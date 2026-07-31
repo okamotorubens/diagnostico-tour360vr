@@ -1,4 +1,3 @@
-import base64
 import datetime
 import io
 import requests
@@ -11,9 +10,6 @@ st.set_page_config(
 
 st.title("📍 Gerador de Diagnóstico Google Meu Negócio")
 st.subheader("Padrão Visual Executivo - Tour360vr")
-
-# Logo Tour360vr embutida em Base64
-LOGO_BASE64 = "data:image/png;base64,iVBORw0KGgoAAAANSU56Buffer..."  # O código gera dinamicamente se a imagem estiver no servidor ou usa o SVG fallback
 
 # Recupera a chave salva nos Secrets do Streamlit Cloud
 try:
@@ -46,11 +42,11 @@ def buscar_dados_google(empresa, cidade, key):
     place_id = result["place_id"]
     primary_type = result.get("types", ["establishment"])[0]
 
-    # Busca Detalhes Completos da Empresa
+    # Detalhes completos
     url_details = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=name,formatted_address,formatted_phone_number,rating,user_ratings_total,photos,website,opening_hours,types&key={key}"
     details = requests.get(url_details).json().get("result", {})
 
-    # Busca Concorrentes na Mesma Cidade e Categoria
+    # Busca Concorrentes
     query_concorrentes = f"{primary_type} em {cidade}"
     url_conc = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={query_concorrentes}&key={key}"
     res_conc = requests.get(url_conc).json().get("results", [])
@@ -97,14 +93,14 @@ def gerar_pdf_bytes(dados, concorrentes):
     reviews = dados.get("user_ratings_total", 0)
     photos_count = len(dados.get("photos", []))
     website = dados.get("website")
-    has_hours = "Sim" if dados.get("opening_hours") else "Incompleto"
+    has_hours = "Completo" if dados.get("opening_hours") else "Incompleto"
     data_hoje = datetime.date.today().strftime("%d/%m/%Y")
     score = calcular_score(dados)
 
     txt_concorrentes = (
         ", ".join(concorrentes)
         if concorrentes
-        else "Concorrentes locais com presença ativa mapeados."
+        else "Concorrentes mapeados na região."
     )
 
     html_template = f"""
@@ -115,128 +111,144 @@ def gerar_pdf_bytes(dados, concorrentes):
         <style>
             @page {{
                 size: a4 portrait;
-                margin: 8mm 10mm 12mm 10mm;
+                margin: 0mm 0mm 0mm 0mm;
             }}
             body {{
                 font-family: Helvetica, Arial, sans-serif;
                 color: #0f172a;
                 font-size: 8.5pt;
-                line-height: 1.3;
+                line-height: 1.35;
+                background-color: #ffffff;
+                padding: 0;
+                margin: 0;
             }}
             
-            /* Header com Tarja Azul */
-            .header-bar {{
+            /* Tarja Azul de Cabeçalho Superior */
+            .top-header {{
                 background-color: #0284c7;
                 color: #ffffff;
-                padding: 10px 14px;
-                margin-bottom: 10px;
+                padding: 14px 18px;
+                margin-bottom: 12px;
             }}
-            .brand-title {{
-                font-size: 18pt;
+            .brand-logo-text {{
+                font-size: 20pt;
                 font-weight: bold;
                 color: #ffffff;
                 letter-spacing: -0.5px;
             }}
-            .brand-title span {{
-                color: #f97316;
+            .brand-logo-text span {{
+                color: #bae6fd;
             }}
-            .brand-sub {{
+            .brand-subtitle {{
                 font-size: 7.5pt;
                 color: #e0f2fe;
                 text-transform: uppercase;
+                margin-top: 1px;
             }}
-            .doc-title {{
+            .header-doc-title {{
                 text-align: right;
-                font-size: 10pt;
+                font-size: 11pt;
                 font-weight: bold;
                 color: #ffffff;
                 text-transform: uppercase;
             }}
+            .header-doc-date {{
+                text-align: right;
+                font-size: 8pt;
+                color: #e0f2fe;
+            }}
+
+            /* Container Principal com Margens Interiores */
+            .content-container {{
+                padding: 0 16px;
+            }}
             
-            /* Card Destaque */
+            /* Destaque do Cliente */
             .client-card {{
-                background-color: #f8fafc;
-                border-left: 4px solid #0284c7;
-                padding: 8px 12px;
-                margin-bottom: 10px;
-                border-top: 1px solid #e2e8f0;
-                border-right: 1px solid #e2e8f0;
-                border-bottom: 1px solid #e2e8f0;
+                background-color: #f0f9ff;
+                border-left: 5px solid #0284c7;
+                padding: 10px 14px;
+                margin-bottom: 12px;
+                border-radius: 4px;
             }}
             .client-name {{
-                font-size: 13pt;
+                font-size: 14pt;
                 font-weight: bold;
                 color: #0369a1;
                 text-transform: uppercase;
-                margin-bottom: 2px;
+                margin-bottom: 3px;
+            }}
+            .client-info {{
+                font-size: 8.5pt;
+                color: #334155;
             }}
             
-            /* Metricas e Termometro */
+            /* Metricas Estilo Cards PinCheck */
             .metrics-table {{
                 width: 100%;
-                margin-bottom: 10px;
+                margin-bottom: 12px;
             }}
             .metric-box {{
                 background-color: #ffffff;
                 border: 1px solid #cbd5e1;
-                padding: 8px;
+                padding: 8px 10px;
                 vertical-align: top;
                 width: 32%;
+                border-radius: 4px;
             }}
             .metric-title {{
-                font-size: 7pt;
+                font-size: 7.5pt;
                 font-weight: bold;
                 color: #475569;
                 text-transform: uppercase;
-                margin-bottom: 4px;
+                margin-bottom: 3px;
             }}
             .metric-score {{
-                font-size: 16pt;
+                font-size: 17pt;
                 font-weight: bold;
                 color: #0284c7;
             }}
-            
-            /* Termometro Visao */
-            .thermo-bg {{
+            .thermo-bar {{
                 background-color: #e2e8f0;
-                height: 8px;
+                height: 7px;
                 width: 100%;
                 margin-top: 4px;
-                border-radius: 4px;
+                border-radius: 3px;
             }}
-            .thermo-fill {{
+            .thermo-progress {{
                 background-color: #0284c7;
-                height: 8px;
+                height: 7px;
                 width: {score}%;
-                border-radius: 4px;
+                border-radius: 3px;
             }}
 
-            /* Tabela de Matriz de Diagnostico (9 Itens) */
+            /* Titulo de Seções */
             .section-header {{
                 font-size: 9.5pt;
                 font-weight: bold;
-                color: #0284c7;
+                color: #0369a1;
                 text-transform: uppercase;
                 border-bottom: 2px solid #0284c7;
                 padding-bottom: 2px;
-                margin-bottom: 6px;
+                margin-bottom: 8px;
             }}
             
+            /* Tabela de Matriz de Diagnostico */
             .diag-table {{
                 width: 100%;
                 border-collapse: collapse;
-                margin-bottom: 10px;
+                margin-bottom: 12px;
             }}
             .diag-table th {{
                 background-color: #0f172a;
                 color: #ffffff;
-                padding: 5px;
+                padding: 6px;
                 font-size: 7.5pt;
                 text-transform: uppercase;
                 text-align: left;
             }}
             .diag-table td {{
-                padding: 5px;
+                padding: 5px 6px;
                 border-bottom: 1px solid #e2e8f0;
                 font-size: 8pt;
                 vertical-align: top;
@@ -253,19 +265,17 @@ def gerar_pdf_bytes(dados, concorrentes):
             .dim-impact {{
                 color: #b91c1c;
                 width: 40%;
+                font-weight: 500;
             }}
 
             /* Blocos Retangulares do Plano de Acao */
-            .action-grid {{
-                width: 100%;
-                margin-bottom: 8px;
-            }}
             .action-block {{
-                background-color: #f0f9ff;
-                border: 1px solid #bae6fd;
+                background-color: #f8fafc;
+                border: 1px solid #e2e8f0;
                 border-left: 4px solid #0284c7;
-                padding: 6px 8px;
-                margin-bottom: 4px;
+                padding: 6px 10px;
+                margin-bottom: 5px;
+                border-radius: 3px;
             }}
             .action-title {{
                 font-size: 8.5pt;
@@ -278,36 +288,39 @@ def gerar_pdf_bytes(dados, concorrentes):
                 color: #334155;
             }}
 
-            /* Box de CTA */
-            .cta-box {{
-                background-color: #0f172a;
-                color: #ffffff;
-                padding: 8px 12px;
-                text-align: center;
-                margin-top: 6px;
+            /* Bloco de Chamada para Ação (CTA Unificado) */
+            .cta-card {{
+                background-color: #f0f9ff;
+                border: 1px solid #bae6fd;
+                border-left: 4px solid #0284c7;
+                padding: 10px 12px;
+                margin-top: 10px;
+                margin-bottom: 12px;
                 border-radius: 4px;
             }}
             .cta-title {{
-                font-size: 9.5pt;
+                font-size: 9pt;
                 font-weight: bold;
-                color: #38bdf8;
-                margin-bottom: 2px;
+                color: #0369a1;
+                margin-bottom: 3px;
+                text-transform: uppercase;
             }}
             .cta-text {{
-                font-size: 7.8pt;
-                color: #e2e8f0;
+                font-size: 8pt;
+                color: #1e293b;
+                line-height: 1.35;
             }}
 
-            /* Footer */
-            .footer {{
+            /* Rodape Limpo */
+            .footer-bar {{
                 text-align: center;
-                font-size: 8pt;
-                color: #0284c7;
-                border-top: 1px solid #cbd5e1;
-                padding-top: 6px;
-                margin-top: 8px;
+                font-size: 8.5pt;
+                color: #0369a1;
+                border-top: 1px solid #e2e8f0;
+                padding-top: 8px;
+                margin-top: 6px;
             }}
-            .footer a {{
+            .footer-bar a {{
                 color: #0284c7;
                 text-decoration: none;
                 font-weight: bold;
@@ -316,144 +329,148 @@ def gerar_pdf_bytes(dados, concorrentes):
     </head>
     <body>
 
-        <!-- Header -->
-        <div class="header-bar">
+        <!-- Tarja Azul de Cabeçalho Superior -->
+        <div class="top-header">
             <table style="width: 100%;">
                 <tr>
                     <td style="width: 60%;">
-                        <div class="brand-title">TOUR<span>360</span>VR</div>
-                        <div class="brand-sub">AUDITORIA E DIAGNÓSTICO GOOGLE MEU NEGÓCIO</div>
+                        <div class="brand-logo-text">TOUR<span>360VR</span></div>
+                        <div class="brand-subtitle">AUDITORIA E DIAGNÓSTICO GOOGLE MEU NEGÓCIO</div>
                     </td>
                     <td style="text-align: right; width: 40%;">
-                        <div class="doc-title">PinCheck Audit</div>
-                        <div style="font-size: 7.5pt; color: #e0f2fe;">Data: {data_hoje}</div>
+                        <div class="header-doc-title">PinCheck Audit</div>
+                        <div class="header-doc-date">Data: {data_hoje}</div>
                     </td>
                 </tr>
             </table>
         </div>
 
-        <!-- Destaque do Cliente -->
-        <div class="client-card">
-            <div class="client-name">{nome}</div>
-            <div style="font-size: 8pt; color: #475569;">
-                <b>Endereço:</b> {endereco} | <b>Telefone:</b> {telefone}
+        <div class="content-container">
+
+            <!-- Destaque do Cliente -->
+            <div class="client-card">
+                <div class="client-name">{nome}</div>
+                <div class="client-info">
+                    <b>Endereço:</b> {endereco} | <b>Telefone:</b> {telefone}
+                </div>
             </div>
-        </div>
 
-        <!-- Metric Cards com Termometro -->
-        <table class="metrics-table">
-            <tr>
-                <td class="metric-box">
-                    <div class="metric-title">OTIMIZAÇÃO DO PERFIL</div>
-                    <div class="metric-score">{score}/100</div>
-                    <div class="thermo-bg"><div class="thermo-fill"></div></div>
-                    <div style="font-size: 7pt; color: #64748b; margin-top: 3px;">Margem para crescimento e conversão</div>
-                </td>
-                <td style="width: 2%;"></td>
-                <td class="metric-box">
-                    <div class="metric-title">NOTA E REPUTAÇÃO</div>
-                    <div class="metric-score">★ {rating}</div>
-                    <div style="font-size: 7.5pt; color: #334155; margin-top: 4px;">Com base em <b>{reviews} avaliações</b> no Google</div>
-                </td>
-                <td style="width: 2%;"></td>
-                <td class="metric-box">
-                    <div class="metric-title">TOUR VIRTUAL 360°</div>
-                    <div class="metric-score" style="color: #dc2626;">AUSENTE</div>
-                    <div style="font-size: 7.5pt; color: #64748b; margin-top: 4px;">Oportunidade para diferenciar no mercado</div>
-                </td>
-            </tr>
-        </table>
+            <!-- Metric Cards com Termometro -->
+            <table class="metrics-table">
+                <tr>
+                    <td class="metric-box">
+                        <div class="metric-title">OTIMIZAÇÃO DO PERFIL</div>
+                        <div class="metric-score">{score}/100</div>
+                        <div class="thermo-bar"><div class="thermo-progress"></div></div>
+                        <div style="font-size: 7pt; color: #64748b; margin-top: 3px;">Margem para crescimento e conversão</div>
+                    </td>
+                    <td style="width: 2%;"></td>
+                    <td class="metric-box">
+                        <div class="metric-title">NOTA E REPUTAÇÃO</div>
+                        <div class="metric-score">★ {rating}</div>
+                        <div style="font-size: 7.5pt; color: #334155; margin-top: 4px;">Com base em <b>{reviews} avaliações</b> no Google</div>
+                    </td>
+                    <td style="width: 2%;"></td>
+                    <td class="metric-box">
+                        <div class="metric-title">TOUR VIRTUAL 360°</div>
+                        <div class="metric-score" style="color: #dc2626;">0 FOTOS</div>
+                        <div style="font-size: 7.5pt; color: #64748b; margin-top: 4px;">Oportunidade para diferenciar no mercado</div>
+                    </td>
+                </tr>
+            </table>
 
-        <!-- Matriz de 9 Itens -->
-        <div class="section-header">DIAGNÓSTICO DETALHADO DE DESEMPENHO</div>
+            <!-- Matriz de 9 Itens -->
+            <div class="section-header">MATRIZ DE DIAGNÓSTICO E IMPACTO COMERCIAL</div>
 
-        <table class="diag-table">
-            <thead>
-                <tr>
-                    <th>Dimensão</th>
-                    <th>Estado Atual Identificado</th>
-                    <th>Impacto no Ranqueamento e Conversão</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td class="dim-name">Completude do Cadastro</td>
-                    <td class="dim-status">{"Website cadastrado" if website else "Falta site próprio ou dados complementares."}</td>
-                    <td class="dim-impact">Perfil incompleto transmite falta de profissionalismo e reduz a conversão.</td>
-                </tr>
-                <tr>
-                    <td class="dim-name">Nota e Avaliações</td>
-                    <td class="dim-status">Nota ★ {rating} com {reviews} avaliações acumuladas.</td>
-                    <td class="dim-impact">Reputação ativa fortalece a prova social e gera confiança imediata no paciente/cliente.</td>
-                </tr>
-                <tr>
-                    <td class="dim-name">Consistência de NAP</td>
-                    <td class="dim-status">Endereço e telefone ativos no Google Maps.</td>
-                    <td class="dim-impact">Informações corretas garantem confiança ao algoritmo e evitarem buscas frustradas.</td>
-                </tr>
-                <tr>
-                    <td class="dim-name">Categorias</td>
-                    <td class="dim-status">Categoria principal definida na ficha.</td>
-                    <td class="dim-impact">Falta de categorias secundárias limita a exibição em buscas locais específicas.</td>
-                </tr>
-                <tr>
-                    <td class="dim-name">Fotos</td>
-                    <td class="dim-status">{photos_count} fotos identificadas no perfil.</td>
-                    <td class="dim-impact">Poucas fotos impedem que o cliente avalie o espaço visualmente antes de contratar.</td>
-                </tr>
-                <tr>
-                    <td class="dim-name">Horários</td>
-                    <td class="dim-status">Horários de funcionamento: {has_hours}.</td>
-                    <td class="dim-impact">Horários claros e atualizados evitam perda de atendimento em horários de pico.</td>
-                </tr>
-                <tr>
-                    <td class="dim-name">Posts / Novidades</td>
-                    <td class="dim-status">Nenhuma atualização constante de posts detectada.</td>
-                    <td class="dim-impact">Perfil estático não incentiva revisitas e deixa de destacar ofertas ou novidades.</td>
-                </tr>
-                <tr>
-                    <td class="dim-name">Recursos Interativos</td>
-                    <td class="dim-status">Nenhum Tour Virtual 360° interativo detectado.</td>
-                    <td class="dim-impact">Visitantes não conseguem "visitar" virtualmente o local; perdem-se conversões por falta de imersão.</td>
-                </tr>
-                <tr>
-                    <td class="dim-name">Presença e Concorrência Local</td>
-                    <td class="dim-status">Concorrentes na região: {txt_concorrentes}.</td>
-                    <td class="dim-impact">Como você está na região — e onde está a oportunidade de superar o volume da concorrência.</td>
-                </tr>
-            </tbody>
-        </table>
+            <table class="diag-table">
+                <thead>
+                    <tr>
+                        <th>Dimensão</th>
+                        <th>Estado Atual Identificado</th>
+                        <th>Impacto no Ranqueamento e Conversão</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="dim-name">Completude do Cadastro</td>
+                        <td class="dim-status">{"Website cadastrado" if website else "Faltam descrição, site próprio e dados complementares."}</td>
+                        <td class="dim-impact">Perfil incompleto transmite falta de profissionalismo e reduz a conversão de visitantes.</td>
+                    </tr>
+                    <tr>
+                        <td class="dim-name">Nota e Avaliações</td>
+                        <td class="dim-status">Nota ★ {rating} com {reviews} avaliações acumuladas.</td>
+                        <td class="dim-impact">Reputação ativa fortalece a prova social e gera confiança imediata ao paciente/cliente.</td>
+                    </tr>
+                    <tr>
+                        <td class="dim-name">Consistência de NAP</td>
+                        <td class="dim-status">Endereço e telefone consistentes no Google Maps.</td>
+                        <td class="dim-impact">Informações corretas garantem confiança ao algoritmo e evitam buscas frustradas.</td>
+                    </tr>
+                    <tr>
+                        <td class="dim-name">Categorias</td>
+                        <td class="dim-status">Categoria principal definida na ficha.</td>
+                        <td class="dim-impact">Falta de categorizações secundárias limita a visibilidade em buscas específicas da região.</td>
+                    </tr>
+                    <tr>
+                        <td class="dim-name">Fotos</td>
+                        <td class="dim-status">{photos_count} fotos identificadas no perfil. Cobertura básica.</td>
+                        <td class="dim-impact">Poucas fotos impedem que os visitantes avaliem a qualidade do ambiente e equipamentos.</td>
+                    </tr>
+                    <tr>
+                        <td class="dim-name">Horários</td>
+                        <td class="dim-status">Horários de funcionamento: {has_hours}.</td>
+                        <td class="dim-impact">Informação correta evita perda de atendimentos e buscas em horários de pico.</td>
+                    </tr>
+                    <tr>
+                        <td class="dim-name">Posts / Novidades</td>
+                        <td class="dim-status">Nenhum post ou novidade constante detectado.</td>
+                        <td class="dim-impact">Perfil estático não incentiva revisitas e deixa de destacar promoções e diferenciais.</td>
+                    </tr>
+                    <tr>
+                        <td class="dim-name">Recursos Interativos</td>
+                        <td class="dim-status">Nenhuma foto 360° ou tour virtual detectado.</td>
+                        <td class="dim-impact">Visitantes não conseguem "visitar" virtualmente o local; perdem-se conversões por falta de imersão.</td>
+                    </tr>
+                    <tr>
+                        <td class="dim-name">Presença e Concorrência Local</td>
+                        <td class="dim-status">{txt_concorrentes}</td>
+                        <td class="dim-impact">Como você está na região — e onde está a oportunidade de superar o volume da concorrência.</td>
+                    </tr>
+                </tbody>
+            </table>
 
-        <!-- Plano de Acao em Blocos Retangulares -->
-        <div class="section-header">PLANO DE AÇÃO RECOMENDADO (SOLUÇÕES TOUR360VR)</div>
+            <!-- Plano de Ação em Blocos Retangulares -->
+            <div class="section-header">PLANO DE AÇÃO RECOMENDADO (SOLUÇÕES TOUR360VR)</div>
 
-        <div class="action-block">
-            <div class="action-title">1. IMPLANTAÇÃO DE TOUR VIRTUAL 360° INTERATIVO</div>
-            <div class="action-desc">Mapeamento em alta definição integrado ao Google Maps. Aumenta o tempo de permanência na ficha e multiplica os agendamentos.</div>
-        </div>
-
-        <div class="action-block">
-            <div class="action-title">2. ENSAIO FOTOGRÁFICO PROFISSIONAL HD</div>
-            <div class="action-desc">Captura em alta resolução das instalações, fachada e diferenciais, elevando a percepção de valor e profissionalismo.</div>
-        </div>
-
-        <div class="action-block">
-            <div class="action-title">3. OTIMIZAÇÃO SEO LOCAL & GESTÃO DE REPUTAÇÃO</div>
-            <div class="action-desc">Reestruturação completa de palavras-chave, categorias e estratégia para alavancar avaliações de clientes satisfeitos.</div>
-        </div>
-
-        <!-- Box de Chamada para Acao (CTA) -->
-        <div class="cta-box">
-            <div class="cta-title">Pronto para elevar sua visibilidade?</div>
-            <div class="cta-text">
-                Conversamos por WhatsApp, entendemos seus objetivos e montamos um plano personalizado. O tour 360° + estratégia de avaliações pode triplicar suas buscas.
+            <div class="action-block">
+                <div class="action-title">1. IMPLANTAÇÃO DE TOUR VIRTUAL 360° INTERATIVO</div>
+                <div class="action-desc">Mapeamento imersivo em alta definição integrado ao Google Maps. Aumenta o tempo de permanência na ficha e multiplica a conversão.</div>
             </div>
-        </div>
 
-        <!-- Rodape -->
-        <div class="footer">
-            <a href="https://wa.me/5516991332121">WhatsApp: (16) 99133-2121</a> | 
-            <a href="https://www.tour360vr.com.br">www.tour360vr.com.br</a>
+            <div class="action-block">
+                <div class="action-title">2. ENSAIO FOTOGRÁFICO PROFISSIONAL HD</div>
+                <div class="action-desc">Fotografias profissionais das instalações, fachada e diferenciais, elevando o valor percebido pelo cliente.</div>
+            </div>
+
+            <div class="action-block">
+                <div class="action-title">3. OTIMIZAÇÃO SEO LOCAL & GESTÃO DE REPUTAÇÃO</div>
+                <div class="action-desc">Reestruturação completa de palavras-chave, categorias e estratégia para alavancar avaliações de clientes satisfeitos.</div>
+            </div>
+
+            <!-- Bloco de Chamada para Ação (CTA Unificado) -->
+            <div class="cta-card">
+                <div class="cta-title">Pronto para elevar sua visibilidade?</div>
+                <div class="cta-text">
+                    Conversamos por WhatsApp, entendemos seus objetivos e montamos um plano personalizado. O tour 360° + estratégia de avaliações pode triplicar suas buscas.
+                </div>
+            </div>
+
+            <!-- Rodapé Limpo -->
+            <div class="footer-bar">
+                <a href="https://wa.me/5516991332121">WhatsApp: (16) 99133-2121</a> &nbsp;|&nbsp; 
+                <a href="https://tour360vr.com.br/">www.tour360vr.com.br</a>
+            </div>
+
         </div>
 
     </body>
