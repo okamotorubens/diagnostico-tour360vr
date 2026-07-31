@@ -44,18 +44,19 @@ class PDF(FPDF):
         self.set_fill_color(15, 23, 42)  # Azul escuro / grafite
         self.rect(0, 0, 210, 35, "F")
 
-        self.set_font("Arial", "B", 20)
+        self.set_font("Helvetica", "B", 20)
         self.set_text_color(255, 255, 255)
         self.set_xy(10, 8)
-        self.cell(0, 10, "Tour360vr", ln=True)
+        self.cell(0, 10, "Tour360vr", new_x="LMARGIN", new_y="NEXT")
 
-        self.set_font("Arial", "", 9)
+        self.set_font("Helvetica", "", 9)
         self.set_text_color(56, 189, 248)  # Azul claro
         self.cell(
             0,
             5,
             "TECNOLOGIA E EXPERIENCIAS IMERSIVAS | DIAGNOSTICO LOCAL",
-            ln=True,
+            new_x="LMARGIN",
+            new_y="NEXT",
         )
         self.ln(10)
 
@@ -63,7 +64,7 @@ class PDF(FPDF):
         self.set_y(-15)
         self.set_fill_color(15, 23, 42)
         self.rect(0, 280, 210, 17, "F")
-        self.set_font("Arial", "B", 8)
+        self.set_font("Helvetica", "B", 8)
         self.set_text_color(255, 255, 255)
         self.set_xy(10, 282)
         self.cell(
@@ -86,69 +87,90 @@ def criar_pdf(dados):
     reviews = dados.get("user_ratings_total", 0)
     photos = len(dados.get("photos", []))
 
+    # Largura útil da página (descontando as margens)
+    largura = pdf.epw
+
     # Título do Relatório
-    pdf.set_font("Arial", "B", 14)
+    pdf.set_font("Helvetica", "B", 13)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(
-        0,
+        largura,
         10,
         f"DIAGNOSTICO DE PRESENCA DIGITAL: {nome.upper()}",
-        ln=True,
+        new_x="LMARGIN",
+        new_y="NEXT",
         border="B",
     )
     pdf.ln(5)
 
     # Dados Coletados
-    pdf.set_font("Arial", "B", 10)
-    pdf.cell(0, 6, "DADOS IDENTIFICADOS NO GOOGLE MAPS:", ln=True)
-    pdf.set_font("Arial", "", 9)
-    pdf.multi_cell(
-        0, 5, f"Endereco: {endereco}\nTelefone: {telefone}\n"
+    pdf.set_font("Helvetica", "B", 10)
+    pdf.cell(
+        largura,
+        6,
+        "DADOS IDENTIFICADOS NO GOOGLE MAPS:",
+        new_x="LMARGIN",
+        new_y="NEXT",
     )
+
+    pdf.set_font("Helvetica", "", 9)
+    pdf.multi_cell(largura, 5, f"Endereco: {endereco}\nTelefone: {telefone}")
     pdf.multi_cell(
-        0,
+        largura,
         5,
         f"Nota Media: {rating} estrelas | Total de Avaliacoes: {reviews}\nFotos Publicadas: {photos} fotos",
     )
     pdf.ln(5)
 
     # Análise de Oportunidades
-    pdf.set_font("Arial", "B", 11)
+    pdf.set_font("Helvetica", "B", 11)
     pdf.set_text_color(185, 28, 28)  # Vermelho / Alerta
-    pdf.cell(0, 8, "PONTOS DE ATENCAO E OPORTUNIDADES:", ln=True)
+    pdf.cell(
+        largura,
+        8,
+        "PONTOS DE ATENCAO E OPORTUNIDADES:",
+        new_x="LMARGIN",
+        new_y="NEXT",
+    )
 
-    pdf.set_font("Arial", "", 9)
+    pdf.set_font("Helvetica", "", 9)
     pdf.set_text_color(0, 0, 0)
 
     if photos < 15:
         pdf.multi_cell(
-            0,
+            largura,
             5,
             "[X] Pouca variedade visual: Perfil possui poucas fotos profissionais atualizadas.",
         )
     if rating < 4.5:
         pdf.multi_cell(
-            0,
+            largura,
             5,
             "[X] Reputacao abaixo do ideal: Pontuacao abaixo de 4.5 estrelas afeta o algoritmo.",
         )
 
     pdf.multi_cell(
-        0,
+        largura,
         5,
         "[X] Ausencia de Experiencia Imersiva 360: O perfil nao possui Tour Virtual 360 interativo integrado.",
     )
     pdf.ln(5)
 
     # Plano de Ação Tour360vr
-    pdf.set_font("Arial", "B", 11)
+    pdf.set_font("Helvetica", "B", 11)
     pdf.set_text_color(2, 132, 199)  # Azul Destaque
-    pdf.cell(0, 8, "PLANO DE ACAO RECOMENDADO (TOUR360VR):", ln=True)
+    pdf.cell(
+        largura,
+        8,
+        "PLANO DE ACAO RECOMENDADO (TOUR360VR):",
+        new_x="LMARGIN",
+        new_y="NEXT",
+    )
 
-    pdf.set_font("Arial", "", 9)
+    pdf.set_font("Helvetica", "", 9)
     pdf.set_text_color(0, 0, 0)
     pdf.multi_cell(
-        0,
+        largura,
         5,
         "1. Implantacao de Tour Virtual 360: Aumenta em ate 41% a chance de visita ao local e melhora o ranqueamento organico no Google Maps.\n"
         "2. Ensaio Fotografico Profissional: Captura de fachada, ambiente interno e diferenciais da empresa em alta resolucao.\n"
