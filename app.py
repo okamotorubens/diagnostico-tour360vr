@@ -10,10 +10,17 @@ st.set_page_config(
 st.title("📍 Gerador de Diagnóstico Google Meu Negócio")
 st.subheader("Ferramenta de Prospecção Tour360vr")
 
-# Interface de Chave da API e Busca
-api_key = st.text_input(
-    "Digite sua Chave da API Google (Places API):", type="password"
-)
+# Recupera a chave salva nos Secrets do Streamlit Cloud
+try:
+    api_key = st.secrets["GOOGLE_API_KEY"]
+except Exception:
+    api_key = None
+
+# Caso você não tenha configurado no Streamlit, permite digitar manualmente
+if not api_key:
+    api_key = st.text_input(
+        "Digite sua Chave da API Google (Places API):", type="password"
+    )
 
 with st.form("form_busca"):
     empresa = st.text_input(
@@ -87,10 +94,8 @@ def criar_pdf(dados):
     reviews = dados.get("user_ratings_total", 0)
     photos = len(dados.get("photos", []))
 
-    # Largura útil da página (descontando as margens)
     largura = pdf.epw
 
-    # Título do Relatório
     pdf.set_font("Helvetica", "B", 13)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(
@@ -103,7 +108,6 @@ def criar_pdf(dados):
     )
     pdf.ln(5)
 
-    # Dados Coletados
     pdf.set_font("Helvetica", "B", 10)
     pdf.cell(
         largura,
@@ -122,9 +126,8 @@ def criar_pdf(dados):
     )
     pdf.ln(5)
 
-    # Análise de Oportunidades
     pdf.set_font("Helvetica", "B", 11)
-    pdf.set_text_color(185, 28, 28)  # Vermelho / Alerta
+    pdf.set_text_color(185, 28, 28)
     pdf.cell(
         largura,
         8,
@@ -156,9 +159,8 @@ def criar_pdf(dados):
     )
     pdf.ln(5)
 
-    # Plano de Ação Tour360vr
     pdf.set_font("Helvetica", "B", 11)
-    pdf.set_text_color(2, 132, 199)  # Azul Destaque
+    pdf.set_text_color(2, 132, 199)
     pdf.cell(
         largura,
         8,
@@ -183,7 +185,9 @@ def criar_pdf(dados):
 
 if btn and empresa and cidade:
     if not api_key:
-        st.error("Por favor, insira sua chave da API do Google.")
+        st.error(
+            "Chave da API do Google não configurada. Verifique os Secrets do Streamlit."
+        )
     else:
         with st.spinner("Buscando dados no Google e gerando relatório..."):
             dados = buscar_dados_google(empresa, cidade, api_key)
