@@ -16,7 +16,6 @@ try:
 except Exception:
     api_key = None
 
-# Caso você não tenha configurado no Streamlit, permite digitar manualmente
 if not api_key:
     api_key = st.text_input(
         "Digite sua Chave da API Google (Places API):", type="password"
@@ -24,10 +23,10 @@ if not api_key:
 
 with st.form("form_busca"):
     empresa = st.text_input(
-        "Nome da Empresa:", placeholder="Ex: Restaurante Exemplo"
+        "Nome da Empresa:", placeholder="Ex: Amazone Açaí Shop"
     )
     cidade = st.text_input(
-        "Cidade / Estado:", placeholder="Ex: Ribeirão Preto / SP"
+        "Cidade / Estado:", placeholder="Ex: Brodowski / SP"
     )
     btn = st.form_submit_button("Gerar Diagnóstico em PDF")
 
@@ -45,138 +44,166 @@ def buscar_dados_google(empresa, cidade, key):
     return requests.get(url_details).json().get("result", {})
 
 
+def clean_text(text):
+    """Converte texto para o encode Latin-1 aceito nativamente pelo FPDF (Helvetica/Arial)"""
+    if not text:
+        return ""
+    return (
+        str(text)
+        .encode("latin-1", "replace")
+        .decode("latin-1")
+    )
+
+
 class PDF(FPDF):
 
     def header(self):
-        self.set_fill_color(15, 23, 42)  # Azul escuro / grafite
-        self.rect(0, 0, 210, 35, "F")
+        # Cabeçalho Azul Escuro
+        self.set_fill_color(15, 23, 42)
+        self.rect(0, 0, 210, 32, "F")
 
-        self.set_font("Helvetica", "B", 20)
+        self.set_font("Helvetica", "B", 18)
         self.set_text_color(255, 255, 255)
-        self.set_xy(10, 8)
-        self.cell(0, 10, "Tour360vr", new_x="LMARGIN", new_y="NEXT")
+        self.set_xy(10, 6)
+        self.cell(0, 8, clean_text("Tour360vr"), new_x="LMARGIN", new_y="NEXT")
 
-        self.set_font("Helvetica", "", 9)
-        self.set_text_color(56, 189, 248)  # Azul claro
+        self.set_font("Helvetica", "", 8)
+        self.set_text_color(56, 189, 248)
         self.cell(
             0,
-            5,
-            "TECNOLOGIA E EXPERIENCIAS IMERSIVAS | DIAGNOSTICO LOCAL",
+            4,
+            clean_text("TECNOLOGIA E EXPERIENCIAS IMERSIVAS | DIAGNOSTICO LOCAL"),
             new_x="LMARGIN",
             new_y="NEXT",
         )
-        self.ln(10)
+        self.set_y(38)
 
     def footer(self):
+        # Rodapé Fixado na parte inferior
         self.set_y(-15)
         self.set_fill_color(15, 23, 42)
-        self.rect(0, 280, 210, 17, "F")
+        self.rect(0, 282, 210, 15, "F")
         self.set_font("Helvetica", "B", 8)
         self.set_text_color(255, 255, 255)
-        self.set_xy(10, 282)
+        self.set_xy(10, 284)
         self.cell(
             0,
             10,
-            "www.tour360vr.com.br | Relatorio de Uso Exclusivo Comercial",
+            clean_text("www.tour360vr.com.br | Relatorio de Uso Exclusivo Comercial"),
             align="C",
         )
 
 
 def criar_pdf(dados):
     pdf = PDF()
-    pdf.add_page()
+    pdf.set_margins(10, 10, 10)
     pdf.set_auto_page_break(auto=True, margin=20)
+    pdf.add_page()
 
     nome = dados.get("name", "N/A")
     endereco = dados.get("formatted_address", "N/A")
     telefone = dados.get("formatted_phone_number", "Não informado")
-    rating = dados.get("rating", 0)
+    rating = dados.get("rating", "N/A")
     reviews = dados.get("user_ratings_total", 0)
     photos = len(dados.get("photos", []))
 
     largura = pdf.epw
 
-    pdf.set_font("Helvetica", "B", 13)
+    # Título Principal
+    pdf.set_font("Helvetica", "B", 12)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(
         largura,
-        10,
-        f"DIAGNOSTICO DE PRESENCA DIGITAL: {nome.upper()}",
+        8,
+        clean_text(f"DIAGNOSTICO DE PRESENCA DIGITAL: {nome.upper()}"),
         new_x="LMARGIN",
         new_y="NEXT",
         border="B",
     )
-    pdf.ln(5)
+    pdf.ln(4)
 
+    # Bloco 1: Dados Coletados
     pdf.set_font("Helvetica", "B", 10)
+    pdf.set_text_color(2, 132, 199)
     pdf.cell(
         largura,
         6,
-        "DADOS IDENTIFICADOS NO GOOGLE MAPS:",
+        clean_text("1. DADOS IDENTIFICADOS NO GOOGLE MAPS:"),
         new_x="LMARGIN",
         new_y="NEXT",
     )
 
     pdf.set_font("Helvetica", "", 9)
-    pdf.multi_cell(largura, 5, f"Endereco: {endereco}\nTelefone: {telefone}")
+    pdf.set_text_color(30, 41, 59)
+    pdf.multi_cell(largura, 5, clean_text(f"Endereco: {endereco}"))
+    pdf.multi_cell(largura, 5, clean_text(f"Telefone: {telefone}"))
     pdf.multi_cell(
         largura,
         5,
-        f"Nota Media: {rating} estrelas | Total de Avaliacoes: {reviews}\nFotos Publicadas: {photos} fotos",
+        clean_text(f"Nota Media: {rating} estrelas | Total de Avaliacoes: {reviews}"),
     )
+    pdf.multi_cell(largura, 5, clean_text(f"Fotos Publicadas na Ficha: {photos} fotos"))
     pdf.ln(5)
 
-    pdf.set_font("Helvetica", "B", 11)
+    # Bloco 2: Oportunidades
+    pdf.set_font("Helvetica", "B", 10)
     pdf.set_text_color(185, 28, 28)
     pdf.cell(
         largura,
-        8,
-        "PONTOS DE ATENCAO E OPORTUNIDADES:",
+        6,
+        clean_text("2. PONTOS DE ATENCAO E OPORTUNIDADES:"),
         new_x="LMARGIN",
         new_y="NEXT",
     )
 
     pdf.set_font("Helvetica", "", 9)
-    pdf.set_text_color(0, 0, 0)
+    pdf.set_text_color(30, 41, 59)
 
     if photos < 15:
         pdf.multi_cell(
             largura,
             5,
-            "[X] Pouca variedade visual: Perfil possui poucas fotos profissionais atualizadas.",
+            clean_text("[X] Pouca variedade visual: O perfil possui poucas fotos do espaço interno e da estrutura."),
         )
-    if rating < 4.5:
-        pdf.multi_cell(
-            largura,
-            5,
-            "[X] Reputacao abaixo do ideal: Pontuacao abaixo de 4.5 estrelas afeta o algoritmo.",
-        )
+
+    try:
+        if float(rating) < 4.5:
+            pdf.multi_cell(
+                largura,
+                5,
+                clean_text("[X] Reputacao abaixo do ideal: Pontuacao abaixo de 4.5 estrelas reduz a conversao de novos clientes."),
+            )
+    except ValueError:
+        pass
 
     pdf.multi_cell(
         largura,
         5,
-        "[X] Ausencia de Experiencia Imersiva 360: O perfil nao possui Tour Virtual 360 interativo integrado.",
+        clean_text("[X] Ausencia de Experiencia Imersiva 360: O perfil nao possui Tour Virtual 360 interativo integrado."),
     )
     pdf.ln(5)
 
-    pdf.set_font("Helvetica", "B", 11)
-    pdf.set_text_color(2, 132, 199)
+    # Bloco 3: Plano de Ação Tour360vr
+    pdf.set_font("Helvetica", "B", 10)
+    pdf.set_text_color(15, 23, 42)
     pdf.cell(
         largura,
-        8,
-        "PLANO DE ACAO RECOMENDADO (TOUR360VR):",
+        6,
+        clean_text("3. PLANO DE ACAO RECOMENDADO (TOUR360VR):"),
         new_x="LMARGIN",
         new_y="NEXT",
     )
 
     pdf.set_font("Helvetica", "", 9)
-    pdf.set_text_color(0, 0, 0)
+    pdf.set_text_color(30, 41, 59)
     pdf.multi_cell(
         largura,
         5,
-        "1. Implantacao de Tour Virtual 360: Aumenta em ate 41% a chance de visita ao local e melhora o ranqueamento organico no Google Maps.\n"
-        "2. Ensaio Fotografico Profissional: Captura de fachada, ambiente interno e diferenciais da empresa em alta resolucao.\n"
-        "3. Otimizacao de Ficha: Atualizacao e padronizacao das informacoes do perfil.",
+        clean_text(
+            "1. Implantacao de Tour Virtual 360: Aumenta o tempo de permanencia no perfil e melhora o ranqueamento organico no Google Maps.\n"
+            "2. Ensaio Fotografico Profissional: Fotografias em alta resolucao destacando fachada, interior e produtos.\n"
+            "3. Otimizacao e Padronizacao: Atualizacao dos dados cadastrais (NAP) para fortalecer o SEO Local."
+        ),
     )
 
     pdf.output("diagnostico.pdf")
@@ -185,9 +212,7 @@ def criar_pdf(dados):
 
 if btn and empresa and cidade:
     if not api_key:
-        st.error(
-            "Chave da API do Google não configurada. Verifique os Secrets do Streamlit."
-        )
+        st.error("Chave da API do Google não configurada.")
     else:
         with st.spinner("Buscando dados no Google e gerando relatório..."):
             dados = buscar_dados_google(empresa, cidade, api_key)
