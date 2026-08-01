@@ -208,15 +208,6 @@ def gerar_pdf_bytes(dados):
     status_completude = f"Faltam: {', '.join(faltam)}" if faltam else "Cadastro completo"
     status_horarios = "Horários configurados" if dados.get("opening_hours") else "Horários ausentes"
     # ----------------------------------------
-
-    # Lógica de Completude e Horários
-    faltam = []
-    if not website: faltam.append("site")
-    if not editorial: faltam.append("descrição")
-    if not telefone or telefone == "N/A": faltam.append("telefone")
-    
-    status_completude = f"Faltam: {', '.join(faltam)}" if faltam else "Cadastro completo"
-    status_horarios = "Horários configurados" if opening_hours else "Horários ausentes"
     
     W = pdf.epw
 
