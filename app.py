@@ -29,7 +29,7 @@ with st.form("form_busca"):
     with col2:
         cidade = st.text_input("Cidade / Estado:", placeholder="Ex: Brodowski / SP")
     
-    btn = st.form_submit_button("Gerar Relatório em PDF")
+    btn = st.form_submit_button("Gerar Relatório Executivo em PDF")
 
 
 def clean_txt(txt):
@@ -197,7 +197,7 @@ def gerar_pdf_bytes(dados):
     score = calcular_score_critico(dados)
 
     # Definição das variáveis de fotos e categorias
-       all_photos = dados.get("photos", [])
+    all_photos = dados.get("photos", [])
     total_fotos = len(all_photos)
     
     tipos = dados.get("types", [])
@@ -206,7 +206,6 @@ def gerar_pdf_bytes(dados):
         return dic.get(cat, cat.replace("_", " ").capitalize())
     
     categorias_texto = ", ".join([traduzir(t) for t in tipos[:2]])
-    
     # --- [INÍCIO DA ALTERAÇÃO] ---
     opening_hours_data = dados.get("opening_hours", {})
     weekday_text = opening_hours_data.get("weekday_text", [])
@@ -506,7 +505,7 @@ if btn and empresa and cidade:
 
                 with open(pdf_file, "rb") as f:
                     st.download_button(
-                        label="📥 Baixar Relatório (PDF)",
+                        label="📥 Baixar Relatório Executivo (PDF)",
                         data=f,
                         file_name=file_download_name,
                         mime="application/pdf",
