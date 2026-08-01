@@ -349,7 +349,7 @@ def gerar_pdf_bytes(dados):
     )
 
     itens = [
-        ("Completude do Cadastro", "Website cadastrado" if website else "Sem website próprio ou link de conversão cadastrado.", "Perfil incompleto reduz a conversão de novos clientes."),
+        ("Completude do Cadastro", "Site cadastrado" if website else "Sem site próprio ou link de conversão cadastrado.", "Perfil incompleto reduz a conversão de novos clientes."),
         ("Nota e Avaliações", txt_eval_critica, "Reputação vulnerável; base pequena limita prova social perante concorrentes."),
         ("Consistência de NAP", "Dados de endereço e telefone ativos.", "Informações corretas evitam perdas por buscas frustradas."),
         ("Categorias", "1 categoria cadastrada (Sem secundárias).", "Falta de categorias secundárias limita a visibilidade regional."),
