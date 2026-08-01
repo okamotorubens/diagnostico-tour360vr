@@ -304,7 +304,7 @@ def gerar_pdf_bytes(dados):
     if reviews_count < 30:
         pdf.cell(w_card - 4, 3.5, clean_txt(f"Apenas {reviews} avaliações (Base pequena)"))
     else:
-        pdf.cell(w_card - 4, 3.5, clean_txt(f"Com base em {reviews} avaliações"))
+        pdf.cell(w_card - 4, 3.5, clean_txt(f"Com base em {reviews} avaliações"), align="C")
 
 
     # Box 3: Tour Virtual 360°
