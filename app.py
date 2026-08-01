@@ -165,7 +165,9 @@ def desenhar_estrelas_destaque(pdf, x_start, y_pos, rating_val):
         rating_num = round(float(rating_val))
     except (ValueError, TypeError):
         rating_num = 0
-
+        
+# Ajuste na chamada da função de estrelas no Card 2
+    desenhar_estrelas_destaque(pdf, 12 + w_card, y_cards + 14.5, rating_raw)
     pdf.set_font("Helvetica", "B", 22)
     
     for k in range(5):
@@ -261,12 +263,15 @@ def gerar_pdf_bytes(dados):
     pdf.set_text_color(20, 50, 135)
     pdf.set_xy(12, y_cards + 2.0)
     pdf.cell(w_card - 4, 3.5, clean_txt("OTIMIZAÇÃO DO PERFIL"))
+    
     pdf.set_font("Helvetica", "B", 18)
-    pdf.set_text_color(249, 115, 22)
+    pdf.set_text_color(249, 115, 22) # Laranja para a nota
     pdf.set_xy(12, y_cards + 6.0)
-    pdf.cell(20, 6, str(score))
+    pdf.cell(12, 6, str(score), align="R") # Nota à direita
+    
     pdf.set_font("Helvetica", "B", 11)
-    pdf.cell(-15, 6, "/100") # Ajuste fino no alinhamento
+    pdf.set_text_color(20, 50, 135) # Azul para o /100
+    pdf.cell(10, 6, "/100")
     
     # Maturidade corrigida para não sobrepor
     pdf.set_font("Helvetica", "B", 10)
@@ -338,6 +343,15 @@ def gerar_pdf_bytes(dados):
 
     pdf.set_y(y_cards + 30)
 
+    # Dicionário simples de tradução
+    traducao_cat = {
+        "lodging": "Hospedagem", "establishment": "Estabelecimento", 
+        "point_of_interest": "Ponto de Interesse", "motel": "Motel"
+    }
+    # Na hora de gerar o texto das categorias:
+    cats_lista = [traducao_cat.get(t, t.capitalize()) for t in tipos[:2]]
+    categorias_texto = ", ".join(cats_lista)
+    
     # Matriz de Diagnóstico
     pdf.set_font("Helvetica", "B", 11)
     pdf.set_text_color(20, 50, 135)
