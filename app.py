@@ -301,7 +301,7 @@ def gerar_pdf_bytes(dados):
     pdf.cell(w_card, 6, f"{rating} / 5.0", align="C")
     
     x_estrelas = (15 + w_card) + (w_card - 32.5) / 2
-    desenhar_estrelas_destaque(pdf, 73.3 + (w - 32.5)/2, y + 16, rating_raw)
+    desenhar_estrelas_destaque(pdf, 12 + w_card, y_cards + 14.5, rating_raw)
 
     pdf.set_font("Helvetica", "", 7); pdf.set_text_color(100, 100, 100)
     pdf.set_xy(73.3, y + 22); pdf.cell(w, 4, f"Base: {reviews} avaliações", align="C")
