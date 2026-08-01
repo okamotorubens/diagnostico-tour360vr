@@ -263,27 +263,22 @@ def gerar_pdf_bytes(dados):
     h_card = 26.0
 
     # Box 1: Otimização do Perfil
-        # Card 1: Otimização
-    pdf.rect(10, y_cards, w_card, h_card, "DF")
-    pdf.set_font("Helvetica", "B", 8)
-    pdf.set_text_color(20, 50, 135)
-    pdf.set_xy(10, y_cards + 2.0)
-    pdf.cell(w_card, 3.5, clean_txt("OTIMIZAÇÃO DO PERFIL"), align="C")
+    pdf.rect(10, y, w, h, "D")
+    pdf.set_font("Helvetica", "B", 8); pdf.set_text_color(20, 50, 135)
+    pdf.set_xy(10, y + 3); pdf.cell(w, 4, "OTIMIZAÇÃO DO PERFIL", align="C")
+    
+    pdf.set_font("Helvetica", "B", 16); pdf.set_text_color(249, 115, 22)
+    pdf.set_xy(10, y + 9); pdf.cell(w, 6, f"{score}/100", align="C")
+    
+    pdf.set_font("Helvetica", "B", 8); pdf.set_text_color(*status_cor)
+    pdf.set_xy(10, y + 17); pdf.cell(w, 4, nivel_maturidade, align="C")
 
-    pdf.set_font("Helvetica", "B", 18)
-    pdf.set_text_color(249, 115, 22)
-    pdf.set_xy(12, y_cards + 6.0)
-    score_str = str(score)
-    pdf.cell(pdf.get_string_width(score_str) + 1, 6, score_str, align="C")
-
-    pdf.set_font("Helvetica", "B", 18)
-    pdf.set_text_color(20, 50, 135)
-    pdf.cell(20, 6, "/100", align="C")
-  
-    pdf.set_font("Helvetica", "B", 10)
-    pdf.set_text_color(*status_cor)
-    pdf.set_xy(12, y_cards + 14.5) 
-    pdf.cell(w_card - 4, 3.5, clean_txt(nivel_maturidade), align="C")
+    # --- Card 2: Reputação ---
+    pdf.rect(73.3, y, w, h, "D")
+    pdf.set_text_color(20, 50, 135); pdf.set_xy(73.3, y + 3); pdf.cell(w, 4, "NOTA E REPUTAÇÃO", align="C")
+    
+    pdf.set_font("Helvetica", "B", 16); pdf.set_text_color(249, 115, 22)
+    pdf.set_xy(73.3, y + 9); pdf.cell(w, 6, f"{rating}/5.0", align="C")
 
     # Box 2: Nota e Reputação
     pdf.set_fill_color(255, 255, 255)
@@ -301,7 +296,10 @@ def gerar_pdf_bytes(dados):
     pdf.cell(w_card, 6, f"{rating} / 5.0", align="C")
     
     x_estrelas = (15 + w_card) + (w_card - 32.5) / 2
-    desenhar_estrelas_destaque(pdf, 12 + w_card, y_cards + 14.5, rating_raw)
+    desenhar_estrelas_destaque(pdf, 73.3 + (w - 32.5)/2, y + 16, rating_raw)
+
+    pdf.set_font("Helvetica", "", 7); pdf.set_text_color(100, 100, 100)
+    pdf.set_xy(73.3, y + 22); pdf.cell(w, 4, f"Base: {reviews} avaliações", align="C")
     
     pdf.set_font("Helvetica", "", 7.5)
     pdf.set_text_color(51, 65, 85)
