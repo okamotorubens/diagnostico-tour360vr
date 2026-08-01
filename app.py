@@ -255,11 +255,6 @@ def gerar_pdf_bytes(dados):
     pdf.set_xy(10, y_cards + 7.0)
     pdf.cell(w_card, 6, f"{score} / 100", align="C") # Centralizado junto
     
-    pdf.set_font("Helvetica", "B", 8)
-    pdf.set_text_color(*status_cor)
-    pdf.set_xy(10, y_cards + 15.0)
-    pdf.cell(w_card, 3.5, clean_txt(nivel_maturidade), align="C")
-    
     # Maturidade corrigida para não sobrepor
     pdf.set_font("Helvetica", "B", 10)
     pdf.set_text_color(*status_cor)
