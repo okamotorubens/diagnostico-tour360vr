@@ -24,7 +24,7 @@ with st.form("form_busca"):
     col1, col2 = st.columns([3, 2])
     with col1:
         empresa = st.text_input(
-            "Nome da Empresa:", placeholder="Ex: Nobre Paladar"
+            "Nome da Empresa:", placeholder="Ex: Amazone Açaí Shop"
         )
     with col2:
         cidade = st.text_input("Cidade / Estado:", placeholder="Ex: Brodowski / SP")
@@ -284,7 +284,7 @@ def gerar_pdf_bytes(dados):
     else:
         pdf.cell(w_card - 4, 3.5, clean_txt(f"Com base em {reviews} avaliações"))
 
-    # Box 3: Tour Virtual 360° (Atualizado para foco em Experiência)
+    # Box 3: Tour Virtual 360°
     pdf.set_fill_color(255, 255, 255)
     pdf.set_draw_color(20, 50, 135)
     pdf.rect(10 + (w_card * 2), y_cards, w_card, h_card, "DF")
@@ -292,19 +292,28 @@ def gerar_pdf_bytes(dados):
     pdf.set_font("Helvetica", "B", 8)
     pdf.set_text_color(20, 50, 135)
     pdf.set_xy(12 + (w_card * 2), y_cards + 2.0)
-    pdf.cell(w_card - 4, 3.5, clean_txt("PRESENÇA IMERSIVA°"))
+    pdf.cell(w_card - 4, 3.5, clean_txt("TOUR VIRTUAL 360°"))
 
     pdf.set_font("Helvetica", "B", 18)
     pdf.set_text_color(220, 38, 38)
-    pdf.set_xy(12 + (w_card * 2), y_cards + 7.0)
-    pdf.cell(w_card - 4, 6, clean_txt("SEM EXPERIÊNCIA 360º"), align="C")
+    pdf.set_xy(12 + (w_card * 2), y_cards + 6.0)
+    txt_zero = "0"
+    pdf.cell(pdf.get_string_width(txt_zero) + 1, 6, txt_zero)
 
-   pdf.set_font("Helvetica", "", 7.5)
-   pdf.set_text_color(100, 116, 139)
-   pdf.set_xy(12 + (w_card * 2), y_cards + 19.5)
-   pdf.cell(w_card - 4, 3.5, clean_txt("Oportunidade: Ativação Street View"), align="C")
-    
-   pdf.set_y(y_cards + 30)
+    pdf.set_font("Helvetica", "B", 13)
+    txt_fotos = " FOTOS"
+    pdf.cell(pdf.get_string_width(txt_fotos) + 1, 6, txt_fotos)
+
+    pdf.set_font("Helvetica", "B", 10.5)
+    pdf.set_text_color(20, 50, 135)
+    pdf.cell(20, 6, " (AUSENTE)")
+
+    pdf.set_font("Helvetica", "", 7.5)
+    pdf.set_text_color(100, 116, 139)
+    pdf.set_xy(12 + (w_card * 2), y_cards + 19.5)
+    pdf.cell(w_card - 4, 3.5, clean_txt("Oportunidade de se diferenciar"))
+
+    pdf.set_y(y_cards + 30)
 
     # Matriz de Diagnóstico
     pdf.set_font("Helvetica", "B", 11)
@@ -397,7 +406,7 @@ def gerar_pdf_bytes(dados):
     pdf.ln(1.5)
 
     acoes = [
-        ("1. ATIVAÇÃO DE EXPERIÊNCIA IMERSIVA (STREET VIEW READY)", " Integração do seu espaço à base cartográfica do Google. Transforma a ficha em um ponto de visita virtual."),
+        ("1. IMPLANTAÇÃO DE TOUR VIRTUAL 360° INTERATIVO", "Mapeamento imersivo em alta definição integrado ao Google Maps. Aumenta a permanência na ficha e amplia agendamentos."),
         ("2. ENSAIO FOTOGRÁFICO PROFISSIONAL", "Fotografias profissionais das instalações, fachada e diferenciais, elevando o valor percebido pelo cliente."),
         ("3. OTIMIZAÇÃO SEO LOCAL & GESTÃO DE REPUTAÇÃO", "Reestruturação completa de palavras-chave, categorias e estratégia para alavancar avaliações positivas."),
     ]
@@ -428,9 +437,9 @@ def gerar_pdf_bytes(dados):
 
     pdf.set_font("Helvetica", "", 9.5)
     pdf.set_text_color(51, 65, 85)
-    pdf.multi_cell(W, 4.8, clean_txt("Vamos realizar uma auditoria presencial para entender seus objetivos e desenhar um plano de crescimento."), align="C")
+    pdf.multi_cell(W, 4.8, clean_txt("Vamos agendar uma visita, entender seus objetivos e montar um plano personalizado."), align="C")
     pdf.ln(1)
-    pdf.multi_cell(W, 4.8, clean_txt("Um perfil otimizado com conteúdo 360º é o diferencial que separa sua empresa dos concorrentes."), align="C")
+    pdf.multi_cell(W, 4.8, clean_txt("O tour virtual 360° + estratégia de avaliações pode triplicar suas buscas."), align="C")
 
     pdf_output_path = "diagnostico_tour360vr.pdf"
     pdf.output(pdf_output_path)
