@@ -1,5 +1,4 @@
 import datetime
-import math
 import requests
 import streamlit as st
 from fpdf import FPDF
@@ -8,8 +7,9 @@ st.set_page_config(
     page_title="Diagnóstico Google - Tour360vr", page_icon="📍", layout="centered"
 )
 
-# Título e Marca abaixo
-st.title("📍 Gerador de Diagnóstico Google Meu Negócio")
+# Título ajustado conforme pedido
+st.title("📍 Gerador de Diagnóstico")
+st.title("Google Meu Negócio")
 st.subheader("Tour360vr")
 
 try:
@@ -157,35 +157,23 @@ class PDFExecutivo(FPDF):
         self.cell(32, 5, clean_txt("Ribeirão Preto - SP"), align="C")
 
 
-def desenhar_estrela_vetor_destaque(pdf, cx, cy, r_out=2.6, r_in=1.1):
-    """Desenha estrela vetorial de 5 pontas em maior escala"""
-    pts = []
-    for i in range(10):
-        r = r_out if i % 2 == 0 else r_in
-        angle = i * math.pi / 5 - math.pi / 2
-        pts.append((cx + r * math.cos(angle), cy + r * math.sin(angle)))
-    
-    poly = []
-    for p in pts:
-        poly.extend(p)
-    pdf.polygon(poly, style="F")
-
-
-def desenhar_estrelas_proporcionais(pdf, x_start, y_center, rating_val):
-    """Desenha 5 estrelas amarelas (cheias) e cinzas (vazias) proporcionais à nota"""
+def desenhar_estrelas_seguras(pdf, x_start, y_pos, rating_val):
+    """Desenha 5 estrelas proporcionais em texto seguro e compatível"""
     try:
         rating_num = round(float(rating_val))
     except (ValueError, TypeError):
         rating_num = 0
 
+    pdf.set_font("Helvetica", "B", 12)
+    
     for k in range(5):
-        cx = x_start + (k * 6.2)
+        pdf.set_xy(x_start + (k * 5.5), y_pos)
         if k < rating_num:
-            pdf.set_fill_color(245, 158, 11)  # Amarelo Ouro (#f59e0b)
+            pdf.set_text_color(245, 158, 11)  # Amarelo Ouro (#f59e0b)
+            pdf.cell(5, 5, clean_txt("*"))
         else:
-            pdf.set_fill_color(203, 213, 225)  # Cinza Claro (#cbd5e1)
-        
-        desenhar_estrela_vetor_destaque(pdf, cx, y_center)
+            pdf.set_text_color(203, 213, 225)  # Cinza Claro (#cbd5e1)
+            pdf.cell(5, 5, clean_txt("-"))
 
 
 def gerar_pdf_bytes(dados):
@@ -263,7 +251,7 @@ def gerar_pdf_bytes(dados):
     pdf.set_xy(12, y_cards + 16.8)
     pdf.cell(w_card - 4, 3.5, clean_txt("Margem para crescimento local"))
 
-    # Box 2: Nota e Reputação com Estrelas em Destaque
+    # Box 2: Nota e Reputação
     pdf.set_fill_color(248, 250, 252)
     pdf.rect(10 + w_card, y_cards, w_card, 23, "DF")
 
@@ -282,8 +270,7 @@ def gerar_pdf_bytes(dados):
     pdf.set_text_color(20, 50, 135)
     pdf.cell(20, 6, " / 5.0")
 
-    # Desenha estrelas proporcionais em destaque (y = 13.8)
-    desenhar_estrelas_proporcionais(pdf, 14 + w_card, y_cards + 13.8, rating_raw)
+    desenhar_estrelas_seguras(pdf, 12 + w_card, y_cards + 11.8, rating_raw)
 
     pdf.set_font("Helvetica", "", 7.5)
     pdf.set_text_color(51, 65, 85)
