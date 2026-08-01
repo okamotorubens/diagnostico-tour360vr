@@ -457,7 +457,7 @@ if btn and empresa and cidade:
                 st.success("Diagnóstico gerado com sucesso!")
 
                 nome_limpo = dados.get("name", empresa).strip()
-                file_download_name = f"Diagnóstico da Ficha - {nome_limpo} - {cidade}.pdf"
+                file_download_name = f"Diagnóstico da Ficha - {empresa} - {cidade}.pdf"
 
                 with open(pdf_file, "rb") as f:
                     st.download_button(
