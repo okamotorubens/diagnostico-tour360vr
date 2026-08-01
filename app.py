@@ -244,7 +244,6 @@ def gerar_pdf_bytes(dados):
     h_card = 27.0
 
     # Card 1: Otimização
-    pdf.rect(10, y, w, h, "D")
     pdf.set_font("Helvetica", "B", 8)
     pdf.set_text_color(20, 50, 135)
     pdf.set_xy(10, y + 2)
