@@ -281,7 +281,7 @@ def gerar_pdf_bytes(dados):
     pdf.cell(w_card - 4, 3.5, clean_txt(nivel_maturidade), align="C")
 
     # Box 2: Nota e Reputação
-        pdf.rect(10 + w_card, y_cards, w_card, h_card, "DF")
+    pdf.rect(10 + w_card, y_cards, w_card, h_card, "DF")
     pdf.set_font("Helvetica", "B", 8)
     pdf.set_text_color(20, 50, 135)
     pdf.set_xy(10 + w_card, y_cards + 2.0)
