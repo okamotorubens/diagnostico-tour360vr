@@ -441,7 +441,6 @@ def gerar_pdf_bytes(dados):
     pdf.ln(3)
 
     # Plano de Ação
-    pdf.set_fill_color(20, 50, 135)
     pdf.set_font("Helvetica", "B", 11)
     pdf.set_text_color(20, 50, 135)
     pdf.cell(
