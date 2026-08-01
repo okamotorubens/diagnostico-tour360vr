@@ -265,9 +265,6 @@ def gerar_pdf_bytes(dados):
     pdf.set_xy(12, y_cards + 14.5) 
     pdf.cell(w_card - 4, 3.5, clean_txt(nivel_maturidade), align="C")
        
-    # Card 2: Reputação
-    pdf.rect(10 + w_card, y_cards, w_card, h_card, "DF")
-    # ... (continua o restante do código)
    # Card 2: Reputação
     pdf.rect(10 + w_card, y_cards, w_card, h_card, "DF")
     pdf.set_font("Helvetica", "B", 8)
@@ -280,7 +277,7 @@ def gerar_pdf_bytes(dados):
     pdf.set_xy(10 + w_card, y_cards + 7.0)
     pdf.cell(w_card, 6, f"{rating} / 5.0", align="C")
     
-    pdf.set_font("Helvetica", "", 7.5)
+    pdf.set_font("Helvetica", "", 8)
     pdf.set_text_color(51, 65, 85)
     pdf.set_xy(10 + w_card, y_cards + 21.0)
     pdf.cell(w_card, 3.5, clean_txt(f"Com base em {reviews} avaliações"), align="C")
@@ -297,7 +294,7 @@ def gerar_pdf_bytes(dados):
     pdf.set_xy(10 + (w_card * 2), y_cards + 8.5)
     pdf.cell(w_card, 6, clean_txt("SEM EXPERIÊNCIA 360º"), align="C")
     
-    pdf.set_font("Helvetica", "", 7.5)
+    pdf.set_font("Helvetica", "", 8)
     pdf.set_text_color(100, 116, 139)
     pdf.set_xy(10 + (w_card * 2), y_cards + 20.0)
     pdf.cell(w_card, 3.5, clean_txt("Ativação Street View Ready"), align="C")
