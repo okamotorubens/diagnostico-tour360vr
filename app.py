@@ -430,7 +430,7 @@ def gerar_pdf_bytes(dados):
         pdf.set_y(pdf.get_y() + 2.5)
 
     # Frase Final de Impacto
-    pdf.ln(4)
+    pdf.ln(3)
     pdf.set_font("Helvetica", "B", 12)
     pdf.set_text_color(20, 50, 135)
     pdf.cell(W, 6, clean_txt("Pronto para elevar sua visibilidade?"), align="C", new_x="LMARGIN", new_y="NEXT")
