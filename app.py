@@ -5,28 +5,18 @@ from io import BytesIO
 # --- CONFIGURAÇÃO ---
 st.set_page_config(page_title="Tour360vr | Auditoria Imbatível", page_icon="🚀", layout="centered")
 
-# --- FUNÇÕES AUXILIARES ---
 def clean_txt(txt):
     return str(txt).encode("latin-1", "replace").decode("latin-1")
 
 def gerar_qr_whatsapp():
-    link = "https://wa.me/5516991332121?text=Olá!%20Vi%20meu%20diagnóstico%20e%20preciso%20ajuda%20para%20melhorar%20minha%20ficha."
+    link = "https://wa.me/5516991332121?text=Olá!%20Vi%20meu%20diagnóstico%20e%20preciso%20de%20ajuda%20para%20melhorar%20minha%20ficha."
     img = qrcode.make(link)
     buf = BytesIO()
     img.save(buf, format="PNG")
     buf.seek(0)
     return buf
 
-def buscar_dados_google(empresa, cidade, key):
-    query = f"{empresa} {cidade}"
-    url = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={query}&key={key}"
-    res = requests.get(url).json()
-    if not res.get("results"): return None
-    place_id = res["results"][0]["place_id"]
-    url_details = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=name,formatted_address,formatted_phone_number,rating,user_ratings_total,photos,website,opening_hours&key={key}"
-    return requests.get(url_details).json().get("result", {})
-
-# --- CLASSE DE PDF OTIMIZADA ---
+# --- CLASSE DE PDF ---
 class PDFImbatível(FPDF):
     def header(self):
         self.set_fill_color(20, 50, 135)
@@ -40,7 +30,19 @@ class PDFImbatível(FPDF):
         qr_img = gerar_qr_whatsapp()
         self.image(qr_img, x=180, y=275, w=20)
         self.set_font("Helvetica", "B", 8)
+        self.set_text_color(20, 50, 135)
         self.cell(0, 10, clean_txt("Escaneie para falar com o consultor"), align="R")
+
+# --- FUNÇÕES DE LÓGICA ---
+def buscar_dados_google(empresa, cidade, key):
+    query = f"{empresa} {cidade}"
+    url = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={query}&key={key}"
+    res = requests.get(url).json()
+    if not res.get("results"): return None
+    
+    place_id = res["results"][0]["place_id"]
+    url_details = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=name,formatted_address,formatted_phone_number,rating,user_ratings_total,photos,website,opening_hours&key={key}"
+    return requests.get(url_details).json().get("result", {})
 
 # --- INTERFACE STREAMLIT ---
 st.title("🚀 Gerador de Auditoria Imbatível")
@@ -50,7 +52,6 @@ try:
 except:
     api_key = st.text_input("Digite sua Chave da API Google:", type="password")
 
-# --- FORMULÁRIO DE BUSCA (REINSERIDO) ---
 with st.form("form_busca"):
     col1, col2 = st.columns(2)
     empresa = col1.text_input("Nome da Empresa:")
@@ -62,27 +63,30 @@ if btn and api_key and empresa and cidade:
         dados = buscar_dados_google(empresa, cidade, api_key)
         
         if dados:
-            # Lógica de cálculo de eficiência
-            if dados:
-            # Lógica de cálculo de eficiência
-            score = 65 
-            st.metric("Índice de Eficiência Digital", f"{score}%", delta="-15% comparado a concorrentes")
+            st.metric("Índice de Eficiência Digital", "65%", delta="-15% vs Concorrentes")
             st.warning("⚠️ Risco Detectado: O perfil está perdendo visibilidade para concorrentes.")
             
-            # --- GERANDO O PDF PARA DOWNLOAD ---
+            # --- GERANDO O PDF ---
             pdf = PDFImbatível()
             pdf.add_page()
             pdf.set_font("Helvetica", size=12)
-            pdf.cell(0, 10, clean_txt(f"Relatório de Auditoria: {dados.get('name')}"), ln=True)
-            # ... aqui você chamaria suas funções de preenchimento do PDF ...
             
-            # Converter o PDF para bytes para permitir o download
+            pdf.ln(10)
+            pdf.set_font("Helvetica", "B", 14)
+            pdf.cell(0, 10, clean_txt(f"Auditoria para: {dados.get('name')}"), ln=True)
+            
+            pdf.set_font("Helvetica", size=11)
+            pdf.cell(0, 8, clean_txt(f"Endereço: {dados.get('formatted_address')}"), ln=True)
+            pdf.cell(0, 8, clean_txt(f"Nota Média: {dados.get('rating', 'N/A')}"), ln=True)
+            
+            # --- BOTÃO DE DOWNLOAD ---
             pdf_bytes = pdf.output(dest='S').encode('latin-1')
-            
             st.download_button(
                 label="📥 Baixar Auditoria em PDF",
                 data=pdf_bytes,
                 file_name=f"Auditoria_{empresa}.pdf",
                 mime="application/pdf"
             )
-            st.success("Auditoria pronta para download!")
+            st.success("Auditoria gerada com sucesso!")
+        else:
+            st.error("Empresa não encontrada. Verifique o nome ou cidade.")
