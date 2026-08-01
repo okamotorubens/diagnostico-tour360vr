@@ -302,8 +302,6 @@ def gerar_pdf_bytes(dados):
     pdf.set_text_color(20, 50, 135)
     pdf.cell(20, 6, " / 5.0")
 
-    desenhar_estrelas_destaque(pdf, 12 + w_card, y_cards + 11.5, rating_raw)
-
     pdf.set_font("Helvetica", "", 7.5)
     pdf.set_text_color(51, 65, 85)
     pdf.set_xy(12 + w_card, y_cards + 19.5)
