@@ -101,14 +101,16 @@ class PDFExecutivo(FPDF):
         self.set_fill_color(20, 50, 135)
         self.rect(0, 0, 210, 26, "F")
 
-        # Título e Subtítulo Centralizados no Cabeçalho
-        self.set_font("Helvetica", "B", 18)
+        # Título Maior (21pt) e Centralizado na Altura da Tarja
+        self.set_font("Helvetica", "B", 21)
         self.set_text_color(255, 255, 255)
-        self.set_xy(10, 5.5)
-        self.cell(0, 6, clean_txt("TOUR360VR"), align="C", new_x="LMARGIN", new_y="NEXT")
+        self.set_xy(10, 4.5)
+        self.cell(0, 7, clean_txt("TOUR360VR"), align="C", new_x="LMARGIN", new_y="NEXT")
 
+        # Subtítulo logo abaixo
         self.set_font("Helvetica", "B", 8.5)
         self.set_text_color(186, 230, 253)
+        self.set_y(14.5)
         self.cell(0, 4, clean_txt("DIAGNÓSTICO E AUDITORIA GOOGLE MEU NEGÓCIO"), align="C", new_x="LMARGIN", new_y="NEXT")
 
         # Data alinhada no canto direito
@@ -132,30 +134,31 @@ class PDFExecutivo(FPDF):
         self.set_y(-9)
         self.set_font("Helvetica", "B", 8)
 
-        self.set_x(12)
+        # Cálculo exato de X para centralizar os 162mm totais da linha na página A4 (210mm)
+        self.set_x(24)
 
         self.set_text_color(255, 255, 255)
-        self.cell(26, 5, clean_txt("Rubens Okamoto"), align="C")
-        self.cell(4, 5, clean_txt(" · "), align="C")
+        self.cell(24, 5, clean_txt("Rubens Okamoto"), align="C")
+        self.cell(3, 5, clean_txt("·"), align="C")
 
         self.set_text_color(224, 242, 254)
-        self.cell(41, 5, clean_txt("contato@tour360vr.com.br"), align="C", link="mailto:contato@tour360vr.com.br")
+        self.cell(39, 5, clean_txt("contato@tour360vr.com.br"), align="C", link="mailto:contato@tour360vr.com.br")
 
         self.set_text_color(255, 255, 255)
-        self.cell(4, 5, clean_txt(" · "), align="C")
+        self.cell(3, 5, clean_txt("·"), align="C")
 
         self.set_text_color(224, 242, 254)
-        self.cell(22, 5, clean_txt("16991332121"), align="C", link="https://wa.me/5516991332121")
+        self.cell(20, 5, clean_txt("16991332121"), align="C", link="https://wa.me/5516991332121")
 
         self.set_text_color(255, 255, 255)
-        self.cell(4, 5, clean_txt(" · "), align="C")
+        self.cell(3, 5, clean_txt("·"), align="C")
 
         self.set_text_color(224, 242, 254)
-        self.cell(28, 5, clean_txt("tour360vr.com.br"), align="C", link="https://tour360vr.com.br/")
+        self.cell(26, 5, clean_txt("tour360vr.com.br"), align="C", link="https://tour360vr.com.br/")
 
         self.set_text_color(255, 255, 255)
-        self.cell(4, 5, clean_txt(" · "), align="C")
-        self.cell(32, 5, clean_txt("Ribeirão Preto - SP"), align="C")
+        self.cell(3, 5, clean_txt("·"), align="C")
+        self.cell(30, 5, clean_txt("Ribeirão Preto - SP"), align="C")
 
 
 def gerar_pdf_bytes(dados):
@@ -177,7 +180,7 @@ def gerar_pdf_bytes(dados):
 
     W = pdf.epw
 
-    # Quadro da Empresa sem sobra de espaço abaixo (Altura reduzida para 14.5mm)
+    # Quadro da Empresa sem sobra de espaço abaixo
     y_empresa = pdf.get_y()
     pdf.set_fill_color(240, 249, 255)
     pdf.set_draw_color(20, 50, 135)
@@ -199,7 +202,6 @@ def gerar_pdf_bytes(dados):
         new_y="NEXT",
     )
 
-    # Início imediato dos quadros logo abaixo do bloco da empresa
     y_cards = y_empresa + 19.5
 
     # Box 1: Otimização do Perfil
@@ -322,6 +324,7 @@ def gerar_pdf_bytes(dados):
         else f"Nota {rating} baseada em {reviews} avaliações."
     )
 
+    # Limpeza rigorosa no texto de Posts / Novidades
     itens = [
         (
             "Completude do Cadastro",
@@ -355,7 +358,7 @@ def gerar_pdf_bytes(dados):
         ),
         (
             "Posts / Novidades",
-            "Sem publicações ou ofertas recentes (Perfil estático).",
+            "Sem publicações ou ofertas recentes (Perfil estático).".strip(),
             "Perfil estático não destaca ofertas nem novidades do local.",
         ),
         (
@@ -440,8 +443,8 @@ def gerar_pdf_bytes(dados):
 
         pdf.set_y(pdf.get_y() + 4)
 
-    # Frase Final de Impacto Com Espaçamento Ajustado
-    pdf.ln(8)
+    # Frase Final Rebaixada (Mais Próxima do Rodapé)
+    pdf.ln(13)
 
     pdf.set_font("Helvetica", "B", 12)
     pdf.set_text_color(20, 50, 135)
