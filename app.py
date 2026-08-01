@@ -219,7 +219,7 @@ def gerar_pdf_bytes(dados):
             "School": "Escola",
             "Physiotherapist": "Fisioterapia",
         }
-    cats = ", ".join([traduzir(t) for t in dados.get("types", [])[:5]])
+        categorias_texto = ", ".join([traduzir(t) for t in tipos[:4]])
     
     # --- [INÍCIO DA ALTERAÇÃO] ---
     opening_hours_data = dados.get("opening_hours", {})
