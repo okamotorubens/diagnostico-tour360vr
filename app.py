@@ -315,7 +315,7 @@ def gerar_pdf_bytes(dados):
     pdf.set_font("Helvetica", "B", 8)
     pdf.set_text_color(20, 50, 135)
     pdf.set_xy(12 + (w_card * 2), y_cards + 2.0)
-    pdf.cell(w_card - 4, 3.5, clean_txt("PRESENÇA IMERSIVA"))
+    pdf.cell(w_card - 4, 3.5, clean_txt("PRESENÇA IMERSIVA"), align="C")
 
     pdf.set_font("Helvetica", "B", 18)
     pdf.set_text_color(220, 38, 38)
