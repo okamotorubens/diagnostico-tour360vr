@@ -197,6 +197,16 @@ def gerar_pdf_bytes(dados):
     editorial = dados.get("editorial_summary", {}).get("overview", "")
     has_hours = "Cadastrado" if dados.get("opening_hours") else "Ausente/Incompleto"
     score = calcular_score_critico(dados)
+    # Adicione este bloco na função gerar_pdf_bytes
+    if score >= 75:
+        nivel_maturidade = "AUTORIDADE DIGITAL"
+        status_cor = (34, 197, 94) # Verde
+    elif score >= 50:
+        nivel_maturidade = "EM EVOLUÇÃO"
+        status_cor = (234, 179, 8) # Amarelo
+    else:
+        nivel_maturidade = "EMERGENTE"
+        status_cor = (239, 68, 68) # Vermelho
     # --- COLE AQUI A LÓGICA DE COMPLETUDE ---
     editorial = dados.get("editorial_summary", {}).get("overview", "")
     faltam = []
@@ -265,7 +275,17 @@ def gerar_pdf_bytes(dados):
     pdf.set_text_color(100, 116, 139)
     pdf.set_xy(12, y_cards + 19.5)
     pdf.cell(w_card - 4, 3.5, clean_txt("Margem para crescimento local"))
-
+    
+    # --- COLE AQUI A EXIBIÇÃO DA MATURIDADE ---
+    pdf.set_font("Helvetica", "B", 9)
+    pdf.set_text_color(*status_cor)
+    pdf.set_xy(12, y_cards + 21.5)
+    pdf.cell(w_card - 4, 3.5, clean_txt(nivel_maturidade), align="C")
+    # -------------------------------------------
+    
+    # Card 2: Reputação
+    pdf.rect(10 + w_card, y_cards, w_card, h_card, "DF")
+    # ... (continua o restante do código)
     # Box 2: Nota e Reputação
     pdf.set_fill_color(255, 255, 255)
     pdf.set_draw_color(20, 50, 135)
