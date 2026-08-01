@@ -130,7 +130,7 @@ class PDFExecutivo(FPDF):
 
     def footer(self):
         # Tarja Azul no Rodapé #143287
-        self.set_fill_color(20, 50, 135)
+       self.set_x(22.5)
         self.rect(0, 285, 210, 12, "F")
 
         self.set_y(-9)
