@@ -202,7 +202,7 @@ def gerar_pdf_bytes(dados):
     
     tipos = dados.get("types", [])
     def traduzir(cat):
-    dic = {"ice_cream_shop": "Sorveteria", "bakery": "Padaria", "snack_bar": "Lanchonete", "physiotherapist": "Fisioterapia", "lodging": "Hospedagem", "establishment": "Estabelecimento", "gym": "Academia", "school": "Escola", "store": "Comércio", "doctor": "Clínica", "beauty_salon": "Salão de Beleza", "point_of_interest": "Ponto de Interesse", "cafe": "Café", "Store": "Loja "motel": "Motel"}
+    dic = {"ice_cream_shop": "Sorveteria", "bakery": "Padaria", "snack_bar": "Lanchonete", "physiotherapist": "Fisioterapia", "lodging": "Hospedagem", "establishment": "Estabelecimento", "gym": "Academia", "store": "Comércio", "doctor": "Clínica", "beauty_salon": "Salão de Beleza", "cafe": "Café", "Store": "Loja "motel": "Motel"}
     return dic.get(cat, cat.replace("_", " ").capitalize())
     
     categorias_texto = ", ".join([traduzir(t) for t in tipos[:5]])
