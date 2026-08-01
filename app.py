@@ -244,11 +244,11 @@ def gerar_pdf_bytes(dados):
     h_card = 27.0
 
     # Card 1: Otimização
-    pdf.rect(10, y_cards, w_card, h_card, "DF")
+    pdf.rect(10, y, w, h, "D")
     pdf.set_font("Helvetica", "B", 8)
     pdf.set_text_color(20, 50, 135)
-    pdf.set_xy(12, y_cards + 2.0)
-    pdf.cell(w_card - 4, 3.5, clean_txt("OTIMIZAÇÃO DO PERFIL"))
+    pdf.set_xy(10, y + 2)
+    pdf.cell(w, 4, "OTIMIZAÇÃO DO PERFIL", align="C")
     
     pdf.set_font("Helvetica", "B", 18)
     pdf.set_text_color(249, 115, 22) # Laranja para a nota
@@ -260,44 +260,44 @@ def gerar_pdf_bytes(dados):
     pdf.cell(10, 6, "/100")
     
     # Maturidade corrigida para não sobrepor
-    pdf.set_font("Helvetica", "B", 10)
+    pdf.set_font("Helvetica", "B", 8)
     pdf.set_text_color(*status_cor)
-    pdf.set_xy(12, y_cards + 14.5) 
-    pdf.cell(w_card - 4, 3.5, clean_txt(nivel_maturidade), align="C")
+    pdf.set_xy(10, y_cards + 16) 
+    pdf.cell(w, 4, nivel_maturidade, align="C")
        
    # Card 2: Reputação
-    pdf.rect(10 + w_card, y_cards, w_card, h_card, "DF")
+    pdf.rect(73.3, y, w, h, "D")
     pdf.set_font("Helvetica", "B", 8)
-    pdf.set_text_color(20, 50, 135)
-    pdf.set_xy(10 + w_card, y_cards + 2.0)
-    pdf.cell(w_card, 3.5, clean_txt("NOTA E REPUTAÇÃO"), align="C")
+    pdf.set_text_color(249, 115, 22)
+    pdf.set_xy(73.3, y + 8)
+    pdf.cell(w, 6, f"{rating} / 5.0", align="C")
     
     pdf.set_font("Helvetica", "B", 18)
     pdf.set_text_color(249, 115, 22)
     pdf.set_xy(10 + w_card, y_cards + 7.0)
     pdf.cell(w_card, 6, f"{rating} / 5.0", align="C")
     
-    pdf.set_font("Helvetica", "", 8)
-    pdf.set_text_color(51, 65, 85)
+    pdf.set_font("Helvetica", "", 7)
+    pdf.set_text_color(100, 100, 100)
     pdf.set_xy(10 + w_card, y_cards + 21.0)
-    pdf.cell(w_card, 3.5, clean_txt(f"Com base em {reviews} avaliações"), align="C")
+    pdf.set_xy(73.3, y + 21); pdf.cell(w, 4, f"Com base em {reviews} avaliações", align="C")
 
   # Card 3: Presença Imersiva
-    pdf.rect(10 + (w_card * 2), y_cards, w_card, h_card, "DF")
+    pdf.rect(136.6, y, w, h, "D")
     pdf.set_font("Helvetica", "B", 8)
     pdf.set_text_color(20, 50, 135)
     pdf.set_xy(10 + (w_card * 2), y_cards + 2.0)
     pdf.cell(w_card, 3.5, clean_txt("PRESENÇA IMERSIVA"), align="C")
     
-    pdf.set_font("Helvetica", "B", 11)
+    pdf.set_font("Helvetica", "B", 9)
     pdf.set_text_color(220, 38, 38)
     pdf.set_xy(10 + (w_card * 2), y_cards + 8.5)
-    pdf.cell(w_card, 6, clean_txt("SEM EXPERIÊNCIA 360º"), align="C")
+    pdf.set_xy(136.6, y + 10), pdf.cell(w, 5, "SEM EXPERIÊNCIA 360º", align="C")
     
-    pdf.set_font("Helvetica", "", 8)
-    pdf.set_text_color(100, 116, 139)
+    pdf.set_font("Helvetica", "", 7)
+    pdf.set_text_color(100, 100, 100)
     pdf.set_xy(10 + (w_card * 2), y_cards + 20.0)
-    pdf.cell(w_card, 3.5, clean_txt("Ativação Street View Ready"), align="C")
+    pdf.set_xy(136.6, y + 19); pdf.cell(w, 4, clean_txt("Ativação Street View"), align="C")
     
     # Matriz de Diagnóstico
     pdf.set_font("Helvetica", "B", 11)
