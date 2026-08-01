@@ -158,26 +158,6 @@ class PDFExecutivo(FPDF):
         self.cell(4, 5, clean_txt("·"), align="C")
         self.cell(34, 5, clean_txt("Ribeirão Preto - SP"), align="C")
 
-
-def desenhar_estrelas_destaque(pdf, x_start, y_pos, rating_val):
-    """Exibe estrelas em tamanho super ampliado (22pt)"""
-    try:
-        rating_num = round(float(rating_val))
-    except (ValueError, TypeError):
-        rating_num = 0
-
-    pdf.set_font("Helvetica", "B", 22)
-    
-    for k in range(5):
-        pdf.set_xy(x_start + (k * 7.5), y_pos)
-        if k < rating_num:
-            pdf.set_text_color(245, 158, 11)  # Amarelo Ouro (#f59e0b)
-            pdf.cell(7, 7, clean_txt("*"))
-        else:
-            pdf.set_text_color(203, 213, 225)  # Cinza Claro (#cbd5e1)
-            pdf.cell(7, 7, clean_txt("-"))
-
-
 def gerar_pdf_bytes(dados):
     pdf = PDFExecutivo()
     pdf.set_margins(10, 6, 10)
@@ -193,9 +173,48 @@ def gerar_pdf_bytes(dados):
     reviews = str(reviews_count)
     photos_count = len(dados.get("photos", []))
     website = dados.get("website")
+    opening_hours = dados.get("opening_hours")
+    editorial = dados.get("editorial_summary", {}).get("overview", "")
     has_hours = "Cadastrado" if dados.get("opening_hours") else "Ausente/Incompleto"
     score = calcular_score_critico(dados)
+    # Definição das variáveis de fotos e categorias
+    all_photos = dados.get("photos", [])
+    total_fotos = len(all_photos)
+    
+    tipos = dados.get("types", [])
+    def traduzir(cat):
+        dic = {"lodging": "Hospedagem", "establishment": "Estabelecimento", "point_of_interest": "Ponto de Interesse", "motel": "Motel"}
+        return dic.get(cat, cat.replace("_", " ").capitalize())
+    
+    categorias_texto = ", ".join([traduzir(t) for t in tipos[:2]])
+    # --- [INÍCIO DA ALTERAÇÃO] ---
+    opening_hours_data = dados.get("opening_hours", {})
+    weekday_text = opening_hours_data.get("weekday_text", [])
+    editorial = dados.get("editorial_summary", {}).get("overview", "")
+    
+    # Lógica de Horários (Padrão Google Maps)
+    if weekday_text:
+        is_24h = any("24 horas" in txt.lower() or "open 24 hours" in txt.lower() for txt in weekday_text)
+        status_horarios = "Aberto 24 Horas" if is_24h else "Horários configurados"
+    else:
+        status_horarios = "Horários ausentes"
 
+    # Lógica de Completude
+    faltam = []
+    if not website: faltam.append("site")
+    if not editorial: faltam.append("descrição")
+    if not telefone or telefone == "Não informado": faltam.append("telefone")
+    status_completude = f"Faltam: {', '.join(faltam)}" if faltam else "Cadastro completo"
+
+    # Lógica de Maturidade Digital
+    if score >= 75:
+        nivel_maturidade, status_cor = "AUTORIDADE DIGITAL", (34, 197, 94)
+    elif score >= 50:
+        nivel_maturidade, status_cor = "EM EVOLUÇÃO", (234, 179, 8)
+    else:
+        nivel_maturidade, status_cor = "EMERGENTE", (239, 68, 68)
+    # --- [FIM DA ALTERAÇÃO] ---
+    
     W = pdf.epw
 
     # Quadro da Empresa
@@ -220,101 +239,73 @@ def gerar_pdf_bytes(dados):
         new_y="NEXT",
     )
 
-    y_cards = y_empresa + 18
+    y_cards = y_empresa + 17
     w_card = 63.3
-    h_card = 26.0
+    h_card = 27.0
 
-    # Box 1: Otimização do Perfil
-    pdf.set_fill_color(255, 255, 255)
-    pdf.set_draw_color(20, 50, 135)
+    # Card 1: Otimização
     pdf.rect(10, y_cards, w_card, h_card, "DF")
-
     pdf.set_font("Helvetica", "B", 8)
     pdf.set_text_color(20, 50, 135)
-    pdf.set_xy(12, y_cards + 2.0)
-    pdf.cell(w_card - 4, 3.5, clean_txt("OTIMIZAÇÃO DO PERFIL"))
-
+    pdf.set_xy(10, y_cards + 2.0)
+    pdf.cell(w_card, 3.5, clean_txt("OTIMIZAÇÃO DO PERFIL"), align="C")
+    
     pdf.set_font("Helvetica", "B", 18)
     pdf.set_text_color(249, 115, 22)
-    pdf.set_xy(12, y_cards + 6.0)
-    score_str = str(score)
-    pdf.cell(pdf.get_string_width(score_str) + 1, 6, score_str)
-
-    pdf.set_font("Helvetica", "B", 11)
-    pdf.set_text_color(20, 50, 135)
-    pdf.cell(20, 6, "/100")
-
-    pdf.set_fill_color(226, 232, 240)
-    pdf.rect(12, y_cards + 13.5, w_card - 8, 3.2, "F")
-    pdf.set_fill_color(20, 50, 135)
-    pdf.rect(12, y_cards + 13.5, ((w_card - 8) * score / 100), 3.2, "F")
-
-    pdf.set_font("Helvetica", "", 7.5)
-    pdf.set_text_color(100, 116, 139)
-    pdf.set_xy(12, y_cards + 19.5)
-    pdf.cell(w_card - 4, 3.5, clean_txt("Margem para crescimento local"))
-
-    # Box 2: Nota e Reputação
-    pdf.set_fill_color(255, 255, 255)
-    pdf.set_draw_color(20, 50, 135)
+    pdf.set_xy(10, y_cards + 7.0)
+    pdf.cell(w_card, 6, f"{score} / 100", align="C") # Centralizado junto
+    
+    pdf.set_font("Helvetica", "B", 8)
+    pdf.set_text_color(*status_cor)
+    pdf.set_xy(10, y_cards + 15.0)
+    pdf.cell(w_card, 3.5, clean_txt(nivel_maturidade), align="C")
+    
+    # Maturidade corrigida para não sobrepor
+    pdf.set_font("Helvetica", "B", 10)
+    pdf.set_text_color(*status_cor)
+    pdf.set_xy(12, y_cards + 14.5) 
+    pdf.cell(w_card - 4, 3.5, clean_txt(nivel_maturidade), align="C")
+       
+    # Card 2: Reputação
     pdf.rect(10 + w_card, y_cards, w_card, h_card, "DF")
-
+    # ... (continua o restante do código)
+   # Card 2: Reputação
+    pdf.rect(10 + w_card, y_cards, w_card, h_card, "DF")
     pdf.set_font("Helvetica", "B", 8)
     pdf.set_text_color(20, 50, 135)
-    pdf.set_xy(12 + w_card, y_cards + 2.0)
-    pdf.cell(w_card - 4, 3.5, clean_txt("NOTA E REPUTAÇÃO"))
-
+    pdf.set_xy(10 + w_card, y_cards + 2.0)
+    pdf.cell(w_card, 3.5, clean_txt("NOTA E REPUTAÇÃO"), align="C")
+    
     pdf.set_font("Helvetica", "B", 18)
     pdf.set_text_color(249, 115, 22)
-    pdf.set_xy(12 + w_card, y_cards + 6.0)
-    w_nota = pdf.get_string_width(rating) + 1
-    pdf.cell(w_nota, 6, rating)
-
-    pdf.set_font("Helvetica", "B", 11)
-    pdf.set_text_color(20, 50, 135)
-    pdf.cell(20, 6, " / 5.0")
-
-    desenhar_estrelas_destaque(pdf, 12 + w_card, y_cards + 11.5, rating_raw)
-
+    pdf.set_xy(10 + w_card, y_cards + 7.0)
+    pdf.cell(w_card, 6, f"{rating} / 5.0", align="C")
+    
+    x_estrelas = (10 + w_card) + (w_card - 32.5) / 2
+    desenhar_estrelas_destaque(pdf, 12 + w_card, y_cards + 14.5, rating_raw)
+    
     pdf.set_font("Helvetica", "", 7.5)
     pdf.set_text_color(51, 65, 85)
-    pdf.set_xy(12 + w_card, y_cards + 19.5)
-    if reviews_count < 30:
-        pdf.cell(w_card - 4, 3.5, clean_txt(f"Apenas {reviews} avaliações (Base pequena)"))
-    else:
-        pdf.cell(w_card - 4, 3.5, clean_txt(f"Com base em {reviews} avaliações"))
+    pdf.set_xy(10 + w_card, y_cards + 21.0)
+    pdf.cell(w_card, 3.5, clean_txt(f"Com base em {reviews} avaliações"), align="C")
 
-    # Box 3: Tour Virtual 360°
-    pdf.set_fill_color(255, 255, 255)
-    pdf.set_draw_color(20, 50, 135)
+  # Card 3: Presença Imersiva
     pdf.rect(10 + (w_card * 2), y_cards, w_card, h_card, "DF")
-
     pdf.set_font("Helvetica", "B", 8)
     pdf.set_text_color(20, 50, 135)
-    pdf.set_xy(12 + (w_card * 2), y_cards + 2.0)
-    pdf.cell(w_card - 4, 3.5, clean_txt("PRESENÇA IMERSIVA"))
-
-    pdf.set_font("Helvetica", "B", 18)
+    pdf.set_xy(10 + (w_card * 2), y_cards + 2.0)
+    pdf.cell(w_card, 3.5, clean_txt("PRESENÇA IMERSIVA"), align="C")
+    
+    pdf.set_font("Helvetica", "B", 11)
     pdf.set_text_color(220, 38, 38)
-    pdf.set_xy(12 + (w_card * 2), y_cards + 6.0)
-    txt_zero = "0"
-    pdf.cell(pdf.get_string_width(txt_zero) + 1, 6, txt_zero)
-
-    pdf.set_font("Helvetica", "B", 13)
-    txt_fotos = " IMAGENS"
-    pdf.cell(pdf.get_string_width(txt_fotos) + 1, 6, txt_fotos)
-
-    pdf.set_font("Helvetica", "B", 10.5)
-    pdf.set_text_color(20, 50, 135)
-    pdf.cell(20, 6, " (AUSENTE)")
-
+    pdf.set_xy(10 + (w_card * 2), y_cards + 8.5)
+    pdf.cell(w_card, 6, clean_txt("SEM EXPERIÊNCIA 360º"), align="C")
+    
     pdf.set_font("Helvetica", "", 7.5)
     pdf.set_text_color(100, 116, 139)
-    pdf.set_xy(12 + (w_card * 2), y_cards + 19.5)
-    pdf.cell(w_card - 4, 3.5, clean_txt("Ativação Street View"))
-
-    pdf.set_y(y_cards + 30)
-
+    pdf.set_xy(10 + (w_card * 2), y_cards + 20.0)
+    pdf.cell(w_card, 3.5, clean_txt("Ativação Street View Ready"), align="C")
+    
     # Matriz de Diagnóstico
     pdf.set_font("Helvetica", "B", 11)
     pdf.set_text_color(20, 50, 135)
@@ -347,16 +338,29 @@ def gerar_pdf_bytes(dados):
         if reviews_count < 40
         else f"Nota {rating} baseada em {reviews} avaliações."
     )
+    # Captura real de dados
+    all_photos = dados.get("photos", [])
+    total_fotos = len(all_photos) # Número real retornado pela API
+    
+    # Captura real de categorias
+    tipos = dados.get("types", [])
+      
+    # Filtra os tipos para mostrar algo legível, ex: limite de 2 categorias
+    # Dicionário de tradução aplicado diretamente
+    def traduzir(cat):
+        dic = {"lodging": "Hospedagem", "establishment": "Estabelecimento", "point_of_interest": "Ponto de Interesse", "motel": "Motel"}
+        return dic.get(cat, cat.replace("_", " ").capitalize())
 
+    cat_formatadas = ", ".join([traduzir(t) for t in dados.get("types", [])[:2]])
     itens = [
-        ("Completude do Cadastro", "Site cadastrado" if website else "Sem site próprio ou link de conversão cadastrado.", "Perfil incompleto transmite falta de profissionalismo e reduz a probabilidade de conversão de visitantes."),
-        ("Nota e Avaliações", txt_eval_critica, "Reputação vulnerável; base pequena limita prova social perante concorrentes."),
+        ("Completude", status_completude, "Perfil incompleto transmite falta de profissionalismo e reduz a probabilidade de conversão de visitantes."),
+        ("Reputação", f"Nota {rating} ({reviews} avaliações).", "Reputação vulnerável; base pequena limita prova social perante concorrentes."),
         ("Consistência de NAP", "Dados de endereço e telefone ativos.", "Informações corretas evitam perdas por buscas frustradas."),
-        ("Categorias", "1 categoria cadastrada (Sem secundárias).", "Falta de categorias secundárias limita a visibilidade regional."),
-        ("Fotos", f"Apenas {photos_count} fotos (Cobertura visual baixa).", "Poucas fotos impedem a avaliação do espaço pelo cliente."),
-        ("Horários", f"Horários de funcionamento: {has_hours}.", "Informação correta evita perda de clientes no atendimento."),
+        ("Categorias", categorias_texto, "Falta de categorias secundárias limita a visibilidade regional."),
+        ("Fotos", f"{photos_count} fotos encontradas.", "Poucas fotos impedem a avaliação do espaço pelo cliente."),
+        ("Horários", status_horarios, "Informação correta evita perda de clientes no atendimento."),
         ("Posts / Novidades", "Sem publicações recentes (Perfil estático).", "Perfil estático não destaca ofertas nem novidades do local."),
-        ("Recursos Interativos", "Nenhum tour virtual 360° interativo detectado.", "Perdem-se conversões por falta de experiência imersiva 360."),
+        ("Presença 360", "Nenhum Tour 360° detectado.", "Perdem-se conversões por falta de experiência imersiva 360."),
     ]
 
     pdf.set_font("Helvetica", "", 9)
