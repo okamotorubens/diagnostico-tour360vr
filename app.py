@@ -197,7 +197,6 @@ def gerar_pdf_bytes(dados):
     editorial = dados.get("editorial_summary", {}).get("overview", "")
     has_hours = "Cadastrado" if dados.get("opening_hours") else "Ausente/Incompleto"
     score = calcular_score_critico(dados)
-
     # --- COLE AQUI A LÓGICA DE COMPLETUDE ---
     editorial = dados.get("editorial_summary", {}).get("overview", "")
     faltam = []
@@ -208,7 +207,7 @@ def gerar_pdf_bytes(dados):
     status_completude = f"Faltam: {', '.join(faltam)}" if faltam else "Cadastro completo"
     status_horarios = "Horários configurados" if dados.get("opening_hours") else "Horários ausentes"
     # ----------------------------------------
-    
+
     W = pdf.epw
 
     # Quadro da Empresa
