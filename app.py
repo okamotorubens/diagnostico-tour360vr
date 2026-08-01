@@ -7,7 +7,6 @@ st.set_page_config(
     page_title="Diagnóstico Google - Tour360vr", page_icon="📍", layout="centered"
 )
 
-# Título unificado em uma única linha
 st.title("📍 Gerador de Diagnóstico")
 st.subheader("Google Meu Negócio - Tour360vr")
 
@@ -21,7 +20,6 @@ if not api_key:
         "Digite sua Chave da API Google (Places API):", type="password"
     )
 
-# Formulário compacto com quadros de preenchimento menores
 with st.form("form_busca"):
     col1, col2 = st.columns([3, 2])
     with col1:
@@ -105,11 +103,11 @@ class PDFExecutivo(FPDF):
         self.set_fill_color(20, 50, 135)
         self.rect(0, 0, 210, 28, "F")
 
-        # Título
-        self.set_font("Helvetica", "B", 21)
+        # Título Tour360vr (tamanho ampliado)
+        self.set_font("Helvetica", "B", 26)
         self.set_text_color(255, 255, 255)
-        self.set_xy(10, 6.5)
-        self.cell(0, 7, clean_txt("TOUR360VR"), align="C", new_x="LMARGIN", new_y="NEXT")
+        self.set_xy(10, 5)
+        self.cell(0, 8, clean_txt("Tour360vr"), align="C", new_x="LMARGIN", new_y="NEXT")
 
         # Subtítulo
         self.set_font("Helvetica", "B", 8.5)
@@ -162,22 +160,22 @@ class PDFExecutivo(FPDF):
 
 
 def desenhar_estrelas_destaque(pdf, x_start, y_pos, rating_val):
-    """Exibe o indicador de estrelas em fonte destacada de 14pt"""
+    """Exibe estrelas em tamanho super ampliado (22pt)"""
     try:
         rating_num = round(float(rating_val))
     except (ValueError, TypeError):
         rating_num = 0
 
-    pdf.set_font("Helvetica", "B", 14)
+    pdf.set_font("Helvetica", "B", 22)
     
     for k in range(5):
-        pdf.set_xy(x_start + (k * 6.2), y_pos)
+        pdf.set_xy(x_start + (k * 7.5), y_pos)
         if k < rating_num:
             pdf.set_text_color(245, 158, 11)  # Amarelo Ouro (#f59e0b)
-            pdf.cell(5, 5, clean_txt("*"))
+            pdf.cell(7, 7, clean_txt("*"))
         else:
             pdf.set_text_color(203, 213, 225)  # Cinza Claro (#cbd5e1)
-            pdf.cell(5, 5, clean_txt("-"))
+            pdf.cell(7, 7, clean_txt("-"))
 
 
 def gerar_pdf_bytes(dados):
@@ -202,7 +200,7 @@ def gerar_pdf_bytes(dados):
 
     # Quadro da Empresa
     y_empresa = pdf.get_y()
-    pdf.set_fill_color(240, 249, 255)
+    pdf.set_fill_color(255, 255, 255)
     pdf.set_draw_color(20, 50, 135)
     pdf.rect(10, y_empresa, W, 14, "DF")
 
@@ -224,20 +222,21 @@ def gerar_pdf_bytes(dados):
 
     y_cards = y_empresa + 18
     w_card = 63.3
+    h_card = 26.0
 
     # Box 1: Otimização do Perfil
-    pdf.set_fill_color(248, 250, 252)
+    pdf.set_fill_color(255, 255, 255)
     pdf.set_draw_color(20, 50, 135)
-    pdf.rect(10, y_cards, w_card, 23, "DF")
+    pdf.rect(10, y_cards, w_card, h_card, "DF")
 
     pdf.set_font("Helvetica", "B", 8)
     pdf.set_text_color(20, 50, 135)
-    pdf.set_xy(12, y_cards + 1.8)
+    pdf.set_xy(12, y_cards + 2.0)
     pdf.cell(w_card - 4, 3.5, clean_txt("OTIMIZAÇÃO DO PERFIL"))
 
     pdf.set_font("Helvetica", "B", 18)
     pdf.set_text_color(249, 115, 22)
-    pdf.set_xy(12, y_cards + 5.2)
+    pdf.set_xy(12, y_cards + 6.0)
     score_str = str(score)
     pdf.cell(pdf.get_string_width(score_str) + 1, 6, score_str)
 
@@ -246,27 +245,28 @@ def gerar_pdf_bytes(dados):
     pdf.cell(20, 6, "/100")
 
     pdf.set_fill_color(226, 232, 240)
-    pdf.rect(12, y_cards + 12.2, w_card - 8, 3.2, "F")
+    pdf.rect(12, y_cards + 13.5, w_card - 8, 3.2, "F")
     pdf.set_fill_color(20, 50, 135)
-    pdf.rect(12, y_cards + 12.2, ((w_card - 8) * score / 100), 3.2, "F")
+    pdf.rect(12, y_cards + 13.5, ((w_card - 8) * score / 100), 3.2, "F")
 
     pdf.set_font("Helvetica", "", 7.5)
     pdf.set_text_color(100, 116, 139)
-    pdf.set_xy(12, y_cards + 16.8)
+    pdf.set_xy(12, y_cards + 19.5)
     pdf.cell(w_card - 4, 3.5, clean_txt("Margem para crescimento local"))
 
     # Box 2: Nota e Reputação
-    pdf.set_fill_color(248, 250, 252)
-    pdf.rect(10 + w_card, y_cards, w_card, 23, "DF")
+    pdf.set_fill_color(255, 255, 255)
+    pdf.set_draw_color(20, 50, 135)
+    pdf.rect(10 + w_card, y_cards, w_card, h_card, "DF")
 
     pdf.set_font("Helvetica", "B", 8)
     pdf.set_text_color(20, 50, 135)
-    pdf.set_xy(12 + w_card, y_cards + 1.8)
+    pdf.set_xy(12 + w_card, y_cards + 2.0)
     pdf.cell(w_card - 4, 3.5, clean_txt("NOTA E REPUTAÇÃO"))
 
     pdf.set_font("Helvetica", "B", 18)
     pdf.set_text_color(249, 115, 22)
-    pdf.set_xy(12 + w_card, y_cards + 5.2)
+    pdf.set_xy(12 + w_card, y_cards + 6.0)
     w_nota = pdf.get_string_width(rating) + 1
     pdf.cell(w_nota, 6, rating)
 
@@ -278,25 +278,25 @@ def gerar_pdf_bytes(dados):
 
     pdf.set_font("Helvetica", "", 7.5)
     pdf.set_text_color(51, 65, 85)
-    pdf.set_xy(12 + w_card, y_cards + 16.8)
+    pdf.set_xy(12 + w_card, y_cards + 19.5)
     if reviews_count < 30:
         pdf.cell(w_card - 4, 3.5, clean_txt(f"Apenas {reviews} avaliações (Base pequena)"))
     else:
         pdf.cell(w_card - 4, 3.5, clean_txt(f"Com base em {reviews} avaliações"))
 
     # Box 3: Tour Virtual 360°
-    pdf.set_fill_color(248, 250, 252)
+    pdf.set_fill_color(255, 255, 255)
     pdf.set_draw_color(20, 50, 135)
-    pdf.rect(10 + (w_card * 2), y_cards, w_card, 23, "DF")
+    pdf.rect(10 + (w_card * 2), y_cards, w_card, h_card, "DF")
 
     pdf.set_font("Helvetica", "B", 8)
     pdf.set_text_color(20, 50, 135)
-    pdf.set_xy(12 + (w_card * 2), y_cards + 1.8)
+    pdf.set_xy(12 + (w_card * 2), y_cards + 2.0)
     pdf.cell(w_card - 4, 3.5, clean_txt("TOUR VIRTUAL 360°"))
 
     pdf.set_font("Helvetica", "B", 18)
     pdf.set_text_color(220, 38, 38)
-    pdf.set_xy(12 + (w_card * 2), y_cards + 5.2)
+    pdf.set_xy(12 + (w_card * 2), y_cards + 6.0)
     txt_zero = "0"
     pdf.cell(pdf.get_string_width(txt_zero) + 1, 6, txt_zero)
 
@@ -310,10 +310,10 @@ def gerar_pdf_bytes(dados):
 
     pdf.set_font("Helvetica", "", 7.5)
     pdf.set_text_color(100, 116, 139)
-    pdf.set_xy(12 + (w_card * 2), y_cards + 16.8)
+    pdf.set_xy(12 + (w_card * 2), y_cards + 19.5)
     pdf.cell(w_card - 4, 3.5, clean_txt("Oportunidade de se diferenciar"))
 
-    pdf.set_y(y_cards + 27)
+    pdf.set_y(y_cards + 30)
 
     # Matriz de Diagnóstico
     pdf.set_font("Helvetica", "B", 11)
@@ -327,7 +327,7 @@ def gerar_pdf_bytes(dados):
     )
     pdf.ln(1)
 
-    # Tabela
+    # Tabela com cabeçalho
     pdf.set_fill_color(20, 50, 135)
     pdf.set_font("Helvetica", "B", 8.5)
     pdf.set_text_color(255, 255, 255)
@@ -349,72 +349,43 @@ def gerar_pdf_bytes(dados):
     )
 
     itens = [
-        (
-            "Completude do Cadastro",
-            "Website cadastrado" if website else "Sem website próprio ou link de conversão cadastrado.",
-            "Perfil incompleto reduz a conversão de novos clientes.",
-        ),
-        (
-            "Nota e Avaliações",
-            txt_eval_critica,
-            "Reputação vulnerável; base pequena limita prova social perante concorrentes.",
-        ),
-        (
-            "Consistência de NAP",
-            "Dados de endereço e telefone ativos.",
-            "Informações corretas evitam perdas por buscas frustradas.",
-        ),
-        (
-            "Categorias",
-            "1 categoria cadastrada (Sem secundárias).",
-            "Falta de categorias secundárias limita a visibilidade regional.",
-        ),
-        (
-            "Fotos",
-            f"Apenas {photos_count} fotos (Cobertura visual baixa).",
-            "Poucas fotos impedem a avaliação do espaço pelo cliente.",
-        ),
-        (
-            "Horários",
-            f"Horários de funcionamento: {has_hours}.",
-            "Informação correta evita perda de clientes no atendimento.",
-        ),
-        (
-            "Posts / Novidades",
-            "Sem publicações recentes (Perfil estático).",
-            "Perfil estático não destaca ofertas nem novidades do local.",
-        ),
-        (
-            "Recursos Interativos",
-            "Nenhum tour virtual 360° interativo detectado.",
-            "Perdem-se conversões por falta de experiência imersiva 360.",
-        ),
+        ("Completude do Cadastro", "Website cadastrado" if website else "Sem website próprio ou link de conversão cadastrado.", "Perfil incompleto reduz a conversão de novos clientes."),
+        ("Nota e Avaliações", txt_eval_critica, "Reputação vulnerável; base pequena limita prova social perante concorrentes."),
+        ("Consistência de NAP", "Dados de endereço e telefone ativos.", "Informações corretas evitam perdas por buscas frustradas."),
+        ("Categorias", "1 categoria cadastrada (Sem secundárias).", "Falta de categorias secundárias limita a visibilidade regional."),
+        ("Fotos", f"Apenas {photos_count} fotos (Cobertura visual baixa).", "Poucas fotos impedem a avaliação do espaço pelo cliente."),
+        ("Horários", f"Horários de funcionamento: {has_hours}.", "Informação correta evita perda de clientes no atendimento."),
+        ("Posts / Novidades", "Sem publicações recentes (Perfil estático).", "Perfil estático não destaca ofertas nem novidades do local."),
+        ("Recursos Interativos", "Nenhum tour virtual 360° interativo detectado.", "Perdem-se conversões por falta de experiência imersiva 360."),
     ]
 
     pdf.set_font("Helvetica", "", 9)
     for i, (dim, est, imp) in enumerate(itens):
-        bg = (240, 249, 255) if i % 2 == 0 else (255, 255, 255)
-
+        bg = (255, 255, 255) if i % 2 == 0 else (248, 250, 252)
+        
         y_curr = pdf.get_y()
-
-        pdf.set_font("Helvetica", "", 9)
+        padding_top = 2.5 # Espaço interno extra
+        padding_bottom = 2.5
+        
+        # Calcula altura baseada no conteúdo + padding
         h_dim = len(pdf.multi_cell(42, 4.6, clean_txt(f" {dim}"), split_only=True)) * 4.6
         h_est = len(pdf.multi_cell(73, 4.6, clean_txt(f" {est}"), split_only=True)) * 4.6
         h_imp = len(pdf.multi_cell(75, 4.6, clean_txt(imp), split_only=True)) * 4.6
-        max_h = max(h_dim, h_est, h_imp, 4.6)
+        max_h = max(h_dim, h_est, h_imp, 4.6) + padding_top + padding_bottom
 
         pdf.set_fill_color(*bg)
         pdf.rect(10, y_curr, W, max_h, "F")
 
-        pdf.set_xy(10, y_curr)
+        # Texto verticalmente alinhado
+        pdf.set_xy(10, y_curr + padding_top)
         pdf.set_text_color(20, 50, 135)
         pdf.multi_cell(42, 4.6, clean_txt(f" {dim}"))
 
-        pdf.set_xy(52, y_curr)
+        pdf.set_xy(52, y_curr + padding_top)
         pdf.set_text_color(51, 65, 85)
         pdf.multi_cell(73, 4.6, clean_txt(f" {est}"))
 
-        pdf.set_xy(125, y_curr)
+        pdf.set_xy(125, y_curr + padding_top)
         pdf.set_text_color(20, 50, 135)
         pdf.multi_cell(75, 4.6, clean_txt(imp), align="J")
 
@@ -435,23 +406,14 @@ def gerar_pdf_bytes(dados):
     pdf.ln(1.5)
 
     acoes = [
-        (
-            "1. IMPLANTAÇÃO DE TOUR VIRTUAL 360° INTERATIVO",
-            "Mapeamento imersivo em alta definição integrado ao Google Maps. Aumenta a permanência na ficha e amplia agendamentos.",
-        ),
-        (
-            "2. ENSAIO FOTOGRÁFICO PROFISSIONAL",
-            "Fotografias profissionais das instalações, fachada e diferenciais, elevando o valor percebido pelo cliente.",
-        ),
-        (
-            "3. OTIMIZAÇÃO SEO LOCAL & GESTÃO DE REPUTAÇÃO",
-            "Reestruturação completa de palavras-chave, categorias e estratégia para alavancar avaliações positivas.",
-        ),
+        ("1. IMPLANTAÇÃO DE TOUR VIRTUAL 360° INTERATIVO", "Mapeamento imersivo em alta definição integrado ao Google Maps. Aumenta a permanência na ficha e amplia agendamentos."),
+        ("2. ENSAIO FOTOGRÁFICO PROFISSIONAL", "Fotografias profissionais das instalações, fachada e diferenciais, elevando o valor percebido pelo cliente."),
+        ("3. OTIMIZAÇÃO SEO LOCAL & GESTÃO DE REPUTAÇÃO", "Reestruturação completa de palavras-chave, categorias e estratégia para alavancar avaliações positivas."),
     ]
 
     for tit, desc in acoes:
-        pdf.set_fill_color(248, 250, 252)
-        pdf.set_draw_color(186, 230, 253)
+        pdf.set_fill_color(255, 255, 255)
+        pdf.set_draw_color(20, 50, 135)
         pdf.rect(10, pdf.get_y(), W, 10.5, "DF")
 
         pdf.set_font("Helvetica", "B", 9)
@@ -467,42 +429,17 @@ def gerar_pdf_bytes(dados):
         pdf.set_y(pdf.get_y() + 2.5)
 
     # Frase Final de Impacto
-    pdf.ln(12)
-
+    pdf.ln(10)
     pdf.set_font("Helvetica", "B", 12)
     pdf.set_text_color(20, 50, 135)
-    pdf.cell(
-        W,
-        6,
-        clean_txt("Pronto para elevar sua visibilidade?"),
-        align="C",
-        new_x="LMARGIN",
-        new_y="NEXT",
-    )
+    pdf.cell(W, 6, clean_txt("Pronto para elevar sua visibilidade?"), align="C", new_x="LMARGIN", new_y="NEXT")
     pdf.ln(1)
 
     pdf.set_font("Helvetica", "", 9.5)
     pdf.set_text_color(51, 65, 85)
-    pdf.cell(
-        W,
-        4.8,
-        clean_txt(
-            "Agendamos uma visita, entendemos seus objetivos e montamos um plano personalizado."
-        ),
-        align="C",
-        new_x="LMARGIN",
-        new_y="NEXT",
-    )
-    pdf.cell(
-        W,
-        4.8,
-        clean_txt(
-            "O Tour 360° + estratégia de avaliações pode triplicar suas buscas."
-        ),
-        align="C",
-        new_x="LMARGIN",
-        new_y="NEXT",
-    )
+    pdf.multi_cell(W, 4.8, clean_txt("Vamos agendar uma visita, entender seus objetivos e montar um plano personalizado."), align="C")
+    pdf.ln(1)
+    pdf.multi_cell(W, 4.8, clean_txt("O Tour 360° + estratégia de avaliações pode triplicar suas buscas."), align="C")
 
     pdf_output_path = "diagnostico_tour360vr.pdf"
     pdf.output(pdf_output_path)
