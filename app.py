@@ -284,7 +284,7 @@ def gerar_pdf_bytes(dados):
     # Centralizando estrelas (ajustando posição X para centralizar no quadro)
     # A largura do card é 63.3, 5 estrelas de 6.5mm = 32.5mm totais
     x_estrelas = (10 + w_card) + (w_card - 32.5) / 2
-    desenhar_estrelas_destaque(pdf, x_estrelas, y_cards + 13.0, rating_raw)
+    desenhar_estrelas_destaque(pdf, 12 + w_card, y_cards + 14.5, rating_raw)
     
     pdf.set_font("Helvetica", "", 7.5)
     pdf.set_text_color(51, 65, 85)
