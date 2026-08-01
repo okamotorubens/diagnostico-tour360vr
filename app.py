@@ -269,11 +269,10 @@ def gerar_pdf_bytes(dados):
     pdf.cell(-15, 6, "/100") # Ajuste fino no alinhamento
     
     # Maturidade corrigida para não sobrepor
-    pdf.set_font("Helvetica", "B", 8)
+    pdf.set_font("Helvetica", "B", 10)
     pdf.set_text_color(*status_cor)
     pdf.set_xy(12, y_cards + 14.5) 
-    pdf.cell(w_card - 4, 3.5, clean_txt(nivel_maturidade), align="C")   
-    pdf.cell(w_card - 4, 5.5, clean_txt("Margem para crescimento local))
+    pdf.cell(w_card - 4, 3.5, clean_txt(nivel_maturidade), align="C")
        
     # Card 2: Reputação
     pdf.rect(10 + w_card, y_cards, w_card, h_card, "DF")
