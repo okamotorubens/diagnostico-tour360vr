@@ -82,14 +82,15 @@ class PDFExecutivo(FPDF):
         self.set_fill_color(20, 50, 135)
         self.rect(0, 0, 210, 26, "F")
 
-        self.set_font("Helvetica", "B", 19)
+        # Rebaixado para não ficar muito no topo
+        self.set_font("Helvetica", "B", 18)
         self.set_text_color(255, 255, 255)
-        self.set_xy(10, 4)
-        self.cell(0, 8, clean_txt("TOUR360VR"), new_x="LMARGIN", new_y="NEXT")
+        self.set_xy(10, 6)
+        self.cell(0, 7, clean_txt("TOUR360VR"), new_x="LMARGIN", new_y="NEXT")
 
         self.set_font("Helvetica", "B", 8.5)
         self.set_text_color(186, 230, 253)
-        self.set_xy(10, 14)
+        self.set_xy(10, 15.5)
         self.cell(
             0,
             4,
@@ -98,7 +99,7 @@ class PDFExecutivo(FPDF):
             new_y="NEXT",
         )
 
-        # Data rebaixada para ficar quase rente ao final da tarja azul (y = 18.5)
+        # Data alinhada na borda inferior da tarja
         self.set_font("Helvetica", "B", 8.5)
         self.set_text_color(224, 242, 254)
         self.set_xy(130, 18.5)
@@ -118,29 +119,29 @@ class PDFExecutivo(FPDF):
 
         self.set_y(-9)
         self.set_font("Helvetica", "B", 8)
-        
-        # Centralização precisa calculada para a largura total dos itens (~189mm)
+
+        # Cálculo de centralização perfeita da linha inteira
         self.set_x(10.5)
-        
+
         self.set_text_color(255, 255, 255)
         self.cell(26, 5, clean_txt("Rubens Okamoto"), align="C")
         self.cell(4, 5, clean_txt(" · "), align="C")
-        
+
         self.set_text_color(224, 242, 254)
         self.cell(41, 5, clean_txt("contato@tour360vr.com.br"), align="C", link="mailto:contato@tour360vr.com.br")
-        
+
         self.set_text_color(255, 255, 255)
         self.cell(4, 5, clean_txt(" · "), align="C")
-        
+
         self.set_text_color(224, 242, 254)
         self.cell(22, 5, clean_txt("16991332121"), align="C", link="https://wa.me/5516991332121")
-        
+
         self.set_text_color(255, 255, 255)
         self.cell(4, 5, clean_txt(" · "), align="C")
-        
+
         self.set_text_color(224, 242, 254)
         self.cell(28, 5, clean_txt("tour360vr.com.br"), align="C", link="https://tour360vr.com.br/")
-        
+
         self.set_text_color(255, 255, 255)
         self.cell(4, 5, clean_txt(" · "), align="C")
         self.cell(32, 5, clean_txt("Ribeirão Preto - SP"), align="C")
@@ -159,7 +160,7 @@ def gerar_pdf_bytes(dados):
     reviews = str(dados.get("user_ratings_total", 0))
     photos_count = len(dados.get("photos", []))
     website = dados.get("website")
-    has_hours = "Completo" if dados.get("opening_hours") else "Incompleto"
+    has_hours = "Cadastrado" if dados.get("opening_hours") else "Ausente/Incompleto"
     score = calcular_score(dados)
 
     W = pdf.epw
@@ -244,7 +245,7 @@ def gerar_pdf_bytes(dados):
     pdf.set_xy(77, y_cards + 14.5)
     pdf.cell(56, 4, clean_txt(f"Com base em {reviews} avaliações"))
 
-    # Box 3: Tour Virtual 360° ("0" em 17pt, "FOTOS" em 14pt e "(AUSENTE)" em 11pt)
+    # Box 3: Tour Virtual 360°
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(20, 50, 135)
     pdf.rect(140, y_cards, 60, 24, "DF")
@@ -254,19 +255,17 @@ def gerar_pdf_bytes(dados):
     pdf.set_xy(142, y_cards + 2)
     pdf.cell(56, 4, clean_txt("TOUR VIRTUAL 360°"))
 
-    # "0" em 17pt Vermelho
+    # "0" (17pt Vermelho), "FOTOS" (14pt Vermelho) e "(AUSENTE)" (11pt Azul)
     pdf.set_font("Helvetica", "B", 17)
     pdf.set_text_color(220, 38, 38)
     pdf.set_xy(142, y_cards + 5.5)
     txt_zero = "0"
     pdf.cell(pdf.get_string_width(txt_zero) + 1, 6, txt_zero)
 
-    # "FOTOS" em 14pt Vermelho
     pdf.set_font("Helvetica", "B", 14)
     txt_fotos = " FOTOS"
     pdf.cell(pdf.get_string_width(txt_fotos) + 1, 6, txt_fotos)
 
-    # "(AUSENTE)" em 11pt Azul
     pdf.set_font("Helvetica", "B", 11)
     pdf.set_text_color(20, 50, 135)
     pdf.cell(22, 6, " (AUSENTE)")
@@ -305,12 +304,11 @@ def gerar_pdf_bytes(dados):
         new_y="NEXT",
     )
 
+    # Diagnósticos claros, críticos e objetivos
     itens = [
         (
             "Completude do Cadastro",
-            "Website cadastrado"
-            if website
-            else "Faltam descrição ou dados complementares.",
+            "Website cadastrado" if website else "Sem website oficial informado no perfil.",
             "Perfil incompleto reduz a conversão de novos clientes.",
         ),
         (
@@ -320,32 +318,32 @@ def gerar_pdf_bytes(dados):
         ),
         (
             "Consistência de NAP",
-            "Endereço e telefone ativos no Google Maps.",
+            "Dados de endereço e telefone ativos.",
             "Informações corretas evitam perdas por buscas frustradas.",
         ),
         (
             "Categorias",
-            "Categoria principal definida na ficha.",
+            "Apenas categoria principal configurada.",
             "Falta de categorias secundárias limita a visibilidade regional.",
         ),
         (
             "Fotos",
-            f"{photos_count} fotos identificadas no perfil.",
+            f"Apenas {photos_count} fotos identificadas.",
             "Poucas fotos impedem a avaliação do espaço pelo cliente.",
         ),
         (
             "Horários",
-            f"Horários de funcionamento: {has_hours}.",
+            f"Horário de funcionamento: {has_hours}.",
             "Informação correta evita perda de clientes no atendimento.",
         ),
         (
             "Posts / Novidades",
-            "Nenhum post recente detectado.",
+            "Sem publicações recentes detectadas.",
             "Perfil estático não destaca ofertas nem novidades do local.",
         ),
         (
             "Recursos Interativos",
-            "Nenhuma foto 360° ou tour virtual detectado.",
+            "Nenhum tour virtual 360° identificado.",
             "Perdem-se conversões por falta de experiência imersiva 360.",
         ),
     ]
@@ -373,9 +371,9 @@ def gerar_pdf_bytes(dados):
         pdf.set_text_color(51, 65, 85)
         pdf.multi_cell(73, 4.8, clean_txt(f" {est}"))
 
-        # Coluna de Impacto (sem espaço inicial extra)
+        # Coluna de Impacto também em AZUL (#143287)
         pdf.set_xy(125, y_curr)
-        pdf.set_text_color(185, 28, 28)
+        pdf.set_text_color(20, 50, 135)
         pdf.multi_cell(75, 4.8, clean_txt(imp), align="J")
 
         pdf.set_y(y_curr + max_h)
