@@ -103,11 +103,11 @@ class PDFExecutivo(FPDF):
         self.set_fill_color(20, 50, 135)
         self.rect(0, 0, 210, 28, "F")
 
-        # Título corrigido para misto: Tour360vr
-        self.set_font("Helvetica", "B", 21)
+        # Título Tour360vr (tamanho ampliado)
+        self.set_font("Helvetica", "B", 26)
         self.set_text_color(255, 255, 255)
-        self.set_xy(10, 6.5)
-        self.cell(0, 7, clean_txt("Tour360vr"), align="C", new_x="LMARGIN", new_y="NEXT")
+        self.set_xy(10, 5)
+        self.cell(0, 8, clean_txt("Tour360vr"), align="C", new_x="LMARGIN", new_y="NEXT")
 
         # Subtítulo
         self.set_font("Helvetica", "B", 8.5)
@@ -209,7 +209,7 @@ def gerar_pdf_bytes(dados):
 
     y_cards = y_empresa + 18
     w_card = 63.3
-    h_card = 26.0  # Ampliado para dar espaço de sobra nos quadros das 3 colunas
+    h_card = 26.0
 
     # Box 1: Otimização do Perfil
     pdf.set_fill_color(255, 255, 255)
@@ -261,8 +261,7 @@ def gerar_pdf_bytes(dados):
     pdf.set_text_color(20, 50, 135)
     pdf.cell(20, 6, " / 5.0")
 
-    # Estrelas com 22pt de tamanho
-    desenhar_estrelas_destaque(pdf, 12 + w_card, y_cards + 12.0, rating_raw)
+    desenhar_estrelas_destaque(pdf, 12 + w_card, y_cards + 11.5, rating_raw)
 
     pdf.set_font("Helvetica", "", 7.5)
     pdf.set_text_color(51, 65, 85)
@@ -315,7 +314,7 @@ def gerar_pdf_bytes(dados):
     )
     pdf.ln(1)
 
-    # Tabela
+    # Tabela com cabeçalho
     pdf.set_fill_color(20, 50, 135)
     pdf.set_font("Helvetica", "B", 8.5)
     pdf.set_text_color(255, 255, 255)
@@ -337,72 +336,43 @@ def gerar_pdf_bytes(dados):
     )
 
     itens = [
-        (
-            "Completude do Cadastro",
-            "Website cadastrado" if website else "Sem website próprio ou link de conversão cadastrado.",
-            "Perfil incompleto reduz a conversão de novos clientes.",
-        ),
-        (
-            "Nota e Avaliações",
-            txt_eval_critica,
-            "Reputação vulnerável; base pequena limita prova social perante concorrentes.",
-        ),
-        (
-            "Consistência de NAP",
-            "Dados de endereço e telefone ativos.",
-            "Informações corretas evitam perdas por buscas frustradas.",
-        ),
-        (
-            "Categorias",
-            "1 categoria cadastrada (Sem secundárias).",
-            "Falta de categorias secundárias limita a visibilidade regional.",
-        ),
-        (
-            "Fotos",
-            f"Apenas {photos_count} fotos (Cobertura visual baixa).",
-            "Poucas fotos impedem a avaliação do espaço pelo cliente.",
-        ),
-        (
-            "Horários",
-            f"Horários de funcionamento: {has_hours}.",
-            "Informação correta evita perda de clientes no atendimento.",
-        ),
-        (
-            "Posts / Novidades",
-            "Sem publicações recentes (Perfil estático).",
-            "Perfil estático não destaca ofertas nem novidades do local.",
-        ),
-        (
-            "Recursos Interativos",
-            "Nenhum tour virtual 360° interativo detectado.",
-            "Perdem-se conversões por falta de experiência imersiva 360.",
-        ),
+        ("Completude do Cadastro", "Website cadastrado" if website else "Sem website próprio ou link de conversão cadastrado.", "Perfil incompleto reduz a conversão de novos clientes."),
+        ("Nota e Avaliações", txt_eval_critica, "Reputação vulnerável; base pequena limita prova social perante concorrentes."),
+        ("Consistência de NAP", "Dados de endereço e telefone ativos.", "Informações corretas evitam perdas por buscas frustradas."),
+        ("Categorias", "1 categoria cadastrada (Sem secundárias).", "Falta de categorias secundárias limita a visibilidade regional."),
+        ("Fotos", f"Apenas {photos_count} fotos (Cobertura visual baixa).", "Poucas fotos impedem a avaliação do espaço pelo cliente."),
+        ("Horários", f"Horários de funcionamento: {has_hours}.", "Informação correta evita perda de clientes no atendimento."),
+        ("Posts / Novidades", "Sem publicações recentes (Perfil estático).", "Perfil estático não destaca ofertas nem novidades do local."),
+        ("Recursos Interativos", "Nenhum tour virtual 360° interativo detectado.", "Perdem-se conversões por falta de experiência imersiva 360."),
     ]
 
     pdf.set_font("Helvetica", "", 9)
     for i, (dim, est, imp) in enumerate(itens):
         bg = (255, 255, 255) if i % 2 == 0 else (248, 250, 252)
-
+        
         y_curr = pdf.get_y()
-
-        pdf.set_font("Helvetica", "", 9)
+        padding_top = 2.5 # Espaço interno extra
+        padding_bottom = 2.5
+        
+        # Calcula altura baseada no conteúdo + padding
         h_dim = len(pdf.multi_cell(42, 4.6, clean_txt(f" {dim}"), split_only=True)) * 4.6
         h_est = len(pdf.multi_cell(73, 4.6, clean_txt(f" {est}"), split_only=True)) * 4.6
         h_imp = len(pdf.multi_cell(75, 4.6, clean_txt(imp), split_only=True)) * 4.6
-        max_h = max(h_dim, h_est, h_imp, 4.6)
+        max_h = max(h_dim, h_est, h_imp, 4.6) + padding_top + padding_bottom
 
         pdf.set_fill_color(*bg)
         pdf.rect(10, y_curr, W, max_h, "F")
 
-        pdf.set_xy(10, y_curr)
+        # Texto verticalmente alinhado
+        pdf.set_xy(10, y_curr + padding_top)
         pdf.set_text_color(20, 50, 135)
         pdf.multi_cell(42, 4.6, clean_txt(f" {dim}"))
 
-        pdf.set_xy(52, y_curr)
+        pdf.set_xy(52, y_curr + padding_top)
         pdf.set_text_color(51, 65, 85)
         pdf.multi_cell(73, 4.6, clean_txt(f" {est}"))
 
-        pdf.set_xy(125, y_curr)
+        pdf.set_xy(125, y_curr + padding_top)
         pdf.set_text_color(20, 50, 135)
         pdf.multi_cell(75, 4.6, clean_txt(imp), align="J")
 
@@ -423,18 +393,9 @@ def gerar_pdf_bytes(dados):
     pdf.ln(1.5)
 
     acoes = [
-        (
-            "1. IMPLANTAÇÃO DE TOUR VIRTUAL 360° INTERATIVO",
-            "Mapeamento imersivo em alta definição integrado ao Google Maps. Aumenta a permanência na ficha e amplia agendamentos.",
-        ),
-        (
-            "2. ENSAIO FOTOGRÁFICO PROFISSIONAL",
-            "Fotografias profissionais das instalações, fachada e diferenciais, elevando o valor percebido pelo cliente.",
-        ),
-        (
-            "3. OTIMIZAÇÃO SEO LOCAL & GESTÃO DE REPUTAÇÃO",
-            "Reestruturação completa de palavras-chave, categorias e estratégia para alavancar avaliações positivas.",
-        ),
+        ("1. IMPLANTAÇÃO DE TOUR VIRTUAL 360° INTERATIVO", "Mapeamento imersivo em alta definição integrado ao Google Maps. Aumenta a permanência na ficha e amplia agendamentos."),
+        ("2. ENSAIO FOTOGRÁFICO PROFISSIONAL", "Fotografias profissionais das instalações, fachada e diferenciais, elevando o valor percebido pelo cliente."),
+        ("3. OTIMIZAÇÃO SEO LOCAL & GESTÃO DE REPUTAÇÃO", "Reestruturação completa de palavras-chave, categorias e estratégia para alavancar avaliações positivas."),
     ]
 
     for tit, desc in acoes:
@@ -454,30 +415,18 @@ def gerar_pdf_bytes(dados):
 
         pdf.set_y(pdf.get_y() + 2.5)
 
-    # Frase Final de Impacto Atualizada
+    # Frase Final de Impacto
     pdf.ln(10)
-
     pdf.set_font("Helvetica", "B", 12)
     pdf.set_text_color(20, 50, 135)
-    pdf.cell(
-        W,
-        6,
-        clean_txt("Pronto para elevar sua visibilidade?"),
-        align="C",
-        new_x="LMARGIN",
-        new_y="NEXT",
-    )
+    pdf.cell(W, 6, clean_txt("Pronto para elevar sua visibilidade?"), align="C", new_x="LMARGIN", new_y="NEXT")
     pdf.ln(1)
 
     pdf.set_font("Helvetica", "", 9.5)
     pdf.set_text_color(51, 65, 85)
-    
-    # Texto unificado atualizado
-    txt_chamada = (
-        "Vamos agendar uma visita, entender seus objetivos e montar um plano personalizado. "
-        "O Tour 360° + estratégia de avaliações pode triplicar suas buscas."
-    )
-    pdf.multi_cell(W, 4.8, clean_txt(txt_chamada), align="C")
+    pdf.multi_cell(W, 4.8, clean_txt("Vamos agendar uma visita, entender seus objetivos e montar um plano personalizado."), align="C")
+    pdf.ln(1)
+    pdf.multi_cell(W, 4.8, clean_txt("O Tour 360° + estratégia de avaliações pode triplicar suas buscas."), align="C")
 
     pdf_output_path = "diagnostico_tour360vr.pdf"
     pdf.output(pdf_output_path)
