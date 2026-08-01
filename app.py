@@ -380,21 +380,13 @@ def gerar_pdf_bytes(dados):
     # Captura real de categorias
     tipos = dados.get("types", [])
       
-    # --- [COLE O DICIONÁRIO E A TRADUÇÃO AQUI] ---
-    traducao_cat = {
-        "lodging": "Hospedagem", 
-        "establishment": "Estabelecimento", 
-        "point_of_interest": "Ponto de Interesse", 
-        "motel": "Motel",
-        "restaurant": "Restaurante",
-        "cafe": "Café"
-    }
-    cats_lista = [traducao_cat.get(t, t.replace("_", " ").capitalize()) for t in tipos[:2]]
-    categorias_texto = ", ".join(cats_lista)
-    # ---------------------------------------------
-    
     # Filtra os tipos para mostrar algo legível, ex: limite de 2 categorias
-    categorias_texto = ", ".join([t.replace("_", " ") for t in tipos[:2]]) if tipos else "Padrão"
+    # Dicionário de tradução aplicado diretamente
+    def traduzir(cat):
+        dic = {"lodging": "Hospedagem", "establishment": "Estabelecimento", "point_of_interest": "Ponto de Interesse", "motel": "Motel"}
+        return dic.get(cat, cat.replace("_", " ").capitalize())
+
+    cat_formatadas = ", ".join([traduzir(t) for t in dados.get("types", [])[:2]])
     itens = [
         ("Completude", status_completude, "Perfil incompleto transmite falta de profissionalismo e reduz a probabilidade de conversão de visitantes."),
         ("Reputação", f"Nota {rating} ({reviews} avaliações).", "Reputação vulnerável; base pequena limita prova social perante concorrentes."),
