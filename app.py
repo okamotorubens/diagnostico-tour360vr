@@ -218,7 +218,8 @@ def gerar_pdf_bytes(dados):
             "Academy": "Academia",
             "School": "Escola",
             "Physiotherapist": "Fisioterapia"}
-            return dic.get(cat, cat.replace("_", " ").capitalize())
+    
+    return dic.get(cat, cat.replace("_", " ").capitalize())
     
     categorias_texto = ", ".join([traduzir(t) for t in tipos[:4]])
 
