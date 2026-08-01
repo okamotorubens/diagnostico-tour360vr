@@ -134,10 +134,10 @@ class PDFExecutivo(FPDF):
         self.rect(0, 285, 210, 12, "F")
 
         self.set_y(-9)
-        self.set_font("Helvetica", "B", 9)  # Fonte do rodapé ampliada para 9pt
+        self.set_font("Helvetica", "B", 10)  # Fonte do rodapé ampliada para 9pt
 
         # Centralização exata mantendo links individuais
-        self.set_x(20.5)
+        self.set_x(22.5)
 
         self.set_text_color(224, 242, 254)
         self.cell(44, 5, clean_txt("contato@tour360vr.com.br"), align="C", link="mailto:contato@tour360vr.com.br")
@@ -349,7 +349,7 @@ def gerar_pdf_bytes(dados):
     )
 
     itens = [
-        ("Completude do Cadastro", "Website cadastrado" if website else "Sem website próprio ou link de conversão cadastrado.", "Perfil incompleto reduz a conversão de novos clientes."),
+        ("Completude do Cadastro", "Site cadastrado" if website else "Sem site próprio ou link de conversão cadastrado.", "Perfil incompleto reduz a conversão de novos clientes."),
         ("Nota e Avaliações", txt_eval_critica, "Reputação vulnerável; base pequena limita prova social perante concorrentes."),
         ("Consistência de NAP", "Dados de endereço e telefone ativos.", "Informações corretas evitam perdas por buscas frustradas."),
         ("Categorias", "1 categoria cadastrada (Sem secundárias).", "Falta de categorias secundárias limita a visibilidade regional."),
