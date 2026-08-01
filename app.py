@@ -24,7 +24,7 @@ with st.form("form_busca"):
     col1, col2 = st.columns([3, 2])
     with col1:
         empresa = st.text_input(
-            "Nome da Empresa:", placeholder="Ex: Amazone Açaí Shop"
+            "Nome da Empresa:", placeholder="Ex: Nobre Paladar"
         )
     with col2:
         cidade = st.text_input("Cidade / Estado:", placeholder="Ex: Brodowski / SP")
@@ -146,7 +146,7 @@ class PDFExecutivo(FPDF):
         self.cell(4, 5, clean_txt("·"), align="C")
 
         self.set_text_color(224, 242, 254)
-        self.cell(25, 5, clean_txt("16991332121"), align="C", link="https://wa.me/5516991332121")
+        self.cell(25, 5, clean_txt("16 99133 2121"), align="C", link="https://wa.me/5516991332121")
 
         self.set_text_color(255, 255, 255)
         self.cell(4, 5, clean_txt("·"), align="C")
@@ -292,7 +292,7 @@ def gerar_pdf_bytes(dados):
     pdf.set_font("Helvetica", "B", 8)
     pdf.set_text_color(20, 50, 135)
     pdf.set_xy(12 + (w_card * 2), y_cards + 2.0)
-    pdf.cell(w_card - 4, 3.5, clean_txt("TOUR VIRTUAL 360°"))
+    pdf.cell(w_card - 4, 3.5, clean_txt("PRESENÇA IMERSIVA"))
 
     pdf.set_font("Helvetica", "B", 18)
     pdf.set_text_color(220, 38, 38)
@@ -301,7 +301,7 @@ def gerar_pdf_bytes(dados):
     pdf.cell(pdf.get_string_width(txt_zero) + 1, 6, txt_zero)
 
     pdf.set_font("Helvetica", "B", 13)
-    txt_fotos = " FOTOS"
+    txt_fotos = " IMAGENS"
     pdf.cell(pdf.get_string_width(txt_fotos) + 1, 6, txt_fotos)
 
     pdf.set_font("Helvetica", "B", 10.5)
@@ -311,7 +311,7 @@ def gerar_pdf_bytes(dados):
     pdf.set_font("Helvetica", "", 7.5)
     pdf.set_text_color(100, 116, 139)
     pdf.set_xy(12 + (w_card * 2), y_cards + 19.5)
-    pdf.cell(w_card - 4, 3.5, clean_txt("Oportunidade de se diferenciar"))
+    pdf.cell(w_card - 4, 3.5, clean_txt("Ativação Street View"))
 
     pdf.set_y(y_cards + 30)
 
@@ -408,7 +408,8 @@ def gerar_pdf_bytes(dados):
     acoes = [
         ("1. IMPLANTAÇÃO DE TOUR VIRTUAL 360° INTERATIVO", "Mapeamento imersivo em alta definição integrado ao Google Maps. Aumenta a permanência na ficha e amplia agendamentos."),
         ("2. ENSAIO FOTOGRÁFICO PROFISSIONAL", "Fotografias profissionais das instalações, fachada e diferenciais, elevando o valor percebido pelo cliente."),
-        ("3. OTIMIZAÇÃO SEO LOCAL & GESTÃO DE REPUTAÇÃO", "Reestruturação completa de palavras-chave, categorias e estratégia para alavancar avaliações positivas."),
+        ("3. FOMENTO À PROVA SOCIAL ORGÂNICA", "Estratégia para incentivar fotos de clientes reais, aumentando a autenticidade e o engajamento da ficha."),
+        ("4. OTIMIZAÇÃO SEO LOCAL & GESTÃO DE REPUTAÇÃO", " Ajuste de categorias secundárias e palavras-chave para ampliar sua visibilidade orgânica regional."),
     ]
 
     for tit, desc in acoes:
@@ -437,9 +438,9 @@ def gerar_pdf_bytes(dados):
 
     pdf.set_font("Helvetica", "", 9.5)
     pdf.set_text_color(51, 65, 85)
-    pdf.multi_cell(W, 4.8, clean_txt("Vamos agendar uma visita, entender seus objetivos e montar um plano personalizado."), align="C")
+    pdf.multi_cell(W, 4.8, clean_txt("Vamos realizar uma auditoria presencial para entender seus objetivos e desenhar um plano de crescimento."), align="C")
     pdf.ln(1)
-    pdf.multi_cell(W, 4.8, clean_txt("O tour virtual 360° + estratégia de avaliações pode triplicar suas buscas."), align="C")
+    pdf.multi_cell(W, 4.8, clean_txt("Um perfil otimizado com conteúdo 360º é o diferencial que separa sua empresa dos concorrentes."), align="C")
 
     pdf_output_path = "diagnostico_tour360vr.pdf"
     pdf.output(pdf_output_path)
@@ -468,3 +469,4 @@ if btn and empresa and cidade:
                     )
             else:
                 st.error("Empresa não encontrada no Google Maps.")
+
