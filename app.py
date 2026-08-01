@@ -134,11 +134,11 @@ class PDFExecutivo(FPDF):
         self.set_y(-9)
         self.set_font("Helvetica", "B", 8.5)
 
-        # Centralização exata dos contatos da Tour360vr sem o nome
-        self.set_x(23)
+        # Largura total calculada do bloco: ~163mm. Início em X = 23.5mm centraliza perfeitamente em 210mm.
+        self.set_x(23.5)
 
         self.set_text_color(224, 242, 254)
-        self.cell(45, 5, clean_txt("contato@tour360vr.com.br"), align="C", link="mailto:contato@tour360vr.com.br")
+        self.cell(42, 5, clean_txt("contato@tour360vr.com.br"), align="C", link="mailto:contato@tour360vr.com.br")
 
         self.set_text_color(255, 255, 255)
         self.cell(4, 5, clean_txt("·"), align="C")
@@ -154,22 +154,25 @@ class PDFExecutivo(FPDF):
 
         self.set_text_color(255, 255, 255)
         self.cell(4, 5, clean_txt("·"), align="C")
-        self.cell(34, 5, clean_txt("Ribeirão Preto - SP"), align="C")
+        self.cell(32, 5, clean_txt("Ribeirão Preto - SP"), align="C")
 
 
 def desenhar_estrelas(pdf, x, y, rating_val):
-    """Desenha 5 estrelas amarelas ampliadas (12.5pt) na mesma altura da barra de progresso"""
-    pdf.set_font("ZapfDingbats", "", 12.5)
-    rating_num = round(float(rating_val))
+    """Desenha 5 estrelas proporcionais: 'H' (cheia) e 'I' (vazia) na fonte ZapfDingbats"""
+    pdf.set_font("ZapfDingbats", "", 12)
+    try:
+        rating_num = round(float(rating_val))
+    except (ValueError, TypeError):
+        rating_num = 0
 
     for k in range(5):
+        pdf.set_xy(x + (k * 5.2), y)
         if k < rating_num:
             pdf.set_text_color(245, 158, 11)  # Amarelo Ouro (#f59e0b)
+            pdf.cell(5, 5, "H")  # Estrela preenchida
         else:
             pdf.set_text_color(203, 213, 225)  # Cinza Claro (#cbd5e1)
-
-        pdf.set_xy(x + (k * 5.8), y)
-        pdf.cell(5, 5, "H")  # 'H' na fonte ZapfDingbats desenha estrela sólida ★
+            pdf.cell(5, 5, "I")  # Estrela de contorno/vazia
 
 
 def gerar_pdf_bytes(dados):
@@ -247,7 +250,7 @@ def gerar_pdf_bytes(dados):
     pdf.set_xy(12, y_cards + 16.8)
     pdf.cell(w_card - 4, 3.5, clean_txt("Margem para crescimento local"))
 
-    # Box 2: Nota e Reputação (Estrelas no mesmo tamanho e nível da barra de status)
+    # Box 2: Nota e Reputação
     pdf.set_fill_color(248, 250, 252)
     pdf.rect(10 + w_card, y_cards, w_card, 23, "DF")
 
@@ -266,8 +269,8 @@ def gerar_pdf_bytes(dados):
     pdf.set_text_color(20, 50, 135)
     pdf.cell(20, 6, " / 5.0")
 
-    # Desenha as estrelas ampliadas na mesma altura da barra de progresso (y = 12.2mm)
-    desenhar_estrelas(pdf, 12 + w_card, y_cards + 12.2, rating_raw)
+    # Desenha estrelas proporcionais (cheias e vazias) na altura da barra de progresso
+    desenhar_estrelas(pdf, 12 + w_card, y_cards + 11.8, rating_raw)
 
     pdf.set_font("Helvetica", "", 7.5)
     pdf.set_text_color(51, 65, 85)
