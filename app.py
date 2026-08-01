@@ -217,9 +217,11 @@ def gerar_pdf_bytes(dados):
             "FRestaurant": "Restaurante",
             "Academy": "Academia",
             "School": "Escola",
-            "Physiotherapist": "Fisioterapia",
-        }
+            "Physiotherapist": "Fisioterapia"}
+            return dic.get(cat, cat.replace("_", " ").capitalize())
+    
     categorias_texto = ", ".join([traduzir(t) for t in tipos[:4]])
+
     
     # --- [INÍCIO DA ALTERAÇÃO] ---
     opening_hours_data = dados.get("opening_hours", {})
