@@ -281,34 +281,24 @@ def gerar_pdf_bytes(dados):
     pdf.cell(w_card - 4, 3.5, clean_txt(nivel_maturidade), align="C")
 
     # Box 2: Nota e Reputação
-    pdf.set_fill_color(255, 255, 255)
-    pdf.set_draw_color(20, 50, 135)
-    pdf.rect(10 + w_card, y_cards, w_card, h_card, "DF")
-
+        pdf.rect(10 + w_card, y_cards, w_card, h_card, "DF")
     pdf.set_font("Helvetica", "B", 8)
     pdf.set_text_color(20, 50, 135)
-    pdf.set_xy(12 + w_card, y_cards + 2.0)
-    pdf.cell(w_card - 4, 3.5, clean_txt("NOTA E REPUTAÇÃO"))
-
+    pdf.set_xy(10 + w_card, y_cards + 2.0)
+    pdf.cell(w_card, 3.5, clean_txt("NOTA E REPUTAÇÃO"), align="C")
+    
     pdf.set_font("Helvetica", "B", 18)
     pdf.set_text_color(249, 115, 22)
-    pdf.set_xy(12 + w_card, y_cards + 6.0)
-    w_nota = pdf.get_string_width(rating) + 1
-    pdf.cell(w_nota, 6, rating)
-
-    pdf.set_font("Helvetica", "B", 11)
-    pdf.set_text_color(20, 50, 135)
-    pdf.cell(20, 6, " / 5.0")
-
-    desenhar_estrelas_destaque(pdf, 12 + w_card, y_cards + 11.5, rating_raw)
-
+    pdf.set_xy(10 + w_card, y_cards + 7.0)
+    pdf.cell(w_card, 6, f"{rating} / 5.0", align="C")
+    
+    x_estrelas = (10 + w_card) + (w_card - 32.5) / 2
+    desenhar_estrelas_destaque(pdf, 12 + w_card, y_cards + 14.5, rating_raw)
+    
     pdf.set_font("Helvetica", "", 7.5)
     pdf.set_text_color(51, 65, 85)
-    pdf.set_xy(12 + w_card, y_cards + 19.5)
-    if reviews_count < 30:
-        pdf.cell(w_card - 4, 3.5, clean_txt(f"Apenas {reviews} avaliações (Base pequena)"))
-    else:
-        pdf.cell(w_card - 4, 3.5, clean_txt(f"Com base em {reviews} avaliações"))
+    pdf.set_xy(10 + w_card, y_cards + 21.0)
+    pdf.cell(w_card, 3.5, clean_txt(f"Com base em {reviews} avaliações"), align="C")
 
     # Box 3: Tour Virtual 360°
     pdf.set_fill_color(255, 255, 255)
