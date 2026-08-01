@@ -349,7 +349,8 @@ def gerar_pdf_bytes(dados):
     )
 
     itens = [
-        ("Completude do Cadastro", "Site cadastrado" if website else "Sem site próprio ou link de conversão cadastrado.", "Perfil incompleto reduz a conversão de novos clientes."),
+        ("Completude do Cadastro", "Site cadastrado" if website else "Sem site próprio ou link de conversão cadastrado.", "Perfil incompleto transmite falta de
+profissionalismo e reduz a probabilidade de conversão de visitantes."),
         ("Nota e Avaliações", txt_eval_critica, "Reputação vulnerável; base pequena limita prova social perante concorrentes."),
         ("Consistência de NAP", "Dados de endereço e telefone ativos.", "Informações corretas evitam perdas por buscas frustradas."),
         ("Categorias", "1 categoria cadastrada (Sem secundárias).", "Falta de categorias secundárias limita a visibilidade regional."),
@@ -406,7 +407,7 @@ def gerar_pdf_bytes(dados):
     pdf.ln(1.5)
 
     acoes = [
-        ("1. IMPLANTAÇÃO DE TOUR VIRTUAL 360° INTERATIVO", "Mapeamento imersivo em alta definição integrado ao Google Maps. Aumenta a permanência na ficha e amplia agendamentos."),
+        ("1. ATIVAÇÃO DE EXPERIÊNCIA IMERSIVA (STREET VIEW)", "Integração do seu espaço à base cartográfica do Google. Transforma a ficha em um ponto de visita virtual."),
         ("2. ENSAIO FOTOGRÁFICO PROFISSIONAL", "Fotografias profissionais das instalações, fachada e diferenciais, elevando o valor percebido pelo cliente."),
         ("3. FOMENTO À PROVA SOCIAL ORGÂNICA", "Estratégia para incentivar fotos de clientes reais, aumentando a autenticidade e o engajamento da ficha."),
         ("4. OTIMIZAÇÃO SEO LOCAL & GESTÃO DE REPUTAÇÃO", " Ajuste de categorias secundárias e palavras-chave para ampliar sua visibilidade orgânica regional."),
