@@ -272,7 +272,7 @@ def gerar_pdf_bytes(dados):
 
     pdf.set_font("Helvetica", "B", 18)
     pdf.set_text_color(249, 115, 22)
-    pdf.set_xy(12, y_cards + 6.0)
+    pdf.set_xy(12 + (w_card * 2), y_cards + 6.0)
     score_str = str(score)
     pdf.cell(pdf.get_string_width(score_str) + 1, 6, score_str, align="C")
 
@@ -300,7 +300,7 @@ def gerar_pdf_bytes(dados):
     pdf.set_xy(10 + w_card, y_cards + 7.0)
     pdf.cell(w_card, 6, f"{rating} / 5.0", align="C")
     
-    x_estrelas = (15 + w_card) + (w_card - 32.5) / 2)
+    x_estrelas = (15 + w_card) + (w_card - 32.5) / 2
     desenhar_estrelas_destaque(pdf, 12 + w_card, y_cards + 14.5, rating_raw)
     
     pdf.set_font("Helvetica", "", 7.5)
