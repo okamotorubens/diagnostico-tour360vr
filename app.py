@@ -3,16 +3,16 @@ import requests
 import streamlit as st
 from fpdf import FPDF
 
-# Configuração do Streamlit
 st.set_page_config(page_title="Diagnóstico Google - Tour360vr", page_icon="📍", layout="centered")
 
 st.title("📍 Gerador de Diagnóstico")
 st.title("Google Meu Negócio")
 st.subheader("Tour360vr")
 
-# Secrets
-try: api_key = st.secrets["GOOGLE_API_KEY"]
-except: api_key = None
+try:
+    api_key = st.secrets["GOOGLE_API_KEY"]
+except Exception:
+    api_key = None
 
 if not api_key:
     api_key = st.text_input("Digite sua Chave da API Google (Places API):", type="password")
@@ -23,12 +23,7 @@ with st.form("form_busca"):
     cidade = st.text_input("Cidade / Estado:", placeholder="Ex: Brodowski / SP")
     btn = st.form_submit_button("Gerar Relatório Executivo em PDF")
 
-# Funções auxiliares com tratamento de segurança para evitar 'None'
-def get_clean(d, key, default=""):
-    val = d.get(key)
-    return str(val) if val is not None else default
-
-class PDF(FPDF):
+class PDFExecutivo(FPDF):
     def header(self):
         self.set_fill_color(20, 50, 135)
         self.rect(0, 0, 210, 28, "F")
@@ -45,71 +40,58 @@ class PDF(FPDF):
         self.set_fill_color(20, 50, 135)
         self.rect(0, 285, 210, 12, "F")
         self.set_y(-8.5)
-        self.set_font("Helvetica", "B", 8)
+        self.set_font("Helvetica", "B", 9)
         self.set_text_color(224, 242, 254)
-        
-        # Alinhamento manual para centralizar com links separados
-        self.set_x(10)
-        self.cell(50, 5, "contato@tour360vr.com.br", align="C", link="mailto:contato@tour360vr.com.br")
-        self.cell(5, 5, "·", align="C")
-        self.cell(30, 5, "16991332121", align="C", link="https://wa.me/5516991332121")
-        self.cell(5, 5, "·", align="C")
-        self.cell(40, 5, "tour360vr.com.br", align="C", link="https://tour360vr.com.br/")
-        self.cell(5, 5, "·", align="C")
-        self.cell(60, 5, "Ribeirão Preto - SP", align="C")
+        txt = "contato@tour360vr.com.br     ·     16991332121     ·     tour360vr.com.br     ·     Ribeirão Preto - SP"
+        self.cell(0, 5, txt, align="C")
 
-def gerar_pdf_estavel(dados, nome_empresa):
-    pdf = PDF()
+def gerar_pdf(dados, nome_empresa):
+    pdf = PDFExecutivo()
     pdf.add_page()
     W = pdf.epw
     
-    # 1. Cabeçalho Empresa
+    # 1. Info Empresa
     pdf.set_fill_color(255, 255, 255)
     pdf.set_draw_color(20, 50, 135)
-    pdf.rect(10, 35, W, 14, "DF")
+    pdf.rect(10, pdf.get_y(), W, 14, "DF")
     pdf.set_font("Helvetica", "B", 13)
     pdf.set_text_color(20, 50, 135)
-    pdf.set_xy(13, 37)
-    pdf.cell(0, 5, get_clean(dados, "name").upper(), new_x="LMARGIN", new_y="NEXT")
+    pdf.set_xy(13, pdf.get_y() + 2)
+    pdf.cell(0, 5, str(dados.get("name", "EMPRESA")).upper(), new_x="LMARGIN", new_y="NEXT")
     pdf.set_font("Helvetica", "", 9)
-    pdf.set_text_color(51, 65, 85)
     pdf.set_x(13)
-    pdf.cell(0, 5, f"Endereço: {get_clean(dados, 'formatted_address')}", new_x="LMARGIN", new_y="NEXT")
-    
-    # 2. Cards (Y fixo para evitar sobreposição)
-    y_c = 55
-    w_b, h_b = 63.3, 26
-    for i, t in enumerate(["OTIMIZAÇÃO", "NOTA E REPUTAÇÃO", "TOUR VIRTUAL 360"]):
+    pdf.cell(0, 5, f"Endereço: {dados.get('formatted_address', 'N/A')}", new_x="LMARGIN", new_y="NEXT")
+
+    # 2. Cards (Posicionamento fixo com reset de Y)
+    y_base = pdf.get_y() + 5
+    w_b, h_b = 63.3, 30.0
+    titles = ["OTIMIZAÇÃO", "NOTA E REPUTAÇÃO", "TOUR VIRTUAL 360"]
+    for i, t in enumerate(titles):
         pdf.set_fill_color(255, 255, 255)
-        pdf.rect(10 + (i * w_b), y_c, w_b, h_b, "DF")
-        pdf.set_xy(12 + (i * w_b), y_c + 2)
+        pdf.rect(10 + (i * w_b), y_base, w_b, h_b, "DF")
+        pdf.set_xy(12 + (i * w_b), y_base + 2)
         pdf.set_font("Helvetica", "B", 8)
-        pdf.set_text_color(20, 50, 135)
         pdf.cell(0, 4, t)
     
-    # 3. Matriz (Y relativo)
-    pdf.set_y(y_c + h_b + 5)
+    # Reset Y para baixo dos cards
+    pdf.set_y(y_base + h_b + 5)
+
+    # 3. Tabela Matriz
     pdf.set_font("Helvetica", "B", 11)
     pdf.set_text_color(20, 50, 135)
-    pdf.cell(W, 8, "MATRIZ DE DIAGNÓSTICO E IMPACTO COMERCIAL", new_x="LMARGIN", new_y="NEXT")
-    
+    pdf.cell(W, 8, "MATRIZ DE DIAGNÓSTICO", new_x="LMARGIN", new_y="NEXT")
     pdf.set_fill_color(20, 50, 135)
     pdf.set_text_color(255, 255, 255)
-    pdf.set_font("Helvetica", "B", 9)
     pdf.cell(40, 7, " Dimensão", fill=True)
-    pdf.cell(70, 7, " Estado Atual Identificado", fill=True)
-    pdf.cell(80, 7, " Impacto no Ranqueamento", fill=True, new_x="LMARGIN", new_y="NEXT")
+    pdf.cell(70, 7, " Estado Atual", fill=True)
+    pdf.cell(80, 7, " Impacto", fill=True, new_x="LMARGIN", new_y="NEXT")
     
-    # Itens corrigidos (Site em vez de Website)
-    itens = [
-        ("Cadastro", "Site cadastrado", "Aumenta conversão"), 
-        ("Avaliações", "Nota 4.5", "Prova social"), 
-        ("Fotos", "Baixa", "Envolvimento")
-    ]
+    itens = [("Cadastro", "Ativo", "Aumenta conversão"), ("Avaliações", "Nota 4.5", "Prova social"), ("Fotos", "Baixa", "Envolvimento")]
     for i, (d, e, imp) in enumerate(itens):
-        pdf.set_fill_color(248, 250, 252) if i % 2 != 0 else pdf.set_fill_color(255, 255, 255)
-        pdf.rect(10, pdf.get_y(), W, 10, "FD")
+        bg = (248, 250, 252) if i % 2 != 0 else (255, 255, 255)
+        pdf.set_fill_color(*bg)
         pdf.set_text_color(51, 65, 85)
+        pdf.rect(10, pdf.get_y(), W, 10, "FD")
         pdf.set_font("Helvetica", "", 9)
         pdf.cell(40, 10, f" {d}")
         pdf.cell(70, 10, f" {e}")
@@ -119,17 +101,16 @@ def gerar_pdf_estavel(dados, nome_empresa):
     pdf.ln(5)
     pdf.set_font("Helvetica", "B", 11)
     pdf.set_text_color(20, 50, 135)
-    pdf.cell(W, 8, "PLANO DE AÇÃO RECOMENDADO", new_x="LMARGIN", new_y="NEXT")
+    pdf.cell(W, 8, "PLANO DE AÇÃO", new_x="LMARGIN", new_y="NEXT")
     for a in ["1. Implantação de Tour Virtual 360", "2. Ensaio Fotográfico", "3. Gestão de Reputação"]:
         pdf.rect(10, pdf.get_y(), W, 9, "DF")
         pdf.cell(0, 9, f" {a}", new_x="LMARGIN", new_y="NEXT")
 
-    # 5. Final (Subido 1 linha / ln(7) em vez de ln(8))
-    pdf.ln(7)
+    # 5. Final
+    pdf.ln(10)
     pdf.set_font("Helvetica", "B", 12)
-    pdf.set_text_color(20, 50, 135)
     pdf.cell(W, 6, "Pronto para elevar sua visibilidade?", align="C", new_x="LMARGIN", new_y="NEXT")
-    pdf.ln(1)
+    pdf.ln(2)
     pdf.set_font("Helvetica", "", 9.5)
     pdf.multi_cell(W, 5, "Vamos agendar uma visita, entender seus objetivos e montar um plano personalizado.\nO Tour 360° + estratégia de avaliações pode triplicar suas buscas.", align="C")
 
@@ -138,14 +119,14 @@ def gerar_pdf_estavel(dados, nome_empresa):
     return nome_arquivo
 
 if btn and empresa and cidade:
-    # URL de busca
+    # Simulação da chamada API
     url = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={empresa}+{cidade}&key={api_key}"
     res = requests.get(url).json()
     if res.get("results"):
         place_id = res["results"][0]["place_id"]
         det_url = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=name,formatted_address,rating&key={api_key}"
         dados = requests.get(det_url).json().get("result", {})
-        pdf_file = gerar_pdf_estavel(dados, empresa)
+        pdf_file = gerar_pdf(dados, empresa)
         with open(pdf_file, "rb") as f:
             st.download_button("📥 Baixar PDF", data=f, file_name=pdf_file, mime="application/pdf")
     else:
