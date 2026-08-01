@@ -363,6 +363,20 @@ def gerar_pdf_bytes(dados):
         if reviews_count < 40
         else f"Nota {rating} baseada em {reviews} avaliações."
     )
+# Captura real de dados
+    all_photos = dados.get("photos", [])
+    total_fotos = len(all_photos) # Número real retornado pela API
+    
+    # Captura real de categorias
+    tipos = dados.get("types", [])
+      
+    # Filtra os tipos para mostrar algo legível, ex: limite de 2 categorias
+    # Dicionário de tradução aplicado diretamente
+    def traduzir(cat):
+        dic = {"lodging": "Hospedagem", "establishment": "Estabelecimento", "point_of_interest": "Ponto de Interesse", "motel": "Motel"}
+        return dic.get(cat, cat.replace("_", " ").capitalize())
+
+    cat_formatadas = ", ".join([traduzir(t) for t in dados.get("types", [])[:2]])
 
     itens = [
         ("Completude do Cadastro", "Site cadastrado" if website else "Sem site próprio ou link de conversão cadastrado.", "Perfil incompleto transmite falta de profissionalismo e reduz a probabilidade de conversão de visitantes."),
