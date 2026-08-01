@@ -97,26 +97,26 @@ def calcular_score_critico(dados):
 class PDFExecutivo(FPDF):
 
     def header(self):
-        # Tarja Azul #143287 (RGB: 20, 50, 135) - Altura 26mm
+        # Tarja Azul #143287 (RGB: 20, 50, 135) - Altura 28mm para mais respiro
         self.set_fill_color(20, 50, 135)
-        self.rect(0, 0, 210, 26, "F")
+        self.rect(0, 0, 210, 28, "F")
 
-        # Título Maior (21pt) e Centralizado na Altura da Tarja
+        # Título Descolado do Topo (y = 6.5)
         self.set_font("Helvetica", "B", 21)
         self.set_text_color(255, 255, 255)
-        self.set_xy(10, 4.5)
+        self.set_xy(10, 6.5)
         self.cell(0, 7, clean_txt("TOUR360VR"), align="C", new_x="LMARGIN", new_y="NEXT")
 
-        # Subtítulo logo abaixo
+        # Subtítulo com respiro
         self.set_font("Helvetica", "B", 8.5)
         self.set_text_color(186, 230, 253)
-        self.set_y(14.5)
+        self.set_y(16)
         self.cell(0, 4, clean_txt("DIAGNÓSTICO E AUDITORIA GOOGLE MEU NEGÓCIO"), align="C", new_x="LMARGIN", new_y="NEXT")
 
         # Data alinhada no canto direito
         self.set_font("Helvetica", "B", 8)
         self.set_text_color(224, 242, 254)
-        self.set_xy(130, 18.5)
+        self.set_xy(130, 20)
         self.cell(
             70,
             5,
@@ -124,7 +124,7 @@ class PDFExecutivo(FPDF):
             align="R",
         )
 
-        self.set_y(29)
+        self.set_y(32)
 
     def footer(self):
         # Tarja Azul Fina no Rodapé #143287
@@ -134,15 +134,15 @@ class PDFExecutivo(FPDF):
         self.set_y(-9)
         self.set_font("Helvetica", "B", 8)
 
-        # Cálculo exato de X para centralizar os 162mm totais da linha na página A4 (210mm)
-        self.set_x(24)
+        # Ajuste fino de X = 20.5mm para centralização exata na A4
+        self.set_x(20.5)
 
         self.set_text_color(255, 255, 255)
-        self.cell(24, 5, clean_txt("Rubens Okamoto"), align="C")
+        self.cell(25, 5, clean_txt("Rubens Okamoto"), align="C")
         self.cell(3, 5, clean_txt("·"), align="C")
 
         self.set_text_color(224, 242, 254)
-        self.cell(39, 5, clean_txt("contato@tour360vr.com.br"), align="C", link="mailto:contato@tour360vr.com.br")
+        self.cell(40, 5, clean_txt("contato@tour360vr.com.br"), align="C", link="mailto:contato@tour360vr.com.br")
 
         self.set_text_color(255, 255, 255)
         self.cell(3, 5, clean_txt("·"), align="C")
@@ -154,11 +154,11 @@ class PDFExecutivo(FPDF):
         self.cell(3, 5, clean_txt("·"), align="C")
 
         self.set_text_color(224, 242, 254)
-        self.cell(26, 5, clean_txt("tour360vr.com.br"), align="C", link="https://tour360vr.com.br/")
+        self.cell(27, 5, clean_txt("tour360vr.com.br"), align="C", link="https://tour360vr.com.br/")
 
         self.set_text_color(255, 255, 255)
         self.cell(3, 5, clean_txt("·"), align="C")
-        self.cell(30, 5, clean_txt("Ribeirão Preto - SP"), align="C")
+        self.cell(31, 5, clean_txt("Ribeirão Preto - SP"), align="C")
 
 
 def gerar_pdf_bytes(dados):
@@ -180,18 +180,18 @@ def gerar_pdf_bytes(dados):
 
     W = pdf.epw
 
-    # Quadro da Empresa sem sobra de espaço abaixo
+    # Quadro da Empresa
     y_empresa = pdf.get_y()
     pdf.set_fill_color(240, 249, 255)
     pdf.set_draw_color(20, 50, 135)
-    pdf.rect(10, y_empresa, W, 14.5, "DF")
+    pdf.rect(10, y_empresa, W, 15, "DF")
 
-    pdf.set_font("Helvetica", "B", 12.5)
+    pdf.set_font("Helvetica", "B", 13.5)
     pdf.set_text_color(20, 50, 135)
-    pdf.set_xy(13, y_empresa + 1.8)
+    pdf.set_xy(13, y_empresa + 2)
     pdf.cell(0, 5, clean_txt(nome.upper()), new_x="LMARGIN", new_y="NEXT")
 
-    pdf.set_font("Helvetica", "", 8.5)
+    pdf.set_font("Helvetica", "", 9.5)
     pdf.set_text_color(51, 65, 85)
     pdf.set_x(13)
     pdf.cell(
@@ -202,59 +202,61 @@ def gerar_pdf_bytes(dados):
         new_y="NEXT",
     )
 
-    y_cards = y_empresa + 19.5
+    y_cards = y_empresa + 20
 
     # Box 1: Otimização do Perfil
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(20, 50, 135)
-    pdf.rect(10, y_cards, 60, 24, "DF")
+    pdf.rect(10, y_cards, 60, 25, "DF")
 
-    pdf.set_font("Helvetica", "B", 8)
+    pdf.set_font("Helvetica", "B", 8.5)
     pdf.set_text_color(20, 50, 135)
     pdf.set_xy(12, y_cards + 2)
     pdf.cell(56, 4, clean_txt("OTIMIZAÇÃO DO PERFIL"))
 
-    pdf.set_font("Helvetica", "B", 17)
+    # Score Laranja Ampliado (20pt)
+    pdf.set_font("Helvetica", "B", 20)
     pdf.set_text_color(249, 115, 22)
     pdf.set_xy(12, y_cards + 5.5)
     score_str = str(score)
-    pdf.cell(pdf.get_string_width(score_str) + 1, 6, score_str)
+    pdf.cell(pdf.get_string_width(score_str) + 1, 7, score_str)
 
-    pdf.set_font("Helvetica", "B", 11)
+    pdf.set_font("Helvetica", "B", 12)
     pdf.set_text_color(20, 50, 135)
-    pdf.cell(20, 6, "/100")
+    pdf.cell(20, 7, "/100")
 
     pdf.set_fill_color(226, 232, 240)
-    pdf.rect(12, y_cards + 13, 56, 3.5, "F")
+    pdf.rect(12, y_cards + 13.5, 56, 3.5, "F")
     pdf.set_fill_color(20, 50, 135)
-    pdf.rect(12, y_cards + 13, (56 * score / 100), 3.5, "F")
+    pdf.rect(12, y_cards + 13.5, (56 * score / 100), 3.5, "F")
 
-    pdf.set_font("Helvetica", "", 7.5)
+    pdf.set_font("Helvetica", "", 8)
     pdf.set_text_color(100, 116, 139)
-    pdf.set_xy(12, y_cards + 17.5)
+    pdf.set_xy(12, y_cards + 18.5)
     pdf.cell(56, 4, clean_txt("Margem para crescimento local"))
 
     # Box 2: Nota e Reputação
     pdf.set_fill_color(248, 250, 252)
-    pdf.rect(75, y_cards, 60, 24, "DF")
+    pdf.rect(75, y_cards, 60, 25, "DF")
 
-    pdf.set_font("Helvetica", "B", 8)
+    pdf.set_font("Helvetica", "B", 8.5)
     pdf.set_text_color(20, 50, 135)
     pdf.set_xy(77, y_cards + 2)
     pdf.cell(56, 4, clean_txt("NOTA E REPUTAÇÃO"))
 
-    pdf.set_font("Helvetica", "B", 17)
+    # Nota Laranja Ampliada (20pt)
+    pdf.set_font("Helvetica", "B", 20)
     pdf.set_text_color(249, 115, 22)
     pdf.set_xy(77, y_cards + 5.5)
-    pdf.cell(pdf.get_string_width(rating) + 1, 6, rating)
+    pdf.cell(pdf.get_string_width(rating) + 1, 7, rating)
 
-    pdf.set_font("Helvetica", "B", 11)
+    pdf.set_font("Helvetica", "B", 12)
     pdf.set_text_color(20, 50, 135)
-    pdf.cell(20, 6, " / 5.0")
+    pdf.cell(20, 7, " / 5.0")
 
-    pdf.set_font("Helvetica", "", 7)
+    pdf.set_font("Helvetica", "", 7.5)
     pdf.set_text_color(51, 65, 85)
-    pdf.set_xy(77, y_cards + 14.5)
+    pdf.set_xy(77, y_cards + 15.5)
     if reviews_count < 30:
         pdf.cell(56, 4, clean_txt(f"Apenas {reviews} avaliações (Base pequena)"))
     else:
@@ -263,36 +265,37 @@ def gerar_pdf_bytes(dados):
     # Box 3: Tour Virtual 360°
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(20, 50, 135)
-    pdf.rect(140, y_cards, 60, 24, "DF")
+    pdf.rect(140, y_cards, 60, 25, "DF")
 
-    pdf.set_font("Helvetica", "B", 8)
+    pdf.set_font("Helvetica", "B", 8.5)
     pdf.set_text_color(20, 50, 135)
     pdf.set_xy(142, y_cards + 2)
     pdf.cell(56, 4, clean_txt("TOUR VIRTUAL 360°"))
 
-    pdf.set_font("Helvetica", "B", 17)
+    # "0" (20pt Vermelho), "FOTOS" (15pt Vermelho)
+    pdf.set_font("Helvetica", "B", 20)
     pdf.set_text_color(220, 38, 38)
     pdf.set_xy(142, y_cards + 5.5)
     txt_zero = "0"
-    pdf.cell(pdf.get_string_width(txt_zero) + 1, 6, txt_zero)
+    pdf.cell(pdf.get_string_width(txt_zero) + 1, 7, txt_zero)
 
-    pdf.set_font("Helvetica", "B", 14)
+    pdf.set_font("Helvetica", "B", 15)
     txt_fotos = " FOTOS"
-    pdf.cell(pdf.get_string_width(txt_fotos) + 1, 6, txt_fotos)
+    pdf.cell(pdf.get_string_width(txt_fotos) + 1, 7, txt_fotos)
 
-    pdf.set_font("Helvetica", "B", 11)
+    pdf.set_font("Helvetica", "B", 12)
     pdf.set_text_color(20, 50, 135)
-    pdf.cell(22, 6, " (AUSENTE)")
+    pdf.cell(22, 7, " (AUSENTE)")
 
-    pdf.set_font("Helvetica", "", 7.5)
+    pdf.set_font("Helvetica", "", 8)
     pdf.set_text_color(100, 116, 139)
-    pdf.set_xy(142, y_cards + 14.5)
+    pdf.set_xy(142, y_cards + 15.5)
     pdf.cell(56, 4, clean_txt("Oportunidade de se diferenciar"))
 
-    pdf.set_y(y_cards + 29)
+    pdf.set_y(y_cards + 30)
 
     # Matriz de Diagnóstico
-    pdf.set_font("Helvetica", "B", 11)
+    pdf.set_font("Helvetica", "B", 11.5)
     pdf.set_text_color(20, 50, 135)
     pdf.cell(
         W,
@@ -305,13 +308,13 @@ def gerar_pdf_bytes(dados):
 
     # Tabela com Cabeçalho
     pdf.set_fill_color(20, 50, 135)
-    pdf.set_font("Helvetica", "B", 8.5)
+    pdf.set_font("Helvetica", "B", 9)
     pdf.set_text_color(255, 255, 255)
-    pdf.cell(42, 6, clean_txt(" Dimensão"), fill=True)
-    pdf.cell(73, 6, clean_txt(" Estado Atual Identificado"), fill=True)
+    pdf.cell(42, 6.5, clean_txt(" Dimensão"), fill=True)
+    pdf.cell(73, 6.5, clean_txt(" Estado Atual Identificado"), fill=True)
     pdf.cell(
         75,
-        6,
+        6.5,
         clean_txt(" Impacto no Ranqueamento e Conversão"),
         fill=True,
         new_x="LMARGIN",
@@ -324,7 +327,7 @@ def gerar_pdf_bytes(dados):
         else f"Nota {rating} baseada em {reviews} avaliações."
     )
 
-    # Limpeza rigorosa no texto de Posts / Novidades
+    # Textos da Matriz com Fonte Ampliada para 10pt (Mais fácil de ler)
     itens = [
         (
             "Completude do Cadastro",
@@ -358,7 +361,7 @@ def gerar_pdf_bytes(dados):
         ),
         (
             "Posts / Novidades",
-            "Sem publicações ou ofertas recentes (Perfil estático).".strip(),
+            "Sem publicações recentes (Perfil estático).",  # Texto sem espaço
             "Perfil estático não destaca ofertas nem novidades do local.",
         ),
         (
@@ -368,39 +371,39 @@ def gerar_pdf_bytes(dados):
         ),
     ]
 
-    pdf.set_font("Helvetica", "", 8.5)
+    pdf.set_font("Helvetica", "", 10)
     for i, (dim, est, imp) in enumerate(itens):
         bg = (240, 249, 255) if i % 2 == 0 else (255, 255, 255)
 
         y_curr = pdf.get_y()
 
-        pdf.set_font("Helvetica", "", 8.5)
-        h_dim = len(pdf.multi_cell(42, 4.8, clean_txt(f" {dim}"), split_only=True)) * 4.8
-        h_est = len(pdf.multi_cell(73, 4.8, clean_txt(f" {est}"), split_only=True)) * 4.8
-        h_imp = len(pdf.multi_cell(75, 4.8, clean_txt(imp), split_only=True)) * 4.8
-        max_h = max(h_dim, h_est, h_imp, 4.8)
+        pdf.set_font("Helvetica", "", 10)
+        h_dim = len(pdf.multi_cell(42, 5.2, clean_txt(f" {dim}"), split_only=True)) * 5.2
+        h_est = len(pdf.multi_cell(73, 5.2, clean_txt(f" {est}"), split_only=True)) * 5.2
+        h_imp = len(pdf.multi_cell(75, 5.2, clean_txt(imp), split_only=True)) * 5.2
+        max_h = max(h_dim, h_est, h_imp, 5.2)
 
         pdf.set_fill_color(*bg)
         pdf.rect(10, y_curr, W, max_h, "F")
 
         pdf.set_xy(10, y_curr)
         pdf.set_text_color(20, 50, 135)
-        pdf.multi_cell(42, 4.8, clean_txt(f" {dim}"))
+        pdf.multi_cell(42, 5.2, clean_txt(f" {dim}"))
 
         pdf.set_xy(52, y_curr)
         pdf.set_text_color(51, 65, 85)
-        pdf.multi_cell(73, 4.8, clean_txt(f" {est}"))
+        pdf.multi_cell(73, 5.2, clean_txt(f" {est}"))
 
         pdf.set_xy(125, y_curr)
         pdf.set_text_color(20, 50, 135)
-        pdf.multi_cell(75, 4.8, clean_txt(imp), align="J")
+        pdf.multi_cell(75, 5.2, clean_txt(imp), align="J")
 
         pdf.set_y(y_curr + max_h)
 
-    pdf.ln(5)
+    pdf.ln(4)
 
-    # Plano de Ação
-    pdf.set_font("Helvetica", "B", 11)
+    # Plano de Ação com Fonte Ampliada
+    pdf.set_font("Helvetica", "B", 11.5)
     pdf.set_text_color(20, 50, 135)
     pdf.cell(
         W,
@@ -429,24 +432,24 @@ def gerar_pdf_bytes(dados):
     for tit, desc in acoes:
         pdf.set_fill_color(248, 250, 252)
         pdf.set_draw_color(186, 230, 253)
-        pdf.rect(10, pdf.get_y(), W, 10.5, "DF")
+        pdf.rect(10, pdf.get_y(), W, 11, "DF")
 
-        pdf.set_font("Helvetica", "B", 8.5)
+        pdf.set_font("Helvetica", "B", 9.5)
         pdf.set_text_color(20, 50, 135)
         pdf.set_xy(12, pdf.get_y() + 1.2)
         pdf.cell(0, 4, clean_txt(tit), new_x="LMARGIN", new_y="NEXT")
 
-        pdf.set_font("Helvetica", "", 8.5)
+        pdf.set_font("Helvetica", "", 9)
         pdf.set_text_color(51, 65, 85)
         pdf.set_x(12)
         pdf.cell(0, 4, clean_txt(desc), new_x="LMARGIN", new_y="NEXT")
 
         pdf.set_y(pdf.get_y() + 4)
 
-    # Frase Final Rebaixada (Mais Próxima do Rodapé)
-    pdf.ln(13)
+    # Frase Final de Impacto Rebaixada (Aproximada do Rodapé)
+    pdf.ln(11)
 
-    pdf.set_font("Helvetica", "B", 12)
+    pdf.set_font("Helvetica", "B", 12.5)
     pdf.set_text_color(20, 50, 135)
     pdf.cell(
         W,
@@ -458,7 +461,7 @@ def gerar_pdf_bytes(dados):
     )
     pdf.ln(1.5)
 
-    pdf.set_font("Helvetica", "", 9.5)
+    pdf.set_font("Helvetica", "", 10)
     pdf.set_text_color(51, 65, 85)
     pdf.cell(
         W,
