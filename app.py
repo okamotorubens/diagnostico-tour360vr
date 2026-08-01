@@ -399,8 +399,7 @@ def gerar_pdf_bytes(dados):
     acoes = [
         ("1. ATIVAÇÃO DE EXPERIÊNCIA IMERSIVA (STREET VIEW READY)", " Integração do seu espaço à base cartográfica do Google. Transforma a ficha em um ponto de visita virtual."),
         ("2. ENSAIO FOTOGRÁFICO PROFISSIONAL", "Fotografias profissionais das instalações, fachada e diferenciais, elevando o valor percebido pelo cliente."),
-       ("3. FOMENTO À PROVA SOCIAL ORGÂNICA", "Estratégia para incentivar fotos de clientes reais, aumentando a autenticidade e o engajamento da ficha."),
-        ("4. OTIMIZAÇÃO SEO LOCAL & GESTÃO DE REPUTAÇÃO", "Reestruturação completa de palavras-chave, categorias e estratégia para alavancar avaliações positivas."),
+        ("3. OTIMIZAÇÃO SEO LOCAL & GESTÃO DE REPUTAÇÃO", "Reestruturação completa de palavras-chave, categorias e estratégia para alavancar avaliações positivas."),
     ]
 
     for tit, desc in acoes:
