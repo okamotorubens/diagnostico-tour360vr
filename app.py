@@ -276,7 +276,7 @@ def gerar_pdf_bytes(dados):
     score_str = str(score)
     pdf.cell(pdf.get_string_width(score_str) + 1, 6, score_str)
 
-    pdf.set_font("Helvetica", "B", 11)
+    pdf.set_font("Helvetica", "B", 18)
     pdf.set_text_color(20, 50, 135)
     pdf.cell(20, 6, "/100")
   
