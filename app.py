@@ -201,7 +201,24 @@ def gerar_pdf_bytes(dados):
     total_fotos = len(all_photos)
     
     tipos = dados.get("types", [])
-       
+
+    def traduzir(c): 
+        # Adicione aqui outros termos conforme necessário
+        dic = {
+            "lodging": "Hospedagem", 
+            "establishment": "Estabelecimento", 
+            "motel": "Motel", 
+            "point_of_interest": "Ponto de Interesse",
+            "restaurant": "Restaurante",
+            "store": "Loja",
+            "beauty_salon": "Salão de Beleza",
+            "shopping_mall": "Shopping Center",
+            "Health": "Saúde",
+            "FRestaurant": "Restaurante",
+            "Academy": "Academia",
+            "School": "Escola",
+            "Physiotherapist": "Fisioterapia"
+        }
     cats = ", ".join([traduzir(t) for t in dados.get("types", [])[:5]])
     
     # --- [INÍCIO DA ALTERAÇÃO] ---
