@@ -334,7 +334,7 @@ def gerar_pdf_bytes(dados):
     pdf.set_font("Helvetica", "", 7.5)
     pdf.set_text_color(100, 116, 139)
     pdf.set_xy(12 + (w_card * 2), y_cards + 19.5)
-    pdf.cell(w_card - 4, 3.5, clean_txt("Ativação Street View"))
+    pdf.cell(w_card - 4, 3.5, clean_txt("Ativação Street View"), align="C")
 
     pdf.set_y(y_cards + 30)
 
