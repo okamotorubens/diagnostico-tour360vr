@@ -7,10 +7,9 @@ st.set_page_config(
     page_title="Diagnóstico Google - Tour360vr", page_icon="📍", layout="centered"
 )
 
-# Título ajustado conforme pedido
+# Título unificado em uma única linha
 st.title("📍 Gerador de Diagnóstico")
-st.title("Google Meu Negócio")
-st.subheader("Tour360vr")
+st.subheader("Google Meu Negócio - Tour360vr")
 
 try:
     api_key = st.secrets["GOOGLE_API_KEY"]
@@ -22,11 +21,16 @@ if not api_key:
         "Digite sua Chave da API Google (Places API):", type="password"
     )
 
+# Formulário compacto com quadros de preenchimento menores
 with st.form("form_busca"):
-    empresa = st.text_input(
-        "Nome da Empresa:", placeholder="Ex: Amazone Açaí Shop"
-    )
-    cidade = st.text_input("Cidade / Estado:", placeholder="Ex: Brodowski / SP")
+    col1, col2 = st.columns([3, 2])
+    with col1:
+        empresa = st.text_input(
+            "Nome da Empresa:", placeholder="Ex: Amazone Açaí Shop"
+        )
+    with col2:
+        cidade = st.text_input("Cidade / Estado:", placeholder="Ex: Brodowski / SP")
+    
     btn = st.form_submit_button("Gerar Relatório Executivo em PDF")
 
 
@@ -131,43 +135,43 @@ class PDFExecutivo(FPDF):
         self.set_fill_color(20, 50, 135)
         self.rect(0, 285, 210, 12, "F")
 
-        self.set_y(-8.5)
-        self.set_font("Helvetica", "B", 8.5)
+        self.set_y(-9)
+        self.set_font("Helvetica", "B", 9)  # Fonte do rodapé ampliada para 9pt
 
-        # Centralização exata com links individuais preservados
-        self.set_x(23.5)
+        # Centralização exata mantendo links individuais
+        self.set_x(20.5)
 
         self.set_text_color(224, 242, 254)
-        self.cell(42, 5, clean_txt("contato@tour360vr.com.br"), align="C", link="mailto:contato@tour360vr.com.br")
+        self.cell(44, 5, clean_txt("contato@tour360vr.com.br"), align="C", link="mailto:contato@tour360vr.com.br")
 
         self.set_text_color(255, 255, 255)
         self.cell(4, 5, clean_txt("·"), align="C")
 
         self.set_text_color(224, 242, 254)
-        self.cell(24, 5, clean_txt("16991332121"), align="C", link="https://wa.me/5516991332121")
+        self.cell(25, 5, clean_txt("16991332121"), align="C", link="https://wa.me/5516991332121")
 
         self.set_text_color(255, 255, 255)
         self.cell(4, 5, clean_txt("·"), align="C")
 
         self.set_text_color(224, 242, 254)
-        self.cell(31, 5, clean_txt("tour360vr.com.br"), align="C", link="https://tour360vr.com.br/")
+        self.cell(33, 5, clean_txt("tour360vr.com.br"), align="C", link="https://tour360vr.com.br/")
 
         self.set_text_color(255, 255, 255)
         self.cell(4, 5, clean_txt("·"), align="C")
-        self.cell(32, 5, clean_txt("Ribeirão Preto - SP"), align="C")
+        self.cell(34, 5, clean_txt("Ribeirão Preto - SP"), align="C")
 
 
-def desenhar_estrelas_seguras(pdf, x_start, y_pos, rating_val):
-    """Desenha 5 estrelas proporcionais em texto seguro e compatível"""
+def desenhar_estrelas_destaque(pdf, x_start, y_pos, rating_val):
+    """Exibe o indicador de estrelas em fonte destacada de 14pt"""
     try:
         rating_num = round(float(rating_val))
     except (ValueError, TypeError):
         rating_num = 0
 
-    pdf.set_font("Helvetica", "B", 12)
+    pdf.set_font("Helvetica", "B", 14)
     
     for k in range(5):
-        pdf.set_xy(x_start + (k * 5.5), y_pos)
+        pdf.set_xy(x_start + (k * 6.2), y_pos)
         if k < rating_num:
             pdf.set_text_color(245, 158, 11)  # Amarelo Ouro (#f59e0b)
             pdf.cell(5, 5, clean_txt("*"))
@@ -270,7 +274,7 @@ def gerar_pdf_bytes(dados):
     pdf.set_text_color(20, 50, 135)
     pdf.cell(20, 6, " / 5.0")
 
-    desenhar_estrelas_seguras(pdf, 12 + w_card, y_cards + 11.8, rating_raw)
+    desenhar_estrelas_destaque(pdf, 12 + w_card, y_cards + 11.5, rating_raw)
 
     pdf.set_font("Helvetica", "", 7.5)
     pdf.set_text_color(51, 65, 85)
