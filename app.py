@@ -272,9 +272,9 @@ def gerar_pdf_bytes(dados):
     
     pdf.set_font("Helvetica", "B", 18)
     pdf.set_text_color(249, 115, 22)
-    pdf.set_xy(12, y_cards + 6.0)
+    pdf.set_xy(10 + w_card, y_cards + 7.0)
     score_str = str(score)
-    pdf.cell(pdf.get_string_width(score_str) + 1, 6, score_str, align="C")
+    pdf.cell(w_card, 6, pdf.get_string_width(score_str) + 1, 6, score_str, align="C")
 
     pdf.set_font("Helvetica", "B", 18)
     pdf.set_text_color(20, 50, 135)
