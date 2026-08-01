@@ -118,11 +118,12 @@ class PDFExecutivo(FPDF):
 
         self.set_y(-9)
         self.set_font("Helvetica", "B", 8)
+        
+        # Centraliza o bloco do rodapé com links individuais
+        # Largura total útil ~ 170mm, inicio x = 20mm para ficar perfeitamente centralizado
+        self.set_x(18)
         self.set_text_color(255, 255, 255)
-
-        # Rodapé com links específicos
-        self.set_x(10)
-        self.cell(24, 5, clean_txt("Rubens Okamoto"), align="R")
+        self.cell(24, 5, clean_txt("Rubens Okamoto"), align="C")
         self.cell(4, 5, clean_txt(" · "), align="C")
         
         self.set_text_color(224, 242, 254)
@@ -142,7 +143,7 @@ class PDFExecutivo(FPDF):
         
         self.set_text_color(255, 255, 255)
         self.cell(4, 5, clean_txt(" · "), align="C")
-        self.cell(30, 5, clean_txt("Ribeirão Preto - SP"), align="L")
+        self.cell(30, 5, clean_txt("Ribeirão Preto - SP"), align="C")
 
 
 def gerar_pdf_bytes(dados):
@@ -197,7 +198,7 @@ def gerar_pdf_bytes(dados):
     pdf.set_xy(12, y_cards + 2)
     pdf.cell(56, 4, clean_txt("OTIMIZAÇÃO DO PERFIL"))
 
-    # Score Laranja MAIOR (17pt) + Azul (11pt)
+    # Score Laranja (17pt) + Azul (11pt)
     pdf.set_font("Helvetica", "B", 17)
     pdf.set_text_color(249, 115, 22)
     pdf.set_xy(12, y_cards + 5.5)
@@ -228,7 +229,7 @@ def gerar_pdf_bytes(dados):
     pdf.set_xy(77, y_cards + 2)
     pdf.cell(56, 4, clean_txt("NOTA E REPUTAÇÃO"))
 
-    # Nota Laranja MAIOR (17pt) + Azul (11pt)
+    # Nota Laranja (17pt) + Azul (11pt)
     pdf.set_font("Helvetica", "B", 17)
     pdf.set_text_color(249, 115, 22)
     pdf.set_xy(77, y_cards + 5.5)
@@ -243,7 +244,7 @@ def gerar_pdf_bytes(dados):
     pdf.set_xy(77, y_cards + 14.5)
     pdf.cell(56, 4, clean_txt(f"Com base em {reviews} avaliações"))
 
-    # Box 3: Tour Virtual 360°
+    # Box 3: Tour Virtual 360° (Padronizado nas fontes 17pt e 11pt)
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(20, 50, 135)
     pdf.rect(140, y_cards, 60, 24, "DF")
@@ -253,10 +254,16 @@ def gerar_pdf_bytes(dados):
     pdf.set_xy(142, y_cards + 2)
     pdf.cell(56, 4, clean_txt("TOUR VIRTUAL 360°"))
 
-    pdf.set_font("Helvetica", "B", 12)
+    # "0 FOTOS" em Vermelho (17pt) + "(AUSENTE)" em Azul (11pt)
+    pdf.set_font("Helvetica", "B", 17)
     pdf.set_text_color(220, 38, 38)
-    pdf.set_xy(142, y_cards + 6)
-    pdf.cell(56, 5, clean_txt("0 FOTOS (AUSENTE)"))
+    pdf.set_xy(142, y_cards + 5.5)
+    txt_zero = "0 FOTOS"
+    pdf.cell(pdf.get_string_width(txt_zero) + 1, 6, txt_zero)
+
+    pdf.set_font("Helvetica", "B", 11)
+    pdf.set_text_color(20, 50, 135)
+    pdf.cell(25, 6, " (AUSENTE)")
 
     pdf.set_font("Helvetica", "", 7.5)
     pdf.set_text_color(100, 116, 139)
@@ -346,7 +353,7 @@ def gerar_pdf_bytes(dados):
         pdf.set_font("Helvetica", "", 8.5)
         h_dim = len(pdf.multi_cell(42, 4.8, clean_txt(f" {dim}"), split_only=True)) * 4.8
         h_est = len(pdf.multi_cell(73, 4.8, clean_txt(f" {est}"), split_only=True)) * 4.8
-        h_imp = len(pdf.multi_cell(75, 4.8, clean_txt(f" {imp}"), split_only=True)) * 4.8
+        h_imp = len(pdf.multi_cell(75, 4.8, clean_txt(imp), split_only=True)) * 4.8  # Sem espaço extra no início
         max_h = max(h_dim, h_est, h_imp, 4.8)
 
         pdf.set_fill_color(*bg)
@@ -360,10 +367,10 @@ def gerar_pdf_bytes(dados):
         pdf.set_text_color(51, 65, 85)
         pdf.multi_cell(73, 4.8, clean_txt(f" {est}"))
 
-        # Coluna de Impacto com alinhamento JUSTIFICADO (align='J')
+        # Coluna de Impacto (sem espaço inicial extra)
         pdf.set_xy(125, y_curr)
         pdf.set_text_color(185, 28, 28)
-        pdf.multi_cell(75, 4.8, clean_txt(f" {imp}"), align="J")
+        pdf.multi_cell(75, 4.8, clean_txt(imp), align="J")
 
         pdf.set_y(y_curr + max_h)
 
@@ -413,7 +420,7 @@ def gerar_pdf_bytes(dados):
 
         pdf.set_y(pdf.get_y() + 4)
 
-    # Frase Final de Impacto Solta com Maior Destaque
+    # Frase Final de Impacto Destaque
     pdf.ln(5)
 
     pdf.set_font("Helvetica", "B", 12)
