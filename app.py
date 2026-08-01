@@ -278,7 +278,7 @@ def gerar_pdf_bytes(dados):
 
     pdf.set_font("Helvetica", "B", 18)
     pdf.set_text_color(20, 50, 135)
-    pdf.cell(20, 6, "/100")
+    pdf.cell(20, 6, "/100", align="C")
   
     pdf.set_font("Helvetica", "B", 10)
     pdf.set_text_color(*status_cor)
