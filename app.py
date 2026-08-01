@@ -133,17 +133,30 @@ class PDFExecutivo(FPDF):
         self.set_fill_color(20, 50, 135)
         self.rect(0, 285, 210, 12, "F")
 
-        self.set_y(-8.5)
-        self.set_font("Helvetica", "B", 8.5)
-        self.set_text_color(255, 255, 255)
+        self.set_y(-9)
+        self.set_font("Helvetica", "B", 9)  # Fonte do rodapé ampliada para 9pt
 
-        txt_rodape = (
-            "contato@tour360vr.com.br     ·     "
-            "16991332121     ·     "
-            "tour360vr.com.br     ·     "
-            "Ribeirão Preto - SP"
-        )
-        self.cell(0, 5, clean_txt(txt_rodape), align="C", link="https://tour360vr.com.br/")
+        # Centralização exata mantendo links individuais
+        self.set_x(20.5)
+
+        self.set_text_color(224, 242, 254)
+        self.cell(44, 5, clean_txt("contato@tour360vr.com.br"), align="C", link="mailto:contato@tour360vr.com.br")
+
+        self.set_text_color(255, 255, 255)
+        self.cell(4, 5, clean_txt("·"), align="C")
+
+        self.set_text_color(224, 242, 254)
+        self.cell(25, 5, clean_txt("16991332121"), align="C", link="https://wa.me/5516991332121")
+
+        self.set_text_color(255, 255, 255)
+        self.cell(4, 5, clean_txt("·"), align="C")
+
+        self.set_text_color(224, 242, 254)
+        self.cell(33, 5, clean_txt("tour360vr.com.br"), align="C", link="https://tour360vr.com.br/")
+
+        self.set_text_color(255, 255, 255)
+        self.cell(4, 5, clean_txt("·"), align="C")
+        self.cell(34, 5, clean_txt("Ribeirão Preto - SP"), align="C")
 
 
 def desenhar_estrelas_destaque(pdf, x_start, y_pos, rating_val):
