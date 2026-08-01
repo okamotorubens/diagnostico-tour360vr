@@ -7,7 +7,6 @@ st.set_page_config(
     page_title="Diagnóstico Google - Tour360vr", page_icon="📍", layout="centered"
 )
 
-# Título unificado em uma única linha
 st.title("📍 Gerador de Diagnóstico")
 st.subheader("Google Meu Negócio - Tour360vr")
 
@@ -21,7 +20,6 @@ if not api_key:
         "Digite sua Chave da API Google (Places API):", type="password"
     )
 
-# Formulário compacto com quadros de preenchimento menores
 with st.form("form_busca"):
     col1, col2 = st.columns([3, 2])
     with col1:
@@ -135,49 +133,37 @@ class PDFExecutivo(FPDF):
         self.set_fill_color(20, 50, 135)
         self.rect(0, 285, 210, 12, "F")
 
-        self.set_y(-9)
-        self.set_font("Helvetica", "B", 9)  # Fonte do rodapé ampliada para 9pt
-
-        # Centralização exata mantendo links individuais
-        self.set_x(20.5)
-
-        self.set_text_color(224, 242, 254)
-        self.cell(44, 5, clean_txt("contato@tour360vr.com.br"), align="C", link="mailto:contato@tour360vr.com.br")
-
+        self.set_y(-8.5)
+        self.set_font("Helvetica", "B", 8.5)
         self.set_text_color(255, 255, 255)
-        self.cell(4, 5, clean_txt("·"), align="C")
 
-        self.set_text_color(224, 242, 254)
-        self.cell(25, 5, clean_txt("16991332121"), align="C", link="https://wa.me/5516991332121")
-
-        self.set_text_color(255, 255, 255)
-        self.cell(4, 5, clean_txt("·"), align="C")
-
-        self.set_text_color(224, 242, 254)
-        self.cell(33, 5, clean_txt("tour360vr.com.br"), align="C", link="https://tour360vr.com.br/")
-
-        self.set_text_color(255, 255, 255)
-        self.cell(4, 5, clean_txt("·"), align="C")
-        self.cell(34, 5, clean_txt("Ribeirão Preto - SP"), align="C")
+        # Texto do rodapé formatado com espaçamento uniforme para centralização absoluta
+        txt_rodape = (
+            "contato@tour360vr.com.br     ·     "
+            "16991332121     ·     "
+            "tour360vr.com.br     ·     "
+            "Ribeirão Preto - SP"
+        )
+        self.cell(0, 5, clean_txt(txt_rodape), align="C", link="https://tour360vr.com.br/")
 
 
 def desenhar_estrelas_destaque(pdf, x_start, y_pos, rating_val):
-    """Exibe o indicador de estrelas em fonte destacada de 14pt"""
+    """Exibe estrelas em tamanho ampliado (18pt) e em negrito"""
     try:
         rating_num = round(float(rating_val))
     except (ValueError, TypeError):
         rating_num = 0
 
-    pdf.set_font("Helvetica", "B", 14)
+    pdf.set_font("Helvetica", "B", 18)
     
     for k in range(5):
-        pdf.set_xy(x_start + (k * 6.2), y_pos)
+        pdf.set_xy(x_start + (k * 7.2), y_pos)
         if k < rating_num:
             pdf.set_text_color(245, 158, 11)  # Amarelo Ouro (#f59e0b)
-            pdf.cell(5, 5, clean_txt("*"))
+            pdf.cell(6, 6, clean_txt("*"))
         else:
             pdf.set_text_color(203, 213, 225)  # Cinza Claro (#cbd5e1)
-            pdf.cell(5, 5, clean_txt("-"))
+            pdf.cell(6, 6, clean_txt("-"))
 
 
 def gerar_pdf_bytes(dados):
@@ -200,9 +186,9 @@ def gerar_pdf_bytes(dados):
 
     W = pdf.epw
 
-    # Quadro da Empresa
+    # Quadro da Empresa (Início em Branco com borda e destaques em Azul)
     y_empresa = pdf.get_y()
-    pdf.set_fill_color(240, 249, 255)
+    pdf.set_fill_color(255, 255, 255)
     pdf.set_draw_color(20, 50, 135)
     pdf.rect(10, y_empresa, W, 14, "DF")
 
@@ -225,8 +211,8 @@ def gerar_pdf_bytes(dados):
     y_cards = y_empresa + 18
     w_card = 63.3
 
-    # Box 1: Otimização do Perfil
-    pdf.set_fill_color(248, 250, 252)
+    # Box 1: Otimização do Perfil (Fundo Branco + Borda Azul)
+    pdf.set_fill_color(255, 255, 255)
     pdf.set_draw_color(20, 50, 135)
     pdf.rect(10, y_cards, w_card, 23, "DF")
 
@@ -255,8 +241,9 @@ def gerar_pdf_bytes(dados):
     pdf.set_xy(12, y_cards + 16.8)
     pdf.cell(w_card - 4, 3.5, clean_txt("Margem para crescimento local"))
 
-    # Box 2: Nota e Reputação
-    pdf.set_fill_color(248, 250, 252)
+    # Box 2: Nota e Reputação (Fundo Branco + Borda Azul)
+    pdf.set_fill_color(255, 255, 255)
+    pdf.set_draw_color(20, 50, 135)
     pdf.rect(10 + w_card, y_cards, w_card, 23, "DF")
 
     pdf.set_font("Helvetica", "B", 8)
@@ -274,7 +261,8 @@ def gerar_pdf_bytes(dados):
     pdf.set_text_color(20, 50, 135)
     pdf.cell(20, 6, " / 5.0")
 
-    desenhar_estrelas_destaque(pdf, 12 + w_card, y_cards + 11.5, rating_raw)
+    # Estrelas com fonte 18pt ampliada
+    desenhar_estrelas_destaque(pdf, 12 + w_card, y_cards + 11.0, rating_raw)
 
     pdf.set_font("Helvetica", "", 7.5)
     pdf.set_text_color(51, 65, 85)
@@ -284,8 +272,8 @@ def gerar_pdf_bytes(dados):
     else:
         pdf.cell(w_card - 4, 3.5, clean_txt(f"Com base em {reviews} avaliações"))
 
-    # Box 3: Tour Virtual 360°
-    pdf.set_fill_color(248, 250, 252)
+    # Box 3: Tour Virtual 360° (Fundo Branco + Borda Azul)
+    pdf.set_fill_color(255, 255, 255)
     pdf.set_draw_color(20, 50, 135)
     pdf.rect(10 + (w_card * 2), y_cards, w_card, 23, "DF")
 
@@ -327,7 +315,7 @@ def gerar_pdf_bytes(dados):
     )
     pdf.ln(1)
 
-    # Tabela
+    # Tabela com Cabeçalho
     pdf.set_fill_color(20, 50, 135)
     pdf.set_font("Helvetica", "B", 8.5)
     pdf.set_text_color(255, 255, 255)
@@ -391,9 +379,10 @@ def gerar_pdf_bytes(dados):
         ),
     ]
 
+    # Linhas da Tabela (Fundo Branco em vez de Azul Claro)
     pdf.set_font("Helvetica", "", 9)
     for i, (dim, est, imp) in enumerate(itens):
-        bg = (240, 249, 255) if i % 2 == 0 else (255, 255, 255)
+        bg = (255, 255, 255) if i % 2 == 0 else (248, 250, 252)
 
         y_curr = pdf.get_y()
 
@@ -422,7 +411,7 @@ def gerar_pdf_bytes(dados):
 
     pdf.ln(3)
 
-    # Plano de Ação
+    # Plano de Ação (Fundo Branco + Borda Azul Fina)
     pdf.set_font("Helvetica", "B", 11)
     pdf.set_text_color(20, 50, 135)
     pdf.cell(
@@ -450,8 +439,8 @@ def gerar_pdf_bytes(dados):
     ]
 
     for tit, desc in acoes:
-        pdf.set_fill_color(248, 250, 252)
-        pdf.set_draw_color(186, 230, 253)
+        pdf.set_fill_color(255, 255, 255)
+        pdf.set_draw_color(20, 50, 135)
         pdf.rect(10, pdf.get_y(), W, 10.5, "DF")
 
         pdf.set_font("Helvetica", "B", 9)
