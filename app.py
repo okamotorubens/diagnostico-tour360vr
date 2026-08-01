@@ -393,11 +393,6 @@ def gerar_pdf_bytes(dados):
     categorias_texto = ", ".join(cats_lista)
     # ---------------------------------------------
     
-    # Agora a lista itens usará a variável categorias_texto definida acima
-    itens = [
-        ("Completude", status_completude, "Perfil incompleto reduz a probabilidade de conversão."),
-        # ... (restante do código)
-    
     # Filtra os tipos para mostrar algo legível, ex: limite de 2 categorias
     categorias_texto = ", ".join([t.replace("_", " ") for t in tipos[:2]]) if tipos else "Padrão"
     itens = [
