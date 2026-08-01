@@ -6,9 +6,10 @@ from io import BytesIO
 st.set_page_config(page_title="Tour360vr | Auditoria Imbatível", page_icon="📍", layout="centered")
 
 def clean_txt(txt):
+    """Trata caracteres acentuados."""
     return str(txt).encode("latin-1", "replace").decode("latin-1")
 
-# --- CLASSE PDF (Estrutura Profissional) ---
+# --- CLASSE PDF ---
 class PDFImbatível(FPDF):
     def header(self):
         self.set_fill_color(20, 50, 135)
@@ -37,7 +38,7 @@ def buscar_dados_google(empresa, cidade, key):
     url_det = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=name,formatted_address,formatted_phone_number,rating,user_ratings_total,photos,website,opening_hours&key={key}"
     return requests.get(url_det).json().get("result", {})
 
-# --- INTERFACE STREAMLIT ---
+# --- INTERFACE ---
 st.title("📍 Gerador de Auditoria Imbatível")
 
 try:
@@ -56,9 +57,7 @@ if btn and api_key and empresa and cidade:
         dados = buscar_dados_google(empresa, cidade, api_key)
         
         if dados:
-            # Lógica de Score (apenas para exibição na tela)
             score = 65 
-            
             pdf = PDFImbatível()
             pdf.add_page()
             
@@ -67,11 +66,10 @@ if btn and api_key and empresa and cidade:
             pdf.set_text_color(20, 50, 135)
             pdf.cell(0, 10, clean_txt(dados.get('name', '').upper()), ln=True)
             pdf.set_font("Helvetica", "", 10)
-            pdf.set_text_color(50, 50, 50)
             pdf.cell(0, 5, clean_txt(f"Endereço: {dados.get('formatted_address')}"), ln=True)
-            pdf.ln(5)
+            pdf.ln(10)
 
-            # Grid de Métricas (Visual)
+            # Grid de Métricas
             pdf.set_fill_color(240, 240, 240)
             pdf.rect(10, 60, 190, 30, "F")
             pdf.set_font("Helvetica", "B", 12)
@@ -97,7 +95,7 @@ if btn and api_key and empresa and cidade:
             diagnostico = [
                 ("Website", "Cadastrado" if dados.get('website') else "Ausente", "A falta de site reduz a confiança em 40%."),
                 ("Fotos", f"{len(dados.get('photos', []))} fotos", "Cobertura visual baixa impede conversões."),
-                ("Tour Virtual", "Ausente", "A ausência de tour 360° é uma falha grave de ranqueamento.")
+                ("Tour Virtual", "Ausente", "A ausência de tour 360° é uma falha grave.")
             ]
             
             for item, status, impacto in diagnostico:
@@ -108,10 +106,15 @@ if btn and api_key and empresa and cidade:
                 pdf.set_font("Helvetica", "I", 9)
                 pdf.multi_cell(0, 7, clean_txt(impacto), ln=True)
 
-            # --- A CORREÇÃO ESTÁ AQUI ---
-            # Em fpdf2, .output(dest='S') já retorna bytes, não precisa de .encode()
-            pdf_bytes = pdf.output(dest='S')
+            # --- A CORREÇÃO FINAL ---
+            pdf_output = pdf.output(dest='S')
             
+            # Se for string, converte para bytes. Se já for bytes, usa como está.
+            if isinstance(pdf_output, str):
+                pdf_bytes = pdf_output.encode('latin-1')
+            else:
+                pdf_bytes = bytes(pdf_output)
+
             st.download_button(
                 label="📥 Baixar Auditoria em PDF",
                 data=pdf_bytes,
