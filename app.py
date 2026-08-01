@@ -63,11 +63,26 @@ if btn and api_key and empresa and cidade:
         
         if dados:
             # Lógica de cálculo de eficiência
+            if dados:
+            # Lógica de cálculo de eficiência
             score = 65 
             st.metric("Índice de Eficiência Digital", f"{score}%", delta="-15% comparado a concorrentes")
-            st.warning("⚠️ Risco Detectado: O perfil está perdendo visibilidade para concorrentes com Tours Virtuais.")
+            st.warning("⚠️ Risco Detectado: O perfil está perdendo visibilidade para concorrentes.")
             
-            # Aqui você chamaria a função para gerar o PDF (simplificado para exemplo)
+            # --- GERANDO O PDF PARA DOWNLOAD ---
+            pdf = PDFImbatível()
+            pdf.add_page()
+            pdf.set_font("Helvetica", size=12)
+            pdf.cell(0, 10, clean_txt(f"Relatório de Auditoria: {dados.get('name')}"), ln=True)
+            # ... aqui você chamaria suas funções de preenchimento do PDF ...
+            
+            # Converter o PDF para bytes para permitir o download
+            pdf_bytes = pdf.output(dest='S').encode('latin-1')
+            
+            st.download_button(
+                label="📥 Baixar Auditoria em PDF",
+                data=pdf_bytes,
+                file_name=f"Auditoria_{empresa}.pdf",
+                mime="application/pdf"
+            )
             st.success("Auditoria pronta para download!")
-        else:
-            st.error("Empresa não encontrada.")
