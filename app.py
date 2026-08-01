@@ -7,10 +7,9 @@ st.set_page_config(
     page_title="Diagnóstico Google - Tour360vr", page_icon="📍", layout="centered"
 )
 
-st.title("📍 Gerador de Diagnóstico Google Meu Negócio")
-st.subheader("Padrão Executivo - Tour360vr")
+st.title("📍 Gerador de Diagnóstico")
+st.subheader("Google Meu Negócio - Tour360vr")
 
-# Recupera a chave dos Secrets do Streamlit Cloud
 try:
     api_key = st.secrets["GOOGLE_API_KEY"]
 except Exception:
@@ -22,10 +21,14 @@ if not api_key:
     )
 
 with st.form("form_busca"):
-    empresa = st.text_input(
-        "Nome da Empresa:", placeholder="Ex: Amazone Açaí Shop"
-    )
-    cidade = st.text_input("Cidade / Estado:", placeholder="Ex: Brodowski / SP")
+    col1, col2 = st.columns([3, 2])
+    with col1:
+        empresa = st.text_input(
+            "Nome da Empresa:", placeholder="Ex: Amazone Açaí Shop"
+        )
+    with col2:
+        cidade = st.text_input("Cidade / Estado:", placeholder="Ex: Brodowski / SP")
+    
     btn = st.form_submit_button("Gerar Relatório Executivo em PDF")
 
 
@@ -54,8 +57,7 @@ def buscar_dados_google(empresa, cidade, key):
 
 
 def calcular_score_critico(dados):
-    """Calcula uma pontuação crítica e realista de otimização de perfil"""
-    score = 25  # Base inicial rígida
+    score = 25
 
     if dados.get("website"):
         score += 15
@@ -97,68 +99,70 @@ def calcular_score_critico(dados):
 class PDFExecutivo(FPDF):
 
     def header(self):
-        # Tarja Azul #143287 (RGB: 20, 50, 135) - Altura 28mm
+        # Tarja Azul #143287
         self.set_fill_color(20, 50, 135)
         self.rect(0, 0, 210, 28, "F")
 
-        # Título Descolado do Topo (y = 6.5)
+        # Título corrigido para misto: Tour360vr
         self.set_font("Helvetica", "B", 21)
         self.set_text_color(255, 255, 255)
         self.set_xy(10, 6.5)
-        self.cell(0, 7, clean_txt("TOUR360VR"), align="C", new_x="LMARGIN", new_y="NEXT")
+        self.cell(0, 7, clean_txt("Tour360vr"), align="C", new_x="LMARGIN", new_y="NEXT")
 
-        # Subtítulo com respiro
+        # Subtítulo
         self.set_font("Helvetica", "B", 8.5)
         self.set_text_color(186, 230, 253)
         self.set_y(16)
         self.cell(0, 4, clean_txt("DIAGNÓSTICO E AUDITORIA GOOGLE MEU NEGÓCIO"), align="C", new_x="LMARGIN", new_y="NEXT")
 
-        # Data alinhada no canto direito
-        self.set_font("Helvetica", "B", 8)
+        # Data
+        self.set_font("Helvetica", "B", 8.5)
         self.set_text_color(224, 242, 254)
         self.set_xy(130, 20)
         self.cell(
             70,
             5,
-            clean_txt(f"Data: {datetime.date.today().strftime('%d/%m/%Y')}"),
+            clean_txt(datetime.date.today().strftime('%d/%m/%Y')),
             align="R",
         )
 
         self.set_y(32)
 
     def footer(self):
-        # Tarja Azul Fina no Rodapé #143287
+        # Tarja Azul no Rodapé #143287
         self.set_fill_color(20, 50, 135)
         self.rect(0, 285, 210, 12, "F")
 
-        self.set_y(-9)
-        self.set_font("Helvetica", "B", 8)
-
-        # Alinhamento exato ao centro da página A4
-        self.set_x(18)
-
+        self.set_y(-8.5)
+        self.set_font("Helvetica", "B", 8.5)
         self.set_text_color(255, 255, 255)
-        self.cell(26, 5, clean_txt("Rubens Okamoto"), align="C")
-        self.cell(3, 5, clean_txt("·"), align="C")
 
-        self.set_text_color(224, 242, 254)
-        self.cell(41, 5, clean_txt("contato@tour360vr.com.br"), align="C", link="mailto:contato@tour360vr.com.br")
+        txt_rodape = (
+            "contato@tour360vr.com.br     ·     "
+            "16991332121     ·     "
+            "tour360vr.com.br     ·     "
+            "Ribeirão Preto - SP"
+        )
+        self.cell(0, 5, clean_txt(txt_rodape), align="C", link="https://tour360vr.com.br/")
 
-        self.set_text_color(255, 255, 255)
-        self.cell(3, 5, clean_txt("·"), align="C")
 
-        self.set_text_color(224, 242, 254)
-        self.cell(21, 5, clean_txt("16991332121"), align="C", link="https://wa.me/5516991332121")
+def desenhar_estrelas_destaque(pdf, x_start, y_pos, rating_val):
+    """Exibe estrelas em tamanho super ampliado (22pt)"""
+    try:
+        rating_num = round(float(rating_val))
+    except (ValueError, TypeError):
+        rating_num = 0
 
-        self.set_text_color(255, 255, 255)
-        self.cell(3, 5, clean_txt("·"), align="C")
-
-        self.set_text_color(224, 242, 254)
-        self.cell(28, 5, clean_txt("tour360vr.com.br"), align="C", link="https://tour360vr.com.br/")
-
-        self.set_text_color(255, 255, 255)
-        self.cell(3, 5, clean_txt("·"), align="C")
-        self.cell(32, 5, clean_txt("Ribeirão Preto - SP"), align="C")
+    pdf.set_font("Helvetica", "B", 22)
+    
+    for k in range(5):
+        pdf.set_xy(x_start + (k * 7.5), y_pos)
+        if k < rating_num:
+            pdf.set_text_color(245, 158, 11)  # Amarelo Ouro (#f59e0b)
+            pdf.cell(7, 7, clean_txt("*"))
+        else:
+            pdf.set_text_color(203, 213, 225)  # Cinza Claro (#cbd5e1)
+            pdf.cell(7, 7, clean_txt("-"))
 
 
 def gerar_pdf_bytes(dados):
@@ -170,7 +174,8 @@ def gerar_pdf_bytes(dados):
     nome = dados.get("name", "N/A")
     endereco = dados.get("formatted_address", "N/A")
     telefone = dados.get("formatted_phone_number", "Não informado")
-    rating = str(dados.get("rating", "0.0"))
+    rating_raw = dados.get("rating", 0.0)
+    rating = str(rating_raw)
     reviews_count = dados.get("user_ratings_total", 0)
     reviews = str(reviews_count)
     photos_count = len(dados.get("photos", []))
@@ -178,11 +183,11 @@ def gerar_pdf_bytes(dados):
     has_hours = "Cadastrado" if dados.get("opening_hours") else "Ausente/Incompleto"
     score = calcular_score_critico(dados)
 
-    W = pdf.epw  # 190mm de largura útil
+    W = pdf.epw
 
     # Quadro da Empresa
     y_empresa = pdf.get_y()
-    pdf.set_fill_color(240, 249, 255)
+    pdf.set_fill_color(255, 255, 255)
     pdf.set_draw_color(20, 50, 135)
     pdf.rect(10, y_empresa, W, 14, "DF")
 
@@ -203,23 +208,22 @@ def gerar_pdf_bytes(dados):
     )
 
     y_cards = y_empresa + 18
-
-    # Largura igualada dos 3 cards: 190mm / 3 = 63.3mm
     w_card = 63.3
+    h_card = 26.0  # Ampliado para dar espaço de sobra nos quadros das 3 colunas
 
     # Box 1: Otimização do Perfil
-    pdf.set_fill_color(248, 250, 252)
+    pdf.set_fill_color(255, 255, 255)
     pdf.set_draw_color(20, 50, 135)
-    pdf.rect(10, y_cards, w_card, 23, "DF")
+    pdf.rect(10, y_cards, w_card, h_card, "DF")
 
     pdf.set_font("Helvetica", "B", 8)
     pdf.set_text_color(20, 50, 135)
-    pdf.set_xy(12, y_cards + 1.8)
+    pdf.set_xy(12, y_cards + 2.0)
     pdf.cell(w_card - 4, 3.5, clean_txt("OTIMIZAÇÃO DO PERFIL"))
 
     pdf.set_font("Helvetica", "B", 18)
     pdf.set_text_color(249, 115, 22)
-    pdf.set_xy(12, y_cards + 5.2)
+    pdf.set_xy(12, y_cards + 6.0)
     score_str = str(score)
     pdf.cell(pdf.get_string_width(score_str) + 1, 6, score_str)
 
@@ -228,54 +232,59 @@ def gerar_pdf_bytes(dados):
     pdf.cell(20, 6, "/100")
 
     pdf.set_fill_color(226, 232, 240)
-    pdf.rect(12, y_cards + 12.2, w_card - 8, 3.2, "F")
+    pdf.rect(12, y_cards + 13.5, w_card - 8, 3.2, "F")
     pdf.set_fill_color(20, 50, 135)
-    pdf.rect(12, y_cards + 12.2, ((w_card - 8) * score / 100), 3.2, "F")
+    pdf.rect(12, y_cards + 13.5, ((w_card - 8) * score / 100), 3.2, "F")
 
     pdf.set_font("Helvetica", "", 7.5)
     pdf.set_text_color(100, 116, 139)
-    pdf.set_xy(12, y_cards + 16.8)
+    pdf.set_xy(12, y_cards + 19.5)
     pdf.cell(w_card - 4, 3.5, clean_txt("Margem para crescimento local"))
 
     # Box 2: Nota e Reputação
-    pdf.set_fill_color(248, 250, 252)
-    pdf.rect(10 + w_card, y_cards, w_card, 23, "DF")
+    pdf.set_fill_color(255, 255, 255)
+    pdf.set_draw_color(20, 50, 135)
+    pdf.rect(10 + w_card, y_cards, w_card, h_card, "DF")
 
     pdf.set_font("Helvetica", "B", 8)
     pdf.set_text_color(20, 50, 135)
-    pdf.set_xy(12 + w_card, y_cards + 1.8)
+    pdf.set_xy(12 + w_card, y_cards + 2.0)
     pdf.cell(w_card - 4, 3.5, clean_txt("NOTA E REPUTAÇÃO"))
 
     pdf.set_font("Helvetica", "B", 18)
     pdf.set_text_color(249, 115, 22)
-    pdf.set_xy(12 + w_card, y_cards + 5.2)
-    pdf.cell(pdf.get_string_width(rating) + 1, 6, rating)
+    pdf.set_xy(12 + w_card, y_cards + 6.0)
+    w_nota = pdf.get_string_width(rating) + 1
+    pdf.cell(w_nota, 6, rating)
 
     pdf.set_font("Helvetica", "B", 11)
     pdf.set_text_color(20, 50, 135)
     pdf.cell(20, 6, " / 5.0")
 
+    # Estrelas com 22pt de tamanho
+    desenhar_estrelas_destaque(pdf, 12 + w_card, y_cards + 12.0, rating_raw)
+
     pdf.set_font("Helvetica", "", 7.5)
     pdf.set_text_color(51, 65, 85)
-    pdf.set_xy(12 + w_card, y_cards + 16.8)
+    pdf.set_xy(12 + w_card, y_cards + 19.5)
     if reviews_count < 30:
         pdf.cell(w_card - 4, 3.5, clean_txt(f"Apenas {reviews} avaliações (Base pequena)"))
     else:
         pdf.cell(w_card - 4, 3.5, clean_txt(f"Com base em {reviews} avaliações"))
 
-    # Box 3: Tour Virtual 360° (Alinhado exatamente com o final da tabela)
-    pdf.set_fill_color(248, 250, 252)
+    # Box 3: Tour Virtual 360°
+    pdf.set_fill_color(255, 255, 255)
     pdf.set_draw_color(20, 50, 135)
-    pdf.rect(10 + (w_card * 2), y_cards, w_card, 23, "DF")
+    pdf.rect(10 + (w_card * 2), y_cards, w_card, h_card, "DF")
 
     pdf.set_font("Helvetica", "B", 8)
     pdf.set_text_color(20, 50, 135)
-    pdf.set_xy(12 + (w_card * 2), y_cards + 1.8)
+    pdf.set_xy(12 + (w_card * 2), y_cards + 2.0)
     pdf.cell(w_card - 4, 3.5, clean_txt("TOUR VIRTUAL 360°"))
 
     pdf.set_font("Helvetica", "B", 18)
     pdf.set_text_color(220, 38, 38)
-    pdf.set_xy(12 + (w_card * 2), y_cards + 5.2)
+    pdf.set_xy(12 + (w_card * 2), y_cards + 6.0)
     txt_zero = "0"
     pdf.cell(pdf.get_string_width(txt_zero) + 1, 6, txt_zero)
 
@@ -289,10 +298,10 @@ def gerar_pdf_bytes(dados):
 
     pdf.set_font("Helvetica", "", 7.5)
     pdf.set_text_color(100, 116, 139)
-    pdf.set_xy(12 + (w_card * 2), y_cards + 16.8)
+    pdf.set_xy(12 + (w_card * 2), y_cards + 19.5)
     pdf.cell(w_card - 4, 3.5, clean_txt("Oportunidade de se diferenciar"))
 
-    pdf.set_y(y_cards + 27)
+    pdf.set_y(y_cards + 30)
 
     # Matriz de Diagnóstico
     pdf.set_font("Helvetica", "B", 11)
@@ -306,7 +315,7 @@ def gerar_pdf_bytes(dados):
     )
     pdf.ln(1)
 
-    # Tabela com Cabeçalho
+    # Tabela
     pdf.set_fill_color(20, 50, 135)
     pdf.set_font("Helvetica", "B", 8.5)
     pdf.set_text_color(255, 255, 255)
@@ -345,7 +354,7 @@ def gerar_pdf_bytes(dados):
         ),
         (
             "Categorias",
-            "Apenas 1 categoria configurada (Sem secundárias).",
+            "1 categoria cadastrada (Sem secundárias).",
             "Falta de categorias secundárias limita a visibilidade regional.",
         ),
         (
@@ -370,32 +379,32 @@ def gerar_pdf_bytes(dados):
         ),
     ]
 
-    pdf.set_font("Helvetica", "", 9.5)
+    pdf.set_font("Helvetica", "", 9)
     for i, (dim, est, imp) in enumerate(itens):
-        bg = (240, 249, 255) if i % 2 == 0 else (255, 255, 255)
+        bg = (255, 255, 255) if i % 2 == 0 else (248, 250, 252)
 
         y_curr = pdf.get_y()
 
-        pdf.set_font("Helvetica", "", 9.5)
-        h_dim = len(pdf.multi_cell(42, 4.8, clean_txt(f" {dim}"), split_only=True)) * 4.8
-        h_est = len(pdf.multi_cell(73, 4.8, clean_txt(f" {est}"), split_only=True)) * 4.8
-        h_imp = len(pdf.multi_cell(75, 4.8, clean_txt(imp), split_only=True)) * 4.8
-        max_h = max(h_dim, h_est, h_imp, 4.8)
+        pdf.set_font("Helvetica", "", 9)
+        h_dim = len(pdf.multi_cell(42, 4.6, clean_txt(f" {dim}"), split_only=True)) * 4.6
+        h_est = len(pdf.multi_cell(73, 4.6, clean_txt(f" {est}"), split_only=True)) * 4.6
+        h_imp = len(pdf.multi_cell(75, 4.6, clean_txt(imp), split_only=True)) * 4.6
+        max_h = max(h_dim, h_est, h_imp, 4.6)
 
         pdf.set_fill_color(*bg)
         pdf.rect(10, y_curr, W, max_h, "F")
 
         pdf.set_xy(10, y_curr)
         pdf.set_text_color(20, 50, 135)
-        pdf.multi_cell(42, 4.8, clean_txt(f" {dim}"))
+        pdf.multi_cell(42, 4.6, clean_txt(f" {dim}"))
 
         pdf.set_xy(52, y_curr)
         pdf.set_text_color(51, 65, 85)
-        pdf.multi_cell(73, 4.8, clean_txt(f" {est}"))
+        pdf.multi_cell(73, 4.6, clean_txt(f" {est}"))
 
         pdf.set_xy(125, y_curr)
         pdf.set_text_color(20, 50, 135)
-        pdf.multi_cell(75, 4.8, clean_txt(imp), align="J")
+        pdf.multi_cell(75, 4.6, clean_txt(imp), align="J")
 
         pdf.set_y(y_curr + max_h)
 
@@ -429,8 +438,8 @@ def gerar_pdf_bytes(dados):
     ]
 
     for tit, desc in acoes:
-        pdf.set_fill_color(248, 250, 252)
-        pdf.set_draw_color(186, 230, 253)
+        pdf.set_fill_color(255, 255, 255)
+        pdf.set_draw_color(20, 50, 135)
         pdf.rect(10, pdf.get_y(), W, 10.5, "DF")
 
         pdf.set_font("Helvetica", "B", 9)
@@ -443,11 +452,10 @@ def gerar_pdf_bytes(dados):
         pdf.set_x(12)
         pdf.cell(0, 4, clean_txt(desc), new_x="LMARGIN", new_y="NEXT")
 
-        # Mais espaço para baixo entre os blocos do plano de ação
-        pdf.set_y(pdf.get_y() + 5.5)
+        pdf.set_y(pdf.get_y() + 2.5)
 
-    # Frase Final de Impacto Posicionada Mais Próxima do Rodapé
-    pdf.ln(14)
+    # Frase Final de Impacto Atualizada
+    pdf.ln(10)
 
     pdf.set_font("Helvetica", "B", 12)
     pdf.set_text_color(20, 50, 135)
@@ -463,26 +471,13 @@ def gerar_pdf_bytes(dados):
 
     pdf.set_font("Helvetica", "", 9.5)
     pdf.set_text_color(51, 65, 85)
-    pdf.cell(
-        W,
-        4.8,
-        clean_txt(
-            "Agendamos uma visita, entendemos seus objetivos e montamos um plano personalizado."
-        ),
-        align="C",
-        new_x="LMARGIN",
-        new_y="NEXT",
+    
+    # Texto unificado atualizado
+    txt_chamada = (
+        "Vamos agendar uma visita, entender seus objetivos e montar um plano personalizado. "
+        "O Tour 360° + estratégia de avaliações pode triplicar suas buscas."
     )
-    pdf.cell(
-        W,
-        4.8,
-        clean_txt(
-            "O Tour 360° + estratégia de avaliações pode triplicar suas buscas."
-        ),
-        align="C",
-        new_x="LMARGIN",
-        new_y="NEXT",
-    )
+    pdf.multi_cell(W, 4.8, clean_txt(txt_chamada), align="C")
 
     pdf_output_path = "diagnostico_tour360vr.pdf"
     pdf.output(pdf_output_path)
