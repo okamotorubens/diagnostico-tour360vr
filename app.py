@@ -263,6 +263,7 @@ def gerar_pdf_bytes(dados):
     h_card = 26.0
 
     # Box 1: Otimização do Perfil
+        # Card 1: Otimização
     pdf.rect(10, y_cards, w_card, h_card, "DF")
     pdf.set_font("Helvetica", "B", 8)
     pdf.set_text_color(20, 50, 135)
@@ -284,7 +285,6 @@ def gerar_pdf_bytes(dados):
     pdf.set_xy(12, y_cards + 14.5) 
     pdf.cell(w_card - 4, 3.5, clean_txt(nivel_maturidade), align="C")
 
-
     # Box 2: Nota e Reputação
     pdf.set_fill_color(255, 255, 255)
     pdf.set_draw_color(20, 50, 135)
@@ -302,9 +302,6 @@ def gerar_pdf_bytes(dados):
     
     x_estrelas = (15 + w_card) + (w_card - 32.5) / 2
     desenhar_estrelas_destaque(pdf, 12 + w_card, y_cards + 14.5, rating_raw)
-
-    pdf.set_font("Helvetica", "", 7); pdf.set_text_color(100, 100, 100)
-    pdf.set_xy(73.3, y + 22); pdf.cell(w, 4, f"Base: {reviews} avaliações", align="C")
     
     pdf.set_font("Helvetica", "", 7.5)
     pdf.set_text_color(51, 65, 85)
