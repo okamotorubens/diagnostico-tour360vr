@@ -340,15 +340,6 @@ def gerar_pdf_bytes(dados):
     pdf.cell(w_card - 4, 3.5, clean_txt("Ativação Street View"))
 
     pdf.set_y(y_cards + 30)
-
-    # Dicionário simples de tradução
-    traducao_cat = {
-        "lodging": "Hospedagem", "establishment": "Estabelecimento", 
-        "point_of_interest": "Ponto de Interesse", "motel": "Motel"
-    }
-    # Na hora de gerar o texto das categorias:
-    cats_lista = [traducao_cat.get(t, t.capitalize()) for t in tipos[:2]]
-    categorias_texto = ", ".join(cats_lista)
     
     # Matriz de Diagnóstico
     pdf.set_font("Helvetica", "B", 11)
@@ -388,6 +379,25 @@ def gerar_pdf_bytes(dados):
     
     # Captura real de categorias
     tipos = dados.get("types", [])
+      
+    # --- [COLE O DICIONÁRIO E A TRADUÇÃO AQUI] ---
+    traducao_cat = {
+        "lodging": "Hospedagem", 
+        "establishment": "Estabelecimento", 
+        "point_of_interest": "Ponto de Interesse", 
+        "motel": "Motel",
+        "restaurant": "Restaurante",
+        "cafe": "Café"
+    }
+    cats_lista = [traducao_cat.get(t, t.replace("_", " ").capitalize()) for t in tipos[:2]]
+    categorias_texto = ", ".join(cats_lista)
+    # ---------------------------------------------
+    
+    # Agora a lista itens usará a variável categorias_texto definida acima
+    itens = [
+        ("Completude", status_completude, "Perfil incompleto reduz a probabilidade de conversão."),
+        # ... (restante do código)
+    
     # Filtra os tipos para mostrar algo legível, ex: limite de 2 categorias
     categorias_texto = ", ".join([t.replace("_", " ") for t in tipos[:2]]) if tipos else "Padrão"
     itens = [
