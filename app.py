@@ -255,34 +255,24 @@ def gerar_pdf_bytes(dados):
     h_card = 26.0
 
     # Box 1: Otimização do Perfil
-    pdf.set_fill_color(255, 255, 255)
-    pdf.set_draw_color(20, 50, 135)
+    # Card 1: Otimização
     pdf.rect(10, y_cards, w_card, h_card, "DF")
-
     pdf.set_font("Helvetica", "B", 8)
     pdf.set_text_color(20, 50, 135)
     pdf.set_xy(12, y_cards + 2.0)
     pdf.cell(w_card - 4, 3.5, clean_txt("OTIMIZAÇÃO DO PERFIL"))
-
     pdf.set_font("Helvetica", "B", 18)
     pdf.set_text_color(249, 115, 22)
     pdf.set_xy(12, y_cards + 6.0)
-    score_str = str(score)
-    pdf.cell(pdf.get_string_width(score_str) + 1, 6, score_str)
-
+    pdf.cell(20, 6, str(score))
     pdf.set_font("Helvetica", "B", 11)
-    pdf.set_text_color(20, 50, 135)
-    pdf.cell(20, 6, "/100")
-
-    pdf.set_fill_color(226, 232, 240)
-    pdf.rect(12, y_cards + 13.5, w_card - 8, 3.2, "F")
-    pdf.set_fill_color(20, 50, 135)
-    pdf.rect(12, y_cards + 13.5, ((w_card - 8) * score / 100), 3.2, "F")
-
-    pdf.set_font("Helvetica", "", 7.5)
-    pdf.set_text_color(100, 116, 139)
-    pdf.set_xy(12, y_cards + 19.5)
-    pdf.cell(w_card - 4, 3.5, clean_txt("Margem para crescimento local"))
+    pdf.cell(-15, 6, "/100") # Ajuste fino no alinhamento
+    
+    # Maturidade corrigida para não sobrepor
+    pdf.set_font("Helvetica", "B", 8)
+    pdf.set_text_color(*status_cor)
+    pdf.set_xy(12, y_cards + 14.5) 
+    pdf.cell(w_card - 4, 3.5, clean_txt(nivel_maturidade), align="C")    
     
   # --- [INÍCIO DA ALTERAÇÃO] ---
     pdf.set_font("Helvetica", "B", 8)
@@ -387,13 +377,20 @@ def gerar_pdf_bytes(dados):
         if reviews_count < 40
         else f"Nota {rating} baseada em {reviews} avaliações."
     )
-
+    # Captura real de dados
+    all_photos = dados.get("photos", [])
+    total_fotos = len(all_photos) # Número real retornado pela API
+    
+    # Captura real de categorias
+    tipos = dados.get("types", [])
+    # Filtra os tipos para mostrar algo legível, ex: limite de 2 categorias
+    categorias_texto = ", ".join([t.replace("_", " ") for t in tipos[:2]]) if tipos else "Padrão"
     itens = [
         ("Completude", status_completude, "Perfil incompleto transmite falta de profissionalismo e reduz a probabilidade de conversão de visitantes."),
         ("Reputação", f"Nota {rating} ({reviews} avaliações).", "Reputação vulnerável; base pequena limita prova social perante concorrentes."),
         ("Consistência de NAP", "Dados de endereço e telefone ativos.", "Informações corretas evitam perdas por buscas frustradas."),
-        ("Categorias", "1 categoria cadastrada (Sem secundárias).", "Falta de categorias secundárias limita a visibilidade regional."),
-        ("Fotos", f"{photos_count} fotos disponíveis.", "Poucas fotos impedem a avaliação do espaço pelo cliente."),
+        ("Categorias", categorias_texto, "Falta de categorias secundárias limita a visibilidade regional."),
+        ("Fotos", f"{photos_count} fotos encontradas.", "Poucas fotos impedem a avaliação do espaço pelo cliente."),
         ("Horários", status_horarios, "Informação correta evita perda de clientes no atendimento."),
         ("Posts / Novidades", "Sem publicações recentes (Perfil estático).", "Perfil estático não destaca ofertas nem novidades do local."),
         ("Presença 360", "Nenhum Tour 360° detectado.", "Perdem-se conversões por falta de experiência imersiva 360."),
