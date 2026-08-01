@@ -332,7 +332,7 @@ def gerar_pdf_bytes(dados):
     pdf.cell(20, 6, " (AUSENTE)")
 
     pdf.set_font("Helvetica", "", 7.5)
-    pdf.set_text_color(100, 116, 139)
+    pdf.set_text_color(20, 50, 135)
     pdf.set_xy(12 + (w_card * 2), y_cards + 19.5)
     pdf.cell(w_card - 4, 3.5, clean_txt("Ativação Street View"), align="C")
 
