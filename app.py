@@ -205,7 +205,7 @@ def gerar_pdf_bytes(dados):
         dic = {"lodging": "Hospedagem", "establishment": "Estabelecimento", "point_of_interest": "Ponto de Interesse", "motel": "Motel"}
         return dic.get(cat, cat.replace("_", " ").capitalize())
     
-    categorias_texto = ", ".join([traduzir(t) for t in tipos[:2]])
+    categorias_texto = ", ".join([traduzir(t) for t in tipos[:4]])
     # --- [INÍCIO DA ALTERAÇÃO] ---
     opening_hours_data = dados.get("opening_hours", {})
     weekday_text = opening_hours_data.get("weekday_text", [])
@@ -498,7 +498,7 @@ if btn and empresa and cidade:
             dados = buscar_dados_google(empresa, cidade, api_key)
             if dados:
                 pdf_file = gerar_pdf_bytes(dados)
-                st.success("Diagnóstico gerado com sucesso!")
+                st.success("Relatório gerado com sucesso!")
 
                 nome_limpo = dados.get("name", empresa).strip()
                 file_download_name = f"Diagnóstico da Ficha - {nome_limpo}.pdf"
