@@ -197,27 +197,35 @@ def gerar_pdf_bytes(dados):
     editorial = dados.get("editorial_summary", {}).get("overview", "")
     has_hours = "Cadastrado" if dados.get("opening_hours") else "Ausente/Incompleto"
     score = calcular_score_critico(dados)
-    # Adicione este bloco na função gerar_pdf_bytes
-    if score >= 75:
-        nivel_maturidade = "AUTORIDADE DIGITAL"
-        status_cor = (34, 197, 94) # Verde
-    elif score >= 50:
-        nivel_maturidade = "EM EVOLUÇÃO"
-        status_cor = (234, 179, 8) # Amarelo
-    else:
-        nivel_maturidade = "EMERGENTE"
-        status_cor = (239, 68, 68) # Vermelho
-    # --- COLE AQUI A LÓGICA DE COMPLETUDE ---
+    
+    # --- [INÍCIO DA ALTERAÇÃO] ---
+    opening_hours_data = dados.get("opening_hours", {})
+    weekday_text = opening_hours_data.get("weekday_text", [])
     editorial = dados.get("editorial_summary", {}).get("overview", "")
+    
+    # Lógica de Horários (Padrão Google Maps)
+    if weekday_text:
+        is_24h = any("24 horas" in txt.lower() or "open 24 hours" in txt.lower() for txt in weekday_text)
+        status_horarios = "Aberto 24 Horas" if is_24h else "Horários configurados"
+    else:
+        status_horarios = "Horários ausentes"
+
+    # Lógica de Completude
     faltam = []
     if not website: faltam.append("site")
     if not editorial: faltam.append("descrição")
-    if not telefone or telefone == "N/A": faltam.append("telefone")
-    
+    if not telefone or telefone == "Não informado": faltam.append("telefone")
     status_completude = f"Faltam: {', '.join(faltam)}" if faltam else "Cadastro completo"
-    status_horarios = "Horários configurados" if dados.get("opening_hours") else "Horários ausentes"
-    # ----------------------------------------
 
+    # Lógica de Maturidade Digital
+    if score >= 75:
+        nivel_maturidade, status_cor = "AUTORIDADE DIGITAL", (34, 197, 94)
+    elif score >= 50:
+        nivel_maturidade, status_cor = "EM EVOLUÇÃO", (234, 179, 8)
+    else:
+        nivel_maturidade, status_cor = "EMERGENTE", (239, 68, 68)
+    # --- [FIM DA ALTERAÇÃO] ---
+    
     W = pdf.epw
 
     # Quadro da Empresa
@@ -276,12 +284,12 @@ def gerar_pdf_bytes(dados):
     pdf.set_xy(12, y_cards + 19.5)
     pdf.cell(w_card - 4, 3.5, clean_txt("Margem para crescimento local"))
     
-    # --- COLE AQUI A EXIBIÇÃO DA MATURIDADE ---
-    pdf.set_font("Helvetica", "B", 9)
+  # --- [INÍCIO DA ALTERAÇÃO] ---
+    pdf.set_font("Helvetica", "B", 8)
     pdf.set_text_color(*status_cor)
-    pdf.set_xy(12, y_cards + 21.5)
-    pdf.cell(w_card - 4, 3.5, clean_txt(nivel_maturidade), align="C")
-    # -------------------------------------------
+    pdf.set_xy(12, y_cards + 19.5)
+    pdf.cell(w_card - 8, 3.5, clean_txt(nivel_maturidade), align="C")
+    # --- [FIM DA ALTERAÇÃO] ---
     
     # Card 2: Reputação
     pdf.rect(10 + w_card, y_cards, w_card, h_card, "DF")
