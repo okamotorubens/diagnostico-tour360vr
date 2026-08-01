@@ -29,7 +29,7 @@ with st.form("form_busca"):
     with col2:
         cidade = st.text_input("Cidade / Estado:", placeholder="Ex: Brodowski / SP")
     
-    btn = st.form_submit_button("Gerar Relatório Executivo em PDF")
+    btn = st.form_submit_button("Gerar Relatório")
 
 
 def clean_txt(txt):
@@ -505,7 +505,7 @@ if btn and empresa and cidade:
 
                 with open(pdf_file, "rb") as f:
                     st.download_button(
-                        label="📥 Baixar Relatório Executivo (PDF)",
+                        label="📥 Baixar Relatório (PDF)",
                         data=f,
                         file_name=file_download_name,
                         mime="application/pdf",
