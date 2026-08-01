@@ -1,4 +1,5 @@
 import datetime
+import math
 import requests
 import streamlit as st
 from fpdf import FPDF
@@ -10,7 +11,6 @@ st.set_page_config(
 st.title("📍 Gerador de Diagnóstico Google Meu Negócio")
 st.subheader("Padrão Executivo - Tour360vr")
 
-# Recupera a chave dos Secrets do Streamlit Cloud
 try:
     api_key = st.secrets["GOOGLE_API_KEY"]
 except Exception:
@@ -54,8 +54,7 @@ def buscar_dados_google(empresa, cidade, key):
 
 
 def calcular_score_critico(dados):
-    """Calcula uma pontuação crítica e realista de otimização de perfil"""
-    score = 25  # Base inicial rígida
+    score = 25
 
     if dados.get("website"):
         score += 15
@@ -97,7 +96,7 @@ def calcular_score_critico(dados):
 class PDFExecutivo(FPDF):
 
     def header(self):
-        # Tarja Azul #143287 (RGB: 20, 50, 135) - Altura 28mm
+        # Tarja Azul #143287
         self.set_fill_color(20, 50, 135)
         self.rect(0, 0, 210, 28, "F")
 
@@ -113,7 +112,7 @@ class PDFExecutivo(FPDF):
         self.set_y(16)
         self.cell(0, 4, clean_txt("DIAGNÓSTICO E AUDITORIA GOOGLE MEU NEGÓCIO"), align="C", new_x="LMARGIN", new_y="NEXT")
 
-        # Data formatada
+        # Data no canto direito
         self.set_font("Helvetica", "B", 8.5)
         self.set_text_color(224, 242, 254)
         self.set_xy(130, 20)
@@ -127,52 +126,49 @@ class PDFExecutivo(FPDF):
         self.set_y(32)
 
     def footer(self):
-        # Tarja Azul Fina no Rodapé #143287
+        # Tarja Azul no Rodapé #143287
         self.set_fill_color(20, 50, 135)
         self.rect(0, 285, 210, 12, "F")
 
-        self.set_y(-9)
+        self.set_y(-8.5)
         self.set_font("Helvetica", "B", 8.5)
-
-        # Largura total calculada do bloco: ~163mm. Início em X = 23.5mm centraliza perfeitamente em 210mm.
-        self.set_x(23.5)
-
-        self.set_text_color(224, 242, 254)
-        self.cell(42, 5, clean_txt("contato@tour360vr.com.br"), align="C", link="mailto:contato@tour360vr.com.br")
-
         self.set_text_color(255, 255, 255)
-        self.cell(4, 5, clean_txt("·"), align="C")
 
-        self.set_text_color(224, 242, 254)
-        self.cell(24, 5, clean_txt("16991332121"), align="C", link="https://wa.me/5516991332121")
-
-        self.set_text_color(255, 255, 255)
-        self.cell(4, 5, clean_txt("·"), align="C")
-
-        self.set_text_color(224, 242, 254)
-        self.cell(31, 5, clean_txt("tour360vr.com.br"), align="C", link="https://tour360vr.com.br/")
-
-        self.set_text_color(255, 255, 255)
-        self.cell(4, 5, clean_txt("·"), align="C")
-        self.cell(32, 5, clean_txt("Ribeirão Preto - SP"), align="C")
+        # Centralização matemática exata com o delimitador · visível
+        txt_full = "contato@tour360vr.com.br   ·   16991332121   ·   tour360vr.com.br   ·   Ribeirão Preto - SP"
+        self.cell(0, 5, clean_txt(txt_full), align="C", link="https://tour360vr.com.br/")
 
 
-def desenhar_estrelas(pdf, x, y, rating_val):
-    """Desenha 5 estrelas proporcionais: 'H' (cheia) e 'I' (vazia) na fonte ZapfDingbats"""
-    pdf.set_font("ZapfDingbats", "", 12)
+def desenhar_estrela_vetor(pdf, cx, cy, r_out=2.2, r_in=0.9):
+    """Desenha geometricamente uma estrela vetorial perfeita de 5 pontas"""
+    pts = []
+    for i in range(10):
+        r = r_out if i % 2 == 0 else r_in
+        angle = i * math.pi / 5 - math.pi / 2
+        pts.append((cx + r * math.cos(angle), cy + r * math.sin(angle)))
+    
+    # Converte pontos para lista plana
+    poly = []
+    for p in pts:
+        poly.extend(p)
+    pdf.polygon(poly, style="F")
+
+
+def desenhar_estrelas_proporcionais(pdf, x_start, y_center, rating_val):
+    """Desenha 5 estrelas vetoriais cheias (amarelas) ou vazias (cinzas)"""
     try:
         rating_num = round(float(rating_val))
     except (ValueError, TypeError):
         rating_num = 0
 
     for k in range(5):
-        pdf.set_xy(x + (k * 5.2), y)
+        cx = x_start + (k * 5.2)
         if k < rating_num:
-            pdf.set_text_color(245, 158, 11)  # Amarelo Ouro (#f59e0b)
-            pdf.cell(5, 5, "H")  # Estrela preenchida
+            pdf.set_fill_color(245, 158, 11)  # Amarelo Ouro (#f59e0b)
         else:
-            pdf.set_text_color(203, 213, 225)  # Cinza Claro (#cbd5e1)
-            pdf.cell(5, 5, "I")  # Estrela de contorno/vazia
+            pdf.set_fill_color(203, 213, 225)  # Cinza Claro (#cbd5e1)
+        
+        desenhar_estrela_vetor(pdf, cx, y_center)
 
 
 def gerar_pdf_bytes(dados):
@@ -193,7 +189,7 @@ def gerar_pdf_bytes(dados):
     has_hours = "Cadastrado" if dados.get("opening_hours") else "Ausente/Incompleto"
     score = calcular_score_critico(dados)
 
-    W = pdf.epw  # 190mm de largura útil
+    W = pdf.epw
 
     # Quadro da Empresa
     y_empresa = pdf.get_y()
@@ -250,7 +246,7 @@ def gerar_pdf_bytes(dados):
     pdf.set_xy(12, y_cards + 16.8)
     pdf.cell(w_card - 4, 3.5, clean_txt("Margem para crescimento local"))
 
-    # Box 2: Nota e Reputação
+    # Box 2: Nota e Reputação com Estrelas Vetoriais
     pdf.set_fill_color(248, 250, 252)
     pdf.rect(10 + w_card, y_cards, w_card, 23, "DF")
 
@@ -269,8 +265,8 @@ def gerar_pdf_bytes(dados):
     pdf.set_text_color(20, 50, 135)
     pdf.cell(20, 6, " / 5.0")
 
-    # Desenha estrelas proporcionais (cheias e vazias) na altura da barra de progresso
-    desenhar_estrelas(pdf, 12 + w_card, y_cards + 11.8, rating_raw)
+    # Desenha as estrelas vetoriais na mesma altura da barra de progresso (y = 13.8)
+    desenhar_estrelas_proporcionais(pdf, 14 + w_card, y_cards + 13.8, rating_raw)
 
     pdf.set_font("Helvetica", "", 7.5)
     pdf.set_text_color(51, 65, 85)
