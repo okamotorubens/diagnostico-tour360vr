@@ -198,6 +198,17 @@ def gerar_pdf_bytes(dados):
     has_hours = "Cadastrado" if dados.get("opening_hours") else "Ausente/Incompleto"
     score = calcular_score_critico(dados)
 
+    # --- COLE AQUI A LÓGICA DE COMPLETUDE ---
+    editorial = dados.get("editorial_summary", {}).get("overview", "")
+    faltam = []
+    if not website: faltam.append("site")
+    if not editorial: faltam.append("descrição")
+    if not telefone or telefone == "N/A": faltam.append("telefone")
+    
+    status_completude = f"Faltam: {', '.join(faltam)}" if faltam else "Cadastro completo"
+    status_horarios = "Horários configurados" if dados.get("opening_hours") else "Horários ausentes"
+    # ----------------------------------------
+
     # Lógica de Completude e Horários
     faltam = []
     if not website: faltam.append("site")
@@ -360,14 +371,14 @@ def gerar_pdf_bytes(dados):
     )
 
     itens = [
-        ("Completude do Cadastro", "Site cadastrado" if website else "Dados faltantes reduzem a confiança.", "Perfil incompleto transmite falta de profissionalismo e reduz a probabilidade de conversão de visitantes."),
-        ("Nota e Avaliações", txt_eval_critica, "Reputação vulnerável; base pequena limita prova social perante concorrentes."),
+        ("Completude", status_completude, "Perfil incompleto transmite falta de profissionalismo e reduz a probabilidade de conversão de visitantes."),
+        ("Reputação", f"Nota {rating} ({reviews} avaliações).", "Reputação vulnerável; base pequena limita prova social perante concorrentes."),
         ("Consistência de NAP", "Dados de endereço e telefone ativos.", "Informações corretas evitam perdas por buscas frustradas."),
         ("Categorias", "1 categoria cadastrada (Sem secundárias).", "Falta de categorias secundárias limita a visibilidade regional."),
-        ("Fotos", f"Apenas {photos_count} fotos (Cobertura visual baixa).", "Poucas fotos impedem a avaliação do espaço pelo cliente."),
-        ("Horários", f"Horários de funcionamento: {has_hours}.", "Informação correta evita perda de clientes no atendimento."),
+        ("Fotos", f"{photos_count} fotos disponíveis.", "Poucas fotos impedem a avaliação do espaço pelo cliente."),
+        ("Horários", status_horarios, "Informação correta evita perda de clientes no atendimento."),
         ("Posts / Novidades", "Sem publicações recentes (Perfil estático).", "Perfil estático não destaca ofertas nem novidades do local."),
-        ("Recursos Interativos", "Nenhum tour virtual 360° interativo detectado.", "Perdem-se conversões por falta de experiência imersiva 360."),
+        ("Presença 360", "Nenhum Tour 360° detectado.", "Perdem-se conversões por falta de experiência imersiva 360."),
     ]
 
     pdf.set_font("Helvetica", "", 9)
