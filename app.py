@@ -300,8 +300,12 @@ def gerar_pdf_bytes(dados):
     
     pdf.set_font("Helvetica", "", 7.5)
     pdf.set_text_color(51, 65, 85)
-    pdf.set_xy(10 + w_card, y_cards + 21.0)
-    pdf.cell(w_card, 3.5, clean_txt(f"Com base em {reviews} avaliações"), align="C")
+    pdf.set_xy(12 + w_card, y_cards + 19.5)
+    if reviews_count < 30:
+        pdf.cell(w_card - 4, 3.5, clean_txt(f"Apenas {reviews} avaliações (Base pequena)"))
+    else:
+        pdf.cell(w_card - 4, 3.5, clean_txt(f"Com base em {reviews} avaliações"))
+
 
     # Box 3: Tour Virtual 360°
     pdf.set_fill_color(255, 255, 255)
