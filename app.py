@@ -42,30 +42,15 @@ def buscar_dados_google(empresa, cidade, key):
     res = requests.get(url).json()
 
     if not res.get("results"):
-        return None, []
+        return None
 
     result = res["results"][0]
     place_id = result["place_id"]
-    nome_empresa = result.get("name", empresa)
 
     url_details = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=name,formatted_address,formatted_phone_number,rating,user_ratings_total,photos,website,opening_hours,types&key={key}"
     details = requests.get(url_details).json().get("result", {})
 
-    termo_busca = nome_empresa.split()[0] if len(nome_empresa.split()) > 0 else empresa
-    query_conc = f"{termo_busca} em {cidade}"
-    url_conc = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={query_conc}&key={key}"
-    res_conc = requests.get(url_conc).json().get("results", [])
-
-    concorrentes = []
-    for c in res_conc:
-        if c.get("place_id") != place_id:
-            concorrentes.append(
-                f"{c.get('name')} ({c.get('user_ratings_total', 0)} avaliações)"
-            )
-        if len(concorrentes) >= 3:
-            break
-
-    return details, concorrentes
+    return details
 
 
 def calcular_score(dados):
@@ -113,7 +98,7 @@ class PDFExecutivo(FPDF):
             new_y="NEXT",
         )
 
-        # Data alinhada no canto direito
+        # Data no canto direito
         self.set_font("Helvetica", "B", 8.5)
         self.set_text_color(224, 242, 254)
         self.set_xy(130, 15)
@@ -127,23 +112,23 @@ class PDFExecutivo(FPDF):
         self.set_y(30)
 
     def footer(self):
-        # Tarja Azul Fina no Rodapé #143287 (RGB: 20, 50, 135)
+        # Tarja Azul Fina no Rodapé #143287
         self.set_fill_color(20, 50, 135)
         self.rect(0, 285, 210, 12, "F")
 
         self.set_y(-9)
-        self.set_font("Helvetica", "B", 8.5)
+        self.set_font("Helvetica", "B", 8)
         self.set_text_color(255, 255, 255)
         self.cell(
             0,
             5,
-            clean_txt("Tour360vr   |   WhatsApp: (16) 99133-2121   |   tour360vr.com.br"),
+            clean_txt("Rubens Okamoto  ·  contato@tour360vr.com.br  ·  16991332121  ·  tour360vr.com.br  ·  Ribeirão Preto - SP"),
             align="C",
             link="https://tour360vr.com.br/",
         )
 
 
-def gerar_pdf_bytes(dados, concorrentes):
+def gerar_pdf_bytes(dados):
     pdf = PDFExecutivo()
     pdf.set_margins(10, 6, 10)
     pdf.set_auto_page_break(auto=False)
@@ -158,12 +143,6 @@ def gerar_pdf_bytes(dados, concorrentes):
     website = dados.get("website")
     has_hours = "Completo" if dados.get("opening_hours") else "Incompleto"
     score = calcular_score(dados)
-
-    txt_conc = (
-        ", ".join(concorrentes)
-        if concorrentes
-        else "Concorrentes mapeados na região."
-    )
 
     W = pdf.epw
 
@@ -204,12 +183,12 @@ def gerar_pdf_bytes(dados, concorrentes):
 
     # Score Laranja + Azul
     pdf.set_font("Helvetica", "B", 15)
-    pdf.set_text_color(249, 115, 22)  # Laranja
+    pdf.set_text_color(249, 115, 22)
     pdf.set_xy(12, y_cards + 6)
     score_str = str(score)
     pdf.cell(pdf.get_string_width(score_str) + 1, 5, score_str)
 
-    pdf.set_text_color(20, 50, 135)  # Azul #143287
+    pdf.set_text_color(20, 50, 135)
     pdf.cell(20, 5, "/100")
 
     # Termômetro
@@ -232,14 +211,13 @@ def gerar_pdf_bytes(dados, concorrentes):
     pdf.set_xy(77, y_cards + 2)
     pdf.cell(56, 4, clean_txt("NOTA E REPUTAÇÃO"))
 
-    # Nota Laranja e Azul
     pdf.set_font("Helvetica", "B", 15)
-    pdf.set_text_color(249, 115, 22)  # Laranja
+    pdf.set_text_color(249, 115, 22)
     pdf.set_xy(77, y_cards + 6)
     pdf.cell(pdf.get_string_width(rating) + 1, 5, rating)
 
     pdf.set_font("Helvetica", "B", 11)
-    pdf.set_text_color(20, 50, 135)  # Azul #143287
+    pdf.set_text_color(20, 50, 135)
     pdf.cell(20, 5, " / 5.0")
 
     pdf.set_font("Helvetica", "", 7.5)
@@ -269,7 +247,7 @@ def gerar_pdf_bytes(dados, concorrentes):
 
     pdf.set_y(y_cards + 29)
 
-    # Matriz de Diagnóstico
+    # Matriz de Diagnóstico (8 Itens sem Concorrência)
     pdf.set_font("Helvetica", "B", 10.5)
     pdf.set_text_color(20, 50, 135)
     pdf.cell(
@@ -339,39 +317,43 @@ def gerar_pdf_bytes(dados, concorrentes):
             "Nenhuma foto 360° ou tour virtual detectado.",
             "Perdem-se conversões por falta de experiência imersiva 360.",
         ),
-        (
-            "Presença e Concorrência",
-            f"Concorrentes no ramo: {txt_conc}",
-            "Oportunidade clara de superar a concorrência na região.",
-        ),
     ]
 
     pdf.set_font("Helvetica", "", 8)
     for i, (dim, est, imp) in enumerate(itens):
         bg = (240, 249, 255) if i % 2 == 0 else (255, 255, 255)
-        pdf.set_fill_color(*bg)
-
+        
         y_curr = pdf.get_y()
 
+        # Calcula a altura necessária testando a maior coluna
+        pdf.set_font("Helvetica", "", 8)
+        
+        # Simula alturas para pegar a maior altura de linha (max_h)
+        h_dim = len(pdf.multi_cell(42, 4.8, clean_txt(f" {dim}"), split_only=True)) * 4.8
+        h_est = len(pdf.multi_cell(73, 4.8, clean_txt(f" {est}"), split_only=True)) * 4.8
+        h_imp = len(pdf.multi_cell(75, 4.8, clean_txt(f" {imp}"), split_only=True)) * 4.8
+        max_h = max(h_dim, h_est, h_imp, 4.8)
+
+        # Desenha o retângulo de fundo com a altura EXATA correspondente a esta linha
+        pdf.set_fill_color(*bg)
+        pdf.rect(10, y_curr, W, max_h, "F")
+
+        # Escreve o texto de cada coluna por cima do fundo proporcional
         pdf.set_xy(10, y_curr)
         pdf.set_text_color(20, 50, 135)
-        pdf.multi_cell(42, 4.8, clean_txt(f" {dim}"), fill=True)
-        h1 = pdf.get_y() - y_curr
+        pdf.multi_cell(42, 4.8, clean_txt(f" {dim}"))
 
         pdf.set_xy(52, y_curr)
         pdf.set_text_color(51, 65, 85)
-        pdf.multi_cell(73, 4.8, clean_txt(f" {est}"), fill=True)
-        h2 = pdf.get_y() - y_curr
+        pdf.multi_cell(73, 4.8, clean_txt(f" {est}"))
 
         pdf.set_xy(125, y_curr)
         pdf.set_text_color(185, 28, 28)
-        pdf.multi_cell(75, 4.8, clean_txt(f" {imp}"), fill=True)
-        h3 = pdf.get_y() - y_curr
+        pdf.multi_cell(75, 4.8, clean_txt(f" {imp}"))
 
-        max_h = max(h1, h2, h3, 4.8)
         pdf.set_y(y_curr + max_h)
 
-    pdf.ln(4)
+    pdf.ln(5)
 
     # Plano de Ação
     pdf.set_font("Helvetica", "B", 10.5)
@@ -415,11 +397,11 @@ def gerar_pdf_bytes(dados, concorrentes):
         pdf.set_x(12)
         pdf.cell(0, 4, clean_txt(desc), new_x="LMARGIN", new_y="NEXT")
 
-        # Margem de 6mm entre os blocos
-        pdf.set_y(pdf.get_y() + 6)
+        # Margem exata de 4mm entre os blocos
+        pdf.set_y(pdf.get_y() + 4)
 
-    # Frase Final de Impacto Destaque (Espaçada e Centralizada)
-    pdf.ln(2)
+    # Frase Final de Impacto Destaque
+    pdf.ln(4)
 
     pdf.set_font("Helvetica", "B", 11)
     pdf.set_text_color(20, 50, 135)
@@ -465,10 +447,10 @@ if btn and empresa and cidade:
     if not api_key:
         st.error("Chave da API do Google não configurada nos Secrets.")
     else:
-        with st.spinner("Analisando ficha e mapeando concorrentes do segmento..."):
-            dados, concorrentes = buscar_dados_google(empresa, cidade, api_key)
+        with st.spinner("Analisando ficha e gerando relatório..."):
+            dados = buscar_dados_google(empresa, cidade, api_key)
             if dados:
-                pdf_file = gerar_pdf_bytes(dados, concorrentes)
+                pdf_file = gerar_pdf_bytes(dados)
                 st.success("Diagnóstico gerado com sucesso!")
 
                 with open(pdf_file, "rb") as f:
