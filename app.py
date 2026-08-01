@@ -239,24 +239,23 @@ def gerar_pdf_bytes(dados):
         new_y="NEXT",
     )
 
-    y_cards = y_empresa + 17
-    w_card = 63.3
-    h_card = 27.0
+    y = 40 
+    w = 63.3 
+    h = 27.0
 
     # Card 1: Otimização
-    pdf.set_font("Helvetica", "B", 8)
-    pdf.set_text_color(20, 50, 135)
-    pdf.set_xy(10, y + 2)
-    pdf.cell(w, 4, "OTIMIZAÇÃO DO PERFIL", align="C")
+    pdf.rect(10, y, w, h, "D")
+    pdf.set_font("Helvetica", "B", 8); pdf.set_text_color(20, 50, 135)
+    pdf.set_xy(10, y + 2); pdf.cell(w, 4, "OTIMIZAÇÃO DO PERFIL", align="C")
     
-    pdf.set_font("Helvetica", "B", 18)
+    pdf.set_font("Helvetica", "B", 16)
     pdf.set_text_color(249, 115, 22) # Laranja para a nota
     pdf.set_xy(12, y_cards + 6.0)
-    pdf.cell(12, 6, str(score), align="R") # Nota à direita
+    pdf.cell(w/2 + 5, 6, str(score), align="R") # Nota à direita
     
-    pdf.set_font("Helvetica", "B", 11)
+    pdf.set_font("Helvetica", "B", 10)
     pdf.set_text_color(20, 50, 135) # Azul para o /100
-    pdf.cell(10, 6, "/100")
+    pdf.cell(15, 6, " /100", align="L")
     
     # Maturidade corrigida para não sobrepor
     pdf.set_font("Helvetica", "B", 8)
@@ -268,8 +267,8 @@ def gerar_pdf_bytes(dados):
     pdf.rect(73.3, y, w, h, "D")
     pdf.set_font("Helvetica", "B", 8)
     pdf.set_text_color(249, 115, 22)
-    pdf.set_xy(73.3, y + 8)
-    pdf.cell(w, 6, f"{rating} / 5.0", align="C")
+    pdf.set_xy(73.3, y + 2)
+    pdf.cell(w, 4, f"{rating} / 5.0", align="C")
     
     pdf.set_font("Helvetica", "B", 18)
     pdf.set_text_color(249, 115, 22)
