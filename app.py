@@ -137,7 +137,7 @@ class PDFExecutivo(FPDF):
         self.set_font("Helvetica", "B", 10)  # Fonte do rodapé ampliada para 9pt
 
         # Centralização exata mantendo links individuais
-        self.set_x(22.5)
+        self.get_string_width
 
         self.set_text_color(224, 242, 254)
         self.cell(44, 5, clean_txt("contato@tour360vr.com.br"), align="C", link="mailto:contato@tour360vr.com.br")
@@ -429,7 +429,7 @@ def gerar_pdf_bytes(dados):
         pdf.set_y(pdf.get_y() + 2.5)
 
     # Frase Final de Impacto
-    pdf.ln(10)
+    pdf.ln(09)
     pdf.set_font("Helvetica", "B", 12)
     pdf.set_text_color(20, 50, 135)
     pdf.cell(W, 6, clean_txt("Pronto para elevar sua visibilidade?"), align="C", new_x="LMARGIN", new_y="NEXT")
