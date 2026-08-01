@@ -3,29 +3,40 @@ import requests
 import streamlit as st
 from fpdf import FPDF
 
-# 1. Configuração do App
+# Configuração do Streamlit
 st.set_page_config(page_title="Diagnóstico Google - Tour360vr", page_icon="📍", layout="centered")
+
 st.title("📍 Gerador de Diagnóstico")
 st.title("Google Meu Negócio")
 st.subheader("Tour360vr")
 
-# 2. Configuração API
-try:
-    api_key = st.secrets["GOOGLE_API_KEY"]
-except Exception:
-    api_key = None
+# Secrets
+try: api_key = st.secrets["GOOGLE_API_KEY"]
+except: api_key = None
 
 if not api_key:
     api_key = st.text_input("Digite sua Chave da API Google (Places API):", type="password")
 
-# 3. Formulário
 with st.form("form_busca"):
     col1, col2 = st.columns([3, 2])
     empresa = st.text_input("Nome da Empresa:", placeholder="Ex: Amazone Açaí Shop")
     cidade = st.text_input("Cidade / Estado:", placeholder="Ex: Brodowski / SP")
     btn = st.form_submit_button("Gerar Relatório Executivo em PDF")
 
-# 4. Classe PDF com estrutura modular
+# Funções auxiliares
+def clean(val, default="N/A"):
+    return str(val) if val is not None else default
+
+def buscar_dados(empresa, cidade, key):
+    query = f"{empresa} {cidade}"
+    url = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={query}&key={key}"
+    res = requests.get(url).json()
+    if not res.get("results"): return None
+    p_id = res["results"][0]["place_id"]
+    det_url = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={p_id}&fields=name,formatted_address,rating,user_ratings_total&key={key}"
+    return requests.get(det_url).json().get("result", {})
+
+# PDF Class
 class PDF(FPDF):
     def header(self):
         self.set_fill_color(20, 50, 135)
@@ -38,74 +49,80 @@ class PDF(FPDF):
         self.set_text_color(186, 230, 253)
         self.set_xy(10, 16)
         self.cell(0, 4, "DIAGNÓSTICO E AUDITORIA GOOGLE MEU NEGÓCIO", align="C", new_x="LMARGIN", new_y="NEXT")
-        self.set_xy(130, 20)
-        self.cell(70, 5, datetime.date.today().strftime('%d/%m/%Y'), align="R")
-        self.set_y(35) # Margem superior para começar o conteúdo
 
     def footer(self):
         self.set_fill_color(20, 50, 135)
         self.rect(0, 285, 210, 12, "F")
         self.set_y(-8.5)
-        self.set_font("Helvetica", "B", 9)
+        self.set_font("Helvetica", "B", 8)
         self.set_text_color(224, 242, 254)
         txt = "contato@tour360vr.com.br     ·     16991332121     ·     tour360vr.com.br     ·     Ribeirão Preto - SP"
         self.cell(0, 5, txt, align="C")
 
-# 5. Função de Geração do PDF
-def gerar_relatorio(dados, nome_empresa):
+# Gerador PDF
+def gerar_pdf_final(dados, nome_empresa):
     pdf = PDF()
     pdf.add_page()
     W = pdf.epw
     
-    # Bloco 1: Empresa
+    # 1. Info Empresa
+    y = 35
     pdf.set_fill_color(255, 255, 255)
     pdf.set_draw_color(20, 50, 135)
-    pdf.rect(10, pdf.get_y(), W, 14, "DF")
+    pdf.rect(10, y, W, 14, "DF")
     pdf.set_font("Helvetica", "B", 13)
     pdf.set_text_color(20, 50, 135)
-    pdf.set_xy(13, pdf.get_y() + 1.5)
-    pdf.cell(0, 5, str(dados.get("name", "N/A")).upper(), new_x="LMARGIN", new_y="NEXT")
+    pdf.set_xy(13, y + 2)
+    pdf.cell(0, 5, clean(dados.get("name")).upper(), new_x="LMARGIN", new_y="NEXT")
     pdf.set_font("Helvetica", "", 9)
     pdf.set_text_color(51, 65, 85)
     pdf.set_x(13)
-    pdf.cell(0, 5, f"Endereço: {dados.get('formatted_address', 'N/A')}", new_x="LMARGIN", new_y="NEXT")
-    
-    pdf.ln(5)
+    pdf.cell(0, 5, f"Endereço: {clean(dados.get('formatted_address'))}", new_x="LMARGIN", new_y="NEXT")
 
-    # Bloco 2: Cards
-    y_cards = pdf.get_y()
-    w_box, h_box = 63.3, 30.0
-    for i, t in enumerate(["OTIMIZAÇÃO", "NOTA E REPUTAÇÃO", "TOUR VIRTUAL 360"]):
-        pdf.set_draw_color(20, 50, 135)
+    # 2. Cards (Y fixo para evitar sobreposição)
+    y_cards = y + 20
+    w_box = 63.3
+    h_box = 30
+    titles = ["OTIMIZAÇÃO", "NOTA E REPUTAÇÃO", "TOUR VIRTUAL 360"]
+    for i, t in enumerate(titles):
+        pdf.set_fill_color(255, 255, 255)
         pdf.rect(10 + (i * w_box), y_cards, w_box, h_box, "DF")
         pdf.set_xy(12 + (i * w_box), y_cards + 2)
         pdf.set_font("Helvetica", "B", 8)
         pdf.set_text_color(20, 50, 135)
         pdf.cell(0, 4, t)
-    
-    pdf.set_y(y_cards + h_box + 5)
+        if i == 1: # Estrelas
+            rating = round(float(dados.get("rating", 0)))
+            pdf.set_font("Helvetica", "B", 22)
+            for k in range(5):
+                pdf.set_xy(12 + (i * w_box) + (k * 8), y_cards + 12)
+                pdf.set_text_color(245, 158, 11) if k < rating else pdf.set_text_color(203, 213, 225)
+                pdf.cell(7, 7, "*")
 
-    # Bloco 3: Tabela
+    # 3. Matriz (Y relativo)
+    pdf.set_y(y_cards + h_box + 5)
     pdf.set_font("Helvetica", "B", 11)
     pdf.set_text_color(20, 50, 135)
     pdf.cell(W, 8, "MATRIZ DE DIAGNÓSTICO", new_x="LMARGIN", new_y="NEXT")
+    
+    # Cabeçalho Tabela
     pdf.set_fill_color(20, 50, 135)
     pdf.set_text_color(255, 255, 255)
-    pdf.set_font("Helvetica", "B", 9)
     pdf.cell(40, 7, " Dimensão", fill=True)
     pdf.cell(70, 7, " Estado Atual", fill=True)
     pdf.cell(80, 7, " Impacto", fill=True, new_x="LMARGIN", new_y="NEXT")
     
-    for i, (d, e, imp) in enumerate([("Cadastro", "Ativo", "Aumenta conversão"), ("Avaliações", "Nota 4.5", "Prova social"), ("Fotos", "Baixa", "Envolvimento")]):
+    # Conteúdo Tabela
+    for i, row in enumerate([("Cadastro", "Ativo", "Aumenta conversão"), ("Avaliações", "Nota 4.5", "Prova social"), ("Fotos", "Baixa", "Envolvimento")]):
         pdf.set_fill_color(248, 250, 252) if i % 2 != 0 else pdf.set_fill_color(255, 255, 255)
         pdf.rect(10, pdf.get_y(), W, 10, "FD")
         pdf.set_text_color(51, 65, 85)
         pdf.set_font("Helvetica", "", 9)
-        pdf.cell(40, 10, f" {d}")
-        pdf.cell(70, 10, f" {e}")
-        pdf.cell(80, 10, f" {imp}", new_x="LMARGIN", new_y="NEXT")
+        pdf.cell(40, 10, f" {row[0]}")
+        pdf.cell(70, 10, f" {row[1]}")
+        pdf.cell(80, 10, f" {row[2]}", new_x="LMARGIN", new_y="NEXT")
 
-    # Bloco 4: Plano
+    # 4. Plano Ação
     pdf.ln(5)
     pdf.set_font("Helvetica", "B", 11)
     pdf.set_text_color(20, 50, 135)
@@ -114,7 +131,7 @@ def gerar_relatorio(dados, nome_empresa):
         pdf.rect(10, pdf.get_y(), W, 9, "DF")
         pdf.cell(0, 9, f" {a}", new_x="LMARGIN", new_y="NEXT")
 
-    # Bloco 5: Final
+    # 5. Final
     pdf.ln(10)
     pdf.set_font("Helvetica", "B", 12)
     pdf.cell(W, 6, "Pronto para elevar sua visibilidade?", align="C", new_x="LMARGIN", new_y="NEXT")
@@ -126,15 +143,11 @@ def gerar_relatorio(dados, nome_empresa):
     pdf.output(nome_arquivo)
     return nome_arquivo
 
-# 6. Lógica de execução
 if btn and empresa and cidade:
-    # Simulação de busca
-    url = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={empresa}+{cidade}&key={api_key}"
-    res = requests.get(url).json()
-    if res.get("results"):
-        place_id = res["results"][0]["place_id"]
-        det_url = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=name,formatted_address,rating&key={api_key}"
-        dados = requests.get(det_url).json().get("result", {})
-        pdf_file = gerar_relatorio(dados, empresa)
-        with open(pdf_file, "rb") as f:
-            st.download_button("📥 Baixar PDF", data=f, file_name=pdf_file, mime="application/pdf")
+    dados = buscar_dados(empresa, cidade, api_key)
+    if dados:
+        arquivo = gerar_pdf_final(dados, empresa)
+        with open(arquivo, "rb") as f:
+            st.download_button("📥 Baixar PDF", data=f, file_name=arquivo, mime="application/pdf")
+    else:
+        st.error("Empresa não encontrada.")
