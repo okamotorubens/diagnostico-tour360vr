@@ -353,7 +353,7 @@ def gerar_pdf_bytes(dados):
         ("Nota e Avaliações", txt_eval_critica, "Reputação vulnerável; base pequena limita prova social perante concorrentes."),
         ("Consistência de NAP", "Dados de endereço e telefone ativos.", "Informações corretas evitam perdas por buscas frustradas."),
         ("Categorias", "1 categoria cadastrada (Sem secundárias).", "Falta de categorias secundárias limita a visibilidade regional."),
-        ("Fotos", f"Apenas {photos_count} fotos (Cobertura visual baixa).", "Poucas fotos impedem que visitantes avaliem o ambiente e o espaço visualmente, reduzindo a confiança do cliente."),
+        ("Fotos", f"Apenas {photos_count} fotos (Cobertura visual baixa).", "Poucas fotos impedem a avaliação do espaço pelo cliente."),
         ("Horários", f"Horários de funcionamento: {has_hours}.", "Informação correta evita perda de clientes no atendimento."),
         ("Posts / Novidades", "Sem publicações recentes (Perfil estático).", "Perfil estático não destaca ofertas nem novidades do local."),
         ("Recursos Interativos", "Nenhum tour virtual 360° interativo detectado.", "Perdem-se conversões por falta de experiência imersiva 360."),
@@ -406,7 +406,7 @@ def gerar_pdf_bytes(dados):
     pdf.ln(1.5)
 
     acoes = [
-        ("1. ATIVAÇÃO DE EXPERIÊNCIA IMERSIVA (STREET VIEW)", "Integração do seu espaço à base cartográfica do Google. Transforma a ficha em um ponto de visita virtual."),
+        ("1. ATIVAÇÃO DE EXPERIÊNCIA IMERSIVA 360º (STREET VIEW)", "Integração do seu espaço à base cartográfica do Google. Transforma a ficha em um ponto de visita virtual."),
         ("2. ENSAIO FOTOGRÁFICO PROFISSIONAL", "Fotografias profissionais das instalações, fachada e diferenciais, elevando o valor percebido pelo cliente."),
         ("3. FOMENTO À PROVA SOCIAL ORGÂNICA", "Estratégia para incentivar fotos de clientes reais, aumentando a autenticidade e o engajamento da ficha."),
         ("4. OTIMIZAÇÃO SEO LOCAL & GESTÃO DE REPUTAÇÃO", " Ajuste de categorias secundárias e palavras-chave para ampliar sua visibilidade orgânica regional."),
