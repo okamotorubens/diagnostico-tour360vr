@@ -217,7 +217,7 @@ def gerar_pdf_bytes(dados):
             "FRestaurant": "Restaurante",
             "Academy": "Academia",
             "School": "Escola",
-            "Physiotherapist": "Fisioterapia"
+            "Physiotherapist": "Fisioterapia",
         }
     cats = ", ".join([traduzir(t) for t in dados.get("types", [])[:5]])
     
