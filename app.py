@@ -101,26 +101,26 @@ class PDFExecutivo(FPDF):
         self.set_fill_color(20, 50, 135)
         self.rect(0, 0, 210, 28, "F")
 
-        # Título Descolado do Topo (y = 6.5)
+        # Título
         self.set_font("Helvetica", "B", 21)
         self.set_text_color(255, 255, 255)
         self.set_xy(10, 6.5)
         self.cell(0, 7, clean_txt("TOUR360VR"), align="C", new_x="LMARGIN", new_y="NEXT")
 
-        # Subtítulo com respiro
+        # Subtítulo
         self.set_font("Helvetica", "B", 8.5)
         self.set_text_color(186, 230, 253)
         self.set_y(16)
         self.cell(0, 4, clean_txt("DIAGNÓSTICO E AUDITORIA GOOGLE MEU NEGÓCIO"), align="C", new_x="LMARGIN", new_y="NEXT")
 
-        # Data alinhada no canto direito
-        self.set_font("Helvetica", "B", 8)
+        # Apenas a Data (sem a palavra "Data:")
+        self.set_font("Helvetica", "B", 8.5)
         self.set_text_color(224, 242, 254)
         self.set_xy(130, 20)
         self.cell(
             70,
             5,
-            clean_txt(f"Data: {datetime.date.today().strftime('%d/%m/%Y')}"),
+            clean_txt(datetime.date.today().strftime('%d/%m/%Y')),
             align="R",
         )
 
@@ -132,48 +132,48 @@ class PDFExecutivo(FPDF):
         self.rect(0, 285, 210, 12, "F")
 
         self.set_y(-9)
-        self.set_font("Helvetica", "B", 8)
+        self.set_font("Helvetica", "B", 8.5)  # Fonte ampliada
 
-        # Centralização exata calculada (X = 14.5mm)
-        self.set_x(14.5)
+        # Centralização precisa calculada para fonte 8.5pt
+        self.set_x(10)
 
         self.set_text_color(255, 255, 255)
-        self.cell(26, 5, clean_txt("Rubens Okamoto"), align="C")
+        self.cell(28, 5, clean_txt("Rubens Okamoto"), align="C")
         self.cell(3, 5, clean_txt("·"), align="C")
 
         self.set_text_color(224, 242, 254)
-        self.cell(42, 5, clean_txt("contato@tour360vr.com.br"), align="C", link="mailto:contato@tour360vr.com.br")
-
-        self.set_text_color(255, 255, 255)
-        self.cell(3, 5, clean_txt("·"), align="C")
-
-        self.set_text_color(224, 242, 254)
-        self.cell(22, 5, clean_txt("16991332121"), align="C", link="https://wa.me/5516991332121")
+        self.cell(45, 5, clean_txt("contato@tour360vr.com.br"), align="C", link="mailto:contato@tour360vr.com.br")
 
         self.set_text_color(255, 255, 255)
         self.cell(3, 5, clean_txt("·"), align="C")
 
         self.set_text_color(224, 242, 254)
-        self.cell(29, 5, clean_txt("tour360vr.com.br"), align="C", link="https://tour360vr.com.br/")
+        self.cell(24, 5, clean_txt("16991332121"), align="C", link="https://wa.me/5516991332121")
 
         self.set_text_color(255, 255, 255)
         self.cell(3, 5, clean_txt("·"), align="C")
-        self.cell(33, 5, clean_txt("Ribeirão Preto - SP"), align="C")
+
+        self.set_text_color(224, 242, 254)
+        self.cell(31, 5, clean_txt("tour360vr.com.br"), align="C", link="https://tour360vr.com.br/")
+
+        self.set_text_color(255, 255, 255)
+        self.cell(3, 5, clean_txt("·"), align="C")
+        self.cell(34, 5, clean_txt("Ribeirão Preto - SP"), align="C")
 
 
 def desenhar_estrelas(pdf, x, y, rating_val):
-    """Desenha 5 estrelas amarelas/cinzas proporcionais à nota"""
-    pdf.set_font("ZapfDingbats", "", 9)
+    """Desenha 5 estrelas amarelas/cinzas na altura da barra de progresso"""
+    pdf.set_font("ZapfDingbats", "", 9.5)
     rating_num = round(float(rating_val))
-    
+
     for k in range(5):
         if k < rating_num:
             pdf.set_text_color(245, 158, 11)  # Amarelo Ouro (#f59e0b)
         else:
             pdf.set_text_color(203, 213, 225)  # Cinza Claro (#cbd5e1)
-            
-        pdf.set_xy(x + (k * 4.2), y)
-        pdf.cell(4, 4, "H")  # Caractere 'H' na fonte ZapfDingbats renderiza uma estrela sólida ★
+
+        pdf.set_xy(x + (k * 4.5), y)
+        pdf.cell(4, 4, "H")  # Caractere 'H' renderiza estrela na fonte ZapfDingbats
 
 
 def gerar_pdf_bytes(dados):
@@ -251,7 +251,7 @@ def gerar_pdf_bytes(dados):
     pdf.set_xy(12, y_cards + 16.8)
     pdf.cell(w_card - 4, 3.5, clean_txt("Margem para crescimento local"))
 
-    # Box 2: Nota e Reputação com Estrelas Amarelas
+    # Box 2: Nota e Reputação com Estrelas Abaixo da Nota (na altura do status)
     pdf.set_fill_color(248, 250, 252)
     pdf.rect(10 + w_card, y_cards, w_card, 23, "DF")
 
@@ -260,18 +260,18 @@ def gerar_pdf_bytes(dados):
     pdf.set_xy(12 + w_card, y_cards + 1.8)
     pdf.cell(w_card - 4, 3.5, clean_txt("NOTA E REPUTAÇÃO"))
 
-    pdf.set_font("Helvetica", "B", 17)
+    pdf.set_font("Helvetica", "B", 18)
     pdf.set_text_color(249, 115, 22)
     pdf.set_xy(12 + w_card, y_cards + 5.2)
     w_nota = pdf.get_string_width(rating) + 1
     pdf.cell(w_nota, 6, rating)
 
-    pdf.set_font("Helvetica", "B", 10.5)
+    pdf.set_font("Helvetica", "B", 11)
     pdf.set_text_color(20, 50, 135)
-    pdf.cell(14, 6, " / 5.0")
+    pdf.cell(20, 6, " / 5.0")
 
-    # Desenha as 5 estrelas amarelas
-    desenhar_estrelas(pdf, 12 + w_card + w_nota + 14, y_cards + 6.2, rating_raw)
+    # Desenha as 5 estrelas amarelas ABAIXO da pontuação
+    desenhar_estrelas(pdf, 12 + w_card, y_cards + 12.0, rating_raw)
 
     pdf.set_font("Helvetica", "", 7.5)
     pdf.set_text_color(51, 65, 85)
@@ -345,7 +345,6 @@ def gerar_pdf_bytes(dados):
         else f"Nota {rating} baseada em {reviews} avaliações."
     )
 
-    # Frase das categorias encurtada e sem espaços indesejados
     itens = [
         (
             "Completude do Cadastro",
@@ -462,10 +461,11 @@ def gerar_pdf_bytes(dados):
         pdf.set_x(12)
         pdf.cell(0, 4, clean_txt(desc), new_x="LMARGIN", new_y="NEXT")
 
-        pdf.set_y(pdf.get_y() + 5.5)
+        # Espaçamento reduzido para 2.5mm entre os blocos
+        pdf.set_y(pdf.get_y() + 2.5)
 
     # Frase Final de Impacto
-    pdf.ln(14)
+    pdf.ln(12)
 
     pdf.set_font("Helvetica", "B", 12)
     pdf.set_text_color(20, 50, 135)
