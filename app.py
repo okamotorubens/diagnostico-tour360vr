@@ -101,27 +101,20 @@ class PDFExecutivo(FPDF):
         self.set_fill_color(20, 50, 135)
         self.rect(0, 0, 210, 26, "F")
 
-        # Título em Negrito + Mais próximo do Subtítulo
+        # Título e Subtítulo Centralizados no Cabeçalho
         self.set_font("Helvetica", "B", 18)
         self.set_text_color(255, 255, 255)
-        self.set_xy(10, 5)
-        self.cell(0, 6, clean_txt("TOUR360VR"), new_x="LMARGIN", new_y="NEXT")
+        self.set_xy(10, 5.5)
+        self.cell(0, 6, clean_txt("TOUR360VR"), align="C", new_x="LMARGIN", new_y="NEXT")
 
-        self.set_font("Helvetica", "B", 8)
+        self.set_font("Helvetica", "B", 8.5)
         self.set_text_color(186, 230, 253)
-        self.set_xy(10, 12.5)
-        self.cell(
-            0,
-            4,
-            clean_txt("DIAGNÓSTICO E AUDITORIA GOOGLE MEU NEGÓCIO"),
-            new_x="LMARGIN",
-            new_y="NEXT",
-        )
+        self.cell(0, 4, clean_txt("DIAGNÓSTICO E AUDITORIA GOOGLE MEU NEGÓCIO"), align="C", new_x="LMARGIN", new_y="NEXT")
 
         # Data alinhada no canto direito
-        self.set_font("Helvetica", "B", 8.5)
+        self.set_font("Helvetica", "B", 8)
         self.set_text_color(224, 242, 254)
-        self.set_xy(130, 17)
+        self.set_xy(130, 18.5)
         self.cell(
             70,
             5,
@@ -129,7 +122,7 @@ class PDFExecutivo(FPDF):
             align="R",
         )
 
-        self.set_y(30)
+        self.set_y(29)
 
     def footer(self):
         # Tarja Azul Fina no Rodapé #143287
@@ -139,7 +132,6 @@ class PDFExecutivo(FPDF):
         self.set_y(-9)
         self.set_font("Helvetica", "B", 8)
 
-        # Rodapé com links mantidos e centralização matemática
         self.set_x(12)
 
         self.set_text_color(255, 255, 255)
@@ -185,29 +177,30 @@ def gerar_pdf_bytes(dados):
 
     W = pdf.epw
 
-    # Quadro da Empresa Completo
+    # Quadro da Empresa sem sobra de espaço abaixo (Altura reduzida para 14.5mm)
     y_empresa = pdf.get_y()
     pdf.set_fill_color(240, 249, 255)
     pdf.set_draw_color(20, 50, 135)
-    pdf.rect(10, y_empresa, W, 18, "DF")
+    pdf.rect(10, y_empresa, W, 14.5, "DF")
 
-    pdf.set_font("Helvetica", "B", 13.5)
+    pdf.set_font("Helvetica", "B", 12.5)
     pdf.set_text_color(20, 50, 135)
-    pdf.set_xy(13, y_empresa + 2)
+    pdf.set_xy(13, y_empresa + 1.8)
     pdf.cell(0, 5, clean_txt(nome.upper()), new_x="LMARGIN", new_y="NEXT")
 
-    pdf.set_font("Helvetica", "", 9)
+    pdf.set_font("Helvetica", "", 8.5)
     pdf.set_text_color(51, 65, 85)
     pdf.set_x(13)
     pdf.cell(
         0,
-        5,
+        4.5,
         clean_txt(f"Endereço: {endereco}  |  Telefone: {telefone}"),
         new_x="LMARGIN",
         new_y="NEXT",
     )
 
-    y_cards = y_empresa + 24
+    # Início imediato dos quadros logo abaixo do bloco da empresa
+    y_cards = y_empresa + 19.5
 
     # Box 1: Otimização do Perfil
     pdf.set_fill_color(248, 250, 252)
@@ -294,7 +287,7 @@ def gerar_pdf_bytes(dados):
     pdf.set_xy(142, y_cards + 14.5)
     pdf.cell(56, 4, clean_txt("Oportunidade de se diferenciar"))
 
-    pdf.set_y(y_cards + 30)
+    pdf.set_y(y_cards + 29)
 
     # Matriz de Diagnóstico
     pdf.set_font("Helvetica", "B", 11)
@@ -329,7 +322,6 @@ def gerar_pdf_bytes(dados):
         else f"Nota {rating} baseada em {reviews} avaliações."
     )
 
-    # Diagnósticos sem espaços em branco extras
     itens = [
         (
             "Completude do Cadastro",
@@ -448,7 +440,7 @@ def gerar_pdf_bytes(dados):
 
         pdf.set_y(pdf.get_y() + 4)
 
-    # Frase Final de Impacto Com Mais Espaçamento Vertical
+    # Frase Final de Impacto Com Espaçamento Ajustado
     pdf.ln(8)
 
     pdf.set_font("Helvetica", "B", 12)
