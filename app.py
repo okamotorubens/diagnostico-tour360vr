@@ -202,10 +202,10 @@ def gerar_pdf_bytes(dados):
     
     tipos = dados.get("types", [])
     def traduzir(cat):
-        dic = {"lodging": "Hospedagem", "establishment": "Estabelecimento", "point_of_interest": "Ponto de Interesse", "motel": "Motel"}
-        return dic.get(cat, cat.replace("_", " ").capitalize())
+        dic = {"lodging": "Hospedagem", "establishment": "Estabelecimento", "point_of_interest": "Ponto de Interesse", "motel": "Motel", "restaurant": "Restaurante"}
+        return dic.get(c, c.replace("_", " ").capitalize())
     
-    categorias_texto = ", ".join([traduzir(t) for t in tipos[:2]])
+   cats = ", ".join([traduzir(t) for t in dados.get("types", [])[:4]])
     # --- [INÍCIO DA ALTERAÇÃO] ---
     opening_hours_data = dados.get("opening_hours", {})
     weekday_text = opening_hours_data.get("weekday_text", [])
