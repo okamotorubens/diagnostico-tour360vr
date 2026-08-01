@@ -196,6 +196,44 @@ def gerar_pdf_bytes(dados):
     has_hours = "Cadastrado" if dados.get("opening_hours") else "Ausente/Incompleto"
     score = calcular_score_critico(dados)
 
+    # Definição das variáveis de fotos e categorias
+    all_photos = dados.get("photos", [])
+    total_fotos = len(all_photos)
+    
+    tipos = dados.get("types", [])
+    def traduzir(cat):
+        dic = {"lodging": "Hospedagem", "establishment": "Estabelecimento", "point_of_interest": "Ponto de Interesse", "motel": "Motel"}
+        return dic.get(cat, cat.replace("_", " ").capitalize())
+    
+    categorias_texto = ", ".join([traduzir(t) for t in tipos[:2]])
+    # --- [INÍCIO DA ALTERAÇÃO] ---
+    opening_hours_data = dados.get("opening_hours", {})
+    weekday_text = opening_hours_data.get("weekday_text", [])
+    editorial = dados.get("editorial_summary", {}).get("overview", "")
+    
+    # Lógica de Horários (Padrão Google Maps)
+    if weekday_text:
+        is_24h = any("24 horas" in txt.lower() or "open 24 hours" in txt.lower() for txt in weekday_text)
+        status_horarios = "Aberto 24 Horas" if is_24h else "Horários configurados"
+    else:
+        status_horarios = "Horários ausentes"
+
+    # Lógica de Completude
+    faltam = []
+    if not website: faltam.append("site")
+    if not editorial: faltam.append("descrição")
+    if not telefone or telefone == "Não informado": faltam.append("telefone")
+    status_completude = f"Faltam: {', '.join(faltam)}" if faltam else "Cadastro completo"
+
+    # Lógica de Maturidade Digital
+    if score >= 75:
+        nivel_maturidade, status_cor = "AUTORIDADE DIGITAL", (34, 197, 94)
+    elif score >= 50:
+        nivel_maturidade, status_cor = "EM EVOLUÇÃO", (234, 179, 8)
+    else:
+        nivel_maturidade, status_cor = "EMERGENTE", (239, 68, 68)
+    # --- [FIM DA ALTERAÇÃO] ---
+
     W = pdf.epw
 
     # Quadro da Empresa
@@ -225,34 +263,28 @@ def gerar_pdf_bytes(dados):
     h_card = 26.0
 
     # Box 1: Otimização do Perfil
-    pdf.set_fill_color(255, 255, 255)
-    pdf.set_draw_color(20, 50, 135)
+        # Card 1: Otimização
     pdf.rect(10, y_cards, w_card, h_card, "DF")
-
     pdf.set_font("Helvetica", "B", 8)
     pdf.set_text_color(20, 50, 135)
-    pdf.set_xy(12, y_cards + 2.0)
-    pdf.cell(w_card - 4, 3.5, clean_txt("OTIMIZAÇÃO DO PERFIL"))
-
+    pdf.set_xy(10, y_cards + 2.0)
+    pdf.cell(w_card, 3.5, clean_txt("OTIMIZAÇÃO DO PERFIL"), align="C")
+    
     pdf.set_font("Helvetica", "B", 18)
     pdf.set_text_color(249, 115, 22)
-    pdf.set_xy(12, y_cards + 6.0)
-    score_str = str(score)
-    pdf.cell(pdf.get_string_width(score_str) + 1, 6, score_str)
+    pdf.set_xy(10, y_cards + 7.0)
+    pdf.cell(w_card, 6, f"{score} / 100", align="C") # Centralizado junto
+    
+    pdf.set_font("Helvetica", "B", 8)
+    pdf.set_text_color(*status_cor)
+    pdf.set_xy(10, y_cards + 15.0)
+    pdf.cell(w_card, 3.5, clean_txt(nivel_maturidade), align="C")
 
-    pdf.set_font("Helvetica", "B", 11)
-    pdf.set_text_color(20, 50, 135)
-    pdf.cell(20, 6, "/100")
-
-    pdf.set_fill_color(226, 232, 240)
-    pdf.rect(12, y_cards + 13.5, w_card - 8, 3.2, "F")
-    pdf.set_fill_color(20, 50, 135)
-    pdf.rect(12, y_cards + 13.5, ((w_card - 8) * score / 100), 3.2, "F")
-
-    pdf.set_font("Helvetica", "", 7.5)
-    pdf.set_text_color(100, 116, 139)
-    pdf.set_xy(12, y_cards + 19.5)
-    pdf.cell(w_card - 4, 3.5, clean_txt("Margem para crescimento local"))
+    # Maturidade corrigida para não sobrepor
+    pdf.set_font("Helvetica", "B", 10)
+    pdf.set_text_color(*status_cor)
+    pdf.set_xy(12, y_cards + 14.5) 
+    pdf.cell(w_card - 4, 3.5, clean_txt(nivel_maturidade), align="C")
 
     # Box 2: Nota e Reputação
     pdf.set_fill_color(255, 255, 255)
