@@ -273,14 +273,7 @@ def gerar_pdf_bytes(dados):
     pdf.set_text_color(*status_cor)
     pdf.set_xy(12, y_cards + 14.5) 
     pdf.cell(w_card - 4, 3.5, clean_txt(nivel_maturidade), align="C")    
-    
-  # --- [INÍCIO DA ALTERAÇÃO] ---
-    pdf.set_font("Helvetica", "B", 8)
-    pdf.set_text_color(*status_cor)
-    pdf.set_xy(12, y_cards + 19.5)
-    pdf.cell(w_card - 8, 3.5, clean_txt(nivel_maturidade), align="C")
-    # --- [FIM DA ALTERAÇÃO] ---
-    
+       
     # Card 2: Reputação
     pdf.rect(10 + w_card, y_cards, w_card, h_card, "DF")
     # ... (continua o restante do código)
