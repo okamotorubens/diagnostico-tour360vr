@@ -202,7 +202,8 @@ def gerar_pdf_bytes(dados):
     
     tipos = dados.get("types", [])
        
-    categorias_texto = ", ".join([traduzir(t) for t in tipos[:5]])
+    cats = ", ".join([traduzir(t) for t in dados.get("types", [])[:5]])
+    
     # --- [INÍCIO DA ALTERAÇÃO] ---
     opening_hours_data = dados.get("opening_hours", {})
     weekday_text = opening_hours_data.get("weekday_text", [])
