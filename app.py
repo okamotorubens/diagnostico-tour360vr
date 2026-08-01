@@ -3,12 +3,12 @@ import requests
 import streamlit as st
 from fpdf import FPDF
 
-# Configuração da Página
-st.set_page_config(page_title="Diagnóstico Google - Tour360vr", page_icon="📍", layout="centered")
+st.set_page_config(
+    page_title="Diagnóstico Google - Tour360vr", page_icon="📍", layout="centered"
+)
 
 st.title("📍 Gerador de Diagnóstico")
-st.title("Google Meu Negócio")
-st.subheader("Tour360vr")
+st.subheader("Google Meu Negócio - Tour360vr")
 
 try:
     api_key = st.secrets["GOOGLE_API_KEY"]
@@ -16,146 +16,399 @@ except Exception:
     api_key = None
 
 if not api_key:
-    api_key = st.text_input("Digite sua Chave da API Google (Places API):", type="password")
+    api_key = st.text_input(
+        "Digite sua Chave da API Google (Places API):", type="password"
+    )
 
 with st.form("form_busca"):
     col1, col2 = st.columns([3, 2])
     with col1:
-        empresa = st.text_input("Nome da Empresa:", placeholder="Ex: Amazone Açaí Shop")
+        empresa = st.text_input(
+            "Nome da Empresa:", placeholder="Ex: Amazone Açaí Shop"
+        )
     with col2:
         cidade = st.text_input("Cidade / Estado:", placeholder="Ex: Brodowski / SP")
+    
     btn = st.form_submit_button("Gerar Relatório Executivo em PDF")
 
+
 def clean_txt(txt):
-    if txt is None: return ""
+    """Trata caracteres acentuados mantendo compatibilidade com FPDF"""
+    if not txt:
+        return ""
     return str(txt).encode("latin-1", "replace").decode("latin-1")
+
 
 def buscar_dados_google(empresa, cidade, key):
     query = f"{empresa} {cidade}"
     url = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={query}&key={key}"
     res = requests.get(url).json()
-    if not res.get("results"): return None
+
+    if not res.get("results"):
+        return None
+
     result = res["results"][0]
     place_id = result["place_id"]
+
     url_details = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=name,formatted_address,formatted_phone_number,rating,user_ratings_total,photos,website,opening_hours,types&key={key}"
-    return requests.get(url_details).json().get("result", {})
+    details = requests.get(url_details).json().get("result", {})
+
+    return details
+
+
+def calcular_score_critico(dados):
+    score = 25
+
+    if dados.get("website"):
+        score += 15
+
+    photos_count = len(dados.get("photos", []))
+    if photos_count >= 25:
+        score += 20
+    elif photos_count >= 10:
+        score += 10
+    elif photos_count >= 5:
+        score += 5
+
+    try:
+        rating = float(dados.get("rating", 0))
+    except (ValueError, TypeError):
+        rating = 0.0
+
+    if rating >= 4.7:
+        score += 15
+    elif rating >= 4.3:
+        score += 10
+    elif rating >= 4.0:
+        score += 5
+
+    reviews = dados.get("user_ratings_total", 0)
+    if reviews >= 150:
+        score += 15
+    elif reviews >= 50:
+        score += 10
+    elif reviews >= 15:
+        score += 5
+
+    if dados.get("opening_hours"):
+        score += 10
+
+    return min(max(score, 30), 85)
+
 
 class PDFExecutivo(FPDF):
+
     def header(self):
+        # Tarja Azul #143287
         self.set_fill_color(20, 50, 135)
         self.rect(0, 0, 210, 28, "F")
+
+        # Título Tour360vr (ampliado)
         self.set_font("Helvetica", "B", 26)
         self.set_text_color(255, 255, 255)
         self.set_xy(10, 5)
         self.cell(0, 8, clean_txt("Tour360vr"), align="C", new_x="LMARGIN", new_y="NEXT")
+
+        # Subtítulo
         self.set_font("Helvetica", "B", 8.5)
         self.set_text_color(186, 230, 253)
         self.set_y(16)
         self.cell(0, 4, clean_txt("DIAGNÓSTICO E AUDITORIA GOOGLE MEU NEGÓCIO"), align="C", new_x="LMARGIN", new_y="NEXT")
+
+        # Data
         self.set_font("Helvetica", "B", 8.5)
         self.set_text_color(224, 242, 254)
         self.set_xy(130, 20)
-        self.cell(70, 5, clean_txt(datetime.date.today().strftime('%d/%m/%Y')), align="R")
+        self.cell(
+            70,
+            5,
+            clean_txt(datetime.date.today().strftime('%d/%m/%Y')),
+            align="R",
+        )
+
         self.set_y(32)
 
     def footer(self):
+        # Tarja Azul no Rodapé #143287
         self.set_fill_color(20, 50, 135)
         self.rect(0, 285, 210, 12, "F")
+
         self.set_y(-8.5)
-        self.set_font("Helvetica", "B", 9)
-        self.set_x(20)
-        self.set_text_color(224, 242, 254)
-        self.cell(45, 5, clean_txt("contato@tour360vr.com.br"), align="C", link="mailto:contato@tour360vr.com.br")
+        self.set_font("Helvetica", "B", 8.5)
         self.set_text_color(255, 255, 255)
-        self.cell(5, 5, clean_txt("·"), align="C")
+
+        # Centralização dos links
+        self.set_x(20.5)
+        self.set_text_color(224, 242, 254)
+        self.cell(44, 5, clean_txt("contato@tour360vr.com.br"), align="C", link="mailto:contato@tour360vr.com.br")
+        self.set_text_color(255, 255, 255)
+        self.cell(4, 5, clean_txt("·"), align="C")
         self.set_text_color(224, 242, 254)
         self.cell(25, 5, clean_txt("16991332121"), align="C", link="https://wa.me/5516991332121")
         self.set_text_color(255, 255, 255)
-        self.cell(5, 5, clean_txt("·"), align="C")
+        self.cell(4, 5, clean_txt("·"), align="C")
         self.set_text_color(224, 242, 254)
-        self.cell(30, 5, clean_txt("tour360vr.com.br"), align="C", link="https://tour360vr.com.br/")
+        self.cell(33, 5, clean_txt("tour360vr.com.br"), align="C", link="https://tour360vr.com.br/")
         self.set_text_color(255, 255, 255)
-        self.cell(5, 5, clean_txt("·"), align="C")
-        self.cell(40, 5, clean_txt("Ribeirão Preto - SP"), align="C")
+        self.cell(4, 5, clean_txt("·"), align="C")
+        self.cell(34, 5, clean_txt("Ribeirão Preto - SP"), align="C")
 
-def desenhar_estrelas(pdf, x, y, rating):
+
+def desenhar_estrelas_destaque(pdf, x_start, y_pos, rating_val):
+    """Exibe estrelas em tamanho super ampliado (22pt)"""
+    try:
+        rating_num = round(float(rating_val))
+    except (ValueError, TypeError):
+        rating_num = 0
+
     pdf.set_font("Helvetica", "B", 22)
-    rating = round(float(rating or 0))
+    
     for k in range(5):
-        pdf.set_xy(x + (k * 7.5), y)
-        pdf.set_text_color(245, 158, 11) if k < rating else pdf.set_text_color(203, 213, 225)
-        pdf.cell(7, 7, clean_txt("*"))
+        pdf.set_xy(x_start + (k * 7.5), y_pos)
+        if k < rating_num:
+            pdf.set_text_color(245, 158, 11)  # Amarelo Ouro (#f59e0b)
+            pdf.cell(7, 7, clean_txt("*"))
+        else:
+            pdf.set_text_color(203, 213, 225)  # Cinza Claro (#cbd5e1)
+            pdf.cell(7, 7, clean_txt("-"))
+
 
 def gerar_pdf_bytes(dados):
     pdf = PDFExecutivo()
     pdf.set_margins(10, 6, 10)
+    pdf.set_auto_page_break(auto=False)
     pdf.add_page()
+
+    nome = dados.get("name", "N/A")
+    endereco = dados.get("formatted_address", "N/A")
+    telefone = dados.get("formatted_phone_number", "Não informado")
+    rating_raw = dados.get("rating", 0.0)
+    rating = str(rating_raw)
+    reviews_count = dados.get("user_ratings_total", 0)
+    reviews = str(reviews_count)
+    photos_count = len(dados.get("photos", []))
+    website = dados.get("website")
+    has_hours = "Cadastrado" if dados.get("opening_hours") else "Ausente/Incompleto"
+    score = calcular_score_critico(dados)
+
     W = pdf.epw
-    
-    # 1. Info Empresa
+
+    # Quadro da Empresa
+    y_empresa = pdf.get_y()
     pdf.set_fill_color(255, 255, 255)
     pdf.set_draw_color(20, 50, 135)
-    pdf.rect(10, pdf.get_y(), W, 14, "DF")
+    pdf.rect(10, y_empresa, W, 14, "DF")
+
     pdf.set_font("Helvetica", "B", 13)
     pdf.set_text_color(20, 50, 135)
-    pdf.set_xy(13, pdf.get_y() + 1.5)
-    pdf.cell(0, 5, clean_txt(dados.get("name", "Empresa").upper()), new_x="LMARGIN", new_y="NEXT")
+    pdf.set_xy(13, y_empresa + 1.5)
+    pdf.cell(0, 5, clean_txt(nome.upper()), new_x="LMARGIN", new_y="NEXT")
+
     pdf.set_font("Helvetica", "", 9)
     pdf.set_text_color(51, 65, 85)
     pdf.set_x(13)
-    pdf.cell(0, 4.2, clean_txt(f"Endereço: {dados.get('formatted_address', 'N/A')}"), new_x="LMARGIN", new_y="NEXT")
+    pdf.cell(
+        0,
+        4.2,
+        clean_txt(f"Endereço: {endereco}  |  Telefone: {telefone}"),
+        new_x="LMARGIN",
+        new_y="NEXT",
+    )
 
-    # 2. Cards
-    y_c = pdf.get_y() + 5
-    w_box = 63.3
-    # Card 1
-    pdf.rect(10, y_c, w_box, 26, "DF")
-    pdf.set_xy(12, y_c + 2); pdf.cell(0, 4, clean_txt("OTIMIZAÇÃO DO PERFIL"))
-    # Card 2
-    pdf.rect(10 + w_box, y_c, w_box, 26, "DF")
-    pdf.set_xy(12 + w_box, y_c + 2); pdf.cell(0, 4, clean_txt("NOTA E REPUTAÇÃO"))
-    desenhar_estrelas(pdf, 14 + w_box, y_c + 10, dados.get("rating", 0))
-    # Card 3
-    pdf.rect(10 + (w_box * 2), y_c, w_box, 26, "DF")
-    pdf.set_xy(12 + (w_box * 2), y_c + 2); pdf.cell(0, 4, clean_txt("TOUR VIRTUAL 360°"))
-    
-    pdf.set_y(y_c + 30)
+    y_cards = y_empresa + 18
+    w_card = 63.3
+    h_card = 26.0
 
-    # 3. Tabela
-    pdf.set_font("Helvetica", "B", 10)
+    # Box 1: Otimização do Perfil
+    pdf.set_fill_color(255, 255, 255)
+    pdf.set_draw_color(20, 50, 135)
+    pdf.rect(10, y_cards, w_card, h_card, "DF")
+    pdf.set_font("Helvetica", "B", 8)
     pdf.set_text_color(20, 50, 135)
-    pdf.cell(W, 8, clean_txt("MATRIZ DE DIAGNÓSTICO"), new_x="LMARGIN", new_y="NEXT")
-    
-    itens = [("Cadastro", "Ativo", "Melhora rankeamento"), ("Avaliações", "Nota 4.5", "Prova social")]
-    for i, (d, e, imp) in enumerate(itens):
-        bg = (248, 250, 252) if i % 2 != 0 else (255, 255, 255)
-        pdf.set_fill_color(*bg)
-        pdf.rect(10, pdf.get_y(), W, 10, "FD")
-        pdf.set_font("Helvetica", "", 9)
-        pdf.cell(40, 10, clean_txt(f" {d}"))
-        pdf.cell(70, 10, clean_txt(f" {e}"))
-        pdf.cell(80, 10, clean_txt(f" {imp}"), new_x="LMARGIN", new_y="NEXT")
+    pdf.set_xy(12, y_cards + 2.0)
+    pdf.cell(w_card - 4, 3.5, clean_txt("OTIMIZAÇÃO DO PERFIL"))
+    pdf.set_font("Helvetica", "B", 18)
+    pdf.set_text_color(249, 115, 22)
+    pdf.set_xy(12, y_cards + 6.0)
+    score_str = str(score)
+    pdf.cell(pdf.get_string_width(score_str) + 1, 6, score_str)
+    pdf.set_font("Helvetica", "B", 11)
+    pdf.set_text_color(20, 50, 135)
+    pdf.cell(20, 6, "/100")
+    pdf.set_fill_color(226, 232, 240)
+    pdf.rect(12, y_cards + 13.5, w_card - 8, 3.2, "F")
+    pdf.set_fill_color(20, 50, 135)
+    pdf.rect(12, y_cards + 13.5, ((w_card - 8) * score / 100), 3.2, "F")
+    pdf.set_font("Helvetica", "", 7.5)
+    pdf.set_text_color(100, 116, 139)
+    pdf.set_xy(12, y_cards + 19.5)
+    pdf.cell(w_card - 4, 3.5, clean_txt("Margem para crescimento local"))
 
-    # 4. Final
-    pdf.ln(10)
+    # Box 2: Nota e Reputação
+    pdf.set_fill_color(255, 255, 255)
+    pdf.set_draw_color(20, 50, 135)
+    pdf.rect(10 + w_card, y_cards, w_card, h_card, "DF")
+    pdf.set_font("Helvetica", "B", 8)
+    pdf.set_text_color(20, 50, 135)
+    pdf.set_xy(12 + w_card, y_cards + 2.0)
+    pdf.cell(w_card - 4, 3.5, clean_txt("NOTA E REPUTAÇÃO"))
+    pdf.set_font("Helvetica", "B", 18)
+    pdf.set_text_color(249, 115, 22)
+    pdf.set_xy(12 + w_card, y_cards + 6.0)
+    w_nota = pdf.get_string_width(rating) + 1
+    pdf.cell(w_nota, 6, rating)
+    pdf.set_font("Helvetica", "B", 11)
+    pdf.set_text_color(20, 50, 135)
+    pdf.cell(20, 6, " / 5.0")
+    desenhar_estrelas_destaque(pdf, 12 + w_card, y_cards + 11.5, rating_raw)
+    pdf.set_font("Helvetica", "", 7.5)
+    pdf.set_text_color(51, 65, 85)
+    pdf.set_xy(12 + w_card, y_cards + 19.5)
+    if reviews_count < 30:
+        pdf.cell(w_card - 4, 3.5, clean_txt(f"Apenas {reviews} avaliações (Base pequena)"))
+    else:
+        pdf.cell(w_card - 4, 3.5, clean_txt(f"Com base em {reviews} avaliações"))
+
+    # Box 3: Tour Virtual 360°
+    pdf.set_fill_color(255, 255, 255)
+    pdf.set_draw_color(20, 50, 135)
+    pdf.rect(10 + (w_card * 2), y_cards, w_card, h_card, "DF")
+    pdf.set_font("Helvetica", "B", 8)
+    pdf.set_text_color(20, 50, 135)
+    pdf.set_xy(12 + (w_card * 2), y_cards + 2.0)
+    pdf.cell(w_card - 4, 3.5, clean_txt("TOUR VIRTUAL 360°"))
+    pdf.set_font("Helvetica", "B", 18)
+    pdf.set_text_color(220, 38, 38)
+    pdf.set_xy(12 + (w_card * 2), y_cards + 6.0)
+    txt_zero = "0"
+    pdf.cell(pdf.get_string_width(txt_zero) + 1, 6, txt_zero)
+    pdf.set_font("Helvetica", "B", 13)
+    txt_fotos = " FOTOS"
+    pdf.cell(pdf.get_string_width(txt_fotos) + 1, 6, txt_fotos)
+    pdf.set_font("Helvetica", "B", 10.5)
+    pdf.set_text_color(20, 50, 135)
+    pdf.cell(20, 6, " (AUSENTE)")
+    pdf.set_font("Helvetica", "", 7.5)
+    pdf.set_text_color(100, 116, 139)
+    pdf.set_xy(12 + (w_card * 2), y_cards + 19.5)
+    pdf.cell(w_card - 4, 3.5, clean_txt("Oportunidade de se diferenciar"))
+
+    pdf.set_y(y_cards + 30)
+
+    # Matriz de Diagnóstico
+    pdf.set_font("Helvetica", "B", 11)
+    pdf.set_text_color(20, 50, 135)
+    pdf.cell(W, 5.5, clean_txt("MATRIZ DE DIAGNÓSTICO E IMPACTO COMERCIAL"), new_x="LMARGIN", new_y="NEXT")
+    pdf.ln(1)
+
+    # Tabela
+    pdf.set_fill_color(20, 50, 135)
+    pdf.set_font("Helvetica", "B", 8.5)
+    pdf.set_text_color(255, 255, 255)
+    pdf.cell(42, 6, clean_txt(" Dimensão"), fill=True)
+    pdf.cell(73, 6, clean_txt(" Estado Atual Identificado"), fill=True)
+    pdf.cell(75, 6, clean_txt(" Impacto no Ranqueamento e Conversão"), fill=True, new_x="LMARGIN", new_y="NEXT")
+
+    itens = [
+        ("Completude do Cadastro", "Site cadastrado" if website else "Sem site próprio ou link de conversão cadastrado.", "Perfil incompleto reduz a conversão de novos clientes."),
+        ("Nota e Avaliações", txt_eval_critica, "Reputação vulnerável; base pequena limita prova social perante concorrentes."),
+        ("Consistência de NAP", "Dados de endereço e telefone ativos.", "Informações corretas evitam perdas por buscas frustradas."),
+        ("Categorias", "1 categoria cadastrada (Sem secundárias).", "Falta de categorias secundárias limita a visibilidade regional."),
+        ("Fotos", f"Apenas {photos_count} fotos (Cobertura visual baixa).", "Poucas fotos impedem a avaliação do espaço pelo cliente."),
+        ("Horários", f"Horários de funcionamento: {has_hours}.", "Informação correta evita perda de clientes no atendimento."),
+        ("Posts / Novidades", "Sem publicações recentes (Perfil estático).", "Perfil estático não destaca ofertas nem novidades do local."),
+        ("Recursos Interativos", "Nenhum tour virtual 360° interativo detectado.", "Perdem-se conversões por falta de experiência imersiva 360."),
+    ]
+
+    pdf.set_font("Helvetica", "", 9)
+    for i, (dim, est, imp) in enumerate(itens):
+        bg = (255, 255, 255) if i % 2 == 0 else (248, 250, 252)
+        y_curr = pdf.get_y()
+        padding_top = 4.0 # Aumentado margem
+        padding_bottom = 4.0 # Aumentado margem
+        
+        h_dim = len(pdf.multi_cell(42, 4.6, clean_txt(f" {dim}"), split_only=True)) * 4.6
+        h_est = len(pdf.multi_cell(73, 4.6, clean_txt(f" {est}"), split_only=True)) * 4.6
+        h_imp = len(pdf.multi_cell(75, 4.6, clean_txt(imp), split_only=True)) * 4.6
+        max_h = max(h_dim, h_est, h_imp, 4.6) + padding_top + padding_bottom
+
+        pdf.set_fill_color(*bg)
+        pdf.rect(10, y_curr, W, max_h, "F")
+        pdf.set_xy(10, y_curr + padding_top)
+        pdf.set_text_color(20, 50, 135)
+        pdf.multi_cell(42, 4.6, clean_txt(f" {dim}"))
+        pdf.set_xy(52, y_curr + padding_top)
+        pdf.set_text_color(51, 65, 85)
+        pdf.multi_cell(73, 4.6, clean_txt(f" {est}"))
+        pdf.set_xy(125, y_curr + padding_top)
+        pdf.set_text_color(20, 50, 135)
+        pdf.multi_cell(75, 4.6, clean_txt(imp), align="J")
+        pdf.set_y(y_curr + max_h)
+
+    pdf.ln(3)
+
+    # Plano de Ação
+    pdf.set_font("Helvetica", "B", 11)
+    pdf.set_text_color(20, 50, 135)
+    pdf.cell(W, 5.5, clean_txt("PLANO DE AÇÃO RECOMENDADO"), new_x="LMARGIN", new_y="NEXT")
+    pdf.ln(1.5)
+
+    acoes = [
+        ("1. IMPLANTAÇÃO DE TOUR VIRTUAL 360° INTERATIVO", "Mapeamento imersivo em alta definição integrado ao Google Maps. Aumenta a permanência na ficha e amplia agendamentos."),
+        ("2. ENSAIO FOTOGRÁFICO PROFISSIONAL", "Fotografias profissionais das instalações, fachada e diferenciais, elevando o valor percebido pelo cliente."),
+        ("3. OTIMIZAÇÃO SEO LOCAL & GESTÃO DE REPUTAÇÃO", "Reestruturação completa de palavras-chave, categorias e estratégia para alavancar avaliações positivas."),
+    ]
+
+    for tit, desc in acoes:
+        pdf.set_fill_color(255, 255, 255)
+        pdf.set_draw_color(20, 50, 135)
+        pdf.rect(10, pdf.get_y(), W, 10.5, "DF")
+        pdf.set_font("Helvetica", "B", 9)
+        pdf.set_text_color(20, 50, 135)
+        pdf.set_xy(12, pdf.get_y() + 1.2)
+        pdf.cell(0, 4, clean_txt(tit), new_x="LMARGIN", new_y="NEXT")
+        pdf.set_font("Helvetica", "", 8.5)
+        pdf.set_text_color(51, 65, 85)
+        pdf.set_x(12)
+        pdf.cell(0, 4, clean_txt(desc), new_x="LMARGIN", new_y="NEXT")
+        pdf.set_y(pdf.get_y() + 2.5)
+
+    # Frase Final
+    pdf.ln(8)
     pdf.set_font("Helvetica", "B", 12)
     pdf.set_text_color(20, 50, 135)
     pdf.cell(W, 6, clean_txt("Pronto para elevar sua visibilidade?"), align="C", new_x="LMARGIN", new_y="NEXT")
-    pdf.ln(2)
-    pdf.set_font("Helvetica", "", 9.5)
-    pdf.multi_cell(W, 5, clean_txt("Vamos agendar uma visita, entender seus objetivos e montar um plano personalizado."), align="C")
     pdf.ln(1)
-    pdf.multi_cell(W, 5, clean_txt("O Tour 360° + estratégia de avaliações pode triplicar suas buscas."), align="C")
+    pdf.set_font("Helvetica", "", 9.5)
+    pdf.set_text_color(51, 65, 85)
+    pdf.multi_cell(W, 4.8, clean_txt("Vamos agendar uma visita, entender seus objetivos e montar um plano personalizado."), align="C")
+    pdf.ln(0.5)
+    pdf.multi_cell(W, 4.8, clean_txt("O Tour 360° + estratégia de avaliações pode triplicar suas buscas."), align="C")
 
-    pdf.output("diagnostico.pdf")
-    return "diagnostico.pdf"
+    pdf_output_path = "diagnostico_tour360vr.pdf"
+    pdf.output(pdf_output_path)
+    return pdf_output_path
+
 
 if btn and empresa and cidade:
-    dados = buscar_dados_google(empresa, cidade, api_key)
-    if dados:
-        pdf_file = gerar_pdf_bytes(dados)
-        st.success("Diagnóstico gerado!")
-        with open(pdf_file, "rb") as f:
-            st.download_button("📥 Baixar PDF", data=f, file_name="diagnostico.pdf", mime="application/pdf")
+    if not api_key:
+        st.error("Chave da API do Google não configurada nos Secrets.")
     else:
-        st.error("Empresa não encontrada.")
+        with st.spinner("Analisando ficha e gerando relatório..."):
+            dados = buscar_dados_google(empresa, cidade, api_key)
+            if dados:
+                pdf_file = gerar_pdf_bytes(dados)
+                st.success("Diagnóstico gerado com sucesso!")
+
+                nome_limpo = dados.get("name", empresa).strip()
+                file_download_name = f"Diagnóstico da Ficha - {nome_limpo}.pdf"
+
+                with open(pdf_file, "rb") as f:
+                    st.download_button(
+                        label="📥 Baixar Relatório Executivo (PDF)",
+                        data=f,
+                        file_name=file_download_name,
+                        mime="application/pdf",
+                    )
+            else:
+                st.error("Empresa não encontrada no Google Maps.")
