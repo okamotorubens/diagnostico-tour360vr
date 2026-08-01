@@ -78,7 +78,7 @@ def calcular_score(dados):
 class PDFExecutivo(FPDF):
 
     def header(self):
-        # Tarja Azul #143287 (RGB: 20, 50, 135)
+        # Tarja Azul #143287 (RGB: 20, 50, 135) - Altura 26mm
         self.set_fill_color(20, 50, 135)
         self.rect(0, 0, 210, 26, "F")
 
@@ -98,10 +98,10 @@ class PDFExecutivo(FPDF):
             new_y="NEXT",
         )
 
-        # Data no canto direito
+        # Data rebaixada para ficar quase rente ao final da tarja azul (y = 18.5)
         self.set_font("Helvetica", "B", 8.5)
         self.set_text_color(224, 242, 254)
-        self.set_xy(130, 15)
+        self.set_xy(130, 18.5)
         self.cell(
             70,
             5,
@@ -119,31 +119,31 @@ class PDFExecutivo(FPDF):
         self.set_y(-9)
         self.set_font("Helvetica", "B", 8)
         
-        # Centraliza o bloco do rodapé com links individuais
-        # Largura total útil ~ 170mm, inicio x = 20mm para ficar perfeitamente centralizado
-        self.set_x(18)
+        # Centralização precisa calculada para a largura total dos itens (~189mm)
+        self.set_x(10.5)
+        
         self.set_text_color(255, 255, 255)
-        self.cell(24, 5, clean_txt("Rubens Okamoto"), align="C")
+        self.cell(26, 5, clean_txt("Rubens Okamoto"), align="C")
         self.cell(4, 5, clean_txt(" · "), align="C")
         
         self.set_text_color(224, 242, 254)
-        self.cell(38, 5, clean_txt("contato@tour360vr.com.br"), align="C", link="mailto:contato@tour360vr.com.br")
-        
-        self.set_text_color(255, 255, 255)
-        self.cell(4, 5, clean_txt(" · "), align="C")
-        
-        self.set_text_color(224, 242, 254)
-        self.cell(20, 5, clean_txt("16991332121"), align="C", link="https://wa.me/5516991332121")
+        self.cell(41, 5, clean_txt("contato@tour360vr.com.br"), align="C", link="mailto:contato@tour360vr.com.br")
         
         self.set_text_color(255, 255, 255)
         self.cell(4, 5, clean_txt(" · "), align="C")
         
         self.set_text_color(224, 242, 254)
-        self.cell(26, 5, clean_txt("tour360vr.com.br"), align="C", link="https://tour360vr.com.br/")
+        self.cell(22, 5, clean_txt("16991332121"), align="C", link="https://wa.me/5516991332121")
         
         self.set_text_color(255, 255, 255)
         self.cell(4, 5, clean_txt(" · "), align="C")
-        self.cell(30, 5, clean_txt("Ribeirão Preto - SP"), align="C")
+        
+        self.set_text_color(224, 242, 254)
+        self.cell(28, 5, clean_txt("tour360vr.com.br"), align="C", link="https://tour360vr.com.br/")
+        
+        self.set_text_color(255, 255, 255)
+        self.cell(4, 5, clean_txt(" · "), align="C")
+        self.cell(32, 5, clean_txt("Ribeirão Preto - SP"), align="C")
 
 
 def gerar_pdf_bytes(dados):
@@ -244,7 +244,7 @@ def gerar_pdf_bytes(dados):
     pdf.set_xy(77, y_cards + 14.5)
     pdf.cell(56, 4, clean_txt(f"Com base em {reviews} avaliações"))
 
-    # Box 3: Tour Virtual 360° (Padronizado nas fontes 17pt e 11pt)
+    # Box 3: Tour Virtual 360° ("0" em 17pt, "FOTOS" em 14pt e "(AUSENTE)" em 11pt)
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(20, 50, 135)
     pdf.rect(140, y_cards, 60, 24, "DF")
@@ -254,16 +254,22 @@ def gerar_pdf_bytes(dados):
     pdf.set_xy(142, y_cards + 2)
     pdf.cell(56, 4, clean_txt("TOUR VIRTUAL 360°"))
 
-    # "0 FOTOS" em Vermelho (17pt) + "(AUSENTE)" em Azul (11pt)
+    # "0" em 17pt Vermelho
     pdf.set_font("Helvetica", "B", 17)
     pdf.set_text_color(220, 38, 38)
     pdf.set_xy(142, y_cards + 5.5)
-    txt_zero = "0 FOTOS"
+    txt_zero = "0"
     pdf.cell(pdf.get_string_width(txt_zero) + 1, 6, txt_zero)
 
+    # "FOTOS" em 14pt Vermelho
+    pdf.set_font("Helvetica", "B", 14)
+    txt_fotos = " FOTOS"
+    pdf.cell(pdf.get_string_width(txt_fotos) + 1, 6, txt_fotos)
+
+    # "(AUSENTE)" em 11pt Azul
     pdf.set_font("Helvetica", "B", 11)
     pdf.set_text_color(20, 50, 135)
-    pdf.cell(25, 6, " (AUSENTE)")
+    pdf.cell(22, 6, " (AUSENTE)")
 
     pdf.set_font("Helvetica", "", 7.5)
     pdf.set_text_color(100, 116, 139)
@@ -353,7 +359,7 @@ def gerar_pdf_bytes(dados):
         pdf.set_font("Helvetica", "", 8.5)
         h_dim = len(pdf.multi_cell(42, 4.8, clean_txt(f" {dim}"), split_only=True)) * 4.8
         h_est = len(pdf.multi_cell(73, 4.8, clean_txt(f" {est}"), split_only=True)) * 4.8
-        h_imp = len(pdf.multi_cell(75, 4.8, clean_txt(imp), split_only=True)) * 4.8  # Sem espaço extra no início
+        h_imp = len(pdf.multi_cell(75, 4.8, clean_txt(imp), split_only=True)) * 4.8
         max_h = max(h_dim, h_est, h_imp, 4.8)
 
         pdf.set_fill_color(*bg)
