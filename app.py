@@ -3,38 +3,32 @@ import requests
 import streamlit as st
 from fpdf import FPDF
 
-st.set_page_config(
-    page_title="Diagnóstico Google - Tour360vr", page_icon="📍",
-    layout="centered"
-)
+# Configuração da página
+st.set_page_config(page_title="Diagnóstico Google - Tour360vr", page_icon="📍", layout="centered")
 
 st.title("📍 Gerador de Diagnóstico")
 st.subheader("Google Meu Negócio - Tour360vr")
 
+# Carregamento da API Key
 try:
     api_key = st.secrets["GOOGLE_API_KEY"]
 except Exception:
     api_key = None
 
 if not api_key:
-    api_key = st.text_input(
-        "Digite sua Chave da API Google (Places API):", type="password"
-    )
+    api_key = st.text_input("Digite sua Chave da API Google (Places API):", type="password")
 
+# Formulário de busca
 with st.form("form_busca"):
     col1, col2 = st.columns([3, 2])
     with col1:
-        empresa = st.text_input(
-            "Nome da Empresa:", placeholder="Ex: Amazone Açaí Shop"
-        )
+        empresa = st.text_input("Nome da Empresa:", placeholder="Ex: Amazone Açaí Shop")
     with col2:
         cidade = st.text_input("Cidade / Estado:", placeholder="Ex: Brodowski / SP")
-    
     btn = st.form_submit_button("Gerar Relatório Executivo em PDF")
 
 def clean_txt(txt):
-    if not txt:
-        return ""
+    if not txt: return ""
     return str(txt).encode("latin-1", "replace").decode("latin-1")
 
 def buscar_dados_google(empresa, cidade, key):
@@ -55,8 +49,7 @@ def calcular_score_critico(dados):
     if photos_count >= 25: score += 20
     elif photos_count >= 10: score += 10
     elif photos_count >= 5: score += 5
-    try:
-        rating = float(dados.get("rating", 0))
+    try: rating = float(dados.get("rating", 0))
     except (ValueError, TypeError): rating = 0.0
     if rating >= 4.7: score += 15
     elif rating >= 4.3: score += 10
