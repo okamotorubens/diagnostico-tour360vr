@@ -3,7 +3,7 @@ import requests
 import streamlit as st
 from fpdf import FPDF
 
-# Configuração do Streamlit
+# Configuração da Página
 st.set_page_config(page_title="Diagnóstico Google - Tour360vr", page_icon="📍", layout="centered")
 
 st.title("📍 Gerador de Diagnóstico")
@@ -22,7 +22,7 @@ with st.form("form_busca"):
     cidade = st.text_input("Cidade / Estado:", placeholder="Ex: Brodowski / SP")
     btn = st.form_submit_button("Gerar Relatório Executivo em PDF")
 
-# Função de limpeza para evitar erro None
+# Função de limpeza para evitar erro
 def clean(val):
     return str(val if val is not None else "")
 
@@ -46,7 +46,7 @@ class PDF(FPDF):
         self.set_font("Helvetica", "B", 8)
         self.set_text_color(224, 242, 254)
         
-        # Centralização dos links individuais
+        # Links Individuais
         self.set_x(10)
         self.cell(45, 5, "contato@tour360vr.com.br", align="C", link="mailto:contato@tour360vr.com.br")
         self.cell(5, 5, "·", align="C")
@@ -54,13 +54,13 @@ class PDF(FPDF):
         self.cell(5, 5, "·", align="C")
         self.cell(30, 5, "tour360vr.com.br", align="C", link="https://tour360vr.com.br/")
         self.cell(5, 5, "·", align="C")
-        self.cell(45, 5, "Ribeirão Preto - SP", align="C")
+        self.cell(40, 5, "Ribeirão Preto - SP", align="C")
 
-def gerar_pdf_versao15(dados, nome_empresa):
+def gerar_pdf_versao_estavel(dados, nome_empresa):
     pdf = PDF()
     pdf.add_page()
     
-    # 1. Info Empresa
+    # 1. Cabeçalho Empresa (Posição fixa igual versão 15)
     pdf.set_fill_color(255, 255, 255)
     pdf.set_draw_color(20, 50, 135)
     pdf.rect(10, 35, 190, 14, "DF")
@@ -71,54 +71,63 @@ def gerar_pdf_versao15(dados, nome_empresa):
     pdf.set_font("Helvetica", "", 9)
     pdf.set_text_color(51, 65, 85)
     pdf.set_xy(13, 44)
-    pdf.cell(0, 5, f"Endereço: {clean(dados.get('formatted_address'))}")
+    # Adicionando telefone que estava na v15
+    tel = clean(dados.get('formatted_phone_number', 'Não informado'))
+    pdf.cell(0, 5, f"Endereço: {clean(dados.get('formatted_address'))} | Telefone: {tel}")
     
-    # 2. Cards
+    # 2. Cards (Posições da v15)
     y_c = 55
     w_b = 63.3
-    titles = ["OTIMIZAÇÃO", "NOTA E REPUTAÇÃO", "TOUR VIRTUAL 360"]
+    titles = ["OTIMIZAÇÃO DO PERFIL", "NOTA E REPUTAÇÃO", "TOUR VIRTUAL 360°"]
     for i, t in enumerate(titles):
-        pdf.rect(10 + (i * w_b), y_c, w_b, 20, "D")
+        pdf.rect(10 + (i * w_b), y_c, w_b, 26, "D")
         pdf.set_xy(12 + (i * w_b), y_c + 2)
         pdf.set_font("Helvetica", "B", 8)
         pdf.set_text_color(20, 50, 135)
         pdf.cell(w_b-4, 4, t)
     
-    # 3. Matriz
-    pdf.set_y(80)
+    # 3. Matriz de Diagnóstico (Posição fixa v15)
+    pdf.set_y(82)
     pdf.set_font("Helvetica", "B", 11)
-    pdf.cell(190, 8, "MATRIZ DE DIAGNÓSTICO", ln=True)
+    pdf.set_text_color(20, 50, 135)
+    pdf.cell(190, 8, "MATRIZ DE DIAGNÓSTICO E IMPACTO COMERCIAL", ln=True)
     pdf.set_fill_color(20, 50, 135)
     pdf.set_text_color(255, 255, 255)
-    pdf.cell(40, 7, " Dimensão", fill=True)
-    pdf.cell(70, 7, " Estado Atual", fill=True)
-    pdf.cell(80, 7, " Impacto", fill=True, ln=True)
+    pdf.cell(42, 7, " Dimensão", fill=True)
+    pdf.cell(73, 7, " Estado Atual Identificado", fill=True)
+    pdf.cell(75, 7, " Impacto no Ranqueamento", fill=True, ln=True)
     
-    # Linha: Site em vez de Website
-    itens = [("Cadastro", "Site ativo", "Aumenta conversão"), ("Avaliações", "Nota 4.5", "Prova social"), ("Fotos", "Baixa", "Envolvimento")]
+    # Correção: Site ativo em vez de Website
+    itens = [
+        ("Cadastro", "Site ativo", "Aumenta conversão"), 
+        ("Avaliações", "Nota 4.5", "Prova social"), 
+        ("Fotos", "Baixa", "Envolvimento")
+    ]
     for i, (d, e, imp) in enumerate(itens):
         pdf.set_fill_color(248, 250, 252) if i % 2 != 0 else pdf.set_fill_color(255, 255, 255)
         pdf.rect(10, pdf.get_y(), 190, 10, "FD")
         pdf.set_text_color(51, 65, 85)
         pdf.set_font("Helvetica", "", 9)
-        pdf.cell(40, 10, f" {d}")
-        pdf.cell(70, 10, f" {e}")
-        pdf.cell(80, 10, f" {imp}", ln=True)
+        pdf.cell(42, 10, f" {d}")
+        pdf.cell(73, 10, f" {e}")
+        pdf.cell(75, 10, f" {imp}", ln=True)
     
     # 4. Plano Ação
     pdf.ln(5)
     pdf.set_font("Helvetica", "B", 11)
     pdf.set_text_color(20, 50, 135)
-    pdf.cell(190, 8, "PLANO DE AÇÃO", ln=True)
-    for a in ["1. Implantação de Tour Virtual 360", "2. Ensaio Fotográfico", "3. Gestão de Reputação"]:
-        pdf.rect(10, pdf.get_y(), 190, 9, "DF")
+    pdf.cell(190, 8, "PLANO DE AÇÃO RECOMENDADO", ln=True)
+    for a in ["1. IMPLANTAÇÃO DE TOUR VIRTUAL 360° INTERATIVO", "2. ENSAIO FOTOGRÁFICO PROFISSIONAL", "3. OTIMIZAÇÃO SEO LOCAL"]:
+        pdf.rect(10, pdf.get_y(), 190, 9, "D")
         pdf.cell(0, 9, f" {a}", ln=True)
         
-    # 5. Final (Subido 1 linha)
-    pdf.ln(8) # Espaço ajustado
+    # 5. Final (Subi 1 linha: ln(7) em vez de ln(8))
+    pdf.ln(7)
     pdf.set_font("Helvetica", "B", 12)
+    pdf.set_text_color(20, 50, 135)
     pdf.cell(190, 6, "Pronto para elevar sua visibilidade?", align="C", ln=True)
     pdf.set_font("Helvetica", "", 9.5)
+    pdf.set_text_color(51, 65, 85)
     pdf.multi_cell(190, 5, "Vamos agendar uma visita, entender seus objetivos e montar um plano personalizado.\nO Tour 360° + estratégia de avaliações pode triplicar suas buscas.", align="C")
 
     nome_arquivo = f"Diagnóstico da ficha - {nome_empresa}.pdf"
@@ -126,13 +135,14 @@ def gerar_pdf_versao15(dados, nome_empresa):
     return nome_arquivo
 
 if btn and empresa and cidade:
+    # URL de busca
     url = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={empresa}+{cidade}&key={api_key}"
     res = requests.get(url).json()
     if res.get("results"):
         place_id = res["results"][0]["place_id"]
-        det_url = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=name,formatted_address,rating&key={api_key}"
+        det_url = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=name,formatted_address,formatted_phone_number,rating&key={api_key}"
         dados = requests.get(det_url).json().get("result", {})
-        pdf_file = gerar_pdf_estavel(dados, empresa)
+        pdf_file = gerar_pdf_versao_estavel(dados, empresa)
         with open(pdf_file, "rb") as f:
             st.download_button("📥 Baixar PDF", data=f, file_name=pdf_file, mime="application/pdf")
     else:
