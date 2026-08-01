@@ -1,4 +1,5 @@
 import datetime
+import math
 import requests
 import streamlit as st
 from fpdf import FPDF
@@ -7,7 +8,9 @@ st.set_page_config(
     page_title="Diagnóstico Google - Tour360vr", page_icon="📍", layout="centered"
 )
 
+# Título e Marca abaixo
 st.title("📍 Gerador de Diagnóstico Google Meu Negócio")
+st.subheader("Tour360vr")
 
 try:
     api_key = st.secrets["GOOGLE_API_KEY"]
@@ -110,7 +113,7 @@ class PDFExecutivo(FPDF):
         self.set_y(16)
         self.cell(0, 4, clean_txt("DIAGNÓSTICO E AUDITORIA GOOGLE MEU NEGÓCIO"), align="C", new_x="LMARGIN", new_y="NEXT")
 
-        # Data no canto direito
+        # Data
         self.set_font("Helvetica", "B", 8.5)
         self.set_text_color(224, 242, 254)
         self.set_xy(130, 20)
@@ -124,36 +127,65 @@ class PDFExecutivo(FPDF):
         self.set_y(32)
 
     def footer(self):
-        # Tarja Azul Fina no Rodapé #143287
+        # Tarja Azul no Rodapé #143287
         self.set_fill_color(20, 50, 135)
         self.rect(0, 285, 210, 12, "F")
 
         self.set_y(-8.5)
         self.set_font("Helvetica", "B", 8.5)
+
+        # Centralização exata com links individuais preservados
+        self.set_x(23.5)
+
+        self.set_text_color(224, 242, 254)
+        self.cell(42, 5, clean_txt("contato@tour360vr.com.br"), align="C", link="mailto:contato@tour360vr.com.br")
+
         self.set_text_color(255, 255, 255)
+        self.cell(4, 5, clean_txt("·"), align="C")
 
-        # Centralização única com link direto
-        txt_full = "contato@tour360vr.com.br   .   16991332121   .   tour360vr.com.br   .   Ribeirão Preto - SP"
-        self.cell(0, 5, clean_txt(txt_full), align="C", link="https://tour360vr.com.br/")
+        self.set_text_color(224, 242, 254)
+        self.cell(24, 5, clean_txt("16991332121"), align="C", link="https://wa.me/5516991332121")
+
+        self.set_text_color(255, 255, 255)
+        self.cell(4, 5, clean_txt("·"), align="C")
+
+        self.set_text_color(224, 242, 254)
+        self.cell(31, 5, clean_txt("tour360vr.com.br"), align="C", link="https://tour360vr.com.br/")
+
+        self.set_text_color(255, 255, 255)
+        self.cell(4, 5, clean_txt("·"), align="C")
+        self.cell(32, 5, clean_txt("Ribeirão Preto - SP"), align="C")
 
 
-def desenhar_estrelas(pdf, x_start, y_pos, rating_val):
-    """Desenha 5 estrelas limpas com caracteres nativos seguros"""
+def desenhar_estrela_vetor_destaque(pdf, cx, cy, r_out=2.6, r_in=1.1):
+    """Desenha estrela vetorial de 5 pontas em maior escala"""
+    pts = []
+    for i in range(10):
+        r = r_out if i % 2 == 0 else r_in
+        angle = i * math.pi / 5 - math.pi / 2
+        pts.append((cx + r * math.cos(angle), cy + r * math.sin(angle)))
+    
+    poly = []
+    for p in pts:
+        poly.extend(p)
+    pdf.polygon(poly, style="F")
+
+
+def desenhar_estrelas_proporcionais(pdf, x_start, y_center, rating_val):
+    """Desenha 5 estrelas amarelas (cheias) e cinzas (vazias) proporcionais à nota"""
     try:
         rating_num = round(float(rating_val))
     except (ValueError, TypeError):
         rating_num = 0
 
-    pdf.set_font("Helvetica", "B", 11)
-    
     for k in range(5):
-        pdf.set_xy(x_start + (k * 4.8), y_pos)
+        cx = x_start + (k * 6.2)
         if k < rating_num:
-            pdf.set_text_color(245, 158, 11)  # Amarelo Ouro
-            pdf.cell(4, 4, clean_txt("*"))
+            pdf.set_fill_color(245, 158, 11)  # Amarelo Ouro (#f59e0b)
         else:
-            pdf.set_text_color(203, 213, 225)  # Cinza Claro
-            pdf.cell(4, 4, clean_txt("-"))
+            pdf.set_fill_color(203, 213, 225)  # Cinza Claro (#cbd5e1)
+        
+        desenhar_estrela_vetor_destaque(pdf, cx, y_center)
 
 
 def gerar_pdf_bytes(dados):
@@ -231,7 +263,7 @@ def gerar_pdf_bytes(dados):
     pdf.set_xy(12, y_cards + 16.8)
     pdf.cell(w_card - 4, 3.5, clean_txt("Margem para crescimento local"))
 
-    # Box 2: Nota e Reputação
+    # Box 2: Nota e Reputação com Estrelas em Destaque
     pdf.set_fill_color(248, 250, 252)
     pdf.rect(10 + w_card, y_cards, w_card, 23, "DF")
 
@@ -250,7 +282,8 @@ def gerar_pdf_bytes(dados):
     pdf.set_text_color(20, 50, 135)
     pdf.cell(20, 6, " / 5.0")
 
-    desenhar_estrelas(pdf, 12 + w_card, y_cards + 11.8, rating_raw)
+    # Desenha estrelas proporcionais em destaque (y = 13.8)
+    desenhar_estrelas_proporcionais(pdf, 14 + w_card, y_cards + 13.8, rating_raw)
 
     pdf.set_font("Helvetica", "", 7.5)
     pdf.set_text_color(51, 65, 85)
@@ -303,7 +336,7 @@ def gerar_pdf_bytes(dados):
     )
     pdf.ln(1)
 
-    # Tabela com Cabeçalho
+    # Tabela
     pdf.set_fill_color(20, 50, 135)
     pdf.set_font("Helvetica", "B", 8.5)
     pdf.set_text_color(255, 255, 255)
