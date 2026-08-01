@@ -1,3 +1,9 @@
+# --- ACESSO À CHAVE (DEBBUGER) ---
+# Vamos forçar a leitura. Se der erro, ele mostrará o erro na tela em vez de esconder.
+api_key = st.secrets["GOOGLE_API_KEY"]
+
+# Se a linha acima funcionar, o código segue. 
+# Se ela falhar, o Streamlit vai te mostrar o erro exato na tela.
 import datetime, requests, streamlit as st
 from fpdf import FPDF
 from io import BytesIO
