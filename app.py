@@ -3,6 +3,7 @@ import requests
 import streamlit as st
 from fpdf import FPDF
 
+# Configuração da Página
 st.set_page_config(page_title="Diagnóstico Google - Tour360vr", page_icon="📍", layout="centered")
 
 st.title("📍 Gerador de Diagnóstico")
@@ -29,10 +30,21 @@ def clean_txt(txt):
     if txt is None: return ""
     return str(txt).encode("latin-1", "replace").decode("latin-1")
 
+def buscar_dados_google(empresa, cidade, key):
+    query = f"{empresa} {cidade}"
+    url = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={query}&key={key}"
+    res = requests.get(url).json()
+    if not res.get("results"): return None
+    result = res["results"][0]
+    place_id = result["place_id"]
+    url_details = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=name,formatted_address,formatted_phone_number,rating,user_ratings_total,photos,website,opening_hours,types&key={key}"
+    return requests.get(url_details).json().get("result", {})
+
 class PDFExecutivo(FPDF):
     def header(self):
         self.set_fill_color(20, 50, 135)
         self.rect(0, 0, 210, 28, "F")
+        # Nome Tour360vr ampliado
         self.set_font("Helvetica", "B", 26)
         self.set_text_color(255, 255, 255)
         self.set_xy(10, 5)
@@ -41,6 +53,8 @@ class PDFExecutivo(FPDF):
         self.set_text_color(186, 230, 253)
         self.set_y(16)
         self.cell(0, 4, clean_txt("DIAGNÓSTICO E AUDITORIA GOOGLE MEU NEGÓCIO"), align="C", new_x="LMARGIN", new_y="NEXT")
+        self.set_font("Helvetica", "B", 8.5)
+        self.set_text_color(224, 242, 254)
         self.set_xy(130, 20)
         self.cell(70, 5, clean_txt(datetime.date.today().strftime('%d/%m/%Y')), align="R")
         self.set_y(32)
@@ -71,41 +85,45 @@ def gerar_pdf_bytes(dados):
     pdf.add_page()
     W = pdf.epw
     
-    # 1. Info Empresa (Seguro contra None)
-    nome = str(dados.get("name", "Empresa"))
-    end = str(dados.get("formatted_address", "Endereço não informado"))
+    # 1. Cabeçalho Empresa
     pdf.set_fill_color(255, 255, 255)
     pdf.set_draw_color(20, 50, 135)
     pdf.rect(10, pdf.get_y(), W, 14, "DF")
     pdf.set_font("Helvetica", "B", 13)
     pdf.set_text_color(20, 50, 135)
     pdf.set_xy(13, pdf.get_y() + 1.5)
-    pdf.cell(0, 5, clean_txt(nome.upper()), new_x="LMARGIN", new_y="NEXT")
+    pdf.cell(0, 5, clean_txt(str(dados.get("name", "EMPRESA")).upper()), new_x="LMARGIN", new_y="NEXT")
     pdf.set_font("Helvetica", "", 9)
     pdf.set_text_color(51, 65, 85)
     pdf.set_x(13)
-    pdf.cell(0, 4.2, clean_txt(f"Endereço: {end}"), new_x="LMARGIN", new_y="NEXT")
+    pdf.cell(0, 4.2, clean_txt(f"Endereço: {dados.get('formatted_address', 'N/A')}"), new_x="LMARGIN", new_y="NEXT")
 
-    # 2. Cards
+    # 2. Cards (Espaço de sobra)
     y_c = pdf.get_y() + 5
     w_box = 63.3
-    boxes = ["OTIMIZAÇÃO", "NOTA E REPUTAÇÃO", "TOUR VIRTUAL 360"]
-    for i, title in enumerate(boxes):
-        pdf.rect(10 + (i * w_box), y_c, w_box, 26, "DF")
-        pdf.set_xy(12 + (i * w_box), y_c + 2); pdf.cell(0, 4, clean_txt(title))
+    h_box = 26.0
+    titles = ["OTIMIZAÇÃO", "NOTA E REPUTAÇÃO", "TOUR VIRTUAL 360"]
+    for i, t in enumerate(titles):
+        pdf.set_fill_color(255, 255, 255)
+        pdf.rect(10 + (i * w_box), y_c, w_box, h_box, "DF")
+        pdf.set_xy(12 + (i * w_box), y_c + 2)
+        pdf.set_font("Helvetica", "B", 8)
+        pdf.cell(0, 4, clean_txt(t))
     
-    pdf.set_y(y_c + 30)
+    pdf.set_y(y_c + h_box + 5)
 
-    # 3. Matriz
+    # 3. Tabela Matriz
     pdf.set_font("Helvetica", "B", 11)
     pdf.set_text_color(20, 50, 135)
     pdf.cell(W, 8, clean_txt("MATRIZ DE DIAGNÓSTICO"), new_x="LMARGIN", new_y="NEXT")
     
-    itens = [("Cadastro", "Ativo", "Melhora rankeamento"), ("Avaliações", "Nota 4.5", "Prova social"), ("NAP", "Consistente", "Buscas locais"), ("Fotos", "Baixa", "Conversão")]
+    itens = [("Cadastro", "Ativo", "Aumenta conversão"), ("Avaliações", "Nota 4.5", "Prova social"), ("Fotos", "Baixa", "Envolvimento")]
     for i, (d, e, imp) in enumerate(itens):
-        pdf.set_fill_color(248, 250, 252) if i % 2 != 0 else pdf.set_fill_color(255, 255, 255)
+        bg = (248, 250, 252) if i % 2 != 0 else (255, 255, 255)
+        pdf.set_fill_color(*bg)
         pdf.rect(10, pdf.get_y(), W, 10, "FD")
         pdf.set_font("Helvetica", "", 9)
+        pdf.set_text_color(51, 65, 85)
         pdf.cell(40, 10, clean_txt(f" {d}"))
         pdf.cell(70, 10, clean_txt(f" {e}"))
         pdf.cell(80, 10, clean_txt(f" {imp}"), new_x="LMARGIN", new_y="NEXT")
@@ -119,8 +137,8 @@ def gerar_pdf_bytes(dados):
         pdf.rect(10, pdf.get_y(), W, 9, "DF")
         pdf.cell(0, 9, clean_txt(f" {a}"), new_x="LMARGIN", new_y="NEXT")
 
-    # 5. Frase Final
-    pdf.ln(10)
+    # 5. Frase Final (Quebrada em partes)
+    pdf.ln(8)
     pdf.set_font("Helvetica", "B", 12)
     pdf.set_text_color(20, 50, 135)
     pdf.cell(W, 6, clean_txt("Pronto para elevar sua visibilidade?"), align="C", new_x="LMARGIN", new_y="NEXT")
