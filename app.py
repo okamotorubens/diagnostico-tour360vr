@@ -57,11 +57,9 @@ def calcular_score_critico(dados):
     """Calcula uma pontuação crítica e realista de otimização de perfil"""
     score = 25  # Base inicial rígida
 
-    # Website próprio
     if dados.get("website"):
         score += 15
 
-    # Cobertura visual (fotos)
     photos_count = len(dados.get("photos", []))
     if photos_count >= 25:
         score += 20
@@ -70,7 +68,6 @@ def calcular_score_critico(dados):
     elif photos_count >= 5:
         score += 5
 
-    # Reputação e nota
     try:
         rating = float(dados.get("rating", 0))
     except (ValueError, TypeError):
@@ -83,7 +80,6 @@ def calcular_score_critico(dados):
     elif rating >= 4.0:
         score += 5
 
-    # Volume de prova social (avaliações)
     reviews = dados.get("user_ratings_total", 0)
     if reviews >= 150:
         score += 15
@@ -92,11 +88,10 @@ def calcular_score_critico(dados):
     elif reviews >= 15:
         score += 5
 
-    # Horários de funcionamento
     if dados.get("opening_hours"):
         score += 10
 
-    return min(max(score, 30), 85)  # Garante nota máxima de 85 sem Tour 360°
+    return min(max(score, 30), 85)
 
 
 class PDFExecutivo(FPDF):
@@ -142,14 +137,32 @@ class PDFExecutivo(FPDF):
 
         self.set_y(-9)
         self.set_font("Helvetica", "B", 8)
-        self.set_text_color(255, 255, 255)
 
-        # Texto unificado e perfeitamente centralizado
-        texto_rodape = (
-            "Rubens Okamoto   ·   contato@tour360vr.com.br   ·   "
-            "16991332121   ·   tour360vr.com.br   ·   Ribeirão Preto - SP"
-        )
-        self.cell(0, 5, clean_txt(texto_rodape), align="C")
+        # Centralização precisa mantendo links individuais
+        self.set_x(10.5)
+
+        self.set_text_color(255, 255, 255)
+        self.cell(26, 5, clean_txt("Rubens Okamoto"), align="C")
+        self.cell(4, 5, clean_txt(" · "), align="C")
+
+        self.set_text_color(224, 242, 254)
+        self.cell(41, 5, clean_txt("contato@tour360vr.com.br"), align="C", link="mailto:contato@tour360vr.com.br")
+
+        self.set_text_color(255, 255, 255)
+        self.cell(4, 5, clean_txt(" · "), align="C")
+
+        self.set_text_color(224, 242, 254)
+        self.cell(22, 5, clean_txt("16991332121"), align="C", link="https://wa.me/5516991332121")
+
+        self.set_text_color(255, 255, 255)
+        self.cell(4, 5, clean_txt(" · "), align="C")
+
+        self.set_text_color(224, 242, 254)
+        self.cell(28, 5, clean_txt("tour360vr.com.br"), align="C", link="https://tour360vr.com.br/")
+
+        self.set_text_color(255, 255, 255)
+        self.cell(4, 5, clean_txt(" · "), align="C")
+        self.cell(32, 5, clean_txt("Ribeirão Preto - SP"), align="C")
 
 
 def gerar_pdf_bytes(dados):
@@ -162,7 +175,8 @@ def gerar_pdf_bytes(dados):
     endereco = dados.get("formatted_address", "N/A")
     telefone = dados.get("formatted_phone_number", "Não informado")
     rating = str(dados.get("rating", "0.0"))
-    reviews = str(dados.get("user_ratings_total", 0))
+    reviews_count = dados.get("user_ratings_total", 0)
+    reviews = str(reviews_count)
     photos_count = len(dados.get("photos", []))
     website = dados.get("website")
     has_hours = "Cadastrado" if dados.get("opening_hours") else "Ausente/Incompleto"
@@ -226,7 +240,7 @@ def gerar_pdf_bytes(dados):
     pdf.set_xy(12, y_cards + 17.5)
     pdf.cell(56, 4, clean_txt("Margem para crescimento local"))
 
-    # Box 2: Nota e Reputação
+    # Box 2: Nota e Reputação Crítica
     pdf.set_fill_color(248, 250, 252)
     pdf.rect(75, y_cards, 60, 24, "DF")
 
@@ -245,10 +259,14 @@ def gerar_pdf_bytes(dados):
     pdf.set_text_color(20, 50, 135)
     pdf.cell(20, 6, " / 5.0")
 
-    pdf.set_font("Helvetica", "", 7.5)
+    # Alerta Crítico sobre a base de avaliações
+    pdf.set_font("Helvetica", "", 7)
     pdf.set_text_color(51, 65, 85)
     pdf.set_xy(77, y_cards + 14.5)
-    pdf.cell(56, 4, clean_txt(f"Com base em {reviews} avaliações"))
+    if reviews_count < 30:
+        pdf.cell(56, 4, clean_txt(f"Apenas {reviews} avaliações (Base pequena)"))
+    else:
+        pdf.cell(56, 4, clean_txt(f"Com base em {reviews} avaliações"))
 
     # Box 3: Tour Virtual 360°
     pdf.set_fill_color(248, 250, 252)
@@ -309,46 +327,52 @@ def gerar_pdf_bytes(dados):
         new_y="NEXT",
     )
 
-    # Diagnósticos claros, críticos e objetivos
+    # Diagnósticos altamente críticos, diretos e reais
+    txt_eval_critica = (
+        f"Nota {rating} com apenas {reviews} avaliações acumuladas."
+        if reviews_count < 40
+        else f"Nota {rating} baseada em {reviews} avaliações."
+    )
+
     itens = [
         (
             "Completude do Cadastro",
-            "Website cadastrado" if website else "Sem website oficial informado no perfil.",
+            "Website cadastrado" if website else "Sem website próprio ou link de conversão cadastrado.",
             "Perfil incompleto reduz a conversão de novos clientes.",
         ),
         (
             "Nota e Avaliações",
-            f"Nota {rating} com {reviews} avaliações acumuladas.",
-            "Reputação ativa fortalece a prova social e gera confiança.",
+            txt_eval_critica,
+            "Reputação vulnerável; base pequena limita prova social perante concorrentes.",
         ),
         (
             "Consistência de NAP",
-            "Dados de endereço e telefone ativos.",
+            "Endereço e telefone principais informados.",
             "Informações corretas evitam perdas por buscas frustradas.",
         ),
         (
             "Categorias",
-            "Apenas categoria principal configurada.",
+            "Apenas 1 categoria configurada (Sem secundárias).",
             "Falta de categorias secundárias limita a visibilidade regional.",
         ),
         (
             "Fotos",
-            f"Apenas {photos_count} fotos identificadas.",
+            f"Apenas {photos_count} fotos (Cobertura visual baixa).",
             "Poucas fotos impedem a avaliação do espaço pelo cliente.",
         ),
         (
             "Horários",
-            f"Horário de funcionamento: {has_hours}.",
+            f"Horários de funcionamento: {has_hours}.",
             "Informação correta evita perda de clientes no atendimento.",
         ),
         (
             "Posts / Novidades",
-            "Sem publicações recentes detectadas.",
+            "Sem publicações ou ofertas recentes (Perfil estático).",
             "Perfil estático não destaca ofertas nem novidades do local.",
         ),
         (
             "Recursos Interativos",
-            "Nenhum tour virtual 360° identificado.",
+            "Nenhum tour virtual 360° interativo detectado.",
             "Perdem-se conversões por falta de experiência imersiva 360.",
         ),
     ]
@@ -382,7 +406,7 @@ def gerar_pdf_bytes(dados):
 
         pdf.set_y(y_curr + max_h)
 
-    pdf.ln(4)
+    pdf.ln(5)
 
     # Plano de Ação
     pdf.set_font("Helvetica", "B", 11)
@@ -481,11 +505,14 @@ if btn and empresa and cidade:
                 pdf_file = gerar_pdf_bytes(dados)
                 st.success("Diagnóstico gerado com sucesso!")
 
+                nome_limpo = dados.get("name", empresa).strip()
+                file_download_name = f"Diagnóstico da Ficha - {nome_limpo}.pdf"
+
                 with open(pdf_file, "rb") as f:
                     st.download_button(
                         label="📥 Baixar Relatório Executivo (PDF)",
                         data=f,
-                        file_name=f"Diagnostico_{dados.get('name')}.pdf",
+                        file_name=file_download_name,
                         mime="application/pdf",
                     )
             else:
