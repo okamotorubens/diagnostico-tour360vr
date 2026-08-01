@@ -247,13 +247,17 @@ def gerar_pdf_bytes(dados):
     pdf.rect(10, y_cards, w_card, h_card, "DF")
     pdf.set_font("Helvetica", "B", 8)
     pdf.set_text_color(20, 50, 135)
-    pdf.set_xy(10, y_cards + 2.0)
-    pdf.cell(w_card, 3.5, clean_txt("OTIMIZAÇÃO DO PERFIL"), align="C")
+    pdf.set_xy(12, y_cards + 2.0)
+    pdf.cell(w_card - 4, 3.5, clean_txt("OTIMIZAÇÃO DO PERFIL"))
     
     pdf.set_font("Helvetica", "B", 18)
-    pdf.set_text_color(249, 115, 22)
-    pdf.set_xy(10, y_cards + 7.0)
-    pdf.cell(w_card, 6, f"{score} / 100", align="C") # Centralizado junto
+    pdf.set_text_color(249, 115, 22) # Laranja para a nota
+    pdf.set_xy(12, y_cards + 6.0)
+    pdf.cell(12, 6, str(score), align="R") # Nota à direita
+    
+    pdf.set_font("Helvetica", "B", 11)
+    pdf.set_text_color(20, 50, 135) # Azul para o /100
+    pdf.cell(10, 6, "/100")
     
     # Maturidade corrigida para não sobrepor
     pdf.set_font("Helvetica", "B", 10)
