@@ -53,26 +53,50 @@ def buscar_dados_google(empresa, cidade, key):
     return details
 
 
-def calcular_score(dados):
-    score = 35
+def calcular_score_critico(dados):
+    """Calcula uma pontuação crítica e realista de otimização de perfil"""
+    score = 25  # Base inicial rígida
+
+    # Website próprio
     if dados.get("website"):
+        score += 15
+
+    # Cobertura visual (fotos)
+    photos_count = len(dados.get("photos", []))
+    if photos_count >= 25:
+        score += 20
+    elif photos_count >= 10:
         score += 10
-    if len(dados.get("photos", [])) >= 10:
-        score += 15
-    elif len(dados.get("photos", [])) >= 3:
-        score += 8
+    elif photos_count >= 5:
+        score += 5
 
-    if dados.get("rating", 0) >= 4.5:
-        score += 15
-    if dados.get("user_ratings_total", 0) >= 30:
-        score += 15
-    elif dados.get("user_ratings_total", 0) >= 10:
-        score += 8
+    # Reputação e nota
+    try:
+        rating = float(dados.get("rating", 0))
+    except (ValueError, TypeError):
+        rating = 0.0
 
+    if rating >= 4.7:
+        score += 15
+    elif rating >= 4.3:
+        score += 10
+    elif rating >= 4.0:
+        score += 5
+
+    # Volume de prova social (avaliações)
+    reviews = dados.get("user_ratings_total", 0)
+    if reviews >= 150:
+        score += 15
+    elif reviews >= 50:
+        score += 10
+    elif reviews >= 15:
+        score += 5
+
+    # Horários de funcionamento
     if dados.get("opening_hours"):
         score += 10
 
-    return min(score, 100)
+    return min(max(score, 30), 85)  # Garante nota máxima de 85 sem Tour 360°
 
 
 class PDFExecutivo(FPDF):
@@ -82,7 +106,6 @@ class PDFExecutivo(FPDF):
         self.set_fill_color(20, 50, 135)
         self.rect(0, 0, 210, 26, "F")
 
-        # Rebaixado para não ficar muito no topo
         self.set_font("Helvetica", "B", 18)
         self.set_text_color(255, 255, 255)
         self.set_xy(10, 6)
@@ -119,32 +142,14 @@ class PDFExecutivo(FPDF):
 
         self.set_y(-9)
         self.set_font("Helvetica", "B", 8)
-
-        # Cálculo de centralização perfeita da linha inteira
-        self.set_x(10.5)
-
         self.set_text_color(255, 255, 255)
-        self.cell(26, 5, clean_txt("Rubens Okamoto"), align="C")
-        self.cell(4, 5, clean_txt(" · "), align="C")
 
-        self.set_text_color(224, 242, 254)
-        self.cell(41, 5, clean_txt("contato@tour360vr.com.br"), align="C", link="mailto:contato@tour360vr.com.br")
-
-        self.set_text_color(255, 255, 255)
-        self.cell(4, 5, clean_txt(" · "), align="C")
-
-        self.set_text_color(224, 242, 254)
-        self.cell(22, 5, clean_txt("16991332121"), align="C", link="https://wa.me/5516991332121")
-
-        self.set_text_color(255, 255, 255)
-        self.cell(4, 5, clean_txt(" · "), align="C")
-
-        self.set_text_color(224, 242, 254)
-        self.cell(28, 5, clean_txt("tour360vr.com.br"), align="C", link="https://tour360vr.com.br/")
-
-        self.set_text_color(255, 255, 255)
-        self.cell(4, 5, clean_txt(" · "), align="C")
-        self.cell(32, 5, clean_txt("Ribeirão Preto - SP"), align="C")
+        # Texto unificado e perfeitamente centralizado
+        texto_rodape = (
+            "Rubens Okamoto   ·   contato@tour360vr.com.br   ·   "
+            "16991332121   ·   tour360vr.com.br   ·   Ribeirão Preto - SP"
+        )
+        self.cell(0, 5, clean_txt(texto_rodape), align="C")
 
 
 def gerar_pdf_bytes(dados):
@@ -161,7 +166,7 @@ def gerar_pdf_bytes(dados):
     photos_count = len(dados.get("photos", []))
     website = dados.get("website")
     has_hours = "Cadastrado" if dados.get("opening_hours") else "Ausente/Incompleto"
-    score = calcular_score(dados)
+    score = calcular_score_critico(dados)
 
     W = pdf.epw
 
@@ -371,14 +376,13 @@ def gerar_pdf_bytes(dados):
         pdf.set_text_color(51, 65, 85)
         pdf.multi_cell(73, 4.8, clean_txt(f" {est}"))
 
-        # Coluna de Impacto também em AZUL (#143287)
         pdf.set_xy(125, y_curr)
         pdf.set_text_color(20, 50, 135)
         pdf.multi_cell(75, 4.8, clean_txt(imp), align="J")
 
         pdf.set_y(y_curr + max_h)
 
-    pdf.ln(5)
+    pdf.ln(4)
 
     # Plano de Ação
     pdf.set_font("Helvetica", "B", 11)
@@ -424,8 +428,8 @@ def gerar_pdf_bytes(dados):
 
         pdf.set_y(pdf.get_y() + 4)
 
-    # Frase Final de Impacto Destaque
-    pdf.ln(5)
+    # Frase Final de Impacto Centralizada na Altura Útil
+    pdf.ln(6)
 
     pdf.set_font("Helvetica", "B", 12)
     pdf.set_text_color(20, 50, 135)
