@@ -439,7 +439,7 @@ def gerar_pdf_bytes(dados):
     pdf.set_text_color(51, 65, 85)
     pdf.multi_cell(W, 4.8, clean_txt("Vamos agendar uma visita, entender seus objetivos e montar um plano personalizado."), align="C")
     pdf.ln(1)
-    pdf.multi_cell(W, 4.8, clean_txt("O Tour 360° + estratégia de avaliações pode triplicar suas buscas."), align="C")
+    pdf.multi_cell(W, 4.8, clean_txt("O tour virtual 360° + estratégia de avaliações pode triplicar suas buscas."), align="C")
 
     pdf_output_path = "diagnostico_tour360vr.pdf"
     pdf.output(pdf_output_path)
