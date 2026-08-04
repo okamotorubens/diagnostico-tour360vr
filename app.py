@@ -197,7 +197,7 @@ def gerar_pdf_bytes(dados):
 
     def traduzir(cat): 
         # Adicione aqui outros termos conforme necessário
-        dic = {"Food": "Alimentação", "Shop": "Loja", "Drugstore": "Drogaria", "Bakery": "Padaria", "Pharmacy": "Farmácia","Hair care": "Cuidados com os cabelos", "Food": "Alimentação", "lodging": "Hospedagem", "establishment": "Estabelecimento", "motel": "Motel", "point_of_interest": "Ponto de Interesse", "store": "Loja", "beauty_salon": "Salão de Beleza", "shopping_mall": "Shopping Center", "Health": "Saúde", "Restaurant": "Restaurante", "Academy": "Academia", "School": "Escola", "Physiotherapist": "Fisioterapia"}
+        dic = {"Shop": "Loja", "Drugstore": "Drogaria", "Bakery": "Padaria", "Pharmacy": "Farmácia","Hair care": "Cuidados com os cabelos", "Food": "Alimentação", "lodging": "Hospedagem", "establishment": "Estabelecimento", "motel": "Motel", "point_of_interest": "Ponto de Interesse", "store": "Loja", "beauty_salon": "Salão de Beleza", "shopping_mall": "Shopping Center", "Health": "Saúde", "Restaurant": "Restaurante", "Academy": "Academia", "School": "Escola", "Physiotherapist": "Fisioterapia"}
     
         return dic.get(cat, cat.replace("_", " ").capitalize())
     
@@ -262,32 +262,26 @@ def gerar_pdf_bytes(dados):
 
     # Box 1: Otimização do Perfil
         # Card 1: Otimização
-    titles = ["OTIMIZAÇÃO DO PERFIL", "NOTA E REPUTAÇÃO", "PRESENÇA IMERSIVA"]
-    for i, t in enumerate(titles):
-        x_card = 10 + (i * w_b)
-        pdf.rect(x_card, y_cards, w_b, h_c, "D")
-        
-        # Título do Card
-        pdf.set_xy(x_card + 2, y_cards + 2)
-        pdf.set_font("Helvetica", "B", 8)
-        pdf.set_text_color(20, 50, 135)
-        pdf.cell(w_b - 4, 4, t)
-
-    # Conteúdo alinhado do Card 1 (Otimização do Perfil)
-    pdf.set_xy(12, y_cards + 7)
-    pdf.set_font("Helvetica", "B", 16)
-    pdf.set_text_color(249, 115, 22)
-    pdf.cell(w_b - 4, 7, "85/100")  # Pontuação limpa e sem espaço indesejado
-    
-    pdf.set_xy(12, y_cards + 15)
-    pdf.set_font("Helvetica", "B", 7)
+    pdf.rect(10, y_cards, w_card, h_card, "DF")
+    pdf.set_font("Helvetica", "B", 8)
     pdf.set_text_color(20, 50, 135)
-    pdf.cell(w_b - 4, 4, "AUTORIDADE DIGITAL")  # Rótulo fixado corretamente dentro do card
-    
-    pdf.set_xy(12, y_cards + 20)
-    pdf.set_font("Helvetica", "", 7)
-    pdf.set_text_color(100, 116, 139)
-    pdf.cell(w_b - 4, 4, "Margem para crescimento local")
+    pdf.set_xy(10, y_cards + 2.0)
+    pdf.cell(w_card, 3.5, clean_txt("OTIMIZAÇÃO DO PERFIL"), align="C")
+
+    pdf.set_font("Helvetica", "B", 18)
+    pdf.set_text_color(249, 115, 22)
+    pdf.set_xy(12, y_cards + 6.0)
+    score_str = str(score)
+    pdf.cell(pdf.get_string_width(score_str) + 1, 6, score_str, align="C")
+
+    pdf.set_font("Helvetica", "B", 18)
+    pdf.set_text_color(20, 50, 135)
+    pdf.cell(20, 6, "/100", align="C")
+  
+    pdf.set_font("Helvetica", "B", 10)
+    pdf.set_text_color(*status_cor)
+    pdf.set_xy(12, y_cards + 14.5) 
+    pdf.cell(w_card - 4, 3.5, clean_txt(nivel_maturidade), align="C")
 
     # Box 2: Nota e Reputação
     pdf.set_fill_color(255, 255, 255)
