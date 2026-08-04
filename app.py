@@ -310,7 +310,6 @@ def gerar_pdf_bytes(dados):
 
 
     # Box 3: Tour Virtual 360°
-   x_card3 = 10 + (w_b * 2)
     photos_count = len(dados.get("photos", []))
     pdf.set_xy(x_card3 + 2, y_c + 7)
     pdf.set_font("Helvetica", "B", 14)
