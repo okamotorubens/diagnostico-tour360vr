@@ -270,8 +270,7 @@ def desenhar_estrelas_destaque(pdf, x_start, y_pos, rating_val):
         pdf.set_text_color(20, 50, 135)
         pdf.cell(w_b - 4, 4, t)
         
-    # Box 1: Otimização do Perfil
-        # Card 1: Otimização
+    # Card 1: Otimização
     pdf.set_xy(12, y_c + 7)
     pdf.set_font("Helvetica", "B", 16)
     pdf.set_text_color(249, 115, 22)
@@ -312,17 +311,21 @@ def desenhar_estrelas_destaque(pdf, x_start, y_pos, rating_val):
 
     pdf.set_y(y_cards + 30)
 
-    # Matriz de Diagnóstico
+    # 3. Matriz de Diagnóstico
+    pdf.set_y(85)
     pdf.set_font("Helvetica", "B", 11)
     pdf.set_text_color(20, 50, 135)
-    pdf.cell(
-        W,
-        5.5,
-        clean_txt("MATRIZ DE DIAGNÓSTICO E IMPACTO COMERCIAL"),
-        new_x="LMARGIN",
-        new_y="NEXT",
-    )
-    pdf.ln(1)
+    pdf.cell(190, 8, "MATRIZ DE DIAGNÓSTICO E IMPACTO COMERCIAL", ln=True)
+    pdf.set_fill_color(20, 50, 135)
+    pdf.set_text_color(255, 255, 255)
+    pdf.cell(42, 7, " Dimensão", fill=True)
+    pdf.cell(73, 7, " Estado Atual Identificado", fill=True)
+    pdf.cell(75, 7, " Impacto no Ranqueamento", fill=True, ln=True)
+    
+    has_website = "Site ativo" if dados.get("website") else "Sem site próprio"
+    rating_val = dados.get("rating", 0)
+    reviews_total = dados.get("user_ratings_total", 0)
+    has_hours = "Cadastrado" if dados.get("opening_hours") else "Ausente/Incompleto"
 
     # Tabela com cabeçalho
     pdf.set_fill_color(20, 50, 135)
@@ -352,24 +355,24 @@ def desenhar_estrelas_destaque(pdf, x_start, y_pos, rating_val):
     tipos = dados.get("types", [])
       
     itens = [
-        ("Completude", status_completude, "Perfil incompleto transmite falta de profissionalismo e reduz a probabilidade de conversão de visitantes."),
-        ("Reputação", f"Nota {rating} ({reviews} avaliações).", "Reputação vulnerável; base pequena limita prova social perante concorrentes."),
-        ("Consistência de NAP", "Dados de endereço e telefone ativos.", "Informações corretas evitam perdas por buscas frustradas."),
-        ("Categorias", categorias_texto, "Falta de categorias secundárias limita a visibilidade regional."),
-        ("Fotos", f"{photos_count} fotos encontradas.", "Poucas fotos impedem a avaliação do espaço pelo cliente."),
-        ("Horários", status_horarios, "Informação correta evita perda de clientes no atendimento."),
-        ("Posts / Novidades", "Sem publicações recentes (Perfil estático).", "Perfil estático não destaca ofertas nem novidades do local."),
-        ("Presença 360", "Nenhum Tour 360° detectado.", "Perdem-se conversões por falta de experiência imersiva 360."),
-
+        ("Completude", has_website, "Perfil incompleto reduz conversão."),
+        ("Reputação", f"Nota {rating_val} ({reviews_total} avaliações).", "Reputação vulnerável."),
+        ("Consistência NAP", "Endereço e telefone ativos.", "Evita perdas por buscas."),
+        ("Categorias", f"{len(dados.get('types', []))} categorias identificadas.", "Limita visibilidade regional."),
+        ("Fotos", f"{photos_count} fotos encontradas.", "Cobertura visual baixa."),
+        ("Horários", f"Funcionamento: {has_hours}.", "Evita perda de clientes."),
+        ("Posts/Novidades", "Sem publicações recentes.", "Perfil estático."),
+        ("Presença 360", "Nenhum Tour 360° detectado.", "Perdem-se conversões imersivas.")
     ]
-
-    pdf.set_font("Helvetica", "", 9)
-    for i, (dim, est, imp) in enumerate(itens):
-        bg = (255, 255, 255) if i % 2 == 0 else (248, 250, 252)
-        
-        y_curr = pdf.get_y()
-        padding_top = 2.5 # Espaço interno extra
-        padding_bottom = 2.5
+    
+    for i, (d, e, imp) in enumerate(itens):
+        pdf.set_fill_color(248, 250, 252) if i % 2 != 0 else pdf.set_fill_color(255, 255, 255)
+        pdf.rect(10, pdf.get_y(), 190, 10, "FD")
+        pdf.set_text_color(51, 65, 85)
+        pdf.set_font("Helvetica", "", 9)
+        pdf.cell(42, 10, f" {d}")
+        pdf.cell(73, 10, f" {e}")
+        pdf.cell(75, 10, f" {imp}", ln=True)
         
         # Calcula altura baseada no conteúdo + padding
         h_dim = len(pdf.multi_cell(42, 4.6, clean_txt(f" {dim}"), split_only=True)) * 4.6
