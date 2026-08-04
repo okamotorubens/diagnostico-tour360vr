@@ -170,24 +170,23 @@ def desenhar_estrelas_destaque(pdf, x_start, y_pos, rating_val):
             pdf.set_text_color(203, 213, 225)  # Cinza Claro (#cbd5e1)
             pdf.cell(7, 7, clean_txt("-"))
 
-
-def gerar_pdf_bytes(dados):
-    pdf = PDFExecutivo()
-    pdf.set_margins(10, 6, 10)
-    pdf.set_auto_page_break(auto=False)
+    def gerar_pdf_bytes(dados):
+    pdf = PDF()
     pdf.add_page()
-
-    nome = dados.get("name", "N/A")
-    endereco = dados.get("formatted_address", "N/A")
-    telefone = dados.get("formatted_phone_number", "Não informado")
-    rating_raw = dados.get("rating", 0.0)
-    rating = str(rating_raw)
-    reviews_count = dados.get("user_ratings_total", 0)
-    reviews = str(reviews_count)
-    photos_count = len(dados.get("photos", []))
-    website = dados.get("website")
-    has_hours = "Cadastrado" if dados.get("opening_hours") else "Ausente/Incompleto"
-    score = calcular_score_critico(dados)
+    
+    # 1. Cabeçalho Empresa
+    pdf.set_fill_color(255, 255, 255)
+    pdf.set_draw_color(20, 50, 135)
+    pdf.rect(10, 35, 190, 14, "DF")
+    pdf.set_font("Helvetica", "B", 13)
+    pdf.set_text_color(20, 50, 135)
+    pdf.set_xy(13, 37)
+    pdf.cell(0, 5, clean(dados.get("name")).upper())
+    pdf.set_font("Helvetica", "", 9)
+    pdf.set_text_color(51, 65, 85)
+    pdf.set_xy(13, 44)
+    tel = clean(dados.get('formatted_phone_number', 'Não informado'))
+    pdf.cell(0, 5, f"Endereço: {clean(dados.get('formatted_address'))} | Telefone: {tel}")
 
     # Definição das variáveis de fotos e categorias
     all_photos = dados.get("photos", [])
