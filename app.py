@@ -38,23 +38,15 @@ def clean_txt(txt):
         return ""
     return str(txt).encode("latin-1", "replace").decode("latin-1")
 
-
-def buscar_dados_google(empresa, cidade, key):
+def pesquisar_lugares(empresa, cidade, key):
     query = f"{empresa} {cidade}"
     url = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={query}&key={key}"
     res = requests.get(url).json()
+    return res.get("results", [])
 
-    if not res.get("results"):
-        return None
-
-    result = res["results"][0]
-    place_id = result["place_id"]
-
-    url_details = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=name,formatted_address,formatted_phone_number,rating,user_ratings_total,photos,website,opening_hours,types&key={key}"
-    details = requests.get(url_details).json().get("result", {})
-
-    return details
-
+def obter_detalhes(place_id, key):
+    url = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=name,formatted_address,formatted_phone_number,rating,user_ratings_total,photos,website,opening_hours&key={key}"
+    return requests.get(url).json().get("result", {})
 
 def calcular_score_critico(dados):
     score = 25
@@ -487,26 +479,48 @@ def gerar_pdf_bytes(dados):
     return pdf_output_path
 
 
+# --- LÓGICA DE SELEÇÃO E BUSCA ---
 if btn and empresa and cidade:
-    if not api_key:
-        st.error("Chave da API do Google não configurada nos Secrets.")
-    else:
-        with st.spinner("Analisando ficha e gerando relatório..."):
-            dados = buscar_dados_google(empresa, cidade, api_key)
-            if dados:
-                pdf_file = gerar_pdf_bytes(dados)
-                st.success("Relatório gerado com sucesso!")
+    st.session_state.lista_candidatos = pesquisar_lugares(empresa, cidade, api_key)
+    if not st.session_state.lista_candidatos:
+        st.error("Nenhuma empresa encontrada.")
 
-                nome_limpo = dados.get("name", empresa).strip()
-                file_download_name = f"Diagnóstico da Ficha - {nome_limpo}.pdf"
+# Se encontrou candidatos, exibe o seletor
+if "lista_candidatos" in st.session_state and st.session_state.lista_candidatos:
+    opcoes = {f"{c['name']} - {c.get('formatted_address', '')}": c['place_id'] for c in st.session_state.lista_candidatos}
+    selecao = st.selectbox("Selecione a unidade correta:", list(opcoes.keys()))
+    
+    if st.button("Carregar Dados desta Unidade"):
+        place_id = opcoes[selecao]
+        st.session_state.dados = obter_detalhes(place_id, api_key)
 
-                with open(pdf_file, "rb") as f:
-                    st.download_button(
-                        label="📥 Baixar Relatório (PDF)",
-                        data=f,
-                        file_name=file_download_name,
-                        mime="application/pdf",
-                    )
-            else:
-                st.error("Empresa não encontrada no Google Maps.")
+# --- EXIBIÇÃO DO PREVIEW E DOWNLOAD ---
+if "dados" in st.session_state and st.session_state.dados:
+    dados = st.session_state.dados
+    st.success("Dados carregados! Confira abaixo antes de gerar o PDF:")
+    
+    # Preview na tela
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Nota Google", dados.get("rating", "N/A"))
+    col2.metric("Avaliações", dados.get("user_ratings_total", 0))
+    col3.metric("Fotos", len(dados.get("photos", [])))
+    
+    # Preview na tela (Tabela)
+    st.write("### Preview do Diagnóstico")
+    st.table(pd.DataFrame([
+        {"Dimensão": "Cadastro", "Estado": "Site ativo" if dados.get("website") else "Sem site", "Impacto": "Aumenta conversão"},
+        {"Dimensão": "Avaliações", "Estado": f"Nota {dados.get('rating')}", "Impacto": "Prova social"}
+    ]))
+
+    # Botão de Gerar PDF
+    if st.button("📥 Gerar e Baixar Relatório (PDF)"):
+        pdf_file = gerar_pdf_bytes(dados)
+        nome_limpo = dados.get("name", empresa).strip()
+        with open(pdf_file, "rb") as f:
+            st.download_button(
+                label="✅ Download Pronto! Clique aqui",
+                data=f,
+                file_name=f"Diagnóstico da Ficha - {nome_limpo}.pdf",
+                mime="application/pdf",
+            )
 
