@@ -256,9 +256,9 @@ def gerar_pdf_bytes(dados):
         new_y="NEXT",
     )
 
-    y_cards = y_empresa + 18
-    w_card = 63.3
-    h_card = 26.0
+   y_cards = 55
+    w_b = 63.3
+    h_c = 26
 
     # Box 1: Otimização do Perfil
         # Card 1: Otimização
