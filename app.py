@@ -46,9 +46,9 @@ def pesquisar_lugares(empresa, cidade, key):
     return res.get("results", [])
 
 def obter_detalhes(place_id, key):
-    url = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=name,formatted_address,formatted_phone_number,rating,user_ratings_total,photos,website,opening_hours&key={key}"
+    url = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=name,formatted_address,formatted_phone_number,rating,user_ratings_total,photos,website,opening_hours,types&key={key}"
     return requests.get(url).json().get("result", {})
-
+    
 def calcular_score_critico(dados):
     score = 25
 
@@ -496,21 +496,39 @@ if "lista_candidatos" in st.session_state and st.session_state.lista_candidatos:
         st.session_state.dados = obter_detalhes(place_id, api_key)
 
 # --- EXIBIÇÃO DO PREVIEW E DOWNLOAD ---
+# --- EXIBIÇÃO DO PREVIEW COMPLETO E DOWNLOAD ---
 if "dados" in st.session_state and st.session_state.dados:
     dados = st.session_state.dados
-    st.success("Dados carregados! Confira abaixo antes de gerar o PDF:")
+    st.success(f"Unidade selecionada: **{dados.get('name')}**")
     
-    # Preview na tela
-    col1, col2, col3 = st.columns(3)
+    # Métricas visuais na tela
+    col1, col2, col3, col4 = st.columns(4)
     col1.metric("Nota Google", dados.get("rating", "N/A"))
     col2.metric("Avaliações", dados.get("user_ratings_total", 0))
     col3.metric("Fotos", len(dados.get("photos", [])))
+    col4.metric("Site", "Sim" if dados.get("website") else "Não")
     
-    # Preview na tela (Tabela)
-    st.write("### Preview do Diagnóstico")
+    # Informações textuais básicas
+    st.write(f"**Endereço:** {dados.get('formatted_address', 'Não informado')}")
+    st.write(f"**Telefone:** {dados.get('formatted_phone_number', 'Não informado')}")
+    
+    # Tabela completa de preview alinhada com o diagnóstico
+    st.write("### Preview da Matriz de Diagnóstico")
+    
+    has_website = "Site ativo" if dados.get("website") else "Sem site próprio"
+    rating_val = dados.get("rating", 0)
+    reviews_total = dados.get("user_ratings_total", 0)
+    photos_count = len(dados.get("photos", []))
+    has_hours = "Cadastrado" if dados.get("opening_hours") else "Ausente/Incompleto"
+    
     st.table(pd.DataFrame([
-        {"Dimensão": "Cadastro", "Estado": "Site ativo" if dados.get("website") else "Sem site", "Impacto": "Aumenta conversão"},
-        {"Dimensão": "Avaliações", "Estado": f"Nota {dados.get('rating')}", "Impacto": "Prova social"}
+        {"Dimensão": "Completude do Cadastro", "Estado Atual": has_website, "Impacto": "Perfil incompleto reduz conversão."},
+        {"Dimensão": "Nota e Avaliações", "Estado Atual": f"Nota {rating_val} ({reviews_total} avaliações)", "Impacto": "Reputação e prova social."},
+        {"Dimensão": "Consistência de NAP", "Estado Atual": "Endereço e telefone ativos", "Impacto": "Evita perdas por buscas."},
+        {"Dimensão": "Categorias", "Estado Atual": f"{len(dados.get('types', []))} categorias identificadas", "Impacto": "Limita visibilidade regional."},
+        {"Dimensão": "Fotos", "Estado Atual": f"{photos_count} fotos encontradas", "Impacto": "Cobertura visual baixa."},
+        {"Dimensão": "Horários", "Estado Atual": f"Funcionamento: {has_hours}", "Impacto": "Evita perda de clientes."},
+        {"Dimensão": "Recursos Interativos", "Estado Atual": "Nenhum tour virtual 360°", "Impacto": "Falta de experiência imersiva."}
     ]))
 
     # Botão de Gerar PDF
@@ -524,4 +542,3 @@ if "dados" in st.session_state and st.session_state.dados:
                 file_name=f"Diagnóstico da Ficha - {nome_limpo}.pdf",
                 mime="application/pdf",
             )
-
