@@ -173,7 +173,7 @@ def desenhar_estrelas_destaque(pdf, x_start, y_pos, rating_val):
     def gerar_pdf_bytes(dados):
     pdf = PDF()
     pdf.add_page()
-    
+        
     # 1. Cabeçalho Empresa
     pdf.set_fill_color(255, 255, 255)
     pdf.set_draw_color(20, 50, 135)
