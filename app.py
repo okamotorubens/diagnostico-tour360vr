@@ -276,7 +276,7 @@ def gerar_pdf_bytes(dados):
     pdf.set_xy(12, y_c + 7)
     pdf.set_font("Helvetica", "B", 16)
     pdf.set_text_color(249, 115, 22)
-    pdf.cell(20, 7, str(score) if 'score' in locals() else "70/100")
+    pdf.cell(20, 7, "70/100")
     
     pdf.set_xy(12, y_c + 17)
     pdf.set_font("Helvetica", "", 7.5)
@@ -293,30 +293,20 @@ def gerar_pdf_bytes(dados):
     pdf.cell(w_card - 4, 3.5, clean_txt(nivel_maturidade), align="C")
 
     # Box 2: Nota e Reputação
-    x_card2 = 10 + w_b
-    pdf.set_xy(x_card2 + 2, y_c + 7)
-    pdf.set_font("Helvetica", "B", 16)
-    pdf.set_text_color(249, 115, 22)
-    pdf.cell(15, 7, str(dados.get("rating", "0.0")))
-    
-    # Estrelas alinhadas no card 2
-    desenhar_estrelas_destaque(pdf, x_card2 + 22, y_c + 8, dados.get("rating", 0))
-    
-    pdf.set_xy(x_card2 + 2, y_c + 17)
+    pdf.set_xy(x_card2 + 2, y_cards + 17)
     pdf.set_font("Helvetica", "", 7.5)
     pdf.set_text_color(51, 65, 85)
     pdf.cell(w_b - 4, 4, f"Com base em {dados.get('user_ratings_total', 0)} avaliações")
-  
 
-
-    # Box 3: Tour Virtual 360°
+    # Card 3: Presença Imersiva
+    x_card3 = 10 + (w_b * 2)
     photos_count = len(dados.get("photos", []))
-    pdf.set_xy(x_card3 + 2, y_c + 7)
+    pdf.set_xy(x_card3 + 2, y_cards + 7)
     pdf.set_font("Helvetica", "B", 14)
     pdf.set_text_color(220, 38, 38)
     pdf.cell(w_b - 4, 7, f"{photos_count} IMAGENS" if photos_count > 0 else "0 IMAGENS (AUSENTE)")
     
-    pdf.set_xy(x_card3 + 2, y_c + 17)
+    pdf.set_xy(x_card3 + 2, y_cards + 17)
     pdf.set_font("Helvetica", "", 7.5)
     pdf.set_text_color(100, 116, 139)
     pdf.cell(w_b - 4, 4, "Ativação Street View recomendada")
