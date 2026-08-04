@@ -197,7 +197,7 @@ def gerar_pdf_bytes(dados):
 
     def traduzir(cat): 
         # Adicione aqui outros termos conforme necessário
-        dic = {"Shop": "Loja", "Drugstore": "Drogaria", "Bakery": "Padaria", "Pharmacy": "Farmácia","Hair care": "Cuidados com os cabelos", "Food": "Alimentação", "lodging": "Hospedagem", "establishment": "Estabelecimento", "motel": "Motel", "point_of_interest": "Ponto de Interesse", "store": "Loja", "beauty_salon": "Salão de Beleza", "shopping_mall": "Shopping Center", "Health": "Saúde", "Restaurant": "Restaurante", "Academy": "Academia", "School": "Escola", "Physiotherapist": "Fisioterapia"}
+        dic = {"Stationery": "Artigos de Papelaria", "Computer": "Informática", "Shop": "Loja", "Drugstore": "Drogaria", "Bakery": "Padaria", "Pharmacy": "Farmácia","Hair care": "Cuidados com os cabelos", "Food": "Alimentação", "lodging": "Hospedagem", "establishment": "Estabelecimento", "motel": "Motel", "point_of_interest": "Ponto de Interesse", "store": "Loja", "beauty_salon": "Salão de Beleza", "shopping_mall": "Shopping Center", "Health": "Saúde", "Restaurant": "Restaurante", "Academy": "Academia", "School": "Escola", "Physiotherapist": "Fisioterapia"}
     
         return dic.get(cat, cat.replace("_", " ").capitalize())
     
@@ -537,7 +537,7 @@ if "dados" in st.session_state and st.session_state.dados:
         nome_limpo = dados.get("name", empresa).strip()
         with open(pdf_file, "rb") as f:
             st.download_button(
-                label="✅ Download Pronto! Baixe aqui",
+                label="✅ Download pronto! Baixe aqui",
                 data=f,
                 file_name=f"Diagnóstico da Ficha - {nome_limpo}.pdf",
                 mime="application/pdf",
