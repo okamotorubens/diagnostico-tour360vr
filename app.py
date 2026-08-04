@@ -532,12 +532,12 @@ if "dados" in st.session_state and st.session_state.dados:
     ]))
 
     # Botão de Gerar PDF
-    if st.button("📥 Gerar e Baixar Relatório (PDF)"):
+    if st.button("📥 Gerar Relatório (PDF)"):
         pdf_file = gerar_pdf_bytes(dados)
         nome_limpo = dados.get("name", empresa).strip()
         with open(pdf_file, "rb") as f:
             st.download_button(
-                label="✅ Download Pronto! Clique aqui",
+                label="✅ Download Pronto! Baixe aqui",
                 data=f,
                 file_name=f"Diagnóstico da Ficha - {nome_limpo}.pdf",
                 mime="application/pdf",
