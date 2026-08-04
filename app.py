@@ -30,7 +30,7 @@ with st.form("form_busca"):
     with col2:
         cidade = st.text_input("Cidade / Estado:", placeholder="Ex: Brodowski / SP")
     
-    btn = st.form_submit_button("Gerar Relatório")
+    btn = st.form_submit_button("Buscar")
 
 
 def clean_txt(txt):
