@@ -256,10 +256,21 @@ def gerar_pdf_bytes(dados):
         new_y="NEXT",
     )
 
-    y_cards = y_empresa + 18
-    w_card = 63.3
-    h_card = 26.0
+    y_c = 55
+    w_b = 63.3
+    h_c = 26
 
+    titles = ["OTIMIZAÇÃO DO PERFIL", "NOTA E REPUTAÇÃO", "PRESENÇA IMERSIVA"]
+    for i, t in enumerate(titles):
+        x_card = 10 + (i * w_b)
+        pdf.rect(x_card, y_c, w_b, h_c, "D")
+        
+        # Título do Card
+        pdf.set_xy(x_card + 2, y_c + 2)
+        pdf.set_font("Helvetica", "B", 8)
+        pdf.set_text_color(20, 50, 135)
+        pdf.cell(w_b - 4, 4, t)
+        
     # Box 1: Otimização do Perfil
         # Card 1: Otimização
     pdf.rect(10, y_cards, w_card, h_card, "DF")
@@ -311,33 +322,17 @@ def gerar_pdf_bytes(dados):
 
 
     # Box 3: Tour Virtual 360°
-    pdf.set_fill_color(255, 255, 255)
-    pdf.set_draw_color(20, 50, 135)
-    pdf.rect(10 + (w_card * 2), y_cards, w_card, h_card, "DF")
-
-    pdf.set_font("Helvetica", "B", 8)
-    pdf.set_text_color(20, 50, 135)
-    pdf.set_xy(12 + (w_card * 2), y_cards + 2.0)
-    pdf.cell(w_card - 4, 3.5, clean_txt("PRESENÇA IMERSIVA"), align="C")
-
-    pdf.set_font("Helvetica", "B", 18)
+   x_card3 = 10 + (w_b * 2)
+    photos_count = len(dados.get("photos", []))
+    pdf.set_xy(x_card3 + 2, y_c + 7)
+    pdf.set_font("Helvetica", "B", 14)
     pdf.set_text_color(220, 38, 38)
-    pdf.set_xy(12 + (w_card * 2), y_cards + 6.0)
-    txt_zero = "0"
-    pdf.cell(pdf.get_string_width(txt_zero) + 1, 6, txt_zero)
-
-    pdf.set_font("Helvetica", "B", 13)
-    txt_fotos = " IMAGENS"
-    pdf.cell(pdf.get_string_width(txt_fotos) + 1, 6, txt_fotos)
-
-    pdf.set_font("Helvetica", "B", 10.5)
-    pdf.set_text_color(20, 50, 135)
-    pdf.cell(20, 6, " (AUSENTE)")
-
+    pdf.cell(w_b - 4, 7, f"{photos_count} IMAGENS" if photos_count > 0 else "0 IMAGENS (AUSENTE)")
+    
+    pdf.set_xy(x_card3 + 2, y_c + 17)
     pdf.set_font("Helvetica", "", 7.5)
-    pdf.set_text_color(20, 50, 135)
-    pdf.set_xy(12 + (w_card * 2), y_cards + 19.5)
-    pdf.cell(w_card - 4, 3.5, clean_txt("Ativação Street View"), align="C")
+    pdf.set_text_color(100, 116, 139)
+    pdf.cell(w_b - 4, 4, "Ativação Street View recomendada")
 
     pdf.set_y(y_cards + 30)
 
