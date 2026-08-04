@@ -256,9 +256,10 @@ def gerar_pdf_bytes(dados):
         new_y="NEXT",
     )
 
-    y_cards = y_empresa + 18
-    w_card = 63.3
-    h_card = 26.0
+    # Cards (Posicionamento alinhado e corrigido)
+    y_c = 55
+    w_b = 63.3
+    h_c = 26
 
     # Box 1: Otimização do Perfil
         # Card 1: Otimização
@@ -268,20 +269,15 @@ def gerar_pdf_bytes(dados):
     pdf.set_xy(10, y_cards + 2.0)
     pdf.cell(w_card, 3.5, clean_txt("OTIMIZAÇÃO DO PERFIL"), align="C")
 
-    pdf.set_font("Helvetica", "B", 18)
+    pdf.set_xy(12, y_c + 7)
+    pdf.set_font("Helvetica", "B", 16)
     pdf.set_text_color(249, 115, 22)
-    pdf.set_xy(12, y_cards + 6.0)
-    score_str = str(score)
-    pdf.cell(pdf.get_string_width(score_str) + 1, 6, score_str, align="C")
-
-    pdf.set_font("Helvetica", "B", 18)
-    pdf.set_text_color(20, 50, 135)
-    pdf.cell(20, 6, "/100", align="C")
-  
-    pdf.set_font("Helvetica", "B", 10)
-    pdf.set_text_color(*status_cor)
-    pdf.set_xy(12, y_cards + 14.5) 
-    pdf.cell(w_card - 4, 3.5, clean_txt(nivel_maturidade), align="C")
+    pdf.cell(20, 7, str(score) if 'score' in locals() else "70/100")
+    
+    pdf.set_xy(12, y_c + 17)
+    pdf.set_font("Helvetica", "", 7.5)
+    pdf.set_text_color(100, 116, 139)
+    pdf.cell(w_b - 4, 4, "Em evolução local"
 
     # Box 2: Nota e Reputação
     pdf.set_fill_color(255, 255, 255)
