@@ -1,6 +1,7 @@
 import datetime
 import requests
 import streamlit as st
+import pandas as pd  # <--- ADICIONE ESTA LINHA AQUI
 from fpdf import FPDF
 
 st.set_page_config(
