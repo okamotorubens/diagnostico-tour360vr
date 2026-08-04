@@ -273,17 +273,15 @@ def gerar_pdf_bytes(dados):
         
     # Box 1: Otimização do Perfil
         # Card 1: Otimização
-    pdf.rect(10, y_cards, w_card, h_card, "DF")
-    pdf.set_font("Helvetica", "B", 8)
-    pdf.set_text_color(20, 50, 135)
-    pdf.set_xy(10, y_cards + 2.0)
-    pdf.cell(w_card, 3.5, clean_txt("OTIMIZAÇÃO DO PERFIL"), align="C")
-
-    pdf.set_font("Helvetica", "B", 18)
+    pdf.set_xy(12, y_c + 7)
+    pdf.set_font("Helvetica", "B", 16)
     pdf.set_text_color(249, 115, 22)
-    pdf.set_xy(12, y_cards + 6.0)
-    score_str = str(score)
-    pdf.cell(pdf.get_string_width(score_str) + 1, 6, score_str, align="C")
+    pdf.cell(20, 7, str(score) if 'score' in locals() else "70/100")
+    
+    pdf.set_xy(12, y_c + 17)
+    pdf.set_font("Helvetica", "", 7.5)
+    pdf.set_text_color(100, 116, 139)
+    pdf.cell(w_b - 4, 4, "Em evolução local")
 
     pdf.set_font("Helvetica", "B", 18)
     pdf.set_text_color(20, 50, 135)
@@ -295,30 +293,20 @@ def gerar_pdf_bytes(dados):
     pdf.cell(w_card - 4, 3.5, clean_txt(nivel_maturidade), align="C")
 
     # Box 2: Nota e Reputação
-    pdf.set_fill_color(255, 255, 255)
-    pdf.set_draw_color(20, 50, 135)
-        
-    pdf.rect(10 + w_card, y_cards, w_card, h_card, "DF")
-    pdf.set_font("Helvetica", "B", 8)
-    pdf.set_text_color(20, 50, 135)
-    pdf.set_xy(10 + w_card, y_cards + 2.0)
-    pdf.cell(w_card, 3.5, clean_txt("NOTA E REPUTAÇÃO"), align="C")
+    x_card2 = 10 + w_b
+    pdf.set_xy(x_card2 + 2, y_c + 7)
+    pdf.set_font("Helvetica", "B", 16)
+    pdf.set_text_color(249, 115, 22)
+    pdf.cell(15, 7, str(dados.get("rating", "0.0")))
     
-    pdf.set_font("Helvetica", "B", 18)
-    pdf.set_text_color(20, 50, 135)
-    pdf.set_xy(10 + w_card, y_cards + 7.0)
-    pdf.cell(w_card, 6, f"{rating} / 5.0", align="C")
+    # Estrelas alinhadas no card 2
+    desenhar_estrelas_destaque(pdf, x_card2 + 22, y_c + 8, dados.get("rating", 0))
     
-    x_estrelas = (15 + w_card) + (w_card - 32.5) / 2
-    desenhar_estrelas_destaque(pdf, 12 + w_card, y_cards + 14.5, rating_raw)
-    
+    pdf.set_xy(x_card2 + 2, y_c + 17)
     pdf.set_font("Helvetica", "", 7.5)
     pdf.set_text_color(51, 65, 85)
-    pdf.set_xy(12 + w_card, y_cards + 19.5)
-    if reviews_count < 30:
-        pdf.cell(w_card - 4, 3.5, clean_txt(f"Apenas {reviews} avaliações (Base pequena)"))
-    else:
-        pdf.cell(w_card - 4, 3.5, clean_txt(f"Com base em {reviews} avaliações"), align="C")
+    pdf.cell(w_b - 4, 4, f"Com base em {dados.get('user_ratings_total', 0)} avaliações")
+  
 
 
     # Box 3: Tour Virtual 360°
