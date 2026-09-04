@@ -68,7 +68,7 @@ def conv(texto):
     return limpo.encode('latin-1', 'replace').decode('latin-1')
 
 # -----------------------------------------------------------------------------
-# 2. GERADOR DE PDF TOUR360VR (QUADROS COMPACTOS E CENTRALIZADOS)
+# 2. GERADOR DE PDF TOUR360VR (TEXTOS CENTRALIZADOS, TELEFONE E ENDEREÇO)
 # -----------------------------------------------------------------------------
 class PDFTour360Oficial(FPDF):
     def header(self):
@@ -162,7 +162,7 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_auto_page_break(auto=True, margin=18)
     
     # -------------------------------------------------------------------------
-    # PÁGINA 1: CAPA
+    # PÁGINA 1: CAPA COM DADOS DA EMPRESA (ENDEREÇO E TELEFONE CENTRALIZADOS)
     # -------------------------------------------------------------------------
     pdf.add_page()
     
@@ -185,14 +185,14 @@ def gerar_pdf_oficial(dados, score):
     pdf.cell(0, 7, conv('Tour360VR'), align='C', ln=True)
     pdf.ln(14)
 
-    # Cartão de Apresentação da Empresa (Compacto e Centralizado)
-    w_capa = 140
+    # Cartão de Apresentação da Empresa (Textos Centralizados)
+    w_capa = 150
     x_capa = (210 - w_capa) / 2.0
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(203, 213, 225)
-    pdf.rounded_rect(x_capa, 120, w_capa, 72, 4, 'FD')
+    pdf.rounded_rect(x_capa, 120, w_capa, 76, 4, 'FD')
 
-    pdf.set_xy(x_capa, 128)
+    pdf.set_xy(x_capa, 127)
     pdf.set_font('Helvetica', 'B', 18)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(w_capa, 8, conv(f"{dados['nome']}"), align='C', ln=True)
@@ -223,13 +223,13 @@ def gerar_pdf_oficial(dados, score):
     # -------------------------------------------------------------------------
     pdf.add_page()
     
-    # Cartão Ficha Analisada (Sem Espaços Sobrando Laterais)
-    w_ficha = 130
+    # Cartão Ficha Analisada com Endereço e Telefone Centralizados
+    w_ficha = 150
     x_ficha = (210 - w_ficha) / 2.0
     
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
-    pdf.rounded_rect(x_ficha, 34, w_ficha, 40, 3, 'FD')
+    pdf.rounded_rect(x_ficha, 34, w_ficha, 44, 3, 'FD')
     
     pdf.set_xy(x_ficha, 36)
     pdf.set_font('Helvetica', 'B', 8.5)
@@ -241,7 +241,6 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_text_color(15, 23, 42)
     pdf.cell(w_ficha, 7, conv(f"{dados['nome']}"), align='C', ln=True)
     
-    # Nota Centralizada
     pdf.set_font('Helvetica', 'B', 9.5)
     pdf.set_text_color(245, 158, 11)
     nota_str = f"Nota {dados['nota']:.1f} *****" if dados['nota'] > 0 else "Sem nota registrada"
@@ -251,16 +250,12 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_font('Helvetica', '', 9)
     pdf.set_text_color(71, 85, 105)
     pdf.set_x(x_ficha)
-    pdf.cell(w_ficha, 4.5, conv(f"Endereço / Cidade: {dados['endereco']}"), align='C', ln=True)
+    pdf.cell(w_ficha, 4.5, conv(f"Endereço: {dados['endereco']}"), align='C', ln=True)
     pdf.set_x(x_ficha)
-    
-    if dados['telefone'] and dados['telefone'] != "Não informado":
-        pdf.cell(w_ficha, 4.5, conv(f"Telefone: {dados['telefone']}  |  Website: {dados['website']}"), align='C', ln=True)
-    else:
-        pdf.cell(w_ficha, 4.5, conv(f"Website: {dados['website']}"), align='C', ln=True)
+    pdf.cell(w_ficha, 4.5, conv(f"Telefone: {dados['telefone']}  |  Website: {dados['website']}"), align='C', ln=True)
 
-    # Quadro do Score Geral (Totalmente Centralizado e Justo)
-    pdf.set_y(80)
+    # Quadro do Score Geral
+    pdf.set_y(84)
     if score < 50:
         cr, cg, cb = 239, 68, 68
         status_txt = "STATUS CRÍTICO"
@@ -271,23 +266,23 @@ def gerar_pdf_oficial(dados, score):
         cr, cg, cb = 34, 197, 94
         status_txt = "ALTO DESEMPENHO"
 
-    w_score = 110
+    w_score = 130
     x_score = (210 - w_score) / 2.0
     
     pdf.set_fill_color(cr, cg, cb)
     pdf.set_draw_color(cr, cg, cb)
-    pdf.rounded_rect(x_score, 80, w_score, 18, 3, 'FD')
+    pdf.rounded_rect(x_score, 84, w_score, 18, 3, 'FD')
     
-    pdf.set_xy(x_score, 82)
+    pdf.set_xy(x_score, 86)
     pdf.set_font('Helvetica', 'B', 16)
     pdf.set_text_color(255, 255, 255)
     pdf.cell(w_score, 6, conv(f"{score} / 100"), align='C', ln=True)
     
-    pdf.set_font('Helvetica', 'B', 8)
+    pdf.set_font('Helvetica', 'B', 8.5)
     pdf.cell(w_score, 5, conv(f"SCORE GERAL DE OTIMIZAÇÃO ({status_txt})"), align='C', ln=True)
 
     # Título da Auditoria
-    pdf.set_y(106)
+    pdf.set_y(108)
     pdf.set_font('Helvetica', 'B', 14)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 7, conv('AUDITORIA DETALHADA DE PONTOS DE BUSCA'), align='C', ln=True)
@@ -372,7 +367,7 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_x(12)
     pdf.multi_cell(186, 4.5, conv(txt_exp), align='C')
     
-    # Descido o Bloco da Proposta de Planos para Maior Respiro Vertical
+    # Proposta de Planos
     pdf.set_y(98)
     pdf.set_font('Helvetica', 'B', 14)
     pdf.set_text_color(15, 23, 42)
@@ -381,7 +376,7 @@ def gerar_pdf_oficial(dados, score):
 
     y_p = pdf.get_y() + 2
     
-    # --- PLANO START ---
+    # --- PLANO START (Centralizado) ---
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
     pdf.rounded_rect(12, y_p + 2, 52, 52, 2, 'FD')
@@ -404,7 +399,7 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_x(12); pdf.cell(52, 4.2, conv('- Ajuste de categorias'), align='C', ln=True)
     pdf.set_x(12); pdf.cell(52, 4.2, conv('- Inserção de links'), align='C', ln=True)
 
-    # --- PLANO PRO ---
+    # --- PLANO PRO (Centralizado) ---
     pdf.set_fill_color(240, 249, 255)
     pdf.set_draw_color(30, 64, 175)
     pdf.set_line_width(1.0)
@@ -434,7 +429,7 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_x(68); pdf.cell(70, 4.8, conv('- Ensaio Fotográfico HD'), align='C', ln=True)
     pdf.set_x(68); pdf.cell(70, 4.8, conv('- Relatório Visual de Entrega'), align='C', ln=True)
 
-    # --- GESTÃO MENSAL ---
+    # --- GESTÃO MENSAL (Centralizado) ---
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
     pdf.rounded_rect(142, y_p + 2, 54, 52, 2, 'FD')
