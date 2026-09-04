@@ -58,6 +58,37 @@ st.markdown("""
 
 API_KEY_GOOGLE = st.secrets.get("GOOGLE_PLACES_API_KEY", "")
 
+# -----------------------------------------------------------------------------
+# INICIALIZAÇÃO DE ESTADOS NATIVOS EDITÁVEIS
+# -----------------------------------------------------------------------------
+if 'dados' not in st.session_state:
+    st.session_state['dados'] = {
+        "nome": "Empresa Exemplo",
+        "contato": "Não informado",
+        "endereco": "Ribeirão Preto / SP",
+        "telefone": "(16) 99999-0000",
+        "website": "Não possui",
+        "nota": 4.2,
+        "avaliacoes": 38,
+        "tem_tour360": False,
+        "tem_fotos_hd": False,
+        "categorias_completas": False,
+        "horarios_ok": False
+    }
+
+if 'planos' not in st.session_state:
+    st.session_state['planos'] = {
+        "start_valor": "500,00",
+        "start_itens": "- Correção cadastral\n- Otimização de SEO\n- Ajuste de categorias\n- Inserção de links",
+        "pro_valor": "1.200,00",
+        "pro_itens": "- Tudo do Plano Start\n- Tour Virtual 360°\n- Ensaio Fotográfico HD\n- Relatório Visual de Entrega",
+        "gestao_valor": "600,00/mês",
+        "gestao_itens": "- Postagens semanais\n- Gestão de avaliações\n- Atualização de fotos\n- Relatório mensal"
+    }
+
+if 'plano_acao_extra' not in st.session_state:
+    st.session_state['plano_acao_extra'] = "Insira aqui observações personalizadas ou estratégias adicionais para o cliente..."
+
 def conv(texto):
     """Trata a codificação para Latin-1 e substitui símbolos unicode incompatíveis."""
     if not texto:
@@ -68,7 +99,7 @@ def conv(texto):
     return limpo.encode('latin-1', 'replace').decode('latin-1')
 
 # -----------------------------------------------------------------------------
-# 2. GERADOR DE PDF TOUR360VR
+# 2. GERADOR DE PDF TOUR360VR (COM DADOS DINÂMICOS EDITÁVEIS)
 # -----------------------------------------------------------------------------
 class PDFTour360Oficial(FPDF):
     def header(self):
@@ -86,7 +117,6 @@ class PDFTour360Oficial(FPDF):
         except:
             x_pos = 12
 
-        # Aumento do Y para afastar o texto da barra colorida superior
         self.set_xy(x_pos, 9.5)
         self.set_font('Helvetica', 'B', 13)
         self.set_text_color(30, 64, 175)
@@ -157,7 +187,7 @@ class PDFTour360Oficial(FPDF):
         hp = self.h
         self._out(f'{x1*k:.2f} {(hp-y1)*k:.2f} {x2*k:.2f} {(hp-y2)*k:.2f} {x3*k:.2f} {(hp-y3)*k:.2f} c')
 
-def gerar_pdf_oficial(dados, score):
+def gerar_pdf_oficial(dados, score, planos):
     pdf = PDFTour360Oficial()
     pdf.set_auto_page_break(auto=True, margin=18)
     
@@ -191,26 +221,25 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_draw_color(203, 213, 225)
     pdf.rounded_rect(x_capa, 120, w_capa, 76, 4, 'FD')
 
-    pdf.set_xy(x_capa, 127)
-    pdf.set_font('Helvetica', 'B', 18)
+    pdf.set_xy(x_capa, 126)
+    pdf.set_font('Helvetica', 'B', 17)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(w_capa, 8, conv(f"{dados['nome']}"), align='C', ln=True)
     
-    # Centralização rigorosa da Nota e Avaliações
     pdf.set_x(x_capa)
     pdf.set_font('Helvetica', 'B', 11)
     pdf.set_text_color(245, 158, 11)
     pdf.cell(w_capa, 6, conv(f"Nota: {dados['nota']:.1f} *****   ({dados['avaliacoes']} avaliações no Google)"), align='C', ln=True)
     pdf.ln(2)
 
-    pdf.set_font('Helvetica', '', 10)
+    pdf.set_font('Helvetica', '', 9.5)
     pdf.set_text_color(71, 85, 105)
     pdf.set_x(x_capa)
-    pdf.cell(w_capa, 5.5, conv(f"{dados['endereco']}"), align='C', ln=True)
+    pdf.cell(w_capa, 5, conv(f"Contato: {dados['contato']}"), align='C', ln=True)
     pdf.set_x(x_capa)
-    pdf.cell(w_capa, 5.5, conv(f"Telefone: {dados['telefone']}"), align='C', ln=True)
+    pdf.cell(w_capa, 5, conv(f"{dados['endereco']}"), align='C', ln=True)
     pdf.set_x(x_capa)
-    pdf.cell(w_capa, 5.5, conv(f"Website Cadastrado: {dados['website']}"), align='C', ln=True)
+    pdf.cell(w_capa, 5, conv(f"Telefone: {dados['telefone']}   |   Website: {dados['website']}"), align='C', ln=True)
     pdf.ln(3)
 
     pdf.set_font('Helvetica', 'B', 10.5)
@@ -244,7 +273,6 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_text_color(15, 23, 42)
     pdf.cell(w_ficha, 7, conv(f"{dados['nome']}"), align='C', ln=True)
     
-    # Centralização da Nota e Avaliações na Página 2
     pdf.set_font('Helvetica', 'B', 9.5)
     pdf.set_text_color(245, 158, 11)
     pdf.set_x(x_ficha)
@@ -257,7 +285,6 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_x(x_ficha)
     pdf.cell(w_ficha, 4.5, conv(f"Telefone: {dados['telefone']}   |   Website: {dados['website']}"), align='C', ln=True)
 
-    # Centralização do Quadro do Score Geral
     pdf.set_y(84)
     if score < 50:
         cr, cg, cb = 239, 68, 68
@@ -285,7 +312,6 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_font('Helvetica', 'B', 8.5)
     pdf.cell(w_score, 5, conv(f"SCORE GERAL DE OTIMIZAÇÃO ({status_txt})"), align='C', ln=True)
 
-    # Título da Auditoria
     pdf.set_y(108)
     pdf.set_font('Helvetica', 'B', 14)
     pdf.set_text_color(15, 23, 42)
@@ -338,7 +364,7 @@ def gerar_pdf_oficial(dados, score):
         pdf.ln(3)
 
     # -------------------------------------------------------------------------
-    # PÁGINA 3: PROPOSTA COMERCIAL & PLANOS DE INVESTIMENTO
+    # PÁGINA 3: PROPOSTA COMERCIAL & PLANOS EDITÁVEIS
     # -------------------------------------------------------------------------
     pdf.add_page()
     
@@ -378,10 +404,10 @@ def gerar_pdf_oficial(dados, score):
 
     y_p = pdf.get_y() + 2
     
-    # --- PLANO START ---
+    # --- PLANO START EDITÁVEL ---
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
-    pdf.rounded_rect(12, y_p + 2, 52, 52, 2, 'FD')
+    pdf.rounded_rect(12, y_p + 2, 52, 58, 2, 'FD')
     
     pdf.set_xy(12, y_p + 5)
     pdf.set_font('Helvetica', 'B', 11)
@@ -389,23 +415,20 @@ def gerar_pdf_oficial(dados, score):
     pdf.cell(52, 5, 'Plano Start', align='C', ln=True)
     
     pdf.set_xy(12, y_p + 12)
-    pdf.set_font('Helvetica', 'B', 13)
+    pdf.set_font('Helvetica', 'B', 12)
     pdf.set_text_color(62, 161, 219)
-    pdf.cell(52, 6, 'R$ 500,00', align='C', ln=True)
+    pdf.cell(52, 6, conv(f"R$ {planos['start_valor']}"), align='C', ln=True)
     
-    pdf.set_font('Helvetica', '', 8.5)
+    pdf.set_font('Helvetica', '', 8)
     pdf.set_text_color(51, 65, 85)
-    pdf.set_xy(12, y_p + 21)
-    pdf.cell(52, 4.2, conv('- Correção cadastral'), align='C', ln=True)
-    pdf.set_x(12); pdf.cell(52, 4.2, conv('- Otimização de SEO'), align='C', ln=True)
-    pdf.set_x(12); pdf.cell(52, 4.2, conv('- Ajuste de categorias'), align='C', ln=True)
-    pdf.set_x(12); pdf.cell(52, 4.2, conv('- Inserção de links'), align='C', ln=True)
+    pdf.set_xy(13, y_p + 20)
+    pdf.multi_cell(50, 4, conv(planos['start_itens']), align='L')
 
-    # --- PLANO PRO ---
+    # --- PLANO PRO EDITÁVEL ---
     pdf.set_fill_color(240, 249, 255)
     pdf.set_draw_color(30, 64, 175)
     pdf.set_line_width(1.0)
-    pdf.rounded_rect(68, y_p - 4, 70, 62, 3, 'FD')
+    pdf.rounded_rect(68, y_p - 4, 70, 66, 3, 'FD')
     pdf.set_line_width(0.2)
     
     pdf.set_xy(68, y_p)
@@ -419,22 +442,19 @@ def gerar_pdf_oficial(dados, score):
     pdf.cell(70, 4, conv('(Recomendado)'), align='C', ln=True)
     
     pdf.set_xy(68, y_p + 11)
-    pdf.set_font('Helvetica', 'B', 16)
+    pdf.set_font('Helvetica', 'B', 14)
     pdf.set_text_color(30, 64, 175)
-    pdf.cell(70, 7, 'R$ 1.200,00', align='C', ln=True)
+    pdf.cell(70, 7, conv(f"R$ {planos['pro_valor']}"), align='C', ln=True)
     
-    pdf.set_font('Helvetica', 'B', 9)
+    pdf.set_font('Helvetica', 'B', 8.5)
     pdf.set_text_color(15, 23, 42)
-    pdf.set_xy(68, y_p + 22)
-    pdf.cell(70, 4.8, conv('- Tudo do Plano Start'), align='C', ln=True)
-    pdf.set_x(68); pdf.cell(70, 4.8, conv('- Tour Virtual 360°'), align='C', ln=True)
-    pdf.set_x(68); pdf.cell(70, 4.8, conv('- Ensaio Fotográfico HD'), align='C', ln=True)
-    pdf.set_x(68); pdf.cell(70, 4.8, conv('- Relatório Visual de Entrega'), align='C', ln=True)
+    pdf.set_xy(70, y_p + 20)
+    pdf.multi_cell(66, 4.2, conv(planos['pro_itens']), align='L')
 
-    # --- GESTÃO MENSAL ---
+    # --- GESTÃO MENSAL EDITÁVEL ---
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
-    pdf.rounded_rect(142, y_p + 2, 54, 52, 2, 'FD')
+    pdf.rounded_rect(142, y_p + 2, 54, 58, 2, 'FD')
     
     pdf.set_xy(142, y_p + 5)
     pdf.set_font('Helvetica', 'B', 11)
@@ -442,17 +462,14 @@ def gerar_pdf_oficial(dados, score):
     pdf.cell(54, 5, conv('Gestão Mensal'), align='C', ln=True)
     
     pdf.set_xy(142, y_p + 12)
-    pdf.set_font('Helvetica', 'B', 13)
+    pdf.set_font('Helvetica', 'B', 12)
     pdf.set_text_color(62, 161, 219)
-    pdf.cell(54, 6, 'R$ 600,00/mês', align='C', ln=True)
+    pdf.cell(54, 6, conv(f"R$ {planos['gestao_valor']}"), align='C', ln=True)
     
-    pdf.set_font('Helvetica', '', 8.5)
+    pdf.set_font('Helvetica', '', 8)
     pdf.set_text_color(51, 65, 85)
-    pdf.set_xy(142, y_p + 21)
-    pdf.cell(54, 4.2, conv('- Postagens semanais'), align='C', ln=True)
-    pdf.set_x(142); pdf.cell(54, 4.2, conv('- Gestão de avaliações'), align='C', ln=True)
-    pdf.set_x(142); pdf.cell(54, 4.2, conv('- Atualização de fotos'), align='C', ln=True)
-    pdf.set_x(142); pdf.cell(54, 4.2, conv('- Relatório mensal'), align='C', ln=True)
+    pdf.set_xy(143, y_p + 20)
+    pdf.multi_cell(52, 4, conv(planos['gestao_itens']), align='L')
 
     # -------------------------------------------------------------------------
     # PÁGINA 4: CONTRATO DE PRESTAÇÃO DE SERVIÇOS
@@ -476,7 +493,7 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_font('Helvetica', 'B', 9.5)
     pdf.write(5.5, conv("CONTRATANTE: "))
     pdf.set_font('Helvetica', '', 9.5)
-    pdf.write(5.5, conv(f"{dados['nome']}, {dados['endereco']}, Telefone: {dados['telefone']}.\n\n"))
+    pdf.write(5.5, conv(f"{dados['nome']}, A/C: {dados['contato']}, {dados['endereco']}, Telefone: {dados['telefone']}.\n\n"))
     
     pdf.set_font('Helvetica', '', 9.5)
     pdf.write(5.5, conv("A "))
@@ -524,7 +541,7 @@ def gerar_pdf_oficial(dados, score):
     return buffer
 
 # -----------------------------------------------------------------------------
-# 3. INTERFACE STREAMLIT COM CONSULTA E EDICAO EM TEMPO REAL
+# 3. INTERFACE STREAMLIT COM MENU LATERAL E SEÇÕES EDITÁVEIS
 # -----------------------------------------------------------------------------
 st.sidebar.markdown("""
     <div style='text-align: center; padding-bottom: 15px;'>
@@ -551,21 +568,20 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# ETAPA 1: CONSULTA E DIAGNÓSTICO
+# ETAPA 1: CONSULTA & DIAGNÓSTICO
 # -----------------------------------------------------------------------------
 if "🔍" in opcao_menu:
-    st.subheader("🔍 Consultar Ficha do Google Meu Negócio")
+    st.subheader("🔍 1. Consultar Ficha & Editar Cadastro")
     
     col_e1, col_e2 = st.columns([2, 1])
     with col_e1:
-        nome_empresa = st.text_input("🏢 Nome da Empresa / Estabelecimento:", placeholder="Ex: Toque de Letra")
+        nome_empresa = st.text_input("🏢 Nome da Empresa / Estabelecimento:", value=st.session_state['dados']['nome'])
     with col_e2:
-        cidade_empresa = st.text_input("📍 Cidade / Estado:", placeholder="Ex: Ribeirão Preto, SP")
+        cidade_empresa = st.text_input("📍 Cidade / Estado:", value="Ribeirão Preto, SP")
 
-    if st.button("🚀 Analisar Perfil e Gerar Diagnóstico", use_container_width=True):
+    if st.button("🚀 Analisar Perfil no Google", use_container_width=True):
         if nome_empresa:
             termo_busca = f"{nome_empresa}, {cidade_empresa}" if cidade_empresa else nome_empresa
-            dados = None
             
             if API_KEY_GOOGLE:
                 try:
@@ -580,119 +596,128 @@ if "🔍" in opcao_menu:
                         res_details = requests.get(url_details).json().get("result", {})
                         
                         photos = res_details.get("photos", place.get("photos", []))
-                        telefone_obtido = res_details.get("formatted_phone_number") or res_details.get("international_phone_number") or "Não informado"
-                        endereco_obtido = res_details.get("formatted_address") or place.get("formatted_address") or (f"{cidade_empresa}" if cidade_empresa else "Ribeirão Preto / SP")
                         
-                        dados = {
-                            "nome": res_details.get("name", place.get("name", nome_empresa)),
-                            "endereco": endereco_obtido,
-                            "telefone": telefone_obtido,
-                            "website": res_details.get("website", "Não possui"),
-                            "nota": res_details.get("rating", place.get("rating", 4.2)),
-                            "avaliacoes": res_details.get("user_ratings_total", place.get("user_ratings_total", 38)),
-                            "tem_tour360": False,
-                            "tem_fotos_hd": len(photos) > 10,
-                            "categorias_completas": False,
-                            "horarios_ok": True
-                        }
+                        st.session_state['dados']['nome'] = res_details.get("name", place.get("name", nome_empresa))
+                        st.session_state['dados']['endereco'] = res_details.get("formatted_address") or place.get("formatted_address") or f"{cidade_empresa}"
+                        st.session_state['dados']['telefone'] = res_details.get("formatted_phone_number") or res_details.get("international_phone_number") or "Não informado"
+                        st.session_state['dados']['website'] = res_details.get("website", "Não possui")
+                        st.session_state['dados']['nota'] = res_details.get("rating", place.get("rating", 4.2))
+                        st.session_state['dados']['avaliacoes'] = res_details.get("user_ratings_total", place.get("user_ratings_total", 38))
+                        st.session_state['dados']['tem_fotos_hd'] = len(photos) > 10
                 except Exception as e:
                     st.error(f"Erro na conexão com o Google: {e}")
 
-            if not dados:
-                dados = {
-                    "nome": nome_empresa,
-                    "endereco": f"{cidade_empresa}" if cidade_empresa else "Ribeirão Preto / SP",
-                    "telefone": "Não informado",
-                    "website": "Não possui",
-                    "nota": 4.2,
-                    "avaliacoes": 38,
-                    "tem_tour360": False,
-                    "tem_fotos_hd": False,
-                    "categorias_completas": False,
-                    "horarios_ok": False
-                }
+            st.success("Busca finalizada!")
 
-            st.session_state['dados'] = dados
-            st.success("Análise do perfil realizada com sucesso!")
+    st.markdown("---")
+    st.markdown("### ✏️ Formatação do Cliente:")
+    
+    col_f1, col_f2 = st.columns(2)
+    with col_f1:
+        st.session_state['dados']['nome'] = st.text_input("🏢 Nome do Estabelecimento:", value=st.session_state['dados']['nome'])
+        st.session_state['dados']['contato'] = st.text_input("👤 Nome do Contato / Responsável:", value=st.session_state['dados']['contato'])
+        st.session_state['dados']['endereco'] = st.text_input("📍 Localização:", value=st.session_state['dados']['endereco'])
+    with col_f2:
+        st.session_state['dados']['telefone'] = st.text_input("📞 Telefone / WhatsApp:", value=st.session_state['dados']['telefone'])
+        st.session_state['dados']['website'] = st.text_input("🌐 Website Cadastrado:", value=st.session_state['dados']['website'])
 
-    if 'dados' in st.session_state:
-        st.markdown("---")
-        st.markdown("### ✏️ Ajustar ou Adicionar Informações do Cliente:")
-        col_f1, col_f2 = st.columns(2)
-        
-        with col_f1:
-            st.session_state['dados']['endereco'] = st.text_input("📍 Localização:", value=st.session_state['dados']['endereco'])
-        with col_f2:
-            st.session_state['dados']['telefone'] = st.text_input("📞 Telefone / WhatsApp:", value=st.session_state['dados']['telefone'])
+    dados = st.session_state['dados']
 
-        dados = st.session_state['dados']
+    score = 100
+    if not dados["tem_tour360"]: score -= 25
+    if dados["website"] == "Não possui": score -= 20
+    if not dados["tem_fotos_hd"]: score -= 20
+    if not dados["categorias_completas"]: score -= 15
+    if not dados["horarios_ok"]: score -= 10
+    if dados["avaliacoes"] < 50: score -= 10
 
-        score = 100
-        if not dados["tem_tour360"]: score -= 25
-        if dados["website"] == "Não possui": score -= 20
-        if not dados["tem_fotos_hd"]: score -= 20
-        if not dados["categorias_completas"]: score -= 15
-        if not dados["horarios_ok"]: score -= 10
-        if dados["avaliacoes"] < 50: score -= 10
+    st.session_state['score'] = score
 
-        st.session_state['score'] = score
+    col1, col2 = st.columns([1, 2])
+    with col1:
+        st.markdown(f"""
+            <div class="score-card">
+                <h2 style="color: #ff3d3d; font-size: 48px; margin: 0;">{score} / 100</h2>
+                <p style="color: #cbd5e1; text-transform: uppercase; font-size: 13px; font-weight: bold;">Score Geral de Otimização</p>
+            </div>
+        """, unsafe_allow_html=True)
 
-        col1, col2 = st.columns([1, 2])
-        with col1:
-            st.markdown(f"""
-                <div class="score-card">
-                    <h2 style="color: #ff3d3d; font-size: 48px; margin: 0;">{score} / 100</h2>
-                    <p style="color: #cbd5e1; text-transform: uppercase; font-size: 13px; font-weight: bold;">Score Geral de Otimização</p>
-                </div>
-            """, unsafe_allow_html=True)
+    with col2:
+        st.markdown(f"""
+            <div class="card-dark">
+                <h3 style="color: #3ea1db; margin-top: 0;">{dados['nome']}</h3>
+                <p style="margin: 4px 0;">👤 <strong>Contato:</strong> {dados['contato']}</p>
+                <p style="margin: 4px 0;">📍 {dados['endereco']}</p>
+                <p style="margin: 4px 0;">📞 <strong>Telefone:</strong> {dados['telefone']}</p>
+                <p style="margin: 4px 0;">🌐 <strong>Website:</strong> {dados['website']}</p>
+                <p style="margin: 4px 0;">⭐ <strong>Avaliações:</strong> {dados['nota']} ({dados['avaliacoes']} avaliações)</p>
+            </div>
+        """, unsafe_allow_html=True)
 
-        with col2:
-            st.markdown(f"""
-                <div class="card-dark">
-                    <h3 style="color: #3ea1db; margin-top: 0;">{dados['nome']}</h3>
-                    <p style="margin: 4px 0;">📍 {dados['endereco']}</p>
-                    <p style="margin: 4px 0;">📞 <strong>Telefone:</strong> {dados['telefone']}</p>
-                    <p style="margin: 4px 0;">🌐 <strong>Website:</strong> {dados['website']}</p>
-                    <p style="margin: 4px 0;">⭐ <strong>Avaliações:</strong> {dados['nota']} ({dados['avaliacoes']} avaliações)</p>
-                </div>
-            """, unsafe_allow_html=True)
+    pdf_bytes = gerar_pdf_oficial(dados, score, st.session_state['planos'])
 
-        pdf_bytes = gerar_pdf_oficial(dados, score)
-
-        st.markdown("---")
-        st.download_button(
-            label="📥 Baixar Documento Oficial de Diagnóstico, Proposta e Contrato em PDF",
-            data=pdf_bytes,
-            file_name=f"Diagnostico_Tour360VR_{dados['nome'].replace(' ', '_')}.pdf",
-            mime="application/pdf",
-            use_container_width=True
-        )
+    st.markdown("---")
+    st.download_button(
+        label="📥 Baixar Documento Oficial de Diagnóstico, Proposta e Contrato em PDF",
+        data=pdf_bytes,
+        file_name=f"Diagnostico_Tour360VR_{dados['nome'].replace(' ', '_')}.pdf",
+        mime="application/pdf",
+        use_container_width=True
+    )
 
 # -----------------------------------------------------------------------------
-# ETAPAS SECUNDÁRIAS DE INFORMAÇÕES
+# ETAPA 2: PLANO DE AÇÃO & DIAGNÓSTICO
 # -----------------------------------------------------------------------------
 elif "💡" in opcao_menu:
-    st.subheader("💡 Diagnóstico Detalhado & Plano de Ação")
+    st.subheader("💡 2. Editar Plano de Ação & Diagnóstico")
+    
     st.markdown("""
         * **SEO Local & Atualização Cadastral:** Ajuste de títulos, palavras-chave e categorias principais/secundárias.
         * **Tour Virtual 360° Interativo:** Publicação de tour imersivo diretamente integrado ao Google Maps.
         * **Fotos de Alta Resolução:** Produção fotográfica profissional em HD para transmitir credibilidade.
         * **Links de Conversão Rápida:** Botões para WhatsApp, cardápio digital e reserva de serviços.
     """)
+    
+    st.markdown("---")
+    st.markdown("### 📝 Informações Adicionais para o Cliente:")
+    st.session_state['plano_acao_extra'] = st.text_area(
+        "Adicionar apontamentos personalizados:",
+        value=st.session_state['plano_acao_extra'],
+        height=140
+    )
+    st.success("Alteraçoes salvas!")
 
+# -----------------------------------------------------------------------------
+# ETAPA 3: PROPOSTA & PLANOS
+# -----------------------------------------------------------------------------
 elif "💲" in opcao_menu:
-    st.subheader("💲 Proposta de Investimento e Planos")
+    st.subheader("💲 3. Editar Itens e Valores da Proposta Comercial")
+    
     col1, col2, col3 = st.columns(3)
+    
     with col1:
-        st.markdown("**PLANO START**\n\n**R$ 500,00**\n- Correção cadastral\n- Otimização de SEO\n- Ajuste de categorias\n- Links de conversão")
+        st.markdown("### 🔹 Plano Start")
+        st.session_state['planos']['start_valor'] = st.text_input("Valor Start (R$):", value=st.session_state['planos']['start_valor'])
+        st.session_state['planos']['start_itens'] = st.text_area("Itens Plano Start:", value=st.session_state['planos']['start_itens'], height=150)
+        
     with col2:
-        st.markdown("**PLANO PRO (Recomendado)**\n\n**R$ 1.200,00**\n- Tudo do Plano Start\n- Tour Virtual 360°\n- Ensaio Fotográfico\n- Relatório de Entrega")
+        st.markdown("### 🔹 Plano Pro")
+        st.session_state['planos']['pro_valor'] = st.text_input("Valor Pro (R$):", value=st.session_state['planos']['pro_valor'])
+        st.session_state['planos']['pro_itens'] = st.text_area("Itens Plano Pro:", value=st.session_state['planos']['pro_itens'], height=150)
+        
     with col3:
-        st.markdown("**GESTÃO MENSAL**\n\n**R$ 600,00/mês**\n- Postagens semanais\n- Gestão de avaliações\n- Atualização de fotos\n- Relatórios mensais")
+        st.markdown("### 🔹 Gestão Mensal")
+        st.session_state['planos']['gestao_valor'] = st.text_input("Valor Gestão (R$):", value=st.session_state['planos']['gestao_valor'])
+        st.session_state['planos']['gestao_itens'] = st.text_area("Itens Gestão Mensal:", value=st.session_state['planos']['gestao_itens'], height=150)
 
+    st.success("Valores e itens atualizados com sucesso!")
+
+# -----------------------------------------------------------------------------
+# ETAPA 4: CONTRATO
+# -----------------------------------------------------------------------------
 elif "📄" in opcao_menu:
-    st.subheader("📄 Contrato de Prestação de Serviços")
-    st.info("O contrato é gerado automaticamente na 4ª página do arquivo PDF completo após a realização da consulta na Etapa 1.")
+    st.subheader("📄 4. Contrato de Prestação de Serviços")
+    st.info("O contrato é atualizado e gerado automaticamente na 4ª página do PDF completo de acordo com os dados editados nas etapas anteriores.")
 
 # -----------------------------------------------------------------------------
 # 4. RODAPÉ FIXO DO APP
