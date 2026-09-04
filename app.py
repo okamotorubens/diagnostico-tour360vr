@@ -68,7 +68,7 @@ def conv(texto):
     return limpo.encode('latin-1', 'replace').decode('latin-1')
 
 # -----------------------------------------------------------------------------
-# 2. GERADOR DE PDF TOUR360VR (TEXTOS AMPLIADOS, ALINHAMENTO CENTRAL E FORMATO COMPACTO)
+# 2. GERADOR DE PDF TOUR360VR (QUADROS COMPACTOS E CENTRALIZADOS)
 # -----------------------------------------------------------------------------
 class PDFTour360Oficial(FPDF):
     def header(self):
@@ -79,9 +79,8 @@ class PDFTour360Oficial(FPDF):
         self.rect(105, 0, 105, 4, 'F')
 
         if self.page_no() == 1:
-            return  # Capa de apresentação com visual próprio
+            return  # Capa com layout próprio
 
-        # Cabeçalho padronizado para as páginas 2, 3 e 4
         try:
             self.image('Logo TOUR transparente.png', 12, 7, 18)
             x_pos = 34
@@ -101,7 +100,6 @@ class PDFTour360Oficial(FPDF):
         self.set_line_width(0.3)
         self.line(12, 21, 198, 21)
         self.set_line_width(0.2)
-        # Mais respiro vertical abaixo da linha topo
         self.ln(20)
 
     def footer(self):
@@ -119,7 +117,6 @@ class PDFTour360Oficial(FPDF):
         self.cell(w_col, 5, 'WhatsApp: (16) 99133-2121', link='https://wa.me/5516991332121', align='C')
         self.cell(w_col, 5, f'Página {self.page_no()} de 4', align='C')
 
-        # Barra colorida inferior
         self.set_fill_color(30, 64, 175)
         self.rect(0, 293.5, 105, 3.5, 'F')
         self.set_fill_color(255, 61, 61)
@@ -165,7 +162,7 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_auto_page_break(auto=True, margin=18)
     
     # -------------------------------------------------------------------------
-    # PÁGINA 1: CAPA RECONSTRUÍDA (MODERNA E CENTRALIZADA)
+    # PÁGINA 1: CAPA
     # -------------------------------------------------------------------------
     pdf.add_page()
     
@@ -188,8 +185,8 @@ def gerar_pdf_oficial(dados, score):
     pdf.cell(0, 7, conv('Tour360VR'), align='C', ln=True)
     pdf.ln(14)
 
-    # Cartão de Apresentação Centralizado da Empresa (Formato Mais Quadrado)
-    w_capa = 150
+    # Cartão de Apresentação da Empresa (Compacto e Centralizado)
+    w_capa = 140
     x_capa = (210 - w_capa) / 2.0
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(203, 213, 225)
@@ -226,8 +223,8 @@ def gerar_pdf_oficial(dados, score):
     # -------------------------------------------------------------------------
     pdf.add_page()
     
-    # Cartão Ficha Analisada (Mais Quadrado, Sem Espaços Sobrando)
-    w_ficha = 150
+    # Cartão Ficha Analisada (Sem Espaços Sobrando Laterais)
+    w_ficha = 130
     x_ficha = (210 - w_ficha) / 2.0
     
     pdf.set_fill_color(248, 250, 252)
@@ -244,6 +241,7 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_text_color(15, 23, 42)
     pdf.cell(w_ficha, 7, conv(f"{dados['nome']}"), align='C', ln=True)
     
+    # Nota Centralizada
     pdf.set_font('Helvetica', 'B', 9.5)
     pdf.set_text_color(245, 158, 11)
     nota_str = f"Nota {dados['nota']:.1f} *****" if dados['nota'] > 0 else "Sem nota registrada"
@@ -261,7 +259,7 @@ def gerar_pdf_oficial(dados, score):
     else:
         pdf.cell(w_ficha, 4.5, conv(f"Website: {dados['website']}"), align='C', ln=True)
 
-    # Quadro do Score Geral (Compacto, Mais Quadrado e Perfeitamente Centralizado)
+    # Quadro do Score Geral (Totalmente Centralizado e Justo)
     pdf.set_y(80)
     if score < 50:
         cr, cg, cb = 239, 68, 68
@@ -273,7 +271,7 @@ def gerar_pdf_oficial(dados, score):
         cr, cg, cb = 34, 197, 94
         status_txt = "ALTO DESEMPENHO"
 
-    w_score = 130
+    w_score = 110
     x_score = (210 - w_score) / 2.0
     
     pdf.set_fill_color(cr, cg, cb)
@@ -285,12 +283,12 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_text_color(255, 255, 255)
     pdf.cell(w_score, 6, conv(f"{score} / 100"), align='C', ln=True)
     
-    pdf.set_font('Helvetica', 'B', 8.5)
+    pdf.set_font('Helvetica', 'B', 8)
     pdf.cell(w_score, 5, conv(f"SCORE GERAL DE OTIMIZAÇÃO ({status_txt})"), align='C', ln=True)
 
-    # Título da Auditoria Ampliado e com Mais Espaço Vertical
+    # Título da Auditoria
     pdf.set_y(106)
-    pdf.set_font('Helvetica', 'B', 14) # Fonte maior
+    pdf.set_font('Helvetica', 'B', 14)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 7, conv('AUDITORIA DETALHADA DE PONTOS DE BUSCA'), align='C', ln=True)
     pdf.ln(8)
@@ -307,7 +305,7 @@ def gerar_pdf_oficial(dados, score):
     ]
 
     for titulo, pct, rotulo, desc in itens:
-        pdf.set_font('Helvetica', 'B', 9.5) # Fonte maior nos tópicos
+        pdf.set_font('Helvetica', 'B', 9.5)
         pdf.set_text_color(30, 41, 59)
         pdf.cell(120, 4, conv(titulo), ln=False)
         
@@ -346,12 +344,12 @@ def gerar_pdf_oficial(dados, score):
     pdf.add_page()
     
     pdf.set_y(32)
-    pdf.set_font('Helvetica', 'B', 14) # Fonte maior no título principal
+    pdf.set_font('Helvetica', 'B', 14)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 7, conv('PROPOSTA COMERCIAL & ESTRUTURAÇÃO ESTRATÉGICA'), align='C', ln=True)
     pdf.ln(8)
 
-    # Quadro Informativo Ajustado com Textos Maiores e Centralizados
+    # Quadro Informativo
     pdf.set_fill_color(240, 249, 255)
     pdf.set_draw_color(62, 161, 219)
     pdf.set_line_width(0.6)
@@ -360,11 +358,11 @@ def gerar_pdf_oficial(dados, score):
 
     y_info = pdf.get_y() + 3
     pdf.set_xy(12, y_info)
-    pdf.set_font('Helvetica', 'B', 10) # Título da caixa maior
+    pdf.set_font('Helvetica', 'B', 10)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(186, 5, conv('POR QUE SEU NEGÓCIO PRECISA DE OTIMIZAÇÃO PROFISSIONAL?'), align='C', ln=True)
     
-    pdf.set_font('Helvetica', '', 9) # Texto interno maior
+    pdf.set_font('Helvetica', '', 9)
     pdf.set_text_color(51, 65, 85)
     txt_exp = (
         "Mais de 80% das buscas locais no Google e Maps resultam em uma ação imediata (ligação, rota ou mensagem).\n"
@@ -374,8 +372,9 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_x(12)
     pdf.multi_cell(186, 4.5, conv(txt_exp), align='C')
     
-    pdf.set_y(90)
-    pdf.set_font('Helvetica', 'B', 14) # Fonte maior
+    # Descido o Bloco da Proposta de Planos para Maior Respiro Vertical
+    pdf.set_y(98)
+    pdf.set_font('Helvetica', 'B', 14)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 7, conv('PROPOSTA DE PLANOS E INVESTIMENTO'), align='C', ln=True)
     pdf.ln(8)
@@ -464,7 +463,7 @@ def gerar_pdf_oficial(dados, score):
     pdf.add_page()
     
     pdf.set_y(32)
-    pdf.set_font('Helvetica', 'B', 14) # Fonte maior no título
+    pdf.set_font('Helvetica', 'B', 14)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 7, conv('CONTRATO DE PRESTAÇÃO DE SERVIÇOS'), align='C', ln=True)
     pdf.ln(8)
