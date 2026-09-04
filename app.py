@@ -1,7 +1,8 @@
 import io
+import os
 import requests
 import streamlit as st
-from fpdf import FPDF
+from weasyprint import HTML, CSS
 
 # -----------------------------------------------------------------------------
 # 1. CONFIGURAÇÃO DA PÁGINA DO STREAMLIT
@@ -12,7 +13,6 @@ st.set_page_config(
     layout="wide"
 )
 
-# Estilização do Aplicativo (Tema Dark Tour360VR)
 st.markdown("""
     <style>
     .stApp { background-color: #0f172a; color: #f8fafc; }
@@ -32,316 +32,327 @@ st.markdown("""
 
 API_KEY_GOOGLE = st.secrets.get("GOOGLE_PLACES_API_KEY", "")
 
-def conv(texto):
-    """Garante compatibilidade de caracteres com latin-1 evitando '?' e falhas."""
-    return str(texto).encode('latin-1', 'replace').decode('latin-1')
-
 # -----------------------------------------------------------------------------
-# 2. CLASSE GERADORA DE PDF OFICIAL TOUR360VR
+# 2. GERADOR DE PDF DE ALTA QUALIDADE (HTML/CSS VIA WEASYPRINT)
 # -----------------------------------------------------------------------------
-class PDFTour360Oficial(FPDF):
-    def header(self):
-        # Logo do Tour360VR no lado esquerdo do cabeçalho
-        try:
-            self.image('Logo TOUR transparente.png', 12, 7, 16)
-            x_pos = 32
-        except:
-            x_pos = 12
+def gerar_pdf_perfeito(dados, score):
+    # Verifica o caminho da logo para carregar no HTML
+    logo_path = os.path.abspath('Logo TOUR transparente.png')
+    logo_html = f'<img src="file://{logo_path}" style="height: 45px; vertical-align: middle; margin-right: 12px;">' if os.path.exists(logo_path) else ''
 
-        if self.page_no() == 1:
-            self.set_xy(x_pos, 8)
-            self.set_font('Helvetica', 'B', 18)
-            self.set_text_color(255, 61, 61) # Red Logo #FF3D3D
-            self.cell(0, 7, 'TOUR360VR', ln=True)
-            self.set_xy(x_pos, 15)
-            self.set_font('Helvetica', 'B', 10)
-            self.set_text_color(62, 161, 219) # Blue Logo #3EA1DB
-            self.cell(0, 5, conv('DIAGNÓSTICO E AUDITORIA DE PERFIL DO GOOGLE'), ln=True)
+    html_content = f"""
+    <!DOCTYPE html>
+    <html lang="pt-BR">
+    <head>
+        <meta charset="UTF-8">
+        <style>
+            @page {{
+                size: A4;
+                margin: 20mm 15mm 20mm 15mm;
+                @bottom-center {{
+                    content: "tour360vr.com.br • contato@tour360vr.com.br • WhatsApp: (16) 99133-2121";
+                    font-family: 'Helvetica Neue', Arial, sans-serif;
+                    font-size: 8pt;
+                    color: #64748b;
+                    border-top: 1px solid #e2e8f0;
+                    padding-top: 8px;
+                    width: 100%;
+                }}
+            }}
+            body {{
+                font-family: 'Helvetica Neue', Arial, sans-serif;
+                color: #1e293b;
+                background-color: #ffffff;
+                font-size: 10pt;
+                line-height: 1.5;
+            }}
+            .header-nav {{
+                border-bottom: 2px solid #ff3d3d;
+                padding-bottom: 10px;
+                margin-bottom: 20px;
+            }}
+            .brand-title {{
+                font-size: 20pt;
+                font-weight: bold;
+                color: #ff3d3d;
+                display: inline-block;
+                vertical-align: middle;
+            }}
+            .brand-subtitle {{
+                font-size: 10pt;
+                color: #3ea1db;
+                font-weight: bold;
+                margin-top: 2px;
+            }}
+            .cover-card {{
+                background-color: #f8fafc;
+                border: 1px solid #e2e8f0;
+                border-radius: 8px;
+                padding: 18px;
+                margin-bottom: 20px;
+            }}
+            .capa-preview-box {{
+                border: 2px dashed #cbd5e1;
+                background-color: #ffffff;
+                border-radius: 6px;
+                padding: 15px;
+                text-align: center;
+                margin-bottom: 18px;
+            }}
+            .score-box {{
+                text-align: center;
+                color: #ffffff;
+                padding: 15px;
+                border-radius: 8px;
+                margin-bottom: 20px;
+                background-color: {'#ff3d3d' if score < 50 else ('#ff9933' if score < 80 else '#8cc63f')};
+            }}
+            .score-val {{
+                font-size: 32pt;
+                font-weight: bold;
+            }}
+            .score-lbl {{
+                font-size: 9pt;
+                font-weight: bold;
+                letter-spacing: 1px;
+            }}
+            .bar-bg {{
+                background-color: #e2e8f0;
+                height: 8px;
+                border-radius: 4px;
+                overflow: hidden;
+                margin-top: 4px;
+                margin-bottom: 12px;
+            }}
+            .bar-fill {{
+                height: 100%;
+                background-color: {'#ff3d3d' if score < 50 else ('#ff9933' if score < 80 else '#8cc63f')};
+            }}
+            .page-break {{
+                page-break-before: always;
+            }}
             
-            self.set_draw_color(255, 61, 61)
-            self.set_line_width(0.8)
-            self.line(12, 26, 198, 26)
-            self.set_line_width(0.2)
-            self.ln(8)
-        else:
-            self.set_xy(x_pos, 8)
-            self.set_font('Helvetica', 'B', 12)
-            self.set_text_color(255, 61, 61)
-            self.cell(0, 5, 'TOUR360VR', ln=True)
-            self.set_xy(x_pos, 13)
-            self.set_font('Helvetica', '', 8)
-            self.set_text_color(100, 116, 139)
-            self.cell(0, 4, conv('Consultoria & Diagnóstico do Google Meu Negócio'), ln=True)
-            
-            self.set_draw_color(226, 232, 240)
-            self.set_line_width(0.3)
-            self.line(12, 24, 198, 24)
-            self.set_line_width(0.2)
-            self.ln(7)
+            /* TABELA DE INVESTIMENTOS EM 3 COLUNAS PERFEITAS */
+            .pricing-table {{
+                width: 100%;
+                border-collapse: separate;
+                border-spacing: 10px;
+                margin-top: 15px;
+            }}
+            .pricing-col {{
+                width: 31%;
+                background-color: #f8fafc;
+                border: 1px solid #e2e8f0;
+                border-radius: 8px;
+                padding: 15px;
+                vertical-align: top;
+            }}
+            .pricing-col.featured {{
+                width: 38%;
+                background-color: #fff5f5;
+                border: 2px solid #ff3d3d;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            }}
+            .plan-title {{
+                font-size: 11pt;
+                font-weight: bold;
+                color: #0f172a;
+                text-align: center;
+            }}
+            .plan-price {{
+                font-size: 15pt;
+                font-weight: bold;
+                color: #ff3d3d;
+                text-align: center;
+                margin: 8px 0;
+            }}
+            .plan-list {{
+                font-size: 8.5pt;
+                color: #475569;
+                padding-left: 15px;
+                margin: 0;
+            }}
+            .plan-list li {{
+                margin-bottom: 5px;
+            }}
 
-    def footer(self):
-        self.set_y(-15)
-        self.set_font('Helvetica', '', 8)
-        self.set_text_color(100, 116, 139)
-        self.set_draw_color(226, 232, 240)
-        self.line(12, self.get_y() - 2, 198, self.get_y() - 2)
+            /* CONTRATO */
+            .contract-title {{
+                font-size: 14pt;
+                font-weight: bold;
+                text-align: center;
+                color: #0f172a;
+                margin-bottom: 15px;
+            }}
+            .clause-box {{
+                background-color: #f8fafc;
+                border: 1px solid #e2e8f0;
+                padding: 10px 15px;
+                border-radius: 6px;
+                margin: 10px 0;
+                font-size: 9pt;
+            }}
+        </style>
+    </head>
+    <body>
+
+        <!-- PÁGINA 1: CAPA DA FICHA & DIAGNÓSTICO -->
+        <div class="header-nav">
+            {logo_html}
+            <div class="brand-title">TOUR360VR</div>
+            <div class="brand-subtitle">DIAGNÓSTICO E AUDITORIA DE PERFIL DO GOOGLE MEU NEGÓCIO</div>
+        </div>
+
+        <div class="cover-card">
+            <div style="font-size: 13pt; font-weight: bold; color: #0f172a; margin-bottom: 8px;">Ficha Analisada do Cliente</div>
+            <div class="capa-preview-box">
+                <div style="font-size: 14pt; font-weight: bold; color: #ff3d3d;">{dados['nome']}</div>
+                <div style="font-size: 9pt; color: #64748b; margin-top: 4px;">📍 {dados['endereco']}</div>
+                <div style="font-size: 9pt; color: #64748b;">📞 {dados['telefone']} | ✉️ {dados.get('email_cliente', 'Não informado')}</div>
+                <div style="font-size: 9pt; color: #64748b;">🌐 {dados['website']}</div>
+            </div>
+            <div><strong>Avaliações no Google:</strong> ⭐ {dados['nota']} Estrelas ({dados['avaliacoes']} avaliações)</div>
+        </div>
+
+        <div class="score-box">
+            <div class="score-val">{score} / 100</div>
+            <div class="score-lbl">{'STATUS CRÍTICO - AÇÃO NECESSÁRIA URGENTE' if score < 50 else 'STATUS MÉDIO - OTIMIZAÇÃO RECOMENDADA'}</div>
+        </div>
+
+        <div style="font-size: 12pt; font-weight: bold; margin-bottom: 10px; color: #0f172a;">Diagnóstico Detalhado do Perfil (Pontos de Busca)</div>
         
-        self.cell(62, 8, 'tour360vr.com.br', link='https://tour360vr.com.br', align='L')
-        self.cell(62, 8, 'contato@tour360vr.com.br', link='mailto:contato@tour360vr.com.br', align='C')
-        self.cell(62, 8, 'WhatsApp: (16) 99133-2121', link='https://wa.me/5516991332121', align='R')
+        <div>
+            <div><strong>Fotos e Resolução Visual:</strong> <span style="color: {'#8cc63f' if dados['tem_fotos_hd'] else '#ff3d3d'}; font-weight: bold;">{'Bom (Imagens HD)' if dados['tem_fotos_hd'] else 'Ruim (Baixa Resolução / Antigas)'}</span></div>
+            <div class="bar-bg"><div class="bar-fill" style="width: {'100%' if dados['tem_fotos_hd'] else '25%'};"></div></div>
 
-def gerar_pdf_oficial(dados, score):
-    pdf = PDFTour360Oficial()
-    pdf.set_auto_page_break(auto=True, margin=18)
-    
-    # -------------------------------------------------------------------------
-    # PÁGINA 1: CAPA & AUDITORIA COM BARRAS DE PROGRESSO
-    # -------------------------------------------------------------------------
-    pdf.add_page()
-    
-    # Cartão da Ficha do Cliente
-    pdf.set_y(30)
-    pdf.set_fill_color(248, 250, 252)
-    pdf.rect(12, 30, 186, 48, 'F')
-    pdf.set_xy(16, 33)
-    pdf.set_font('Helvetica', 'B', 13)
-    pdf.set_text_color(15, 23, 42)
-    pdf.cell(0, 7, conv(f"Empresa: {dados['nome']}"), ln=True)
-    
-    pdf.set_font('Helvetica', '', 9.5)
-    pdf.set_text_color(51, 65, 85)
-    pdf.set_x(16); pdf.cell(0, 5.5, conv(f"Endereço: {dados['endereco']}"), ln=True)
-    pdf.set_x(16); pdf.cell(0, 5.5, conv(f"E-mail: {dados.get('email_cliente', 'Não informado')} | Telefone: {dados['telefone']}"), ln=True)
-    pdf.set_x(16); pdf.cell(0, 5.5, conv(f"Website: {dados['website']}"), ln=True)
-    pdf.set_x(16); pdf.cell(0, 5.5, conv(f"Avaliações no Google: {dados['nota']} Estrelas ({dados['avaliacoes']} avaliações)"), ln=True)
+            <div><strong>Tour Virtual 360° Interativo:</strong> <span style="color: {'#8cc63f' if dados['tem_tour360'] else '#ff3d3d'}; font-weight: bold;">{'Bom (Publicado no Maps)' if dados['tem_tour360'] else 'Ruim (Ausente - Perda de Visibilidade)'}</span></div>
+            <div class="bar-bg"><div class="bar-fill" style="width: {'100%' if dados['tem_tour360'] else '5%'};"></div></div>
 
-    # Bloco do Score Geral de Saúde do Perfil
-    pdf.set_y(82)
-    if score < 50:
-        cr, cg, cb = 255, 61, 61 # Vermelho
-        status_txt = "STATUS CRÍTICO - AÇÃO NECESSÁRIA URGENTE"
-    elif score < 80:
-        cr, cg, cb = 255, 153, 51 # Laranja
-        status_txt = "STATUS MÉDIO - OTIMIZAÇÕES RECOMENDADAS"
-    else:
-        cr, cg, cb = 140, 198, 63 # Verde Logo
-        status_txt = "PERFIL OTIMIZADO E EM ALTA PERFORMANCE"
+            <div><strong>Categorias Principal e Secundárias:</strong> <span style="color: {'#8cc63f' if dados['categorias_completas'] else '#ff9933'}; font-weight: bold;">{'Completas' if dados['categorias_completas'] else 'Médio (Incompletas)'}</span></div>
+            <div class="bar-bg"><div class="bar-fill" style="width: {'100%' if dados['categorias_completas'] else '50%'};"></div></div>
 
-    pdf.set_fill_color(cr, cg, cb)
-    pdf.rect(12, 82, 186, 26, 'F')
-    pdf.set_xy(12, 84)
-    pdf.set_font('Helvetica', 'B', 22)
-    pdf.set_text_color(255, 255, 255)
-    pdf.cell(186, 9, f"{score} / 100", align='C', ln=True)
-    pdf.set_font('Helvetica', 'B', 8.5)
-    pdf.cell(186, 5, conv(status_txt), align='C', ln=True)
+            <div><strong>Horários e Exceções (Feriados):</strong> <span style="color: {'#8cc63f' if dados['horarios_ok'] else '#ff9933'}; font-weight: bold;">{'Atualizados' if dados['horarios_ok'] else 'Médio (Incompleto)'}</span></div>
+            <div class="bar-bg"><div class="bar-fill" style="width: {'100%' if dados['horarios_ok'] else '40%'};"></div></div>
 
-    # Detalhamento de Auditoria com Barras de Progresso
-    pdf.set_y(114)
-    pdf.set_font('Helvetica', 'B', 12)
-    pdf.set_text_color(15, 23, 42)
-    pdf.cell(0, 6, conv('Diagnóstico Detalhado do Perfil (Pontos de Busca)'), ln=True)
-    pdf.ln(2)
+            <div><strong>Website e Links de Conversão:</strong> <span style="color: {'#8cc63f' if dados['website'] != 'Não possui' else '#ff3d3d'}; font-weight: bold;">{'Links Ativos' if dados['website'] != 'Não possui' else 'Ruim (Sem Links Diretos)'}</span></div>
+            <div class="bar-bg"><div class="bar-fill" style="width: {'100%' if dados['website'] != 'Não possui' else '10%'};"></div></div>
+        </div>
 
-    itens = [
-        ("Fotos e Resolução Visual", 30 if not dados['tem_fotos_hd'] else 100, "Ruim (Baixa Resolução / Antigas)" if not dados['tem_fotos_hd'] else "Bom (Fotos HD Atualizadas)"),
-        ("Tour Virtual 360 Interativo", 0 if not dados['tem_tour360'] else 100, "Ruim (Ausente - Perda de Visibilidade)" if not dados['tem_tour360'] else "Bom (Publicado no Google Maps)"),
-        ("Categorias Principal e Secundárias", 50 if not dados['categorias_completas'] else 100, "Médio (Incompletas)" if not dados['categorias_completas'] else "Bom (Relevância Otimizada)"),
-        ("Horários e Exceções (Feriados)", 40 if not dados['horarios_ok'] else 100, "Médio (Incompleto / Feriados)" if not dados['horarios_ok'] else "Bom (Horários Atualizados)"),
-        ("Website e Links de Conversão", 10 if dados['website'] == 'Não possui' else 100, "Ruim (Sem Links Diretos no Perfil)" if dados['website'] == 'Não possui' else "Bom (Links Ativos)"),
-    ]
+        <!-- PÁGINA 2: PLANO DE AÇÃO & PROPOSTA DE PLANOS -->
+        <div class="page-break"></div>
 
-    for titulo, pct, desc in itens:
-        pdf.set_font('Helvetica', 'B', 9)
-        pdf.set_text_color(30, 41, 59)
-        pdf.cell(100, 5, conv(f"- {titulo}:"), ln=False)
-        pdf.set_font('Helvetica', '', 8.5)
-        pdf.set_text_color(100, 116, 139)
-        pdf.cell(86, 5, conv(desc), align='R', ln=True)
+        <div class="header-nav">
+            {logo_html}
+            <div class="brand-title">TOUR360VR</div>
+            <div class="brand-subtitle">PLANO DE AÇÃO E PROPOSTA COMERCIAL</div>
+        </div>
 
-        pdf.set_fill_color(226, 232, 240)
-        pdf.rect(12, pdf.get_y(), 186, 5, 'F')
-        
-        if pct < 40:
-            pdf.set_fill_color(255, 61, 61)
-        elif pct < 80:
-            pdf.set_fill_color(255, 153, 51)
-        else:
-            pdf.set_fill_color(140, 198, 63)
+        <div style="font-size: 12pt; font-weight: bold; margin-bottom: 8px; color: #0f172a;">Plano de Ação Estruturado</div>
+        <div style="font-size: 9pt; color: #475569; margin-bottom: 15px;">
+            1. <strong>Atualização Cadastral & SEO Local:</strong> Otimização completa das palavras-chave de busca.<br>
+            2. <strong>Criação do Tour Virtual 360°:</strong> Aumento direto da permanência e cliques na ficha.<br>
+            3. <strong>Produção Fotográfica Profissional:</strong> Imagens em alta resolução para transmitir autoridade.<br>
+            4. <strong>Integração de Links de Conversão:</strong> Inclusão de botões de WhatsApp, menu e reservas.
+        </div>
+
+        <div style="font-size: 12pt; font-weight: bold; margin-bottom: 5px; color: #0f172a;">Proposta de Investimento e Planos</div>
+
+        <table class="pricing-table">
+            <tr>
+                <td class="pricing-col">
+                    <div class="plan-title">PLANO START</div>
+                    <div class="plan-price">R$ 500,00</div>
+                    <ul class="plan-list">
+                        <li>Correção cadastral completa</li>
+                        <li>Otimização de SEO Local</li>
+                        <li>Ajuste de categorias</li>
+                        <li>Inclusão de links diretos</li>
+                        <li>Suporte técnico dedicado</li>
+                    </ul>
+                </td>
+                <td class="pricing-col featured">
+                    <div class="plan-title" style="color: #ff3d3d;">PLANO PRO</div>
+                    <div style="text-align: center; font-size: 8pt; font-weight: bold; color: #ff3d3d;">(Recomendado)</div>
+                    <div class="plan-price">R$ 1.200,00</div>
+                    <ul class="plan-list">
+                        <li><strong>Tudo do Plano Start</strong></li>
+                        <li><strong>Criação do Tour Virtual 360°</strong></li>
+                        <li><strong>Sessão Fotográfica Profissional</strong></li>
+                        <li>SEO Avançado no Google Maps</li>
+                        <li>Relatório de Entrega Visual</li>
+                        <li>Atendimento Prioritário</li>
+                    </ul>
+                </td>
+                <td class="pricing-col">
+                    <div class="plan-title">GESTÃO MENSAL</div>
+                    <div class="plan-price">R$ 600,00<span style="font-size: 8pt;">/mês</span></div>
+                    <ul class="plan-list">
+                        <li>Postagens semanais na ficha</li>
+                        <li>Gestão contínua de avaliações</li>
+                        <li>Atualização periódica de fotos</li>
+                        <li>Proteção contra alterações</li>
+                        <li>Relatórios mensais de métricas</li>
+                    </ul>
+                </td>
+            </tr>
+        </table>
+
+        <!-- PÁGINA 3: CONTRATO -->
+        <div class="page-break"></div>
+
+        <div class="header-nav">
+            {logo_html}
+            <div class="brand-title">TOUR360VR</div>
+            <div class="brand-subtitle">CONTRATO DE PRESTAÇÃO DE SERVIÇOS</div>
+        </div>
+
+        <div class="contract-title">CONTRATO DE PRESTAÇÃO DE SERVIÇOS</div>
+
+        <div style="font-size: 9pt; color: #334155; line-height: 1.6;">
+            <p><strong>CONTRATADA:</strong> TOUR360VR, representada por Rubens H. Okamoto, CPF: 287.932.298-79, E-mail: contato@tour360vr.com.br e Telefone: (16) 99133-2121.</p>
+            <p><strong>CONTRATANTE:</strong> {dados['nome']}, Endereço: {dados['endereco']}, E-mail: {dados.get('email_cliente', 'Não informado')}, Telefone: {dados['telefone']}.</p>
             
-        largura_barra = max(float(pct) * 1.86, 3.0)
-        pdf.rect(12, pdf.get_y(), largura_barra, 5, 'F')
-        pdf.ln(8)
+            <p>A <strong>CONTRATADA</strong> compromete-se a executar os serviços de otimização, reestruturação técnica e/ou produção de Tour Virtual 360° para o perfil do Google da <strong>CONTRATANTE</strong>.</p>
 
-    # -------------------------------------------------------------------------
-    # PÁGINA 2: PLANO DE AÇÃO & PROPOSTA DE PLANOS (COM PRO EM DESTAQUE MAIOR)
-    # -------------------------------------------------------------------------
-    pdf.add_page()
-    
-    pdf.set_font('Helvetica', 'B', 12)
-    pdf.set_text_color(15, 23, 42)
-    pdf.cell(0, 6, conv('Plano de Ação Estruturado'), ln=True)
-    
-    pdf.set_font('Helvetica', '', 9)
-    pdf.set_text_color(51, 65, 85)
-    acoes = (
-        "1. Atualização Cadastral & SEO Local: Otimização completa das palavras-chave de busca.\n"
-        "2. Criação do Tour Virtual 360°: Aumento direto da permanência e cliques na ficha.\n"
-        "3. Produção Fotográfica Profissional: Imagens em alta resolução para transmitir autoridade.\n"
-        "4. Integração de Links de Conversão: Inclusão de botões de WhatsApp, menu e reservas."
-    )
-    pdf.multi_cell(186, 4.5, conv(acoes))
-    pdf.ln(6)
+            <p><strong>CLÁUSULA PRIMEIRA:</strong> Os serviços serão iniciados em até 5 dias úteis após o fornecimento dos acessos e informações necessárias ao perfil.</p>
 
-    pdf.set_font('Helvetica', 'B', 12)
-    pdf.set_text_color(15, 23, 42)
-    pdf.cell(0, 6, conv('Proposta de Investimento e Planos'), ln=True)
-    pdf.ln(3)
+            <p><strong>CLÁUSULA SEGUNDA:</strong> O não pagamento na data acordada sujeitará o presente contrato à incidência de juros legais de mora e interrupção temporária dos serviços.</p>
 
-    y_p = pdf.get_y()
-    
-    # --- COLUNA 1: PLANO START (R$ 500,00) ---
-    pdf.set_fill_color(248, 250, 252)
-    pdf.set_draw_color(226, 232, 240)
-    pdf.rect(12, y_p + 4, 54, 88, 'FD')
-    
-    pdf.set_xy(12, y_p + 8)
-    pdf.set_font('Helvetica', 'B', 10)
-    pdf.set_text_color(30, 41, 59)
-    pdf.cell(54, 5, 'PLANO START', align='C', ln=True)
-    
-    pdf.set_font('Helvetica', 'B', 13)
-    pdf.set_text_color(255, 61, 61)
-    pdf.cell(54, 7, 'R$ 500,00', align='C', ln=True)
-    
-    pdf.set_font('Helvetica', '', 8)
-    pdf.set_text_color(51, 65, 85)
-    it_start = "- Correção cadastral\n- Otimização de SEO\n- Ajuste de categorias\n- Links de conversão\n- Suporte técnico"
-    pdf.set_xy(14, y_p + 24)
-    pdf.multi_cell(50, 4.5, conv(it_start))
+            <p><strong>CLÁUSULA TERCEIRA - SELEÇÃO DO PLANO CONTRATADO:</strong></p>
+            <div class="clause-box">
+                ( &nbsp; &nbsp; ) Plano Start - R$ 500,00 &nbsp; &nbsp; &nbsp; &nbsp; ( &nbsp; &nbsp; ) Plano Pro - R$ 1.200,00 &nbsp; &nbsp; &nbsp; &nbsp; ( &nbsp; &nbsp; ) Gestão Mensal - R$ 600,00/mês
+            </div>
 
-    # --- COLUNA 2: PLANO PRO (R$ 1.200,00) - RECOMENDADO EM DESTAQUE AMPLIADO ---
-    pdf.set_fill_color(254, 242, 242)
-    pdf.set_draw_color(255, 61, 61)
-    pdf.set_line_width(0.8)
-    pdf.rect(70, y_p, 66, 96, 'FD') # Quadro com altura e largura aumentadas
-    pdf.set_line_width(0.2)
-    
-    pdf.set_xy(70, y_p + 5)
-    pdf.set_font('Helvetica', 'B', 11)
-    pdf.set_text_color(255, 61, 61)
-    pdf.cell(66, 5, conv('PLANO PRO'), align='C', ln=True)
-    pdf.set_font('Helvetica', 'B', 8.5)
-    pdf.cell(66, 4, conv('(Recomendado)'), align='C', ln=True)
-    
-    pdf.set_font('Helvetica', 'B', 14)
-    pdf.cell(66, 7, 'R$ 1.200,00', align='C', ln=True)
-    
-    pdf.set_font('Helvetica', '', 8.5)
-    pdf.set_text_color(51, 65, 85)
-    it_pro = "- Tudo do Plano Start\n- Tour Virtual 360°\n- Ensaio Fotográfico\n- SEO Avançado Google\n- Relatório de Entrega\n- Suporte Prioritário"
-    pdf.set_xy(73, y_p + 26)
-    pdf.multi_cell(60, 4.8, conv(it_pro))
+            <p><strong>CLÁUSULA QUARTA - CONDIÇÕES DE PAGAMENTO:</strong></p>
+            <div class="clause-box">
+                ( &nbsp; &nbsp; ) À Vista &nbsp; &nbsp; &nbsp; &nbsp; ( &nbsp; &nbsp; ) 2x &nbsp; &nbsp; &nbsp; &nbsp; ( &nbsp; &nbsp; ) 3x &nbsp; &nbsp; &nbsp; &nbsp; ( &nbsp; &nbsp; ) Mensal - Vencimento Todo Dia: _____
+            </div>
 
-    # --- COLUNA 3: GESTÃO MENSAL (R$ 600,00/mês) ---
-    pdf.set_fill_color(248, 250, 252)
-    pdf.set_draw_color(226, 232, 240)
-    pdf.rect(140, y_p + 4, 54, 88, 'FD')
-    
-    pdf.set_xy(140, y_p + 8)
-    pdf.set_font('Helvetica', 'B', 10)
-    pdf.set_text_color(30, 41, 59)
-    pdf.cell(54, 5, conv('GESTÃO MENSAL'), align='C', ln=True)
-    
-    pdf.set_font('Helvetica', 'B', 13)
-    pdf.set_text_color(255, 61, 61)
-    pdf.cell(54, 7, 'R$ 600,00/mês', align='C', ln=True)
-    
-    pdf.set_font('Helvetica', '', 8)
-    pdf.set_text_color(51, 65, 85)
-    it_mensal = "- Postagens semanais\n- Gestão de avaliações\n- Atualização de fotos\n- Proteção da ficha\n- Relatórios mensais"
-    pdf.set_xy(142, y_p + 24)
-    pdf.multi_cell(50, 4.5, conv(it_mensal))
+            <br><br><br>
+            <table style="width: 100%; border-collapse: collapse; text-align: center;">
+                <tr>
+                    <td style="width: 45%; border-top: 1px solid #0f172a; padding-top: 5px;">
+                        <strong>TOUR360VR</strong><br>Rubens H. Okamoto
+                    </td>
+                    <td style="width: 10%;"></td>
+                    <td style="width: 45%; border-top: 1px solid #0f172a; padding-top: 5px;">
+                        <strong>{dados['nome']}</strong><br>Aceite / Assinatura
+                    </td>
+                </tr>
+            </table>
+        </div>
 
-    # -------------------------------------------------------------------------
-    # PÁGINA 3: CONTRATO DE PRESTAÇÃO DE SERVIÇOS
-    # -------------------------------------------------------------------------
-    pdf.add_page()
+    </body>
+    </html>
+    """
     
-    # Título do Contrato Ampliado
-    pdf.set_font('Helvetica', 'B', 14)
-    pdf.set_text_color(15, 23, 42)
-    pdf.cell(0, 8, conv('CONTRATO DE PRESTAÇÃO DE SERVIÇOS'), align='C', ln=True)
-    pdf.ln(4)
-
-    # Identificação das Partes com Bolds Solicitados
-    pdf.set_font('Helvetica', '', 8.5)
-    pdf.set_text_color(51, 65, 85)
-    
-    pdf.set_font('Helvetica', 'B', 8.5)
-    pdf.write(4.5, conv("CONTRATADA: "))
-    pdf.set_font('Helvetica', '', 8.5)
-    pdf.write(4.5, conv("TOUR360VR, representada por Rubens H. Okamoto, CPF: 287.932.298-79, E-mail: contato@tour360vr.com.br e Telefone: (16) 99133-2121.\n"))
-    
-    pdf.set_font('Helvetica', 'B', 8.5)
-    pdf.write(4.5, conv("CONTRATANTE: "))
-    pdf.set_font('Helvetica', '', 8.5)
-    pdf.write(4.5, conv(f"{dados['nome']}, Endereço: {dados['endereco']}, E-mail: {dados.get('email_cliente', 'Não informado')}, Telefone: {dados['telefone']}.\n\n"))
-    
-    pdf.multi_cell(186, 4.5, conv("A CONTRATADA compromete-se a executar os serviços de otimização, reestruturação técnica e/ou produção de Tour Virtual 360° para o perfil do Google do CONTRATANTE."))
-    pdf.ln(5)
-
-    # Cláusula Primeira
-    pdf.set_font('Helvetica', 'B', 8.5)
-    pdf.write(4.5, conv("CLÁUSULA PRIMEIRA: "))
-    pdf.set_font('Helvetica', '', 8.5)
-    pdf.write(4.5, conv("Os serviços serão iniciados em até 5 dias úteis após o fornecimento dos acessos e informações necessárias ao perfil.\n\n"))
-
-    # Cláusula Segunda
-    pdf.set_font('Helvetica', 'B', 8.5)
-    pdf.write(4.5, conv("CLÁUSULA SEGUNDA: "))
-    pdf.set_font('Helvetica', '', 8.5)
-    pdf.write(4.5, conv("O não pagamento na data acordada sujeitará o presente contrato à incidência de juros legais de mora e interrupção temporária dos serviços.\n\n"))
-
-    # Cláusula Terceira (Seleção de Plano)
-    pdf.set_font('Helvetica', 'B', 8.5)
-    pdf.write(4.5, conv("CLÁUSULA TERCEIRA - SELEÇÃO DO PLANO CONTRATADO:\n"))
-    pdf.set_font('Helvetica', '', 8.5)
-    
-    pdf.set_fill_color(248, 250, 252)
-    pdf.rect(12, pdf.get_y() + 1, 186, 12, 'F')
-    pdf.set_xy(16, pdf.get_y() + 3)
-    pdf.cell(0, 8, conv("(      ) Plano Start - R$ 500,00     (      ) Plano Pro - R$ 1.200,00     (      ) Gestão Mensal - R$ 600,00/mês"), ln=True)
-    pdf.ln(3)
-
-    # Cláusula Quarta (Condições de Pagamento)
-    pdf.set_font('Helvetica', 'B', 8.5)
-    pdf.write(4.5, conv("CLÁUSULA QUARTA - CONDIÇÕES DE PAGAMENTO:\n"))
-    pdf.set_font('Helvetica', '', 8.5)
-    
-    pdf.set_fill_color(248, 250, 252)
-    pdf.rect(12, pdf.get_y() + 1, 186, 12, 'F')
-    pdf.set_xy(16, pdf.get_y() + 3)
-    pdf.cell(0, 8, conv("(      ) À Vista     (      ) 2x     (      ) 3x     (      ) Mensal - Vencimento Todo Dia: _____"), ln=True)
-    pdf.ln(20)
-
-    # Campo de Assinaturas
-    pdf.cell(88, 5, '__________________________________', align='C')
-    pdf.cell(10, 5, '')
-    pdf.cell(88, 5, '__________________________________', align='C', ln=True)
-    
-    pdf.set_font('Helvetica', 'B', 8)
-    pdf.cell(88, 4, 'TOUR360VR (Rubens H. Okamoto)', align='C')
-    pdf.cell(10, 4, '')
-    pdf.cell(88, 4, conv(f"{dados['nome']}"), align='C', ln=True)
-
     buffer = io.BytesIO()
-    pdf.output(buffer)
+    HTML(string=html_content).write_pdf(buffer)
     buffer.seek(0)
     return buffer
 
 # -----------------------------------------------------------------------------
-# 3. INTERFACE STREAMLIT COM FORMULÁRIO COMPLETO DE DADOS DO CLIENTE
+# 3. INTERFACE STREAMLIT COM FORMULÁRIO COMPLETO
 # -----------------------------------------------------------------------------
 st.subheader("📋 Dados para Consulta e Emissão de Documentos")
 
@@ -395,7 +406,6 @@ if st.button("🚀 Analisar Perfil e Gerar Diagnóstico", use_container_width=Tr
             except Exception as e:
                 st.error(f"Erro ao conectar na API do Google: {e}")
 
-        # Se não houver chave API ou falhar a requisição
         if not dados:
             dados = {
                 "nome": nome_estabelecimento,
@@ -448,8 +458,8 @@ if st.button("🚀 Analisar Perfil e Gerar Diagnóstico", use_container_width=Tr
         st.progress(50 if not dados["categorias_completas"] else 100, text="Categorias: Incompletas")
         st.progress(10 if dados["website"] == "Não possui" else 100, text="Website / Links de Ação: Não Identificado")
 
-        # Gerar o PDF Oficial em Tema Claro
-        pdf_bytes = gerar_pdf_oficial(dados, score)
+        # Gerar o PDF via WeasyPrint
+        pdf_bytes = gerar_pdf_perfeito(dados, score)
 
         st.markdown("---")
         st.subheader("📄 Exportar Diagnóstico, Proposta e Contrato em PDF")
