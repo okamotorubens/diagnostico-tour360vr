@@ -38,49 +38,40 @@ def conv(texto):
     return str(texto).encode('latin-1', 'replace').decode('latin-1')
 
 # -----------------------------------------------------------------------------
-# 2. GERADOR DE PDF TOUR360VR (CORRIGIDO E DIAGRAMADO)
+# 2. GERADOR DE PDF TOUR360VR (COM CAPA INICIAL E DIAGRAMAÇÃO CORRIGIDA)
 # -----------------------------------------------------------------------------
 class PDFTour360Oficial(FPDF):
     def header(self):
-        # Tenta carregar a imagem da logo do repositório
+        # Não exibe cabeçalho padrão na Capa Inicial (Página 1)
+        if self.page_no() == 1:
+            return
+
         try:
             self.image('Logo TOUR transparente.png', 12, 6, 18)
             x_pos = 34
         except:
             x_pos = 12
 
-        if self.page_no() == 1:
-            self.set_xy(x_pos, 8)
-            self.set_font('Helvetica', 'B', 18)
-            self.set_text_color(255, 61, 61) # Red Logo #FF3D3D
-            self.cell(0, 7, 'TOUR360VR', ln=True)
-            self.set_xy(x_pos, 15)
-            self.set_font('Helvetica', 'B', 10)
-            self.set_text_color(62, 161, 219) # Blue Logo #3EA1DB
-            self.cell(0, 5, conv('DIAGNÓSTICO E AUDITORIA DE PERFIL DO GOOGLE'), ln=True)
-            
-            self.set_draw_color(255, 61, 61)
-            self.set_line_width(0.8)
-            self.line(12, 26, 198, 26)
-            self.set_line_width(0.2)
-            self.ln(8)
-        else:
-            self.set_xy(x_pos, 8)
-            self.set_font('Helvetica', 'B', 12)
-            self.set_text_color(255, 61, 61)
-            self.cell(0, 5, 'TOUR360VR', ln=True)
-            self.set_xy(x_pos, 13)
-            self.set_font('Helvetica', '', 8.5)
-            self.set_text_color(100, 116, 139)
-            self.cell(0, 4, conv('Consultoria & Diagnóstico do Google Meu Negócio'), ln=True)
-            
-            self.set_draw_color(226, 232, 240)
-            self.set_line_width(0.3)
-            self.line(12, 24, 198, 24)
-            self.set_line_width(0.2)
-            self.ln(7)
+        self.set_xy(x_pos, 8)
+        self.set_font('Helvetica', 'B', 12)
+        self.set_text_color(255, 61, 61)
+        self.cell(0, 5, 'TOUR360VR', ln=True)
+        self.set_xy(x_pos, 13)
+        self.set_font('Helvetica', '', 8.5)
+        self.set_text_color(100, 116, 139)
+        self.cell(0, 4, conv('Consultoria & Diagnóstico do Google Meu Negócio'), ln=True)
+        
+        self.set_draw_color(226, 232, 240)
+        self.set_line_width(0.3)
+        self.line(12, 24, 198, 24)
+        self.set_line_width(0.2)
+        self.ln(10)
 
     def footer(self):
+        # Não exibe rodapé na Capa Inicial
+        if self.page_no() == 1:
+            return
+
         self.set_y(-15)
         self.set_font('Helvetica', '', 8.5)
         self.set_text_color(100, 116, 139)
@@ -96,27 +87,64 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_auto_page_break(auto=True, margin=18)
     
     # -------------------------------------------------------------------------
-    # PÁGINA 1: CAPA, DIAGNÓSTICO E PLANO DE AÇÃO
+    # PÁGINA 1: CAPA INICIAL COM LOGO E FICHA GOOGLE
     # -------------------------------------------------------------------------
     pdf.add_page()
     
-    # Cartão da Ficha do Cliente (Nome direto, sem a palavra "Empresa:")
-    pdf.set_y(29)
-    pdf.set_fill_color(248, 250, 252)
-    pdf.rect(12, 29, 186, 38, 'F')
-    pdf.set_xy(16, 31)
-    pdf.set_font('Helvetica', 'B', 14)
-    pdf.set_text_color(15, 23, 42)
-    pdf.cell(0, 7, conv(f"{dados['nome']}"), ln=True) # Apenas nome direto
-    
-    pdf.set_font('Helvetica', '', 9.5)
-    pdf.set_text_color(51, 65, 85)
-    pdf.set_x(16); pdf.cell(0, 5, conv(f"Endereço / Cidade: {dados['endereco']}"), ln=True)
-    pdf.set_x(16); pdf.cell(0, 5, conv(f"Telefone: {dados['telefone']} | Website: {dados['website']}"), ln=True)
-    pdf.set_x(16); pdf.cell(0, 5, conv(f"Avaliações no Google: {dados['nota']} Estrelas ({dados['avaliacoes']} avaliações)"), ln=True)
+    # Logo Central na Capa
+    try:
+        pdf.image('Logo TOUR transparente.png', 85, 30, 40)
+    except:
+        pass
 
-    # Bloco do Score Geral de Saúde do Perfil
-    pdf.set_y(70)
+    pdf.set_y(78)
+    pdf.set_font('Helvetica', 'B', 28)
+    pdf.set_text_color(255, 61, 61)
+    pdf.cell(0, 10, 'TOUR360VR', align='C', ln=True)
+    
+    pdf.set_font('Helvetica', 'B', 12)
+    pdf.set_text_color(62, 161, 219)
+    pdf.cell(0, 6, conv('DIAGNÓSTICO & AUDITORIA DE PERFIL DO GOOGLE'), align='C', ln=True)
+    pdf.ln(15)
+
+    # Moldura da Ficha do Google
+    pdf.set_fill_color(248, 250, 252)
+    pdf.set_draw_color(226, 232, 240)
+    pdf.rect(15, pdf.get_y(), 180, 120, 'FD')
+    
+    y_capa = pdf.get_y() + 8
+    pdf.set_xy(20, y_capa)
+    pdf.set_font('Helvetica', 'B', 18)
+    pdf.set_text_color(15, 23, 42)
+    pdf.cell(170, 8, conv(f"{dados['nome']}"), align='C', ln=True)
+    
+    pdf.set_font('Helvetica', '', 10)
+    pdf.set_text_color(100, 116, 139)
+    pdf.cell(170, 6, conv(f"📍 {dados['endereco']}"), align='C', ln=True)
+    pdf.cell(170, 6, conv(f"📞 Telefone: {dados['telefone']} | Website: {dados['website']}"), align='C', ln=True)
+    pdf.cell(170, 6, conv(f"⭐ Avaliações no Google: {dados['nota']} ({dados['avaliacoes']} avaliações)"), align='C', ln=True)
+    pdf.ln(10)
+
+    # Imagem/Foto da Ficha na Capa (se houver foto do Places ou placeholder)
+    try:
+        if dados.get("foto_url"):
+            pdf.image(dados["foto_url"], 30, pdf.get_y(), 150, 65)
+        else:
+            pdf.set_fill_color(226, 232, 240)
+            pdf.rect(30, pdf.get_y(), 150, 60, 'F')
+            pdf.set_xy(30, pdf.get_y() + 25)
+            pdf.set_font('Helvetica', 'B', 11)
+            pdf.set_text_color(100, 116, 139)
+            pdf.cell(150, 6, conv("FICHA DO GOOGLE MEU NEGÓCIO PESQUISADA"), align='C', ln=True)
+    except:
+        pass
+
+    # -------------------------------------------------------------------------
+    # PÁGINA 2: DIAGNÓSTICO DETALHADO & PLANO DE AÇÃO
+    # -------------------------------------------------------------------------
+    pdf.add_page()
+    
+    # Bloco do Score
     if score < 50:
         cr, cg, cb = 255, 61, 61
         status_txt = "STATUS CRÍTICO - AÇÃO NECESSÁRIA URGENTE"
@@ -128,20 +156,20 @@ def gerar_pdf_oficial(dados, score):
         status_txt = "PERFIL OTIMIZADO E EM ALTA PERFORMANCE"
 
     pdf.set_fill_color(cr, cg, cb)
-    pdf.rect(12, 70, 186, 22, 'F')
-    pdf.set_xy(12, 72)
+    pdf.rect(12, 32, 186, 22, 'F')
+    pdf.set_xy(12, 34)
     pdf.set_font('Helvetica', 'B', 18)
     pdf.set_text_color(255, 255, 255)
     pdf.cell(186, 8, f"{score} / 100", align='C', ln=True)
     pdf.set_font('Helvetica', 'B', 8)
     pdf.cell(186, 4, conv(status_txt), align='C', ln=True)
 
-    # Detalhamento de Auditoria com Fontes Ampliadas
-    pdf.set_y(96)
-    pdf.set_font('Helvetica', 'B', 11)
+    # Diagnóstico com Maior Espaçamento
+    pdf.set_y(62)
+    pdf.set_font('Helvetica', 'B', 12)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 6, conv('Diagnóstico Detalhado do Perfil (Pontos de Busca)'), ln=True)
-    pdf.ln(1)
+    pdf.ln(4)
 
     itens = [
         ("Fotos e Resolução Visual", 30 if not dados['tem_fotos_hd'] else 100, "Poucas fotos encontradas / antigas.", "Impede a avaliação prévia do local pelo cliente."),
@@ -154,7 +182,7 @@ def gerar_pdf_oficial(dados, score):
     for titulo, pct, estado, impacto in itens:
         pdf.set_font('Helvetica', 'B', 9.5)
         pdf.set_text_color(30, 41, 59)
-        pdf.cell(100, 4.5, conv(f"- {titulo}:"), ln=False)
+        pdf.cell(100, 5, conv(f"- {titulo}:"), ln=False)
         
         pdf.set_font('Helvetica', 'B', 9)
         if pct < 40:
@@ -164,9 +192,8 @@ def gerar_pdf_oficial(dados, score):
         else:
             pdf.set_text_color(140, 198, 63)
             
-        pdf.cell(86, 4.5, conv(f"Score: {pct}%"), align='R', ln=True)
+        pdf.cell(86, 5, conv(f"Score: {pct}%"), align='R', ln=True)
 
-        # Barra de Progresso
         pdf.set_fill_color(226, 232, 240)
         pdf.rect(12, pdf.get_y(), 186, 4, 'F')
         
@@ -179,21 +206,20 @@ def gerar_pdf_oficial(dados, score):
             
         largura_barra = max(float(pct) * 1.86, 3.0)
         pdf.rect(12, pdf.get_y(), largura_barra, 4, 'F')
-        pdf.ln(5)
+        pdf.ln(6)
 
-        # Estado Atual e Impacto com Fontes Maiores (9.5pt)
         pdf.set_font('Helvetica', '', 9.5)
         pdf.set_text_color(71, 85, 105)
-        pdf.cell(0, 4.2, conv(f"  Estado Atual: {estado}"), ln=True)
-        pdf.cell(0, 4.2, conv(f"  Impacto de Conversão: {impacto}"), ln=True)
-        pdf.ln(2)
+        pdf.cell(0, 4.5, conv(f"  Estado Atual: {estado}"), ln=True)
+        pdf.cell(0, 4.5, conv(f"  Impacto de Conversão: {impacto}"), ln=True)
+        pdf.ln(5) # Maior espaçamento entre categorias
 
-    # PLANO DE AÇÃO ESTRUTURADO LOGO ABAIXO DO DIAGNÓSTICO
-    pdf.ln(3)
-    pdf.set_font('Helvetica', 'B', 11)
+    # Plano de Ação Estruturado
+    pdf.ln(2)
+    pdf.set_font('Helvetica', 'B', 12)
     pdf.set_text_color(15, 23, 42)
-    pdf.cell(0, 5, conv('Plano de Ação Recomentado'), ln=True)
-    pdf.ln(1)
+    pdf.cell(0, 6, conv('Plano de Ação Recomendado'), ln=True)
+    pdf.ln(2)
     
     pdf.set_font('Helvetica', '', 9.5)
     pdf.set_text_color(51, 65, 85)
@@ -203,24 +229,24 @@ def gerar_pdf_oficial(dados, score):
         "3. Produção Fotográfica Profissional: Imagens em alta resolução para transmitir autoridade.\n"
         "4. Integração de Links de Conversão: Inclusão de botões de WhatsApp, menu e reservas."
     )
-    pdf.multi_cell(186, 4.5, conv(acoes))
+    pdf.multi_cell(186, 4.8, conv(acoes))
 
     # -------------------------------------------------------------------------
-    # PÁGINA 2: PROPOSTA DE INVESTIMENTO E PLANOS (PLANO PRO EM AZUL)
+    # PÁGINA 3: PROPOSTA DE INVESTIMENTO E PLANOS (PERFEITAMENTE DIAGRAMADA)
     # -------------------------------------------------------------------------
     pdf.add_page()
     
     pdf.set_font('Helvetica', 'B', 13)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 8, conv('Proposta de Investimento e Planos'), ln=True)
-    pdf.ln(4)
+    pdf.ln(6)
 
     y_p = pdf.get_y()
     
     # --- COLUNA 1: PLANO START (R$ 500,00) ---
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
-    pdf.rect(12, y_p + 4, 54, 95, 'FD')
+    pdf.rect(12, y_p + 4, 54, 85, 'FD')
     
     pdf.set_xy(12, y_p + 10)
     pdf.set_font('Helvetica', 'B', 11)
@@ -233,20 +259,20 @@ def gerar_pdf_oficial(dados, score):
     
     pdf.set_font('Helvetica', '', 9)
     pdf.set_text_color(51, 65, 85)
-    it_start = "- Correção cadastral\n- Otimização de SEO\n- Ajuste de categorias\n- Links de conversão\n- Suporte técnico"
+    it_start = "- Correção cadastral\n- Otimização de SEO\n- Ajuste de categorias\n- Links de conversão"
     pdf.set_xy(14, y_p + 28)
-    pdf.multi_cell(50, 5, conv(it_start))
+    pdf.multi_cell(50, 5.5, conv(it_start))
 
-    # --- COLUNA 2: PLANO PRO (R$ 1.200,00) - COR AZUL (#3EA1DB) EM DESTAQUE ---
+    # --- COLUNA 2: PLANO PRO (R$ 1.200,00) - AZUL (#3EA1DB) EM DESTAQUE ---
     pdf.set_fill_color(240, 249, 255) # Fundo Azul Suave
-    pdf.set_draw_color(62, 161, 219)  # Borda Azul #3EA1DB
+    pdf.set_draw_color(62, 161, 219)  # Borda Azul
     pdf.set_line_width(0.8)
-    pdf.rect(70, y_p, 66, 103, 'FD')
+    pdf.rect(70, y_p, 66, 93, 'FD')
     pdf.set_line_width(0.2)
     
     pdf.set_xy(70, y_p + 6)
     pdf.set_font('Helvetica', 'B', 12)
-    pdf.set_text_color(62, 161, 219) # Azul Logo
+    pdf.set_text_color(62, 161, 219)
     pdf.cell(66, 5, conv('PLANO PRO'), align='C', ln=True)
     pdf.set_font('Helvetica', 'B', 9)
     pdf.cell(66, 4, conv('(Recomendado)'), align='C', ln=True)
@@ -256,14 +282,14 @@ def gerar_pdf_oficial(dados, score):
     
     pdf.set_font('Helvetica', '', 9.5)
     pdf.set_text_color(51, 65, 85)
-    it_pro = "- Tudo do Plano Start\n- Tour Virtual 360°\n- Ensaio Fotográfico\n- SEO Avançado Google\n- Relatório de Entrega\n- Suporte Prioritário"
+    it_pro = "- Tudo do Plano Start\n- Tour Virtual 360°\n- Ensaio Fotográfico\n- Relatório de Entrega"
     pdf.set_xy(73, y_p + 28)
-    pdf.multi_cell(60, 5.2, conv(it_pro))
+    pdf.multi_cell(60, 5.5, conv(it_pro))
 
     # --- COLUNA 3: GESTÃO MENSAL (R$ 600,00/mês) ---
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
-    pdf.rect(140, y_p + 4, 54, 95, 'FD')
+    pdf.rect(140, y_p + 4, 54, 85, 'FD')
     
     pdf.set_xy(140, y_p + 10)
     pdf.set_font('Helvetica', 'B', 11)
@@ -271,17 +297,17 @@ def gerar_pdf_oficial(dados, score):
     pdf.cell(54, 5, conv('GESTÃO MENSAL'), align='C', ln=True)
     
     pdf.set_font('Helvetica', 'B', 14)
-    pdf.set_text_color(62, 161, 219) # Azul
+    pdf.set_text_color(62, 161, 219)
     pdf.cell(54, 8, 'R$ 600,00/mês', align='C', ln=True)
     
     pdf.set_font('Helvetica', '', 9)
     pdf.set_text_color(51, 65, 85)
     it_mensal = "- Postagens semanais\n- Gestão de avaliações\n- Atualização de fotos\n- Proteção da ficha\n- Relatórios mensais"
     pdf.set_xy(142, y_p + 28)
-    pdf.multi_cell(50, 5, conv(it_mensal))
+    pdf.multi_cell(50, 5.2, conv(it_mensal))
 
     # -------------------------------------------------------------------------
-    # PÁGINA 3: CONTRATO DE PRESTAÇÃO DE SERVIÇOS (COM CLÁUSULA TERCEIRA LIMPA)
+    # PÁGINA 4: CONTRATO DE PRESTAÇÃO DE SERVIÇOS (CONTRATADA EM NEGRITO)
     # -------------------------------------------------------------------------
     pdf.add_page()
     
@@ -293,11 +319,13 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_font('Helvetica', '', 9.5)
     pdf.set_text_color(51, 65, 85)
     
+    # CONTRATADA Em Negrito Solicitado
     pdf.set_font('Helvetica', 'B', 9.5)
     pdf.write(5, conv("CONTRATADA: "))
     pdf.set_font('Helvetica', '', 9.5)
-    pdf.write(5, conv("TOUR360VR, representada por Rubens H. Okamoto, CPF: 287.932.298-79, E-mail: contato@tour360vr.com.br e Telefone: (16) 99133-2121.\n"))
+    pdf.write(5, conv("TOUR360VR, representada por Rubens H. Okamoto, CPF: 287.932.298-79, E-mail: contato@tour360vr.com.br e Telefone: (16) 99133-2121.\n\n"))
     
+    # CONTRATANTE Em Negrito
     pdf.set_font('Helvetica', 'B', 9.5)
     pdf.write(5, conv("CONTRATANTE: "))
     pdf.set_font('Helvetica', '', 9.5)
@@ -316,13 +344,11 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_font('Helvetica', '', 9.5)
     pdf.write(5, conv("O não pagamento na data acordada sujeitará o presente contrato à incidência de juros legais de mora e interrupção temporária dos serviços.\n\n"))
 
-    # Cláusula Terceira Limpa (Sem Valores)
     pdf.set_font('Helvetica', 'B', 9.5)
     pdf.write(5, conv("CLÁUSULA TERCEIRA - SELEÇÃO DO PLANO CONTRATADO:\n"))
     pdf.set_font('Helvetica', '', 9.5)
     pdf.write(5, conv("(      ) Plano Start         (      ) Plano Pro         (      ) Gestão Mensal\n\n"))
 
-    # Cláusula Quarta
     pdf.set_font('Helvetica', 'B', 9.5)
     pdf.write(5, conv("CLÁUSULA QUARTA - CONDIÇÕES DE PAGAMENTO:\n"))
     pdf.set_font('Helvetica', '', 9.5)
@@ -376,6 +402,12 @@ if st.button("🚀 Analisar Perfil e Gerar Diagnóstico", use_container_width=Tr
                         place = res_details["result"]
                         photos = place.get("photos", [])
                         
+                        foto_url = None
+                        if photos and len(photos) > 0:
+                            photo_ref = photos[0].get("photo_reference")
+                            if photo_ref:
+                                foto_url = f"https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photo_reference={photo_ref}&key={API_KEY_GOOGLE}"
+
                         dados = {
                             "nome": place.get("name", nome_estabelecimento),
                             "endereco": place.get("formatted_address", cidade_estabelecimento if cidade_estabelecimento else "Endereço cadastrado"),
@@ -383,6 +415,7 @@ if st.button("🚀 Analisar Perfil e Gerar Diagnóstico", use_container_width=Tr
                             "website": place.get("website", "Não possui"),
                             "nota": place.get("rating", 0.0),
                             "avaliacoes": place.get("user_ratings_total", 0),
+                            "foto_url": foto_url,
                             "tem_tour360": False,
                             "tem_fotos_hd": len(photos) > 10,
                             "categorias_completas": False,
@@ -399,6 +432,7 @@ if st.button("🚀 Analisar Perfil e Gerar Diagnóstico", use_container_width=Tr
                 "website": "Não possui",
                 "nota": 4.2,
                 "avaliacoes": 38,
+                "foto_url": None,
                 "tem_tour360": False,
                 "tem_fotos_hd": False,
                 "categorias_completas": False,
