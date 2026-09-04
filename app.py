@@ -84,7 +84,7 @@ def gerar_pdf_claro(dados, score):
     pdf.set_text_color(30, 41, 59)
     pdf.cell(0, 6, conv('DIAGNÓSTICO E AUDITORIA DE PERFIL DO GOOGLE'), ln=True)
     
-    # Linha divisória
+   # Linha divisória
     pdf.set_draw_color(220, 38, 38)
     pdf.set_linewidth(1)
     pdf.line(12, 38, 198, 38)
