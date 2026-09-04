@@ -68,13 +68,13 @@ def conv(texto):
     return limpo.encode('latin-1', 'replace').decode('latin-1')
 
 # -----------------------------------------------------------------------------
-# 2. GERADOR DE PDF TOUR360VR (TOTALMENTE CENTRALIZADO E CORRIGIDO)
+# 2. GERADOR DE PDF TOUR360VR
 # -----------------------------------------------------------------------------
 class PDFTour360Oficial(FPDF):
     def header(self):
-        self.set_fill_color(30, 64, 175) # Azul
+        self.set_fill_color(30, 64, 175)
         self.rect(0, 0, 105, 4, 'F')
-        self.set_fill_color(255, 61, 61) # Vermelho
+        self.set_fill_color(255, 61, 61)
         self.rect(105, 0, 105, 4, 'F')
 
         if self.page_no() == 1:
@@ -249,7 +249,7 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_x(x_ficha)
     pdf.cell(w_ficha, 4.5, conv(f"Telefone: {dados['telefone']}   |   Website: {dados['website']}"), align='C', ln=True)
 
-    # Quadro do Score Geral (Corrigido para usar a variável score real)
+    # Quadro do Score Geral
     pdf.set_y(84)
     if score < 50:
         cr, cg, cb = 239, 68, 68
@@ -515,7 +515,7 @@ def gerar_pdf_oficial(dados, score):
     return buffer
 
 # -----------------------------------------------------------------------------
-# 3. INTERFACE STREAMLIT COM MENU LATERAL
+# 3. INTERFACE STREAMLIT COM MENU LATERAL E EDICAO MANUAL
 # -----------------------------------------------------------------------------
 st.sidebar.markdown("""
     <div style='text-align: center; padding-bottom: 15px;'>
@@ -549,7 +549,7 @@ if "🔍" in opcao_menu:
     
     col_e1, col_e2 = st.columns([2, 1])
     with col_e1:
-        nome_empresa = st.text_input("🏢 Nome da Empresa / Estabelecimento:", placeholder="Ex: Personalitté estética")
+        nome_empresa = st.text_input("🏢 Nome da Empresa / Estabelecimento:", placeholder="Ex: Toque de Letra")
     with col_e2:
         cidade_empresa = st.text_input("📍 Cidade / Estado:", placeholder="Ex: Ribeirão Preto, SP")
 
@@ -560,30 +560,31 @@ if "🔍" in opcao_menu:
             
             if API_KEY_GOOGLE:
                 try:
-                    url_find = f"https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input={termo_busca}&inputtype=textquery&fields=place_id&key={API_KEY_GOOGLE}"
-                    res_find = requests.get(url_find).json()
+                    # Busca ampla usando Text Search para capturar telefone e endereço completos
+                    url_search = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={termo_busca}&key={API_KEY_GOOGLE}"
+                    res_search = requests.get(url_search).json()
                     
-                    if res_find.get("candidates"):
-                        place_id = res_find["candidates"][0]["place_id"]
-                        url_details = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=name,formatted_address,formatted_phone_number,website,rating,user_ratings_total,photos&key={API_KEY_GOOGLE}"
-                        res_details = requests.get(url_details).json()
+                    if res_search.get("results"):
+                        place = res_search["results"][0]
+                        place_id = place["place_id"]
                         
-                        if "result" in res_details:
-                            place = res_details["result"]
-                            photos = place.get("photos", [])
-                            
-                            dados = {
-                                "nome": place.get("name", nome_empresa),
-                                "endereco": place.get("formatted_address", cidade_empresa if cidade_empresa else "Endereço registrado"),
-                                "telefone": place.get("formatted_phone_number", "Não informado"),
-                                "website": place.get("website", "Não possui"),
-                                "nota": place.get("rating", 0.0),
-                                "avaliacoes": place.get("user_ratings_total", 0),
-                                "tem_tour360": False,
-                                "tem_fotos_hd": len(photos) > 10,
-                                "categorias_completas": False,
-                                "horarios_ok": True
-                            }
+                        url_details = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=name,formatted_address,formatted_phone_number,website,rating,user_ratings_total,photos&key={API_KEY_GOOGLE}"
+                        res_details = requests.get(url_details).json().get("result", {})
+                        
+                        photos = res_details.get("photos", [])
+                        
+                        dados = {
+                            "nome": res_details.get("name", place.get("name", nome_empresa)),
+                            "endereco": res_details.get("formatted_address", place.get("formatted_address", f"{cidade_empresa}")),
+                            "telefone": res_details.get("formatted_phone_number", "Não informado"),
+                            "website": res_details.get("website", "Não possui"),
+                            "nota": res_details.get("rating", place.get("rating", 4.2)),
+                            "avaliacoes": res_details.get("user_ratings_total", place.get("user_ratings_total", 38)),
+                            "tem_tour360": False,
+                            "tem_fotos_hd": len(photos) > 10,
+                            "categorias_completas": False,
+                            "horarios_ok": True
+                        }
                 except Exception as e:
                     st.error(f"Erro na conexão com o Google: {e}")
 
@@ -591,7 +592,7 @@ if "🔍" in opcao_menu:
                 dados = {
                     "nome": nome_empresa,
                     "endereco": f"{cidade_empresa}" if cidade_empresa else "Ribeirão Preto / SP",
-                    "telefone": "(16) 99999-0000",
+                    "telefone": "Não informado",
                     "website": "Não possui",
                     "nota": 4.2,
                     "avaliacoes": 38,
@@ -601,22 +602,30 @@ if "🔍" in opcao_menu:
                     "horarios_ok": False
                 }
 
-            score = 100
-            if not dados["tem_tour360"]: score -= 25
-            if dados["website"] == "Não possui": score -= 20
-            if not dados["tem_fotos_hd"]: score -= 20
-            if not dados["categorias_completas"]: score -= 15
-            if not dados["horarios_ok"]: score -= 10
-            if dados["avaliacoes"] < 50: score -= 10
-
             st.session_state['dados'] = dados
-            st.session_state['score'] = score
 
-            st.success("Análise do perfil realizada com sucesso!")
+            st.success("Análise realizada!")
 
     if 'dados' in st.session_state:
         dados = st.session_state['dados']
-        score = st.session_state['score']
+        
+        st.markdown("### ✏️ Confirmar ou Editar Dados do Cliente:")
+        col_f1, col_f2 = st.columns(2)
+        with col_f1:
+            dados['endereco'] = st.text_input("📍 Endereço Completo:", value=dados['endereco'])
+        with col_f2:
+            dados['telefone'] = st.text_input("📞 Telefone / WhatsApp:", value=dados['telefone'])
+
+        # Cálculo do Score de forma limpa e dinâmica
+        score = 100
+        if not dados["tem_tour360"]: score -= 25
+        if dados["website"] == "Não possui": score -= 20
+        if not dados["tem_fotos_hd"]: score -= 20
+        if not dados["categorias_completas"]: score -= 15
+        if not dados["horarios_ok"]: score -= 10
+        if dados["avaliacoes"] < 50: score -= 10
+
+        st.session_state['score'] = score
 
         col1, col2 = st.columns([1, 2])
         with col1:
@@ -631,7 +640,7 @@ if "🔍" in opcao_menu:
             st.markdown(f"""
                 <div class="card-dark">
                     <h3 style="color: #3ea1db; margin-top: 0;">{dados['nome']}</h3>
-                    <p style="margin: 4px 0;">📍 <strong>Endereço / Cidade:</strong> {dados['endereco']}</p>
+                    <p style="margin: 4px 0;">📍 <strong>Endereço:</strong> {dados['endereco']}</p>
                     <p style="margin: 4px 0;">📞 <strong>Telefone:</strong> {dados['telefone']}</p>
                     <p style="margin: 4px 0;">🌐 <strong>Website:</strong> {dados['website']}</p>
                     <p style="margin: 4px 0;">⭐ <strong>Avaliações:</strong> {dados['nota']} ({dados['avaliacoes']} avaliações)</p>
