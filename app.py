@@ -4,7 +4,7 @@ import streamlit as st
 from fpdf import FPDF
 
 # -----------------------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA DO STREAMLIT (TEMA DARK NO APP)
+# 1. CONFIGURAÇÃO DA PÁGINA DO STREAMLIT (TEMA DARK)
 # -----------------------------------------------------------------------------
 st.set_page_config(
     page_title="Tour360VR - Plataforma de Consultoria e Diagnóstico",
@@ -202,7 +202,8 @@ def gerar_pdf_oficial(dados, score):
 
     pdf.set_font('Helvetica', '', 10)
     pdf.set_text_color(71, 85, 105)
-    pdf.cell(w_capa, 5.5, conv(f"Endereço: {dados['endereco']}"), align='C', ln=True)
+    # Exclusão da palavra "Endereço:"
+    pdf.cell(w_capa, 5.5, conv(f"{dados['endereco']}"), align='C', ln=True)
     pdf.cell(w_capa, 5.5, conv(f"Telefone: {dados['telefone']}"), align='C', ln=True)
     pdf.cell(w_capa, 5.5, conv(f"Website Cadastrado: {dados['website']}"), align='C', ln=True)
     pdf.ln(3)
@@ -245,7 +246,8 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_font('Helvetica', '', 9)
     pdf.set_text_color(71, 85, 105)
     pdf.set_x(x_ficha)
-    pdf.cell(w_ficha, 4.5, conv(f"Endereço: {dados['endereco']}"), align='C', ln=True)
+    # Exclusão da palavra "Endereço:"
+    pdf.cell(w_ficha, 4.5, conv(f"{dados['endereco']}"), align='C', ln=True)
     pdf.set_x(x_ficha)
     pdf.cell(w_ficha, 4.5, conv(f"Telefone: {dados['telefone']}   |   Website: {dados['website']}"), align='C', ln=True)
 
@@ -467,7 +469,7 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_font('Helvetica', 'B', 9.5)
     pdf.write(5.5, conv("CONTRATANTE: "))
     pdf.set_font('Helvetica', '', 9.5)
-    pdf.write(5.5, conv(f"{dados['nome']}, Endereço: {dados['endereco']}.\n\n"))
+    pdf.write(5.5, conv(f"{dados['nome']}, {dados['endereco']}.\n\n"))
     
     pdf.set_font('Helvetica', '', 9.5)
     pdf.write(5.5, conv("A "))
@@ -515,7 +517,7 @@ def gerar_pdf_oficial(dados, score):
     return buffer
 
 # -----------------------------------------------------------------------------
-# 3. INTERFACE STREAMLIT COM BUSCA TEXTSEARCH COMPLETA (GOOGLE PLACES)
+# 3. INTERFACE STREAMLIT COM CONSULTA E EDICAO EM TEMPO REAL
 # -----------------------------------------------------------------------------
 st.sidebar.markdown("""
     <div style='text-align: center; padding-bottom: 15px;'>
@@ -560,7 +562,6 @@ if "🔍" in opcao_menu:
             
             if API_KEY_GOOGLE:
                 try:
-                    # Busca direta por TextSearch para trazer objeto completo com endereço e telefone
                     url_search = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={termo_busca}&key={API_KEY_GOOGLE}"
                     res_search = requests.get(url_search).json()
                     
@@ -568,7 +569,6 @@ if "🔍" in opcao_menu:
                         place = res_search["results"][0]
                         place_id = place.get("place_id")
                         
-                        # Chamada complementar de detalhes para garantir o telefone formatado e website
                         url_details = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=name,formatted_address,formatted_phone_number,international_phone_number,website,rating,user_ratings_total,photos&key={API_KEY_GOOGLE}"
                         res_details = requests.get(url_details).json().get("result", {})
                         
@@ -609,15 +609,17 @@ if "🔍" in opcao_menu:
             st.success("Análise do perfil realizada com sucesso!")
 
     if 'dados' in st.session_state:
-        dados = st.session_state['dados']
-        
         st.markdown("---")
         st.markdown("### ✏️ Ajustar ou Adicionar Informações do Cliente:")
         col_f1, col_f2 = st.columns(2)
+        
+        # Edição direta no st.session_state para garantir atualização imediata no PDF
         with col_f1:
-            dados['endereco'] = st.text_input("📍 Endereço Completo:", value=dados['endereco'])
+            st.session_state['dados']['endereco'] = st.text_input("📍 Localização:", value=st.session_state['dados']['endereco'])
         with col_f2:
-            dados['telefone'] = st.text_input("📞 Telefone / WhatsApp:", value=dados['telefone'])
+            st.session_state['dados']['telefone'] = st.text_input("📞 Telefone / WhatsApp:", value=st.session_state['dados']['telefone'])
+
+        dados = st.session_state['dados']
 
         # Recálculo do score
         score = 100
@@ -643,13 +645,14 @@ if "🔍" in opcao_menu:
             st.markdown(f"""
                 <div class="card-dark">
                     <h3 style="color: #3ea1db; margin-top: 0;">{dados['nome']}</h3>
-                    <p style="margin: 4px 0;">📍 <strong>Endereço:</strong> {dados['endereco']}</p>
+                    <p style="margin: 4px 0;">📍 {dados['endereco']}</p>
                     <p style="margin: 4px 0;">📞 <strong>Telefone:</strong> {dados['telefone']}</p>
                     <p style="margin: 4px 0;">🌐 <strong>Website:</strong> {dados['website']}</p>
                     <p style="margin: 4px 0;">⭐ <strong>Avaliações:</strong> {dados['nota']} ({dados['avaliacoes']} avaliações)</p>
                 </div>
             """, unsafe_allow_html=True)
 
+        # Geração do PDF utilizando os dados atualizados em tempo real
         pdf_bytes = gerar_pdf_oficial(dados, score)
 
         st.markdown("---")
