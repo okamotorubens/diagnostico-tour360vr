@@ -68,7 +68,7 @@ def conv(texto):
     return limpo.encode('latin-1', 'replace').decode('latin-1')
 
 # -----------------------------------------------------------------------------
-# 2. GERADOR DE PDF TOUR360VR (CONTEÚDO DESLOCADO E TEXTOS CENTRALIZADOS)
+# 2. GERADOR DE PDF TOUR360VR (TEXTOS AMPLIADOS, ALINHAMENTO CENTRAL E FORMATO COMPACTO)
 # -----------------------------------------------------------------------------
 class PDFTour360Oficial(FPDF):
     def header(self):
@@ -101,8 +101,8 @@ class PDFTour360Oficial(FPDF):
         self.set_line_width(0.3)
         self.line(12, 21, 198, 21)
         self.set_line_width(0.2)
-        # Aumentado o espaçamento para afastar todo o conteúdo da linha
-        self.ln(16)
+        # Mais respiro vertical abaixo da linha topo
+        self.ln(20)
 
     def footer(self):
         self.set_y(-16)
@@ -165,7 +165,7 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_auto_page_break(auto=True, margin=18)
     
     # -------------------------------------------------------------------------
-    # PÁGINA 1: CAPA RECONSTRUÍDA
+    # PÁGINA 1: CAPA RECONSTRUÍDA (MODERNA E CENTRALIZADA)
     # -------------------------------------------------------------------------
     pdf.add_page()
     
@@ -188,76 +188,81 @@ def gerar_pdf_oficial(dados, score):
     pdf.cell(0, 7, conv('Tour360VR'), align='C', ln=True)
     pdf.ln(14)
 
-    # Cartão de Apresentação Centralizado
+    # Cartão de Apresentação Centralizado da Empresa (Formato Mais Quadrado)
+    w_capa = 150
+    x_capa = (210 - w_capa) / 2.0
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(203, 213, 225)
-    pdf.rounded_rect(20, 120, 170, 70, 4, 'FD')
+    pdf.rounded_rect(x_capa, 120, w_capa, 72, 4, 'FD')
 
-    pdf.set_xy(20, 128)
+    pdf.set_xy(x_capa, 128)
     pdf.set_font('Helvetica', 'B', 18)
     pdf.set_text_color(15, 23, 42)
-    pdf.cell(170, 8, conv(f"{dados['nome']}"), align='C', ln=True)
+    pdf.cell(w_capa, 8, conv(f"{dados['nome']}"), align='C', ln=True)
     
     pdf.set_font('Helvetica', 'B', 11)
     pdf.set_text_color(245, 158, 11)
     nota_stars = "*****" if dados['nota'] > 0 else ""
-    pdf.cell(170, 6, conv(f"Nota: {dados['nota']:.1f} {nota_stars}  ({dados['avaliacoes']} avaliações no Google)"), align='C', ln=True)
+    pdf.cell(w_capa, 6, conv(f"Nota: {dados['nota']:.1f} {nota_stars}  ({dados['avaliacoes']} avaliações no Google)"), align='C', ln=True)
     pdf.ln(2)
 
     pdf.set_font('Helvetica', '', 10)
     pdf.set_text_color(71, 85, 105)
-    pdf.cell(170, 5.5, conv(f"Endereço: {dados['endereco']}"), align='C', ln=True)
-    pdf.cell(170, 5.5, conv(f"Telefone: {dados['telefone']}"), align='C', ln=True)
-    pdf.cell(170, 5.5, conv(f"Website Cadastrado: {dados['website']}"), align='C', ln=True)
+    pdf.cell(w_capa, 5.5, conv(f"Endereço: {dados['endereco']}"), align='C', ln=True)
+    pdf.cell(w_capa, 5.5, conv(f"Telefone: {dados['telefone']}"), align='C', ln=True)
+    pdf.cell(w_capa, 5.5, conv(f"Website Cadastrado: {dados['website']}"), align='C', ln=True)
     pdf.ln(3)
 
     pdf.set_font('Helvetica', 'B', 10.5)
     if score < 50:
         pdf.set_text_color(239, 68, 68)
-        pdf.cell(170, 6, conv("Status da Ficha: Crítico (Visibilidade e Conversão Comprometidas)"), align='C', ln=True)
+        pdf.cell(w_capa, 6, conv("Status da Ficha: Crítico (Visibilidade Comprometida)"), align='C', ln=True)
     else:
         pdf.set_text_color(34, 197, 94)
-        pdf.cell(170, 6, conv("Status da Ficha: Otimizado e Em Expansão"), align='C', ln=True)
+        pdf.cell(w_capa, 6, conv("Status da Ficha: Otimizado e Em Expansão"), align='C', ln=True)
 
     # -------------------------------------------------------------------------
     # PÁGINA 2: DIAGNÓSTICO DETALHADO DA FICHA E SCORE GERAL
     # -------------------------------------------------------------------------
     pdf.add_page()
     
-    # Cartão com Dados da Empresa (Deslocado para baixo e textos centralizados)
+    # Cartão Ficha Analisada (Mais Quadrado, Sem Espaços Sobrando)
+    w_ficha = 150
+    x_ficha = (210 - w_ficha) / 2.0
+    
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
-    pdf.rounded_rect(12, 30, 186, 38, 3, 'FD')
+    pdf.rounded_rect(x_ficha, 34, w_ficha, 40, 3, 'FD')
     
-    pdf.set_xy(12, 32)
+    pdf.set_xy(x_ficha, 36)
     pdf.set_font('Helvetica', 'B', 8.5)
     pdf.set_text_color(100, 116, 139)
-    pdf.cell(186, 4, conv('FICHA ANALISADA DO CLIENTE'), align='C', ln=True)
+    pdf.cell(w_ficha, 4, conv('FICHA ANALISADA DO CLIENTE'), align='C', ln=True)
     
-    pdf.set_x(12)
+    pdf.set_x(x_ficha)
     pdf.set_font('Helvetica', 'B', 15)
     pdf.set_text_color(15, 23, 42)
-    pdf.cell(186, 7, conv(f"{dados['nome']}"), align='C', ln=True)
+    pdf.cell(w_ficha, 7, conv(f"{dados['nome']}"), align='C', ln=True)
     
     pdf.set_font('Helvetica', 'B', 9.5)
     pdf.set_text_color(245, 158, 11)
     nota_str = f"Nota {dados['nota']:.1f} *****" if dados['nota'] > 0 else "Sem nota registrada"
-    pdf.set_x(12)
-    pdf.cell(186, 4.5, conv(f"{nota_str}  •  {dados['avaliacoes']} avaliações no Google"), align='C', ln=True)
+    pdf.set_x(x_ficha)
+    pdf.cell(w_ficha, 4.5, conv(f"{nota_str}  •  {dados['avaliacoes']} avaliações no Google"), align='C', ln=True)
     
     pdf.set_font('Helvetica', '', 9)
     pdf.set_text_color(71, 85, 105)
-    pdf.set_x(12)
-    pdf.cell(186, 4.5, conv(f"Endereço / Cidade: {dados['endereco']}"), align='C', ln=True)
-    pdf.set_x(12)
+    pdf.set_x(x_ficha)
+    pdf.cell(w_ficha, 4.5, conv(f"Endereço / Cidade: {dados['endereco']}"), align='C', ln=True)
+    pdf.set_x(x_ficha)
     
     if dados['telefone'] and dados['telefone'] != "Não informado":
-        pdf.cell(186, 4.5, conv(f"Telefone: {dados['telefone']}  |  Website: {dados['website']}"), align='C', ln=True)
+        pdf.cell(w_ficha, 4.5, conv(f"Telefone: {dados['telefone']}  |  Website: {dados['website']}"), align='C', ln=True)
     else:
-        pdf.cell(186, 4.5, conv(f"Website: {dados['website']}"), align='C', ln=True)
+        pdf.cell(w_ficha, 4.5, conv(f"Website: {dados['website']}"), align='C', ln=True)
 
-    # Quadro do Score Geral
-    pdf.set_y(74)
+    # Quadro do Score Geral (Compacto, Mais Quadrado e Perfeitamente Centralizado)
+    pdf.set_y(80)
     if score < 50:
         cr, cg, cb = 239, 68, 68
         status_txt = "STATUS CRÍTICO"
@@ -268,27 +273,27 @@ def gerar_pdf_oficial(dados, score):
         cr, cg, cb = 34, 197, 94
         status_txt = "ALTO DESEMPENHO"
 
-    w_score = 150
+    w_score = 130
     x_score = (210 - w_score) / 2.0
     
     pdf.set_fill_color(cr, cg, cb)
     pdf.set_draw_color(cr, cg, cb)
-    pdf.rounded_rect(x_score, 74, w_score, 15, 2.5, 'FD')
+    pdf.rounded_rect(x_score, 80, w_score, 18, 3, 'FD')
     
-    pdf.set_xy(x_score, 75.5)
-    pdf.set_font('Helvetica', 'B', 15)
+    pdf.set_xy(x_score, 82)
+    pdf.set_font('Helvetica', 'B', 16)
     pdf.set_text_color(255, 255, 255)
     pdf.cell(w_score, 6, conv(f"{score} / 100"), align='C', ln=True)
     
-    pdf.set_font('Helvetica', 'B', 8)
-    pdf.cell(w_score, 4.5, conv(f"SCORE GERAL DE OTIMIZAÇÃO ({status_txt})"), align='C', ln=True)
+    pdf.set_font('Helvetica', 'B', 8.5)
+    pdf.cell(w_score, 5, conv(f"SCORE GERAL DE OTIMIZAÇÃO ({status_txt})"), align='C', ln=True)
 
-    # Título da Auditoria com Maior Espaçamento
-    pdf.set_y(98)
-    pdf.set_font('Helvetica', 'B', 13)
+    # Título da Auditoria Ampliado e com Mais Espaço Vertical
+    pdf.set_y(106)
+    pdf.set_font('Helvetica', 'B', 14) # Fonte maior
     pdf.set_text_color(15, 23, 42)
-    pdf.cell(0, 6, conv('AUDITORIA DETALHADA DE PONTOS DE BUSCA'), align='C', ln=True)
-    pdf.ln(7)
+    pdf.cell(0, 7, conv('AUDITORIA DETALHADA DE PONTOS DE BUSCA'), align='C', ln=True)
+    pdf.ln(8)
 
     pct_avaliacoes = min(int((dados['avaliacoes'] / 50.0) * 100), 100) if dados['avaliacoes'] > 0 else 10
 
@@ -302,11 +307,11 @@ def gerar_pdf_oficial(dados, score):
     ]
 
     for titulo, pct, rotulo, desc in itens:
-        pdf.set_font('Helvetica', 'B', 9)
+        pdf.set_font('Helvetica', 'B', 9.5) # Fonte maior nos tópicos
         pdf.set_text_color(30, 41, 59)
         pdf.cell(120, 4, conv(titulo), ln=False)
         
-        pdf.set_font('Helvetica', 'B', 8.5)
+        pdf.set_font('Helvetica', 'B', 9)
         if pct < 40:
             pdf.set_text_color(239, 68, 68)
         elif pct < 80:
@@ -340,26 +345,26 @@ def gerar_pdf_oficial(dados, score):
     # -------------------------------------------------------------------------
     pdf.add_page()
     
-    pdf.set_y(30)
-    pdf.set_font('Helvetica', 'B', 13)
+    pdf.set_y(32)
+    pdf.set_font('Helvetica', 'B', 14) # Fonte maior no título principal
     pdf.set_text_color(15, 23, 42)
-    pdf.cell(0, 6, conv('PROPOSTA COMERCIAL & ESTRUTURAÇÃO ESTRATÉGICA'), align='C', ln=True)
-    pdf.ln(7)
+    pdf.cell(0, 7, conv('PROPOSTA COMERCIAL & ESTRUTURAÇÃO ESTRATÉGICA'), align='C', ln=True)
+    pdf.ln(8)
 
-    # Quadro Informativo Ajustado com Texto Centralizado
+    # Quadro Informativo Ajustado com Textos Maiores e Centralizados
     pdf.set_fill_color(240, 249, 255)
     pdf.set_draw_color(62, 161, 219)
     pdf.set_line_width(0.6)
-    pdf.rounded_rect(12, pdf.get_y(), 186, 32, 2, 'FD')
+    pdf.rounded_rect(12, pdf.get_y(), 186, 36, 2, 'FD')
     pdf.set_line_width(0.2)
 
     y_info = pdf.get_y() + 3
     pdf.set_xy(12, y_info)
-    pdf.set_font('Helvetica', 'B', 9)
+    pdf.set_font('Helvetica', 'B', 10) # Título da caixa maior
     pdf.set_text_color(15, 23, 42)
-    pdf.cell(186, 4, conv('POR QUE SEU NEGÓCIO PRECISA DE OTIMIZAÇÃO PROFISSIONAL?'), align='C', ln=True)
+    pdf.cell(186, 5, conv('POR QUE SEU NEGÓCIO PRECISA DE OTIMIZAÇÃO PROFISSIONAL?'), align='C', ln=True)
     
-    pdf.set_font('Helvetica', '', 8.5)
+    pdf.set_font('Helvetica', '', 9) # Texto interno maior
     pdf.set_text_color(51, 65, 85)
     txt_exp = (
         "Mais de 80% das buscas locais no Google e Maps resultam em uma ação imediata (ligação, rota ou mensagem).\n"
@@ -367,13 +372,12 @@ def gerar_pdf_oficial(dados, score):
         "Fichas incompletas ou desatualizadas perdem clientes diariamente para concorrentes diretos com nota mais alta."
     )
     pdf.set_x(12)
-    pdf.multi_cell(186, 4.0, conv(txt_exp), align='C')
+    pdf.multi_cell(186, 4.5, conv(txt_exp), align='C')
     
-    # Respiro Ampliado para os Títulos dos Planos
-    pdf.set_y(86)
-    pdf.set_font('Helvetica', 'B', 13)
+    pdf.set_y(90)
+    pdf.set_font('Helvetica', 'B', 14) # Fonte maior
     pdf.set_text_color(15, 23, 42)
-    pdf.cell(0, 6, conv('PROPOSTA DE PLANOS E INVESTIMENTO'), align='C', ln=True)
+    pdf.cell(0, 7, conv('PROPOSTA DE PLANOS E INVESTIMENTO'), align='C', ln=True)
     pdf.ln(8)
 
     y_p = pdf.get_y() + 2
@@ -459,11 +463,11 @@ def gerar_pdf_oficial(dados, score):
     # -------------------------------------------------------------------------
     pdf.add_page()
     
-    pdf.set_y(30)
-    pdf.set_font('Helvetica', 'B', 13)
+    pdf.set_y(32)
+    pdf.set_font('Helvetica', 'B', 14) # Fonte maior no título
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 7, conv('CONTRATO DE PRESTAÇÃO DE SERVIÇOS'), align='C', ln=True)
-    pdf.ln(7)
+    pdf.ln(8)
 
     pdf.set_font('Helvetica', '', 9.5)
     pdf.set_text_color(51, 65, 85)
