@@ -81,23 +81,24 @@ class PDFTour360Oficial(FPDF):
             return
 
         try:
-            self.image('Logo TOUR transparente.png', 12, 7, 18)
+            self.image('Logo TOUR transparente.png', 12, 9, 18)
             x_pos = 34
         except:
             x_pos = 12
 
-        self.set_xy(x_pos, 7.5)
+        # Aumento do Y para afastar o texto da barra colorida superior
+        self.set_xy(x_pos, 9.5)
         self.set_font('Helvetica', 'B', 13)
         self.set_text_color(30, 64, 175)
         self.cell(0, 5, 'TOUR360VR', ln=True)
-        self.set_xy(x_pos, 13.5)
+        self.set_xy(x_pos, 15.5)
         self.set_font('Helvetica', 'B', 9)
         self.set_text_color(100, 116, 139)
         self.cell(0, 4, conv('Gestão de Perfil & Diagnóstico do Google Meu Negócio'), ln=True)
         
         self.set_draw_color(226, 232, 240)
         self.set_line_width(0.3)
-        self.line(12, 21, 198, 21)
+        self.line(12, 23, 198, 23)
         self.set_line_width(0.2)
         self.ln(20)
 
@@ -195,6 +196,8 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_text_color(15, 23, 42)
     pdf.cell(w_capa, 8, conv(f"{dados['nome']}"), align='C', ln=True)
     
+    # Centralização rigorosa da Nota e Avaliações
+    pdf.set_x(x_capa)
     pdf.set_font('Helvetica', 'B', 11)
     pdf.set_text_color(245, 158, 11)
     pdf.cell(w_capa, 6, conv(f"Nota: {dados['nota']:.1f} *****   ({dados['avaliacoes']} avaliações no Google)"), align='C', ln=True)
@@ -202,12 +205,16 @@ def gerar_pdf_oficial(dados, score):
 
     pdf.set_font('Helvetica', '', 10)
     pdf.set_text_color(71, 85, 105)
+    pdf.set_x(x_capa)
     pdf.cell(w_capa, 5.5, conv(f"{dados['endereco']}"), align='C', ln=True)
+    pdf.set_x(x_capa)
     pdf.cell(w_capa, 5.5, conv(f"Telefone: {dados['telefone']}"), align='C', ln=True)
+    pdf.set_x(x_capa)
     pdf.cell(w_capa, 5.5, conv(f"Website Cadastrado: {dados['website']}"), align='C', ln=True)
     pdf.ln(3)
 
     pdf.set_font('Helvetica', 'B', 10.5)
+    pdf.set_x(x_capa)
     if score < 50:
         pdf.set_text_color(239, 68, 68)
         pdf.cell(w_capa, 6, conv("Status da Ficha: Crítico (Visibilidade Comprometida)"), align='C', ln=True)
@@ -237,6 +244,7 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_text_color(15, 23, 42)
     pdf.cell(w_ficha, 7, conv(f"{dados['nome']}"), align='C', ln=True)
     
+    # Centralização da Nota e Avaliações na Página 2
     pdf.set_font('Helvetica', 'B', 9.5)
     pdf.set_text_color(245, 158, 11)
     pdf.set_x(x_ficha)
@@ -249,7 +257,7 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_x(x_ficha)
     pdf.cell(w_ficha, 4.5, conv(f"Telefone: {dados['telefone']}   |   Website: {dados['website']}"), align='C', ln=True)
 
-    # Quadro do Score Geral
+    # Centralização do Quadro do Score Geral
     pdf.set_y(84)
     if score < 50:
         cr, cg, cb = 239, 68, 68
@@ -273,6 +281,7 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_text_color(255, 255, 255)
     pdf.cell(w_score, 6, conv(f"{score} / 100"), align='C', ln=True)
     
+    pdf.set_xy(x_score, 92)
     pdf.set_font('Helvetica', 'B', 8.5)
     pdf.cell(w_score, 5, conv(f"SCORE GERAL DE OTIMIZAÇÃO ({status_txt})"), align='C', ln=True)
 
@@ -446,7 +455,7 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_x(142); pdf.cell(54, 4.2, conv('- Relatório mensal'), align='C', ln=True)
 
     # -------------------------------------------------------------------------
-    # PÁGINA 4: CONTRATO DE PRESTAÇÃO DE SERVIÇOS (REFORMULADO)
+    # PÁGINA 4: CONTRATO DE PRESTAÇÃO DE SERVIÇOS
     # -------------------------------------------------------------------------
     pdf.add_page()
     
@@ -467,7 +476,6 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_font('Helvetica', 'B', 9.5)
     pdf.write(5.5, conv("CONTRATANTE: "))
     pdf.set_font('Helvetica', '', 9.5)
-    # Formatação contínua sem a palavra "Endereço:"
     pdf.write(5.5, conv(f"{dados['nome']}, {dados['endereco']}, Telefone: {dados['telefone']}.\n\n"))
     
     pdf.set_font('Helvetica', '', 9.5)
