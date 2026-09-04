@@ -202,7 +202,6 @@ def gerar_pdf_oficial(dados, score):
 
     pdf.set_font('Helvetica', '', 10)
     pdf.set_text_color(71, 85, 105)
-    # Exclusão da palavra "Endereço:"
     pdf.cell(w_capa, 5.5, conv(f"{dados['endereco']}"), align='C', ln=True)
     pdf.cell(w_capa, 5.5, conv(f"Telefone: {dados['telefone']}"), align='C', ln=True)
     pdf.cell(w_capa, 5.5, conv(f"Website Cadastrado: {dados['website']}"), align='C', ln=True)
@@ -246,7 +245,6 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_font('Helvetica', '', 9)
     pdf.set_text_color(71, 85, 105)
     pdf.set_x(x_ficha)
-    # Exclusão da palavra "Endereço:"
     pdf.cell(w_ficha, 4.5, conv(f"{dados['endereco']}"), align='C', ln=True)
     pdf.set_x(x_ficha)
     pdf.cell(w_ficha, 4.5, conv(f"Telefone: {dados['telefone']}   |   Website: {dados['website']}"), align='C', ln=True)
@@ -448,7 +446,7 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_x(142); pdf.cell(54, 4.2, conv('- Relatório mensal'), align='C', ln=True)
 
     # -------------------------------------------------------------------------
-    # PÁGINA 4: CONTRATO DE PRESTAÇÃO DE SERVIÇOS
+    # PÁGINA 4: CONTRATO DE PRESTAÇÃO DE SERVIÇOS (REFORMULADO)
     # -------------------------------------------------------------------------
     pdf.add_page()
     
@@ -469,7 +467,8 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_font('Helvetica', 'B', 9.5)
     pdf.write(5.5, conv("CONTRATANTE: "))
     pdf.set_font('Helvetica', '', 9.5)
-    pdf.write(5.5, conv(f"{dados['nome']}, {dados['endereco']}.\n\n"))
+    # Formatação contínua sem a palavra "Endereço:"
+    pdf.write(5.5, conv(f"{dados['nome']}, {dados['endereco']}, Telefone: {dados['telefone']}.\n\n"))
     
     pdf.set_font('Helvetica', '', 9.5)
     pdf.write(5.5, conv("A "))
@@ -613,7 +612,6 @@ if "🔍" in opcao_menu:
         st.markdown("### ✏️ Ajustar ou Adicionar Informações do Cliente:")
         col_f1, col_f2 = st.columns(2)
         
-        # Edição direta no st.session_state para garantir atualização imediata no PDF
         with col_f1:
             st.session_state['dados']['endereco'] = st.text_input("📍 Localização:", value=st.session_state['dados']['endereco'])
         with col_f2:
@@ -621,7 +619,6 @@ if "🔍" in opcao_menu:
 
         dados = st.session_state['dados']
 
-        # Recálculo do score
         score = 100
         if not dados["tem_tour360"]: score -= 25
         if dados["website"] == "Não possui": score -= 20
@@ -652,7 +649,6 @@ if "🔍" in opcao_menu:
                 </div>
             """, unsafe_allow_html=True)
 
-        # Geração do PDF utilizando os dados atualizados em tempo real
         pdf_bytes = gerar_pdf_oficial(dados, score)
 
         st.markdown("---")
