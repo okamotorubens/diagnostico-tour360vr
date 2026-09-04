@@ -59,18 +59,20 @@ st.markdown("""
 API_KEY_GOOGLE = st.secrets.get("GOOGLE_PLACES_API_KEY", "")
 
 def conv(texto):
-    """Trata caracteres para Latin-1 e elimina símbolos unicode não suportados para evitar '?'."""
+    """Trata a codificação para Latin-1 e substitui símbolos unicode incompatíveis por caracteres seguros para FPDF."""
     if not texto:
         return ""
-    limpo = str(texto).replace("📍", "").replace("📞", "").replace("⭐", "").replace("✉️", "").replace("🌐", "").replace("★", "").replace("☆", "")
+    limpo = str(texto)
+    # Substituições universais de unicode para evitar '?'
+    limpo = limpo.replace("•", "- ").replace("✓", "[OK] ").replace("X", "[X] ")
+    limpo = limpo.replace("📍", "").replace("📞", "").replace("⭐", "").replace("✉️", "").replace("🌐", "").replace("★", "").replace("☆", "")
     return limpo.encode('latin-1', 'replace').decode('latin-1')
 
 # -----------------------------------------------------------------------------
-# 2. GERADOR DE PDF TOUR360VR (DESIGN EXATO DO MODELO DE REFERÊNCIA)
+# 2. GERADOR DE PDF TOUR360VR (CORRIGIDO E SEM SOBREPOSIÇÕES)
 # -----------------------------------------------------------------------------
 class PDFTour360Oficial(FPDF):
     def header(self):
-        # Linha dupla de acento no topo
         self.set_fill_color(30, 64, 175) # Azul
         self.rect(0, 0, 105, 3.5, 'F')
         self.set_fill_color(255, 61, 61) # Vermelho
@@ -121,7 +123,7 @@ def gerar_pdf_oficial(dados, score):
     # Cartão Ficha Analisada do Cliente
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
-    pdf.rect(12, 24, 186, 32, 'FD')
+    pdf.rect(12, 24, 186, 30, 'FD')
     
     pdf.set_xy(16, 26)
     pdf.set_font('Helvetica', 'B', 8.5)
@@ -144,8 +146,8 @@ def gerar_pdf_oficial(dados, score):
     else:
         pdf.cell(178, 4.2, conv(f"Website: {dados['website']}"), ln=True)
 
-    # Faixa do Score Geral de Otimização
-    pdf.set_y(60)
+    # Faixa do Score Geral Ajustada (Sem Quebra de Linha Estreita)
+    pdf.set_y(58)
     if score < 50:
         cr, cg, cb = 239, 68, 68
         status_txt = "SCORE GERAL DE OTIMIZAÇÃO (STATUS CRÍTICO)"
@@ -157,12 +159,12 @@ def gerar_pdf_oficial(dados, score):
         status_txt = "SCORE GERAL DE OTIMIZAÇÃO (PERFIL ALTO DESEMPENHO)"
 
     pdf.set_fill_color(cr, cg, cb)
-    pdf.rect(12, pdf.get_y(), 186, 11, 'F')
+    pdf.rect(12, 58, 186, 10, 'F')
     
-    pdf.set_xy(12, pdf.get_y() + 1.5)
-    pdf.set_font('Helvetica', 'B', 11)
+    pdf.set_xy(12, 59.5)
+    pdf.set_font('Helvetica', 'B', 10.5)
     pdf.set_text_color(255, 255, 255)
-    pdf.cell(186, 8, conv(f"{score}/100 - {status_txt}"), align='C', ln=True)
+    pdf.cell(186, 7, conv(f"{score}/100 - {status_txt}"), align='C', ln=True)
     pdf.ln(6)
 
     # Marcadores de Seção em Caixas Cinzas
@@ -226,11 +228,10 @@ def gerar_pdf_oficial(dados, score):
         pdf.ln(3)
 
     # -------------------------------------------------------------------------
-    # PÁGINA 2: SOLUÇÃO & PLANOS DE INVESTIMENTO
+    # PÁGINA 2: SOLUÇÃO & PLANOS DE INVESTIMENTO (COLUNAS BLOQUEADAS)
     # -------------------------------------------------------------------------
     pdf.add_page()
     
-    # Caixa Marcador de Cabeçalho
     pdf.set_fill_color(241, 245, 249)
     pdf.rect(12, 24, 186, 6, 'F')
     pdf.set_xy(14, 25)
@@ -239,7 +240,6 @@ def gerar_pdf_oficial(dados, score):
     pdf.cell(178, 4, conv('SOLUÇÃO & PLANOS'), ln=True)
     pdf.ln(4)
 
-    # Quadro Informativo "Por que otimizar"
     pdf.set_fill_color(240, 249, 255)
     pdf.set_draw_color(62, 161, 219)
     pdf.set_line_width(0.6)
@@ -271,7 +271,7 @@ def gerar_pdf_oficial(dados, score):
 
     y_p = pdf.get_y()
     
-    # --- PLANO START ---
+    # --- PLANO START (X = 12) ---
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
     pdf.rect(12, y_p, 54, 52, 'FD')
@@ -289,12 +289,12 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_font('Helvetica', '', 8.5)
     pdf.set_text_color(51, 65, 85)
     pdf.set_xy(12, y_p + 19)
-    pdf.cell(54, 4.2, conv('• Correção cadastral'), align='C', ln=True)
-    pdf.set_x(12); pdf.cell(54, 4.2, conv('• Otimização de SEO'), align='C', ln=True)
-    pdf.set_x(12); pdf.cell(54, 4.2, conv('• Ajuste de categorias'), align='C', ln=True)
-    pdf.set_x(12); pdf.cell(54, 4.2, conv('• Inserção de links'), align='C', ln=True)
+    pdf.cell(54, 4.2, conv('- Correção cadastral'), align='C', ln=True)
+    pdf.set_x(12); pdf.cell(54, 4.2, conv('- Otimização de SEO'), align='C', ln=True)
+    pdf.set_x(12); pdf.cell(54, 4.2, conv('- Ajuste de categorias'), align='C', ln=True)
+    pdf.set_x(12); pdf.cell(54, 4.2, conv('- Inserção de links'), align='C', ln=True)
 
-    # --- PLANO PRO (RECOMENDADO) ---
+    # --- PLANO PRO (X = 72) ---
     pdf.set_fill_color(240, 249, 255)
     pdf.set_draw_color(62, 161, 219)
     pdf.set_line_width(1.0)
@@ -319,12 +319,12 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_font('Helvetica', 'B', 8.5)
     pdf.set_text_color(30, 41, 59)
     pdf.set_xy(72, y_p + 22)
-    pdf.cell(66, 4.5, conv('• Tudo do Plano Start'), align='C', ln=True)
-    pdf.set_x(72); pdf.cell(66, 4.5, conv('• Tour Virtual 360°'), align='C', ln=True)
-    pdf.set_x(72); pdf.cell(66, 4.5, conv('• Ensaio Fotográfico'), align='C', ln=True)
-    pdf.set_x(72); pdf.cell(66, 4.5, conv('• Relatório de Entrega'), align='C', ln=True)
+    pdf.cell(66, 4.5, conv('- Tudo do Plano Start'), align='C', ln=True)
+    pdf.set_x(72); pdf.cell(66, 4.5, conv('- Tour Virtual 360°'), align='C', ln=True)
+    pdf.set_x(72); pdf.cell(66, 4.5, conv('- Ensaio Fotográfico'), align='C', ln=True)
+    pdf.set_x(72); pdf.cell(66, 4.5, conv('- Relatório de Entrega'), align='C', ln=True)
 
-    # --- GESTÃO MENSAL ---
+    # --- GESTÃO MENSAL (X = 144) ---
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
     pdf.rect(144, y_p, 54, 52, 'FD')
@@ -342,10 +342,10 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_font('Helvetica', '', 8.5)
     pdf.set_text_color(51, 65, 85)
     pdf.set_xy(144, y_p + 19)
-    pdf.cell(54, 4.2, conv('• Postagens semanais'), align='C', ln=True)
-    pdf.set_x(144); pdf.cell(54, 4.2, conv('• Gestão de avaliações'), align='C', ln=True)
-    pdf.set_x(144); pdf.cell(54, 4.2, conv('• Atualização de fotos'), align='C', ln=True)
-    pdf.set_x(144); pdf.cell(54, 4.2, conv('• Relatório mensal'), align='C', ln=True)
+    pdf.cell(54, 4.2, conv('- Postagens semanais'), align='C', ln=True)
+    pdf.set_x(144); pdf.cell(54, 4.2, conv('- Gestão de avaliações'), align='C', ln=True)
+    pdf.set_x(144); pdf.cell(54, 4.2, conv('- Atualização de fotos'), align='C', ln=True)
+    pdf.set_x(144); pdf.cell(54, 4.2, conv('- Relatório mensal'), align='C', ln=True)
 
     # -------------------------------------------------------------------------
     # PÁGINA 3: COMPROVAÇÃO DE ENTREGÁVEIS (ANTES VS DEPOIS)
@@ -365,7 +365,6 @@ def gerar_pdf_oficial(dados, score):
     pdf.cell(0, 5, conv('DEMONSTRATIVO VISUAL DO TRABALHO REALIZADO'), ln=True)
     pdf.ln(3)
 
-    # Quadro Comparativo Visual Antes vs Depois
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
     pdf.rect(12, pdf.get_y(), 90, 48, 'FD')
@@ -379,10 +378,10 @@ def gerar_pdf_oficial(dados, score):
     
     pdf.set_font('Helvetica', '', 8.5)
     pdf.set_text_color(71, 85, 105)
-    pdf.set_x(12); pdf.cell(90, 4.8, conv('X Fotos escuras e sem qualidade'), align='C', ln=True)
-    pdf.set_x(12); pdf.cell(90, 4.8, conv('X Sem Tour Virtual 360°'), align='C', ln=True)
-    pdf.set_x(12); pdf.cell(90, 4.8, conv('X Informações desencontradas'), align='C', ln=True)
-    pdf.set_x(12); pdf.cell(90, 4.8, conv(f'X Score do perfil: {score}/100'), align='C', ln=True)
+    pdf.set_x(12); pdf.cell(90, 4.8, conv('[X] Fotos escuras e sem qualidade'), align='C', ln=True)
+    pdf.set_x(12); pdf.cell(90, 4.8, conv('[X] Sem Tour Virtual 360°'), align='C', ln=True)
+    pdf.set_x(12); pdf.cell(90, 4.8, conv('[X] Informações desencontradas'), align='C', ln=True)
+    pdf.set_x(12); pdf.cell(90, 4.8, conv(f'[X] Score do perfil: {score}/100'), align='C', ln=True)
 
     pdf.set_xy(108, y_comp)
     pdf.set_font('Helvetica', 'B', 9.5)
@@ -391,10 +390,10 @@ def gerar_pdf_oficial(dados, score):
     
     pdf.set_font('Helvetica', '', 8.5)
     pdf.set_text_color(71, 85, 105)
-    pdf.set_x(108); pdf.cell(90, 4.8, conv('✓ Fotos HD alinhadas com SEO'), align='C', ln=True)
-    pdf.set_x(108); pdf.cell(90, 4.8, conv('✓ Tour 360° publicado no Maps'), align='C', ln=True)
-    pdf.set_x(108); pdf.cell(90, 4.8, conv('✓ Cardápio e site integrados'), align='C', ln=True)
-    pdf.set_x(108); pdf.cell(90, 4.8, conv('✓ Score do perfil: 98/100'), align='C', ln=True)
+    pdf.set_x(108); pdf.cell(90, 4.8, conv('[OK] Fotos HD alinhadas com SEO'), align='C', ln=True)
+    pdf.set_x(108); pdf.cell(90, 4.8, conv('[OK] Tour 360° publicado no Maps'), align='C', ln=True)
+    pdf.set_x(108); pdf.cell(90, 4.8, conv('[OK] Cardápio e site integrados'), align='C', ln=True)
+    pdf.set_x(108); pdf.cell(90, 4.8, conv('[OK] Score do perfil: 98/100'), align='C', ln=True)
 
     # -------------------------------------------------------------------------
     # PÁGINA 4: CONTRATO DE PRESTAÇÃO DE SERVIÇOS
@@ -451,10 +450,11 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_font('Helvetica', '', 9)
     pdf.write(5, conv("(   ) Plano Start          (   ) Plano Pro          (   ) Gestão Mensal\n\n"))
 
+    # Texto corrigido sem 'À' corrompido e com espaçamento alinhado em 1 linha
     pdf.set_font('Helvetica', 'B', 9)
     pdf.write(5, conv("CLÁUSULA QUARTA - CONDIÇÕES DE PAGAMENTO:\n"))
     pdf.set_font('Helvetica', '', 9)
-    pdf.write(5, conv("(   ) À Vista     (   ) 2x Plano Start     (   ) 3x Plano Pro     (   ) Gestão Mensal - Vencimento Todo Dia: _____\n\n\n"))
+    pdf.write(5, conv("(   ) A Vista     (   ) 2x Plano Start     (   ) 3x Plano Pro     (   ) Gestão Mensal - Vencimento Todo Dia: _____\n\n\n"))
 
     pdf.ln(16)
 
