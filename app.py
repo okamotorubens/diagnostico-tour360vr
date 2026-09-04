@@ -68,54 +68,85 @@ def conv(texto):
     return limpo.encode('latin-1', 'replace').decode('latin-1')
 
 # -----------------------------------------------------------------------------
-# 2. GERADOR DE PDF TOUR360VR (EFEITOS 3D, ESTILO SEARCH E RODAPÉ CENTRALIZADO)
+# 2. GERADOR DE PDF TOUR360VR (DESIGN REFINADO E MODERNO)
 # -----------------------------------------------------------------------------
 class PDFTour360Oficial(FPDF):
     def header(self):
+        # Barra de acento topo
         self.set_fill_color(30, 64, 175) # Azul
         self.rect(0, 0, 105, 3.5, 'F')
         self.set_fill_color(255, 61, 61) # Vermelho
         self.rect(105, 0, 105, 3.5, 'F')
 
-        try:
-            self.image('Logo TOUR transparente.png', 12, 7, 16)
-            x_pos = 32
-        except:
-            x_pos = 12
+        if self.page_no() == 1:
+            # Página 1 possui cabeçalho expandido em destaque
+            try:
+                self.image('Logo TOUR transparente.png', 12, 8, 22)
+                x_pos = 38
+            except:
+                x_pos = 12
 
-        self.set_xy(x_pos, 7.5)
-        self.set_font('Helvetica', 'B', 12)
-        self.set_text_color(30, 64, 175)
-        self.cell(0, 5, 'TOUR360VR', ln=True)
-        self.set_xy(x_pos, 13.0)
-        self.set_font('Helvetica', 'B', 8)
-        self.set_text_color(100, 116, 139)
-        self.cell(0, 4, conv('Gestão de Perfil & Diagnóstico do Google Meu Negócio'), ln=True)
-        
-        self.set_draw_color(226, 232, 240)
-        self.set_line_width(0.3)
-        self.line(12, 21, 198, 21)
-        self.set_line_width(0.2)
-        self.ln(10)
+            self.set_xy(x_pos, 8)
+            self.set_font('Helvetica', 'B', 18)
+            self.set_text_color(30, 64, 175)
+            self.cell(0, 7, 'TOUR360VR', ln=True)
+            self.set_xy(x_pos, 15.5)
+            self.set_font('Helvetica', 'B', 10)
+            self.set_text_color(100, 116, 139)
+            self.cell(0, 5, conv('Gestão de Perfil & Diagnóstico do Google Meu Negócio'), ln=True)
+            
+            self.set_draw_color(226, 232, 240)
+            self.set_line_width(0.4)
+            self.line(12, 23, 198, 23)
+            self.set_line_width(0.2)
+            self.ln(12)
+        else:
+            try:
+                self.image('Logo TOUR transparente.png', 12, 7, 16)
+                x_pos = 32
+            except:
+                x_pos = 12
+
+            self.set_xy(x_pos, 7.5)
+            self.set_font('Helvetica', 'B', 12)
+            self.set_text_color(30, 64, 175)
+            self.cell(0, 5, 'TOUR360VR', ln=True)
+            self.set_xy(x_pos, 13.0)
+            self.set_font('Helvetica', 'B', 8)
+            self.set_text_color(100, 116, 139)
+            self.cell(0, 4, conv('Gestão de Perfil & Diagnóstico do Google Meu Negócio'), ln=True)
+            
+            self.set_draw_color(226, 232, 240)
+            self.set_line_width(0.3)
+            self.line(12, 21, 198, 21)
+            self.set_line_width(0.2)
+            self.ln(10)
 
     def footer(self):
-        self.set_y(-15)
+        # Linha separadora do rodapé
+        self.set_y(-16)
         self.set_font('Helvetica', '', 8)
         self.set_text_color(100, 116, 139)
         self.set_draw_color(226, 232, 240)
         self.line(12, self.get_y(), 198, self.get_y())
         
-        # Rodapé com espaçamentos rigorosamente alinhados e centralizados
-        self.set_y(-12)
-        w_col = (198 - 12) / 4.0  # 46.5 mm por coluna
+        # Conteúdo do rodapé rigorosamente centralizado
+        self.set_y(-13)
+        w_col = (198 - 12) / 4.0
         self.set_x(12)
-        self.cell(w_col, 6, 'www.tour360vr.com.br', link='https://tour360vr.com.br', align='C')
-        self.cell(w_col, 6, 'contato@tour360vr.com.br', link='mailto:contato@tour360vr.com.br', align='C')
-        self.cell(w_col, 6, 'WhatsApp: (16) 99133-2121', link='https://wa.me/5516991332121', align='C')
-        self.cell(w_col, 6, f'Página {self.page_no()} de 3', align='C')
+        self.cell(w_col, 5, 'www.tour360vr.com.br', link='https://tour360vr.com.br', align='C')
+        self.cell(w_col, 5, 'contato@tour360vr.com.br', link='mailto:contato@tour360vr.com.br', align='C')
+        self.cell(w_col, 5, 'WhatsApp: (16) 99133-2121', link='https://wa.me/5516991332121', align='C')
+        self.cell(w_col, 5, f'Página {self.page_no()} de 3', align='C')
+
+        # Replicando a barra de acento na base da página
+        self.set_fill_color(30, 64, 175)
+        self.rect(0, 293.5, 105, 3.5, 'F')
+        self.set_fill_color(255, 61, 61)
+        self.rect(105, 293.5, 105, 3.5, 'F')
 
     def rounded_rect(self, x, y, w, h, r, style=''):
-        """Desenha um retângulo com cantos arredondados."""
+        """Desenha um retângulo com cantos arredondados suaves."""
         k = self.k
         hp = self.h
         if style == 'F':
@@ -155,39 +186,44 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_auto_page_break(auto=True, margin=18)
     
     # -------------------------------------------------------------------------
-    # PÁGINA 1: FICHA DO CLIENTE (ESTILO SEARCH) & AUDITORIA DETALHADA
+    # PÁGINA 1: FICHA DO CLIENTE E AUDITORIA DETALHADA
     # -------------------------------------------------------------------------
     pdf.add_page()
     
-    # Cartão Ficha Analisada do Cliente (Estilo Resultado da Busca Streamlit)
+    # Cartão da Ficha Analisada do Cliente (Ampliado e Estilizado)
     pdf.set_fill_color(248, 250, 252)
-    pdf.set_draw_color(203, 213, 225)
-    pdf.rounded_rect(12, 26, 186, 38, 3, 'FD')
+    pdf.set_draw_color(226, 232, 240)
+    pdf.rounded_rect(12, 28, 186, 40, 3, 'FD')
     
-    pdf.set_xy(16, 29)
-    pdf.set_font('Helvetica', 'B', 15)
-    pdf.set_text_color(30, 64, 175)
-    pdf.cell(178, 6, conv(f"[M] {dados['nome']}"), ln=True)
+    pdf.set_xy(16, 31)
+    pdf.set_font('Helvetica', 'B', 8.5)
+    pdf.set_text_color(100, 116, 139)
+    pdf.cell(178, 4, conv('FICHA ANALISADA DO CLIENTE'), ln=True)
     
-    pdf.set_font('Helvetica', 'B', 9)
-    pdf.set_text_color(245, 158, 11)
-    nota_str = f"[{dados['nota']:.1f} *****]" if dados['nota'] > 0 else "[Sem nota]"
     pdf.set_x(16)
-    pdf.cell(178, 4.5, conv(f"{nota_str}  ({dados['avaliacoes']} avaliações no Google)"), ln=True)
+    pdf.set_font('Helvetica', 'B', 15)
+    pdf.set_text_color(15, 23, 42)
+    pdf.cell(178, 7, conv(f"[+] {dados['nome']}"), ln=True)
     
-    pdf.set_font('Helvetica', '', 8.5)
+    pdf.set_font('Helvetica', 'B', 9.5)
+    pdf.set_text_color(245, 158, 11)
+    nota_str = f"[{dados['nota']:.1f} ★★★★★]" if dados['nota'] > 0 else "[Sem nota registrada]"
+    pdf.set_x(16)
+    pdf.cell(178, 5, conv(f"{nota_str}  •  {dados['avaliacoes']} avaliações no Google"), ln=True)
+    
+    pdf.set_font('Helvetica', '', 9)
     pdf.set_text_color(71, 85, 105)
     pdf.set_x(16)
-    pdf.cell(178, 4.2, conv(f"Endereço / Cidade: {dados['endereco']}"), ln=True)
+    pdf.cell(178, 4.5, conv(f"Endereço / Cidade: {dados['endereco']}"), ln=True)
     pdf.set_x(16)
     
     if dados['telefone'] and dados['telefone'] != "Não informado":
-        pdf.cell(178, 4.2, conv(f"Telefone: {dados['telefone']}  |  Website: {dados['website']}"), ln=True)
+        pdf.cell(178, 4.5, conv(f"Telefone: {dados['telefone']}  |  Website: {dados['website']}"), ln=True)
     else:
-        pdf.cell(178, 4.2, conv(f"Website: {dados['website']}"), ln=True)
+        pdf.cell(178, 4.5, conv(f"Website: {dados['website']}"), ln=True)
 
-    # Quadro do Score Geral em Relevo 3D
-    pdf.set_y(70)
+    # Quadro do Score Geral Compacto e Relevo Suave (Sem Espaço Sobrando)
+    pdf.set_y(73)
     if score < 50:
         cr, cg, cb = 239, 68, 68
         status_txt = "STATUS CRÍTICO"
@@ -198,25 +234,25 @@ def gerar_pdf_oficial(dados, score):
         cr, cg, cb = 34, 197, 94
         status_txt = "ALTO DESEMPENHO"
 
-    # Sombra 3D
-    pdf.set_fill_color(203, 213, 225)
-    pdf.rounded_rect(13.5, 71.5, 186, 18, 3, 'F')
+    # Sombra sutil em tom neutro
+    pdf.set_fill_color(226, 232, 240)
+    pdf.rounded_rect(31, 74.5, 148, 17, 3, 'F')
     
-    # Bloco Principal
+    # Bloco Principal do Score
     pdf.set_fill_color(cr, cg, cb)
     pdf.set_draw_color(cr, cg, cb)
-    pdf.rounded_rect(12, 70, 186, 18, 3, 'FD')
+    pdf.rounded_rect(30, 73, 148, 17, 3, 'FD')
     
-    pdf.set_xy(12, 71.5)
-    pdf.set_font('Helvetica', 'B', 18)
+    pdf.set_xy(30, 74.5)
+    pdf.set_font('Helvetica', 'B', 16)
     pdf.set_text_color(255, 255, 255)
-    pdf.cell(186, 7, conv(f"{score} / 100"), align='C', ln=True)
+    pdf.cell(148, 6, conv(f"{score} / 100"), align='C', ln=True)
     
-    pdf.set_font('Helvetica', 'B', 9)
-    pdf.cell(186, 5, conv(f"SCORE GERAL DE OTIMIZAÇÃO ({status_txt})"), align='C', ln=True)
+    pdf.set_font('Helvetica', 'B', 8.5)
+    pdf.cell(148, 4.5, conv(f"SCORE GERAL DE OTIMIZAÇÃO ({status_txt})"), align='C', ln=True)
 
     # Título Principal da Auditoria (Centralizado e Fonte Maior)
-    pdf.set_y(96)
+    pdf.set_y(98)
     pdf.set_font('Helvetica', 'B', 13)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 7, conv('AUDITORIA DETALHADA DE PONTOS DE BUSCA'), align='C', ln=True)
@@ -248,7 +284,6 @@ def gerar_pdf_oficial(dados, score):
             
         pdf.cell(66, 4, conv(f"| {pct}% - {rotulo}"), align='R', ln=True)
 
-        # Trilha da Barra Arredondada
         pdf.set_fill_color(226, 232, 240)
         pdf.rounded_rect(12, pdf.get_y(), 186, 3.5, 1.5, 'F')
         
@@ -269,7 +304,7 @@ def gerar_pdf_oficial(dados, score):
         pdf.ln(3)
 
     # -------------------------------------------------------------------------
-    # PÁGINA 2: PROPOSTA COMERCIAL & PLANOS COM EFEITO 3D NO PLANO PRO
+    # PÁGINA 2: PROPOSTA COMERCIAL E PLANOS (EFEITO 3D REFINADO)
     # -------------------------------------------------------------------------
     pdf.add_page()
     
@@ -279,11 +314,11 @@ def gerar_pdf_oficial(dados, score):
     pdf.cell(0, 7, conv('PROPOSTA COMERCIAL & ESTRUTURAÇÃO ESTRATÉGICA'), align='C', ln=True)
     pdf.ln(6)
 
-    # Quadro Informativo Expandido com Argumentos Comerciais Relevantes
+    # Quadro Informativo "Por que seu negócio precisa de otimização"
     pdf.set_fill_color(240, 249, 255)
     pdf.set_draw_color(62, 161, 219)
     pdf.set_line_width(0.6)
-    pdf.rounded_rect(12, pdf.get_y(), 186, 38, 2, 'FD')
+    pdf.rounded_rect(12, pdf.get_y(), 186, 36, 2, 'FD')
     pdf.set_line_width(0.2)
 
     y_info = pdf.get_y() + 3
@@ -300,17 +335,18 @@ def gerar_pdf_oficial(dados, score):
         "Fichas incompletas ou desatualizadas perdem clientes diariamente para concorrentes diretos com nota mais alta."
     )
     pdf.set_x(16)
-    pdf.multi_cell(178, 4.2, conv(txt_exp))
+    pdf.multi_cell(178, 4.0, conv(txt_exp))
     
-    pdf.set_y(82)
-    pdf.set_font('Helvetica', 'B', 12)
+    # Maior espaçamento de altura para descer a Proposta de Planos
+    pdf.set_y(88)
+    pdf.set_font('Helvetica', 'B', 13)
     pdf.set_text_color(15, 23, 42)
-    pdf.cell(0, 6, conv('PROPOSTA DE PLANOS E INVESTIMENTO'), align='C', ln=True)
+    pdf.cell(0, 7, conv('PROPOSTA DE PLANOS E INVESTIMENTO'), align='C', ln=True)
     pdf.ln(8)
 
     y_p = pdf.get_y() + 2
     
-    # --- PLANO START (Plano Padrão) ---
+    # --- PLANO START ---
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
     pdf.rounded_rect(12, y_p, 52, 54, 2, 'FD')
@@ -333,42 +369,42 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_x(12); pdf.cell(52, 4.2, conv('- Ajuste de categorias'), align='C', ln=True)
     pdf.set_x(12); pdf.cell(52, 4.2, conv('- Inserção de links'), align='C', ln=True)
 
-    # --- PLANO PRO (EFEITO 3D "SALTANDO" EM DESTAQUE) ---
-    # Sombra do efeito 3D
-    pdf.set_fill_color(191, 219, 254)
-    pdf.rounded_rect(70, y_p - 4, 70, 64, 4, 'F')
+    # --- PLANO PRO (EFEITO 3D ELEGANTE E PROJETADO) ---
+    # Sombra sutil de projeção 3D
+    pdf.set_fill_color(203, 213, 225)
+    pdf.rounded_rect(70, y_p - 4, 68, 62, 3, 'F')
     
-    # Bloco Principal Projetado para Frente
-    pdf.set_fill_color(239, 246, 255)
+    # Bloco Principal Elevado
+    pdf.set_fill_color(240, 249, 255)
     pdf.set_draw_color(30, 64, 175)
-    pdf.set_line_width(1.2)
-    pdf.rounded_rect(68, y_p - 6, 70, 64, 4, 'FD')
+    pdf.set_line_width(0.8)
+    pdf.rounded_rect(68, y_p - 6, 68, 62, 3, 'FD')
     pdf.set_line_width(0.2)
     
     pdf.set_xy(68, y_p - 1)
     pdf.set_font('Helvetica', 'B', 13)
     pdf.set_text_color(30, 64, 175)
-    pdf.cell(70, 5, conv('Plano Pro'), align='C', ln=True)
+    pdf.cell(68, 5, conv('Plano Pro'), align='C', ln=True)
     
-    pdf.set_xy(68, y_p + 5)
-    pdf.set_font('Helvetica', 'B', 9)
+    pdf.set_xy(68, y_p + 4)
+    pdf.set_font('Helvetica', 'B', 8.5)
     pdf.set_text_color(255, 61, 61)
-    pdf.cell(70, 4, conv('★ RECOMENDADO ★'), align='C', ln=True)
+    pdf.cell(68, 4, conv('(Recomendado)'), align='C', ln=True)
     
-    pdf.set_xy(68, y_p + 11)
-    pdf.set_font('Helvetica', 'B', 16)
+    pdf.set_xy(68, y_p + 10)
+    pdf.set_font('Helvetica', 'B', 15)
     pdf.set_text_color(30, 64, 175)
-    pdf.cell(70, 7, 'R$ 1.200,00', align='C', ln=True)
+    pdf.cell(68, 7, 'R$ 1.200,00', align='C', ln=True)
     
-    pdf.set_font('Helvetica', 'B', 9)
+    pdf.set_font('Helvetica', 'B', 8.5)
     pdf.set_text_color(15, 23, 42)
-    pdf.set_xy(68, y_p + 22)
-    pdf.cell(70, 4.8, conv('- Tudo do Plano Start'), align='C', ln=True)
-    pdf.set_x(68); pdf.cell(70, 4.8, conv('- Tour Virtual 360°'), align='C', ln=True)
-    pdf.set_x(68); pdf.cell(70, 4.8, conv('- Ensaio Fotográfico HD'), align='C', ln=True)
-    pdf.set_x(68); pdf.cell(70, 4.8, conv('- Relatório Visual de Entrega'), align='C', ln=True)
+    pdf.set_xy(68, y_p + 21)
+    pdf.cell(68, 4.5, conv('- Tudo do Plano Start'), align='C', ln=True)
+    pdf.set_x(68); pdf.cell(68, 4.5, conv('- Tour Virtual 360°'), align='C', ln=True)
+    pdf.set_x(68); pdf.cell(68, 4.5, conv('- Ensaio Fotográfico HD'), align='C', ln=True)
+    pdf.set_x(68); pdf.cell(68, 4.5, conv('- Relatório Visual de Entrega'), align='C', ln=True)
 
-    # --- GESTÃO MENSAL (Plano Padrão) ---
+    # --- GESTÃO MENSAL ---
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
     pdf.rounded_rect(144, y_p, 54, 54, 2, 'FD')
