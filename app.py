@@ -1,5 +1,6 @@
 import io
 import os
+import base64
 import requests
 import streamlit as st
 from fpdf import FPDF
@@ -13,7 +14,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# Estilização Tema Dark no Streamlit
+# Estilização Tema Dark
 st.markdown("""
     <style>
     .stApp { background-color: #0f172a; color: #f8fafc; }
@@ -34,15 +35,14 @@ st.markdown("""
 API_KEY_GOOGLE = st.secrets.get("GOOGLE_PLACES_API_KEY", "")
 
 def conv(texto):
-    """Trata acentuação nativa sem quebrar caracteres."""
+    """Trata caracteres para latin-1 evitando falhas de codificação no FPDF2."""
     return str(texto).encode('latin-1', 'replace').decode('latin-1')
 
 # -----------------------------------------------------------------------------
-# 2. GERADOR DE PDF COMPATÍVEL E FORMATADO (FPDF2)
+# 2. GERADOR DE PDF COM BARRAS DE PROGRESSO + IMPACTO DE CONVERSÃO
 # -----------------------------------------------------------------------------
-class PDFTour360Completo(FPDF):
+class PDFTour360Oficial(FPDF):
     def header(self):
-        # Tenta desenhar a logo se o arquivo existir no repositório
         try:
             self.image('Logo TOUR transparente.png', 12, 7, 16)
             x_pos = 32
@@ -91,19 +91,19 @@ class PDFTour360Completo(FPDF):
         self.cell(62, 8, 'contato@tour360vr.com.br', link='mailto:contato@tour360vr.com.br', align='C')
         self.cell(62, 8, 'WhatsApp: (16) 99133-2121', link='https://wa.me/5516991332121', align='R')
 
-def gerar_pdf_final(dados, score):
-    pdf = PDFTour360Completo()
+def gerar_pdf_oficial(dados, score):
+    pdf = PDFTour360Oficial()
     pdf.set_auto_page_break(auto=True, margin=18)
     
     # -------------------------------------------------------------------------
-    # PÁGINA 1: CAPA & DIAGNÓSTICO
+    # PÁGINA 1: CAPA & DIAGNÓSTICO COM BARRAS DE PROGRESSO E IMPACTO DE CONVERSÃO
     # -------------------------------------------------------------------------
     pdf.add_page()
     
     # Cartão da Ficha do Cliente
     pdf.set_y(30)
     pdf.set_fill_color(248, 250, 252)
-    pdf.rect(12, 30, 186, 46, 'F')
+    pdf.rect(12, 30, 186, 42, 'F')
     pdf.set_xy(16, 33)
     pdf.set_font('Helvetica', 'B', 13)
     pdf.set_text_color(15, 23, 42)
@@ -115,8 +115,8 @@ def gerar_pdf_final(dados, score):
     pdf.set_x(16); pdf.cell(0, 5.5, conv(f"Telefone: {dados['telefone']} | Website: {dados['website']}"), ln=True)
     pdf.set_x(16); pdf.cell(0, 5.5, conv(f"Avaliações no Google: {dados['nota']} Estrelas ({dados['avaliacoes']} avaliações)"), ln=True)
 
-    # Bloco do Score Geral de Saúde
-    pdf.set_y(80)
+    # Bloco do Score Geral de Saúde do Perfil
+    pdf.set_y(76)
     if score < 50:
         cr, cg, cb = 255, 61, 61
         status_txt = "STATUS CRÍTICO - AÇÃO NECESSÁRIA URGENTE"
@@ -128,39 +128,72 @@ def gerar_pdf_final(dados, score):
         status_txt = "PERFIL OTIMIZADO E EM ALTA PERFORMANCE"
 
     pdf.set_fill_color(cr, cg, cb)
-    pdf.rect(12, 80, 186, 26, 'F')
-    pdf.set_xy(12, 82)
-    pdf.set_font('Helvetica', 'B', 22)
+    pdf.rect(12, 76, 186, 24, 'F')
+    pdf.set_xy(12, 78)
+    pdf.set_font('Helvetica', 'B', 20)
     pdf.set_text_color(255, 255, 255)
-    pdf.cell(186, 9, f"{score} / 100", align='C', ln=True)
-    pdf.set_font('Helvetica', 'B', 8.5)
+    pdf.cell(186, 8, f"{score} / 100", align='C', ln=True)
+    pdf.set_font('Helvetica', 'B', 8)
     pdf.cell(186, 5, conv(status_txt), align='C', ln=True)
 
-    # Auditoria Detalhada
-    pdf.set_y(112)
-    pdf.set_font('Helvetica', 'B', 12)
+    # Detalhamento de Auditoria com Barras de Progresso e Impacto
+    pdf.set_y(106)
+    pdf.set_font('Helvetica', 'B', 11)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 6, conv('Diagnóstico Detalhado do Perfil (Pontos de Busca)'), ln=True)
     pdf.ln(2)
 
     itens = [
-        ("Fotos e Resolução Visual", 30 if not dados['tem_fotos_hd'] else 100, "Ruim (Baixa Resolução / Antigas)" if not dados['tem_fotos_hd'] else "Bom (Fotos HD)"),
-        ("Tour Virtual 360 Interativo", 0 if not dados['tem_tour360'] else 100, "Ruim (Ausente - Perda de Visibilidade)" if not dados['tem_tour360'] else "Bom (Publicado)"),
-        ("Categorias Principal e Secundárias", 50 if not dados['categorias_completas'] else 100, "Médio (Incompletas)" if not dados['categorias_completas'] else "Bom (Otimizadas)"),
-        ("Horários e Exceções (Feriados)", 40 if not dados['horarios_ok'] else 100, "Médio (Incompleto)" if not dados['horarios_ok'] else "Bom (Atualizados)"),
-        ("Website e Links de Conversão", 10 if dados['website'] == 'Não possui' else 100, "Ruim (Sem Links Diretos)" if dados['website'] == 'Não possui' else "Bom (Links Ativos)"),
+        (
+            "Fotos e Resolução Visual",
+            30 if not dados['tem_fotos_hd'] else 100,
+            "Poucas fotos encontradas / antigas.",
+            "Impede que o cliente avalie a estrutura do local antes da visita."
+        ),
+        (
+            "Tour Virtual 360 Interativo",
+            0 if not dados['tem_tour360'] else 100,
+            "Nenhum Tour 360° detectado.",
+            "Perdem-se conversões por falta de uma experiência imersiva real."
+        ),
+        (
+            "Categorias Principal e Secundárias",
+            50 if not dados['categorias_completas'] else 100,
+            "Incompletas / Sem secundárias.",
+            "Limita a visibilidade regional em buscas por serviços específicos."
+        ),
+        (
+            "Horários e Exceções (Feriados)",
+            40 if not dados['horarios_ok'] else 100,
+            "Desatualizados ou sem exceções.",
+            "Gera insatisfação e perda de clientes por buscas frustradas."
+        ),
+        (
+            "Website e Links de Conversão",
+            10 if dados['website'] == 'Não possui' else 100,
+            "Sem links diretos de conversão.",
+            "Dificulta a tomada de decisão rápida e o contato via WhatsApp."
+        )
     ]
 
-    for titulo, pct, desc in itens:
-        pdf.set_font('Helvetica', 'B', 9)
+    for titulo, pct, estado, impacto in itens:
+        pdf.set_font('Helvetica', 'B', 8.5)
         pdf.set_text_color(30, 41, 59)
-        pdf.cell(100, 5, conv(f"- {titulo}:"), ln=False)
-        pdf.set_font('Helvetica', '', 8.5)
-        pdf.set_text_color(100, 116, 139)
-        pdf.cell(86, 5, conv(desc), align='R', ln=True)
+        pdf.cell(100, 4, conv(f"• {titulo}:"), ln=False)
+        
+        pdf.set_font('Helvetica', 'B', 8)
+        if pct < 40:
+            pdf.set_text_color(255, 61, 61)
+        elif pct < 80:
+            pdf.set_text_color(255, 153, 51)
+        else:
+            pdf.set_text_color(140, 198, 63)
+            
+        pdf.cell(86, 4, conv(f"Score: {pct}%"), align='R', ln=True)
 
+        # Fundo e Preenchimento da Barra de Progresso
         pdf.set_fill_color(226, 232, 240)
-        pdf.rect(12, pdf.get_y(), 186, 5, 'F')
+        pdf.rect(12, pdf.get_y(), 186, 4, 'F')
         
         if pct < 40:
             pdf.set_fill_color(255, 61, 61)
@@ -170,11 +203,18 @@ def gerar_pdf_final(dados, score):
             pdf.set_fill_color(140, 198, 63)
             
         largura_barra = max(float(pct) * 1.86, 3.0)
-        pdf.rect(12, pdf.get_y(), largura_barra, 5, 'F')
-        pdf.ln(8)
+        pdf.rect(12, pdf.get_y(), largura_barra, 4, 'F')
+        pdf.ln(5)
+
+        # Estado Atual e Impacto em Texto
+        pdf.set_font('Helvetica', '', 8)
+        pdf.set_text_color(71, 85, 105)
+        pdf.cell(0, 3.8, conv(f"  Estado Atual: {estado}"), ln=True)
+        pdf.cell(0, 3.8, conv(f"  Impacto de Conversão: {impacto}"), ln=True)
+        pdf.ln(2.5)
 
     # -------------------------------------------------------------------------
-    # PÁGINA 2: PLANO DE AÇÃO & PROPOSTA DE INVESTIMENTO (3 COLUNAS)
+    # PÁGINA 2: PLANO DE AÇÃO & PROPOSTA DE PLANOS (PLANO PRO EM AZUL)
     # -------------------------------------------------------------------------
     pdf.add_page()
     
@@ -220,16 +260,16 @@ def gerar_pdf_final(dados, score):
     pdf.set_xy(14, y_p + 24)
     pdf.multi_cell(50, 4.5, conv(it_start))
 
-    # --- COLUNA 2: PLANO PRO (R$ 1.200,00) - DESTAQUE AMPLIO ---
-    pdf.set_fill_color(254, 242, 242)
-    pdf.set_draw_color(255, 61, 61)
+    # --- COLUNA 2: PLANO PRO (R$ 1.200,00) - AZUL (#3EA1DB) EM DESTAQUE ---
+    pdf.set_fill_color(240, 249, 255) # Fundo Azul Claro
+    pdf.set_draw_color(62, 161, 219)  # Borda Azul #3EA1DB
     pdf.set_line_width(0.8)
     pdf.rect(70, y_p, 66, 96, 'FD')
     pdf.set_line_width(0.2)
     
     pdf.set_xy(70, y_p + 5)
     pdf.set_font('Helvetica', 'B', 11)
-    pdf.set_text_color(255, 61, 61)
+    pdf.set_text_color(62, 161, 219) # Azul Logo
     pdf.cell(66, 5, conv('PLANO PRO'), align='C', ln=True)
     pdf.set_font('Helvetica', 'B', 8.5)
     pdf.cell(66, 4, conv('(Recomendado)'), align='C', ln=True)
@@ -264,7 +304,7 @@ def gerar_pdf_final(dados, score):
     pdf.multi_cell(50, 4.5, conv(it_mensal))
 
     # -------------------------------------------------------------------------
-    # PÁGINA 3: CONTRATO DE PRESTAÇÃO DE SERVIÇOS
+    # PÁGINA 3: CONTRATO DE PRESTAÇÃO DE SERVIÇOS (CLÁUSULAS LIMPAS)
     # -------------------------------------------------------------------------
     pdf.add_page()
     
@@ -299,25 +339,19 @@ def gerar_pdf_final(dados, score):
     pdf.set_font('Helvetica', '', 8.5)
     pdf.write(4.5, conv("O não pagamento na data acordada sujeitará o presente contrato à incidência de juros legais de mora e interrupção temporária dos serviços.\n\n"))
 
+    # Cláusula Terceira
     pdf.set_font('Helvetica', 'B', 8.5)
     pdf.write(4.5, conv("CLÁUSULA TERCEIRA - SELEÇÃO DO PLANO CONTRATADO:\n"))
     pdf.set_font('Helvetica', '', 8.5)
-    
-    pdf.set_fill_color(248, 250, 252)
-    pdf.rect(12, pdf.get_y() + 1, 186, 12, 'F')
-    pdf.set_xy(16, pdf.get_y() + 3)
-    pdf.cell(0, 8, conv("(      ) Plano Start - R$ 500,00     (      ) Plano Pro - R$ 1.200,00     (      ) Gestão Mensal - R$ 600,00/mês"), ln=True)
-    pdf.ln(3)
+    pdf.write(4.5, conv("(      ) Plano Start - R$ 500,00     (      ) Plano Pro - R$ 1.200,00     (      ) Gestão Mensal - R$ 600,00/mês\n\n"))
 
+    # Cláusula Quarta
     pdf.set_font('Helvetica', 'B', 8.5)
     pdf.write(4.5, conv("CLÁUSULA QUARTA - CONDIÇÕES DE PAGAMENTO:\n"))
     pdf.set_font('Helvetica', '', 8.5)
-    
-    pdf.set_fill_color(248, 250, 252)
-    pdf.rect(12, pdf.get_y() + 1, 186, 12, 'F')
-    pdf.set_xy(16, pdf.get_y() + 3)
-    pdf.cell(0, 8, conv("(      ) À Vista     (      ) 2x     (      ) 3x     (      ) Mensal - Vencimento Todo Dia: _____"), ln=True)
-    pdf.ln(20)
+    pdf.write(4.5, conv("(      ) À Vista     (      ) 2x     (      ) 3x     (      ) Mensal - Vencimento Todo Dia: _____\n\n\n"))
+
+    pdf.ln(15)
 
     # Assinaturas
     pdf.cell(88, 5, '__________________________________', align='C')
@@ -350,7 +384,7 @@ if st.button("🚀 Analisar Perfil e Gerar Diagnóstico", use_container_width=Tr
         termo_busca = f"{nome_estabelecimento}, {cidade_estabelecimento}" if cidade_estabelecimento else nome_estabelecimento
         dados = None
         
-        # Consulta ao Google Places API
+        # Consulta com Google Places API
         if API_KEY_GOOGLE:
             try:
                 url_find = f"https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input={termo_busca}&inputtype=textquery&fields=place_id&key={API_KEY_GOOGLE}"
@@ -380,7 +414,6 @@ if st.button("🚀 Analisar Perfil e Gerar Diagnóstico", use_container_width=Tr
             except Exception as e:
                 st.error(f"Erro na conexão com o Google: {e}")
 
-        # Se estiver sem chave de API ativa
         if not dados:
             dados = {
                 "nome": nome_estabelecimento,
@@ -426,14 +459,8 @@ if st.button("🚀 Analisar Perfil e Gerar Diagnóstico", use_container_width=Tr
                 </div>
             """, unsafe_allow_html=True)
 
-        st.subheader("📊 Diagnóstico dos Pontos de Busca")
-        st.progress(25 if dados["tem_fotos_hd"] else 10, text="Fotos e Resolução: Baixa Qualidade Detectada")
-        st.progress(0 if not dados["tem_tour360"] else 100, text="Tour Virtual 360°: Ausente no Perfil")
-        st.progress(50 if not dados["categorias_completas"] else 100, text="Categorias: Incompletas")
-        st.progress(10 if dados["website"] == "Não possui" else 100, text="Website / Links de Ação: Não Identificado")
-
-        # Gerar o PDF via FPDF2
-        pdf_bytes = gerar_pdf_final(dados, score)
+        # Gerar o PDF
+        pdf_bytes = gerar_pdf_oficial(dados, score)
 
         st.markdown("---")
         st.subheader("📄 Exportar Documentos Oficiais da Tour360VR")
