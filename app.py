@@ -4,7 +4,7 @@ import streamlit as st
 from fpdf import FPDF
 
 # -----------------------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA DO STREAMLIT (TEMA DARK)
+# 1. CONFIGURAÇÃO DA PÁGINA DO STREAMLIT (TEMA DARK NO APP)
 # -----------------------------------------------------------------------------
 st.set_page_config(
     page_title="Tour360VR - Plataforma de Consultoria e Diagnóstico",
@@ -68,13 +68,13 @@ def conv(texto):
     return limpo.encode('latin-1', 'replace').decode('latin-1')
 
 # -----------------------------------------------------------------------------
-# 2. GERADOR DE PDF TOUR360VR (TEXTOS CENTRALIZADOS)
+# 2. GERADOR DE PDF TOUR360VR
 # -----------------------------------------------------------------------------
 class PDFTour360Oficial(FPDF):
     def header(self):
-        self.set_fill_color(30, 64, 175) # Azul
+        self.set_fill_color(30, 64, 175)
         self.rect(0, 0, 105, 4, 'F')
-        self.set_fill_color(255, 61, 61) # Vermelho
+        self.set_fill_color(255, 61, 61)
         self.rect(105, 0, 105, 4, 'F')
 
         if self.page_no() == 1:
@@ -515,7 +515,7 @@ def gerar_pdf_oficial(dados, score):
     return buffer
 
 # -----------------------------------------------------------------------------
-# 3. INTERFACE STREAMLIT COM CONSULTA GOOGLE PLACES COMPLETA
+# 3. INTERFACE STREAMLIT COM BUSCA TEXTSEARCH COMPLETA (GOOGLE PLACES)
 # -----------------------------------------------------------------------------
 st.sidebar.markdown("""
     <div style='text-align: center; padding-bottom: 15px;'>
@@ -560,36 +560,29 @@ if "🔍" in opcao_menu:
             
             if API_KEY_GOOGLE:
                 try:
-                    # Chamada 1: Find Place
-                    url_find = f"https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input={termo_busca}&inputtype=textquery&fields=place_id&key={API_KEY_GOOGLE}"
-                    res_find = requests.get(url_find).json()
+                    # Busca direta por TextSearch para trazer objeto completo com endereço e telefone
+                    url_search = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={termo_busca}&key={API_KEY_GOOGLE}"
+                    res_search = requests.get(url_search).json()
                     
-                    place_id = None
-                    if res_find.get("candidates"):
-                        place_id = res_find["candidates"][0]["place_id"]
-                    else:
-                        # Fallback Chamada 1: Text Search
-                        url_search = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={termo_busca}&key={API_KEY_GOOGLE}"
-                        res_search = requests.get(url_search).json()
-                        if res_search.get("results"):
-                            place_id = res_search["results"][0]["place_id"]
-
-                    if place_id:
-                        # Chamada 2: Detalhes Completos (Garante Telefone e Endereço)
+                    if res_search.get("results"):
+                        place = res_search["results"][0]
+                        place_id = place.get("place_id")
+                        
+                        # Chamada complementar de detalhes para garantir o telefone formatado e website
                         url_details = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=name,formatted_address,formatted_phone_number,international_phone_number,website,rating,user_ratings_total,photos&key={API_KEY_GOOGLE}"
                         res_details = requests.get(url_details).json().get("result", {})
                         
-                        photos = res_details.get("photos", [])
-                        phone = res_details.get("formatted_phone_number") or res_details.get("international_phone_number") or "Não informado"
-                        address = res_details.get("formatted_address") or (f"{cidade_empresa}" if cidade_empresa else "Ribeirão Preto / SP")
+                        photos = res_details.get("photos", place.get("photos", []))
+                        telefone_obtido = res_details.get("formatted_phone_number") or res_details.get("international_phone_number") or "Não informado"
+                        endereco_obtido = res_details.get("formatted_address") or place.get("formatted_address") or (f"{cidade_empresa}" if cidade_empresa else "Ribeirão Preto / SP")
                         
                         dados = {
-                            "nome": res_details.get("name", nome_empresa),
-                            "endereco": address,
-                            "telefone": phone,
+                            "nome": res_details.get("name", place.get("name", nome_empresa)),
+                            "endereco": endereco_obtido,
+                            "telefone": telefone_obtido,
                             "website": res_details.get("website", "Não possui"),
-                            "nota": res_details.get("rating", 4.2),
-                            "avaliacoes": res_details.get("user_ratings_total", 38),
+                            "nota": res_details.get("rating", place.get("rating", 4.2)),
+                            "avaliacoes": res_details.get("user_ratings_total", place.get("user_ratings_total", 38)),
                             "tem_tour360": False,
                             "tem_fotos_hd": len(photos) > 10,
                             "categorias_completas": False,
@@ -613,7 +606,7 @@ if "🔍" in opcao_menu:
                 }
 
             st.session_state['dados'] = dados
-            st.success("Análise de perfil realizada com sucesso!")
+            st.success("Análise do perfil realizada com sucesso!")
 
     if 'dados' in st.session_state:
         dados = st.session_state['dados']
