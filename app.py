@@ -4,30 +4,60 @@ import streamlit as st
 from fpdf import FPDF
 
 # -----------------------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA DO STREAMLIT
+# 1. CONFIGURAÇÃO DA PÁGINA E ESTILIZAÇÃO DASHBOARD DARK
 # -----------------------------------------------------------------------------
 st.set_page_config(
-    page_title="Tour360VR - Diagnóstico do Google Meu Negócio",
+    page_title="Tour360VR - Plataforma de Consultoria e Diagnóstico",
     page_icon="🌐",
     layout="wide"
 )
 
-# Estilização Tema Dark
+# Estilização CSS inspirada na imagem do protótipo
 st.markdown("""
     <style>
     .stApp { background-color: #0f172a; color: #f8fafc; }
-    .header-box { border-bottom: 2px solid #1e40af; padding-bottom: 12px; margin-bottom: 25px; }
-    .card-info { background-color: #1e293b; border: 1px solid #334155; padding: 20px; border-radius: 8px; margin-bottom: 15px; }
-    .score-card { background-color: #1e293b; border: 2px solid #1e40af; padding: 20px; border-radius: 8px; text-align: center; }
-    .footer { position: fixed; left: 0; bottom: 0; width: 100%; background-color: #0f172a; color: #94a3b8; text-align: center; padding: 10px; border-top: 1px solid #1e293b; font-size: 12px; z-index: 100; }
+    
+    /* Topo / Header */
+    .header-box { 
+        border-bottom: 2px solid #1e40af; 
+        padding-bottom: 12px; 
+        margin-bottom: 25px; 
+    }
+    .header-title { color: #ffffff; font-size: 26px; font-weight: 700; margin: 0; }
+    .header-title span { color: #ff3d3d; }
+    .header-subtitle { color: #3ea1db; font-size: 14px; font-weight: 600; margin-top: 4px; }
+    
+    /* Cards da Interface */
+    .card-dark { 
+        background-color: #1e293b; 
+        border: 1px solid #334155; 
+        border-radius: 8px; 
+        padding: 20px; 
+        margin-bottom: 20px; 
+    }
+    .score-card { 
+        background-color: #1e293b; 
+        border: 2px solid #1e40af; 
+        padding: 20px; 
+        border-radius: 8px; 
+        text-align: center; 
+    }
+    
+    /* Rodapé Fixo */
+    .footer { 
+        position: fixed; 
+        left: 0; 
+        bottom: 0; 
+        width: 100%; 
+        background-color: #0b0f19; 
+        color: #94a3b8; 
+        text-align: center; 
+        padding: 10px; 
+        border-top: 1px solid #1e293b; 
+        font-size: 12px; 
+        z-index: 100; 
+    }
     </style>
-""", unsafe_allow_html=True)
-
-st.markdown("""
-    <div class="header-box">
-        <h1 style="color: #ffffff; margin: 0;">TOUR<span style="color: #1e40af;">360VR</span></h1>
-        <p style="color: #3ea1db; margin-top: 5px; font-weight: 600;">Plataforma de Consultoria, Diagnóstico & Gestão do Google Meu Negócio</p>
-    </div>
 """, unsafe_allow_html=True)
 
 API_KEY_GOOGLE = st.secrets.get("GOOGLE_PLACES_API_KEY", "")
@@ -40,14 +70,14 @@ def conv(texto):
     return limpo.encode('latin-1', 'replace').decode('latin-1')
 
 # -----------------------------------------------------------------------------
-# 2. GERADOR DE PDF TOUR360VR
+# 2. GERADOR DE PDF TOUR360VR (ESTILO SISTEMA DE OTIMIZAÇÃO)
 # -----------------------------------------------------------------------------
 class PDFTour360Oficial(FPDF):
     def header(self):
         if self.page_no() == 1:
-            return  # Layout próprio na Capa
+            return  # Capa com layout próprio
 
-        self.set_fill_color(30, 64, 175) # Azul Médio #1E40AF
+        self.set_fill_color(30, 64, 175) # Azul #1E40AF
         self.rect(0, 0, 105, 3, 'F')
         self.set_fill_color(62, 161, 219) # Azul Claro #3EA1DB
         self.rect(105, 0, 105, 3, 'F')
@@ -92,7 +122,7 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_auto_page_break(auto=True, margin=18)
     
     # -------------------------------------------------------------------------
-    # PÁGINA 1: CAPA INICIAL COM TÍTULO INVERTIDO E SEM AVALIAÇÕES
+    # PÁGINA 1: CAPA COM TÍTULO EM DESTAQUE E FICHA DO CLIENTE
     # -------------------------------------------------------------------------
     pdf.add_page()
     
@@ -104,19 +134,17 @@ def gerar_pdf_oficial(dados, score):
     except:
         pass
 
-    # Título Principal em Maior Destaque
     pdf.set_y(68)
     pdf.set_font('Helvetica', 'B', 20)
-    pdf.set_text_color(30, 64, 175) # Azul Médio
+    pdf.set_text_color(30, 64, 175)
     pdf.cell(0, 8, conv('DIAGNÓSTICO & AUDITORIA DE PERFIL DO GOOGLE'), align='C', ln=True)
     
-    # Nome do Serviço/Empresa em Tamanho Menor Abaixo
     pdf.set_font('Helvetica', 'B', 15)
-    pdf.set_text_color(30, 64, 175) # Azul Médio
+    pdf.set_text_color(255, 61, 61)
     pdf.cell(0, 7, 'TOUR360VR', align='C', ln=True)
     pdf.ln(10)
 
-    # Cartão de Informações do Cliente (Sem Avaliações)
+    # Cartão Ficha Analisada do Cliente
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
     pdf.rect(20, pdf.get_y(), 170, 75, 'FD')
@@ -138,7 +166,7 @@ def gerar_pdf_oficial(dados, score):
         pdf.cell(160, 7, conv(f"Website: {dados['website']}"), align='C', ln=True)
 
     # -------------------------------------------------------------------------
-    # PÁGINA 2: DIAGNÓSTICO DETALHADO (ESPAÇAMENTO AMPLIADO)
+    # PÁGINA 2: DIAGNÓSTICO DETALHADO (AUDITORIA DE PONTOS DE BUSCA)
     # -------------------------------------------------------------------------
     pdf.add_page()
     
@@ -168,9 +196,8 @@ def gerar_pdf_oficial(dados, score):
     pdf.cell(186, 8, f"{score} / 100", align='C', ln=True)
     pdf.set_font('Helvetica', 'B', 10)
     pdf.cell(186, 5, conv(status_txt), align='C', ln=True)
-    pdf.ln(14) # Maior espaçamento abaixo do status
+    pdf.ln(14)
 
-    # 6 Pontos de Diagnóstico com Espaçamento Amplo e Equilibrado
     pct_avaliacoes = min(int((dados['avaliacoes'] / 50.0) * 100), 100) if dados['avaliacoes'] > 0 else 10
     
     itens = [
@@ -215,9 +242,8 @@ def gerar_pdf_oficial(dados, score):
         pdf.set_text_color(71, 85, 105)
         pdf.cell(0, 3.8, conv(f"  Estado Atual: {estado}"), ln=True)
         pdf.cell(0, 3.8, conv(f"  Impacto de Conversão: {impacto}"), ln=True)
-        pdf.ln(6) # Espaçamento aumentado entre cada item
+        pdf.ln(6)
 
-    # Plano de Ação Recomendado Posicionado Mais Abaixo
     pdf.ln(4)
     y_plano = pdf.get_y()
     
@@ -245,7 +271,7 @@ def gerar_pdf_oficial(dados, score):
     pdf.multi_cell(178, 4.4, conv(acoes))
 
     # -------------------------------------------------------------------------
-    # PÁGINA 3: PROPOSTA DE INVESTIMENTO
+    # PÁGINA 3: PROPOSTA DE INVESTIMENTO E PLANOS
     # -------------------------------------------------------------------------
     pdf.add_page()
     
@@ -256,7 +282,7 @@ def gerar_pdf_oficial(dados, score):
 
     y_p = pdf.get_y()
     
-    # --- COLUNA 1: PLANO START ---
+    # --- PLANO START ---
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
     pdf.rect(12, y_p + 4, 52, 42, 'FD')
@@ -279,7 +305,7 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_x(12); pdf.cell(52, 4.2, conv('Ajuste de categorias'), align='C', ln=True)
     pdf.set_x(12); pdf.cell(52, 4.2, conv('Links de conversão'), align='C', ln=True)
 
-    # --- COLUNA 2: PLANO PRO ---
+    # --- PLANO PRO ---
     pdf.set_fill_color(240, 249, 255)
     pdf.set_draw_color(62, 161, 219)
     pdf.set_line_width(1.0)
@@ -309,7 +335,7 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_x(69); pdf.cell(68, 4.5, conv('Ensaio Fotográfico'), align='C', ln=True)
     pdf.set_x(69); pdf.cell(68, 4.5, conv('Relatório de Entrega'), align='C', ln=True)
 
-    # --- COLUNA 3: GESTÃO MENSAL ---
+    # --- GESTÃO MENSAL ---
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
     pdf.rect(142, y_p + 4, 54, 42, 'FD')
@@ -333,7 +359,7 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_x(142); pdf.cell(54, 4.2, conv('Relatórios mensais'), align='C', ln=True)
 
     # -------------------------------------------------------------------------
-    # PÁGINA 4: CONTRATO (CLÁUSULA QUARTA MAIS ESPAÇADA)
+    # PÁGINA 4: CONTRATO DE PRESTAÇÃO DE SERVIÇOS
     # -------------------------------------------------------------------------
     pdf.add_page()
     
@@ -379,7 +405,6 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_font('Helvetica', '', 9.5)
     pdf.write(5, conv("(   ) Plano Start          (   ) Plano Pro          (   ) Gestão Mensal\n\n"))
 
-    # Cláusula Quarta Ampliada mantendo 1 linha perfeita
     pdf.set_font('Helvetica', 'B', 9.5)
     pdf.write(5, conv("CLÁUSULA QUARTA - CONDIÇÕES DE PAGAMENTO:\n"))
     pdf.set_font('Helvetica', '', 9.5)
@@ -402,88 +427,121 @@ def gerar_pdf_oficial(dados, score):
     return buffer
 
 # -----------------------------------------------------------------------------
-# 3. INTERFACE DE BUSCA SIMPLIFICADA
+# 3. INTERFACE STREAMLIT COM MENU LATERAL (SISTEMA DE OTIMIZAÇÃO)
 # -----------------------------------------------------------------------------
-st.subheader("📋 Consultar Ficha do Google Meu Negócio")
+st.sidebar.markdown("""
+    <div style='text-align: center; padding-bottom: 15px;'>
+        <h2 style='color: #ffffff; margin: 0;'>TOUR<span style='color: #ff3d3d;'>360VR</span></h2>
+        <p style='color: #3ea1db; font-size: 12px; margin-top: 2px;'>Plataforma de Consultoria</p>
+    </div>
+""", unsafe_allow_html=True)
 
-col_e1, col_e2 = st.columns([2, 1])
-with col_e1:
-    nome_estabelecimento = st.text_input("🏢 Nome da Empresa / Estabelecimento:", placeholder="Ex: Personalitté estética")
-with col_e2:
-    cidade_estabelecimento = st.text_input("📍 Cidade / Estado:", placeholder="Ex: Ribeirão Preto, SP")
+opcao_menu = st.sidebar.radio(
+    "Navegação do Sistema:",
+    [
+        "🔍 1. Consulta & Diagnóstico Rápido",
+        "💡 2. Plano de Ação & Diagnóstico",
+        "💲 3. Proposta & Planos",
+        "📄 4. Contrato Profissional"
+    ]
+)
 
-if st.button("🚀 Analisar Perfil e Gerar Diagnóstico", use_container_width=True):
-    if nome_estabelecimento:
-        termo_busca = f"{nome_estabelecimento}, {cidade_estabelecimento}" if cidade_estabelecimento else nome_estabelecimento
-        dados = None
-        
-        if API_KEY_GOOGLE:
-            try:
-                url_find = f"https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input={termo_busca}&inputtype=textquery&fields=place_id&key={API_KEY_GOOGLE}"
-                res_find = requests.get(url_find).json()
-                
-                if res_find.get("candidates"):
-                    place_id = res_find["candidates"][0]["place_id"]
-                    url_details = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=name,formatted_address,formatted_phone_number,website,rating,user_ratings_total,photos&key={API_KEY_GOOGLE}"
-                    res_details = requests.get(url_details).json()
+st.markdown("""
+    <div class="header-box">
+        <div class="header-title">PLATAFORMA DE CONSULTORIA <span>TOUR360VR</span></div>
+        <div class="header-subtitle">GESTÃO & DIAGNÓSTICO DO GOOGLE MEU NEGÓCIO</div>
+    </div>
+""", unsafe_allow_html=True)
+
+# -----------------------------------------------------------------------------
+# ETAPA 1: CONSULTA E DIAGNÓSTICO
+# -----------------------------------------------------------------------------
+if "🔍" in opcao_menu:
+    st.subheader("🔍 Consultar Ficha do Google Meu Negócio")
+    
+    col_e1, col_e2 = st.columns([2, 1])
+    with col_e1:
+        nome_empresa = st.text_input("🏢 Nome da Empresa / Estabelecimento:", placeholder="Ex: Personalitté estética")
+    with col_e2:
+        cidade_empresa = st.text_input("📍 Cidade / Estado:", placeholder="Ex: Ribeirão Preto, SP")
+
+    if st.button("🚀 Analisar Perfil e Gerar Diagnóstico", use_container_width=True):
+        if nome_empresa:
+            termo_busca = f"{nome_empresa}, {cidade_empresa}" if cidade_empresa else nome_empresa
+            dados = None
+            
+            if API_KEY_GOOGLE:
+                try:
+                    url_find = f"https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input={termo_busca}&inputtype=textquery&fields=place_id&key={API_KEY_GOOGLE}"
+                    res_find = requests.get(url_find).json()
                     
-                    if "result" in res_details:
-                        place = res_details["result"]
-                        photos = place.get("photos", [])
+                    if res_find.get("candidates"):
+                        place_id = res_find["candidates"][0]["place_id"]
+                        url_details = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=name,formatted_address,formatted_phone_number,website,rating,user_ratings_total,photos&key={API_KEY_GOOGLE}"
+                        res_details = requests.get(url_details).json()
                         
-                        dados = {
-                            "nome": place.get("name", nome_estabelecimento),
-                            "endereco": place.get("formatted_address", cidade_estabelecimento if cidade_estabelecimento else "Endereço cadastrado"),
-                            "telefone": place.get("formatted_phone_number", "Não informado"),
-                            "website": place.get("website", "Não possui"),
-                            "nota": place.get("rating", 0.0),
-                            "avaliacoes": place.get("user_ratings_total", 0),
-                            "tem_tour360": False,
-                            "tem_fotos_hd": len(photos) > 10,
-                            "categorias_completas": False,
-                            "horarios_ok": True
-                        }
-            except Exception as e:
-                st.error(f"Erro na conexão com o Google: {e}")
+                        if "result" in res_details:
+                            place = res_details["result"]
+                            photos = place.get("photos", [])
+                            
+                            dados = {
+                                "nome": place.get("name", nome_empresa),
+                                "endereco": place.get("formatted_address", cidade_empresa if cidade_empresa else "Endereço cadastrado"),
+                                "telefone": place.get("formatted_phone_number", "Não informado"),
+                                "website": place.get("website", "Não possui"),
+                                "nota": place.get("rating", 0.0),
+                                "avaliacoes": place.get("user_ratings_total", 0),
+                                "tem_tour360": False,
+                                "tem_fotos_hd": len(photos) > 10,
+                                "categorias_completas": False,
+                                "horarios_ok": True
+                            }
+                except Exception as e:
+                    st.error(f"Erro na conexão com o Google: {e}")
 
-        if not dados:
-            endereco_fallback = f"{cidade_estabelecimento}" if cidade_estabelecimento else "Ribeirão Preto, SP"
-            dados = {
-                "nome": nome_estabelecimento,
-                "endereco": endereco_fallback,
-                "telefone": "Não informado",
-                "website": "Não possui",
-                "nota": 4.2,
-                "avaliacoes": 38,
-                "tem_tour360": False,
-                "tem_fotos_hd": False,
-                "categorias_completas": False,
-                "horarios_ok": False
-            }
+            if not dados:
+                dados = {
+                    "nome": nome_empresa,
+                    "endereco": f"{cidade_empresa}" if cidade_empresa else "Ribeirão Preto, SP",
+                    "telefone": "Não informado",
+                    "website": "Não possui",
+                    "nota": 4.2,
+                    "avaliacoes": 38,
+                    "tem_tour360": False,
+                    "tem_fotos_hd": False,
+                    "categorias_completas": False,
+                    "horarios_ok": False
+                }
 
-        score = 100
-        if not dados["tem_tour360"]: score -= 25
-        if dados["website"] == "Não possui": score -= 20
-        if not dados["tem_fotos_hd"]: score -= 20
-        if not dados["categorias_completas"]: score -= 15
-        if not dados["horarios_ok"]: score -= 10
-        if dados["avaliacoes"] < 50: score -= 10
+            score = 100
+            if not dados["tem_tour360"]: score -= 25
+            if dados["website"] == "Não possui": score -= 20
+            if not dados["tem_fotos_hd"]: score -= 20
+            if not dados["categorias_completas"]: score -= 15
+            if not dados["horarios_ok"]: score -= 10
+            if dados["avaliacoes"] < 50: score -= 10
 
-        st.success("Análise do perfil realizada com sucesso!")
+            st.session_state['dados'] = dados
+            st.session_state['score'] = score
+
+            st.success("Análise do perfil realizada com sucesso!")
+
+    if 'dados' in st.session_state:
+        dados = st.session_state['dados']
+        score = st.session_state['score']
 
         col1, col2 = st.columns([1, 2])
-
         with col1:
             st.markdown(f"""
                 <div class="score-card">
-                    <h2 style="color: #1e40af; font-size: 46px; margin: 0;">{score} / 100</h2>
+                    <h2 style="color: #ff3d3d; font-size: 48px; margin: 0;">{score} / 100</h2>
                     <p style="color: #cbd5e1; text-transform: uppercase; font-size: 13px; font-weight: bold;">Score Geral de Otimização</p>
                 </div>
             """, unsafe_allow_html=True)
 
         with col2:
             st.markdown(f"""
-                <div class="card-info">
+                <div class="card-dark">
                     <h3 style="color: #3ea1db; margin-top: 0;">{dados['nome']}</h3>
                     <p style="margin: 4px 0;">📍 <strong>Endereço / Cidade:</strong> {dados['endereco']}</p>
                     <p style="margin: 4px 0;">📞 <strong>Telefone:</strong> {dados['telefone']}</p>
@@ -495,20 +553,42 @@ if st.button("🚀 Analisar Perfil e Gerar Diagnóstico", use_container_width=Tr
         pdf_bytes = gerar_pdf_oficial(dados, score)
 
         st.markdown("---")
-        st.subheader("📄 Exportar Documentos Oficiais da Tour360VR")
-        
         st.download_button(
-            label="📥 Baixar Diagnóstico, Proposta e Contrato em PDF",
+            label="📥 Baixar Documento Oficial de Diagnóstico, Proposta e Contrato em PDF",
             data=pdf_bytes,
             file_name=f"Diagnostico_Tour360VR_{dados['nome'].replace(' ', '_')}.pdf",
             mime="application/pdf",
             use_container_width=True
         )
-    else:
-        st.warning("Por favor, digite o nome do estabelecimento para consultar.")
 
 # -----------------------------------------------------------------------------
-# 4. RODAPÉ FIXO DO APP
+# ETAPAS SECUNDÁRIAS DE INFORMAÇÕES
+# -----------------------------------------------------------------------------
+elif "💡" in opcao_menu:
+    st.subheader("💡 Diagnóstico Detalhado & Plano de Ação")
+    st.markdown("""
+        * **SEO Local & Atualização Cadastral:** Ajuste de títulos, palavras-chave e categorias principais/secundárias.
+        * **Tour Virtual 360° Interativo:** Publicação de tour imersivo diretamente integrado ao Google Maps.
+        * **Fotos de Alta Resolução:** Produção fotográfica profissional em HD para transmitir credibilidade.
+        * **Links de Conversão Rápida:** Botões para WhatsApp, cardápio digital e reserva de serviços.
+    """)
+
+elif "💲" in opcao_menu:
+    st.subheader("💲 Proposta de Investimento e Planos")
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.markdown("**PLANO START**\n\n**R$ 500,00**\n- Correção cadastral\n- Otimização de SEO\n- Ajuste de categorias\n- Links de conversão")
+    with col2:
+        st.markdown("**PLANO PRO (Recomendado)**\n\n**R$ 1.200,00**\n- Tudo do Plano Start\n- Tour Virtual 360°\n- Ensaio Fotográfico\n- Relatório de Entrega")
+    with col3:
+        st.markdown("**GESTÃO MENSAL**\n\n**R$ 600,00/mês**\n- Postagens semanais\n- Gestão de avaliações\n- Atualização de fotos\n- Relatórios mensais")
+
+elif "📄" in opcao_menu:
+    st.subheader("📄 Contrato de Prestação de Serviços")
+    st.info("O contrato é gerado automaticamente na 4ª página do arquivo PDF completo após a realização da consulta na Etapa 1.")
+
+# -----------------------------------------------------------------------------
+# 4. RODAPÉ FIXO
 # -----------------------------------------------------------------------------
 st.markdown("""
     <div class="footer">
