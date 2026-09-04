@@ -4,7 +4,7 @@ import streamlit as st
 from fpdf import FPDF
 
 # -----------------------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA DO STREAMLIT (TEMA DARK NO APP)
+# 1. CONFIGURAÇÃO DA PÁGINA DO STREAMLIT
 # -----------------------------------------------------------------------------
 st.set_page_config(
     page_title="Tour360VR - Plataforma de Consultoria e Diagnóstico",
@@ -59,16 +59,16 @@ st.markdown("""
 API_KEY_GOOGLE = st.secrets.get("GOOGLE_PLACES_API_KEY", "")
 
 def conv(texto):
-    """Trata a codificação para Latin-1 e substitui símbolos unicode incompatíveis por caracteres seguros para FPDF."""
+    """Trata a codificação para Latin-1 e substitui símbolos unicode incompatíveis."""
     if not texto:
         return ""
     limpo = str(texto)
     limpo = limpo.replace("•", "- ").replace("✓", "[OK] ").replace("X", "[X] ")
-    limpo = limpo.replace("📍", "").replace("📞", "").replace("⭐", "*").replace("✉️", "").replace("🌐", "").replace("★", "*").replace("☆", "")
+    limpo = limpo.replace("📍", "").replace("📞", "").replace("⭐", "*").replace("✉️", "").replace("🌐", "").replace("★", "*").replace("☆", "").replace("☐", "[ ]")
     return limpo.encode('latin-1', 'replace').decode('latin-1')
 
 # -----------------------------------------------------------------------------
-# 2. GERADOR DE PDF TOUR360VR
+# 2. GERADOR DE PDF TOUR360VR (TOTALMENTE CENTRALIZADO E CORRIGIDO)
 # -----------------------------------------------------------------------------
 class PDFTour360Oficial(FPDF):
     def header(self):
@@ -184,7 +184,7 @@ def gerar_pdf_oficial(dados, score):
     pdf.cell(0, 7, conv('Tour360VR'), align='C', ln=True)
     pdf.ln(14)
 
-    w_capa = 150
+    w_capa = 160
     x_capa = (210 - w_capa) / 2.0
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(203, 213, 225)
@@ -197,7 +197,7 @@ def gerar_pdf_oficial(dados, score):
     
     pdf.set_font('Helvetica', 'B', 11)
     pdf.set_text_color(245, 158, 11)
-    pdf.cell(w_capa, 6, conv(f"Nota: {dados['nota']:.1f} *****  ({dados['avaliacoes']} avaliações no Google)"), align='C', ln=True)
+    pdf.cell(w_capa, 6, conv(f"Nota: {dados['nota']:.1f} *****   ({dados['avaliacoes']} avaliações no Google)"), align='C', ln=True)
     pdf.ln(2)
 
     pdf.set_font('Helvetica', '', 10)
@@ -220,7 +220,7 @@ def gerar_pdf_oficial(dados, score):
     # -------------------------------------------------------------------------
     pdf.add_page()
     
-    w_ficha = 150
+    w_ficha = 160
     x_ficha = (210 - w_ficha) / 2.0
     
     pdf.set_fill_color(248, 250, 252)
@@ -249,7 +249,7 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_x(x_ficha)
     pdf.cell(w_ficha, 4.5, conv(f"Telefone: {dados['telefone']}   |   Website: {dados['website']}"), align='C', ln=True)
 
-    # Quadro do Score Geral Corrigido
+    # Quadro do Score Geral (Corrigido para usar a variável score real)
     pdf.set_y(84)
     if score < 50:
         cr, cg, cb = 239, 68, 68
@@ -261,7 +261,7 @@ def gerar_pdf_oficial(dados, score):
         cr, cg, cb = 34, 197, 94
         status_txt = "ALTO DESEMPENHO"
 
-    w_score = 140
+    w_score = 150
     x_score = (210 - w_score) / 2.0
     
     pdf.set_fill_color(cr, cg, cb)
@@ -491,12 +491,12 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_font('Helvetica', 'B', 9.5)
     pdf.write(5.5, conv("CLÁUSULA TERCEIRA - SELEÇÃO DO PLANO CONTRATADO:\n"))
     pdf.set_font('Helvetica', '', 9.5)
-    pdf.write(5.5, conv("(  ) Plano Start        (  ) Plano Pro        (  ) Gestão Mensal\n\n"))
+    pdf.write(5.5, conv("[  ] Plano Start        [  ] Plano Pro        [  ] Gestão Mensal\n\n"))
 
     pdf.set_font('Helvetica', 'B', 9.5)
     pdf.write(5.5, conv("CLÁUSULA QUARTA - CONDIÇÕES DE PAGAMENTO:\n"))
     pdf.set_font('Helvetica', '', 9.5)
-    pdf.write(5.5, conv("(  ) A Vista    (  ) 2x Plano Start    (  ) 3x Plano Pro    (  ) Gestão Mensal - Vencimento Todo Dia: _____\n\n\n"))
+    pdf.write(5.5, conv("[  ] A Vista    [  ] 2x Plano Start    [  ] 3x Plano Pro    [  ] Gestão Mensal - Vencimento Todo Dia: _____\n\n\n"))
 
     pdf.ln(16)
 
@@ -574,7 +574,7 @@ if "🔍" in opcao_menu:
                             
                             dados = {
                                 "nome": place.get("name", nome_empresa),
-                                "endereco": place.get("formatted_address", cidade_empresa if cidade_empresa else "Endereço cadastrado"),
+                                "endereco": place.get("formatted_address", cidade_empresa if cidade_empresa else "Endereço registrado"),
                                 "telefone": place.get("formatted_phone_number", "Não informado"),
                                 "website": place.get("website", "Não possui"),
                                 "nota": place.get("rating", 0.0),
@@ -590,8 +590,8 @@ if "🔍" in opcao_menu:
             if not dados:
                 dados = {
                     "nome": nome_empresa,
-                    "endereco": f"{cidade_empresa}" if cidade_empresa else "Ribeirão Preto, SP",
-                    "telefone": "Não informado",
+                    "endereco": f"{cidade_empresa}" if cidade_empresa else "Ribeirão Preto / SP",
+                    "telefone": "(16) 99999-0000",
                     "website": "Não possui",
                     "nota": 4.2,
                     "avaliacoes": 38,
