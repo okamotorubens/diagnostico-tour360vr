@@ -86,10 +86,10 @@ def gerar_pdf_claro(dados, score):
     
    # Linha divisória
     pdf.set_draw_color(220, 38, 38)
-    pdf.set_linewidth(1)
+    pdf.set_line_width(1.0)
     pdf.line(12, 38, 198, 38)
-    pdf.set_linewidth(0.2)
-
+    pdf.set_line_width(0.2)
+    
     # Cartão da Ficha do Cliente
     pdf.set_y(50)
     pdf.set_fill_color(241, 245, 249)
