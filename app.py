@@ -92,7 +92,7 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_auto_page_break(auto=True, margin=18)
     
     # -------------------------------------------------------------------------
-    # PÁGINA 1: CAPA INICIAL MODERNA E REEQUILIBRADA
+    # PÁGINA 1: CAPA INICIAL COM TÍTULO INVERTIDO E SEM AVALIAÇÕES
     # -------------------------------------------------------------------------
     pdf.add_page()
     
@@ -100,48 +100,45 @@ def gerar_pdf_oficial(dados, score):
     pdf.rect(0, 0, 210, 5, 'F')
     
     try:
-        pdf.image('Logo TOUR transparente.png', 85, 25, 40)
+        pdf.image('Logo TOUR transparente.png', 85, 22, 40)
     except:
         pass
 
-    pdf.set_y(70)
-    pdf.set_font('Helvetica', 'B', 34)
-    pdf.set_text_color(30, 64, 175)
-    pdf.cell(0, 10, 'TOUR360VR', align='C', ln=True)
+    # Título Principal em Maior Destaque
+    pdf.set_y(68)
+    pdf.set_font('Helvetica', 'B', 20)
+    pdf.set_text_color(30, 64, 175) # Azul Médio
+    pdf.cell(0, 8, conv('DIAGNÓSTICO & AUDITORIA DE PERFIL DO GOOGLE'), align='C', ln=True)
     
-    pdf.set_font('Helvetica', 'B', 11)
-    pdf.set_text_color(62, 161, 219)
-    pdf.cell(0, 6, conv('DIAGNÓSTICO & AUDITORIA DE PERFIL DO GOOGLE MEU NEGÓCIO'), align='C', ln=True)
-    pdf.ln(12)
+    # Nome do Serviço/Empresa em Tamanho Menor Abaixo
+    pdf.set_font('Helvetica', 'B', 15)
+    pdf.set_text_color(30, 64, 175) # Azul Médio
+    pdf.cell(0, 7, 'TOUR360VR', align='C', ln=True)
+    pdf.ln(10)
 
-    # Cartão de Informações do Cliente Elegante
+    # Cartão de Informações do Cliente (Sem Avaliações)
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
-    pdf.rect(18, pdf.get_y(), 174, 90, 'FD')
+    pdf.rect(20, pdf.get_y(), 170, 75, 'FD')
     
-    y_capa = pdf.get_y() + 10
-    pdf.set_xy(22, y_capa)
+    y_capa = pdf.get_y() + 14
+    pdf.set_xy(25, y_capa)
     pdf.set_font('Helvetica', 'B', 22)
     pdf.set_text_color(15, 23, 42)
-    pdf.cell(166, 10, conv(f"{dados['nome']}"), align='C', ln=True)
-    pdf.ln(5)
+    pdf.cell(160, 10, conv(f"{dados['nome']}"), align='C', ln=True)
+    pdf.ln(6)
 
     pdf.set_font('Helvetica', '', 11)
     pdf.set_text_color(71, 85, 105)
-    pdf.cell(174, 7, conv(f"Endereço: {dados['endereco']}"), align='C', ln=True)
+    pdf.cell(160, 7, conv(f"Endereço: {dados['endereco']}"), align='C', ln=True)
     
     if dados['telefone'] and dados['telefone'] != "Não informado":
-        pdf.cell(174, 7, conv(f"Telefone: {dados['telefone']} | Website: {dados['website']}"), align='C', ln=True)
+        pdf.cell(160, 7, conv(f"Telefone: {dados['telefone']} | Website: {dados['website']}"), align='C', ln=True)
     else:
-        pdf.cell(174, 7, conv(f"Website: {dados['website']}"), align='C', ln=True)
-        
-    pdf.ln(4)
-    pdf.set_font('Helvetica', 'B', 12)
-    pdf.set_text_color(30, 64, 175)
-    pdf.cell(174, 8, conv(f"Avaliações no Google: Nota {dados['nota']} / 5.0 ({dados['avaliacoes']} avaliações)"), align='C', ln=True)
+        pdf.cell(160, 7, conv(f"Website: {dados['website']}"), align='C', ln=True)
 
     # -------------------------------------------------------------------------
-    # PÁGINA 2: DIAGNÓSTICO DETALHADO (AVALIAÇÕES INCORPORADAS)
+    # PÁGINA 2: DIAGNÓSTICO DETALHADO (ESPAÇAMENTO AMPLIADO)
     # -------------------------------------------------------------------------
     pdf.add_page()
     
@@ -171,9 +168,9 @@ def gerar_pdf_oficial(dados, score):
     pdf.cell(186, 8, f"{score} / 100", align='C', ln=True)
     pdf.set_font('Helvetica', 'B', 10)
     pdf.cell(186, 5, conv(status_txt), align='C', ln=True)
-    pdf.ln(10)
+    pdf.ln(14) # Maior espaçamento abaixo do status
 
-    # 6 Pontos de Diagnóstico (Avaliações Incluídas como Item)
+    # 6 Pontos de Diagnóstico com Espaçamento Amplo e Equilibrado
     pct_avaliacoes = min(int((dados['avaliacoes'] / 50.0) * 100), 100) if dados['avaliacoes'] > 0 else 10
     
     itens = [
@@ -182,15 +179,15 @@ def gerar_pdf_oficial(dados, score):
         ("Categorias Principal e Secundárias", 50 if not dados['categorias_completas'] else 100, "Incompletas / Sem secundárias.", "Limita a visibilidade regional em buscas específicas."),
         ("Horários e Exceções (Feriados)", 40 if not dados['horarios_ok'] else 100, "Desatualizados / Sem exceções.", "Gera insatisfação e perda de vendas imediatas."),
         ("Website e Links de Conversão", 10 if dados['website'] == 'Não possui' else 100, "Sem links diretos no perfil.", "Dificulta o contato rápido e a tomada de decisão."),
-        ("Avaliações no Google (Prova Social)", pct_avaliacoes, f"Nota {dados['nota']} / 5.0 ({dados['avaliacoes']} avaliações).", "Poucas avaliações limitam a confiança e autoridade perante concorrentes.")
+        ("Avaliações no Google (Prova Social)", pct_avaliacoes, f"Nota {dados['nota']} / 5.0 ({dados['avaliacoes']} avaliações).", "Poucas avaliações limitam a confiança perante concorrentes.")
     ]
 
     for titulo, pct, estado, impacto in itens:
-        pdf.set_font('Helvetica', 'B', 9)
+        pdf.set_font('Helvetica', 'B', 9.5)
         pdf.set_text_color(30, 41, 59)
-        pdf.cell(100, 4, conv(f"- {titulo}:"), ln=False)
+        pdf.cell(100, 4.5, conv(f"- {titulo}:"), ln=False)
         
-        pdf.set_font('Helvetica', 'B', 8.5)
+        pdf.set_font('Helvetica', 'B', 9)
         if pct < 40:
             pdf.set_text_color(255, 61, 61)
         elif pct < 80:
@@ -198,10 +195,10 @@ def gerar_pdf_oficial(dados, score):
         else:
             pdf.set_text_color(140, 198, 63)
             
-        pdf.cell(86, 4, conv(f"Score: {pct}%"), align='R', ln=True)
+        pdf.cell(86, 4.5, conv(f"Score: {pct}%"), align='R', ln=True)
 
         pdf.set_fill_color(226, 232, 240)
-        pdf.rect(12, pdf.get_y(), 186, 3, 'F')
+        pdf.rect(12, pdf.get_y(), 186, 3.5, 'F')
         
         if pct < 40:
             pdf.set_fill_color(255, 61, 61)
@@ -211,17 +208,17 @@ def gerar_pdf_oficial(dados, score):
             pdf.set_fill_color(140, 198, 63)
             
         largura_barra = max(float(pct) * 1.86, 3.0)
-        pdf.rect(12, pdf.get_y(), largura_barra, 3, 'F')
-        pdf.ln(4)
+        pdf.rect(12, pdf.get_y(), largura_barra, 3.5, 'F')
+        pdf.ln(4.5)
 
-        pdf.set_font('Helvetica', '', 8.5)
+        pdf.set_font('Helvetica', '', 9)
         pdf.set_text_color(71, 85, 105)
-        pdf.cell(0, 3.5, conv(f"  Estado Atual: {estado}"), ln=True)
-        pdf.cell(0, 3.5, conv(f"  Impacto de Conversão: {impacto}"), ln=True)
-        pdf.ln(2.5)
+        pdf.cell(0, 3.8, conv(f"  Estado Atual: {estado}"), ln=True)
+        pdf.cell(0, 3.8, conv(f"  Impacto de Conversão: {impacto}"), ln=True)
+        pdf.ln(6) # Espaçamento aumentado entre cada item
 
-    # Plano de Ação Recomendado em Moldura
-    pdf.ln(2)
+    # Plano de Ação Recomendado Posicionado Mais Abaixo
+    pdf.ln(4)
     y_plano = pdf.get_y()
     
     pdf.set_fill_color(240, 249, 255)
@@ -248,7 +245,7 @@ def gerar_pdf_oficial(dados, score):
     pdf.multi_cell(178, 4.4, conv(acoes))
 
     # -------------------------------------------------------------------------
-    # PÁGINA 3: PROPOSTA DE INVESTIMENTO (QUADROS COMPACTOS SEM ESPAÇO SOBRANDO)
+    # PÁGINA 3: PROPOSTA DE INVESTIMENTO
     # -------------------------------------------------------------------------
     pdf.add_page()
     
@@ -259,10 +256,10 @@ def gerar_pdf_oficial(dados, score):
 
     y_p = pdf.get_y()
     
-    # --- COLUNA 1: PLANO START (ALTURA COMPACTA) ---
+    # --- COLUNA 1: PLANO START ---
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
-    pdf.rect(12, y_p + 4, 52, 42, 'FD') # Altura reduzida para 42px
+    pdf.rect(12, y_p + 4, 52, 42, 'FD')
     
     pdf.set_xy(12, y_p + 7)
     pdf.set_font('Helvetica', 'B', 11)
@@ -282,11 +279,11 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_x(12); pdf.cell(52, 4.2, conv('Ajuste de categorias'), align='C', ln=True)
     pdf.set_x(12); pdf.cell(52, 4.2, conv('Links de conversão'), align='C', ln=True)
 
-    # --- COLUNA 2: PLANO PRO (RECOMENDADO COMPACTO) ---
+    # --- COLUNA 2: PLANO PRO ---
     pdf.set_fill_color(240, 249, 255)
     pdf.set_draw_color(62, 161, 219)
     pdf.set_line_width(1.0)
-    pdf.rect(69, y_p - 1, 68, 58, 'FD') # Altura reduzida para 58px
+    pdf.rect(69, y_p - 1, 68, 58, 'FD')
     pdf.set_line_width(0.2)
     
     pdf.set_xy(69, y_p + 3)
@@ -312,10 +309,10 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_x(69); pdf.cell(68, 4.5, conv('Ensaio Fotográfico'), align='C', ln=True)
     pdf.set_x(69); pdf.cell(68, 4.5, conv('Relatório de Entrega'), align='C', ln=True)
 
-    # --- COLUNA 3: GESTÃO MENSAL (ALTURA COMPACTA) ---
+    # --- COLUNA 3: GESTÃO MENSAL ---
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
-    pdf.rect(142, y_p + 4, 54, 42, 'FD') # Altura reduzida para 42px
+    pdf.rect(142, y_p + 4, 54, 42, 'FD')
     
     pdf.set_xy(142, y_p + 7)
     pdf.set_font('Helvetica', 'B', 11)
@@ -336,7 +333,7 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_x(142); pdf.cell(54, 4.2, conv('Relatórios mensais'), align='C', ln=True)
 
     # -------------------------------------------------------------------------
-    # PÁGINA 4: CONTRATO DE PRESTAÇÃO DE SERVIÇOS
+    # PÁGINA 4: CONTRATO (CLÁUSULA QUARTA MAIS ESPAÇADA)
     # -------------------------------------------------------------------------
     pdf.add_page()
     
@@ -382,15 +379,14 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_font('Helvetica', '', 9.5)
     pdf.write(5, conv("(   ) Plano Start          (   ) Plano Pro          (   ) Gestão Mensal\n\n"))
 
-    # Cláusula Quarta com Mais Espaço nas Opções Mantendo a Fonte 9.5pt em 1 Linha
+    # Cláusula Quarta Ampliada mantendo 1 linha perfeita
     pdf.set_font('Helvetica', 'B', 9.5)
     pdf.write(5, conv("CLÁUSULA QUARTA - CONDIÇÕES DE PAGAMENTO:\n"))
     pdf.set_font('Helvetica', '', 9.5)
-    pdf.write(5, conv("(   ) À Vista    (   ) 2x Plano Start    (   ) 3x Plano Pro    (   ) Gestão Mensal - Vencimento Todo Dia: _____\n\n\n"))
+    pdf.write(5, conv("(   ) À Vista     (   ) 2x Plano Start     (   ) 3x Plano Pro     (   ) Gestão Mensal - Vencimento Todo Dia: _____\n\n\n"))
 
     pdf.ln(18)
 
-    # Assinaturas
     pdf.cell(88, 5, '__________________________________', align='C')
     pdf.cell(10, 5, '')
     pdf.cell(88, 5, '__________________________________', align='C', ln=True)
@@ -421,7 +417,6 @@ if st.button("🚀 Analisar Perfil e Gerar Diagnóstico", use_container_width=Tr
         termo_busca = f"{nome_estabelecimento}, {cidade_estabelecimento}" if cidade_estabelecimento else nome_estabelecimento
         dados = None
         
-        # Consulta com Google Places API
         if API_KEY_GOOGLE:
             try:
                 url_find = f"https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input={termo_busca}&inputtype=textquery&fields=place_id&key={API_KEY_GOOGLE}"
@@ -451,7 +446,6 @@ if st.button("🚀 Analisar Perfil e Gerar Diagnóstico", use_container_width=Tr
             except Exception as e:
                 st.error(f"Erro na conexão com o Google: {e}")
 
-        # Fallback de busca quando sem chave de API
         if not dados:
             endereco_fallback = f"{cidade_estabelecimento}" if cidade_estabelecimento else "Ribeirão Preto, SP"
             dados = {
