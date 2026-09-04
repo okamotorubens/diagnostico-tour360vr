@@ -66,14 +66,14 @@ def conv(texto):
     return limpo.encode('latin-1', 'replace').decode('latin-1')
 
 # -----------------------------------------------------------------------------
-# 2. GERADOR DE PDF TOUR360VR (DESIGN EXATO DO MODELO - FUNDO CLARO)
+# 2. GERADOR DE PDF TOUR360VR (DESIGN EXATO DO MODELO DE REFERÊNCIA)
 # -----------------------------------------------------------------------------
 class PDFTour360Oficial(FPDF):
     def header(self):
-        # Linha dupla corporativa no topo
-        self.set_fill_color(30, 64, 175) # Azul principal
+        # Linha dupla de acento no topo
+        self.set_fill_color(30, 64, 175) # Azul
         self.rect(0, 0, 105, 3.5, 'F')
-        self.set_fill_color(255, 61, 61) # Accent Vermelho
+        self.set_fill_color(255, 61, 61) # Vermelho
         self.rect(105, 0, 105, 3.5, 'F')
 
         try:
@@ -114,14 +114,14 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_auto_page_break(auto=True, margin=18)
     
     # -------------------------------------------------------------------------
-    # PÁGINA 1: AUDITORIA & FICHA ANALISADA DO CLIENTE
+    # PÁGINA 1: FICHA DO CLIENTE & AUDITORIA DETALHADA
     # -------------------------------------------------------------------------
     pdf.add_page()
     
-    # Cartão da Ficha Analisada do Cliente
+    # Cartão Ficha Analisada do Cliente
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
-    pdf.rect(12, 24, 186, 30, 'FD')
+    pdf.rect(12, 24, 186, 32, 'FD')
     
     pdf.set_xy(16, 26)
     pdf.set_font('Helvetica', 'B', 8.5)
@@ -144,8 +144,8 @@ def gerar_pdf_oficial(dados, score):
     else:
         pdf.cell(178, 4.2, conv(f"Website: {dados['website']}"), ln=True)
 
-    # Faixa de Score Geral
-    pdf.set_y(58)
+    # Faixa do Score Geral de Otimização
+    pdf.set_y(60)
     if score < 50:
         cr, cg, cb = 239, 68, 68
         status_txt = "SCORE GERAL DE OTIMIZAÇÃO (STATUS CRÍTICO)"
@@ -165,11 +165,20 @@ def gerar_pdf_oficial(dados, score):
     pdf.cell(186, 8, conv(f"{score}/100 - {status_txt}"), align='C', ln=True)
     pdf.ln(6)
 
-    # Título da Auditoria
-    pdf.set_font('Helvetica', 'B', 10.5)
-    pdf.set_text_color(15, 23, 42)
-    pdf.cell(0, 5, conv('AUDITORIA DETALHADA DE PONTOS DE BUSCA'), ln=True)
-    pdf.ln(3)
+    # Marcadores de Seção em Caixas Cinzas
+    pdf.set_fill_color(241, 245, 249)
+    pdf.rect(12, pdf.get_y(), 90, 6, 'F')
+    pdf.rect(108, pdf.get_y(), 90, 6, 'F')
+    
+    y_lbl = pdf.get_y() + 1
+    pdf.set_xy(14, y_lbl)
+    pdf.set_font('Helvetica', 'B', 8)
+    pdf.set_text_color(71, 85, 105)
+    pdf.cell(86, 4, conv('AUDITORIA DETALHADA DE PONTOS DE BUSCA'), ln=False)
+    
+    pdf.set_xy(110, y_lbl)
+    pdf.cell(86, 4, conv('DIAGNÓSTICO TÉCNICO'), ln=True)
+    pdf.ln(5)
 
     pct_avaliacoes = min(int((dados['avaliacoes'] / 50.0) * 100), 100) if dados['avaliacoes'] > 0 else 10
 
@@ -221,10 +230,14 @@ def gerar_pdf_oficial(dados, score):
     # -------------------------------------------------------------------------
     pdf.add_page()
     
-    pdf.set_font('Helvetica', 'B', 11)
-    pdf.set_text_color(30, 64, 175)
-    pdf.cell(0, 5, conv('PROPOSTA COMERCIAL & ESTRUTURAÇÃO ESTRATÉGICA'), ln=True)
-    pdf.ln(3)
+    # Caixa Marcador de Cabeçalho
+    pdf.set_fill_color(241, 245, 249)
+    pdf.rect(12, 24, 186, 6, 'F')
+    pdf.set_xy(14, 25)
+    pdf.set_font('Helvetica', 'B', 8)
+    pdf.set_text_color(71, 85, 105)
+    pdf.cell(178, 4, conv('SOLUÇÃO & PLANOS'), ln=True)
+    pdf.ln(4)
 
     # Quadro Informativo "Por que otimizar"
     pdf.set_fill_color(240, 249, 255)
@@ -339,10 +352,18 @@ def gerar_pdf_oficial(dados, score):
     # -------------------------------------------------------------------------
     pdf.add_page()
     
+    pdf.set_fill_color(241, 245, 249)
+    pdf.rect(12, 24, 186, 6, 'F')
+    pdf.set_xy(14, 25)
+    pdf.set_font('Helvetica', 'B', 8)
+    pdf.set_text_color(71, 85, 105)
+    pdf.cell(178, 4, conv('COMPROVAÇÃO DE ENTREGÁVEIS'), ln=True)
+    pdf.ln(4)
+
     pdf.set_font('Helvetica', 'B', 11)
     pdf.set_text_color(30, 64, 175)
-    pdf.cell(0, 5, conv('RELATÓRIO VISUAL DE ESTRUTURAÇÃO (ANTES VS. DEPOIS)'), ln=True)
-    pdf.ln(4)
+    pdf.cell(0, 5, conv('DEMONSTRATIVO VISUAL DO TRABALHO REALIZADO'), ln=True)
+    pdf.ln(3)
 
     # Quadro Comparativo Visual Antes vs Depois
     pdf.set_fill_color(248, 250, 252)
@@ -375,13 +396,19 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_x(108); pdf.cell(90, 4.8, conv('✓ Cardápio e site integrados'), align='C', ln=True)
     pdf.set_x(108); pdf.cell(90, 4.8, conv('✓ Score do perfil: 98/100'), align='C', ln=True)
 
-    # Nota: Excluído o Quadro de Resumo de Desempenho e Métricas do Mês conforme solicitado.
-
     # -------------------------------------------------------------------------
     # PÁGINA 4: CONTRATO DE PRESTAÇÃO DE SERVIÇOS
     # -------------------------------------------------------------------------
     pdf.add_page()
     
+    pdf.set_fill_color(241, 245, 249)
+    pdf.rect(12, 24, 186, 6, 'F')
+    pdf.set_xy(14, 25)
+    pdf.set_font('Helvetica', 'B', 8)
+    pdf.set_text_color(71, 85, 105)
+    pdf.cell(178, 4, conv('DOCUMENTO JURÍDICO'), ln=True)
+    pdf.ln(4)
+
     pdf.set_font('Helvetica', 'B', 13)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 8, conv('CONTRATO DE PRESTAÇÃO DE SERVIÇOS'), align='C', ln=True)
