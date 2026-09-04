@@ -22,7 +22,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Cabeçalho
+# Cabeçalho da Aplicação
 st.markdown("""
     <div class="header-box">
         <h1 style="color: #ffffff; margin: 0;">TOUR<span style="color: #ef4444;">360VR</span></h1>
@@ -30,8 +30,11 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
+# Recupera a chave do Google diretamente dos Secrets do Streamlit
+API_KEY_GOOGLE = st.secrets.get("GOOGLE_PLACES_API_KEY", "")
+
 # -----------------------------------------------------------------------------
-# 2. CLASSE FPDF2 SEM ERRO DE LINT OU METODO
+# 2. CLASSE GERADORA DE PDF (FPDF2 NATIVO)
 # -----------------------------------------------------------------------------
 class PDFTour360(FPDF):
     def header(self):
@@ -154,7 +157,7 @@ def gerar_pdf_completo_fpdf(dados, score):
         pdf.multi_cell(190, 5, f"  {desc}")
         pdf.ln(4)
 
-    # PÁGINA 3
+    # PÁGINA 3 - CONTRATO
     pdf.add_page()
     pdf.set_font('Helvetica', 'B', 11)
     pdf.set_text_color(255, 255, 255)
@@ -192,12 +195,8 @@ def gerar_pdf_completo_fpdf(dados, score):
     return buffer
 
 # -----------------------------------------------------------------------------
-# 3. PAINEL LATERAL & CAMPOS DE BUSCA SEPARADOS
+# 3. INTERFACE DE BUSCA E DIAGNÓSTICO
 # -----------------------------------------------------------------------------
-st.sidebar.header("⚙️ Configurações da Consulta")
-st.sidebar.info("A chave da API do Google Places permite consultar qualquer empresa em tempo real.")
-API_KEY_GOOGLE = st.sidebar.text_input("Chave Google Places API (Opcional):", type="password")
-
 col_empresa, col_cidade = st.columns([2, 1])
 
 with col_empresa:
@@ -210,30 +209,43 @@ if st.button("🚀 Analisar Perfil Agora", use_container_width=True):
     if nome_estabelecimento:
         termo_busca = f"{nome_estabelecimento}, {cidade_estabelecimento}" if cidade_estabelecimento else nome_estabelecimento
         
+        dados = None
+        
+        # Faz a consulta real no Google Places API se a chave estiver configurada nos Secrets
         if API_KEY_GOOGLE:
             try:
-                url = f"https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input={termo_busca}&inputtype=textquery&fields=place_id,name,formatted_address,rating,user_ratings_total&key={API_KEY_GOOGLE}"
-                res = requests.get(url).json()
-                if res.get("candidates"):
-                    c = res["candidates"][0]
-                    dados = {
-                        "nome": c.get("name", nome_estabelecimento),
-                        "endereco": c.get("formatted_address", f"{cidade_estabelecimento}"),
-                        "telefone": "(16) 3999-8888",
-                        "website": "Não possui",
-                        "nota": c.get("rating", 4.0),
-                        "avaliacoes": c.get("user_ratings_total", 15),
-                        "tem_tour360": False,
-                        "tem_fotos_hd": False,
-                        "categorias_completas": False,
-                        "horarios_ok": True
-                    }
-                else:
-                    API_KEY_GOOGLE = None
-            except:
-                API_KEY_GOOGLE = None
+                # 1. Busca o Place ID do local
+                url_find = f"https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input={termo_busca}&inputtype=textquery&fields=place_id&key={API_KEY_GOOGLE}"
+                res_find = requests.get(url_find).json()
+                
+                if res_find.get("candidates"):
+                    place_id = res_find["candidates"][0]["place_id"]
+                    
+                    # 2. Busca os detalhes completos da ficha no Google Maps
+                    url_details = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=name,formatted_address,formatted_phone_number,website,rating,user_ratings_total,photos&key={API_KEY_GOOGLE}"
+                    res_details = requests.get(url_details).json()
+                    
+                    if "result" in res_details:
+                        place = res_details["result"]
+                        photos = place.get("photos", [])
+                        
+                        dados = {
+                            "nome": place.get("name", nome_estabelecimento),
+                            "endereco": place.get("formatted_address", cidade_estabelecimento),
+                            "telefone": place.get("formatted_phone_number", "Não informado"),
+                            "website": place.get("website", "Não possui"),
+                            "nota": place.get("rating", 0.0),
+                            "avaliacoes": place.get("user_ratings_total", 0),
+                            "tem_tour360": False,
+                            "tem_fotos_hd": len(photos) > 10,
+                            "categorias_completas": False,
+                            "horarios_ok": True
+                        }
+            except Exception as e:
+                st.error(f"Erro ao conectar com o Google: {e}")
 
-        if not API_KEY_GOOGLE:
+        # Fallback de demonstração caso esteja sem a chave nos Secrets
+        if not dados:
             dados = {
                 "nome": nome_estabelecimento,
                 "endereco": f"{cidade_estabelecimento}" if cidade_estabelecimento else "Endereço cadastrado no Google",
@@ -247,6 +259,7 @@ if st.button("🚀 Analisar Perfil Agora", use_container_width=True):
                 "horarios_ok": False
             }
 
+        # Cálculo do Score
         score = 100
         if not dados["tem_tour360"]: score -= 25
         if dados["website"] == "Não possui": score -= 20
@@ -271,7 +284,7 @@ if st.button("🚀 Analisar Perfil Agora", use_container_width=True):
             st.markdown(f"""
                 <div class="card-info">
                     <h3 style="color: #38bdf8; margin-top: 0;">{dados['nome']}</h3>
-                    <p style="margin: 4px 0;">📍 <strong>Endereço / Cidade:</strong> {dados['endereco']}</p>
+                    <p style="margin: 4px 0;">📍 <strong>Endereço:</strong> {dados['endereco']}</p>
                     <p style="margin: 4px 0;">📞 <strong>Telefone:</strong> {dados['telefone']}</p>
                     <p style="margin: 4px 0;">🌐 <strong>Website:</strong> {dados['website']}</p>
                     <p style="margin: 4px 0;">⭐ <strong>Avaliações:</strong> {dados['nota']} ({dados['avaliacoes']} avaliações)</p>
@@ -284,7 +297,7 @@ if st.button("🚀 Analisar Perfil Agora", use_container_width=True):
         st.progress(50 if not dados["categorias_completas"] else 100, text="Categorias: Incompletas")
         st.progress(10 if dados["website"] == "Não possui" else 100, text="Website / Links de Ação: Não Identificado")
 
-        # Gerar o PDF nativo corrigido
+        # Gerar o PDF nativo
         pdf_bytes = gerar_pdf_completo_fpdf(dados, score)
 
         st.markdown("---")
