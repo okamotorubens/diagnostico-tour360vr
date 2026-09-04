@@ -491,7 +491,7 @@ def gerar_pdf_oficial(dados, score, planos, plano_acao_extra=""):
     pdf.multi_cell(52, 4, conv(planos['gestao_itens']), align='L')
 
     # -------------------------------------------------------------------------
-    # PÁGINA 4: CONTRATO DE PRESTAÇÃO DE SERVIÇOS (FORMATAÇÃO LIMPA)
+    # PÁGINA 4: CONTRATO DE PRESTAÇÃO DE SERVIÇOS
     # -------------------------------------------------------------------------
     pdf.add_page()
     
@@ -586,7 +586,7 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# CALCULO DINAMICO DO SCORE (FORA DOS BLOCOS PARA GARANTIR ATUALIZAÇÃO)
+# CALCULO DINAMICO DO SCORE
 dados_atuais = st.session_state['dados']
 score_calculado = 100
 if not dados_atuais["tem_tour360"]: score_calculado -= 25
@@ -599,20 +599,22 @@ if dados_atuais["avaliacoes"] < 50: score_calculado -= 10
 st.session_state['score'] = score_calculado
 
 # -----------------------------------------------------------------------------
-# ETAPA 1: CONSULTA & DIAGNÓSTICO
+# ETAPA 1: CONSULTA & DIAGNÓSTICO (UNIFICADA - SEM DUPLICIDADE)
 # -----------------------------------------------------------------------------
 if "🔍" in opcao_menu:
-    st.subheader("🔍 1. Consultar Ficha & Editar Cadastro")
+    st.subheader("🔍 1. Dados do Cliente & Diagnóstico")
     
-    col_e1, col_e2 = st.columns([2, 1])
-    with col_e1:
-        nome_empresa = st.text_input("🏢 Nome da Empresa / Estabelecimento:", value=st.session_state['dados']['nome'])
-    with col_e2:
-        cidade_empresa = st.text_input("📍 Cidade / Estado:", value="Ribeirão Preto, SP")
+    # Campo Único para Nome e Busca
+    col_busca, col_cidade = st.columns([2, 1])
+    with col_busca:
+        nome_input = st.text_input("🏢 Nome do Estabelecimento:", value=st.session_state['dados']['nome'])
+        st.session_state['dados']['nome'] = nome_input
+    with col_cidade:
+        cidade_empresa = st.text_input("📍 Cidade / Estado da Busca:", value="Ribeirão Preto, SP")
 
-    if st.button("🚀 Analisar Perfil no Google", use_container_width=True):
-        if nome_empresa:
-            termo_busca = f"{nome_empresa}, {cidade_empresa}" if cidade_empresa else nome_empresa
+    if st.button("🚀 Buscar e Atualizar Dados no Google", use_container_width=True):
+        if nome_input:
+            termo_busca = f"{nome_input}, {cidade_empresa}" if cidade_empresa else nome_input
             
             if API_KEY_GOOGLE:
                 try:
@@ -628,7 +630,7 @@ if "🔍" in opcao_menu:
                         
                         photos = res_details.get("photos", place.get("photos", []))
                         
-                        st.session_state['dados']['nome'] = res_details.get("name", place.get("name", nome_empresa))
+                        st.session_state['dados']['nome'] = res_details.get("name", place.get("name", nome_input))
                         st.session_state['dados']['endereco'] = res_details.get("formatted_address") or place.get("formatted_address") or f"{cidade_empresa}"
                         st.session_state['dados']['telefone'] = res_details.get("formatted_phone_number") or res_details.get("international_phone_number") or "Não informado"
                         st.session_state['dados']['website'] = res_details.get("website", "Não possui")
@@ -641,13 +643,11 @@ if "🔍" in opcao_menu:
             st.rerun()
 
     st.markdown("---")
-    st.markdown("### ✏️ Formatação do Cliente:")
     
     col_f1, col_f2 = st.columns(2)
     with col_f1:
-        st.session_state['dados']['nome'] = st.text_input("🏢 Nome do Estabelecimento:", value=st.session_state['dados']['nome'])
         st.session_state['dados']['contato'] = st.text_input("👤 Nome do Contato / Responsável:", value=st.session_state['dados']['contato'])
-        st.session_state['dados']['endereco'] = st.text_input("📍 Localização:", value=st.session_state['dados']['endereco'])
+        st.session_state['dados']['endereco'] = st.text_input("📍 Endereço Completo:", value=st.session_state['dados']['endereco'])
     with col_f2:
         st.session_state['dados']['telefone'] = st.text_input("📞 Telefone / WhatsApp:", value=st.session_state['dados']['telefone'])
         st.session_state['dados']['website'] = st.text_input("🌐 Website Cadastrado:", value=st.session_state['dados']['website'])
