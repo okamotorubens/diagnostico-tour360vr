@@ -22,7 +22,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Cabeçalho da Aplicação
+# Cabeçalho
 st.markdown("""
     <div class="header-box">
         <h1 style="color: #ffffff; margin: 0;">TOUR<span style="color: #ef4444;">360VR</span></h1>
@@ -31,15 +31,13 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# 2. GERADOR DE PDF USANDO FPDF2 (100% PYTHON / NATIVO)
+# 2. CLASSE FPDF2 SEM ERRO DE LINT OU METODO
 # -----------------------------------------------------------------------------
 class PDFTour360(FPDF):
     def header(self):
-        # Fundo escuro dark mode em todas as páginas
         self.set_fill_color(15, 23, 42)
         self.rect(0, 0, 210, 297, 'F')
         
-        # Cabeçalho da marca
         self.set_font('Helvetica', 'B', 16)
         self.set_text_color(255, 255, 255)
         self.cell(0, 8, 'TOUR360VR', ln=True)
@@ -47,7 +45,6 @@ class PDFTour360(FPDF):
         self.set_text_color(239, 68, 68)
         self.cell(0, 4, 'GESTAO DE PERFIL & DIAGNOSTICO GOOGLE MEU NEGOCIO', ln=True)
         self.set_draw_color(239, 68, 68)
-        self.set_linewidth(0.8)
         self.line(10, self.get_y() + 2, 200, self.get_y() + 2)
         self.ln(6)
 
@@ -61,12 +58,8 @@ def gerar_pdf_completo_fpdf(dados, score):
     pdf = PDFTour360()
     pdf.set_auto_page_break(auto=True, margin=15)
     
-    # ---------------------------------------------------------
-    # PÁGINA 1: DIAGNÓSTICO E AUDITORIA
-    # ---------------------------------------------------------
+    # PÁGINA 1
     pdf.add_page()
-    
-    # Card Ficha do Cliente
     pdf.set_fill_color(30, 41, 59)
     pdf.rect(10, 30, 190, 42, 'F')
     pdf.set_xy(15, 33)
@@ -81,7 +74,6 @@ def gerar_pdf_completo_fpdf(dados, score):
     pdf.set_x(15); pdf.cell(0, 5, f"Telefone: {dados['telefone']} | Website: {dados['website']}", ln=True)
     pdf.set_x(15); pdf.cell(0, 5, f"Avaliacoes: {dados['nota']} estrelas ({dados['avaliacoes']} avaliacoes)", ln=True)
 
-    # Score Box
     pdf.set_fill_color(40, 20, 30)
     pdf.rect(10, 78, 190, 22, 'F')
     pdf.set_xy(10, 80)
@@ -92,7 +84,6 @@ def gerar_pdf_completo_fpdf(dados, score):
     pdf.set_text_color(203, 213, 225)
     pdf.cell(190, 4, 'SCORE GERAL DE OTIMIZACAO (STATUS CRITICO)', align='C', ln=True)
 
-    # Tabela de Diagnóstico
     pdf.set_xy(10, 108)
     pdf.set_font('Helvetica', 'B', 12)
     pdf.set_text_color(255, 255, 255)
@@ -112,7 +103,7 @@ def gerar_pdf_completo_fpdf(dados, score):
         pdf.set_fill_color(30, 41, 59)
         pdf.cell(130, 8, f"  {item}", border=0, fill=True)
         pdf.set_font('Helvetica', 'B', 9)
-        if "Ok" in status or "Presente" in status or "Completas" in status or "Verificado" in status or "Inserido" in status:
+        if status in ["Ok", "Presente", "Completas", "Verificado", "Inserido"]:
             pdf.set_text_color(34, 197, 94)
         else:
             pdf.set_text_color(239, 68, 68)
@@ -121,11 +112,8 @@ def gerar_pdf_completo_fpdf(dados, score):
         pdf.set_text_color(248, 250, 252)
         pdf.ln(1)
 
-    # ---------------------------------------------------------
-    # PÁGINA 2: ESTRUTURA PERSUASIVA E PLANOS
-    # ---------------------------------------------------------
+    # PÁGINA 2
     pdf.add_page()
-    
     pdf.set_font('Helvetica', 'B', 12)
     pdf.set_text_color(255, 255, 255)
     pdf.cell(0, 8, 'Por que seu negocio precisa de Otimizacao Profissional?', ln=True)
@@ -147,7 +135,6 @@ def gerar_pdf_completo_fpdf(dados, score):
     pdf.cell(0, 8, 'Proposta de Planos e Investimento', ln=True)
     pdf.ln(2)
 
-    # Cards de Planos
     planos = [
         ("Plano Start - R$ 590,00", "Correcao cadastral completa, otimizacao de categorias, insercao de site e links oficiais."),
         ("Plano Pro (Recomendado) - R$ 1.290,00", "Tudo do Start + Sessao de Fotos Profissionais + Criacao de Tour Virtual 360 + SEO Local Avançado."),
@@ -157,18 +144,18 @@ def gerar_pdf_completo_fpdf(dados, score):
     for titulo, desc in planos:
         pdf.set_fill_color(30, 41, 59)
         pdf.set_font('Helvetica', 'B', 10)
-        pdf.set_text_color(56, 189, 248) if "Start" in titulo or "Mensal" in titulo else pdf.set_text_color(239, 68, 68)
+        if "Pro" in titulo:
+            pdf.set_text_color(239, 68, 68)
+        else:
+            pdf.set_text_color(56, 189, 248)
         pdf.cell(190, 7, f"  {titulo}", fill=True, ln=True)
         pdf.set_font('Helvetica', '', 8.5)
         pdf.set_text_color(203, 213, 225)
         pdf.multi_cell(190, 5, f"  {desc}")
         pdf.ln(4)
 
-    # ---------------------------------------------------------
-    # PÁGINA 3: CONTRATO DE PRESTAÇÃO DE SERVIÇOS
-    # ---------------------------------------------------------
+    # PÁGINA 3
     pdf.add_page()
-    
     pdf.set_font('Helvetica', 'B', 11)
     pdf.set_text_color(255, 255, 255)
     pdf.cell(0, 6, 'CONTRATO DE PRESTACAO DE SERVICOS DE OTIMIZACAO GOOGLE MEU NEGOCIO', align='C', ln=True)
@@ -190,7 +177,6 @@ def gerar_pdf_completo_fpdf(dados, score):
     pdf.multi_cell(190, 4.5, contrato_texto)
     pdf.ln(15)
 
-    # Assinaturas
     pdf.cell(90, 5, '__________________________________', align='C')
     pdf.cell(10, 5, '')
     pdf.cell(90, 5, '__________________________________', align='C', ln=True)
@@ -206,24 +192,33 @@ def gerar_pdf_completo_fpdf(dados, score):
     return buffer
 
 # -----------------------------------------------------------------------------
-# 3. CONSULTA DE FICHA E INTERFACE
+# 3. PAINEL LATERAL & CAMPOS DE BUSCA SEPARADOS
 # -----------------------------------------------------------------------------
 st.sidebar.header("⚙️ Configurações da Consulta")
+st.sidebar.info("A chave da API do Google Places permite consultar qualquer empresa em tempo real.")
 API_KEY_GOOGLE = st.sidebar.text_input("Chave Google Places API (Opcional):", type="password")
 
-busca_cliente = st.text_input("🔍 Digite o Nome do Estabelecimento e Cidade:", placeholder="Ex: Restaurante Sabor Local Ribeirão Preto")
+col_empresa, col_cidade = st.columns([2, 1])
+
+with col_empresa:
+    nome_estabelecimento = st.text_input("🏢 Nome do Estabelecimento:", placeholder="Ex: Toque de Letra")
+
+with col_cidade:
+    cidade_estabelecimento = st.text_input("📍 Cidade / Estado:", placeholder="Ex: Ribeirão Preto, SP")
 
 if st.button("🚀 Analisar Perfil Agora", use_container_width=True):
-    if busca_cliente:
+    if nome_estabelecimento:
+        termo_busca = f"{nome_estabelecimento}, {cidade_estabelecimento}" if cidade_estabelecimento else nome_estabelecimento
+        
         if API_KEY_GOOGLE:
             try:
-                url = f"https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input={busca_cliente}&inputtype=textquery&fields=place_id,name,formatted_address,rating,user_ratings_total&key={API_KEY_GOOGLE}"
+                url = f"https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input={termo_busca}&inputtype=textquery&fields=place_id,name,formatted_address,rating,user_ratings_total&key={API_KEY_GOOGLE}"
                 res = requests.get(url).json()
                 if res.get("candidates"):
                     c = res["candidates"][0]
                     dados = {
-                        "nome": c.get("name", busca_cliente),
-                        "endereco": c.get("formatted_address", "Endereço registrado no Google Maps"),
+                        "nome": c.get("name", nome_estabelecimento),
+                        "endereco": c.get("formatted_address", f"{cidade_estabelecimento}"),
                         "telefone": "(16) 3999-8888",
                         "website": "Não possui",
                         "nota": c.get("rating", 4.0),
@@ -240,8 +235,8 @@ if st.button("🚀 Analisar Perfil Agora", use_container_width=True):
 
         if not API_KEY_GOOGLE:
             dados = {
-                "nome": busca_cliente,
-                "endereco": "Av. Principal, 1200 - Ribeirão Preto, SP",
+                "nome": nome_estabelecimento,
+                "endereco": f"{cidade_estabelecimento}" if cidade_estabelecimento else "Endereço cadastrado no Google",
                 "telefone": "(16) 3999-8888",
                 "website": "Não possui",
                 "nota": 4.2,
@@ -276,7 +271,7 @@ if st.button("🚀 Analisar Perfil Agora", use_container_width=True):
             st.markdown(f"""
                 <div class="card-info">
                     <h3 style="color: #38bdf8; margin-top: 0;">{dados['nome']}</h3>
-                    <p style="margin: 4px 0;">📍 <strong>Endereço:</strong> {dados['endereco']}</p>
+                    <p style="margin: 4px 0;">📍 <strong>Endereço / Cidade:</strong> {dados['endereco']}</p>
                     <p style="margin: 4px 0;">📞 <strong>Telefone:</strong> {dados['telefone']}</p>
                     <p style="margin: 4px 0;">🌐 <strong>Website:</strong> {dados['website']}</p>
                     <p style="margin: 4px 0;">⭐ <strong>Avaliações:</strong> {dados['nota']} ({dados['avaliacoes']} avaliações)</p>
@@ -289,7 +284,7 @@ if st.button("🚀 Analisar Perfil Agora", use_container_width=True):
         st.progress(50 if not dados["categorias_completas"] else 100, text="Categorias: Incompletas")
         st.progress(10 if dados["website"] == "Não possui" else 100, text="Website / Links de Ação: Não Identificado")
 
-        # Gerar o PDF nativo com FPDF2
+        # Gerar o PDF nativo corrigido
         pdf_bytes = gerar_pdf_completo_fpdf(dados, score)
 
         st.markdown("---")
@@ -303,7 +298,7 @@ if st.button("🚀 Analisar Perfil Agora", use_container_width=True):
             use_container_width=True
         )
     else:
-        st.warning("Digite o nome de uma empresa para realizar a consulta.")
+        st.warning("Por favor, digite o nome do estabelecimento.")
 
 # -----------------------------------------------------------------------------
 # 4. RODAPÉ FIXO
