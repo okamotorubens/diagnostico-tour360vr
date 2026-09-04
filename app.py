@@ -68,7 +68,7 @@ def conv(texto):
     return limpo.encode('latin-1', 'replace').decode('latin-1')
 
 # -----------------------------------------------------------------------------
-# 2. GERADOR DE PDF TOUR360VR (DESIGN CORRIGIDO E BALANCEADO)
+# 2. GERADOR DE PDF TOUR360VR (ESTÉTICA AJUSTADA E BARRAS ARREDONDADAS)
 # -----------------------------------------------------------------------------
 class PDFTour360Oficial(FPDF):
     def header(self):
@@ -94,9 +94,9 @@ class PDFTour360Oficial(FPDF):
         
         self.set_draw_color(226, 232, 240)
         self.set_line_width(0.3)
-        self.line(12, 20, 198, 20)
+        self.line(12, 21, 198, 21)
         self.set_line_width(0.2)
-        self.ln(6)
+        self.ln(10)
 
     def footer(self):
         self.set_y(-15)
@@ -106,10 +106,47 @@ class PDFTour360Oficial(FPDF):
         self.line(12, self.get_y(), 198, self.get_y())
         
         self.set_y(-12)
-        self.cell(50, 6, 'Tour360VR www.tour360vr.com.br', link='https://tour360vr.com.br', align='L')
-        self.cell(50, 6, 'contato@tour360vr.com.br', link='mailto:contato@tour360vr.com.br', align='C')
-        self.cell(50, 6, 'WhatsApp: (16) 99133-2121', link='https://wa.me/5516991332121', align='C')
-        self.cell(36, 6, f'Página {self.page_no()} de 3', align='R')
+        # Removida a palavra 'Tour360VR' do início conforme pedido
+        self.cell(54, 6, 'www.tour360vr.com.br', link='https://tour360vr.com.br', align='L')
+        self.cell(54, 6, 'contato@tour360vr.com.br', link='mailto:contato@tour360vr.com.br', align='C')
+        self.cell(48, 6, 'WhatsApp: (16) 99133-2121', link='https://wa.me/5516991332121', align='C')
+        self.cell(30, 6, f'Página {self.page_no()} de 3', align='R')
+
+    def rounded_rect(self, x, y, w, h, r, style=''):
+        """Desenha um retângulo com cantos arredondados."""
+        k = self.k
+        hp = self.h
+        if style == 'F':
+            op = 'f'
+        elif style == 'FD' or style == 'DF':
+            op = 'B'
+        else:
+            op = 'S'
+        
+        my_arc = 4/3 * (2**0.5 - 1)
+        self._out(f'{(x+r)*k:.2f} {(hp-y)*k:.2f} m')
+        xc = x + w - r
+        yc = y + r
+        self._out(f'{xc*k:.2f} {(hp-y)*k:.2f} l')
+        self._arc(xc + r*my_arc, yc - r, xc + r, yc - r*my_arc, xc + r, yc)
+        xc = x + w - r
+        yc = y + h - r
+        self._out(f'{(x+w)*k:.2f} {(hp-yc)*k:.2f} l')
+        self._arc(xc + r, yc + r*my_arc, xc + r*my_arc, yc + r, xc, yc + r)
+        xc = x + r
+        yc = y + h - r
+        self._out(f'{xc*k:.2f} {(hp-(y+h))*k:.2f} l')
+        self._arc(xc - r*my_arc, yc + r, xc - r, yc + r*my_arc, xc - r, yc)
+        xc = x + r
+        yc = y + r
+        self._out(f'{x*k:.2f} {(hp-yc)*k:.2f} l')
+        self._arc(xc - r, yc - r*my_arc, xc - r*my_arc, yc - r, xc, yc - r)
+        self._out(f'{op}')
+
+    def _arc(self, x1, y1, x2, y2, x3, y3):
+        k = self.k
+        hp = self.h
+        self._out(f'{x1*k:.2f} {(hp-y1)*k:.2f} {x2*k:.2f} {(hp-y2)*k:.2f} {x3*k:.2f} {(hp-y3)*k:.2f} c')
 
 def gerar_pdf_oficial(dados, score):
     pdf = PDFTour360Oficial()
@@ -120,12 +157,12 @@ def gerar_pdf_oficial(dados, score):
     # -------------------------------------------------------------------------
     pdf.add_page()
     
-    # Cartão Ficha Analisada do Cliente (Ampliado)
+    # Cartão Ficha Analisada do Cliente (Descido e com espaçamento)
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
-    pdf.rect(12, 24, 186, 36, 'FD')
+    pdf.rounded_rect(12, 28, 186, 36, 2, 'FD')
     
-    pdf.set_xy(16, 27)
+    pdf.set_xy(16, 31)
     pdf.set_font('Helvetica', 'B', 10)
     pdf.set_text_color(100, 116, 139)
     pdf.cell(178, 4, conv('FICHA ANALISADA DO CLIENTE'), ln=True)
@@ -146,8 +183,8 @@ def gerar_pdf_oficial(dados, score):
     else:
         pdf.cell(178, 4.8, conv(f"Website: {dados['website']}"), ln=True)
 
-    # Quadro do Score Geral de Otimização
-    pdf.set_y(65)
+    # Quadro do Score Geral com Nota Destaque em Tamanho Maior Real
+    pdf.set_y(70)
     if score < 50:
         cr, cg, cb = 239, 68, 68
         status_txt = "STATUS CRÍTICO"
@@ -160,18 +197,18 @@ def gerar_pdf_oficial(dados, score):
 
     pdf.set_fill_color(cr, cg, cb)
     pdf.set_draw_color(cr, cg, cb)
-    pdf.rect(12, 65, 186, 14, 'FD')
+    pdf.rounded_rect(12, 70, 186, 18, 2, 'FD')
     
-    pdf.set_xy(12, 67)
-    pdf.set_font('Helvetica', 'B', 12)
+    pdf.set_xy(12, 72)
+    pdf.set_font('Helvetica', 'B', 18)  # Tamanho maior e real da nota
     pdf.set_text_color(255, 255, 255)
-    pdf.cell(186, 5, conv(f"{score}/100"), align='C', ln=True)
+    pdf.cell(186, 7, conv(f"{score}/100"), align='C', ln=True)
+    
     pdf.set_font('Helvetica', 'B', 9)
-    pdf.cell(186, 4, conv(f"SCORE GERAL DE OTIMIZAÇÃO ({status_txt})"), align='C', ln=True)
-    pdf.ln(8)
+    pdf.cell(186, 5, conv(f"SCORE GERAL DE OTIMIZAÇÃO ({status_txt})"), align='C', ln=True)
 
     # Título Principal da Auditoria (Centralizado e Fonte Maior)
-    pdf.set_y(85)
+    pdf.set_y(96)
     pdf.set_font('Helvetica', 'B', 13)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 7, conv('AUDITORIA DETALHADA DE PONTOS DE BUSCA'), align='C', ln=True)
@@ -203,8 +240,9 @@ def gerar_pdf_oficial(dados, score):
             
         pdf.cell(66, 4, conv(f"| {pct}% - {rotulo}"), align='R', ln=True)
 
+        # Trilha da Barra Arredondada
         pdf.set_fill_color(226, 232, 240)
-        pdf.rect(12, pdf.get_y(), 186, 3, 'F')
+        pdf.rounded_rect(12, pdf.get_y(), 186, 3.5, 1.5, 'F')
         
         if pct < 40:
             pdf.set_fill_color(239, 68, 68)
@@ -213,9 +251,10 @@ def gerar_pdf_oficial(dados, score):
         else:
             pdf.set_fill_color(34, 197, 94)
             
-        largura_barra = max(float(pct) * 1.86, 3.0)
-        pdf.rect(12, pdf.get_y(), largura_barra, 3, 'F')
-        pdf.ln(4)
+        largura_barra = max(float(pct) * 1.86, 4.0)
+        # Preenchimento do Gráfico com Cantos Arredondados
+        pdf.rounded_rect(12, pdf.get_y(), largura_barra, 3.5, 1.5, 'F')
+        pdf.ln(4.5)
 
         pdf.set_font('Helvetica', '', 8)
         pdf.set_text_color(100, 116, 139)
@@ -223,55 +262,53 @@ def gerar_pdf_oficial(dados, score):
         pdf.ln(3)
 
     # -------------------------------------------------------------------------
-    # PÁGINA 2: PROPOSTA COMERCIAL (BEM DISTRIBUÍDA)
+    # PÁGINA 2: PROPOSTA COMERCIAL (DESLOCADA E COM QUADRO REDUZIDO)
     # -------------------------------------------------------------------------
     pdf.add_page()
     
-    # Título Principal da Proposta (Centralizado e Fonte Maior)
-    pdf.set_y(24)
+    # Título Principal Deslocado para Baixo
+    pdf.set_y(28)
     pdf.set_font('Helvetica', 'B', 13)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 7, conv('PROPOSTA COMERCIAL & ESTRUTURAÇÃO ESTRATÉGICA'), align='C', ln=True)
-    pdf.ln(8)
+    pdf.ln(6)
 
-    # Quadro Informativo
+    # Quadro Informativo Reduzido sem Espaço Sobrando
     pdf.set_fill_color(240, 249, 255)
     pdf.set_draw_color(62, 161, 219)
     pdf.set_line_width(0.6)
-    pdf.rect(12, pdf.get_y(), 186, 42, 'FD')
+    pdf.rounded_rect(12, pdf.get_y(), 186, 32, 2, 'FD')
     pdf.set_line_width(0.2)
 
-    y_info = pdf.get_y() + 4
+    y_info = pdf.get_y() + 3
     pdf.set_xy(16, y_info)
-    pdf.set_font('Helvetica', 'B', 9.5)
+    pdf.set_font('Helvetica', 'B', 9)
     pdf.set_text_color(15, 23, 42)
-    pdf.cell(178, 5, conv('POR QUE SEU NEGÓCIO PRECISA DE OTIMIZAÇÃO PROFISSIONAL?'), ln=True)
+    pdf.cell(178, 4.5, conv('POR QUE SEU NEGÓCIO PRECISA DE OTIMIZAÇÃO PROFISSIONAL?'), ln=True)
     
     pdf.set_font('Helvetica', '', 8.5)
     pdf.set_text_color(51, 65, 85)
     txt_exp = (
         "Mais de 80% das buscas por estabelecimentos locais acontecem diretamente no Google e Google Maps. "
-        "Quando uma ficha possui notas baixas em itens essenciais como fotos, tour 360°, categorias corretas e "
-        "tempo de resposta, o algoritmo reduz expressivamente a visibilidade da sua empresa.\n"
+        "Quando uma ficha possui notas baixas em fotos, tour 360° e categorias corretas, o algoritmo reduz a visibilidade.\n"
         "Com a estruturação completa da Tour360VR, transformamos o seu perfil em um ímã de novos clientes."
     )
     pdf.set_x(16)
-    pdf.multi_cell(178, 4.4, conv(txt_exp))
+    pdf.multi_cell(178, 4.0, conv(txt_exp))
     
-    pdf.ln(12)
-    
-    # Subtítulo da Proposta Alinhado
-    pdf.set_font('Helvetica', 'B', 11)
+    # Maior espaçamento vertical para descer a proposta e quadros
+    pdf.set_y(80)
+    pdf.set_font('Helvetica', 'B', 12)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 6, conv('PROPOSTA DE PLANOS E INVESTIMENTO'), align='C', ln=True)
-    pdf.ln(6)
+    pdf.ln(8)
 
     y_p = pdf.get_y()
     
     # --- PLANO START ---
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
-    pdf.rect(12, y_p, 54, 56, 'FD')
+    pdf.rounded_rect(12, y_p, 54, 56, 2, 'FD')
     
     pdf.set_xy(12, y_p + 5)
     pdf.set_font('Helvetica', 'B', 11)
@@ -295,7 +332,7 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_fill_color(240, 249, 255)
     pdf.set_draw_color(62, 161, 219)
     pdf.set_line_width(1.0)
-    pdf.rect(72, y_p - 2, 66, 62, 'FD')
+    pdf.rounded_rect(72, y_p - 2, 66, 62, 2, 'FD')
     pdf.set_line_width(0.2)
     
     pdf.set_xy(72, y_p + 3)
@@ -324,7 +361,7 @@ def gerar_pdf_oficial(dados, score):
     # --- GESTÃO MENSAL ---
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
-    pdf.rect(144, y_p, 54, 56, 'FD')
+    pdf.rounded_rect(144, y_p, 54, 56, 2, 'FD')
     
     pdf.set_xy(144, y_p + 5)
     pdf.set_font('Helvetica', 'B', 11)
@@ -345,11 +382,11 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_x(144); pdf.cell(54, 4.5, conv('- Relatório mensal'), align='C', ln=True)
 
     # -------------------------------------------------------------------------
-    # PÁGINA 3: CONTRATO DE PRESTAÇÃO DE SERVIÇOS
+    # PÁGINA 3: CONTRATO DE PRESTAÇÃO DE SERVIÇOS (PARÁGRAFO ATUALIZADO)
     # -------------------------------------------------------------------------
     pdf.add_page()
     
-    pdf.set_y(24)
+    pdf.set_y(28)
     pdf.set_font('Helvetica', 'B', 13)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 8, conv('CONTRATO DE PRESTAÇÃO DE SERVIÇOS'), align='C', ln=True)
@@ -358,10 +395,11 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_font('Helvetica', '', 9)
     pdf.set_text_color(51, 65, 85)
     
+    # Parágrafo da CONTRATADA conforme a especificação exata
     pdf.set_font('Helvetica', 'B', 9)
     pdf.write(5, conv("CONTRATADA: "))
     pdf.set_font('Helvetica', '', 9)
-    pdf.write(5, conv("TOUR360VR MIDIAS VISUAIS, representada por Rubens H. Okamoto, CPF: 287.932.298-79, E-mail: contato@tour360vr.com.br e Telefone: (16) 99133-2121.\n\n"))
+    pdf.write(5, conv("Tour360VR, representada por Rubens H. Okamoto, CPF: 287.932.298-79 e Telefone: (16) 99133-2121.\n\n"))
     
     pdf.set_font('Helvetica', 'B', 9)
     pdf.write(5, conv("CONTRATANTE: "))
