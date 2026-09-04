@@ -1,26 +1,69 @@
 import io
 import requests
 import streamlit as st
-from weasyprint import HTML
+from fpdf import FPDF
 
 # -----------------------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA E ESTILOS DA TOUR360VR
+# CLASSE DE GERAÇÃO DO PDF EM FPDF2 (Sem dependências C do Linux)
 # -----------------------------------------------------------------------------
-st.set_page_config(
-    page_title="Tour360VR - Gestão & Diagnóstico Google Meu Negócio",
-    page_icon="🌐",
-    layout="wide"
-)
+class PDFTour360(FPDF):
+    def header(self):
+        self.set_fill_color(15, 23, 42)
+        self.rect(0, 0, 210, 297, 'F')
+        self.set_font('Helvetica', 'B', 16)
+        self.set_text_color(255, 255, 255)
+        self.cell(0, 10, 'TOUR360VR', ln=True)
+        self.set_font('Helvetica', 'B', 9)
+        self.set_text_color(239, 68, 68)
+        self.cell(0, 5, 'GESTAO DE PERFIL & DIAGNOSTICO GOOGLE MEU NEGOCIO', ln=True)
+        self.set_draw_color(239, 68, 68)
+        self.line(10, self.get_y() + 2, 200, self.get_y() + 2)
+        self.ln(8)
 
-st.markdown("""
-    <style>
-    .stApp { background-color: #0f172a; color: #f8fafc; }
-    .header-box { border-bottom: 2px solid #ef4444; padding-bottom: 12px; margin-bottom: 25px; }
-    .score-card { background-color: #1e293b; border: 2px solid #ef4444; padding: 20px; border-radius: 8px; text-align: center; }
-    .card-info { background-color: #1e293b; border: 1px solid #334155; padding: 18px; border-radius: 8px; margin-bottom: 15px; }
-    .footer { position: fixed; left: 0; bottom: 0; width: 100%; background-color: #0f172a; color: #94a3b8; text-align: center; padding: 10px; border-top: 1px solid #1e293b; font-size: 12px; z-index: 100; }
-    </style>
-""", unsafe_allow_html=True)
+    def footer(self):
+        self.set_y(-15)
+        self.set_font('Helvetica', '', 8)
+        self.set_text_color(148, 163, 184)
+        self.cell(0, 10, 'Tour360VR - tour360vr.com.br - contato@tour360vr.com.br - WhatsApp: (16) 99133-2121', align='C')
+
+def gerar_pdf_fpdf(dados, score):
+    pdf = PDFTour360()
+    pdf.add_page()
+    
+    # Card Ficha Cliente
+    pdf.set_fill_color(30, 41, 59)
+    pdf.rect(10, 32, 190, 45, 'F')
+    pdf.set_xy(15, 35)
+    pdf.set_font('Helvetica', 'B', 11)
+    pdf.set_text_color(56, 189, 248)
+    pdf.cell(0, 6, 'Ficha Analisada do Cliente', ln=True)
+    
+    pdf.set_font('Helvetica', '', 9)
+    pdf.set_text_color(248, 250, 252)
+    pdf.set_x(15)
+    pdf.cell(0, 5, f"Empresa: {dados['nome']}", ln=True)
+    pdf.set_x(15)
+    pdf.cell(0, 5, f"Endereco: {dados['endereco']}", ln=True)
+    pdf.set_x(15)
+    pdf.cell(0, 5, f"Telefone: {dados['telefone']} | Website: {dados['website']}", ln=True)
+    pdf.set_x(15)
+    pdf.cell(0, 5, f"Avaliacoes: {dados['nota']} estrelas ({dados['avaliacoes']} avaliacoes)", ln=True)
+
+    # Score Box
+    pdf.set_fill_color(40, 20, 30)
+    pdf.rect(10, 85, 190, 25, 'F')
+    pdf.set_xy(10, 88)
+    pdf.set_font('Helvetica', 'B', 24)
+    pdf.set_text_color(239, 68, 68)
+    pdf.cell(190, 10, f"{score} / 100", align='C', ln=True)
+    pdf.set_font('Helvetica', 'B', 8)
+    pdf.set_text_color(203, 213, 225)
+    pdf.cell(190, 5, 'SCORE GERAL DE OTIMIZACAO (STATUS CRITICO)', align='C', ln=True)
+
+    buffer = io.BytesIO()
+    pdf.output(buffer)
+    buffer.seek(0)
+    return buffer
 
 # Cabeçalho da Aplicação
 st.markdown("""
