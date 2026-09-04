@@ -63,13 +63,12 @@ def conv(texto):
     if not texto:
         return ""
     limpo = str(texto)
-    # Substituições universais de unicode para evitar '?'
     limpo = limpo.replace("•", "- ").replace("✓", "[OK] ").replace("X", "[X] ")
     limpo = limpo.replace("📍", "").replace("📞", "").replace("⭐", "").replace("✉️", "").replace("🌐", "").replace("★", "").replace("☆", "")
     return limpo.encode('latin-1', 'replace').decode('latin-1')
 
 # -----------------------------------------------------------------------------
-# 2. GERADOR DE PDF TOUR360VR (CORRIGIDO E SEM SOBREPOSIÇÕES)
+# 2. GERADOR DE PDF TOUR360VR (3 PÁGINAS - LAYOUT AJUSTADO)
 # -----------------------------------------------------------------------------
 class PDFTour360Oficial(FPDF):
     def header(self):
@@ -109,7 +108,7 @@ class PDFTour360Oficial(FPDF):
         self.cell(62, 7, 'Tour360VR www.tour360vr.com.br', link='https://tour360vr.com.br', align='L')
         self.cell(62, 7, 'contato@tour360vr.com.br', link='mailto:contato@tour360vr.com.br', align='C')
         self.cell(38, 7, 'WhatsApp: (16) 99133-2121', link='https://wa.me/5516991332121', align='C')
-        self.cell(24, 7, f'Página {self.page_no()} de 4', align='R')
+        self.cell(24, 7, f'Página {self.page_no()} de 3', align='R')
 
 def gerar_pdf_oficial(dados, score):
     pdf = PDFTour360Oficial()
@@ -146,7 +145,7 @@ def gerar_pdf_oficial(dados, score):
     else:
         pdf.cell(178, 4.2, conv(f"Website: {dados['website']}"), ln=True)
 
-    # Faixa do Score Geral Ajustada (Sem Quebra de Linha Estreita)
+    # Faixa do Score Geral
     pdf.set_y(58)
     if score < 50:
         cr, cg, cb = 239, 68, 68
@@ -167,19 +166,15 @@ def gerar_pdf_oficial(dados, score):
     pdf.cell(186, 7, conv(f"{score}/100 - {status_txt}"), align='C', ln=True)
     pdf.ln(6)
 
-    # Marcadores de Seção em Caixas Cinzas
+    # Marcador de Seção Auditoria
     pdf.set_fill_color(241, 245, 249)
-    pdf.rect(12, pdf.get_y(), 90, 6, 'F')
-    pdf.rect(108, pdf.get_y(), 90, 6, 'F')
+    pdf.rect(12, pdf.get_y(), 186, 6, 'F')
     
     y_lbl = pdf.get_y() + 1
     pdf.set_xy(14, y_lbl)
     pdf.set_font('Helvetica', 'B', 8)
     pdf.set_text_color(71, 85, 105)
-    pdf.cell(86, 4, conv('AUDITORIA DETALHADA DE PONTOS DE BUSCA'), ln=False)
-    
-    pdf.set_xy(110, y_lbl)
-    pdf.cell(86, 4, conv('DIAGNÓSTICO TÉCNICO'), ln=True)
+    pdf.cell(178, 4, conv('AUDITORIA DETALHADA DE PONTOS DE BUSCA'), ln=True)
     pdf.ln(5)
 
     pct_avaliacoes = min(int((dados['avaliacoes'] / 50.0) * 100), 100) if dados['avaliacoes'] > 0 else 10
@@ -228,16 +223,13 @@ def gerar_pdf_oficial(dados, score):
         pdf.ln(3)
 
     # -------------------------------------------------------------------------
-    # PÁGINA 2: SOLUÇÃO & PLANOS DE INVESTIMENTO (COLUNAS BLOQUEADAS)
+    # PÁGINA 2: PROPOSTA COMERCIAL & PLANOS DE INVESTIMENTO
     # -------------------------------------------------------------------------
     pdf.add_page()
     
-    pdf.set_fill_color(241, 245, 249)
-    pdf.rect(12, 24, 186, 6, 'F')
-    pdf.set_xy(14, 25)
-    pdf.set_font('Helvetica', 'B', 8)
-    pdf.set_text_color(71, 85, 105)
-    pdf.cell(178, 4, conv('SOLUÇÃO & PLANOS'), ln=True)
+    pdf.set_font('Helvetica', 'B', 11)
+    pdf.set_text_color(30, 64, 175)
+    pdf.cell(0, 5, conv('Proposta Comercial & Estruturação Estratégica'), ln=True)
     pdf.ln(4)
 
     pdf.set_fill_color(240, 249, 255)
@@ -271,7 +263,7 @@ def gerar_pdf_oficial(dados, score):
 
     y_p = pdf.get_y()
     
-    # --- PLANO START (X = 12) ---
+    # --- PLANO START ---
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
     pdf.rect(12, y_p, 54, 52, 'FD')
@@ -294,7 +286,7 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_x(12); pdf.cell(54, 4.2, conv('- Ajuste de categorias'), align='C', ln=True)
     pdf.set_x(12); pdf.cell(54, 4.2, conv('- Inserção de links'), align='C', ln=True)
 
-    # --- PLANO PRO (X = 72) ---
+    # --- PLANO PRO ---
     pdf.set_fill_color(240, 249, 255)
     pdf.set_draw_color(62, 161, 219)
     pdf.set_line_width(1.0)
@@ -324,7 +316,7 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_x(72); pdf.cell(66, 4.5, conv('- Ensaio Fotográfico'), align='C', ln=True)
     pdf.set_x(72); pdf.cell(66, 4.5, conv('- Relatório de Entrega'), align='C', ln=True)
 
-    # --- GESTÃO MENSAL (X = 144) ---
+    # --- GESTÃO MENSAL ---
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
     pdf.rect(144, y_p, 54, 52, 'FD')
@@ -348,69 +340,18 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_x(144); pdf.cell(54, 4.2, conv('- Relatório mensal'), align='C', ln=True)
 
     # -------------------------------------------------------------------------
-    # PÁGINA 3: COMPROVAÇÃO DE ENTREGÁVEIS (ANTES VS DEPOIS)
+    # PÁGINA 3: CONTRATO DE PRESTAÇÃO DE SERVIÇOS
     # -------------------------------------------------------------------------
     pdf.add_page()
     
-    pdf.set_fill_color(241, 245, 249)
-    pdf.rect(12, 24, 186, 6, 'F')
-    pdf.set_xy(14, 25)
-    pdf.set_font('Helvetica', 'B', 8)
-    pdf.set_text_color(71, 85, 105)
-    pdf.cell(178, 4, conv('COMPROVAÇÃO DE ENTREGÁVEIS'), ln=True)
-    pdf.ln(4)
-
     pdf.set_font('Helvetica', 'B', 11)
     pdf.set_text_color(30, 64, 175)
-    pdf.cell(0, 5, conv('DEMONSTRATIVO VISUAL DO TRABALHO REALIZADO'), ln=True)
-    pdf.ln(3)
-
-    pdf.set_fill_color(248, 250, 252)
-    pdf.set_draw_color(226, 232, 240)
-    pdf.rect(12, pdf.get_y(), 90, 48, 'FD')
-    pdf.rect(108, pdf.get_y(), 90, 48, 'FD')
-
-    y_comp = pdf.get_y() + 4
-    pdf.set_xy(12, y_comp)
-    pdf.set_font('Helvetica', 'B', 9.5)
-    pdf.set_text_color(239, 68, 68)
-    pdf.cell(90, 5, conv('ANTES DA CONSULTORIA'), align='C', ln=True)
-    
-    pdf.set_font('Helvetica', '', 8.5)
-    pdf.set_text_color(71, 85, 105)
-    pdf.set_x(12); pdf.cell(90, 4.8, conv('[X] Fotos escuras e sem qualidade'), align='C', ln=True)
-    pdf.set_x(12); pdf.cell(90, 4.8, conv('[X] Sem Tour Virtual 360°'), align='C', ln=True)
-    pdf.set_x(12); pdf.cell(90, 4.8, conv('[X] Informações desencontradas'), align='C', ln=True)
-    pdf.set_x(12); pdf.cell(90, 4.8, conv(f'[X] Score do perfil: {score}/100'), align='C', ln=True)
-
-    pdf.set_xy(108, y_comp)
-    pdf.set_font('Helvetica', 'B', 9.5)
-    pdf.set_text_color(34, 197, 94)
-    pdf.cell(90, 5, conv('DEPOIS DA ESTRUTURAÇÃO'), align='C', ln=True)
-    
-    pdf.set_font('Helvetica', '', 8.5)
-    pdf.set_text_color(71, 85, 105)
-    pdf.set_x(108); pdf.cell(90, 4.8, conv('[OK] Fotos HD alinhadas com SEO'), align='C', ln=True)
-    pdf.set_x(108); pdf.cell(90, 4.8, conv('[OK] Tour 360° publicado no Maps'), align='C', ln=True)
-    pdf.set_x(108); pdf.cell(90, 4.8, conv('[OK] Cardápio e site integrados'), align='C', ln=True)
-    pdf.set_x(108); pdf.cell(90, 4.8, conv('[OK] Score do perfil: 98/100'), align='C', ln=True)
-
-    # -------------------------------------------------------------------------
-    # PÁGINA 4: CONTRATO DE PRESTAÇÃO DE SERVIÇOS
-    # -------------------------------------------------------------------------
-    pdf.add_page()
-    
-    pdf.set_fill_color(241, 245, 249)
-    pdf.rect(12, 24, 186, 6, 'F')
-    pdf.set_xy(14, 25)
-    pdf.set_font('Helvetica', 'B', 8)
-    pdf.set_text_color(71, 85, 105)
-    pdf.cell(178, 4, conv('DOCUMENTO JURÍDICO'), ln=True)
+    pdf.cell(0, 5, conv('Contrato de Prestação de Serviços Profissionais'), ln=True)
     pdf.ln(4)
 
-    pdf.set_font('Helvetica', 'B', 13)
+    pdf.set_font('Helvetica', 'B', 12)
     pdf.set_text_color(15, 23, 42)
-    pdf.cell(0, 8, conv('CONTRATO DE PRESTAÇÃO DE SERVIÇOS'), align='C', ln=True)
+    pdf.cell(0, 7, conv('CONTRATO DE PRESTAÇÃO DE SERVIÇOS'), align='C', ln=True)
     pdf.ln(4)
 
     pdf.set_font('Helvetica', '', 9)
@@ -450,7 +391,6 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_font('Helvetica', '', 9)
     pdf.write(5, conv("(   ) Plano Start          (   ) Plano Pro          (   ) Gestão Mensal\n\n"))
 
-    # Texto corrigido sem 'À' corrompido e com espaçamento alinhado em 1 linha
     pdf.set_font('Helvetica', 'B', 9)
     pdf.write(5, conv("CLÁUSULA QUARTA - CONDIÇÕES DE PAGAMENTO:\n"))
     pdf.set_font('Helvetica', '', 9)
@@ -631,7 +571,7 @@ elif "💲" in opcao_menu:
 
 elif "📄" in opcao_menu:
     st.subheader("📄 Contrato de Prestação de Serviços")
-    st.info("O contrato é gerado automaticamente na 4ª página do arquivo PDF completo após a realização da consulta na Etapa 1.")
+    st.info("O contrato é gerado automaticamente na 3ª página do arquivo PDF completo após a realização da consulta na Etapa 1.")
 
 # -----------------------------------------------------------------------------
 # 4. RODAPÉ FIXO DO APP
