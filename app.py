@@ -63,10 +63,10 @@ API_KEY_GOOGLE = st.secrets.get("GOOGLE_PLACES_API_KEY", "")
 # -----------------------------------------------------------------------------
 if 'dados' not in st.session_state:
     st.session_state['dados'] = {
-        "nome": "Empresa Exemplo",
-        "contato": "Não informado",
+        "nome": "Toque de Letra",
+        "contato": "Marcio Javaroni",
         "endereco": "Ribeirão Preto / SP",
-        "telefone": "(16) 99999-0000",
+        "telefone": "16 99622 2121",
         "website": "Não possui",
         "nota": 4.2,
         "avaliacoes": 38,
@@ -80,14 +80,14 @@ if 'planos' not in st.session_state:
     st.session_state['planos'] = {
         "start_valor": "500,00",
         "start_itens": "- Correção cadastral\n- Otimização de SEO\n- Ajuste de categorias\n- Inserção de links",
-        "pro_valor": "1.200,00",
+        "pro_valor": "1.150,00",
         "pro_itens": "- Tudo do Plano Start\n- Tour Virtual 360°\n- Ensaio Fotográfico HD\n- Relatório Visual de Entrega",
         "gestao_valor": "600,00/mês",
         "gestao_itens": "- Postagens semanais\n- Gestão de avaliações\n- Atualização de fotos\n- Relatório mensal"
     }
 
 if 'plano_acao_extra' not in st.session_state:
-    st.session_state['plano_acao_extra'] = "Insira aqui observações personalizadas ou estratégias adicionais para o cliente..."
+    st.session_state['plano_acao_extra'] = "Você precisa de mim."
 
 def conv(texto):
     """Trata a codificação para Latin-1 e substitui símbolos unicode incompatíveis."""
@@ -99,7 +99,7 @@ def conv(texto):
     return limpo.encode('latin-1', 'replace').decode('latin-1')
 
 # -----------------------------------------------------------------------------
-# 2. GERADOR DE PDF TOUR360VR (COM DADOS DINÂMICOS EDITÁVEIS)
+# 2. GERADOR DE PDF TOUR360VR
 # -----------------------------------------------------------------------------
 class PDFTour360Oficial(FPDF):
     def header(self):
@@ -273,10 +273,10 @@ def gerar_pdf_oficial(dados, score, planos, plano_acao_extra=""):
     pdf.set_text_color(15, 23, 42)
     pdf.cell(w_ficha, 6, conv(f"{dados['nome']}"), align='C', ln=True)
     
-    pdf.set_font('Helvetica', 'B', 9)
+    pdf.set_font('Helvetica', 'B', 9.5)
     pdf.set_text_color(245, 158, 11)
     pdf.set_x(x_ficha)
-    pdf.cell(w_ficha, 4, conv(f"Nota {dados['nota']:.1f} *****   •   {dados['avaliacoes']} avaliações no Google"), align='C', ln=True)
+    pdf.cell(w_ficha, 4.5, conv(f"Nota {dados['nota']:.1f} *****   •   {dados['avaliacoes']} avaliações no Google"), align='C', ln=True)
     
     pdf.set_font('Helvetica', '', 8.5)
     pdf.set_text_color(71, 85, 105)
@@ -363,17 +363,17 @@ def gerar_pdf_oficial(dados, score, planos, plano_acao_extra=""):
         pdf.cell(0, 3, conv(f"  Diagnóstico: {desc}"), ln=True)
         pdf.ln(2)
 
-    # BLOCO DO PLANO DE AÇÃO EXTRA / OBSERVAÇÕES
+    # BLOCO DO PLANO DE AÇÃO EXTRA
     if plano_acao_extra and plano_acao_extra.strip() != "":
         pdf.ln(2)
         pdf.set_fill_color(248, 250, 252)
         pdf.set_draw_color(203, 213, 225)
         
         y_extra = pdf.get_y()
-        pdf.rounded_rect(12, y_extra, 186, 28, 2, 'FD')
+        pdf.rounded_rect(12, y_extra, 186, 24, 2, 'FD')
         
         pdf.set_xy(15, y_extra + 2)
-        pdf.set_font('Helvetica', 'B', 9)
+        pdf.set_font('Helvetica', 'B', 8.5)
         pdf.set_text_color(30, 64, 175)
         pdf.cell(180, 4, conv("PLANO DE AÇÃO E APONTAMENTOS ESTRATÉGICOS PERSONALIZADOS:"), ln=True)
         
@@ -491,7 +491,7 @@ def gerar_pdf_oficial(dados, score, planos, plano_acao_extra=""):
     pdf.multi_cell(52, 4, conv(planos['gestao_itens']), align='L')
 
     # -------------------------------------------------------------------------
-    # PÁGINA 4: CONTRATO DE PRESTAÇÃO DE SERVIÇOS
+    # PÁGINA 4: CONTRATO DE PRESTAÇÃO DE SERVIÇOS (FORMATAÇÃO LIMPA)
     # -------------------------------------------------------------------------
     pdf.add_page()
     
@@ -536,12 +536,12 @@ def gerar_pdf_oficial(dados, score, planos, plano_acao_extra=""):
     pdf.set_font('Helvetica', 'B', 9.5)
     pdf.write(5.5, conv("CLÁUSULA TERCEIRA - SELEÇÃO DO PLANO CONTRATADO:\n"))
     pdf.set_font('Helvetica', '', 9.5)
-    pdf.write(5.5, conv("[  ] Plano Start        [  ] Plano Pro        [  ] Gestão Mensal\n\n"))
+    pdf.write(5.5, conv("(  ) Plano Start        (  ) Plano Pro        (  ) Gestão Mensal\n\n"))
 
     pdf.set_font('Helvetica', 'B', 9.5)
     pdf.write(5.5, conv("CLÁUSULA QUARTA - CONDIÇÕES DE PAGAMENTO:\n"))
     pdf.set_font('Helvetica', '', 9.5)
-    pdf.write(5.5, conv("[  ] A Vista    [  ] 2x Plano Start    [  ] 3x Plano Pro    [  ] Gestão Mensal - Vencimento Todo Dia: _____\n\n\n"))
+    pdf.write(5.5, conv("(  ) A Vista    (  ) 2x Plano Start    (  ) 3x Plano Pro    (  ) Gestão Mensal - Vencimento Todo Dia: _____\n\n\n"))
 
     pdf.ln(16)
 
@@ -586,6 +586,18 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
+# CALCULO DINAMICO DO SCORE (FORA DOS BLOCOS PARA GARANTIR ATUALIZAÇÃO)
+dados_atuais = st.session_state['dados']
+score_calculado = 100
+if not dados_atuais["tem_tour360"]: score_calculado -= 25
+if dados_atuais["website"] == "Não possui": score_calculado -= 20
+if not dados_atuais["tem_fotos_hd"]: score_calculado -= 20
+if not dados_atuais["categorias_completas"]: score_calculado -= 15
+if not dados_atuais["horarios_ok"]: score_calculado -= 10
+if dados_atuais["avaliacoes"] < 50: score_calculado -= 10
+
+st.session_state['score'] = score_calculado
+
 # -----------------------------------------------------------------------------
 # ETAPA 1: CONSULTA & DIAGNÓSTICO
 # -----------------------------------------------------------------------------
@@ -626,7 +638,7 @@ if "🔍" in opcao_menu:
                 except Exception as e:
                     st.error(f"Erro na conexão com o Google: {e}")
 
-            st.success("Busca finalizada!")
+            st.rerun()
 
     st.markdown("---")
     st.markdown("### ✏️ Formatação do Cliente:")
@@ -641,16 +653,7 @@ if "🔍" in opcao_menu:
         st.session_state['dados']['website'] = st.text_input("🌐 Website Cadastrado:", value=st.session_state['dados']['website'])
 
     dados = st.session_state['dados']
-
-    score = 100
-    if not dados["tem_tour360"]: score -= 25
-    if dados["website"] == "Não possui": score -= 20
-    if not dados["tem_fotos_hd"]: score -= 20
-    if not dados["categorias_completas"]: score -= 15
-    if not dados["horarios_ok"]: score -= 10
-    if dados["avaliacoes"] < 50: score -= 10
-
-    st.session_state['score'] = score
+    score = st.session_state['score']
 
     col1, col2 = st.columns([1, 2])
     with col1:
@@ -685,7 +688,7 @@ if "🔍" in opcao_menu:
     )
 
 # -----------------------------------------------------------------------------
-# ETAPA 2: PLANO DE AÇÃO & DIAGNÓSTICO (ATUALIZAÇÃO EM TEMPO REAL)
+# ETAPA 2: PLANO DE AÇÃO & DIAGNÓSTICO
 # -----------------------------------------------------------------------------
 elif "💡" in opcao_menu:
     st.subheader("💡 2. Editar Plano de Ação & Diagnóstico")
