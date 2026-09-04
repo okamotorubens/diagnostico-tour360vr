@@ -33,32 +33,29 @@ st.markdown("""
 API_KEY_GOOGLE = st.secrets.get("GOOGLE_PLACES_API_KEY", "")
 
 def conv(texto):
-    """Trata caracteres e limpa símbolos não suportados para Latin-1 evitando '?'."""
+    """Trata caracteres e elimina caracteres unicode incompatíveis para Latin-1 evitando '?'."""
     if not texto:
         return ""
-    limpo = str(texto).replace("📍", "").replace("📞", "").replace("⭐", "").replace("✉️", "").replace("🌐", "")
+    limpo = str(texto).replace("📍", "").replace("📞", "").replace("⭐", "").replace("✉️", "").replace("🌐", "").replace("★", "").replace("☆", "")
     return limpo.encode('latin-1', 'replace').decode('latin-1')
 
-def obter_estrelas_texto(nota):
-    """Retorna a representação textual das estrelas sem quebrar o FPDF."""
-    try:
-        val = float(nota)
-        num_estrelas = int(round(val))
-        return "★" * num_estrelas
-    except:
-        return "★★★★"
-
 # -----------------------------------------------------------------------------
-# 2. GERADOR DE PDF TOUR360VR COM TÍTULOS CENTRALIZADOS E ESTRELAS
+# 2. GERADOR DE PDF TOUR360VR (DESIGN MODERNO & REGRAS AJUSTADAS)
 # -----------------------------------------------------------------------------
 class PDFTour360Oficial(FPDF):
     def header(self):
         if self.page_no() == 1:
-            return
+            return  # Capa possui layout próprio
+
+        # Linhas de Acento Modernas no Topo das Páginas Internas
+        self.set_fill_color(255, 61, 61)
+        self.rect(0, 0, 105, 3, 'F')
+        self.set_fill_color(62, 161, 219)
+        self.rect(105, 0, 105, 3, 'F')
 
         try:
-            self.image('Logo TOUR transparente.png', 12, 6, 18)
-            x_pos = 34
+            self.image('Logo TOUR transparente.png', 12, 7, 16)
+            x_pos = 32
         except:
             x_pos = 12
 
@@ -67,13 +64,13 @@ class PDFTour360Oficial(FPDF):
         self.set_text_color(255, 61, 61)
         self.cell(0, 5, 'TOUR360VR', ln=True)
         self.set_xy(x_pos, 13.5)
-        self.set_font('Helvetica', '', 8.5)
-        self.set_text_color(100, 116, 139)
-        self.cell(0, 4, conv('Consultoria & Diagnóstico do Google Meu Negócio'), ln=True)
+        self.set_font('Helvetica', 'B', 8)
+        self.set_text_color(62, 161, 219)
+        self.cell(0, 4, conv('CONSULTORIA & DIAGNÓSTICO DO GOOGLE MEU NEGÓCIO'), ln=True)
         
         self.set_draw_color(226, 232, 240)
         self.set_line_width(0.3)
-        self.line(12, 24, 198, 24)
+        self.line(12, 22, 198, 22)
         self.set_line_width(0.2)
         self.ln(10)
 
@@ -96,9 +93,13 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_auto_page_break(auto=True, margin=18)
     
     # -------------------------------------------------------------------------
-    # PÁGINA 1: CAPA INICIAL COM AVALIAÇÕES EM PRETO E ESTRELAS
+    # PÁGINA 1: CAPA INICIAL MODERNA (COM BARRAS DE ACENTO E CARTÃO FLUTUANTE)
     # -------------------------------------------------------------------------
     pdf.add_page()
+    
+    # Topo Estilizado da Capa
+    pdf.set_fill_color(255, 61, 61)
+    pdf.rect(0, 0, 210, 5, 'F')
     
     try:
         pdf.image('Logo TOUR transparente.png', 85, 18, 40)
@@ -110,15 +111,15 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_text_color(255, 61, 61)
     pdf.cell(0, 10, 'TOUR360VR', align='C', ln=True)
     
-    pdf.set_font('Helvetica', 'B', 12)
+    pdf.set_font('Helvetica', 'B', 11)
     pdf.set_text_color(62, 161, 219)
-    pdf.cell(0, 6, conv('DIAGNÓSTICO & AUDITORIA DE PERFIL DO GOOGLE'), align='C', ln=True)
-    pdf.ln(8)
+    pdf.cell(0, 6, conv('DIAGNÓSTICO & AUDITORIA DE PERFIL DO GOOGLE MEU NEGÓCIO'), align='C', ln=True)
+    pdf.ln(6)
 
-    # Moldura da Ficha do Google
+    # Moldura do Cartão Flutuante
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
-    pdf.rect(15, pdf.get_y(), 180, 158, 'FD')
+    pdf.rect(15, pdf.get_y(), 180, 162, 'FD')
     
     y_capa = pdf.get_y() + 6
     pdf.set_xy(20, y_capa)
@@ -126,22 +127,22 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_text_color(15, 23, 42)
     pdf.cell(170, 9, conv(f"{dados['nome']}"), align='C', ln=True)
     
-    pdf.set_font('Helvetica', '', 10.5)
+    pdf.set_font('Helvetica', '', 10)
     pdf.set_text_color(71, 85, 105)
-    pdf.cell(170, 5.5, conv(f"Endereço: {dados['endereco']}"), align='C', ln=True)
-    pdf.cell(170, 5.5, conv(f"Telefone: {dados['telefone']} | Website: {dados['website']}"), align='C', ln=True)
+    pdf.cell(170, 5, conv(f"Endereço: {dados['endereco']}"), align='C', ln=True)
+    pdf.cell(170, 5, conv(f"Telefone: {dados['telefone']} | Website: {dados['website']}"), align='C', ln=True)
     
-    # Avaliações no Google em PRETO com Estrelas
-    pdf.set_font('Helvetica', 'B', 12)
-    pdf.set_text_color(15, 23, 42) # Texto em Preto Solicitado
-    pdf.cell(170, 7, conv(f"Avaliações no Google: ★★★★☆ Nota {dados['nota']} / 5.0 ({dados['avaliacoes']} avaliações)"), align='C', ln=True)
+    # Avaliações em Texto Puro sem caracteres '?'
+    pdf.set_font('Helvetica', 'B', 11)
+    pdf.set_text_color(15, 23, 42)
+    pdf.cell(170, 6, conv(f"Avaliações no Google: Nota {dados['nota']} / 5.0 ({dados['avaliacoes']} avaliações)"), align='C', ln=True)
     pdf.ln(4)
 
-    # Foto Real da Ficha
+    # Foto da Ficha do Google
     if dados.get("foto_bytes"):
         try:
             img_buffer = io.BytesIO(dados["foto_bytes"])
-            pdf.image(img_buffer, x=25, y=pdf.get_y(), w=160, h=95)
+            pdf.image(img_buffer, x=25, y=pdf.get_y(), w=160, h=98)
         except:
             pdf.set_fill_color(226, 232, 240)
             pdf.rect(30, pdf.get_y(), 150, 85, 'F')
@@ -158,10 +159,18 @@ def gerar_pdf_oficial(dados, score):
         pdf.cell(150, 6, conv("FICHA DO GOOGLE MEU NEGÓCIO PESQUISADA"), align='C', ln=True)
 
     # -------------------------------------------------------------------------
-    # PÁGINA 2: DIAGNÓSTICO DETALHADO & PLANO DE AÇÃO (TÍTULOS CENTRALIZADOS)
+    # PÁGINA 2: DIAGNÓSTICO DETALHADO, QUADRO DE STATUS E PLANO EM MOLDURA
     # -------------------------------------------------------------------------
     pdf.add_page()
     
+    # Título Centralizado Primeiro
+    pdf.set_y(28)
+    pdf.set_font('Helvetica', 'B', 14)
+    pdf.set_text_color(15, 23, 42)
+    pdf.cell(0, 8, conv('Diagnóstico Detalhado do Perfil (Pontos de Busca)'), align='C', ln=True)
+    pdf.ln(3)
+
+    # Quadro STATUS CRÍTICO Logo Abaixo do Título
     if score < 50:
         cr, cg, cb = 255, 61, 61
         status_txt = "STATUS CRÍTICO - AÇÃO NECESSÁRIA URGENTE"
@@ -173,21 +182,18 @@ def gerar_pdf_oficial(dados, score):
         status_txt = "PERFIL OTIMIZADO E EM ALTA PERFORMANCE"
 
     pdf.set_fill_color(cr, cg, cb)
-    pdf.rect(12, 32, 186, 24, 'F')
-    pdf.set_xy(12, 34)
-    pdf.set_font('Helvetica', 'B', 20)
+    pdf.rect(12, pdf.get_y(), 186, 22, 'F')
+    
+    y_st = pdf.get_y() + 2
+    pdf.set_xy(12, y_st)
+    pdf.set_font('Helvetica', 'B', 18)
     pdf.set_text_color(255, 255, 255)
     pdf.cell(186, 8, f"{score} / 100", align='C', ln=True)
-    pdf.set_font('Helvetica', 'B', 10.5)
+    pdf.set_font('Helvetica', 'B', 10)
     pdf.cell(186, 5, conv(status_txt), align='C', ln=True)
+    pdf.ln(8)
 
-    # TÍTULO CENTRALIZADO COMO EM CONTRATO
-    pdf.set_y(64)
-    pdf.set_font('Helvetica', 'B', 14)
-    pdf.set_text_color(15, 23, 42)
-    pdf.cell(0, 8, conv('Diagnóstico Detalhado do Perfil (Pontos de Busca)'), align='C', ln=True)
-    pdf.ln(4)
-
+    # Lista das Categorias Auditadas
     itens = [
         ("Fotos e Resolução Visual", 30 if not dados['tem_fotos_hd'] else 100, "Poucas fotos encontradas / antigas.", "Impede a avaliação prévia do local pelo cliente."),
         ("Tour Virtual 360 Interativo", 0 if not dados['tem_tour360'] else 100, "Nenhum Tour 360 detectado.", "Perde-se engajamento por falta de experiência imersiva."),
@@ -197,11 +203,11 @@ def gerar_pdf_oficial(dados, score):
     ]
 
     for titulo, pct, estado, impacto in itens:
-        pdf.set_font('Helvetica', 'B', 10)
-        pdf.set_text_color(30, 41, 59)
-        pdf.cell(100, 5, conv(f"- {titulo}:"), ln=False)
-        
         pdf.set_font('Helvetica', 'B', 9.5)
+        pdf.set_text_color(30, 41, 59)
+        pdf.cell(100, 4.5, conv(f"- {titulo}:"), ln=False)
+        
+        pdf.set_font('Helvetica', 'B', 9)
         if pct < 40:
             pdf.set_text_color(255, 61, 61)
         elif pct < 80:
@@ -209,10 +215,10 @@ def gerar_pdf_oficial(dados, score):
         else:
             pdf.set_text_color(140, 198, 63)
             
-        pdf.cell(86, 5, conv(f"Score: {pct}%"), align='R', ln=True)
+        pdf.cell(86, 4.5, conv(f"Score: {pct}%"), align='R', ln=True)
 
         pdf.set_fill_color(226, 232, 240)
-        pdf.rect(12, pdf.get_y(), 186, 4, 'F')
+        pdf.rect(12, pdf.get_y(), 186, 3.5, 'F')
         
         if pct < 40:
             pdf.set_fill_color(255, 61, 61)
@@ -222,23 +228,32 @@ def gerar_pdf_oficial(dados, score):
             pdf.set_fill_color(140, 198, 63)
             
         largura_barra = max(float(pct) * 1.86, 3.0)
-        pdf.rect(12, pdf.get_y(), largura_barra, 4, 'F')
-        pdf.ln(5)
+        pdf.rect(12, pdf.get_y(), largura_barra, 3.5, 'F')
+        pdf.ln(4.5)
 
-        pdf.set_font('Helvetica', '', 9.5)
+        pdf.set_font('Helvetica', '', 9)
         pdf.set_text_color(71, 85, 105)
-        pdf.cell(0, 4.2, conv(f"  Estado Atual: {estado}"), ln=True)
-        pdf.cell(0, 4.2, conv(f"  Impacto de Conversão: {impacto}"), ln=True)
-        pdf.ln(4)
+        pdf.cell(0, 3.8, conv(f"  Estado Atual: {estado}"), ln=True)
+        pdf.cell(0, 3.8, conv(f"  Impacto de Conversão: {impacto}"), ln=True)
+        pdf.ln(3)
 
-    # PLANO DE AÇÃO RECOMENDADO - TÍTULO CENTRALIZADO
+    # PLANO DE AÇÃO EM QUADRO ESTILIZADO PADRÃO PLANO PRO
     pdf.ln(2)
-    pdf.set_font('Helvetica', 'B', 14)
+    y_plano = pdf.get_y()
+    
+    pdf.set_fill_color(240, 249, 255) # Fundo Azul Claro
+    pdf.set_draw_color(62, 161, 219)  # Borda Azul #3EA1DB
+    pdf.set_line_width(0.8)
+    pdf.rect(12, y_plano, 186, 46, 'FD')
+    pdf.set_line_width(0.2)
+
+    pdf.set_xy(12, y_plano + 4)
+    pdf.set_font('Helvetica', 'B', 13)
     pdf.set_text_color(15, 23, 42)
-    pdf.cell(0, 8, conv('Plano de Ação Recomendado'), align='C', ln=True)
+    pdf.cell(186, 6, conv('Plano de Ação Recomendado'), align='C', ln=True)
     pdf.ln(2)
     
-    pdf.set_font('Helvetica', '', 10)
+    pdf.set_font('Helvetica', '', 9.5)
     pdf.set_text_color(51, 65, 85)
     acoes = (
         "1. Atualização Cadastral & SEO Local: Otimização completa das palavras-chave de busca.\n"
@@ -246,14 +261,14 @@ def gerar_pdf_oficial(dados, score):
         "3. Produção Fotográfica Profissional: Imagens em alta resolução para transmitir autoridade.\n"
         "4. Integração de Links de Conversão: Inclusão de botões de WhatsApp, menu e reservas."
     )
-    pdf.multi_cell(186, 4.8, conv(acoes))
+    pdf.set_x(16)
+    pdf.multi_cell(178, 4.8, conv(acoes))
 
     # -------------------------------------------------------------------------
-    # PÁGINA 3: PROPOSTA DE INVESTIMENTO (TÍTULO CENTRALIZADO & PLANO PRO EXPANDIDO)
+    # PÁGINA 3: PROPOSTA DE INVESTIMENTO (CENTRALIZADA)
     # -------------------------------------------------------------------------
     pdf.add_page()
     
-    # TÍTULO CENTRALIZADO COMO EM CONTRATO
     pdf.set_font('Helvetica', 'B', 15)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 8, conv('Proposta de Investimento e Planos'), align='C', ln=True)
@@ -261,10 +276,10 @@ def gerar_pdf_oficial(dados, score):
 
     y_p = pdf.get_y()
     
-    # --- COLUNA 1: PLANO START ---
+    # --- COLUNA 1: PLANO START (CENTRALIZADO) ---
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
-    pdf.rect(12, y_p + 4, 52, 52, 'FD')
+    pdf.rect(12, y_p + 4, 52, 54, 'FD')
     
     pdf.set_xy(12, y_p + 9)
     pdf.set_font('Helvetica', 'B', 11)
@@ -278,15 +293,17 @@ def gerar_pdf_oficial(dados, score):
     
     pdf.set_font('Helvetica', '', 9.5)
     pdf.set_text_color(51, 65, 85)
-    it_start = "- Correção cadastral\n- Otimização de SEO\n- Ajuste de categorias\n- Links de conversão"
-    pdf.set_xy(14, y_p + 27)
-    pdf.multi_cell(48, 5.0, conv(it_start))
+    pdf.set_xy(12, y_p + 27)
+    pdf.cell(52, 4.8, conv('Correção cadastral'), align='C', ln=True)
+    pdf.cell(52, 4.8, conv('Otimização de SEO'), align='C', ln=True)
+    pdf.cell(52, 4.8, conv('Ajuste de categorias'), align='C', ln=True)
+    pdf.cell(52, 4.8, conv('Links de conversão'), align='C', ln=True)
 
-    # --- COLUNA 2: PLANO PRO (TEXTO MAIOR EM DESTAQUE) ---
+    # --- COLUNA 2: PLANO PRO (CENTRALIZADO E DESTAQUE) ---
     pdf.set_fill_color(240, 249, 255)
     pdf.set_draw_color(62, 161, 219)
     pdf.set_line_width(1.0)
-    pdf.rect(69, y_p - 2, 68, 80, 'FD')
+    pdf.rect(69, y_p - 2, 68, 78, 'FD')
     pdf.set_line_width(0.2)
     
     pdf.set_xy(69, y_p + 4)
@@ -304,17 +321,18 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_text_color(62, 161, 219)
     pdf.cell(68, 8, 'R$ 1.200,00', align='C', ln=True)
     
-    # Texto Maior no Quadro Recomendado (10.5pt Bold)
-    pdf.set_font('Helvetica', 'B', 10.5)
+    pdf.set_font('Helvetica', 'B', 10)
     pdf.set_text_color(30, 41, 59)
-    it_pro = "- Tudo do Plano Start\n- Tour Virtual 360°\n- Ensaio Fotográfico\n- Relatório de Entrega"
-    pdf.set_xy(72, y_p + 29)
-    pdf.multi_cell(62, 5.8, conv(it_pro))
+    pdf.set_xy(69, y_p + 29)
+    pdf.cell(68, 5.2, conv('Tudo do Plano Start'), align='C', ln=True)
+    pdf.cell(68, 5.2, conv('Tour Virtual 360°'), align='C', ln=True)
+    pdf.cell(68, 5.2, conv('Ensaio Fotográfico'), align='C', ln=True)
+    pdf.cell(68, 5.2, conv('Relatório de Entrega'), align='C', ln=True)
 
-    # --- COLUNA 3: GESTÃO MENSAL (SEM 'PROTEÇÃO DA FICHA') ---
+    # --- COLUNA 3: GESTÃO MENSAL (CENTRALIZADO) ---
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
-    pdf.rect(142, y_p + 4, 54, 52, 'FD') # Altura ajustada
+    pdf.rect(142, y_p + 4, 54, 54, 'FD')
     
     pdf.set_xy(142, y_p + 9)
     pdf.set_font('Helvetica', 'B', 11)
@@ -328,13 +346,14 @@ def gerar_pdf_oficial(dados, score):
     
     pdf.set_font('Helvetica', '', 9.5)
     pdf.set_text_color(51, 65, 85)
-    # Removido "Proteção da ficha"
-    it_mensal = "- Postagens semanais\n- Gestão de avaliações\n- Atualização de fotos\n- Relatórios mensais"
-    pdf.set_xy(144, y_p + 27)
-    pdf.multi_cell(50, 5.0, conv(it_mensal))
+    pdf.set_xy(142, y_p + 27)
+    pdf.cell(54, 4.8, conv('Postagens semanais'), align='C', ln=True)
+    pdf.cell(54, 4.8, conv('Gestão de avaliações'), align='C', ln=True)
+    pdf.cell(54, 4.8, conv('Atualização de fotos'), align='C', ln=True)
+    pdf.cell(54, 4.8, conv('Relatórios mensais'), align='C', ln=True)
 
     # -------------------------------------------------------------------------
-    # PÁGINA 4: CONTRATO DE PRESTAÇÃO DE SERVIÇOS (COM GESTÃO MENSAL EM CONDIÇÕES)
+    # PÁGINA 4: CONTRATO DE PRESTAÇÃO DE SERVIÇOS (CLÁUSULA QUARTA EM 1 LINHA)
     # -------------------------------------------------------------------------
     pdf.add_page()
     
@@ -382,11 +401,11 @@ def gerar_pdf_oficial(dados, score):
     pdf.set_font('Helvetica', '', 9.5)
     pdf.write(5, conv("(      ) Plano Start         (      ) Plano Pro         (      ) Gestão Mensal\n\n"))
 
-    # Condições de Pagamento Atualizadas com "Gestão Mensal"
+    # Cláusula Quarta Ajustada em 1 Linha
     pdf.set_font('Helvetica', 'B', 9.5)
     pdf.write(5, conv("CLÁUSULA QUARTA - CONDIÇÕES DE PAGAMENTO:\n"))
-    pdf.set_font('Helvetica', '', 9.5)
-    pdf.write(5, conv("(      ) À Vista     (      ) 2x para o Plano Start     (      ) 3x para o Plano Pro     (      ) Gestão Mensal - Vencimento Todo Dia: _____\n\n\n"))
+    pdf.set_font('Helvetica', '', 8.8) # Fonte ajustada para garantir 1 linha
+    pdf.write(5, conv("(   ) À Vista  (   ) 2x Plano Start  (   ) 3x Plano Pro  (   ) Gestão Mensal - Vencimento Todo Dia: _____\n\n\n"))
 
     pdf.ln(18)
 
