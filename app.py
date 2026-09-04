@@ -561,8 +561,8 @@ if "🔍" in opcao_menu:
             if API_KEY_GOOGLE:
                 try:
                     # Busca ampla usando Text Search para capturar telefone e endereço completos
-                       url = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=name,formatted_address,formatted_phone_number,rating,user_ratings_total,photos,website,opening_hours,types&key={key}"
-    return requests.get(url).json().get("result", {})
+                    url_search = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={termo_busca}&key={API_KEY_GOOGLE}"
+                    res_search = requests.get(url_search).json()
                     
                     if res_search.get("results"):
                         place = res_search["results"][0]
