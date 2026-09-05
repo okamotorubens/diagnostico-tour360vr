@@ -214,9 +214,14 @@ def baixar_foto_google(photo_reference, api_key, maxwidth=800):
     return None
 
 
-def texto_estrelas(nota):
+def texto_estrelas(nota, unicode_disponivel=True):
+    """Os caracteres ★/☆ só existem na fonte Unicode (DejaVu). Se ela não
+    estiver disponível (fallback para Helvetica), usar um formato 100%
+    seguro em ASCII evita o FPDFUnicodeEncodingException que travava o PDF."""
     cheias = max(0, min(5, round(nota)))
-    return "★" * cheias + "☆" * (5 - cheias)
+    if unicode_disponivel:
+        return "★" * cheias + "☆" * (5 - cheias)
+    return "[" + "*" * cheias + "-" * (5 - cheias) + "]"
 
 
 # -----------------------------------------------------------------------------
@@ -412,7 +417,7 @@ def gerar_pdf_oficial(dados, score, itens, status_label, status_cor,
     fonte('B', 13)
     pdf.set_text_color(*BRAND["laranja"])
     pdf.set_x(col2_x)
-    pdf.cell(col2_w, 6, texto_estrelas(dados['nota']), ln=True)
+    pdf.cell(col2_w, 6, texto_estrelas(dados['nota'], fonte_disponivel), ln=True)
 
     fonte('', 9)
     pdf.set_text_color(*BRAND["texto_medio"])
