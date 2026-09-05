@@ -99,7 +99,7 @@ def conv(texto):
     return limpo.encode('latin-1', 'replace').decode('latin-1')
 
 def formatar_estrelas(nota):
-    """Gera visualização de estrelas limpa sem caracteres 'o'."""
+    """Gera visualização de estrelas limpa."""
     try:
         val = float(nota)
         cheias = int(round(val))
@@ -279,24 +279,25 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     # -------------------------------------------------------------------------
     pdf.add_page()
     
-    w_ficha = 186
+    # QUADRO COMPACTO DA FICHA ANALISADA (SEM SOBRA LATERAL)
+    w_ficha = 130
     x_ficha = (210 - w_ficha) / 2.0
     
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
-    pdf.rounded_rect(x_ficha, 34, w_ficha, 40, 3, 'FD')
+    pdf.rounded_rect(x_ficha, 32, w_ficha, 38, 3, 'FD')
     
-    pdf.set_xy(x_ficha, 36)
+    pdf.set_xy(x_ficha, 34)
     pdf.set_font('Helvetica', 'B', 8.5)
     pdf.set_text_color(100, 116, 139)
     pdf.cell(w_ficha, 4, conv('FICHA ANALISADA DO CLIENTE'), align='C', ln=True)
     
     pdf.set_x(x_ficha)
-    pdf.set_font('Helvetica', 'B', 14)
+    pdf.set_font('Helvetica', 'B', 13)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(w_ficha, 6, conv(f"{dados['nome']}"), align='C', ln=True)
     
-    pdf.set_font('Helvetica', 'B', 9.5)
+    pdf.set_font('Helvetica', 'B', 9)
     pdf.set_text_color(245, 158, 11)
     pdf.set_x(x_ficha)
     pdf.cell(w_ficha, 4.5, conv(f"Nota {dados['nota']:.1f} {estrelas_txt}   -   {dados['avaliacoes']} avaliações no Google"), align='C', ln=True)
@@ -308,7 +309,11 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_x(x_ficha)
     pdf.cell(w_ficha, 4, conv(f"Telefone: {dados['telefone']}   |   Website: {dados['website']}"), align='C', ln=True)
 
-    pdf.set_y(78)
+    # QUADRO COMPACTO DO SCORE
+    w_score = 70
+    x_score = (210 - w_score) / 2.0
+    
+    pdf.set_y(74)
     if score < 50:
         cr, cg, cb = 239, 68, 68
         status_txt = "STATUS CRÍTICO"
@@ -319,28 +324,24 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
         cr, cg, cb = 34, 197, 94
         status_txt = "ALTO DESEMPENHO"
 
-    # COMPACTAÇÃO DO QUADRO DO SCORE (MAIS QUADRADO)
-    w_score = 80
-    x_score = (210 - w_score) / 2.0
-    
     pdf.set_fill_color(cr, cg, cb)
     pdf.set_draw_color(cr, cg, cb)
-    pdf.rounded_rect(x_score, 78, w_score, 18, 3, 'FD')
+    pdf.rounded_rect(x_score, 74, w_score, 17, 3, 'FD')
     
-    pdf.set_xy(x_score, 80)
-    pdf.set_font('Helvetica', 'B', 16)
+    pdf.set_xy(x_score, 76)
+    pdf.set_font('Helvetica', 'B', 15)
     pdf.set_text_color(255, 255, 255)
     pdf.cell(w_score, 6, conv(f"{score} / 100"), align='C', ln=True)
     
-    pdf.set_xy(x_score, 88)
+    pdf.set_xy(x_score, 83)
     pdf.set_font('Helvetica', 'B', 7.5)
     pdf.cell(w_score, 4, conv(f"SCORE GERAL ({status_txt})"), align='C', ln=True)
 
-    pdf.set_y(102)
-    pdf.set_font('Helvetica', 'B', 13)
+    pdf.set_y(96)
+    pdf.set_font('Helvetica', 'B', 12)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 6, conv('AUDITORIA DETALHADA DE PONTOS DE BUSCA'), align='C', ln=True)
-    pdf.ln(6)
+    pdf.ln(5)
 
     pct_avaliacoes = min(int((dados['avaliacoes'] / 50.0) * 100), 100) if dados['avaliacoes'] > 0 else 10
 
@@ -358,11 +359,11 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     ]
 
     for titulo, pct, rotulo, desc in itens:
-        pdf.set_font('Helvetica', 'B', 9)
-        pdf.set_text_color(30, 41, 59)
-        pdf.cell(120, 3.8, conv(titulo), ln=False)
-        
         pdf.set_font('Helvetica', 'B', 8.5)
+        pdf.set_text_color(30, 41, 59)
+        pdf.cell(120, 3.6, conv(titulo), ln=False)
+        
+        pdf.set_font('Helvetica', 'B', 8)
         if pct < 40:
             pdf.set_text_color(239, 68, 68)
         elif pct < 80:
@@ -370,10 +371,10 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
         else:
             pdf.set_text_color(34, 197, 94)
             
-        pdf.cell(66, 3.8, conv(f"| {pct}% - {rotulo}"), align='R', ln=True)
+        pdf.cell(66, 3.6, conv(f"| {pct}% - {rotulo}"), align='R', ln=True)
 
         pdf.set_fill_color(226, 232, 240)
-        pdf.rounded_rect(12, pdf.get_y(), 186, 3, 1.5, 'F')
+        pdf.rounded_rect(12, pdf.get_y(), 186, 2.8, 1.4, 'F')
         
         if pct < 40:
             pdf.set_fill_color(239, 68, 68)
@@ -383,15 +384,15 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
             pdf.set_fill_color(34, 197, 94)
             
         largura_barra = max(float(pct) * 1.86, 4.0)
-        pdf.rounded_rect(12, pdf.get_y(), largura_barra, 3, 1.5, 'F')
-        pdf.ln(3.8)
+        pdf.rounded_rect(12, pdf.get_y(), largura_barra, 2.8, 1.4, 'F')
+        pdf.ln(3.5)
 
-        pdf.set_font('Helvetica', '', 8)
+        pdf.set_font('Helvetica', '', 7.5)
         pdf.set_text_color(100, 116, 139)
         pdf.cell(0, 3, conv(f"  Diagnóstico: {desc}"), ln=True)
-        pdf.ln(2)
+        pdf.ln(1.8)
 
-    # BLOCO DO PLANO DE AÇÃO EXTRA
+    # BLOCO CENTRALIZADO DO PLANO DE AÇÃO PERSONALIZADO
     if plano_acao_extra and plano_acao_extra.strip() != "":
         pdf.ln(2)
         pdf.set_fill_color(248, 250, 252)
@@ -400,18 +401,18 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
         y_extra = pdf.get_y()
         pdf.rounded_rect(12, y_extra, 186, 24, 2, 'FD')
         
-        pdf.set_xy(15, y_extra + 2)
+        pdf.set_xy(12, y_extra + 2.5)
         pdf.set_font('Helvetica', 'B', 8.5)
         pdf.set_text_color(30, 64, 175)
-        pdf.cell(180, 4, conv("PLANO DE AÇÃO E APONTAMENTOS ESTRATÉGICOS PERSONALIZADOS:"), ln=True)
+        pdf.cell(186, 4, conv("PLANO DE AÇÃO E APONTAMENTOS ESTRATÉGICOS PERSONALIZADOS:"), align='C', ln=True)
         
-        pdf.set_x(15)
+        pdf.set_x(12)
         pdf.set_font('Helvetica', '', 8)
         pdf.set_text_color(51, 65, 85)
-        pdf.multi_cell(180, 3.6, conv(plano_acao_extra))
+        pdf.multi_cell(186, 3.8, conv(plano_acao_extra), align='C')
 
     # -------------------------------------------------------------------------
-    # PÁGINA 3: PROPOSTA COMERCIAL & PLANOS CENTRALIZADOS
+    # PÁGINA 3: PROPOSTA COMERCIAL & PLANOS COM TEXTO CENTRALIZADO
     # -------------------------------------------------------------------------
     pdf.add_page()
     
@@ -419,21 +420,22 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_font('Helvetica', 'B', 14)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 7, conv('PROPOSTA COMERCIAL & ESTRUTURAÇÃO ESTRATÉGICA'), align='C', ln=True)
-    pdf.ln(8)
+    pdf.ln(6)
 
+    # REDUÇÃO E CENTRALIZAÇÃO DO QUADRO INFORMATIVO
     pdf.set_fill_color(240, 249, 255)
     pdf.set_draw_color(62, 161, 219)
-    pdf.set_line_width(0.6)
-    pdf.rounded_rect(12, pdf.get_y(), 186, 36, 2, 'FD')
+    pdf.set_line_width(0.5)
+    pdf.rounded_rect(12, pdf.get_y(), 186, 28, 2, 'FD')
     pdf.set_line_width(0.2)
 
-    y_info = pdf.get_y() + 3
+    y_info = pdf.get_y() + 2.5
     pdf.set_xy(12, y_info)
-    pdf.set_font('Helvetica', 'B', 10)
+    pdf.set_font('Helvetica', 'B', 9.5)
     pdf.set_text_color(15, 23, 42)
-    pdf.cell(186, 5, conv('POR QUE SEU NEGÓCIO PRECISA DE OTIMIZAÇÃO PROFISSIONAL?'), align='C', ln=True)
+    pdf.cell(186, 4.5, conv('POR QUE SEU NEGÓCIO PRECISA DE OTIMIZAÇÃO PROFISSIONAL?'), align='C', ln=True)
     
-    pdf.set_font('Helvetica', '', 9)
+    pdf.set_font('Helvetica', '', 8.5)
     pdf.set_text_color(51, 65, 85)
     txt_exp = (
         "Mais de 80% das buscas locais no Google e Maps resultam em uma ação imediata (ligação, rota ou mensagem).\n"
@@ -441,17 +443,17 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
         "Fichas incompletas ou desatualizadas perdem clientes diariamente para concorrentes diretos com nota mais alta."
     )
     pdf.set_x(12)
-    pdf.multi_cell(186, 4.5, conv(txt_exp), align='C')
+    pdf.multi_cell(186, 4, conv(txt_exp), align='C')
     
-    pdf.set_y(98)
-    pdf.set_font('Helvetica', 'B', 14)
+    pdf.set_y(88)
+    pdf.set_font('Helvetica', 'B', 13)
     pdf.set_text_color(15, 23, 42)
-    pdf.cell(0, 7, conv('PROPOSTA DE PLANOS E INVESTIMENTO'), align='C', ln=True)
-    pdf.ln(8)
+    pdf.cell(0, 6, conv('PROPOSTA DE PLANOS E INVESTIMENTO'), align='C', ln=True)
+    pdf.ln(6)
 
     y_p = pdf.get_y() + 2
     
-    # --- PLANO START ---
+    # --- PLANO START (CENTRALIZADO) ---
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
     pdf.rounded_rect(12, y_p + 2, 54, 60, 2, 'FD')
@@ -468,10 +470,10 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     
     pdf.set_font('Helvetica', '', 8)
     pdf.set_text_color(51, 65, 85)
-    pdf.set_xy(15, y_p + 22)
-    pdf.multi_cell(48, 4.2, conv(planos['start_itens']), align='L')
+    pdf.set_xy(12, y_p + 22)
+    pdf.multi_cell(54, 4.2, conv(planos['start_itens']), align='C')
 
-    # --- PLANO PRO (DESTACADO E CENTRALIZADO) ---
+    # --- PLANO PRO (CENTRALIZADO E DESTACADO) ---
     pdf.set_fill_color(238, 242, 255)
     pdf.set_draw_color(30, 64, 175)
     pdf.set_line_width(1.2)
@@ -495,10 +497,10 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     
     pdf.set_font('Helvetica', 'B', 9)
     pdf.set_text_color(15, 23, 42)
-    pdf.set_xy(74, y_p + 23)
-    pdf.multi_cell(62, 4.8, conv(planos['pro_itens']), align='L')
+    pdf.set_xy(70, y_p + 23)
+    pdf.multi_cell(70, 4.8, conv(planos['pro_itens']), align='C')
 
-    # --- GESTÃO MENSAL ---
+    # --- GESTÃO MENSAL (CENTRALIZADO) ---
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
     pdf.rounded_rect(144, y_p + 2, 54, 60, 2, 'FD')
@@ -515,11 +517,11 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     
     pdf.set_font('Helvetica', '', 8)
     pdf.set_text_color(51, 65, 85)
-    pdf.set_xy(147, y_p + 22)
-    pdf.multi_cell(48, 4.2, conv(planos['gestao_itens']), align='L')
+    pdf.set_xy(144, y_p + 22)
+    pdf.multi_cell(54, 4.2, conv(planos['gestao_itens']), align='C')
 
     # -------------------------------------------------------------------------
-    # PÁGINA 4: CONTRATO (SEM A/C:)
+    # PÁGINA 4: CONTRATO (SEM A/C: E COM LINHAS FORMATADAS " - ")
     # -------------------------------------------------------------------------
     pdf.add_page()
     
@@ -540,7 +542,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_font('Helvetica', 'B', 9.5)
     pdf.write(5.5, conv("CONTRATANTE: "))
     pdf.set_font('Helvetica', '', 9.5)
-    pdf.write(5.5, conv(f"{dados['nome']}, Responsável: {dados['contato']}, {dados['endereco']}, Telefone: {dados['telefone']}.\n\n"))
+    pdf.write(5.5, conv(f"{dados['nome']}, {dados['contato']}, {dados['endereco']}, Telefone: {dados['telefone']}.\n\n"))
     
     pdf.set_font('Helvetica', '', 9.5)
     pdf.write(5.5, conv("A "))
@@ -577,10 +579,10 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.cell(10, 5, '')
     pdf.cell(88, 5, '__________________________________', align='C', ln=True)
     
-    pdf.set_font('Helvetica', 'B', 9)
-    pdf.cell(88, 5, 'TOUR360VR (Rubens H. Okamoto)', align='C')
+    pdf.set_font('Helvetica', 'B', 8.5)
+    pdf.cell(88, 5, 'Rubens H. Okamoto - TOUR360VR', align='C')
     pdf.cell(10, 5, '')
-    pdf.cell(88, 5, conv(f"{dados['nome']}"), align='C', ln=True)
+    pdf.cell(88, 5, conv(f"{dados['contato']} - {dados['nome']}"), align='C', ln=True)
 
     buffer = io.BytesIO()
     pdf.output(buffer)
@@ -619,7 +621,7 @@ score_calculado = calcular_score_real(st.session_state['dados'])
 st.session_state['score'] = score_calculado
 
 # -----------------------------------------------------------------------------
-# ETAPA 1: CONSULTA & DIAGNÓSTICO
+# ETAPA 1: CONSULTA & DIAGNÓSTICO (ATUALIZAÇÃO TOTAL DOS DADOS)
 # -----------------------------------------------------------------------------
 if "🔍" in opcao_menu:
     st.subheader("🔍 1. Dados do Cliente & Diagnóstico")
@@ -627,7 +629,6 @@ if "🔍" in opcao_menu:
     col_busca, col_cidade = st.columns([2, 1])
     with col_busca:
         nome_input = st.text_input("🏢 Nome do Estabelecimento:", value=st.session_state['dados']['nome'])
-        st.session_state['dados']['nome'] = nome_input
     with col_cidade:
         cidade_empresa = st.text_input("📍 Cidade / Estado da Busca:", value="Ribeirão Preto, SP")
 
@@ -678,7 +679,8 @@ if "🔍" in opcao_menu:
     
     col_f1, col_f2 = st.columns(2)
     with col_f1:
-        st.session_state['dados']['contato'] = st.text_input("👤 Nome do Contato / Responsável:", value=st.session_state['dados']['contato'])
+        st.session_state['dados']['nome'] = st.text_input("🏢 Nome do Cliente / Empresa:", value=st.session_state['dados']['nome'])
+        st.session_state['dados']['contato'] = st.text_input("👤 Nome do Responsável:", value=st.session_state['dados']['contato'])
         st.session_state['dados']['endereco'] = st.text_input("📍 Endereço Completo:", value=st.session_state['dados']['endereco'])
     with col_f2:
         st.session_state['dados']['telefone'] = st.text_input("📞 Telefone / WhatsApp:", value=st.session_state['dados']['telefone'])
