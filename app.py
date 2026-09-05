@@ -130,18 +130,18 @@ def obter_caminho_logo():
 # -----------------------------------------------------------------------------
 if 'dados' not in st.session_state:
     st.session_state['dados'] = {
-        "nome": "Nobre Paladar Restaurante",
+        "nome": "Toque de Letra Comunicação",
         "contato": "Gerente Responsável",
         "endereco": "Ribeirão Preto / SP",
-        "telefone": "(16) 3900-2774",
-        "website": "Não possui",
+        "telefone": "(16) 98176-4000",
+        "website": "https://toquedeletra.com.br/",
         "nota": 5.0,
         "avaliacoes": 1,
         "tem_tour360": False,
-        "tem_fotos_hd": True,
-        "categorias_completas": True,
+        "tem_fotos_hd": False,
+        "categorias_completas": False,
         "horarios_ok": True,
-        "tem_descricao": True,
+        "tem_descricao": False,
         "atributos_ok": True,
         "resposta_avaliacoes_ok": False,
         "categorias_detectadas": []
@@ -164,7 +164,7 @@ if 'unidades_encontradas' not in st.session_state:
     st.session_state['unidades_encontradas'] = []
 
 # -----------------------------------------------------------------------------
-# 4. GERADOR PDF TOUR360VR (CABEÇALHO RIGOROSAMENTE ALINHADO)
+# 4. GERADOR PDF TOUR360VR (CORREÇÃO DE CABEÇALHO, SCORE E FONTES)
 # -----------------------------------------------------------------------------
 class PDFTour360Oficial(FPDF):
     def header(self):
@@ -179,20 +179,20 @@ class PDFTour360Oficial(FPDF):
             try: self.image(caminho_logo, 12, 8, 18)
             except: pass
             
-        # FIXAÇÃO DO ALINHAMENTO À ESQUERDA
-        self.set_xy(34, 8.5)
+        # CABEÇALHO ALINHADO À ESQUERDA
+        self.set_xy(34, 8)
         self.set_font('Helvetica', 'B', 12)
         self.set_text_color(30, 64, 175)
-        self.cell(160, 4.5, 'TOUR360VR', align='L', ln=True)
+        self.cell(0, 5, 'TOUR360VR', align='L', ln=True)
         
         self.set_x(34)
         self.set_font('Helvetica', 'B', 8.5)
         self.set_text_color(100, 116, 139)
-        self.cell(160, 4, conv('Gestão de Perfil & Diagnóstico do Google Meu Negócio'), align='L', ln=True)
+        self.cell(0, 4, conv('Gestão de Perfil & Diagnóstico do Google Meu Negócio'), align='L', ln=True)
         
         self.set_draw_color(226, 232, 240)
-        self.line(12, 21, 198, 21)
-        self.set_y(25)
+        self.line(12, 20, 198, 20)
+        self.set_y(24)
 
     def footer(self):
         self.set_y(-16)
@@ -300,9 +300,9 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
-    pdf.rounded_rect(x_ficha, 26, w_ficha, 36, 3, 'FD')
+    pdf.rounded_rect(x_ficha, 24, w_ficha, 36, 3, 'FD')
     
-    pdf.set_xy(x_ficha, 28)
+    pdf.set_xy(x_ficha, 26)
     pdf.set_font('Helvetica', 'B', 9.5)
     pdf.set_text_color(100, 116, 139)
     pdf.cell(w_ficha, 4.5, conv('FICHA ANALISADA DO CLIENTE'), align='C', ln=True)
@@ -325,25 +325,24 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_x(x_ficha)
     pdf.cell(w_ficha, 4, conv(f"Telefone: {dados['telefone']}   |   Website: {dados['website']}"), align='C', ln=True)
 
-    w_score = 90
-    x_score = (210 - w_score) / 2.0
-    pdf.set_y(66)
+    # SCORE GERAL: SEM QUADRO DE FUNDO VERMELHO
+    pdf.set_y(64)
     if score < 50: cr, cg, cb, status_txt = 239, 68, 68, "STATUS CRÍTICO"
     elif score < 80: cr, cg, cb, status_txt = 245, 158, 11, "STATUS MÉDIO"
     else: cr, cg, cb, status_txt = 34, 197, 94, "ALTO DESEMPENHO"
 
-    pdf.set_fill_color(cr, cg, cb)
-    pdf.set_draw_color(cr, cg, cb)
-    pdf.rounded_rect(x_score, 66, w_score, 18, 3, 'FD')
-    pdf.set_xy(x_score, 67)
-    pdf.set_font('Helvetica', 'B', 18)
-    pdf.set_text_color(255, 255, 255)
-    pdf.cell(w_score, 7, conv(f"{score} / 100"), align='C', ln=True)
-    pdf.set_xy(x_score, 75)
-    pdf.set_font('Helvetica', 'B', 8)
-    pdf.cell(w_score, 4, conv(f"SCORE GERAL ({status_txt})"), align='C', ln=True)
+    pdf.set_font('Helvetica', 'B', 22)
+    pdf.set_text_color(cr, cg, cb)
+    pdf.write(8, conv(f"{score} "))
+    pdf.set_font('Helvetica', 'B', 22)
+    pdf.set_text_color(0, 0, 0)
+    pdf.write(8, conv("/ 100\n"))
+    
+    pdf.set_font('Helvetica', 'B', 8.5)
+    pdf.set_text_color(cr, cg, cb)
+    pdf.cell(0, 4, conv(f"SCORE GERAL ({status_txt})"), align='C', ln=True)
 
-    pdf.set_y(90)
+    pdf.set_y(86)
     pdf.set_font('Helvetica', 'B', 11)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 5, conv('AUDITORIA DETALHADA DE PONTOS DE BUSCA'), align='C', ln=True)
@@ -360,44 +359,45 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
 
     itens = [
         ("1. Fotos e Resolução Visual", 100 if dados['tem_fotos_hd'] else 30, "Alto", desc_fotos),
-        ("2. Tour Virtual 360° Interativo", 100 if dados['tem_tour360'] else 0, "Ativo" if dados['tem_tour360'] else "Ausente", desc_tour),
-        ("3. Categorias Principal e Secundárias", 100 if dados['categorias_completas'] else 50, "Completo" if dados['categorias_completas'] else "Incompleto", desc_cat),
+        ("2. Tour Virtual 360° Interativo", 100 if dados['tem_tour360'] else 0, "Ausente" if not dados['tem_tour360'] else "Ativo", desc_tour),
+        ("3. Categorias Principal e Secundárias", 100 if dados['categorias_completas'] else 50, "Incompleto" if not dados['categorias_completas'] else "Completo", desc_cat),
         ("4. Horários e Exceções (Feriados)", 100 if dados['horarios_ok'] else 40, "Atualizado" if dados['horarios_ok'] else "Desatualizado", "Falta de horários especiais em feriados."),
         ("5. Website e Links de Conversão", 100 if dados['website'] != 'Não possui' else 10, "Ativo" if dados['website'] != 'Não possui' else "Falho", desc_web),
         ("6. Avaliações no Google (Prova Social)", pct_avaliacoes, f"{dados['nota']}/5.0", f"{dados['avaliacoes']} avaliações registradas."),
-        ("7. Resumo Editorial & Descrição", 100 if dados.get('tem_descricao', True) else 30, "Completo" if dados.get('tem_descricao', True) else "Ausente", desc_desc),
+        ("7. Resumo Editorial & Descrição", 100 if dados.get('tem_descricao', True) else 30, "Ausente" if not dados.get('tem_descricao', True) else "Completo", desc_desc),
         ("8. Atributos de Acessibilidade/Serviços", 100 if dados.get('atributos_ok', True) else 40, "Ativo" if dados.get('atributos_ok', True) else "Pendente", desc_atrib),
-        ("9. Interação e Resposta a Avaliações", 100 if dados.get('resposta_avaliacoes_ok', False) else 30, "Ativo" if dados.get('resposta_avaliacoes_ok', False) else "Pendente", desc_resp)
+        ("9. Interação e Resposta a Avaliações", 100 if dados.get('resposta_avaliacoes_ok', False) else 30, "Pendente" if not dados.get('resposta_avaliacoes_ok', False) else "Ativo", desc_resp)
     ]
 
     for titulo, pct, rotulo, desc in itens:
-        pdf.set_font('Helvetica', 'B', 8.0)
+        # TÍTULO DA AUDITORIA AMPLIADO PARA 9.5PT
+        pdf.set_font('Helvetica', 'B', 9.5)
         pdf.set_text_color(30, 41, 59)
-        pdf.cell(130, 3, conv(titulo), ln=False)
+        pdf.cell(130, 3.5, conv(titulo), ln=False)
         
-        pdf.set_font('Helvetica', 'B', 8.0)
+        pdf.set_font('Helvetica', 'B', 9.5)
         if pct < 40: pdf.set_text_color(239, 68, 68)
         elif pct < 80: pdf.set_text_color(245, 158, 11)
         else: pdf.set_text_color(34, 197, 94)
             
-        # APENAS RÓTULO DE STATUS SEM PORCENTAGEM
-        pdf.cell(56, 3, conv(f"- {rotulo}"), align='R', ln=True)
+        # RÓTULO DE STATUS LIMPO (SEM HÍFEM E SEM PORCENTAGEM)
+        pdf.cell(56, 3.5, conv(rotulo), align='R', ln=True)
 
         pdf.set_fill_color(226, 232, 240)
-        pdf.rounded_rect(12, pdf.get_y(), 186, 2.2, 1.0, 'F')
+        pdf.rounded_rect(12, pdf.get_y(), 186, 2.4, 1.0, 'F')
         
         if pct < 40: pdf.set_fill_color(239, 68, 68)
         elif pct < 80: pdf.set_fill_color(245, 158, 11)
         else: pdf.set_fill_color(34, 197, 94)
             
         largura_barra = max(float(pct) * 1.86, 4.0)
-        pdf.rounded_rect(12, pdf.get_y(), largura_barra, 2.2, 1.0, 'F')
-        pdf.ln(2.8)
+        pdf.rounded_rect(12, pdf.get_y(), largura_barra, 2.4, 1.0, 'F')
+        pdf.ln(3.0)
 
-        # TEXTO DE DIAGNÓSTICO AMPLIADO PARA 8.5PT
-        pdf.set_font('Helvetica', '', 8.5)
+        # TEXTO DE DIAGNÓSTICO AMPLIADO PARA 9PT
+        pdf.set_font('Helvetica', '', 9.0)
         pdf.set_text_color(71, 85, 105)
-        pdf.cell(0, 3.2, conv(f"  Diagnóstico: {desc}"), ln=True)
+        pdf.cell(0, 3.5, conv(f"  Diagnóstico: {desc}"), ln=True)
         pdf.ln(1.5)
 
     # MAIS ESPAÇO ANTES DO PLANO DE AÇÃO
@@ -407,14 +407,14 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
         pdf.set_draw_color(203, 213, 225)
         y_extra = pdf.get_y()
         
-        pdf.rounded_rect(12, y_extra, 186, 28, 2.5, 'FD')
+        pdf.rounded_rect(12, y_extra, 186, 26, 2.5, 'FD')
         
         pdf.set_xy(12, y_extra + 3)
         pdf.set_font('Helvetica', 'B', 9.5)
         pdf.set_text_color(30, 64, 175)
         pdf.cell(186, 4, conv("PLANO DE AÇÃO E APONTAMENTOS ESTRATÉGICOS PERSONALIZADOS:"), align='C', ln=True)
         
-        pdf.set_xy(16, y_extra + 9)
+        pdf.set_xy(16, y_extra + 8.5)
         pdf.set_font('Helvetica', '', 8.5)
         pdf.set_text_color(51, 65, 85)
         pdf.multi_cell(178, 3.8, conv(plano_acao_extra), align='L')
