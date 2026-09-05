@@ -95,13 +95,24 @@ def conv(texto):
         return ""
     limpo = str(texto)
     limpo = limpo.replace("•", "- ").replace("✓", "[OK] ").replace("X", "[X] ")
-    limpo = limpo.replace("📍", "").replace("📞", "").replace("⭐", "*").replace("✉️", "").replace("🌐", "").replace("★", "*").replace("☆", "").replace("☐", "[ ]")
+    limpo = limpo.replace("📍", "").replace("📞", "").replace("✉️", "").replace("🌐", "").replace("☐", "[ ]")
     return limpo.encode('latin-1', 'replace').decode('latin-1')
+
+def formatar_estrelas(nota):
+    """Gera visualização dinâmica de estrelas cheias (*) e vazias (o)."""
+    try:
+        val = float(nota)
+        cheias = int(round(val))
+        cheias = max(0, min(5, cheias))
+        vazias = 5 - cheias
+        return ("*" * cheias) + ("o" * vazias)
+    except:
+        return "*****"
 
 def calcular_score_real(dados):
     score = 100
     if not dados.get("tem_tour360", False): score -= 25
-    if dados.get("website") == "Não possui": score -= 20
+    if dados.get("website") == "Não possui" or not dados.get("website"): score -= 20
     if not dados.get("tem_fotos_hd", False): score -= 20
     if not dados.get("categorias_completas", False): score -= 15
     if not dados.get("horarios_ok", False): score -= 10
@@ -202,6 +213,8 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf = PDFTour360Oficial()
     pdf.set_auto_page_break(auto=True, margin=18)
     
+    estrelas_txt = formatar_estrelas(dados['nota'])
+
     # -------------------------------------------------------------------------
     # PÁGINA 1: CAPA
     # -------------------------------------------------------------------------
@@ -226,21 +239,22 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.cell(0, 7, conv('Tour360VR'), align='C', ln=True)
     pdf.ln(14)
 
-    w_capa = 160
+    # Expansão de largura do quadro principal da capa
+    w_capa = 180
     x_capa = (210 - w_capa) / 2.0
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(203, 213, 225)
     pdf.rounded_rect(x_capa, 120, w_capa, 76, 4, 'FD')
 
     pdf.set_xy(x_capa, 126)
-    pdf.set_font('Helvetica', 'B', 17)
+    pdf.set_font('Helvetica', 'B', 18)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(w_capa, 8, conv(f"{dados['nome']}"), align='C', ln=True)
     
     pdf.set_x(x_capa)
     pdf.set_font('Helvetica', 'B', 11)
     pdf.set_text_color(245, 158, 11)
-    pdf.cell(w_capa, 6, conv(f"Nota: {dados['nota']:.1f} *****   ({dados['avaliacoes']} avaliações no Google)"), align='C', ln=True)
+    pdf.cell(w_capa, 6, conv(f"Nota: {dados['nota']:.1f} {estrelas_txt}   ({dados['avaliacoes']} avaliações no Google)"), align='C', ln=True)
     pdf.ln(2)
 
     pdf.set_font('Helvetica', '', 9.5)
@@ -267,7 +281,8 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     # -------------------------------------------------------------------------
     pdf.add_page()
     
-    w_ficha = 160
+    # Expansão de largura da caixa superior da Página 2
+    w_ficha = 186
     x_ficha = (210 - w_ficha) / 2.0
     
     pdf.set_fill_color(248, 250, 252)
@@ -287,7 +302,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_font('Helvetica', 'B', 9.5)
     pdf.set_text_color(245, 158, 11)
     pdf.set_x(x_ficha)
-    pdf.cell(w_ficha, 4.5, conv(f"Nota {dados['nota']:.1f} *****   -   {dados['avaliacoes']} avaliações no Google"), align='C', ln=True)
+    pdf.cell(w_ficha, 4.5, conv(f"Nota {dados['nota']:.1f} {estrelas_txt}   -   {dados['avaliacoes']} avaliações no Google"), align='C', ln=True)
     
     pdf.set_font('Helvetica', '', 8.5)
     pdf.set_text_color(71, 85, 105)
@@ -307,7 +322,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
         cr, cg, cb = 34, 197, 94
         status_txt = "ALTO DESEMPENHO"
 
-    w_score = 150
+    w_score = 186
     x_score = (210 - w_score) / 2.0
     
     pdf.set_fill_color(cr, cg, cb)
@@ -331,12 +346,17 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
 
     pct_avaliacoes = min(int((dados['avaliacoes'] / 50.0) * 100), 100) if dados['avaliacoes'] > 0 else 10
 
+    # Diagnóstico Real Baseado na Consulta do Google
+    desc_fotos = "Atende ao volume recomendado de fotos em HD." if dados['tem_fotos_hd'] else "Poucas fotos encontradas / antigas no perfil."
+    desc_tour = "Tour Virtual 360° ativo e integrado." if dados['tem_tour360'] else "Nenhum Tour 360 detectado no perfil do Google."
+    desc_web = f"Website oficial: {dados['website']}" if dados['website'] != 'Não possui' else "Falta link de website cadastrado para conversão."
+
     itens = [
-        ("1. Fotos e Resolução Visual", 30 if not dados['tem_fotos_hd'] else 100, "Baixo", "Poucas fotos encontradas / antigas."),
-        ("2. Tour Virtual 360° Interativo", 0 if not dados['tem_tour360'] else 100, "Ausente", "Nenhum Tour 360 detectado no perfil."),
-        ("3. Categorias Principal e Secundárias", 50 if not dados['categorias_completas'] else 100, "Incompleto", "Sem categorias secundárias estratégicas."),
-        ("4. Horários e Exceções (Feriados)", 40 if not dados['horarios_ok'] else 100, "Desatualizado", "Falta de horários especiais em feriados."),
-        ("5. Website e Links de Conversão", 10 if dados['website'] == 'Não possui' else 100, "Falho", "Sem links diretos de contato e WhatsApp."),
+        ("1. Fotos e Resolução Visual", 100 if dados['tem_fotos_hd'] else 30, "Alto" if dados['tem_fotos_hd'] else "Baixo", desc_fotos),
+        ("2. Tour Virtual 360° Interativo", 100 if dados['tem_tour360'] else 0, "Ativo" if dados['tem_tour360'] else "Ausente", desc_tour),
+        ("3. Categorias Principal e Secundárias", 100 if dados['categorias_completas'] else 50, "Completo" if dados['categorias_completas'] else "Incompleto", "Ajuste necessário em categorias secundárias."),
+        ("4. Horários e Exceções (Feriados)", 100 if dados['horarios_ok'] else 40, "Atualizado" if dados['horarios_ok'] else "Desatualizado", "Falta de horários especiais em feriados."),
+        ("5. Website e Links de Conversão", 100 if dados['website'] != 'Não possui' else 10, "Ativo" if dados['website'] != 'Não possui' else "Falho", desc_web),
         ("6. Avaliações no Google (Prova Social)", pct_avaliacoes, f"{dados['nota']}/5.0", f"{dados['avaliacoes']} avaliações registradas.")
     ]
 
@@ -374,7 +394,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
         pdf.cell(0, 3, conv(f"  Diagnóstico: {desc}"), ln=True)
         pdf.ln(2)
 
-    # BLOCO DO PLANO DE AÇÃO EXTRA
+    # BLOCO DO PLANO DE AÇÃO EXTRA (LARGURA EXPANDIDA)
     if plano_acao_extra and plano_acao_extra.strip() != "":
         pdf.ln(2)
         pdf.set_fill_color(248, 250, 252)
@@ -394,7 +414,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
         pdf.multi_cell(180, 3.6, conv(plano_acao_extra))
 
     # -------------------------------------------------------------------------
-    # PÁGINA 3: PROPOSTA COMERCIAL & PLANOS EDITÁVEIS
+    # PÁGINA 3: PROPOSTA COMERCIAL & PLANOS COM DESTAQUE NO PLANO PRO
     # -------------------------------------------------------------------------
     pdf.add_page()
     
@@ -434,7 +454,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
 
     y_p = pdf.get_y() + 2
     
-    # --- PLANO START EDITÁVEL ---
+    # --- PLANO START ---
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
     pdf.rounded_rect(12, y_p + 2, 52, 58, 2, 'FD')
@@ -454,51 +474,51 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_xy(13, y_p + 20)
     pdf.multi_cell(50, 4, conv(planos['start_itens']), align='L')
 
-    # --- PLANO PRO EDITÁVEL ---
-    pdf.set_fill_color(240, 249, 255)
+    # --- PLANO PRO (DESTACADO COM FONTE MAIOR) ---
+    pdf.set_fill_color(238, 242, 255)
     pdf.set_draw_color(30, 64, 175)
-    pdf.set_line_width(1.0)
-    pdf.rounded_rect(68, y_p - 4, 70, 66, 3, 'FD')
+    pdf.set_line_width(1.2)
+    pdf.rounded_rect(68, y_p - 6, 72, 70, 3, 'FD')
     pdf.set_line_width(0.2)
     
-    pdf.set_xy(68, y_p)
-    pdf.set_font('Helvetica', 'B', 13)
+    pdf.set_xy(68, y_p - 2)
+    pdf.set_font('Helvetica', 'B', 15)
     pdf.set_text_color(30, 64, 175)
-    pdf.cell(70, 5, conv('Plano Pro'), align='C', ln=True)
+    pdf.cell(72, 6, conv('Plano Pro'), align='C', ln=True)
     
-    pdf.set_xy(68, y_p + 5)
-    pdf.set_font('Helvetica', 'B', 9)
+    pdf.set_xy(68, y_p + 4)
+    pdf.set_font('Helvetica', 'B', 10)
     pdf.set_text_color(255, 61, 61)
-    pdf.cell(70, 4, conv('(Recomendado)'), align='C', ln=True)
+    pdf.cell(72, 5, conv('(RECOMENDADO)'), align='C', ln=True)
     
     pdf.set_xy(68, y_p + 11)
-    pdf.set_font('Helvetica', 'B', 14)
+    pdf.set_font('Helvetica', 'B', 16)
     pdf.set_text_color(30, 64, 175)
-    pdf.cell(70, 7, conv(f"R$ {planos['pro_valor']}"), align='C', ln=True)
+    pdf.cell(72, 8, conv(f"R$ {planos['pro_valor']}"), align='C', ln=True)
     
-    pdf.set_font('Helvetica', 'B', 8.5)
+    pdf.set_font('Helvetica', 'B', 9.5)
     pdf.set_text_color(15, 23, 42)
-    pdf.set_xy(70, y_p + 20)
-    pdf.multi_cell(66, 4.2, conv(planos['pro_itens']), align='L')
+    pdf.set_xy(71, y_p + 22)
+    pdf.multi_cell(68, 4.8, conv(planos['pro_itens']), align='L')
 
-    # --- GESTÃO MENSAL EDITÁVEL ---
+    # --- GESTÃO MENSAL ---
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
-    pdf.rounded_rect(142, y_p + 2, 54, 58, 2, 'FD')
+    pdf.rounded_rect(144, y_p + 2, 54, 58, 2, 'FD')
     
-    pdf.set_xy(142, y_p + 5)
+    pdf.set_xy(144, y_p + 5)
     pdf.set_font('Helvetica', 'B', 11)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(54, 5, conv('Gestão Mensal'), align='C', ln=True)
     
-    pdf.set_xy(142, y_p + 12)
+    pdf.set_xy(144, y_p + 12)
     pdf.set_font('Helvetica', 'B', 12)
     pdf.set_text_color(62, 161, 219)
     pdf.cell(54, 6, conv(f"R$ {planos['gestao_valor']}"), align='C', ln=True)
     
     pdf.set_font('Helvetica', '', 8)
     pdf.set_text_color(51, 65, 85)
-    pdf.set_xy(143, y_p + 20)
+    pdf.set_xy(145, y_p + 20)
     pdf.multi_cell(52, 4, conv(planos['gestao_itens']), align='L')
 
     # -------------------------------------------------------------------------
