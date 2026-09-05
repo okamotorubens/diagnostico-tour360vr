@@ -57,58 +57,92 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 1. Ajuste da leitura do Segredo (suporta ambas as nomenclaturas)
+# Suporte duplo para o nome do segredo no Streamlit Cloud
 API_KEY_GOOGLE = (
-    st.secrets.get("GOOGLE_PLACES_API_KEY") 
-    or st.secrets.get("GOOGLE_API_KEY") 
+    st.secrets.get("GOOGLE_API_KEY") 
+    or st.secrets.get("GOOGLE_PLACES_API_KEY") 
     or ""
 )
 
-# 2. Atualização da Chamada de Busca
-if st.button("🚀 Buscar e Atualizar Dados no Google", use_container_width=True):
-    if nome_input:
-        termo_busca = f"{nome_input}, {cidade_empresa}" if cidade_empresa else nome_input
-        
-        if API_KEY_GOOGLE:
-            try:
-                # Busca pelo estabelecimento
-                url_search = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={termo_busca}&key={API_KEY_GOOGLE}"
-                res_search = requests.get(url_search).json()
-                
-                if res_search.get("results"):
-                    place = res_search["results"][0]
-                    place_id = place.get("place_id")
-                    
-                    # Detalhes aprofundados
-                    url_details = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=name,formatted_address,formatted_phone_number,international_phone_number,website,rating,user_ratings_total,photos,opening_hours&key={API_KEY_GOOGLE}"
-                    res_details = requests.get(url_details).json().get("result", {})
-                    
-                    photos = res_details.get("photos", place.get("photos", []))
-                    
-                    # Atualização forçada do estado
-                    st.session_state['dados']['nome'] = res_details.get("name") or place.get("name") or nome_input
-                    st.session_state['dados']['endereco'] = res_details.get("formatted_address") or place.get("formatted_address") or f"{cidade_empresa}"
-                    st.session_state['dados']['telefone'] = res_details.get("formatted_phone_number") or res_details.get("international_phone_number") or "Não informado"
-                    st.session_state['dados']['website'] = res_details.get("website") or "Não possui"
-                    st.session_state['dados']['nota'] = float(res_details.get("rating") or place.get("rating") or 0.0)
-                    st.session_state['dados']['avaliacoes'] = int(res_details.get("user_ratings_total") or place.get("user_ratings_total") or 0)
-                    
-                    # Regras automáticas ajustadas
-                    st.session_state['dados']['tem_fotos_hd'] = len(photos) >= 10
-                    st.session_state['dados']['horarios_ok'] = "opening_hours" in res_details
-                    
-                    st.success("Dados reais extraídos diretamente do Google!")
-                else:
-                    st.warning("Nenhum local encontrado no Google Maps para esse termo.")
-            except Exception as e:
-                st.error(f"Erro ao conectar com a API do Google: {e}")
-        else:
-            st.error("Chave GOOGLE_API_KEY não foi encontrada nos segredos do Streamlit.")
+# -----------------------------------------------------------------------------
+# 2. DECLARAÇÃO DE FUNÇÕES UTILITÁRIAS (DEVEM FICAR ANTES DO USO)
+# -----------------------------------------------------------------------------
+def conv(texto):
+    """Trata a codificação para Latin-1 e substitui símbolos unicode incompatíveis."""
+    if not texto:
+        return ""
+    limpo = str(texto)
+    limpo = limpo.replace("•", "- ").replace("✓", "[OK] ").replace("X", "[X] ")
+    limpo = limpo.replace("📍", "").replace("📞", "").replace("✉️", "").replace("🌐", "").replace("☐", "[ ]")
+    return limpo.encode('latin-1', 'replace').decode('latin-1')
 
-        st.rerun()
+def formatar_estrelas(nota):
+    """Gera visualização de estrelas limpa."""
+    try:
+        val = float(nota)
+        cheias = int(round(val))
+        cheias = max(0, min(5, cheias))
+        return "*" * cheias
+    except:
+        return "*****"
+
+def calcular_score_real(dados):
+    """Calcula o score de otimização com base no estado dos itens."""
+    score = 100
+    if not dados.get("tem_tour360", False): score -= 25
+    if dados.get("website") == "Não possui" or not dados.get("website"): score -= 20
+    if not dados.get("tem_fotos_hd", False): score -= 20
+    if not dados.get("categorias_completas", False): score -= 15
+    if not dados.get("horarios_ok", False): score -= 10
+    if dados.get("avaliacoes", 0) < 50: score -= 10
+    return max(score, 10)
+
+def obter_caminho_logo():
+    """Tenta localizar o logo no assets/ ou na raiz do repositório."""
+    caminhos = [
+        'assets/Logo_TOUR_transparente.png',
+        'Logo_TOUR_transparente.png',
+        'assets/Logo TOUR transparente.png',
+        'Logo TOUR transparente.png'
+    ]
+    for c in caminhos:
+        if os.path.exists(c):
+            return c
+    return None
 
 # -----------------------------------------------------------------------------
-# 2. GERADOR DE PDF TOUR360VR
+# 3. INICIALIZAÇÃO DE ESTADOS NATIVOS EDITÁVEIS
+# -----------------------------------------------------------------------------
+if 'dados' not in st.session_state:
+    st.session_state['dados'] = {
+        "nome": "Toque de Letra",
+        "contato": "Marcio Javaroni",
+        "endereco": "Ribeirão Preto / SP",
+        "telefone": "16 99622 2121",
+        "website": "Não possui",
+        "nota": 4.2,
+        "avaliacoes": 38,
+        "tem_tour360": False,
+        "tem_fotos_hd": False,
+        "categorias_completas": False,
+        "horarios_ok": False
+    }
+
+if 'planos' not in st.session_state:
+    st.session_state['planos'] = {
+        "start_valor": "500,00",
+        "start_itens": "- Correção cadastral\n- Otimização de SEO\n- Ajuste de categorias\n- Inserção de links",
+        "pro_valor": "1.150,00",
+        "pro_itens": "- Tudo do Plano Start\n- Tour Virtual 360°\n- Ensaio Fotográfico HD\n- Relatório Visual de Entrega",
+        "gestao_valor": "600,00/mês",
+        "gestao_itens": "- Postagens semanais\n- Gestão de avaliações\n- Atualização de fotos\n- Relatório mensal"
+    }
+
+if 'plano_acao_extra' not in st.session_state:
+    st.session_state['plano_acao_extra'] = "Você precisa de mim."
+
+# -----------------------------------------------------------------------------
+# 4. GERADOR DE PDF TOUR360VR
 # -----------------------------------------------------------------------------
 class PDFTour360Oficial(FPDF):
     def header(self):
@@ -207,11 +241,8 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     
     estrelas_txt = formatar_estrelas(dados['nota'])
 
-    # -------------------------------------------------------------------------
-    # PÁGINA 1: CAPA (TITULOS DE MESMO TAMANHO)
-    # -------------------------------------------------------------------------
+    # PÁGINA 1: CAPA
     pdf.add_page()
-    
     caminho_logo = obter_caminho_logo()
     if caminho_logo:
         try:
@@ -225,7 +256,6 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.cell(0, 10, conv('DIAGNÓSTICO DE PRESENÇA DIGITAL'), align='C', ln=True)
     pdf.ln(2)
 
-    # Google Meu Negócio e Tour360VR do mesmo tamanho (18pt)
     pdf.set_font('Helvetica', 'B', 18)
     pdf.set_text_color(255, 61, 61)
     pdf.cell(0, 8, conv('GOOGLE MEU NEGÓCIO'), align='C', ln=True)
@@ -271,11 +301,8 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
         pdf.set_text_color(34, 197, 94)
         pdf.cell(w_capa, 6, conv("Status da Ficha: Otimizado e Em Expansão"), align='C', ln=True)
 
-    # -------------------------------------------------------------------------
-    # PÁGINA 2: DIAGNÓSTICO DETALHADO, SCORE MAIOR E ESPAÇAMENTO RESPIRÁVEL
-    # -------------------------------------------------------------------------
+    # PÁGINA 2: DIAGNÓSTICO
     pdf.add_page()
-    
     w_ficha = 154
     x_ficha = (210 - w_ficha) / 2.0
     
@@ -305,7 +332,6 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_x(x_ficha)
     pdf.cell(w_ficha, 4.5, conv(f"Telefone: {dados['telefone']}   |   Website: {dados['website']}"), align='C', ln=True)
 
-    # AUMENTO DO TAMANHO E DESTAQUE DO SCORE
     w_score = 90
     x_score = (210 - w_score) / 2.0
     
@@ -388,7 +414,6 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
         pdf.cell(0, 3, conv(f"  Diagnóstico: {desc}"), ln=True)
         pdf.ln(2.2)
 
-    # ESPAÇAMENTO RESPIRÁVEL ANTES DO PLANO DE AÇÃO EXTRA
     if plano_acao_extra and plano_acao_extra.strip() != "":
         pdf.ln(8)
         pdf.set_fill_color(248, 250, 252)
@@ -407,18 +432,14 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
         pdf.set_text_color(51, 65, 85)
         pdf.multi_cell(178, 3.8, conv(plano_acao_extra), align='L')
 
-    # -------------------------------------------------------------------------
-    # PÁGINA 3: PLANOS E INVESTIMENTO (TÍTULO ALTERADO E ESPAÇOS AMPLIADOS)
-    # -------------------------------------------------------------------------
+    # PÁGINA 3: PLANOS E INVESTIMENTO
     pdf.add_page()
-    
     pdf.set_y(32)
     pdf.set_font('Helvetica', 'B', 14)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 7, conv('PROPOSTA COMERCIAL & ESTRUTURAÇÃO ESTRATÉGICA'), align='C', ln=True)
     pdf.ln(12)
 
-    # TÍTULO AJUSTADO: "PLANOS E INVESTIMENTO"
     pdf.set_font('Helvetica', 'B', 14)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 6, conv('PLANOS E INVESTIMENTO'), align='C', ln=True)
@@ -426,7 +447,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
 
     y_p = pdf.get_y() + 2
     
-    # --- PLANO START ---
+    # Plano Start
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
     pdf.rounded_rect(12, y_p + 2, 54, 62, 2, 'FD')
@@ -446,7 +467,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_xy(17, y_p + 23)
     pdf.multi_cell(44, 4.2, conv(planos['start_itens']), align='L')
 
-    # --- PLANO PRO ---
+    # Plano Pro
     pdf.set_fill_color(238, 242, 255)
     pdf.set_draw_color(30, 64, 175)
     pdf.set_line_width(1.2)
@@ -473,7 +494,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_xy(78, y_p + 24)
     pdf.multi_cell(56, 4.8, conv(planos['pro_itens']), align='L')
 
-    # --- GESTÃO MENSAL ---
+    # Gestão Mensal
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
     pdf.rounded_rect(144, y_p + 2, 54, 62, 2, 'FD')
@@ -493,7 +514,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_xy(149, y_p + 23)
     pdf.multi_cell(44, 4.2, conv(planos['gestao_itens']), align='L')
 
-    # QUADRO INFORMATIVO MOVIDO PARA A PARTE INFERIOR
+    # Por que seu negócio precisa...
     pdf.set_y(y_p + 78)
     pdf.set_fill_color(240, 249, 255)
     pdf.set_draw_color(62, 161, 219)
@@ -518,16 +539,13 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_x(12)
     pdf.multi_cell(186, 4.5, conv(txt_exp), align='C')
 
-    # -------------------------------------------------------------------------
-    # PÁGINA 4: CONTRATO (MAIS ESPAÇO APÓS O TÍTULO)
-    # -------------------------------------------------------------------------
+    # PÁGINA 4: CONTRATO
     pdf.add_page()
-    
     pdf.set_y(32)
     pdf.set_font('Helvetica', 'B', 14)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 7, conv('CONTRATO DE PRESTAÇÃO DE SERVIÇOS'), align='C', ln=True)
-    pdf.ln(14)  # Espaçamento ampliado entre o título e o texto
+    pdf.ln(14)
 
     pdf.set_font('Helvetica', '', 9.5)
     pdf.set_text_color(51, 65, 85)
@@ -588,7 +606,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     return buffer
 
 # -----------------------------------------------------------------------------
-# 3. INTERFACE STREAMLIT COM MENU LATERAL E SEÇÕES EDITÁVEIS
+# 5. INTERFACE DO USUÁRIO NO STREAMLIT
 # -----------------------------------------------------------------------------
 st.sidebar.markdown("""
     <div style='text-align: center; padding-bottom: 15px;'>
@@ -614,12 +632,12 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# CALCULO DINAMICO DO SCORE
+# CALCULO DO SCORE REAL (CHAMADA SEGURA APÓS A DECLARAÇÃO DA FUNÇÃO)
 score_calculado = calcular_score_real(st.session_state['dados'])
 st.session_state['score'] = score_calculado
 
 # -----------------------------------------------------------------------------
-# ETAPA 1: CONSULTA & DIAGNÓSTICO (BUSCA 100% FIEL DO GOOGLE PLACES)
+# ETAPA 1: CONSULTA & DIAGNÓSTICO
 # -----------------------------------------------------------------------------
 if "🔍" in opcao_menu:
     st.subheader("🔍 1. Dados do Cliente & Diagnóstico")
@@ -644,7 +662,7 @@ if "🔍" in opcao_menu:
                         place = res_search["results"][0]
                         place_id = place.get("place_id")
                         
-                        url_details = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=name,formatted_address,formatted_phone_number,international_phone_number,website,rating,user_ratings_total,photos&key={API_KEY_GOOGLE}"
+                        url_details = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=name,formatted_address,formatted_phone_number,international_phone_number,website,rating,user_ratings_total,photos,opening_hours&key={API_KEY_GOOGLE}"
                         res_details = requests.get(url_details).json().get("result", {})
                         
                         photos = res_details.get("photos", place.get("photos", []))
@@ -653,12 +671,19 @@ if "🔍" in opcao_menu:
                         st.session_state['dados']['endereco'] = res_details.get("formatted_address") or place.get("formatted_address") or f"{cidade_empresa}"
                         st.session_state['dados']['telefone'] = res_details.get("formatted_phone_number") or res_details.get("international_phone_number") or "Não informado"
                         st.session_state['dados']['website'] = res_details.get("website") or "Não possui"
-                        st.session_state['dados']['nota'] = float(res_details.get("rating") or place.get("rating") or 4.2)
-                        st.session_state['dados']['avaliacoes'] = int(res_details.get("user_ratings_total") or place.get("user_ratings_total") or 38)
-                        st.session_state['dados']['tem_fotos_hd'] = len(photos) > 10
-                        st.success("Busca concluída e dados atualizados com sucesso!")
+                        st.session_state['dados']['nota'] = float(res_details.get("rating") or place.get("rating") or 0.0)
+                        st.session_state['dados']['avaliacoes'] = int(res_details.get("user_ratings_total") or place.get("user_ratings_total") or 0)
+                        
+                        st.session_state['dados']['tem_fotos_hd'] = len(photos) >= 10
+                        st.session_state['dados']['horarios_ok'] = "opening_hours" in res_details
+                        
+                        st.success("Busca realizada e dados extraídos com sucesso!")
+                    else:
+                        st.warning("Nenhum local encontrado no Google Maps para este termo.")
                 except Exception as e:
                     st.error(f"Erro na conexão com o Google: {e}")
+            else:
+                st.error("Chave GOOGLE_API_KEY ou GOOGLE_PLACES_API_KEY não foi configurada nos segredos.")
 
             st.rerun()
 
@@ -775,7 +800,7 @@ elif "📄" in opcao_menu:
     st.info("O contrato é atualizado e gerado automaticamente na 4ª página do PDF completo de acordo com os dados editados nas etapas anteriores.")
 
 # -----------------------------------------------------------------------------
-# 4. RODAPÉ FIXO DO APP
+# 6. RODAPÉ FIXO DO APP
 # -----------------------------------------------------------------------------
 st.markdown("""
     <div class="footer">
