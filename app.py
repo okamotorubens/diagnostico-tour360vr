@@ -176,19 +176,19 @@ class PDFTour360Oficial(FPDF):
         
         caminho_logo = obter_caminho_logo()
         if caminho_logo:
-            try: self.image(caminho_logo, 12, 6.5, 15)
+            try: self.image(caminho_logo, 12, 6.5, 18)
             except: pass
             
-        # CABEÇALHO CRAVADO NA POSIÇÃO ESQUERDA (X = 30mm)
-        self.set_xy(30, 6.5)
+        # CABEÇALHO COM ALINHAMENTO À ESQUERDA CORRIGIDO (X = 35mm)
+        self.set_xy(35, 6.5)
         self.set_font('Helvetica', 'B', 12)
         self.set_text_color(30, 64, 175)
-        self.cell(168, 4.5, 'TOUR360VR', align='L', ln=True)
+        self.cell(163, 4.5, 'TOUR360VR', align='L', ln=True)
         
-        self.set_x(30)
+        self.set_x(35)
         self.set_font('Helvetica', 'B', 8.5)
         self.set_text_color(100, 116, 139)
-        self.cell(168, 4, conv('Gestão de Perfil & Diagnóstico do Google Meu Negócio'), align='L', ln=True)
+        self.cell(163, 4, conv('Gestão de Perfil & Diagnóstico do Google Meu Negócio'), align='L', ln=True)
         
         self.set_draw_color(226, 232, 240)
         self.line(12, 18.5, 198, 18.5)
@@ -325,7 +325,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_x(x_ficha)
     pdf.cell(w_ficha, 4, conv(f"Telefone: {dados['telefone']}   |   Website: {dados['website']}"), align='C', ln=True)
 
-    # QUADRO DO SCORE EM AZUL SUAVE IGUAL AOS OUTROS QUADROS
+    # QUADRO DO SCORE: AZUL CLARO IDÊNTICO AO QUADRO INFORMATIVO
     w_box_score = 110
     x_box_score = (210 - w_box_score) / 2.0
     y_box_score = 63
@@ -340,8 +340,8 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
         cr, cg, cb = 34, 197, 94
         status_txt = "ALTO DESEMPENHO"
 
-    pdf.set_fill_color(248, 250, 252)
-    pdf.set_draw_color(226, 232, 240)
+    pdf.set_fill_color(240, 249, 255)
+    pdf.set_draw_color(62, 161, 219)
     pdf.set_line_width(0.5)
     pdf.rounded_rect(x_box_score, y_box_score, w_box_score, 20, 3, 'FD')
     pdf.set_line_width(0.2)
@@ -431,23 +431,27 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
         pdf.cell(0, 3.5, conv(f"  Diagnóstico: {desc}"), ln=True)
         pdf.ln(1.5)
 
+    # QUADRO PLANO DE AÇÃO: IDÊNTICO AO AZUL CLARO COM ESPAÇAMENTO EXPANDIDO
     if plano_acao_extra and plano_acao_extra.strip() != "":
         pdf.ln(6)
-        pdf.set_fill_color(248, 250, 252)
-        pdf.set_draw_color(203, 213, 225)
+        pdf.set_fill_color(240, 249, 255)
+        pdf.set_draw_color(62, 161, 219)
+        pdf.set_line_width(0.5)
+        
         y_extra = pdf.get_y()
+        pdf.rounded_rect(12, y_extra, 186, 30, 2.5, 'FD')
+        pdf.set_line_width(0.2)
         
-        pdf.rounded_rect(12, y_extra, 186, 26, 2.5, 'FD')
-        
-        pdf.set_xy(12, y_extra + 3)
+        pdf.set_xy(12, y_extra + 4)
         pdf.set_font('Helvetica', 'B', 9.5)
         pdf.set_text_color(30, 64, 175)
         pdf.cell(186, 4, conv("PLANO DE AÇÃO E APONTAMENTOS ESTRATÉGICOS PERSONALIZADOS:"), align='C', ln=True)
         
-        pdf.set_xy(16, y_extra + 8.5)
+        # ESPAÇAMENTO INTERNO AMPLIADO
+        pdf.set_xy(16, y_extra + 12)
         pdf.set_font('Helvetica', '', 8.5)
         pdf.set_text_color(51, 65, 85)
-        pdf.multi_cell(178, 3.8, conv(plano_acao_extra), align='L')
+        pdf.multi_cell(178, 4.0, conv(plano_acao_extra), align='L')
 
     # PÁGINA 3: PLANOS E MENSALIDADES
     pdf.add_page()
@@ -545,7 +549,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_x(12)
     pdf.multi_cell(186, 4.5, conv(txt_exp), align='C')
 
-    # PÁGINA 4: CONTRATO COM ASSINATURA EM 2 LINHAS
+    # PÁGINA 4: CONTRATO
     pdf.add_page()
     pdf.set_y(32)
     pdf.set_font('Helvetica', 'B', 14)
@@ -596,18 +600,15 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
 
     pdf.ln(16)
     
-    # LINHA DE ASSINATURAS
     pdf.cell(88, 5, '__________________________________', align='C')
     pdf.cell(10, 5, '')
     pdf.cell(88, 5, '__________________________________', align='C', ln=True)
     
-    # LINHA 1 DA ASSINATURA
     pdf.set_font('Helvetica', 'B', 8.5)
     pdf.cell(88, 4.5, 'Rubens H. Okamoto', align='C')
     pdf.cell(10, 4.5, '')
     pdf.cell(88, 4.5, conv(f"{dados['contato']}"), align='C', ln=True)
     
-    # LINHA 2 DA ASSINATURA
     pdf.set_font('Helvetica', 'B', 8.5)
     pdf.set_text_color(100, 116, 139)
     pdf.cell(88, 4.5, 'TOUR360VR', align='C')
