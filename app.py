@@ -422,12 +422,12 @@ def gerar_pdf_oficial(dados, score, itens, status_label, status_cor,
     fonte('', 9)
     pdf.set_text_color(*BRAND["texto_medio"])
     pdf.set_x(col2_x)
-    pdf.cell(col2_w, 5, f"{dados['nota']:.1f}/5.0  •  {dados['avaliacoes']} avaliações no Google", ln=True)
+    pdf.cell(col2_w, 5, f"{dados['nota']:.1f}/5.0  ·  {dados['avaliacoes']} avaliações no Google", ln=True)
 
     pdf.set_x(col2_x)
     pdf.ln(3)
     pill_w = 62
-    pdf.pill_status(col2_x, pdf.get_y(), pill_w, 9, f"{status_label}  •  {score}/100", status_cor)
+    pdf.pill_status(col2_x, pdf.get_y(), pill_w, 9, f"{status_label}  ·  {score}/100", status_cor)
 
     # --- Legenda de status (deixa a leitura mais intuitiva) ---
     y_legenda = card_y + card_h + 14
@@ -460,7 +460,7 @@ def gerar_pdf_oficial(dados, score, itens, status_label, status_cor,
     fonte('', 7.5)
     pdf.set_text_color(*BRAND["texto_medio"])
     pdf.set_xy(0, 262)
-    pdf.cell(210, 4, f'Diagnóstico gerado em {data_geracao}  •  Tour360VR', align='C')
+    pdf.cell(210, 4, f'Diagnóstico gerado em {data_geracao}  ·  Tour360VR', align='C')
 
     # -------------------------------------------------------------------
     # PÁGINA 2: DIAGNÓSTICO DETALHADO
