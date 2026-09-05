@@ -57,9 +57,11 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+# Captura inteligente da chave de API (suporta múltiplos nomes de segredo)
 API_KEY_GOOGLE = (
     st.secrets.get("GOOGLE_API_KEY") 
     or st.secrets.get("GOOGLE_PLACES_API_KEY") 
+    or os.environ.get("GOOGLE_API_KEY")
     or ""
 )
 
@@ -300,7 +302,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
         pdf.set_text_color(34, 197, 94)
         pdf.cell(w_capa, 6, conv("Status da Ficha: Otimizado e Em Expansão"), align='C', ln=True)
 
-    # PÁGINA 2: DIAGNÓSTICO
+    # PÁGINA 2: DIAGNÓSTICO (COM MAIS ESPAÇAMENTO ENTRE OS BLOCOS)
     pdf.add_page()
     w_ficha = 154
     x_ficha = (210 - w_ficha) / 2.0
@@ -358,11 +360,12 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_font('Helvetica', 'B', 9)
     pdf.cell(w_score, 5, conv(f"SCORE GERAL ({status_txt})"), align='C', ln=True)
 
-    pdf.set_y(106)
+    # MAIOR ESPAÇAMENTO ANTES DA AUDITORIA
+    pdf.set_y(108)
     pdf.set_font('Helvetica', 'B', 12)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 6, conv('AUDITORIA DETALHADA DE PONTOS DE BUSCA'), align='C', ln=True)
-    pdf.ln(4)
+    pdf.ln(8)
 
     pct_avaliacoes = min(int((dados['avaliacoes'] / 50.0) * 100), 100) if dados['avaliacoes'] > 0 else 10
 
@@ -411,15 +414,16 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
         pdf.set_font('Helvetica', '', 7.5)
         pdf.set_text_color(100, 116, 139)
         pdf.cell(0, 3.5, conv(f"Diagnóstico: {desc}"), ln=True)
-        pdf.ln(1.5)
+        pdf.ln(2.0)
 
+    # MAIOR ESPAÇAMENTO PARA O PLANO DE AÇÃO PERSONALIZADO
     if plano_acao_extra and plano_acao_extra.strip() != "":
-        pdf.ln(4)
+        pdf.ln(12)
         pdf.set_fill_color(248, 250, 252)
         pdf.set_draw_color(203, 213, 225)
         
         y_extra = pdf.get_y()
-        pdf.rounded_rect(12, y_extra, 186, 26, 2, 'FD')
+        pdf.rounded_rect(12, y_extra, 186, 28, 2, 'FD')
         
         pdf.set_xy(12, y_extra + 3)
         pdf.set_font('Helvetica', 'B', 8.5)
@@ -513,8 +517,8 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_xy(149, y_p + 23)
     pdf.multi_cell(44, 4.2, conv(planos['gestao_itens']), align='L')
 
-    # Por que seu negócio precisa...
-    pdf.set_y(y_p + 78)
+    # POR QUE SEU NEGÓCIO PRECISA... (ESPAÇAMENTO AUMENTADO)
+    pdf.set_y(y_p + 82)
     pdf.set_fill_color(240, 249, 255)
     pdf.set_draw_color(62, 161, 219)
     pdf.set_line_width(0.5)
@@ -635,7 +639,7 @@ score_calculado = calcular_score_real(st.session_state['dados'])
 st.session_state['score'] = score_calculado
 
 # -----------------------------------------------------------------------------
-# ETAPA 1: CONSULTA & DIAGNÓSTICO
+# ETAPA 1: CONSULTA & DIAGNÓSTICO (BUSCA REATIVA AO GOOGLE MAPS)
 # -----------------------------------------------------------------------------
 if "🔍" in opcao_menu:
     st.subheader("🔍 1. Dados do Cliente & Diagnóstico")
@@ -656,7 +660,7 @@ if "🔍" in opcao_menu:
                     url_search = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={termo_busca}&key={API_KEY_GOOGLE}"
                     res_search = requests.get(url_search).json()
                     
-                    if res_search.get("results"):
+                    if res_search.get("status") == "OK" and res_search.get("results"):
                         place = res_search["results"][0]
                         place_id = place.get("place_id")
                         
@@ -665,6 +669,7 @@ if "🔍" in opcao_menu:
                         
                         photos = res_details.get("photos", place.get("photos", []))
                         
+                        # SOBRESCREVENDO OS DADOS PADRÃO COM OS RETORNADOS
                         st.session_state['dados']['nome'] = res_details.get("name") or place.get("name") or nome_input
                         st.session_state['dados']['endereco'] = res_details.get("formatted_address") or place.get("formatted_address") or f"{cidade_empresa}"
                         st.session_state['dados']['telefone'] = res_details.get("formatted_phone_number") or res_details.get("international_phone_number") or "Não informado"
@@ -675,13 +680,13 @@ if "🔍" in opcao_menu:
                         st.session_state['dados']['tem_fotos_hd'] = len(photos) >= 10
                         st.session_state['dados']['horarios_ok'] = "opening_hours" in res_details
                         
-                        st.success("Busca realizada e dados extraídos com sucesso!")
+                        st.success("Busca realizada e dados reais atualizados com sucesso!")
                     else:
-                        st.warning("Nenhum local encontrado no Google Maps para este termo.")
+                        st.error(f"Erro na busca: {res_search.get('status')} - {res_search.get('error_message', 'Local não encontrado')}")
                 except Exception as e:
-                    st.error(f"Erro na conexão com o Google: {e}")
+                    st.error(f"Erro na conexão com a API do Google: {e}")
             else:
-                st.error("Chave GOOGLE_API_KEY ou GOOGLE_PLACES_API_KEY não foi configurada nos segredos.")
+                st.error("Chave de API do Google não foi localizada nos segredos do Streamlit.")
 
             st.rerun()
 
