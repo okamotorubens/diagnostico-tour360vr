@@ -57,80 +57,55 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-API_KEY_GOOGLE = st.secrets.get("GOOGLE_PLACES_API_KEY", "")
+# 1. Ajuste da leitura do Segredo (suporta ambas as nomenclaturas)
+API_KEY_GOOGLE = (
+    st.secrets.get("GOOGLE_PLACES_API_KEY") 
+    or st.secrets.get("GOOGLE_API_KEY") 
+    or ""
+)
 
-# -----------------------------------------------------------------------------
-# INICIALIZAÇÃO DE ESTADOS NATIVOS EDITÁVEIS
-# -----------------------------------------------------------------------------
-if 'dados' not in st.session_state:
-    st.session_state['dados'] = {
-        "nome": "Toque de Letra",
-        "contato": "Marcio Javaroni",
-        "endereco": "Ribeirão Preto / SP",
-        "telefone": "16 99622 2121",
-        "website": "Não possui",
-        "nota": 4.2,
-        "avaliacoes": 38,
-        "tem_tour360": False,
-        "tem_fotos_hd": False,
-        "categorias_completas": False,
-        "horarios_ok": False
-    }
+# 2. Atualização da Chamada de Busca
+if st.button("🚀 Buscar e Atualizar Dados no Google", use_container_width=True):
+    if nome_input:
+        termo_busca = f"{nome_input}, {cidade_empresa}" if cidade_empresa else nome_input
+        
+        if API_KEY_GOOGLE:
+            try:
+                # Busca pelo estabelecimento
+                url_search = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={termo_busca}&key={API_KEY_GOOGLE}"
+                res_search = requests.get(url_search).json()
+                
+                if res_search.get("results"):
+                    place = res_search["results"][0]
+                    place_id = place.get("place_id")
+                    
+                    # Detalhes aprofundados
+                    url_details = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=name,formatted_address,formatted_phone_number,international_phone_number,website,rating,user_ratings_total,photos,opening_hours&key={API_KEY_GOOGLE}"
+                    res_details = requests.get(url_details).json().get("result", {})
+                    
+                    photos = res_details.get("photos", place.get("photos", []))
+                    
+                    # Atualização forçada do estado
+                    st.session_state['dados']['nome'] = res_details.get("name") or place.get("name") or nome_input
+                    st.session_state['dados']['endereco'] = res_details.get("formatted_address") or place.get("formatted_address") or f"{cidade_empresa}"
+                    st.session_state['dados']['telefone'] = res_details.get("formatted_phone_number") or res_details.get("international_phone_number") or "Não informado"
+                    st.session_state['dados']['website'] = res_details.get("website") or "Não possui"
+                    st.session_state['dados']['nota'] = float(res_details.get("rating") or place.get("rating") or 0.0)
+                    st.session_state['dados']['avaliacoes'] = int(res_details.get("user_ratings_total") or place.get("user_ratings_total") or 0)
+                    
+                    # Regras automáticas ajustadas
+                    st.session_state['dados']['tem_fotos_hd'] = len(photos) >= 10
+                    st.session_state['dados']['horarios_ok'] = "opening_hours" in res_details
+                    
+                    st.success("Dados reais extraídos diretamente do Google!")
+                else:
+                    st.warning("Nenhum local encontrado no Google Maps para esse termo.")
+            except Exception as e:
+                st.error(f"Erro ao conectar com a API do Google: {e}")
+        else:
+            st.error("Chave GOOGLE_API_KEY não foi encontrada nos segredos do Streamlit.")
 
-if 'planos' not in st.session_state:
-    st.session_state['planos'] = {
-        "start_valor": "500,00",
-        "start_itens": "- Correção cadastral\n- Otimização de SEO\n- Ajuste de categorias\n- Inserção de links",
-        "pro_valor": "1.150,00",
-        "pro_itens": "- Tudo do Plano Start\n- Tour Virtual 360°\n- Ensaio Fotográfico HD\n- Relatório Visual de Entrega",
-        "gestao_valor": "600,00/mês",
-        "gestao_itens": "- Postagens semanais\n- Gestão de avaliações\n- Atualização de fotos\n- Relatório mensal"
-    }
-
-if 'plano_acao_extra' not in st.session_state:
-    st.session_state['plano_acao_extra'] = "Você precisa de mim."
-
-def conv(texto):
-    """Trata a codificação para Latin-1 e substitui símbolos unicode incompatíveis."""
-    if not texto:
-        return ""
-    limpo = str(texto)
-    limpo = limpo.replace("•", "- ").replace("✓", "[OK] ").replace("X", "[X] ")
-    limpo = limpo.replace("📍", "").replace("📞", "").replace("✉️", "").replace("🌐", "").replace("☐", "[ ]")
-    return limpo.encode('latin-1', 'replace').decode('latin-1')
-
-def formatar_estrelas(nota):
-    """Gera visualização de estrelas limpa."""
-    try:
-        val = float(nota)
-        cheias = int(round(val))
-        cheias = max(0, min(5, cheias))
-        return "*" * cheias
-    except:
-        return "*****"
-
-def calcular_score_real(dados):
-    score = 100
-    if not dados.get("tem_tour360", False): score -= 25
-    if dados.get("website") == "Não possui" or not dados.get("website"): score -= 20
-    if not dados.get("tem_fotos_hd", False): score -= 20
-    if not dados.get("categorias_completas", False): score -= 15
-    if not dados.get("horarios_ok", False): score -= 10
-    if dados.get("avaliacoes", 0) < 50: score -= 10
-    return max(score, 10)
-
-def obter_caminho_logo():
-    """Tenta localizar o logo no assets/ ou na raiz."""
-    caminhos = [
-        'assets/Logo_TOUR_transparente.png',
-        'Logo_TOUR_transparente.png',
-        'assets/Logo TOUR transparente.png',
-        'Logo TOUR transparente.png'
-    ]
-    for c in caminhos:
-        if os.path.exists(c):
-            return c
-    return None
+        st.rerun()
 
 # -----------------------------------------------------------------------------
 # 2. GERADOR DE PDF TOUR360VR
