@@ -24,15 +24,17 @@ st.markdown("""
     [data-testid="stSidebar"] {
         background-color: #111827;
         border-right: 1px solid #1f2937;
-        padding-top: 0px;
+        padding-top: 10px;
     }
     
     .main-header {
-        font-size: 24px;
+        font-size: 22px;
         font-weight: 800;
         color: #ffffff;
         letter-spacing: -0.5px;
+        margin-top: 0px;
         margin-bottom: 20px;
+        padding-top: 0px;
     }
     .main-header span { color: #ff3d3d; }
     
@@ -45,7 +47,7 @@ st.markdown("""
     }
 
     .card-title {
-        font-size: 16px;
+        font-size: 15px;
         font-weight: 700;
         color: #ffffff;
         margin-bottom: 12px;
@@ -75,9 +77,9 @@ st.markdown("""
         background-color: #070a10;
         color: #94a3b8;
         text-align: center;
-        padding: 12px;
+        padding: 10px;
         border-top: 1px solid #1e293b;
-        font-size: 13px;
+        font-size: 12px;
         z-index: 999;
     }
     .custom-footer a { color: #3ea1db; text-decoration: none; }
@@ -127,17 +129,17 @@ def obter_caminho_logo():
 # -----------------------------------------------------------------------------
 if 'dados' not in st.session_state:
     st.session_state['dados'] = {
-        "nome": "Restaurante Sabor Local",
+        "nome": "Nobre Paladar Restaurante",
         "contato": "Gerente Responsável",
         "endereco": "Ribeirão Preto / SP",
-        "telefone": "(16) 99133-2121",
+        "telefone": "(16) 3900-2774",
         "website": "Não possui",
-        "nota": 4.2,
-        "avaliacoes": 38,
+        "nota": 5.0,
+        "avaliacoes": 1,
         "tem_tour360": False,
-        "tem_fotos_hd": False,
-        "categorias_completas": False,
-        "horarios_ok": False,
+        "tem_fotos_hd": True,
+        "categorias_completas": True,
+        "horarios_ok": True,
         "categorias_detectadas": []
     }
 
@@ -145,7 +147,7 @@ if 'planos' not in st.session_state:
     st.session_state['planos'] = {
         "start_valor": "500,00",
         "start_itens": "- Correção cadastral\n- Otimização de SEO\n- Ajuste de categorias\n- Inserção de links",
-        "pro_valor": "1.150,00",
+        "pro_valor": "1.200,00",
         "pro_itens": "- Tudo do Plano Start\n- Tour Virtual 360°\n- Ensaio Fotográfico HD\n- Relatório Visual de Entrega",
         "gestao_valor": "600,00/mês",
         "gestao_itens": "- Postagens semanais\n- Gestão de avaliações\n- Atualização de fotos\n- Relatório mensal"
@@ -158,7 +160,7 @@ if 'unidades_encontradas' not in st.session_state:
     st.session_state['unidades_encontradas'] = []
 
 # -----------------------------------------------------------------------------
-# 4. GERADOR PDF TOUR360VR COMPLETO (4 PÁGINAS)
+# 4. GERADOR PDF TOUR360VR CORRIGIDO (4 PÁGINAS)
 # -----------------------------------------------------------------------------
 class PDFTour360Oficial(FPDF):
     def header(self):
@@ -183,7 +185,7 @@ class PDFTour360Oficial(FPDF):
         self.cell(0, 4, conv('Gestão de Perfil & Diagnóstico do Google Meu Negócio'), ln=True)
         self.set_draw_color(226, 232, 240)
         self.line(12, 23, 198, 23)
-        self.ln(20)
+        self.ln(18)
 
     def footer(self):
         self.set_y(-16)
@@ -199,8 +201,7 @@ class PDFTour360Oficial(FPDF):
         self.cell(w_col, 5, f'Página {self.page_no()} de 4', align='C')
 
     def rounded_rect(self, x, y, w, h, r, style=''):
-        k = self.k
-        hp = self.h
+        k, hp = self.k, self.h
         op = 'f' if style == 'F' else ('B' if style in ['FD', 'DF'] else 'S')
         my_arc = 4/3 * (2**0.5 - 1)
         self._out(f'{(x+r)*k:.2f} {(hp-y)*k:.2f} m')
@@ -285,57 +286,57 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
         pdf.set_text_color(34, 197, 94)
         pdf.cell(w_capa, 6, conv("Status da Ficha: Otimizado e Em Expansão"), align='C', ln=True)
 
-    # PÁGINA 2: DIAGNÓSTICO
+    # PÁGINA 2: DIAGNÓSTICO E AUDITORIA (AJUSTE DOS DIAGNÓSTICOS E MARGENS)
     pdf.add_page()
     w_ficha = 154
     x_ficha = (210 - w_ficha) / 2.0
     
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
-    pdf.rounded_rect(x_ficha, 32, w_ficha, 40, 3, 'FD')
+    pdf.rounded_rect(x_ficha, 28, w_ficha, 38, 3, 'FD')
     
-    pdf.set_xy(x_ficha, 34)
-    pdf.set_font('Helvetica', 'B', 9)
+    pdf.set_xy(x_ficha, 30)
+    pdf.set_font('Helvetica', 'B', 8.5)
     pdf.set_text_color(100, 116, 139)
     pdf.cell(w_ficha, 4, conv('FICHA ANALISADA DO CLIENTE'), align='C', ln=True)
     pdf.set_x(x_ficha)
-    pdf.set_font('Helvetica', 'B', 15)
+    pdf.set_font('Helvetica', 'B', 14)
     pdf.set_text_color(15, 23, 42)
-    pdf.cell(w_ficha, 7, conv(f"{dados['nome']}"), align='C', ln=True)
-    pdf.set_font('Helvetica', 'B', 10)
+    pdf.cell(w_ficha, 6.5, conv(f"{dados['nome']}"), align='C', ln=True)
+    pdf.set_font('Helvetica', 'B', 9.5)
     pdf.set_text_color(245, 158, 11)
     pdf.set_x(x_ficha)
-    pdf.cell(w_ficha, 5, conv(f"Nota {dados['nota']:.1f} {estrelas_txt}   -   {dados['avaliacoes']} avaliações no Google"), align='C', ln=True)
-    pdf.set_font('Helvetica', '', 9)
+    pdf.cell(w_ficha, 4.5, conv(f"Nota {dados['nota']:.1f} {estrelas_txt}   -   {dados['avaliacoes']} avaliações no Google"), align='C', ln=True)
+    pdf.set_font('Helvetica', '', 8.5)
     pdf.set_text_color(71, 85, 105)
     pdf.set_x(x_ficha)
-    pdf.cell(w_ficha, 4.5, conv(f"{dados['endereco']}"), align='C', ln=True)
+    pdf.cell(w_ficha, 4, conv(f"{dados['endereco']}"), align='C', ln=True)
     pdf.set_x(x_ficha)
-    pdf.cell(w_ficha, 4.5, conv(f"Telefone: {dados['telefone']}   |   Website: {dados['website']}"), align='C', ln=True)
+    pdf.cell(w_ficha, 4, conv(f"Telefone: {dados['telefone']}   |   Website: {dados['website']}"), align='C', ln=True)
 
     w_score = 90
     x_score = (210 - w_score) / 2.0
-    pdf.set_y(78)
+    pdf.set_y(70)
     if score < 50: cr, cg, cb, status_txt = 239, 68, 68, "STATUS CRÍTICO"
     elif score < 80: cr, cg, cb, status_txt = 245, 158, 11, "STATUS MÉDIO"
     else: cr, cg, cb, status_txt = 34, 197, 94, "ALTO DESEMPENHO"
 
     pdf.set_fill_color(cr, cg, cb)
     pdf.set_draw_color(cr, cg, cb)
-    pdf.rounded_rect(x_score, 78, w_score, 22, 3, 'FD')
-    pdf.set_xy(x_score, 80)
-    pdf.set_font('Helvetica', 'B', 22)
+    pdf.rounded_rect(x_score, 70, w_score, 20, 3, 'FD')
+    pdf.set_xy(x_score, 71.5)
+    pdf.set_font('Helvetica', 'B', 20)
     pdf.set_text_color(255, 255, 255)
     pdf.cell(w_score, 8, conv(f"{score} / 100"), align='C', ln=True)
-    pdf.set_xy(x_score, 90)
-    pdf.set_font('Helvetica', 'B', 9)
+    pdf.set_xy(x_score, 80.5)
+    pdf.set_font('Helvetica', 'B', 8.5)
     pdf.cell(w_score, 5, conv(f"SCORE GERAL ({status_txt})"), align='C', ln=True)
 
-    pdf.set_y(108)
-    pdf.set_font('Helvetica', 'B', 12)
+    pdf.set_y(96)
+    pdf.set_font('Helvetica', 'B', 11)
     pdf.set_text_color(15, 23, 42)
-    pdf.cell(0, 6, conv('AUDITORIA DETALHADA DE PONTOS DE BUSCA'), align='C', ln=True)
-    pdf.ln(8)
+    pdf.cell(0, 5, conv('AUDITORIA DETALHADA DE PONTOS DE BUSCA'), align='C', ln=True)
+    pdf.ln(4)
 
     pct_avaliacoes = min(int((dados['avaliacoes'] / 50.0) * 100), 100) if dados['avaliacoes'] > 0 else 10
     desc_fotos = "Atende ao volume recomendado de fotos em HD." if dados['tem_fotos_hd'] else "Poucas fotos encontradas / antigas no perfil."
@@ -353,49 +354,49 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     ]
 
     for titulo, pct, rotulo, desc in itens:
-        pdf.set_font('Helvetica', 'B', 8.5)
+        pdf.set_font('Helvetica', 'B', 8)
         pdf.set_text_color(30, 41, 59)
-        pdf.cell(120, 4, conv(titulo), ln=False)
+        pdf.cell(120, 3.5, conv(titulo), ln=False)
         
         pdf.set_font('Helvetica', 'B', 8)
         if pct < 40: pdf.set_text_color(239, 68, 68)
         elif pct < 80: pdf.set_text_color(245, 158, 11)
         else: pdf.set_text_color(34, 197, 94)
             
-        pdf.cell(66, 4, conv(f"{pct}% - {rotulo}"), align='R', ln=True)
+        pdf.cell(66, 3.5, conv(f"{pct}% - {rotulo}"), align='R', ln=True)
 
         pdf.set_fill_color(226, 232, 240)
-        pdf.rounded_rect(12, pdf.get_y(), 186, 2.8, 1.4, 'F')
+        pdf.rounded_rect(12, pdf.get_y(), 186, 2.5, 1.2, 'F')
         
         if pct < 40: pdf.set_fill_color(239, 68, 68)
         elif pct < 80: pdf.set_fill_color(245, 158, 11)
         else: pdf.set_fill_color(34, 197, 94)
             
         largura_barra = max(float(pct) * 1.86, 4.0)
-        pdf.rounded_rect(12, pdf.get_y(), largura_barra, 2.8, 1.4, 'F')
-        pdf.ln(3.8)
+        pdf.rounded_rect(12, pdf.get_y(), largura_barra, 2.5, 1.2, 'F')
+        pdf.ln(3.2)
 
-        pdf.set_font('Helvetica', '', 9.0)
+        pdf.set_font('Helvetica', '', 8.0)
         pdf.set_text_color(71, 85, 105)
-        pdf.cell(0, 4.2, conv(f"Diagnóstico: {desc}"), ln=True)
-        pdf.ln(2.2)
+        pdf.cell(0, 3.5, conv(f"  Diagnóstico: {desc}"), ln=True)
+        pdf.ln(1.8)
 
     if plano_acao_extra and plano_acao_extra.strip() != "":
-        pdf.ln(10)
+        pdf.ln(4)
         pdf.set_fill_color(248, 250, 252)
         pdf.set_draw_color(203, 213, 225)
         y_extra = pdf.get_y()
-        pdf.rounded_rect(12, y_extra, 186, 28, 2, 'FD')
-        pdf.set_xy(12, y_extra + 3)
-        pdf.set_font('Helvetica', 'B', 8.5)
+        pdf.rounded_rect(12, y_extra, 186, 24, 2, 'FD')
+        pdf.set_xy(12, y_extra + 2.5)
+        pdf.set_font('Helvetica', 'B', 8)
         pdf.set_text_color(30, 64, 175)
-        pdf.cell(186, 4, conv("PLANO DE AÇÃO E APONTAMENTOS ESTRATÉGICOS PERSONALIZADOS:"), align='C', ln=True)
-        pdf.set_xy(16, y_extra + 8.5)
-        pdf.set_font('Helvetica', '', 8.5)
+        pdf.cell(186, 3.5, conv("PLANO DE AÇÃO E APONTAMENTOS ESTRATÉGICOS PERSONALIZADOS:"), align='C', ln=True)
+        pdf.set_xy(16, y_extra + 7.5)
+        pdf.set_font('Helvetica', '', 8)
         pdf.set_text_color(51, 65, 85)
-        pdf.multi_cell(178, 3.8, conv(plano_acao_extra), align='L')
+        pdf.multi_cell(178, 3.5, conv(plano_acao_extra), align='L')
 
-    # PÁGINA 3: PLANOS E MENSALIDADES
+    # PÁGINA 3: PLANOS E MENSALIDADES (SUBSTITUINDO LATEX POR TEXTO PURO)
     pdf.add_page()
     pdf.set_y(32)
     pdf.set_font('Helvetica', 'B', 14)
@@ -555,7 +556,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     return buffer
 
 # -----------------------------------------------------------------------------
-# 5. SIDEBAR / MENU LATERAL
+# 5. SIDEBAR / MENU LATERAL REDUZIDO PARA AS 4 OPÇÕES ESSENCIAIS
 # -----------------------------------------------------------------------------
 with st.sidebar:
     caminho_logo = obter_caminho_logo()
@@ -571,11 +572,9 @@ with st.sidebar:
         "Navegação do Sistema:",
         [
             "🔍 1. Consulta & Diagnóstico Rápido",
-            "🤝 2. Relatório de Vendas e Persuasão",
-            "📜 3. Proposta & Planos",
-            "📄 4. Contrato Profissional",
-            "📊 5. Apresentação e Resultados",
-            "📅 6. Relatório Mensal"
+            "💡 2. Plano de Ação & Persuasão",
+            "📜 3. Proposta Comercial & Planos",
+            "📄 4. Contrato Profissional"
         ]
     )
 
@@ -584,7 +583,7 @@ dados = st.session_state['dados']
 score = calcular_score_real(dados)
 
 # -----------------------------------------------------------------------------
-# PAINEL CENTRAL - CONTEÚDO EDITÁVEL POR MÓDULO
+# PAINEL CENTRAL - MÓDULOS DE USO
 # -----------------------------------------------------------------------------
 
 # MÓDULO 1: CONSULTA E DIAGNÓSTICO COMPLETO
@@ -689,8 +688,8 @@ if "1. Consulta" in opcao_menu:
             
         st.markdown("</div>", unsafe_allow_html=True)
 
-# MÓDULO 2: RELATÓRIO DE VENDAS E APONTAMENTOS ESTRATÉGICOS
-elif "2. Relatório" in opcao_menu:
+# MÓDULO 2: PLANO DE AÇÃO
+elif "2. Plano de Ação" in opcao_menu:
     st.markdown("<div class='dashboard-card'>", unsafe_allow_html=True)
     st.markdown("<div class='card-title'>💡 PLANO DE AÇÃO & APONTAMENTOS ESTRATÉGICOS PERSONALIZADOS</div>", unsafe_allow_html=True)
     
@@ -703,10 +702,10 @@ elif "2. Relatório" in opcao_menu:
     st.success("Plano de Ação salvo e atualizado para os relatórios/PDFs!")
     st.markdown("</div>", unsafe_allow_html=True)
 
-# MÓDULO 3: PROPOSTA & PLANOS DE VALORES EDITÁVEIS
+# MÓDULO 3: PROPOSTA COMERCIAL & VALORES
 elif "3. Proposta" in opcao_menu:
     st.markdown("<div class='dashboard-card'>", unsafe_allow_html=True)
-    st.markdown("<div class='card-title'>💲 EDITE OS VALORES E CONTEÚDO DOS PLANOS COMERCIAIS</div>", unsafe_allow_html=True)
+    st.markdown("<div class='card-title'>📜 EDITE OS VALORES E CONTEÚDO DOS PLANOS COMERCIAIS</div>", unsafe_allow_html=True)
     
     p1, p2, p3 = st.columns(3)
     
@@ -728,27 +727,29 @@ elif "3. Proposta" in opcao_menu:
     st.success("Valores e itens dos planos comerciais atualizados com sucesso!")
     st.markdown("</div>", unsafe_allow_html=True)
 
-else:
+# MÓDULO 4: CONTRATO
+elif "4. Contrato" in opcao_menu:
     st.markdown("<div class='dashboard-card'>", unsafe_allow_html=True)
-    st.markdown(f"<div class='card-title'>{opcao_menu}</div>", unsafe_allow_html=True)
-    st.info("Módulo em exibição.")
+    st.markdown("<div class='card-title'>📄 CONTRATO DE PRESTAÇÃO DE SERVIÇOS</div>", unsafe_allow_html=True)
+    st.info("O contrato é atualizado e gerado automaticamente na 4ª página do arquivo PDF completo com base nos dados informados nas etapas anteriores.")
     st.markdown("</div>", unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# PAINEL DE EXPORTAÇÃO DE PDFS
+# UNIFICADO: ÚNICO BOTÃO GERADOR DE PDF COMPLETO
 # -----------------------------------------------------------------------------
 st.markdown("<div class='dashboard-card'>", unsafe_allow_html=True)
-st.markdown("<div class='card-title'>GERAR PDF</div>", unsafe_allow_html=True)
+st.markdown("<div class='card-title'>GERAR DOCUMENTO OFICIAL</div>", unsafe_allow_html=True)
 
 pdf_bytes = gerar_pdf_oficial(dados, score, st.session_state['planos'], st.session_state['plano_acao_extra'])
 
-b1, b2, b3 = st.columns(3)
-with b1:
-    st.download_button("💾 Salvar Diagnóstico em PDF", data=pdf_bytes, file_name=f"Diagnostico_{dados['nome'].replace(' ', '_')}.pdf", mime="application/pdf", use_container_width=True, key="btn_pdf_diag")
-with b2:
-    st.download_button("📄 Salvar Contrato em PDF", data=pdf_bytes, file_name=f"Contrato_{dados['nome'].replace(' ', '_')}.pdf", mime="application/pdf", use_container_width=True, key="btn_pdf_contrato")
-with b3:
-    st.download_button("📊 Salvar Relatório em PDF", data=pdf_bytes, file_name=f"Relatorio_{dados['nome'].replace(' ', '_')}.pdf", mime="application/pdf", use_container_width=True, key="btn_pdf_relatorio")
+st.download_button(
+    "📥 Baixar Diagnóstico, Proposta e Contrato Completo em PDF",
+    data=pdf_bytes,
+    file_name=f"Diagnostico_Proposta_Contrato_{dados['nome'].replace(' ', '_')}.pdf",
+    mime="application/pdf",
+    use_container_width=True,
+    key="btn_pdf_unico_unificado"
+)
 
 st.markdown("</div>", unsafe_allow_html=True)
 
