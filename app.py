@@ -164,7 +164,7 @@ if 'unidades_encontradas' not in st.session_state:
     st.session_state['unidades_encontradas'] = []
 
 # -----------------------------------------------------------------------------
-# 4. GERADOR PDF TOUR360VR (CABEÇALHO PERFEITAMENTE ALINHADO À ESQUERDA)
+# 4. GERADOR PDF TOUR360VR
 # -----------------------------------------------------------------------------
 class PDFTour360Oficial(FPDF):
     def header(self):
@@ -176,22 +176,22 @@ class PDFTour360Oficial(FPDF):
         
         caminho_logo = obter_caminho_logo()
         if caminho_logo:
-            try: self.image(caminho_logo, 12, 7, 16)
+            try: self.image(caminho_logo, 12, 6.5, 15)
             except: pass
             
-        # CABEÇALHO CRAVADO NA MARGEM ESQUERDA (X = 32mm)
-        self.set_xy(32, 7)
+        # CABEÇALHO CRAVADO NA POSIÇÃO ESQUERDA (X = 30mm)
+        self.set_xy(30, 6.5)
         self.set_font('Helvetica', 'B', 12)
         self.set_text_color(30, 64, 175)
-        self.cell(166, 4.5, 'TOUR360VR', align='L', ln=True)
+        self.cell(168, 4.5, 'TOUR360VR', align='L', ln=True)
         
-        self.set_x(32)
+        self.set_x(30)
         self.set_font('Helvetica', 'B', 8.5)
         self.set_text_color(100, 116, 139)
-        self.cell(166, 4, conv('Gestão de Perfil & Diagnóstico do Google Meu Negócio'), align='L', ln=True)
+        self.cell(168, 4, conv('Gestão de Perfil & Diagnóstico do Google Meu Negócio'), align='L', ln=True)
         
         self.set_draw_color(226, 232, 240)
-        self.line(12, 19, 198, 19)
+        self.line(12, 18.5, 198, 18.5)
         self.set_y(22)
 
     def footer(self):
@@ -325,27 +325,24 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_x(x_ficha)
     pdf.cell(w_ficha, 4, conv(f"Telefone: {dados['telefone']}   |   Website: {dados['website']}"), align='C', ln=True)
 
-    # SCORE GERAL: QUADRO ESTÉTICO CENTRALIZADO
+    # QUADRO DO SCORE EM AZUL SUAVE IGUAL AOS OUTROS QUADROS
     w_box_score = 110
     x_box_score = (210 - w_box_score) / 2.0
     y_box_score = 63
     
     if score < 50:
         cr, cg, cb = 239, 68, 68
-        bg_r, bg_g, bg_b = 254, 242, 242
         status_txt = "STATUS CRÍTICO"
     elif score < 80:
         cr, cg, cb = 245, 158, 11
-        bg_r, bg_g, bg_b = 254, 252, 232
         status_txt = "STATUS MÉDIO"
     else:
         cr, cg, cb = 34, 197, 94
-        bg_r, bg_g, bg_b = 240, 253, 244
         status_txt = "ALTO DESEMPENHO"
 
-    pdf.set_fill_color(bg_r, bg_g, bg_b)
-    pdf.set_draw_color(cr, cg, cb)
-    pdf.set_line_width(0.6)
+    pdf.set_fill_color(248, 250, 252)
+    pdf.set_draw_color(226, 232, 240)
+    pdf.set_line_width(0.5)
     pdf.rounded_rect(x_box_score, y_box_score, w_box_score, 20, 3, 'FD')
     pdf.set_line_width(0.2)
 
@@ -353,7 +350,6 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_font('Helvetica', 'B', 22)
     pdf.set_text_color(cr, cg, cb)
     
-    # Centralização do número colorido + /100 em preto
     str_score = f"{score} "
     str_100 = "/ 100"
     w_part1 = pdf.get_string_width(str_score)
@@ -395,11 +391,6 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     desc_atrib = "Atributos de serviços e acessibilidade ativos." if dados.get('atributos_ok', True) else "Falta cadastrar atributos de acessibilidade/serviços."
     desc_resp = "Boa frequência de respostas do proprietário." if dados.get('resposta_avaliacoes_ok', False) else "Falta de respostas oficiais do proprietário às avaliações."
 
-    def rotulo_status(pct):
-        if pct < 40: return "Baixo" if pct == 30 else "Ausente"
-        elif pct < 80: return "Incompleto" if pct == 50 else "Pendente"
-        return "Alto" if pct == 100 else "Ativo"
-
     itens = [
         ("1. Fotos e Resolução Visual", pct_fotos, "Alto" if dados['tem_fotos_hd'] else "Baixo", desc_fotos),
         ("2. Tour Virtual 360° Interativo", pct_tour, "Ativo" if dados['tem_tour360'] else "Ausente", desc_tour),
@@ -413,7 +404,6 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     ]
 
     for titulo, pct, rotulo, desc in itens:
-        # FONTE AMPLIADA PARA 9.5PT NOS TÍTULOS
         pdf.set_font('Helvetica', 'B', 9.5)
         pdf.set_text_color(30, 41, 59)
         pdf.cell(130, 3.5, conv(titulo), ln=False)
@@ -423,7 +413,6 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
         elif pct < 80: pdf.set_text_color(245, 158, 11)
         else: pdf.set_text_color(34, 197, 94)
             
-        # RÓTULO LIMPO (SEM HÍFEM E SEM PORCENTAGEM)
         pdf.cell(56, 3.5, conv(rotulo), align='R', ln=True)
 
         pdf.set_fill_color(226, 232, 240)
@@ -437,7 +426,6 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
         pdf.rounded_rect(12, pdf.get_y(), largura_barra, 2.4, 1.0, 'F')
         pdf.ln(3.0)
 
-        # FONTE AMPLIADA PARA 9PT NO DIAGNÓSTICO
         pdf.set_font('Helvetica', '', 9.0)
         pdf.set_text_color(71, 85, 105)
         pdf.cell(0, 3.5, conv(f"  Diagnóstico: {desc}"), ln=True)
@@ -557,7 +545,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_x(12)
     pdf.multi_cell(186, 4.5, conv(txt_exp), align='C')
 
-    # PÁGINA 4: CONTRATO
+    # PÁGINA 4: CONTRATO COM ASSINATURA EM 2 LINHAS
     pdf.add_page()
     pdf.set_y(32)
     pdf.set_font('Helvetica', 'B', 14)
@@ -606,14 +594,25 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_font('Helvetica', '', 9.5)
     pdf.write(5.5, conv("(  ) A Vista    (  ) 2x Plano Start    (  ) 3x Plano Pro    (  ) Gestão Mensal - Vencimento Todo Dia: _____\n\n\n"))
 
-    pdf.ln(18)
+    pdf.ln(16)
+    
+    # LINHA DE ASSINATURAS
     pdf.cell(88, 5, '__________________________________', align='C')
     pdf.cell(10, 5, '')
     pdf.cell(88, 5, '__________________________________', align='C', ln=True)
+    
+    # LINHA 1 DA ASSINATURA
     pdf.set_font('Helvetica', 'B', 8.5)
-    pdf.cell(88, 5, 'Rubens H. Okamoto - TOUR360VR', align='C')
-    pdf.cell(10, 5, '')
-    pdf.cell(88, 5, conv(f"{dados['contato']} - {dados['nome']}"), align='C', ln=True)
+    pdf.cell(88, 4.5, 'Rubens H. Okamoto', align='C')
+    pdf.cell(10, 4.5, '')
+    pdf.cell(88, 4.5, conv(f"{dados['contato']}"), align='C', ln=True)
+    
+    # LINHA 2 DA ASSINATURA
+    pdf.set_font('Helvetica', 'B', 8.5)
+    pdf.set_text_color(100, 116, 139)
+    pdf.cell(88, 4.5, 'TOUR360VR', align='C')
+    pdf.cell(10, 4.5, '')
+    pdf.cell(88, 4.5, conv(f"{dados['nome']}"), align='C', ln=True)
 
     buffer = io.BytesIO()
     pdf.output(buffer)
