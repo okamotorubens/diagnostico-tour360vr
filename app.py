@@ -57,7 +57,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Captura inteligente da chave de API (suporta múltiplos nomes de segredo)
+# Captura de chaves nos Segredos do Streamlit
 API_KEY_GOOGLE = (
     st.secrets.get("GOOGLE_API_KEY") 
     or st.secrets.get("GOOGLE_PLACES_API_KEY") 
@@ -141,6 +141,9 @@ if 'planos' not in st.session_state:
 
 if 'plano_acao_extra' not in st.session_state:
     st.session_state['plano_acao_extra'] = "Você precisa de mim."
+
+if 'unidades_encontradas' not in st.session_state:
+    st.session_state['unidades_encontradas'] = []
 
 # -----------------------------------------------------------------------------
 # 4. GERADOR DE PDF TOUR360VR
@@ -302,7 +305,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
         pdf.set_text_color(34, 197, 94)
         pdf.cell(w_capa, 6, conv("Status da Ficha: Otimizado e Em Expansão"), align='C', ln=True)
 
-    # PÁGINA 2: DIAGNÓSTICO (COM MAIS ESPAÇAMENTO ENTRE OS BLOCOS)
+    # PÁGINA 2: DIAGNÓSTICO
     pdf.add_page()
     w_ficha = 154
     x_ficha = (210 - w_ficha) / 2.0
@@ -360,7 +363,6 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_font('Helvetica', 'B', 9)
     pdf.cell(w_score, 5, conv(f"SCORE GERAL ({status_txt})"), align='C', ln=True)
 
-    # MAIOR ESPAÇAMENTO ANTES DA AUDITORIA
     pdf.set_y(108)
     pdf.set_font('Helvetica', 'B', 12)
     pdf.set_text_color(15, 23, 42)
@@ -416,7 +418,6 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
         pdf.cell(0, 3.5, conv(f"Diagnóstico: {desc}"), ln=True)
         pdf.ln(2.0)
 
-    # MAIOR ESPAÇAMENTO PARA O PLANO DE AÇÃO PERSONALIZADO
     if plano_acao_extra and plano_acao_extra.strip() != "":
         pdf.ln(12)
         pdf.set_fill_color(248, 250, 252)
@@ -517,7 +518,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_xy(149, y_p + 23)
     pdf.multi_cell(44, 4.2, conv(planos['gestao_itens']), align='L')
 
-    # POR QUE SEU NEGÓCIO PRECISA... (ESPAÇAMENTO AUMENTADO)
+    # POR QUE SEU NEGÓCIO PRECISA DE OTIMIZAÇÃO PROFISSIONAL?
     pdf.set_y(y_p + 82)
     pdf.set_fill_color(240, 249, 255)
     pdf.set_draw_color(62, 161, 219)
@@ -639,9 +640,6 @@ score_calculado = calcular_score_real(st.session_state['dados'])
 st.session_state['score'] = score_calculado
 
 # -----------------------------------------------------------------------------
-# ETAPA 1: CONSULTA & DIAGNÓSTICO (BUSCA REATIVA AO GOOGLE MAPS)
-# -----------------------------------------------------------------------------
-# -----------------------------------------------------------------------------
 # ETAPA 1: CONSULTA COM SUPORTE A MÚLTIPLAS UNIDADES
 # -----------------------------------------------------------------------------
 if "🔍" in opcao_menu:
@@ -650,9 +648,8 @@ if "🔍" in opcao_menu:
     col_busca, col_cidade = st.columns([2, 1])
     with col_busca:
         nome_input = st.text_input("🏢 Nome do Cliente/Empresa:", value=st.session_state['dados']['nome'])
-        st.session_state['dados']['nome'] = nome_input
     with col_cidade:
-        cidade_empresa = st.text_input("📍 Cidade / Endereço / Bairro:", value="Ribeirão Preto, SP")
+        cidade_empresa = st.text_input("📍 Cidade / Bairro / Estado:", value="Ribeirão Preto, SP")
 
     if st.button("🚀 Buscar no Google Maps", use_container_width=True):
         if nome_input:
@@ -664,45 +661,105 @@ if "🔍" in opcao_menu:
                     res_search = requests.get(url_search).json()
                     
                     if res_search.get("status") == "OK" and res_search.get("results"):
-                        # Armazena todas as unidades encontradas na sessão
                         st.session_state['unidades_encontradas'] = res_search["results"]
-                        st.success(f"Encontrada(s) {len(res_search['results'])} unidade(s). Selecione a desejada abaixo.")
+                        st.success(f"Encontrada(s) {len(res_search['results'])} unidade(s). Escolha a filial desejada abaixo.")
                     else:
-                        st.error("Nenhuma unidade encontrada. Tente incluir o bairro ou endereço na busca.")
+                        st.error(f"Erro na busca: {res_search.get('status')} - {res_search.get('error_message', 'Nenhuma unidade encontrada.')}")
                 except Exception as e:
-                    st.error(f"Erro ao conectar com a API: {e}")
+                    st.error(f"Erro na conexão com a API do Google: {e}")
             else:
-                st.error("Chave de API do Google não configurada.")
+                st.error("Chave de API do Google não foi configurada nos segredos.")
 
-    # Se houver mais de uma unidade, exibe o menu de seleção
-    if 'unidades_encontradas' in st.session_state and st.session_state['unidades_encontradas']:
+    # Se houver filiais retornadas, permite a seleção da correta
+    if st.session_state['unidades_encontradas']:
         unidades = st.session_state['unidades_encontradas']
         opcoes = [f"{u.get('name')} - {u.get('formatted_address')}" for u in unidades]
         
-        escolha = st.selectbox("🎯 Escolha a filial correta para o diagnóstico:", opcoes)
+        escolha = st.selectbox("🎯 Selecione a unidade para carregar os dados:", opcoes)
         idx_selecionado = opcoes.index(escolha)
         place_selecionado = unidades[idx_selecionado]
 
-        if st.button("📌 Carregar Dados desta Unidade", use_container_width=True):
+        if st.button("📌 Confirmar e Carregar Unidade Selecionada", use_container_width=True):
             place_id = place_selecionado.get("place_id")
             
-            url_details = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=name,formatted_address,formatted_phone_number,international_phone_number,website,rating,user_ratings_total,photos,opening_hours&key={API_KEY_GOOGLE}"
-            res_details = requests.get(url_details).json().get("result", {})
-            
-            photos = res_details.get("photos", place_selecionado.get("photos", []))
-            
-            # Atualiza o estado da ficha com a unidade escolhida
-            st.session_state['dados']['nome'] = res_details.get("name") or place_selecionado.get("name")
-            st.session_state['dados']['endereco'] = res_details.get("formatted_address") or place_selecionado.get("formatted_address")
-            st.session_state['dados']['telefone'] = res_details.get("formatted_phone_number") or res_details.get("international_phone_number") or "Não informado"
-            st.session_state['dados']['website'] = res_details.get("website") or "Não possui"
-            st.session_state['dados']['nota'] = float(res_details.get("rating") or place_selecionado.get("rating") or 0.0)
-            st.session_state['dados']['avaliacoes'] = int(res_details.get("user_ratings_total") or place_selecionado.get("user_ratings_total") or 0)
-            st.session_state['dados']['tem_fotos_hd'] = len(photos) >= 10
-            st.session_state['dados']['horarios_ok'] = "opening_hours" in res_details
-            
-            st.success(f"Dados carregados para: {st.session_state['dados']['endereco']}")
-            st.rerun()
+            if API_KEY_GOOGLE:
+                try:
+                    url_details = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=name,formatted_address,formatted_phone_number,international_phone_number,website,rating,user_ratings_total,photos,opening_hours&key={API_KEY_GOOGLE}"
+                    res_details = requests.get(url_details).json().get("result", {})
+                    
+                    photos = res_details.get("photos", place_selecionado.get("photos", []))
+                    
+                    st.session_state['dados']['nome'] = res_details.get("name") or place_selecionado.get("name") or nome_input
+                    st.session_state['dados']['endereco'] = res_details.get("formatted_address") or place_selecionado.get("formatted_address")
+                    st.session_state['dados']['telefone'] = res_details.get("formatted_phone_number") or res_details.get("international_phone_number") or "Não informado"
+                    st.session_state['dados']['website'] = res_details.get("website") or "Não possui"
+                    st.session_state['dados']['nota'] = float(res_details.get("rating") or place_selecionado.get("rating") or 0.0)
+                    st.session_state['dados']['avaliacoes'] = int(res_details.get("user_ratings_total") or place_selecionado.get("user_ratings_total") or 0)
+                    st.session_state['dados']['tem_fotos_hd'] = len(photos) >= 10
+                    st.session_state['dados']['horarios_ok'] = "opening_hours" in res_details
+                    
+                    st.success("Dados carregados com sucesso!")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Erro ao obter detalhes da unidade: {e}")
+
+    st.markdown("---")
+    st.markdown("### ⚙️ Ajuste Fino dos Itens da Auditoria:")
+    
+    col_chk1, col_chk2, col_chk3, col_chk4 = st.columns(4)
+    with col_chk1:
+        st.session_state['dados']['tem_tour360'] = st.checkbox("Possui Tour 360°", value=st.session_state['dados']['tem_tour360'])
+    with col_chk2:
+        st.session_state['dados']['tem_fotos_hd'] = st.checkbox("Possui Fotos HD", value=st.session_state['dados']['tem_fotos_hd'])
+    with col_chk3:
+        st.session_state['dados']['categorias_completas'] = st.checkbox("Categorias OK", value=st.session_state['dados']['categorias_completas'])
+    with col_chk4:
+        st.session_state['dados']['horarios_ok'] = st.checkbox("Horários OK", value=st.session_state['dados']['horarios_ok'])
+
+    st.markdown("---")
+    
+    col_f1, col_f2 = st.columns(2)
+    with col_f1:
+        st.session_state['dados']['contato'] = st.text_input("👤 Nome do Responsável:", value=st.session_state['dados']['contato'])
+        st.session_state['dados']['endereco'] = st.text_input("📍 Endereço Completo:", value=st.session_state['dados']['endereco'])
+    with col_f2:
+        st.session_state['dados']['telefone'] = st.text_input("📞 Telefone / WhatsApp:", value=st.session_state['dados']['telefone'])
+        st.session_state['dados']['website'] = st.text_input("🌐 Website Cadastrado:", value=st.session_state['dados']['website'])
+
+    dados = st.session_state['dados']
+    score = calcular_score_real(dados)
+
+    col1, col2 = st.columns([1, 2])
+    with col1:
+        st.markdown(f"""
+            <div class="score-card">
+                <h2 style="color: #ff3d3d; font-size: 48px; margin: 0;">{score} / 100</h2>
+                <p style="color: #cbd5e1; text-transform: uppercase; font-size: 13px; font-weight: bold;">Score Geral de Otimização</p>
+            </div>
+        """, unsafe_allow_html=True)
+
+    with col2:
+        st.markdown(f"""
+            <div class="card-dark">
+                <h3 style="color: #3ea1db; margin-top: 0;">{dados['nome']}</h3>
+                <p style="margin: 4px 0;">👤 <strong>Contato:</strong> {dados['contato']}</p>
+                <p style="margin: 4px 0;">📍 {dados['endereco']}</p>
+                <p style="margin: 4px 0;">📞 <strong>Telefone:</strong> {dados['telefone']}</p>
+                <p style="margin: 4px 0;">🌐 <strong>Website:</strong> {dados['website']}</p>
+                <p style="margin: 4px 0;">⭐ <strong>Avaliações:</strong> {dados['nota']} ({dados['avaliacoes']} avaliações)</p>
+            </div>
+        """, unsafe_allow_html=True)
+
+    pdf_bytes = gerar_pdf_oficial(dados, score, st.session_state['planos'], st.session_state['plano_acao_extra'])
+
+    st.markdown("---")
+    st.download_button(
+        label="📥 Baixar Documento Oficial de Diagnóstico, Proposta e Contrato em PDF",
+        data=pdf_bytes,
+        file_name=f"Diagnostico_Tour360VR_{dados['nome'].replace(' ', '_')}.pdf",
+        mime="application/pdf",
+        use_container_width=True
+    )
 
 # -----------------------------------------------------------------------------
 # ETAPA 2: PLANO DE AÇÃO & DIAGNÓSTICO
