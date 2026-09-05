@@ -98,6 +98,16 @@ def conv(texto):
     limpo = limpo.replace("📍", "").replace("📞", "").replace("⭐", "*").replace("✉️", "").replace("🌐", "").replace("★", "*").replace("☆", "").replace("☐", "[ ]")
     return limpo.encode('latin-1', 'replace').decode('latin-1')
 
+def calcular_score_real(dados):
+    score = 100
+    if not dados.get("tem_tour360", False): score -= 25
+    if dados.get("website") == "Não possui": score -= 20
+    if not dados.get("tem_fotos_hd", False): score -= 20
+    if not dados.get("categorias_completas", False): score -= 15
+    if not dados.get("horarios_ok", False): score -= 10
+    if dados.get("avaliacoes", 0) < 50: score -= 10
+    return max(score, 10)
+
 # -----------------------------------------------------------------------------
 # 2. GERADOR DE PDF TOUR360VR
 # -----------------------------------------------------------------------------
@@ -112,7 +122,7 @@ class PDFTour360Oficial(FPDF):
             return
 
         try:
-            self.image('Logo TOUR transparente.png', 12, 9, 18)
+            self.image('assets/Logo_TOUR_transparente.png', 12, 9, 18)
             x_pos = 34
         except:
             x_pos = 12
@@ -187,7 +197,8 @@ class PDFTour360Oficial(FPDF):
         hp = self.h
         self._out(f'{x1*k:.2f} {(hp-y1)*k:.2f} {x2*k:.2f} {(hp-y2)*k:.2f} {x3*k:.2f} {(hp-y3)*k:.2f} c')
 
-def gerar_pdf_oficial(dados, score, planos, plano_acao_extra=""):
+def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
+    score = calcular_score_real(dados)
     pdf = PDFTour360Oficial()
     pdf.set_auto_page_break(auto=True, margin=18)
     
@@ -197,7 +208,7 @@ def gerar_pdf_oficial(dados, score, planos, plano_acao_extra=""):
     pdf.add_page()
     
     try:
-        pdf.image('Logo TOUR transparente.png', 82, 22, 46)
+        pdf.image('assets/Logo_TOUR_transparente.png', 82, 22, 46)
     except:
         pass
 
@@ -276,7 +287,7 @@ def gerar_pdf_oficial(dados, score, planos, plano_acao_extra=""):
     pdf.set_font('Helvetica', 'B', 9.5)
     pdf.set_text_color(245, 158, 11)
     pdf.set_x(x_ficha)
-    pdf.cell(w_ficha, 4.5, conv(f"Nota {dados['nota']:.1f} *****   •   {dados['avaliacoes']} avaliações no Google"), align='C', ln=True)
+    pdf.cell(w_ficha, 4.5, conv(f"Nota {dados['nota']:.1f} *****   -   {dados['avaliacoes']} avaliações no Google"), align='C', ln=True)
     
     pdf.set_font('Helvetica', '', 8.5)
     pdf.set_text_color(71, 85, 105)
@@ -587,24 +598,15 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # CALCULO DINAMICO DO SCORE
-dados_atuais = st.session_state['dados']
-score_calculado = 100
-if not dados_atuais["tem_tour360"]: score_calculado -= 25
-if dados_atuais["website"] == "Não possui": score_calculado -= 20
-if not dados_atuais["tem_fotos_hd"]: score_calculado -= 20
-if not dados_atuais["categorias_completas"]: score_calculado -= 15
-if not dados_atuais["horarios_ok"]: score_calculado -= 10
-if dados_atuais["avaliacoes"] < 50: score_calculado -= 10
-
+score_calculado = calcular_score_real(st.session_state['dados'])
 st.session_state['score'] = score_calculado
 
 # -----------------------------------------------------------------------------
-# ETAPA 1: CONSULTA & DIAGNÓSTICO (UNIFICADA - SEM DUPLICIDADE)
+# ETAPA 1: CONSULTA & DIAGNÓSTICO
 # -----------------------------------------------------------------------------
 if "🔍" in opcao_menu:
     st.subheader("🔍 1. Dados do Cliente & Diagnóstico")
     
-    # Campo Único para Nome e Busca
     col_busca, col_cidade = st.columns([2, 1])
     with col_busca:
         nome_input = st.text_input("🏢 Nome do Estabelecimento:", value=st.session_state['dados']['nome'])
@@ -653,7 +655,7 @@ if "🔍" in opcao_menu:
         st.session_state['dados']['website'] = st.text_input("🌐 Website Cadastrado:", value=st.session_state['dados']['website'])
 
     dados = st.session_state['dados']
-    score = st.session_state['score']
+    score = calcular_score_real(dados)
 
     col1, col2 = st.columns([1, 2])
     with col1:
