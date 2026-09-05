@@ -286,57 +286,62 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
         pdf.set_text_color(34, 197, 94)
         pdf.cell(w_capa, 6, conv("Status da Ficha: Otimizado e Em Expansão"), align='C', ln=True)
 
-    # PÁGINA 2: DIAGNÓSTICO E AUDITORIA (AJUSTE DOS DIAGNÓSTICOS E MARGENS)
+    # PÁGINA 2: DIAGNÓSTICO E AUDITORIA (CABEÇALHO À ESQUERDA E ESPAÇAMENTOS EXPANDIDOS)
     pdf.add_page()
-    w_ficha = 154
-    x_ficha = (210 - w_ficha) / 2.0
+    w_ficha = 186
+    x_ficha = 12
     
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
-    pdf.rounded_rect(x_ficha, 28, w_ficha, 38, 3, 'FD')
+    pdf.rounded_rect(x_ficha, 28, w_ficha, 36, 3, 'FD')
     
-    pdf.set_xy(x_ficha, 30)
+    pdf.set_xy(x_ficha + 4, 30)
     pdf.set_font('Helvetica', 'B', 8.5)
     pdf.set_text_color(100, 116, 139)
-    pdf.cell(w_ficha, 4, conv('FICHA ANALISADA DO CLIENTE'), align='C', ln=True)
-    pdf.set_x(x_ficha)
+    pdf.cell(w_ficha - 8, 4, conv('FICHA ANALISADA DO CLIENTE'), align='L', ln=True)
+    
+    pdf.set_x(x_ficha + 4)
     pdf.set_font('Helvetica', 'B', 14)
     pdf.set_text_color(15, 23, 42)
-    pdf.cell(w_ficha, 6.5, conv(f"{dados['nome']}"), align='C', ln=True)
+    pdf.cell(w_ficha - 8, 6, conv(f"{dados['nome']}"), align='L', ln=True)
+    
+    pdf.set_x(x_ficha + 4)
     pdf.set_font('Helvetica', 'B', 9.5)
     pdf.set_text_color(245, 158, 11)
-    pdf.set_x(x_ficha)
-    pdf.cell(w_ficha, 4.5, conv(f"Nota {dados['nota']:.1f} {estrelas_txt}   -   {dados['avaliacoes']} avaliações no Google"), align='C', ln=True)
+    pdf.cell(w_ficha - 8, 4.5, conv(f"Nota {dados['nota']:.1f} {estrelas_txt}   -   {dados['avaliacoes']} avaliações no Google"), align='L', ln=True)
+    
+    pdf.set_x(x_ficha + 4)
     pdf.set_font('Helvetica', '', 8.5)
     pdf.set_text_color(71, 85, 105)
-    pdf.set_x(x_ficha)
-    pdf.cell(w_ficha, 4, conv(f"{dados['endereco']}"), align='C', ln=True)
-    pdf.set_x(x_ficha)
-    pdf.cell(w_ficha, 4, conv(f"Telefone: {dados['telefone']}   |   Website: {dados['website']}"), align='C', ln=True)
+    pdf.cell(w_ficha - 8, 4, conv(f"{dados['endereco']}"), align='L', ln=True)
+    
+    pdf.set_x(x_ficha + 4)
+    pdf.cell(w_ficha - 8, 4, conv(f"Telefone: {dados['telefone']}   |   Website: {dados['website']}"), align='L', ln=True)
 
     w_score = 90
     x_score = (210 - w_score) / 2.0
-    pdf.set_y(70)
+    pdf.set_y(68)
     if score < 50: cr, cg, cb, status_txt = 239, 68, 68, "STATUS CRÍTICO"
     elif score < 80: cr, cg, cb, status_txt = 245, 158, 11, "STATUS MÉDIO"
     else: cr, cg, cb, status_txt = 34, 197, 94, "ALTO DESEMPENHO"
 
     pdf.set_fill_color(cr, cg, cb)
     pdf.set_draw_color(cr, cg, cb)
-    pdf.rounded_rect(x_score, 70, w_score, 20, 3, 'FD')
-    pdf.set_xy(x_score, 71.5)
-    pdf.set_font('Helvetica', 'B', 20)
+    pdf.rounded_rect(x_score, 68, w_score, 19, 3, 'FD')
+    pdf.set_xy(x_score, 69.5)
+    pdf.set_font('Helvetica', 'B', 19)
     pdf.set_text_color(255, 255, 255)
-    pdf.cell(w_score, 8, conv(f"{score} / 100"), align='C', ln=True)
-    pdf.set_xy(x_score, 80.5)
-    pdf.set_font('Helvetica', 'B', 8.5)
-    pdf.cell(w_score, 5, conv(f"SCORE GERAL ({status_txt})"), align='C', ln=True)
+    pdf.cell(w_score, 7.5, conv(f"{score} / 100"), align='C', ln=True)
+    pdf.set_xy(x_score, 78)
+    pdf.set_font('Helvetica', 'B', 8)
+    pdf.cell(w_score, 4.5, conv(f"SCORE GERAL ({status_txt})"), align='C', ln=True)
 
-    pdf.set_y(96)
+    # MAIS ESPAÇO ANTES DE "AUDITORIA DETALHADA DE PONTOS DE BUSCA"
+    pdf.set_y(94)
     pdf.set_font('Helvetica', 'B', 11)
     pdf.set_text_color(15, 23, 42)
-    pdf.cell(0, 5, conv('AUDITORIA DETALHADA DE PONTOS DE BUSCA'), align='C', ln=True)
-    pdf.ln(4)
+    pdf.cell(0, 5, conv('AUDITORIA DETALHADA DE PONTOS DE BUSCA'), align='L', ln=True)
+    pdf.ln(8)
 
     pct_avaliacoes = min(int((dados['avaliacoes'] / 50.0) * 100), 100) if dados['avaliacoes'] > 0 else 10
     desc_fotos = "Atende ao volume recomendado de fotos em HD." if dados['tem_fotos_hd'] else "Poucas fotos encontradas / antigas no perfil."
@@ -381,22 +386,26 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
         pdf.cell(0, 3.5, conv(f"  Diagnóstico: {desc}"), ln=True)
         pdf.ln(1.8)
 
+    # AMPLIADO: FONTE MAIOR, MAIS ESPAÇO E ALTURA AUMENTADA NO QUADRO DO PLANO DE AÇÃO
     if plano_acao_extra and plano_acao_extra.strip() != "":
-        pdf.ln(4)
+        pdf.ln(6)
         pdf.set_fill_color(248, 250, 252)
         pdf.set_draw_color(203, 213, 225)
         y_extra = pdf.get_y()
-        pdf.rounded_rect(12, y_extra, 186, 24, 2, 'FD')
-        pdf.set_xy(12, y_extra + 2.5)
-        pdf.set_font('Helvetica', 'B', 8)
+        
+        pdf.rounded_rect(12, y_extra, 186, 32, 2.5, 'FD')
+        
+        pdf.set_xy(12, y_extra + 4)
+        pdf.set_font('Helvetica', 'B', 9.5)
         pdf.set_text_color(30, 64, 175)
-        pdf.cell(186, 3.5, conv("PLANO DE AÇÃO E APONTAMENTOS ESTRATÉGICOS PERSONALIZADOS:"), align='C', ln=True)
-        pdf.set_xy(16, y_extra + 7.5)
-        pdf.set_font('Helvetica', '', 8)
+        pdf.cell(186, 4.5, conv("PLANO DE AÇÃO E APONTAMENTOS ESTRATÉGICOS PERSONALIZADOS:"), align='C', ln=True)
+        
+        pdf.set_xy(16, y_extra + 11)
+        pdf.set_font('Helvetica', '', 9.0)
         pdf.set_text_color(51, 65, 85)
-        pdf.multi_cell(178, 3.5, conv(plano_acao_extra), align='L')
+        pdf.multi_cell(178, 4.2, conv(plano_acao_extra), align='L')
 
-    # PÁGINA 3: PLANOS E MENSALIDADES (SUBSTITUINDO LATEX POR TEXTO PURO)
+    # PÁGINA 3: PLANOS E MENSALIDADES
     pdf.add_page()
     pdf.set_y(32)
     pdf.set_font('Helvetica', 'B', 14)
