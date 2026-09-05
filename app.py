@@ -1,3 +1,4 @@
+import os
 import io
 import requests
 import streamlit as st
@@ -118,6 +119,19 @@ def calcular_score_real(dados):
     if dados.get("avaliacoes", 0) < 50: score -= 10
     return max(score, 10)
 
+def obter_caminho_logo():
+    """Tenta localizar o logo no assets/ ou na raiz."""
+    caminhos = [
+        'assets/Logo_TOUR_transparente.png',
+        'Logo_TOUR_transparente.png',
+        'assets/Logo TOUR transparente.png',
+        'Logo TOUR transparente.png'
+    ]
+    for c in caminhos:
+        if os.path.exists(c):
+            return c
+    return None
+
 # -----------------------------------------------------------------------------
 # 2. GERADOR DE PDF TOUR360VR
 # -----------------------------------------------------------------------------
@@ -131,10 +145,14 @@ class PDFTour360Oficial(FPDF):
         if self.page_no() == 1:
             return
 
-        try:
-            self.image('assets/Logo_TOUR_transparente.png', 12, 9, 18)
-            x_pos = 34
-        except:
+        caminho_logo = obter_caminho_logo()
+        if caminho_logo:
+            try:
+                self.image(caminho_logo, 12, 9, 18)
+                x_pos = 34
+            except:
+                x_pos = 12
+        else:
             x_pos = 12
 
         self.set_xy(x_pos, 9.5)
@@ -215,25 +233,29 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     estrelas_txt = formatar_estrelas(dados['nota'])
 
     # -------------------------------------------------------------------------
-    # PÁGINA 1: CAPA (TITULOS E DESTAQUES AMPLIADOS)
+    # PÁGINA 1: CAPA (TITULOS DE MESMO TAMANHO)
     # -------------------------------------------------------------------------
     pdf.add_page()
     
-    try:
-        pdf.image('assets/Logo_TOUR_transparente.png', 82, 20, 46)
-    except:
-        pass
+    caminho_logo = obter_caminho_logo()
+    if caminho_logo:
+        try:
+            pdf.image(caminho_logo, 82, 18, 46)
+        except:
+            pass
 
-    pdf.set_y(70)
+    pdf.set_y(68)
     pdf.set_font('Helvetica', 'B', 24)
     pdf.set_text_color(30, 64, 175)
     pdf.cell(0, 10, conv('DIAGNÓSTICO DE PRESENÇA DIGITAL'), align='C', ln=True)
-    
+    pdf.ln(2)
+
+    # Google Meu Negócio e Tour360VR do mesmo tamanho (18pt)
     pdf.set_font('Helvetica', 'B', 18)
     pdf.set_text_color(255, 61, 61)
     pdf.cell(0, 8, conv('GOOGLE MEU NEGÓCIO'), align='C', ln=True)
     
-    pdf.set_font('Helvetica', 'B', 16)
+    pdf.set_font('Helvetica', 'B', 18)
     pdf.set_text_color(30, 64, 175)
     pdf.cell(0, 8, conv('Tour360VR'), align='C', ln=True)
     pdf.ln(12)
@@ -275,11 +297,11 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
         pdf.cell(w_capa, 6, conv("Status da Ficha: Otimizado e Em Expansão"), align='C', ln=True)
 
     # -------------------------------------------------------------------------
-    # PÁGINA 2: DIAGNÓSTICO DETALHADO, SCORE MAIOR E ESPAÇAMENTO HARMÔNICO
+    # PÁGINA 2: DIAGNÓSTICO DETALHADO, SCORE MAIOR E ESPAÇAMENTO RESPIRÁVEL
     # -------------------------------------------------------------------------
     pdf.add_page()
     
-    w_ficha = 150
+    w_ficha = 154
     x_ficha = (210 - w_ficha) / 2.0
     
     pdf.set_fill_color(248, 250, 252)
@@ -308,10 +330,11 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_x(x_ficha)
     pdf.cell(w_ficha, 4.5, conv(f"Telefone: {dados['telefone']}   |   Website: {dados['website']}"), align='C', ln=True)
 
-    w_score = 80
+    # AUMENTO DO TAMANHO E DESTAQUE DO SCORE
+    w_score = 90
     x_score = (210 - w_score) / 2.0
     
-    pdf.set_y(78)
+    pdf.set_y(80)
     if score < 50:
         cr, cg, cb = 239, 68, 68
         status_txt = "STATUS CRÍTICO"
@@ -324,22 +347,22 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
 
     pdf.set_fill_color(cr, cg, cb)
     pdf.set_draw_color(cr, cg, cb)
-    pdf.rounded_rect(x_score, 78, w_score, 20, 3, 'FD')
+    pdf.rounded_rect(x_score, 80, w_score, 22, 3, 'FD')
     
-    pdf.set_xy(x_score, 80)
-    pdf.set_font('Helvetica', 'B', 18)
+    pdf.set_xy(x_score, 82)
+    pdf.set_font('Helvetica', 'B', 22)
     pdf.set_text_color(255, 255, 255)
-    pdf.cell(w_score, 7, conv(f"{score} / 100"), align='C', ln=True)
+    pdf.cell(w_score, 8, conv(f"{score} / 100"), align='C', ln=True)
     
-    pdf.set_xy(x_score, 89)
-    pdf.set_font('Helvetica', 'B', 8.5)
-    pdf.cell(w_score, 4, conv(f"SCORE GERAL ({status_txt})"), align='C', ln=True)
+    pdf.set_xy(x_score, 92)
+    pdf.set_font('Helvetica', 'B', 9)
+    pdf.cell(w_score, 5, conv(f"SCORE GERAL ({status_txt})"), align='C', ln=True)
 
-    pdf.set_y(104)
+    pdf.set_y(110)
     pdf.set_font('Helvetica', 'B', 12)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 6, conv('AUDITORIA DETALHADA DE PONTOS DE BUSCA'), align='C', ln=True)
-    pdf.ln(5)
+    pdf.ln(6)
 
     pct_avaliacoes = min(int((dados['avaliacoes'] / 50.0) * 100), 100) if dados['avaliacoes'] > 0 else 10
 
@@ -388,11 +411,11 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
         pdf.set_font('Helvetica', '', 7.5)
         pdf.set_text_color(100, 116, 139)
         pdf.cell(0, 3, conv(f"  Diagnóstico: {desc}"), ln=True)
-        pdf.ln(2.0)
+        pdf.ln(2.2)
 
-    # MAIOR ESPAÇAMENTO PARA O QUADRO DO PLANO DE AÇÃO PERSONALIZADO
+    # ESPAÇAMENTO RESPIRÁVEL ANTES DO PLANO DE AÇÃO EXTRA
     if plano_acao_extra and plano_acao_extra.strip() != "":
-        pdf.ln(6)
+        pdf.ln(8)
         pdf.set_fill_color(248, 250, 252)
         pdf.set_draw_color(203, 213, 225)
         
@@ -410,7 +433,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
         pdf.multi_cell(178, 3.8, conv(plano_acao_extra), align='L')
 
     # -------------------------------------------------------------------------
-    # PÁGINA 3: PLANOS NO TOPO E JUSTIFICATIVA ABAIXO
+    # PÁGINA 3: PLANOS E INVESTIMENTO (TÍTULO ALTERADO E ESPAÇOS AMPLIADOS)
     # -------------------------------------------------------------------------
     pdf.add_page()
     
@@ -418,16 +441,17 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_font('Helvetica', 'B', 14)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 7, conv('PROPOSTA COMERCIAL & ESTRUTURAÇÃO ESTRATÉGICA'), align='C', ln=True)
-    pdf.ln(6)
+    pdf.ln(12)
 
-    pdf.set_font('Helvetica', 'B', 13)
+    # TÍTULO AJUSTADO: "PLANOS E INVESTIMENTO"
+    pdf.set_font('Helvetica', 'B', 14)
     pdf.set_text_color(15, 23, 42)
-    pdf.cell(0, 6, conv('PROPOSTA DE PLANOS E INVESTIMENTO'), align='C', ln=True)
-    pdf.ln(8)
+    pdf.cell(0, 6, conv('PLANOS E INVESTIMENTO'), align='C', ln=True)
+    pdf.ln(10)
 
     y_p = pdf.get_y() + 2
     
-    # --- PLANO START (RECUO DE CENTRALIZAÇÃO DO BLOCO DE TEXTO) ---
+    # --- PLANO START ---
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
     pdf.rounded_rect(12, y_p + 2, 54, 62, 2, 'FD')
@@ -447,7 +471,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_xy(17, y_p + 23)
     pdf.multi_cell(44, 4.2, conv(planos['start_itens']), align='L')
 
-    # --- PLANO PRO (RECUO DE CENTRALIZAÇÃO DO BLOCO DE TEXTO) ---
+    # --- PLANO PRO ---
     pdf.set_fill_color(238, 242, 255)
     pdf.set_draw_color(30, 64, 175)
     pdf.set_line_width(1.2)
@@ -474,7 +498,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_xy(78, y_p + 24)
     pdf.multi_cell(56, 4.8, conv(planos['pro_itens']), align='L')
 
-    # --- GESTÃO MENSAL (RECUO DE CENTRALIZAÇÃO DO BLOCO DE TEXTO) ---
+    # --- GESTÃO MENSAL ---
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
     pdf.rounded_rect(144, y_p + 2, 54, 62, 2, 'FD')
@@ -494,8 +518,8 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_xy(149, y_p + 23)
     pdf.multi_cell(44, 4.2, conv(planos['gestao_itens']), align='L')
 
-    # QUADRO INFORMATIVO MOVIDO PARA BAIXO DOS PLANOS
-    pdf.set_y(y_p + 74)
+    # QUADRO INFORMATIVO MOVIDO PARA A PARTE INFERIOR
+    pdf.set_y(y_p + 78)
     pdf.set_fill_color(240, 249, 255)
     pdf.set_draw_color(62, 161, 219)
     pdf.set_line_width(0.5)
@@ -520,7 +544,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.multi_cell(186, 4.5, conv(txt_exp), align='C')
 
     # -------------------------------------------------------------------------
-    # PÁGINA 4: CONTRATO DE PRESTAÇÃO DE SERVIÇOS
+    # PÁGINA 4: CONTRATO (MAIS ESPAÇO APÓS O TÍTULO)
     # -------------------------------------------------------------------------
     pdf.add_page()
     
@@ -528,7 +552,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_font('Helvetica', 'B', 14)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 7, conv('CONTRATO DE PRESTAÇÃO DE SERVIÇOS'), align='C', ln=True)
-    pdf.ln(8)
+    pdf.ln(14)  # Espaçamento ampliado entre o título e o texto
 
     pdf.set_font('Helvetica', '', 9.5)
     pdf.set_text_color(51, 65, 85)
@@ -620,7 +644,7 @@ score_calculado = calcular_score_real(st.session_state['dados'])
 st.session_state['score'] = score_calculado
 
 # -----------------------------------------------------------------------------
-# ETAPA 1: CONSULTA & DIAGNÓSTICO (INTEGRAÇÃO DE BUSCA COMPLETA DO GOOGLE)
+# ETAPA 1: CONSULTA & DIAGNÓSTICO (BUSCA 100% FIEL DO GOOGLE PLACES)
 # -----------------------------------------------------------------------------
 if "🔍" in opcao_menu:
     st.subheader("🔍 1. Dados do Cliente & Diagnóstico")
@@ -657,7 +681,7 @@ if "🔍" in opcao_menu:
                         st.session_state['dados']['nota'] = float(res_details.get("rating") or place.get("rating") or 4.2)
                         st.session_state['dados']['avaliacoes'] = int(res_details.get("user_ratings_total") or place.get("user_ratings_total") or 38)
                         st.session_state['dados']['tem_fotos_hd'] = len(photos) > 10
-                        st.success("Busca concluída e dados atualizados!")
+                        st.success("Busca concluída e dados atualizados com sucesso!")
                 except Exception as e:
                     st.error(f"Erro na conexão com o Google: {e}")
 
