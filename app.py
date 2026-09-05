@@ -57,7 +57,6 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Suporte duplo para o nome do segredo no Streamlit Cloud
 API_KEY_GOOGLE = (
     st.secrets.get("GOOGLE_API_KEY") 
     or st.secrets.get("GOOGLE_PLACES_API_KEY") 
@@ -65,7 +64,7 @@ API_KEY_GOOGLE = (
 )
 
 # -----------------------------------------------------------------------------
-# 2. DECLARAÇÃO DE FUNÇÕES UTILITÁRIAS (DEVEM FICAR ANTES DO USO)
+# 2. FUNÇÕES UTILITÁRIAS
 # -----------------------------------------------------------------------------
 def conv(texto):
     """Trata a codificação para Latin-1 e substitui símbolos unicode incompatíveis."""
@@ -335,7 +334,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     w_score = 90
     x_score = (210 - w_score) / 2.0
     
-    pdf.set_y(80)
+    pdf.set_y(78)
     if score < 50:
         cr, cg, cb = 239, 68, 68
         status_txt = "STATUS CRÍTICO"
@@ -348,22 +347,22 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
 
     pdf.set_fill_color(cr, cg, cb)
     pdf.set_draw_color(cr, cg, cb)
-    pdf.rounded_rect(x_score, 80, w_score, 22, 3, 'FD')
+    pdf.rounded_rect(x_score, 78, w_score, 22, 3, 'FD')
     
-    pdf.set_xy(x_score, 82)
+    pdf.set_xy(x_score, 80)
     pdf.set_font('Helvetica', 'B', 22)
     pdf.set_text_color(255, 255, 255)
     pdf.cell(w_score, 8, conv(f"{score} / 100"), align='C', ln=True)
     
-    pdf.set_xy(x_score, 92)
+    pdf.set_xy(x_score, 90)
     pdf.set_font('Helvetica', 'B', 9)
     pdf.cell(w_score, 5, conv(f"SCORE GERAL ({status_txt})"), align='C', ln=True)
 
-    pdf.set_y(110)
+    pdf.set_y(106)
     pdf.set_font('Helvetica', 'B', 12)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 6, conv('AUDITORIA DETALHADA DE PONTOS DE BUSCA'), align='C', ln=True)
-    pdf.ln(6)
+    pdf.ln(4)
 
     pct_avaliacoes = min(int((dados['avaliacoes'] / 50.0) * 100), 100) if dados['avaliacoes'] > 0 else 10
 
@@ -383,7 +382,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     for titulo, pct, rotulo, desc in itens:
         pdf.set_font('Helvetica', 'B', 8.5)
         pdf.set_text_color(30, 41, 59)
-        pdf.cell(120, 3.6, conv(titulo), ln=False)
+        pdf.cell(120, 4, conv(titulo), ln=False)
         
         pdf.set_font('Helvetica', 'B', 8)
         if pct < 40:
@@ -393,7 +392,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
         else:
             pdf.set_text_color(34, 197, 94)
             
-        pdf.cell(66, 3.6, conv(f"| {pct}% - {rotulo}"), align='R', ln=True)
+        pdf.cell(66, 4, conv(f"{pct}% - {rotulo}"), align='R', ln=True)
 
         pdf.set_fill_color(226, 232, 240)
         pdf.rounded_rect(12, pdf.get_y(), 186, 2.8, 1.4, 'F')
@@ -411,16 +410,16 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
 
         pdf.set_font('Helvetica', '', 7.5)
         pdf.set_text_color(100, 116, 139)
-        pdf.cell(0, 3, conv(f"  Diagnóstico: {desc}"), ln=True)
-        pdf.ln(2.2)
+        pdf.cell(0, 3.5, conv(f"Diagnóstico: {desc}"), ln=True)
+        pdf.ln(1.5)
 
     if plano_acao_extra and plano_acao_extra.strip() != "":
-        pdf.ln(8)
+        pdf.ln(4)
         pdf.set_fill_color(248, 250, 252)
         pdf.set_draw_color(203, 213, 225)
         
         y_extra = pdf.get_y()
-        pdf.rounded_rect(12, y_extra, 186, 28, 2, 'FD')
+        pdf.rounded_rect(12, y_extra, 186, 26, 2, 'FD')
         
         pdf.set_xy(12, y_extra + 3)
         pdf.set_font('Helvetica', 'B', 8.5)
@@ -438,12 +437,12 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_font('Helvetica', 'B', 14)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 7, conv('PROPOSTA COMERCIAL & ESTRUTURAÇÃO ESTRATÉGICA'), align='C', ln=True)
-    pdf.ln(12)
+    pdf.ln(10)
 
     pdf.set_font('Helvetica', 'B', 14)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 6, conv('PLANOS E INVESTIMENTO'), align='C', ln=True)
-    pdf.ln(10)
+    pdf.ln(8)
 
     y_p = pdf.get_y() + 2
     
@@ -632,7 +631,6 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# CALCULO DO SCORE REAL (CHAMADA SEGURA APÓS A DECLARAÇÃO DA FUNÇÃO)
 score_calculado = calcular_score_real(st.session_state['dados'])
 st.session_state['score'] = score_calculado
 
