@@ -123,7 +123,7 @@ def obter_caminho_logo():
     return None
 
 # -----------------------------------------------------------------------------
-# 3. ESTADOS DA SESSÃO COM VERIFICAÇÃO ANTI-CRASH
+# 3. ESTADOS DA SESSÃO PERSISTENTES
 # -----------------------------------------------------------------------------
 if 'dados' not in st.session_state:
     st.session_state['dados'] = {
@@ -137,17 +137,18 @@ if 'dados' not in st.session_state:
         "tem_tour360": False,
         "tem_fotos_hd": False,
         "categorias_completas": False,
-        "horarios_ok": False
+        "horarios_ok": False,
+        "categorias_detectadas": []
     }
 
 if 'planos' not in st.session_state:
     st.session_state['planos'] = {
         "start_valor": "500,00",
-        "start_itens": "- Correção cadastral\n- Otimização de SEO\n- Ajuste de categorias",
+        "start_itens": "- Correção cadastral\n- Otimização de SEO\n- Ajuste de categorias\n- Inserção de links",
         "pro_valor": "1.150,00",
-        "pro_itens": "- Tudo do Plano Start\n- Tour Virtual 360°\n- Ensaio Fotográfico HD",
+        "pro_itens": "- Tudo do Plano Start\n- Tour Virtual 360°\n- Ensaio Fotográfico HD\n- Relatório Visual de Entrega",
         "gestao_valor": "600,00/mês",
-        "gestao_itens": "- Postagens semanais\n- Gestão de avaliações"
+        "gestao_itens": "- Postagens semanais\n- Gestão de avaliações\n- Atualização de fotos\n- Relatório mensal"
     }
 
 if 'plano_acao_extra' not in st.session_state:
@@ -157,7 +158,7 @@ if 'unidades_encontradas' not in st.session_state:
     st.session_state['unidades_encontradas'] = []
 
 # -----------------------------------------------------------------------------
-# 4. GERADOR PDF TOUR360VR
+# 4. GERADOR PDF TOUR360VR COMPLETO (4 PÁGINAS)
 # -----------------------------------------------------------------------------
 class PDFTour360Oficial(FPDF):
     def header(self):
@@ -583,8 +584,10 @@ dados = st.session_state['dados']
 score = calcular_score_real(dados)
 
 # -----------------------------------------------------------------------------
-# PAINEL CENTRAL (MÓDULO 1 COM SUPORTE A ÂNCORA DE URL E DADOS REALTIME)
+# PAINEL CENTRAL - CONTEÚDO EDITÁVEL POR MÓDULO
 # -----------------------------------------------------------------------------
+
+# MÓDULO 1: CONSULTA E DIAGNÓSTICO COMPLETO
 if "1. Consulta" in opcao_menu:
     col_left, col_right = st.columns([1.5, 1])
     
@@ -641,6 +644,7 @@ if "1. Consulta" in opcao_menu:
                         st.session_state['dados']['tem_fotos_hd'] = len(photos) >= 10
                         st.session_state['dados']['horarios_ok'] = "opening_hours" in res_details
                         st.session_state['dados']['categorias_completas'] = len(types_lista) >= 3
+                        st.session_state['dados']['categorias_detectadas'] = types_lista
                         
                         st.success("Dados atualizados com sucesso!")
                         st.rerun()
@@ -648,7 +652,6 @@ if "1. Consulta" in opcao_menu:
                         st.error(f"Erro ao obter detalhes: {e}")
 
         st.markdown("---")
-        # ÂNCORA HTML PARA ACESSO DIRETO VIA URL
         st.markdown("<h3 id='ajuste-fino-dos-itens-da-auditoria' style='color: #ffffff; font-size: 16px; font-weight: 700;'>⚙️ AJUSTE FINO DOS ITENS DA AUDITORIA</h3>", unsafe_allow_html=True)
         
         c_a, c_b, c_c, c_d = st.columns(4)
@@ -656,6 +659,15 @@ if "1. Consulta" in opcao_menu:
         st.session_state['dados']['tem_fotos_hd'] = c_b.checkbox("Fotos HD", value=st.session_state['dados']['tem_fotos_hd'], key="chk_fotos_hd_val")
         st.session_state['dados']['categorias_completas'] = c_c.checkbox("Categorias OK", value=st.session_state['dados']['categorias_completas'], key="chk_cat_ok_val")
         st.session_state['dados']['horarios_ok'] = c_d.checkbox("Horários OK", value=st.session_state['dados']['horarios_ok'], key="chk_horarios_ok_val")
+        
+        st.markdown("---")
+        st.markdown("### ✍️ Edição dos Dados de Contato:")
+        f_c1, f_c2 = st.columns(2)
+        st.session_state['dados']['contato'] = f_c1.text_input("Nome do Responsável:", value=st.session_state['dados']['contato'], key="edit_contato")
+        st.session_state['dados']['telefone'] = f_c2.text_input("Telefone / WhatsApp:", value=st.session_state['dados']['telefone'], key="edit_telefone")
+        st.session_state['dados']['website'] = f_c1.text_input("Website:", value=st.session_state['dados']['website'], key="edit_website")
+        st.session_state['dados']['endereco'] = f_c2.text_input("Endereço Completo:", value=st.session_state['dados']['endereco'], key="edit_endereco")
+
         st.markdown("</div>", unsafe_allow_html=True)
 
     with col_right:
@@ -669,21 +681,51 @@ if "1. Consulta" in opcao_menu:
         st.markdown(f"* Fotos HD: {'✓ Ativo' if dados['tem_fotos_hd'] else '❌ Poucas / Inexistentes'}")
         st.markdown(f"* Categorias: {'✓ Atualizadas' if dados['categorias_completas'] else '❌ Incompletas (Ajustar Secundárias)'}")
         st.markdown(f"* Horários: {'✓ OK' if dados['horarios_ok'] else '❌ Falta atualizar'}")
+        
+        if dados.get('categorias_detectadas'):
+            st.markdown("---")
+            st.markdown("**Tags/Categorias Apuradas no Google:**")
+            st.caption(", ".join(dados['categorias_detectadas']))
+            
         st.markdown("</div>", unsafe_allow_html=True)
 
+# MÓDULO 2: RELATÓRIO DE VENDAS E APONTAMENTOS ESTRATÉGICOS
 elif "2. Relatório" in opcao_menu:
     st.markdown("<div class='dashboard-card'>", unsafe_allow_html=True)
-    st.markdown("<div class='card-title'>ESTRUTURA DE VENDAS PERSUASIVA</div>", unsafe_allow_html=True)
-    st.write("Apresentação de argumentos e gatilhos visuais de persuasão para o cliente.")
+    st.markdown("<div class='card-title'>💡 PLANO DE AÇÃO & APONTAMENTOS ESTRATÉGICOS PERSONALIZADOS</div>", unsafe_allow_html=True)
+    
+    st.session_state['plano_acao_extra'] = st.text_area(
+        "Edite o texto do Plano de Ação e Apontamentos Estratégicos (este conteúdo reflete diretamente no PDF):",
+        value=st.session_state['plano_acao_extra'],
+        height=180,
+        key="area_plano_acao_extra"
+    )
+    st.success("Plano de Ação salvo e atualizado para os relatórios/PDFs!")
     st.markdown("</div>", unsafe_allow_html=True)
 
+# MÓDULO 3: PROPOSTA & PLANOS DE VALORES EDITÁVEIS
 elif "3. Proposta" in opcao_menu:
     st.markdown("<div class='dashboard-card'>", unsafe_allow_html=True)
-    st.markdown("<div class='card-title'>PROPOSTA & PLANOS COMERCIAIS</div>", unsafe_allow_html=True)
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Plano Start", f"R$ {st.session_state['planos']['start_valor']}")
-    c2.metric("Plano Pro", f"R$ {st.session_state['planos']['pro_valor']}")
-    c3.metric("Gestão Mensal", f"R$ {st.session_state['planos']['gestao_valor']}")
+    st.markdown("<div class='card-title'>💲 EDITE OS VALORES E CONTEÚDO DOS PLANOS COMERCIAIS</div>", unsafe_allow_html=True)
+    
+    p1, p2, p3 = st.columns(3)
+    
+    with p1:
+        st.markdown("### 🔹 Plano Start")
+        st.session_state['planos']['start_valor'] = st.text_input("Valor Start (R$):", value=st.session_state['planos']['start_valor'], key="edit_p_start_val")
+        st.session_state['planos']['start_itens'] = st.text_area("Itens Plano Start:", value=st.session_state['planos']['start_itens'], height=160, key="edit_p_start_itens")
+        
+    with p2:
+        st.markdown("### 🔹 Plano Pro")
+        st.session_state['planos']['pro_valor'] = st.text_input("Valor Pro (R$):", value=st.session_state['planos']['pro_valor'], key="edit_p_pro_val")
+        st.session_state['planos']['pro_itens'] = st.text_area("Itens Plano Pro:", value=st.session_state['planos']['pro_itens'], height=160, key="edit_p_pro_itens")
+        
+    with p3:
+        st.markdown("### 🔹 Gestão Mensal")
+        st.session_state['planos']['gestao_valor'] = st.text_input("Valor Gestão (R$):", value=st.session_state['planos']['gestao_valor'], key="edit_p_gestao_val")
+        st.session_state['planos']['gestao_itens'] = st.text_area("Itens Gestão Mensal:", value=st.session_state['planos']['gestao_itens'], height=160, key="edit_p_gestao_itens")
+
+    st.success("Valores e itens dos planos comerciais atualizados com sucesso!")
     st.markdown("</div>", unsafe_allow_html=True)
 
 else:
@@ -693,7 +735,7 @@ else:
     st.markdown("</div>", unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# PAINEL DE EXPORTAÇÃO PDF
+# PAINEL DE EXPORTAÇÃO DE PDFS
 # -----------------------------------------------------------------------------
 st.markdown("<div class='dashboard-card'>", unsafe_allow_html=True)
 st.markdown("<div class='card-title'>GERAR PDF</div>", unsafe_allow_html=True)
