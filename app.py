@@ -123,7 +123,7 @@ def obter_caminho_logo():
     return None
 
 # -----------------------------------------------------------------------------
-# 3. ESTADOS DA SESSÃO
+# 3. ESTADOS DA SESSÃO COM VERIFICAÇÃO ANTI-CRASH
 # -----------------------------------------------------------------------------
 if 'dados' not in st.session_state:
     st.session_state['dados'] = {
@@ -284,7 +284,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
         pdf.set_text_color(34, 197, 94)
         pdf.cell(w_capa, 6, conv("Status da Ficha: Otimizado e Em Expansão"), align='C', ln=True)
 
-    # PÁGINA 2: DIAGNÓSTICO E AUDITORIA
+    # PÁGINA 2: DIAGNÓSTICO
     pdf.add_page()
     w_ficha = 154
     x_ficha = (210 - w_ficha) / 2.0
@@ -374,7 +374,6 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
         pdf.rounded_rect(12, pdf.get_y(), largura_barra, 2.8, 1.4, 'F')
         pdf.ln(3.8)
 
-        # TEXTO DE DIAGNÓSTICO AMPLIADO PARA 9PT
         pdf.set_font('Helvetica', '', 9.0)
         pdf.set_text_color(71, 85, 105)
         pdf.cell(0, 4.2, conv(f"Diagnóstico: {desc}"), ln=True)
@@ -395,7 +394,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
         pdf.set_text_color(51, 65, 85)
         pdf.multi_cell(178, 3.8, conv(plano_acao_extra), align='L')
 
-    # PÁGINA 3: PLANOS E INVESTIMENTO
+    # PÁGINA 3: PLANOS E MENSALIDADES
     pdf.add_page()
     pdf.set_y(32)
     pdf.set_font('Helvetica', 'B', 14)
@@ -584,7 +583,7 @@ dados = st.session_state['dados']
 score = calcular_score_real(dados)
 
 # -----------------------------------------------------------------------------
-# PAINEL CENTRAL (ETAPA 1 ATUALIZADA COM VERIFICAÇÃO DINÂMICA DE CATEGORIAS)
+# PAINEL CENTRAL (MÓDULO 1 COM SUPORTE A ÂNCORA DE URL E DADOS REALTIME)
 # -----------------------------------------------------------------------------
 if "1. Consulta" in opcao_menu:
     col_left, col_right = st.columns([1.5, 1])
@@ -595,11 +594,11 @@ if "1. Consulta" in opcao_menu:
         
         c1, c2 = st.columns([2, 1])
         with c1:
-            nome_input = st.text_input("Nome da Empresa:", value=dados['nome'])
+            nome_input = st.text_input("Nome da Empresa:", value=dados['nome'], key="input_empresa_nome")
         with c2:
-            cidade_empresa = st.text_input("Localização:", value="Ribeirão Preto, SP")
+            cidade_empresa = st.text_input("Localização:", value="Ribeirão Preto, SP", key="input_empresa_cidade")
             
-        if st.button("🚀 Buscar no Google Maps", use_container_width=True):
+        if st.button("🚀 Buscar no Google Maps", use_container_width=True, key="btn_busca_google"):
             if API_KEY_GOOGLE:
                 try:
                     termo = f"{nome_input}, {cidade_empresa}" if cidade_empresa else nome_input
@@ -617,14 +616,13 @@ if "1. Consulta" in opcao_menu:
 
         if st.session_state['unidades_encontradas']:
             opcoes = [f"{u.get('name')} - {u.get('formatted_address')}" for u in st.session_state['unidades_encontradas']]
-            escolha = st.selectbox("Selecione a unidade exata:", opcoes)
+            escolha = st.selectbox("Selecione a unidade exata:", opcoes, key="select_unidade_exata")
             
-            if st.button("📌 Carregar Dados desta Unidade", use_container_width=True):
+            if st.button("📌 Carregar Dados desta Unidade", use_container_width=True, key="btn_carregar_unidade"):
                 idx = opcoes.index(escolha)
                 u = st.session_state['unidades_encontradas'][idx]
                 place_id = u.get("place_id")
                 
-                # REQUISIÇÃO COMPLETA COM CAMPOS DE DETALHE E TYPES (CATEGORIAS)
                 if API_KEY_GOOGLE:
                     try:
                         url_details = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=name,formatted_address,formatted_phone_number,international_phone_number,website,rating,user_ratings_total,photos,opening_hours,types&key={API_KEY_GOOGLE}"
@@ -642,22 +640,22 @@ if "1. Consulta" in opcao_menu:
                         
                         st.session_state['dados']['tem_fotos_hd'] = len(photos) >= 10
                         st.session_state['dados']['horarios_ok'] = "opening_hours" in res_details
-                        
-                        # AVALIAÇÃO DINÂMICA DAS CATEGORIAS (100% se tiver 3+ categorias; senão 50%)
                         st.session_state['dados']['categorias_completas'] = len(types_lista) >= 3
                         
-                        st.success("Dados reais e categorias extraídas do Google com sucesso!")
+                        st.success("Dados atualizados com sucesso!")
                         st.rerun()
                     except Exception as e:
                         st.error(f"Erro ao obter detalhes: {e}")
 
         st.markdown("---")
-        st.markdown("### ⚙️ Ajustes Manuais da Auditoria:")
+        # ÂNCORA HTML PARA ACESSO DIRETO VIA URL
+        st.markdown("<h3 id='ajuste-fino-dos-itens-da-auditoria' style='color: #ffffff; font-size: 16px; font-weight: 700;'>⚙️ AJUSTE FINO DOS ITENS DA AUDITORIA</h3>", unsafe_allow_html=True)
+        
         c_a, c_b, c_c, c_d = st.columns(4)
-        st.session_state['dados']['tem_tour360'] = c_a.checkbox("Tour 360°", value=st.session_state['dados']['tem_tour360'])
-        st.session_state['dados']['tem_fotos_hd'] = c_b.checkbox("Fotos HD", value=st.session_state['dados']['tem_fotos_hd'])
-        st.session_state['dados']['categorias_completas'] = c_c.checkbox("Categorias OK", value=st.session_state['dados']['categorias_completas'])
-        st.session_state['dados']['horarios_ok'] = c_d.checkbox("Horários OK", value=st.session_state['dados']['horarios_ok'])
+        st.session_state['dados']['tem_tour360'] = c_a.checkbox("Tour 360°", value=st.session_state['dados']['tem_tour360'], key="chk_tour360_val")
+        st.session_state['dados']['tem_fotos_hd'] = c_b.checkbox("Fotos HD", value=st.session_state['dados']['tem_fotos_hd'], key="chk_fotos_hd_val")
+        st.session_state['dados']['categorias_completas'] = c_c.checkbox("Categorias OK", value=st.session_state['dados']['categorias_completas'], key="chk_cat_ok_val")
+        st.session_state['dados']['horarios_ok'] = c_d.checkbox("Horários OK", value=st.session_state['dados']['horarios_ok'], key="chk_horarios_ok_val")
         st.markdown("</div>", unsafe_allow_html=True)
 
     with col_right:
@@ -704,11 +702,11 @@ pdf_bytes = gerar_pdf_oficial(dados, score, st.session_state['planos'], st.sessi
 
 b1, b2, b3 = st.columns(3)
 with b1:
-    st.download_button("💾 Salvar Diagnóstico em PDF", data=pdf_bytes, file_name=f"Diagnostico_{dados['nome'].replace(' ', '_')}.pdf", mime="application/pdf", use_container_width=True)
+    st.download_button("💾 Salvar Diagnóstico em PDF", data=pdf_bytes, file_name=f"Diagnostico_{dados['nome'].replace(' ', '_')}.pdf", mime="application/pdf", use_container_width=True, key="btn_pdf_diag")
 with b2:
-    st.download_button("📄 Salvar Contrato em PDF", data=pdf_bytes, file_name=f"Contrato_{dados['nome'].replace(' ', '_')}.pdf", mime="application/pdf", use_container_width=True)
+    st.download_button("📄 Salvar Contrato em PDF", data=pdf_bytes, file_name=f"Contrato_{dados['nome'].replace(' ', '_')}.pdf", mime="application/pdf", use_container_width=True, key="btn_pdf_contrato")
 with b3:
-    st.download_button("📊 Salvar Relatório em PDF", data=pdf_bytes, file_name=f"Relatorio_{dados['nome'].replace(' ', '_')}.pdf", mime="application/pdf", use_container_width=True)
+    st.download_button("📊 Salvar Relatório em PDF", data=pdf_bytes, file_name=f"Relatorio_{dados['nome'].replace(' ', '_')}.pdf", mime="application/pdf", use_container_width=True, key="btn_pdf_relatorio")
 
 st.markdown("</div>", unsafe_allow_html=True)
 
