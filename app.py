@@ -172,26 +172,27 @@ class PDFTour360Oficial(FPDF):
         self.rect(0, 0, 105, 4, 'F')
         self.set_fill_color(255, 61, 61)
         self.rect(105, 0, 105, 4, 'F')
-        if self.page_no() == 1: return
+        if self.page_no() == 1: 
+            return
         
         caminho_logo = obter_caminho_logo()
         if caminho_logo:
-            try: self.image(caminho_logo, 12, 6, 18)
-            except: pass
+            try: 
+                self.image(caminho_logo, 12, 6, 18)
+            except: 
+                pass
             
-       self.set_xy(12, 11)
-       self.set_font('Helvetica', 'B', 12)
-       self.set_text_color(30, 64, 175)
-       self.cell(0, 4.5, 'TOUR360VR', align='L', ln=True)
-
-       self.set_x(12)
-       self.set_font('Helvetica', 'B', 8.5)
-       self.set_text_color(100, 116, 139)
-       self.cell(0, 4, conv('Gestão de Perfil & Diagnóstico do Google Meu Negócio'), align='L', ln=True)
+        self.set_xy(32, 10)
+        self.set_font('Helvetica', 'B', 12)
+        self.set_text_color(30, 64, 175)
+        self.cell(166, 4.5, 'TOUR360VR', align='L', ln=True)
+        
+        self.set_x(32)
+        self.set_font('Helvetica', 'B', 8.5)
+        self.set_text_color(100, 116, 139)
+        self.cell(166, 4, conv('Gestão de Perfil & Diagnóstico do Google Meu Negócio'), align='L', ln=True)
         
         self.set_draw_color(226, 232, 240)
-        self.line(12, 17.5, 198, 17.5)
-        self.set_y(21)self.set_draw_color(226, 232, 240)
         self.line(12, 21.5, 198, 21.5)
         self.set_y(25)
 
