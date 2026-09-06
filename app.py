@@ -98,7 +98,7 @@ API_KEY_GOOGLE = (
 # -----------------------------------------------------------------------------
 def conv(texto):
     if not texto: return ""
-    limpo = str(texto).replace("•", "- ").replace("✓", "[OK] ").replace("📍", "").replace("📞", "").replace("🌐", "")
+    limpo = str(texto).replace("•", "- ").replace("✓", "[OK] ").replace("📍", "").replace("📞", "").replace("🌐", "").replace("Brazil", "Brasil")
     return limpo.encode('latin-1', 'replace').decode('latin-1')
 
 def formatar_estrelas(nota):
@@ -235,7 +235,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_auto_page_break(auto=True, margin=18)
     estrelas_txt = formatar_estrelas(dados['nota'])
 
-    # PÁGINA 1: CAPA (NOME DO CLIENTE AMPLIADO EM DESTAQUE)
+    # PÁGINA 1: CAPA (CLIENTE EM PRETO)
     pdf.add_page()
     caminho_logo = obter_caminho_logo()
     if caminho_logo:
@@ -268,9 +268,9 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.cell(w_capa, 9, conv(f"{dados['nome']}"), align='C', ln=True)
     pdf.ln(3)
 
-    # TAMANHO DO TEXTO CLIENTE/RESPONSÁVEL AUMENTADO
+    # TEXTO "CLIENTE:" EM PRETO
     pdf.set_font('Helvetica', 'B', 13)
-    pdf.set_text_color(30, 64, 175)
+    pdf.set_text_color(15, 23, 42)
     pdf.set_x(x_capa)
     pdf.cell(w_capa, 6.5, conv(f"Cliente: {dados['contato']}"), align='C', ln=True)
     
@@ -291,23 +291,22 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
         pdf.set_text_color(34, 197, 94)
         pdf.cell(w_capa, 6, conv("Status da Ficha: Otimizado e Em Expansão"), align='C', ln=True)
 
-    # PÁGINA 2: DIAGNÓSTICO E AUDITORIA (CABEÇALHO PADRONIZADO EM Y = 30)
+    # PÁGINA 2: DIAGNÓSTICO E AUDITORIA (MAIS ESPAÇAMENTO ENTRE BLOCOS)
     pdf.add_page()
     pdf.set_y(30)
     pdf.set_font('Helvetica', 'B', 14)
     pdf.set_text_color(15, 23, 42)
     
-    # TÍTULO PRINCIPAL MOVIDO PARA O TOPO
     pdf.cell(0, 7, conv('AUDITORIA DETALHADA DE PONTOS DE BUSCA'), align='C', ln=True)
     pdf.ln(8)
 
     w_ficha = 186
     x_ficha = (210 - w_ficha) / 2.0
     
-    # 1. FICHA ANALISADA (ENXUGADO)
+    # 1. FICHA ANALISADA (SÓ COM WEBSITE)
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
-    pdf.rounded_rect(x_ficha, pdf.get_y(), w_ficha, 25, 3, 'FD')
+    pdf.rounded_rect(x_ficha, pdf.get_y(), w_ficha, 22, 3, 'FD')
     
     y_curr = pdf.get_y()
     pdf.set_xy(x_ficha, y_curr + 2.5)
@@ -323,15 +322,10 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_x(x_ficha)
     pdf.set_font('Helvetica', 'B', 9.0)
     pdf.set_text_color(245, 158, 11)
-    pdf.cell(w_ficha, 4, conv(f"Nota {dados['nota']:.1f} {estrelas_txt}   -   {dados['avaliacoes']} avaliações no Google"), align='C', ln=True)
-    
-    pdf.set_x(x_ficha)
-    pdf.set_font('Helvetica', '', 8.5)
-    pdf.set_text_color(71, 85, 105)
-    pdf.cell(w_ficha, 4, conv(f"{dados['endereco']}  |  Tel: {dados['telefone']}  |  Site: {dados['website']}"), align='C', ln=True)
+    pdf.cell(w_ficha, 4, conv(f"Nota {dados['nota']:.1f} {estrelas_txt}   -   {dados['avaliacoes']} avaliações no Google   |   Site: {dados['website']}"), align='C', ln=True)
 
-    # 2. SCORE GERAL (ESPAÇAMENTO VERTICAL AMPLIADO)
-    pdf.set_y(y_curr + 31)
+    # 2. SCORE GERAL (ESPAÇAMENTO AMPLIADO)
+    pdf.set_y(y_curr + 30)
     w_box_score = 105
     x_box_score = (210 - w_box_score) / 2.0
     y_box_score = pdf.get_y()
@@ -372,8 +366,8 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_text_color(cr, cg, cb)
     pdf.cell(w_box_score, 4, conv(f"SCORE GERAL ({status_txt})"), align='C', ln=True)
 
-    # 3. LISTA DA AUDITORIA (MAIS ESPAÇAMENTO VERTICAL ENTRE OS BLOCOS)
-    pdf.set_y(y_box_score + 22)
+    # 3. LISTA DA AUDITORIA (COM MAIS ESPAÇAMENTO VERTICAL ENTRE SCORE E DIAGNÓSTICO)
+    pdf.set_y(y_box_score + 24)
 
     pct_avaliacoes = min(int((dados['avaliacoes'] / 50.0) * 100), 100) if dados['avaliacoes'] > 0 else 10
     pct_fotos = 100 if dados['tem_fotos_hd'] else 30
@@ -435,7 +429,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
 
     # 4. PLANO DE AÇÃO (MAIS ESPAÇAMENTO VERTICAL)
     if plano_acao_extra and plano_acao_extra.strip() != "":
-        pdf.ln(6)
+        pdf.ln(8)
         pdf.set_fill_color(240, 249, 255)
         pdf.set_draw_color(62, 161, 219)
         pdf.set_line_width(0.5)
@@ -454,18 +448,18 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
         pdf.set_text_color(51, 65, 85)
         pdf.multi_cell(178, 3.8, conv(plano_acao_extra), align='L')
 
-    # PÁGINA 3: PLANOS E MENSALIDADES (ALINHAMENTO Y = 30)
+    # PÁGINA 3: PLANOS (ESPAÇAMENTO AMPLIADO ENTRE TÍTULOS, BLOCOS E INFORMATIVO)
     pdf.add_page()
     pdf.set_y(30)
     pdf.set_font('Helvetica', 'B', 14)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 7, conv('PROPOSTA COMERCIAL & ESTRUTURAÇÃO ESTRATÉGICA'), align='C', ln=True)
-    pdf.ln(6)
+    pdf.ln(10)
 
     pdf.set_font('Helvetica', 'B', 14)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 6, conv('PLANOS E INVESTIMENTO'), align='C', ln=True)
-    pdf.ln(6)
+    pdf.ln(10)
 
     y_p = pdf.get_y() + 2
     
@@ -486,7 +480,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_xy(15, y_p + 20)
     pdf.multi_cell(48, 4.8, conv(planos['start_itens']), align='L')
 
-    # Plano Pro (Ajustado no Y para Alinhamento Vertical Perfeito)
+    # Plano Pro
     pdf.set_fill_color(240, 249, 255)
     pdf.set_draw_color(30, 64, 175)
     pdf.set_line_width(1.2)
@@ -526,8 +520,8 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_xy(147, y_p + 20)
     pdf.multi_cell(48, 4.8, conv(planos['gestao_itens']), align='L')
 
-    # QUADRO INFORMATIVO (ALTURA E ESPAÇO OTIMIZADOS)
-    pdf.set_y(y_p + 68)
+    # QUADRO INFORMATIVO (COM MAIS ESPAÇAMENTO VERTICAL)
+    pdf.set_y(y_p + 74)
     pdf.set_fill_color(240, 249, 255)
     pdf.set_draw_color(62, 161, 219)
     pdf.set_line_width(0.5)
@@ -551,7 +545,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_x(12)
     pdf.multi_cell(186, 4.0, conv(txt_exp), align='C')
 
-    # PÁGINA 4: CONTRATO (ALINHAMENTO Y = 30)
+    # PÁGINA 4: CONTRATO
     pdf.add_page()
     pdf.set_y(30)
     pdf.set_font('Helvetica', 'B', 14)
@@ -737,7 +731,13 @@ if "1. Consulta" in opcao_menu:
         f_c1, f_c2 = st.columns(2)
         st.session_state['dados']['contato'] = f_c1.text_input("Nome do Responsável:", value=st.session_state['dados']['contato'], key="edit_contato")
         st.session_state['dados']['telefone'] = f_c2.text_input("Telefone / WhatsApp:", value=st.session_state['dados']['telefone'], key="edit_telefone")
-        st.session_state['dados']['website'] = f_c1.text_input("Website:", value=st.session_state['dados']['website'], key="edit_website")
+        
+        # CAMPO WEBSITE ATUALIZADO DINAMICAMENTE
+        st.session_state['dados']['website'] = f_c1.text_input(
+            "Website:", 
+            value=st.session_state['dados']['website'], 
+            key=f"edit_website_{st.session_state['dados']['website']}"
+        )
         st.session_state['dados']['endereco'] = f_c2.text_input("Endereço Completo:", value=st.session_state['dados']['endereco'], key="edit_endereco")
 
         st.markdown("</div>", unsafe_allow_html=True)
