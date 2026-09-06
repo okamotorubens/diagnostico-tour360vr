@@ -885,7 +885,7 @@ st.markdown("</div>", unsafe_allow_html=True)
 # -----------------------------------------------------------------------------
 st.markdown("""
     <div class='custom-footer'>
-        <a href='https://tour360vr.com.br' target='_blank'>www.tour360vr.com.br</a> | 
+        <a href='https://tour360vr.com.br' target='_blank'>tour360vr.com.br</a> | 
         <a href='mailto:contato@tour360vr.com.br'>contato@tour360vr.com.br</a> | 
         Whatsapp: (16) 99133-2121 | 
         <b>Tour360VR - Gestão de Perfil do Google</b>
