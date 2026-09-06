@@ -743,86 +743,85 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     pdf.multi_cell(w_info, 4.8, conv(txt_exp), align='C')
 
 
-    from fpdf import FPDF, HTMLMixin
-
-# Subclasse com suporte a HTML para permitir <b>CONTRATADA</b> em blocos justificados
-class PDFContrato(FPDF, HTMLMixin):
-    pass
-
-def gerar_contrato_p3(dados, conv):
-    pdf = PDFContrato()
+    # PÁGINA 4: CONTRATO (FLUXO CONTÍNUO COM WRITE - NEGRITOS E ALINHAMENTO JUSTIFICADO PERFEITO)
     pdf.add_page()
     pdf.set_y(30)
-    pdf.set_margins(12, 10, 12)
-    
-    # TÍTULO PRINCIPAL
     pdf.set_font('Helvetica', 'B', 17)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 8, conv('CONTRATO DE PRESTAÇÃO DE SERVIÇOS'), align='C', ln=True)
     pdf.ln(10)
 
-    # Configuração de estilo e cor padrão dos parágrafos
-    pdf.set_font('Helvetica', '', 9.5)
-    pdf.set_text_color(51, 65, 85)
+    h_linha = 5.2
 
     # 1. CONTRATADA
-    txt_contratada = (
-        "<b>CONTRATADA:</b> Tour360VR, representada por Rubens H. Okamoto, "
-        "CPF: 287.932.298-79 e Telefone: (16) 99133-2121."
-    )
-    pdf.write_html(f'<p align="justify">{conv(txt_contratada)}</p>')
-    pdf.ln(4)
+    pdf.set_x(12)
+    pdf.set_font('Helvetica', 'B', 9.5)
+    pdf.set_text_color(15, 23, 42)
+    pdf.write(h_linha, conv("CONTRATADA: "))
+    
+    pdf.set_font('Helvetica', '', 9.5)
+    pdf.set_text_color(51, 65, 85)
+    pdf.write(h_linha, conv("Tour360VR, representada por Rubens H. Okamoto, CPF: 287.932.298-79 e Telefone: (16) 99133-2121.\n\n"))
 
     # 2. CONTRATANTE
-    txt_cli_dados = f"{dados['nome'] or 'Empresa Contratante'}, representada por {dados['contato'] or 'Responsável'}, localizada em {dados['endereco'] or 'Endereço não informado'}, Telefone: {dados['telefone'] or 'N/I'}."
-    txt_contratante = f"<b>CONTRATANTE:</b> {txt_cli_dados}"
-    pdf.write_html(f'<p align="justify">{conv(txt_contratante)}</p>')
-    pdf.ln(4)
+    pdf.set_x(12)
+    pdf.set_font('Helvetica', 'B', 9.5)
+    pdf.set_text_color(15, 23, 42)
+    pdf.write(h_linha, conv("CONTRATANTE: "))
+    
+    pdf.set_font('Helvetica', '', 9.5)
+    pdf.set_text_color(51, 65, 85)
+    txt_cli = f"{dados['nome'] or 'Empresa Contratante'}, representada por {dados['contato'] or 'Responsável'}, localizada em {dados['endereco'] or 'Endereço não informado'}, Telefone: {dados['telefone'] or 'N/I'}.\n\n"
+    pdf.write(h_linha, conv(txt_cli))
 
     # 3. OBJETO
-    txt_objeto = (
-        "A <b>CONTRATADA</b> compromete-se a executar os serviços de otimização, "
-        "reestruturação técnica e/ou produção de Tour Virtual 360° para o perfil "
-        "do Google da <b>CONTRATANTE</b>."
-    )
-    pdf.write_html(f'<p align="justify">{conv(txt_objeto)}</p>')
-    pdf.ln(4)
+    pdf.set_x(12)
+    pdf.set_font('Helvetica', '', 9.5)
+    pdf.set_text_color(51, 65, 85)
+    pdf.write(h_linha, conv("A CONTRATADA compromete-se a executar os serviços de otimização, reestruturação técnica e/ou produção de Tour Virtual 360° para o perfil do Google da CONTRATANTE.\n\n"))
 
     # 4. CLÁUSULA PRIMEIRA
-    txt_cl_1 = (
-        "<b>CLÁUSULA PRIMEIRA - DO OBJETO:</b> Os serviços serão iniciados em até "
-        "5 dias úteis após o fornecimento de todos os acessos e informações necessárias à gestão do perfil."
-    )
-    pdf.write_html(f'<p align="justify">{conv(txt_cl_1)}</p>')
-    pdf.ln(4)
+    pdf.set_x(12)
+    pdf.set_font('Helvetica', 'B', 9.5)
+    pdf.set_text_color(15, 23, 42)
+    pdf.write(h_linha, conv("CLÁUSULA PRIMEIRA - DO OBJETO: "))
+    
+    pdf.set_font('Helvetica', '', 9.5)
+    pdf.set_text_color(51, 65, 85)
+    pdf.write(h_linha, conv("Os serviços serão iniciados em até 5 dias úteis após o fornecimento de todos os acessos e informações necessárias à gestão do perfil.\n\n"))
 
     # 5. CLÁUSULA SEGUNDA
-    txt_cl_2 = (
-        "<b>CLÁUSULA SEGUNDA - DAS OBRIGAÇÕES:</b> O não pagamento no prazo pactuado "
-        "sujeitará o presente contrato à incidência de juros moratórios legais e à suspensão "
-        "temporária dos serviços até a devida regularização."
-    )
-    pdf.write_html(f'<p align="justify">{conv(txt_cl_2)}</p>')
-    pdf.ln(6)
+    pdf.set_x(12)
+    pdf.set_font('Helvetica', 'B', 9.5)
+    pdf.set_text_color(15, 23, 42)
+    pdf.write(h_linha, conv("CLÁUSULA SEGUNDA - DAS OBRIGAÇÕES: "))
+    
+    pdf.set_font('Helvetica', '', 9.5)
+    pdf.set_text_color(51, 65, 85)
+    pdf.write(h_linha, conv("O não pagamento no prazo pactuado sujeitará o presente contrato à incidência de juros moratórios legais e à suspensão temporária dos serviços até a devida regularização.\n\n"))
 
     # 6. CLÁUSULA TERCEIRA
+    pdf.set_x(12)
     pdf.set_font('Helvetica', 'B', 9.5)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(186, 5.0, conv("CLÁUSULA TERCEIRA - SELEÇÃO DO PLANO CONTRATADO:"), ln=True)
     
+    pdf.set_x(12)
     pdf.set_font('Helvetica', '', 9.5)
     pdf.set_text_color(51, 65, 85)
     pdf.cell(186, 6.0, conv("(   ) Plano Start          (   ) Plano Pro          (   ) Gestão Mensal"), ln=True)
     pdf.ln(4)
 
     # 7. CLÁUSULA QUARTA
+    pdf.set_x(12)
     pdf.set_font('Helvetica', 'B', 9.5)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(186, 5.0, conv("CLÁUSULA QUARTA - CONDIÇÕES DE PAGAMENTO:"), ln=True)
     
+    pdf.set_x(12)
     pdf.set_font('Helvetica', '', 9.5)
     pdf.set_text_color(51, 65, 85)
-    pdf.cell(186, 6.0, conv("(   ) À Vista          (   ) 2x - Plano Start          (   ) 3x - Plano Pro          (   ) Vencimento Dia: _____ - Gestão Mensal"), ln=True)
+    pdf.cell(186, 6.0, conv("(   ) A Vista          (   ) 2x - Plano Start          (   ) 3x - Plano Pro          (   ) Vencimento Dia: _____ - Gestão Mensal"), ln=True)
 
     # 8. ASSINATURAS
     pdf.ln(20)
@@ -833,7 +832,6 @@ def gerar_contrato_p3(dados, conv):
     pdf.cell(88, 5, '_____________________________________', align='C', ln=True)
     
     pdf.set_font('Helvetica', 'B', 8.5)
-    pdf.set_text_color(15, 23, 42)
     pdf.set_x(12)
     pdf.cell(88, 4.5, 'Rubens H. Okamoto', align='C')
     pdf.set_x(110)
