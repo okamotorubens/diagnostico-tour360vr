@@ -530,44 +530,68 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
         pdf.cell(w_score, 5.2, conv("Score Geral"), border=0, fill=True, align='C')
         pdf.ln()
 
+        # FUNÇÃO PARA RENDERIZAR CÉLULA COLORIDA (SUAVE)
+        def celula_sim_nao(pdf_obj, w, h, valor):
+            if valor == "Sim":
+                pdf_obj.set_fill_color(220, 252, 231) # Verde claro
+                pdf_obj.set_text_color(22, 101, 52)   # Verde escuro
+            else:
+                pdf_obj.set_fill_color(254, 226, 226) # Vermelho claro
+                pdf_obj.set_text_color(153, 27, 27)   # Vermelho escuro
+            pdf_obj.cell(w, h, conv(valor), border='B', fill=True, align='C')
+
+        # LINHA DA EMPRESA CLIENTE
         pdf.set_fill_color(240, 249, 255)
-        pdf.set_draw_color(191, 219, 254)
         pdf.set_font('Helvetica', 'B', 8.0)
         pdf.set_text_color(30, 64, 175)
-        
         pdf.cell(w_emp, 5.2, conv(f" {dados['nome'][:28]}"), border='B', fill=True)
-        pdf.cell(w_item, 5.2, conv("Sim" if dados['tem_fotos_hd'] else "Não"), border='B', fill=True, align='C')
-        pdf.cell(w_item, 5.2, conv("Sim" if dados['tem_tour360'] else "Não"), border='B', fill=True, align='C')
-        pdf.cell(w_item, 5.2, conv("Sim" if dados['categorias_completas'] else "Não"), border='B', fill=True, align='C')
-        pdf.cell(w_item, 5.2, conv("Sim" if dados['horarios_ok'] else "Não"), border='B', fill=True, align='C')
-        pdf.cell(w_item, 5.2, conv("Sim" if dados['website'] and dados['website'] != 'Não possui' else "Não"), border='B', fill=True, align='C')
+        
+        celula_sim_nao(pdf, w_item, 5.2, "Sim" if dados['tem_fotos_hd'] else "Não")
+        celula_sim_nao(pdf, w_item, 5.2, "Sim" if dados['tem_tour360'] else "Não")
+        celula_sim_nao(pdf, w_item, 5.2, "Sim" if dados['categorias_completas'] else "Não")
+        celula_sim_nao(pdf, w_item, 5.2, "Sim" if dados['horarios_ok'] else "Não")
+        celula_sim_nao(pdf, w_item, 5.2, "Sim" if dados['website'] and dados['website'] != 'Não possui' else "Não")
+        
+        pdf.set_fill_color(240, 249, 255)
+        pdf.set_text_color(30, 64, 175)
         pdf.cell(w_item, 5.2, conv(f"{dados['nota']:.1f}"), border='B', fill=True, align='C')
-        pdf.cell(w_item, 5.2, conv("Sim" if dados.get('tem_descricao') else "Não"), border='B', fill=True, align='C')
-        pdf.cell(w_item, 5.2, conv("Sim" if dados.get('atributos_ok') else "Não"), border='B', fill=True, align='C')
-        pdf.cell(w_item, 5.2, conv("Sim" if dados.get('resposta_avaliacoes_ok') else "Não"), border='B', fill=True, align='C')
+        
+        celula_sim_nao(pdf, w_item, 5.2, "Sim" if dados.get('tem_descricao') else "Não")
+        celula_sim_nao(pdf, w_item, 5.2, "Sim" if dados.get('atributos_ok') else "Não")
+        celula_sim_nao(pdf, w_item, 5.2, "Sim" if dados.get('resposta_avaliacoes_ok') else "Não")
+        
+        pdf.set_fill_color(240, 249, 255)
+        pdf.set_font('Helvetica', 'B', 8.0)
+        pdf.set_text_color(30, 64, 175)
         pdf.cell(w_score, 5.2, conv(f"{score} / 100"), border='B', fill=True, align='C')
         pdf.ln()
 
+        # LINHAS DOS CONCORRENTES
         pdf.set_font('Helvetica', '', 8.0)
-        pdf.set_text_color(51, 65, 85)
         for idx_c, c in enumerate(concorrentes_filtrados):
-            fill_row = (idx_c % 2 == 1)
             score_conc = calcular_score_concorrente(c)
-            pdf.set_fill_color(248, 250, 252) if fill_row else pdf.set_fill_color(255, 255, 255)
+            pdf.set_fill_color(255, 255, 255)
+            pdf.set_text_color(51, 65, 85)
             
-            pdf.cell(w_emp, 5.2, conv(f" {c['nome'][:28]}"), border='B', fill=fill_row)
-            pdf.cell(w_item, 5.2, conv(c.get('tem_fotos_hd', 'Não')), border='B', fill=fill_row, align='C')
-            pdf.cell(w_item, 5.2, conv(c.get('tem_tour360', 'Não')), border='B', fill=fill_row, align='C')
-            pdf.cell(w_item, 5.2, conv(c.get('categorias_ok', 'Não')), border='B', fill=fill_row, align='C')
-            pdf.cell(w_item, 5.2, conv(c.get('horarios_ok', 'Não')), border='B', fill=fill_row, align='C')
-            pdf.cell(w_item, 5.2, conv(c.get('tem_website', 'Não')), border='B', fill=fill_row, align='C')
-            pdf.cell(w_item, 5.2, conv(f"{float(c['nota']):.1f}"), border='B', fill=fill_row, align='C')
-            pdf.cell(w_item, 5.2, conv(c.get('tem_descricao', 'Não')), border='B', fill=fill_row, align='C')
-            pdf.cell(w_item, 5.2, conv(c.get('atributos_ok', 'Não')), border='B', fill=fill_row, align='C')
-            pdf.cell(w_item, 5.2, conv(c.get('respostas_ok', 'Não')), border='B', fill=fill_row, align='C')
+            pdf.cell(w_emp, 5.2, conv(f" {c['nome'][:28]}"), border='B', fill=True)
+            celula_sim_nao(pdf, w_item, 5.2, c.get('tem_fotos_hd', 'Não'))
+            celula_sim_nao(pdf, w_item, 5.2, c.get('tem_tour360', 'Não'))
+            celula_sim_nao(pdf, w_item, 5.2, c.get('categorias_ok', 'Não'))
+            celula_sim_nao(pdf, w_item, 5.2, c.get('horarios_ok', 'Não'))
+            celula_sim_nao(pdf, w_item, 5.2, c.get('tem_website', 'Não'))
             
+            pdf.set_fill_color(255, 255, 255)
+            pdf.set_text_color(51, 65, 85)
+            pdf.cell(w_item, 5.2, conv(f"{float(c['nota']):.1f}"), border='B', fill=True, align='C')
+            
+            celula_sim_nao(pdf, w_item, 5.2, c.get('tem_descricao', 'Não'))
+            celula_sim_nao(pdf, w_item, 5.2, c.get('atributos_ok', 'Não'))
+            celula_sim_nao(pdf, w_item, 5.2, c.get('respostas_ok', 'Não'))
+            
+            pdf.set_fill_color(255, 255, 255)
             pdf.set_font('Helvetica', 'B', 8.0)
-            pdf.cell(w_score, 5.2, conv(f"{score_conc} / 100"), border='B', fill=fill_row, align='C')
+            pdf.set_text_color(51, 65, 85)
+            pdf.cell(w_score, 5.2, conv(f"{score_conc} / 100"), border='B', fill=True, align='C')
             pdf.set_font('Helvetica', '', 8.0)
             pdf.ln()
 
@@ -720,7 +744,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     pdf.set_x(x_info)
     pdf.multi_cell(w_info, 4.8, conv(txt_exp), align='C')
 
-    # PÁGINA 4: CONTRATO
+    # PÁGINA 4: CONTRATO (COM ALINHAMENTO JUSTIFICADO E FORMATADO)
     pdf.add_page()
     pdf.set_y(30)
     pdf.set_font('Helvetica', 'B', 17)
@@ -730,60 +754,46 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
 
     w_contrato = 186
     pdf.set_x(12)
+    pdf.set_font('Helvetica', '', 9.5)
+    pdf.set_text_color(51, 65, 85)
     
-    # CONTRATADA E CONTRATANTE EM NEGRITO
-    pdf.set_font('Helvetica', 'B', 9.5)
-    pdf.set_text_color(15, 23, 42)
-    pdf.write(5.2, conv("CONTRATADA: "))
-    pdf.set_font('Helvetica', '', 9.5)
-    pdf.set_text_color(51, 65, 85)
-    pdf.write(5.2, conv("Tour360VR, representada por Rubens H. Okamoto, CPF: 287.932.298-79 e Telefone: (16) 99133-2121.\n\n"))
-
-    pdf.set_font('Helvetica', 'B', 9.5)
-    pdf.set_text_color(15, 23, 42)
-    pdf.write(5.2, conv("CONTRATANTE: "))
-    pdf.set_font('Helvetica', '', 9.5)
-    pdf.set_text_color(51, 65, 85)
-    pdf.write(5.2, conv(f"{dados['nome'] or 'Empresa Contratante'}, representada por {dados['contato'] or 'Responsável'}, localizada em {dados['endereco'] or 'Endereço não informado'}, Telefone: {dados['telefone'] or 'N/I'}.\n\n"))
-
-    pdf.write(5.2, conv("A CONTRATADA compromete-se a executar os serviços de otimização, reestruturação técnica e/ou produção de Tour Virtual 360° para o perfil do Google da CONTRATANTE.\n\n"))
-    pdf.ln(4)
-
-    # CLÁUSULA PRIMEIRA
-    pdf.set_font('Helvetica', 'B', 9.5)
-    pdf.set_text_color(15, 23, 42)
-    pdf.write(5.2, conv("CLÁUSULA PRIMEIRA - DO OBJETO: "))
-    pdf.set_font('Helvetica', '', 9.5)
-    pdf.set_text_color(51, 65, 85)
-    pdf.write(5.2, conv("Os serviços serão iniciados em até 5 dias úteis após o fornecimento de todos os acessos e informações necessárias à gestão do perfil.\n\n"))
-    pdf.ln(4)
-
-    # CLÁUSULA SEGUNDA
-    pdf.set_font('Helvetica', 'B', 9.5)
-    pdf.set_text_color(15, 23, 42)
-    pdf.write(5.2, conv("CLÁUSULA SEGUNDA - DAS OBRIGAÇÕES: "))
-    pdf.set_font('Helvetica', '', 9.5)
-    pdf.set_text_color(51, 65, 85)
-    pdf.write(5.2, conv("O não pagamento no prazo pactuado sujeitará o presente contrato à incidência de juros moratórios legais e à suspensão temporária dos serviços até a devida regularização.\n\n"))
+    txt_partes = (
+        f"CONTRATADA: Tour360VR, representada por Rubens H. Okamoto, CPF: 287.932.298-79 e Telefone: (16) 99133-2121.\n\n"
+        f"CONTRATANTE: {dados['nome'] or 'Empresa Contratante'}, representada por {dados['contato'] or 'Responsável'}, "
+        f"localizada em {dados['endereco'] or 'Endereço não informado'}, Telefone: {dados['telefone'] or 'N/I'}.\n\n"
+        f"A CONTRATADA compromete-se a executar os serviços de otimização, reestruturação técnica e/ou produção "
+        f"de Tour Virtual 360° para o perfil do Google da CONTRATANTE."
+    )
+    pdf.multi_cell(w_contrato, 5.2, conv(txt_partes), align='J')
     pdf.ln(6)
 
-    # CLÁUSULA TERCEIRA (SOMENTE A PARTE "CLÁUSULA TERCEIRA" EM NEGRITO)
+    c1 = "CLÁUSULA PRIMEIRA - DO OBJETO: Os serviços serão iniciados em até 5 dias úteis após o fornecimento de todos os acessos e informações necessárias à gestão do perfil."
+    pdf.set_x(12)
+    pdf.multi_cell(w_contrato, 5.2, conv(c1), align='J')
+    pdf.ln(6)
+
+    c2 = "CLÁUSULA SEGUNDA - DAS OBRIGAÇÕES: O não pagamento no prazo pactuado sujeitará o presente contrato à incidência de juros moratórios legais e à suspensão temporária dos serviços até a devida regularização."
+    pdf.set_x(12)
+    pdf.multi_cell(w_contrato, 5.2, conv(c2), align='J')
+    pdf.ln(8)
+
+    pdf.set_x(12)
     pdf.set_font('Helvetica', 'B', 9.5)
     pdf.set_text_color(15, 23, 42)
-    pdf.write(5.0, conv("CLÁUSULA TERCEIRA "))
+    pdf.cell(w_contrato, 5.0, conv("CLÁUSULA TERCEIRA - SELEÇÃO DO PLANO CONTRATADO:"), ln=True)
+    pdf.set_x(12)
     pdf.set_font('Helvetica', '', 9.5)
     pdf.set_text_color(51, 65, 85)
-    pdf.write(5.0, conv("- SELEÇÃO DO PLANO CONTRATADO:\n"))
     pdf.cell(w_contrato, 6.5, conv("(   ) Plano Start        (   ) Plano Pro        (   ) Gestão Mensal"), ln=True)
     pdf.ln(6)
 
-    # CLÁUSULA QUARTA (SOMENTE A PARTE "CLÁUSULA QUARTA" EM NEGRITO)
+    pdf.set_x(12)
     pdf.set_font('Helvetica', 'B', 9.5)
     pdf.set_text_color(15, 23, 42)
-    pdf.write(5.0, conv("CLÁUSULA QUARTA "))
+    pdf.cell(w_contrato, 5.0, conv("CLÁUSULA QUARTA - CONDIÇÕES DE PAGAMENTO:"), ln=True)
+    pdf.set_x(12)
     pdf.set_font('Helvetica', '', 9.5)
     pdf.set_text_color(51, 65, 85)
-    pdf.write(5.0, conv("- CONDIÇÕES DE PAGAMENTO:\n"))
     pdf.cell(w_contrato, 6.5, conv("(   ) À Vista       (   ) 2x - Plano Start       (   ) 3x - Plano Pro       (   ) Vencimento Dia: _____ - Gestão Mensal"), ln=True)
 
     pdf.ln(22)
