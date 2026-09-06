@@ -153,7 +153,7 @@ if 'planos' not in st.session_state:
         "start_itens": "- Correção cadastral\n- Otimização de SEO\n- Ajuste de categorias\n- Inserção de links",
         "pro_valor": "1.200,00",
         "pro_itens": "- Tudo do Plano Start\n- Tour Virtual 360°\n- Ensaio Fotográfico HD\n- Relatório Visual de Entrega",
-        "gestao_valor": "600,00/mês",
+        "gestao_valor": "600,00",
         "gestao_itens": "- Postagens semanais\n- Gestão de avaliações\n- Atualização de fotos\n- Relatório mensal"
     }
 
@@ -235,7 +235,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_auto_page_break(auto=True, margin=18)
     estrelas_txt = formatar_estrelas(dados['nota'])
 
-    # PÁGINA 1: CAPA (CLIENTE EM PRETO)
+    # PÁGINA 1: CAPA
     pdf.add_page()
     caminho_logo = obter_caminho_logo()
     if caminho_logo:
@@ -268,7 +268,6 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.cell(w_capa, 9, conv(f"{dados['nome']}"), align='C', ln=True)
     pdf.ln(3)
 
-    # TEXTO "CLIENTE:" EM PRETO
     pdf.set_font('Helvetica', 'B', 13)
     pdf.set_text_color(15, 23, 42)
     pdf.set_x(x_capa)
@@ -288,13 +287,13 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
         pdf.set_text_color(239, 68, 68)
         pdf.cell(w_capa, 6, conv("Status da Ficha: Crítico (Visibilidade Comprometida)"), align='C', ln=True)
     else:
-        pdf.set_text_color(34, 197, 94)
+        pdf.set_text_color(22, 128, 61) # VERDE ESCURO
         pdf.cell(w_capa, 6, conv("Status da Ficha: Otimizado e Em Expansão"), align='C', ln=True)
 
-    # PÁGINA 2: DIAGNÓSTICO E AUDITORIA (MAIS ESPAÇAMENTO ENTRE BLOCOS)
+    # PÁGINA 2: DIAGNÓSTICO (TÍTULO AUMENTADO PARA 16pt E QUADRO DE SCORE REDUZIDO)
     pdf.add_page()
     pdf.set_y(30)
-    pdf.set_font('Helvetica', 'B', 14)
+    pdf.set_font('Helvetica', 'B', 16) # TÍTULO AUMENTADO
     pdf.set_text_color(15, 23, 42)
     
     pdf.cell(0, 7, conv('AUDITORIA DETALHADA DE PONTOS DE BUSCA'), align='C', ln=True)
@@ -303,30 +302,30 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     w_ficha = 186
     x_ficha = (210 - w_ficha) / 2.0
     
-    # 1. FICHA ANALISADA (SÓ COM WEBSITE)
+    # 1. FICHA ANALISADA DO CLIENTE (FONTE E NOTA AUMENTADAS / SITE EXCLUÍDO)
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
-    pdf.rounded_rect(x_ficha, pdf.get_y(), w_ficha, 22, 3, 'FD')
+    pdf.rounded_rect(x_ficha, pdf.get_y(), w_ficha, 24, 3, 'FD')
     
     y_curr = pdf.get_y()
     pdf.set_xy(x_ficha, y_curr + 2.5)
-    pdf.set_font('Helvetica', 'B', 8.5)
+    pdf.set_font('Helvetica', 'B', 10.5) # FONTE AUMENTADA
     pdf.set_text_color(100, 116, 139)
-    pdf.cell(w_ficha, 4, conv('FICHA ANALISADA DO CLIENTE'), align='C', ln=True)
+    pdf.cell(w_ficha, 4.5, conv('FICHA ANALISADA DO CLIENTE'), align='C', ln=True)
     
     pdf.set_x(x_ficha)
-    pdf.set_font('Helvetica', 'B', 13)
+    pdf.set_font('Helvetica', 'B', 14)
     pdf.set_text_color(15, 23, 42)
-    pdf.cell(w_ficha, 5.5, conv(f"{dados['nome']}"), align='C', ln=True)
+    pdf.cell(w_ficha, 6, conv(f"{dados['nome']}"), align='C', ln=True)
     
     pdf.set_x(x_ficha)
-    pdf.set_font('Helvetica', 'B', 9.0)
+    pdf.set_font('Helvetica', 'B', 11.5) # NOTA AUMENTADA (SEM SITE)
     pdf.set_text_color(245, 158, 11)
-    pdf.cell(w_ficha, 4, conv(f"Nota {dados['nota']:.1f} {estrelas_txt}   -   {dados['avaliacoes']} avaliações no Google   |   Site: {dados['website']}"), align='C', ln=True)
+    pdf.cell(w_ficha, 5, conv(f"Nota {dados['nota']:.1f} {estrelas_txt}   -   {dados['avaliacoes']} avaliações no Google"), align='C', ln=True)
 
-    # 2. SCORE GERAL (ESPAÇAMENTO AMPLIADO)
-    pdf.set_y(y_curr + 30)
-    w_box_score = 105
+    # 2. SCORE GERAL (LARGURA REDUZIDA PARA 80mm - VERDE ESCURO)
+    pdf.set_y(y_curr + 31)
+    w_box_score = 80 # LARGURA COMPACTA REDUZIDA
     x_box_score = (210 - w_box_score) / 2.0
     y_box_score = pdf.get_y()
     
@@ -337,7 +336,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
         cr, cg, cb = 245, 158, 11
         status_txt = "STATUS MÉDIO"
     else:
-        cr, cg, cb = 34, 197, 94
+        cr, cg, cb = 22, 128, 61 # VERDE ESCURO
         status_txt = "ALTO DESEMPENHO"
 
     pdf.set_fill_color(240, 249, 255)
@@ -366,7 +365,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_text_color(cr, cg, cb)
     pdf.cell(w_box_score, 4, conv(f"SCORE GERAL ({status_txt})"), align='C', ln=True)
 
-    # 3. LISTA DA AUDITORIA (COM MAIS ESPAÇAMENTO VERTICAL ENTRE SCORE E DIAGNÓSTICO)
+    # 3. LISTA DA AUDITORIA (VERDE ESCURO NOS STATUS E BARRAS)
     pdf.set_y(y_box_score + 24)
 
     pct_avaliacoes = min(int((dados['avaliacoes'] / 50.0) * 100), 100) if dados['avaliacoes'] > 0 else 10
@@ -407,7 +406,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
         pdf.set_font('Helvetica', 'B', 9.5)
         if pct < 40: pdf.set_text_color(239, 68, 68)
         elif pct < 80: pdf.set_text_color(245, 158, 11)
-        else: pdf.set_text_color(34, 197, 94)
+        else: pdf.set_text_color(22, 128, 61) # VERDE ESCURO
             
         pdf.cell(56, 3.5, conv(rotulo), align='R', ln=True)
 
@@ -416,7 +415,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
         
         if pct < 40: pdf.set_fill_color(239, 68, 68)
         elif pct < 80: pdf.set_fill_color(245, 158, 11)
-        else: pdf.set_fill_color(34, 197, 94)
+        else: pdf.set_fill_color(22, 128, 61) # VERDE ESCURO
             
         largura_barra = max(float(pct) * 1.86, 4.0)
         pdf.rounded_rect(12, pdf.get_y(), largura_barra, 2.4, 1.0, 'F')
@@ -427,7 +426,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
         pdf.cell(0, 3.5, conv(f"  Diagnóstico: {desc}"), ln=True)
         pdf.ln(2.0)
 
-    # 4. PLANO DE AÇÃO (MAIS ESPAÇAMENTO VERTICAL)
+    # 4. PLANO DE AÇÃO
     if plano_acao_extra and plano_acao_extra.strip() != "":
         pdf.ln(8)
         pdf.set_fill_color(240, 249, 255)
@@ -448,15 +447,15 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
         pdf.set_text_color(51, 65, 85)
         pdf.multi_cell(178, 3.8, conv(plano_acao_extra), align='L')
 
-    # PÁGINA 3: PLANOS (ESPAÇAMENTO AMPLIADO ENTRE TÍTULOS, BLOCOS E INFORMATIVO)
+    # PÁGINA 3: PLANOS E PROPOSTA (TÍTULOS AUMENTADOS PARA 16pt / CONDIÇÕES DE PAGAMENTO ABAIXO DOS VALORES)
     pdf.add_page()
     pdf.set_y(30)
-    pdf.set_font('Helvetica', 'B', 14)
+    pdf.set_font('Helvetica', 'B', 16) # TÍTULO AUMENTADO
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 7, conv('PROPOSTA COMERCIAL & ESTRUTURAÇÃO ESTRATÉGICA'), align='C', ln=True)
     pdf.ln(10)
 
-    pdf.set_font('Helvetica', 'B', 14)
+    pdf.set_font('Helvetica', 'B', 16) # TÍTULO AUMENTADO
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 6, conv('PLANOS E INVESTIMENTO'), align='C', ln=True)
     pdf.ln(10)
@@ -464,23 +463,32 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     y_p = pdf.get_y() + 2
     
     # Plano Start
+    val_start_limpo = str(planos['start_valor']).replace("/mês", "").replace("/mes", "").strip()
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
     pdf.rounded_rect(12, y_p, 54, 58, 2, 'FD')
-    pdf.set_xy(12, y_p + 4)
+    pdf.set_xy(12, y_p + 3.5)
     pdf.set_font('Helvetica', 'B', 12)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(54, 5, 'Plano Start', align='C', ln=True)
-    pdf.set_xy(12, y_p + 11)
+    
+    pdf.set_xy(12, y_p + 9.5)
     pdf.set_font('Helvetica', 'B', 13)
     pdf.set_text_color(62, 161, 219)
-    pdf.cell(54, 6, conv(f"R$ {planos['start_valor']}"), align='C', ln=True)
+    pdf.cell(54, 5, conv(f"R$ {val_start_limpo}"), align='C', ln=True)
+    
+    pdf.set_xy(12, y_p + 15)
+    pdf.set_font('Helvetica', 'B', 7.5)
+    pdf.set_text_color(100, 116, 139)
+    pdf.cell(54, 3.5, conv('(em até 2x)'), align='C', ln=True)
+    
     pdf.set_font('Helvetica', '', 9.0)
     pdf.set_text_color(51, 65, 85)
-    pdf.set_xy(15, y_p + 20)
-    pdf.multi_cell(48, 4.8, conv(planos['start_itens']), align='L')
+    pdf.set_xy(15, y_p + 21)
+    pdf.multi_cell(48, 4.5, conv(planos['start_itens']), align='L')
 
     # Plano Pro
+    val_pro_limpo = str(planos['pro_valor']).replace("/mês", "").replace("/mes", "").strip()
     pdf.set_fill_color(240, 249, 255)
     pdf.set_draw_color(30, 64, 175)
     pdf.set_line_width(1.2)
@@ -489,38 +497,54 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_xy(70, y_p - 1)
     pdf.set_font('Helvetica', 'B', 14)
     pdf.set_text_color(30, 64, 175)
-    pdf.cell(70, 6, conv('Plano Pro'), align='C', ln=True)
-    pdf.set_xy(70, y_p + 5)
-    pdf.set_font('Helvetica', 'B', 9.5)
+    pdf.cell(70, 5, conv('Plano Pro'), align='C', ln=True)
+    
+    pdf.set_xy(70, y_p + 4.5)
+    pdf.set_font('Helvetica', 'B', 9.0)
     pdf.set_text_color(255, 61, 61)
     pdf.cell(70, 4, conv('(RECOMENDADO)'), align='C', ln=True)
-    pdf.set_xy(70, y_p + 11)
+    
+    pdf.set_xy(70, y_p + 10)
     pdf.set_font('Helvetica', 'B', 15)
     pdf.set_text_color(30, 64, 175)
-    pdf.cell(70, 7, conv(f"R$ {planos['pro_valor']}"), align='C', ln=True)
+    pdf.cell(70, 6, conv(f"R$ {val_pro_limpo}"), align='C', ln=True)
+    
+    pdf.set_xy(70, y_p + 16.5)
+    pdf.set_font('Helvetica', 'B', 8.0)
+    pdf.set_text_color(100, 116, 139)
+    pdf.cell(70, 3.5, conv('(em até 3x)'), align='C', ln=True)
+    
     pdf.set_font('Helvetica', 'B', 9.5)
     pdf.set_text_color(15, 23, 42)
-    pdf.set_xy(75, y_p + 21)
-    pdf.multi_cell(60, 5.0, conv(planos['pro_itens']), align='L')
+    pdf.set_xy(75, y_p + 22)
+    pdf.multi_cell(60, 4.8, conv(planos['pro_itens']), align='L')
 
-    # Gestão Mensal
+    # Gestão Mensal (SEM "/MÊS" NO VALOR PRINCIPAL)
+    val_gestao_limpo = str(planos['gestao_valor']).replace("/mês", "").replace("/mes", "").strip()
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
     pdf.rounded_rect(144, y_p, 54, 58, 2, 'FD')
-    pdf.set_xy(144, y_p + 4)
+    pdf.set_xy(144, y_p + 3.5)
     pdf.set_font('Helvetica', 'B', 12)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(54, 5, conv('Gestão Mensal'), align='C', ln=True)
-    pdf.set_xy(144, y_p + 11)
+    
+    pdf.set_xy(144, y_p + 9.5)
     pdf.set_font('Helvetica', 'B', 13)
     pdf.set_text_color(62, 161, 219)
-    pdf.cell(54, 6, conv(f"R$ {planos['gestao_valor']}"), align='C', ln=True)
+    pdf.cell(54, 5, conv(f"R$ {val_gestao_limpo}"), align='C', ln=True)
+    
+    pdf.set_xy(144, y_p + 15)
+    pdf.set_font('Helvetica', 'B', 7.5)
+    pdf.set_text_color(100, 116, 139)
+    pdf.cell(54, 3.5, conv('(valor mensal)'), align='C', ln=True)
+    
     pdf.set_font('Helvetica', '', 9.0)
     pdf.set_text_color(51, 65, 85)
-    pdf.set_xy(147, y_p + 20)
-    pdf.multi_cell(48, 4.8, conv(planos['gestao_itens']), align='L')
+    pdf.set_xy(147, y_p + 21)
+    pdf.multi_cell(48, 4.5, conv(planos['gestao_itens']), align='L')
 
-    # QUADRO INFORMATIVO (COM MAIS ESPAÇAMENTO VERTICAL)
+    # QUADRO INFORMATIVO
     pdf.set_y(y_p + 74)
     pdf.set_fill_color(240, 249, 255)
     pdf.set_draw_color(62, 161, 219)
@@ -545,10 +569,10 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_x(12)
     pdf.multi_cell(186, 4.0, conv(txt_exp), align='C')
 
-    # PÁGINA 4: CONTRATO
+    # PÁGINA 4: CONTRATO (TÍTULO AUMENTADO PARA 16pt)
     pdf.add_page()
     pdf.set_y(30)
-    pdf.set_font('Helvetica', 'B', 14)
+    pdf.set_font('Helvetica', 'B', 16) # TÍTULO AUMENTADO
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 7, conv('CONTRATO DE PRESTAÇÃO DE SERVIÇOS'), align='C', ln=True)
     pdf.ln(8)
@@ -732,7 +756,6 @@ if "1. Consulta" in opcao_menu:
         st.session_state['dados']['contato'] = f_c1.text_input("Nome do Responsável:", value=st.session_state['dados']['contato'], key="edit_contato")
         st.session_state['dados']['telefone'] = f_c2.text_input("Telefone / WhatsApp:", value=st.session_state['dados']['telefone'], key="edit_telefone")
         
-        # CAMPO WEBSITE ATUALIZADO DINAMICAMENTE
         st.session_state['dados']['website'] = f_c1.text_input(
             "Website:", 
             value=st.session_state['dados']['website'], 
