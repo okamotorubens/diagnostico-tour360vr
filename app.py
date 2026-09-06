@@ -129,26 +129,33 @@ def obter_caminho_logo():
         if os.path.exists(c): return c
     return None
 
-def obter_categoria_valida(types_lista):
+def extrair_termo_busca_segmento(nome_empresa, types_lista):
     """
-    Filtra rigorosamente categorias genéricas e administrativas do Google Places para priorizar o nicho exato.
+    Extrai o nicho/segmento real da empresa para buscar concorrentes diretos e relevantes.
     """
-    genericos = [
-        "establishment", "point_of_interest", "store", "food", "health", 
-        "finance", "general_contractor", "place_of_worship", "political", 
-        "locality", "sublocality", "administrative_area_level_1", "building"
-    ]
+    genericos = ["establishment", "point_of_interest", "store", "food", "health", "building"]
+    
+    # 1. Tenta identificar palavras-chave no nome do estabelecimento
+    nome_lc = nome_empresa.lower()
+    palavras_chave_comuns = ["sorvet", "sorveteria", "açaí", "hotel", "pousada", "restaurante", "pizzaria", "bar", "café", "padaria", "farmácia", "oficina", "odontologia", "clínica"]
+    for pk in palavras_chave_comuns:
+        if pk in nome_lc:
+            return pk
+            
+    # 2. Se não achar no nome, usa a categoria técnica do Google que não seja genérica
     for t in types_lista:
         if t not in genericos:
-            return t
-    return types_lista[0] if types_lista else "establishment"
+            return t.replace("_", " ")
+            
+    return nome_empresa
 
-def buscar_concorrentes_proximos(lat, lng, place_id_cliente, tipo_categoria, api_key):
+def buscar_concorrentes_proximos(lat, lng, place_id_cliente, termo_segmento, api_key):
     if not lat or not lng or not api_key:
         return []
     
     try:
-        url = f"https://maps.googleapis.com/maps/api/place/nearbysearch/json?location={lat},{lng}&radius=5000&type={tipo_categoria}&key={api_key}"
+        # Utiliza keyword para forçar o Google a retornar concorrentes do mesmo nicho comercial
+        url = f"https://maps.googleapis.com/maps/api/place/nearbysearch/json?location={lat},{lng}&radius=10000&keyword={requests.utils.quote(termo_segmento)}&key={api_key}"
         res = requests.get(url).json()
         
         concorrentes = []
@@ -360,40 +367,40 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
         pdf.set_text_color(22, 128, 61)
         pdf.cell(w_capa, 6, conv("Status da Ficha: Otimizado e Em Expansão"), align='C', ln=True)
 
-    # PÁGINA 2: DIAGNÓSTICO (ESPAÇAMENTO AMPLIADO E EQUILIBRADO)
+    # PÁGINA 2: DIAGNÓSTICO (ESTRUTURA IDENTICA, AMPLIADA E EQUILIBRADA)
     pdf.add_page()
-    pdf.set_y(28)
+    pdf.set_y(32)
     pdf.set_font('Helvetica', 'B', 17)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 8, conv('AUDITORIA DETALHADA DE PONTOS DE BUSCA'), align='C', ln=True)
-    pdf.ln(3)
+    pdf.ln(5)
 
     w_ficha = 186
     x_ficha = (210 - w_ficha) / 2.0
     
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
-    pdf.rounded_rect(x_ficha, pdf.get_y(), w_ficha, 23, 3, 'FD')
+    pdf.rounded_rect(x_ficha, pdf.get_y(), w_ficha, 24, 3, 'FD')
     
     y_curr = pdf.get_y()
     pdf.set_xy(x_ficha, y_curr + 2.5)
     
-    pdf.set_font('Helvetica', 'B', 10.5)
+    pdf.set_font('Helvetica', 'B', 11)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(w_ficha, 4.5, conv('FICHA ANALISADA'), align='C', ln=True)
     
     pdf.set_x(x_ficha)
-    pdf.set_font('Helvetica', 'B', 13)
+    pdf.set_font('Helvetica', 'B', 14)
     pdf.set_text_color(30, 64, 175)
-    pdf.cell(w_ficha, 5.5, conv(f"{dados['nome'] or 'Empresa Analisada'}"), align='C', ln=True)
+    pdf.cell(w_ficha, 6.0, conv(f"{dados['nome'] or 'Empresa Analisada'}"), align='C', ln=True)
 
     pdf.set_x(x_ficha)
-    pdf.set_font('Helvetica', 'B', 11)
+    pdf.set_font('Helvetica', 'B', 11.5)
     pdf.set_text_color(245, 158, 11)
-    pdf.cell(w_ficha, 4.5, conv(f"Nota {dados['nota']:.1f} {estrelas_txt}   -   {dados['avaliacoes']} avaliações no Google"), align='C', ln=True)
+    pdf.cell(w_ficha, 5.0, conv(f"Nota {dados['nota']:.1f} {estrelas_txt}   -   {dados['avaliacoes']} avaliações no Google"), align='C', ln=True)
 
     # QUADRO SCORE GERAL
-    pdf.set_y(y_curr + 26)
+    pdf.set_y(y_curr + 28)
     w_box_score = 80
     x_box_score = (210 - w_box_score) / 2.0
     y_box_score = pdf.get_y()
@@ -411,21 +418,21 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     pdf.set_fill_color(240, 249, 255)
     pdf.set_draw_color(62, 161, 219)
     pdf.set_line_width(0.5)
-    pdf.rounded_rect(x_box_score, y_box_score, w_box_score, 14, 3, 'FD')
+    pdf.rounded_rect(x_box_score, y_box_score, w_box_score, 15, 3, 'FD')
     pdf.set_line_width(0.2)
 
-    pdf.set_xy(x_box_score, y_box_score + 1.5)
-    pdf.set_font('Helvetica', 'B', 15)
+    pdf.set_xy(x_box_score, y_box_score + 1.8)
+    pdf.set_font('Helvetica', 'B', 16)
     pdf.set_text_color(cr, cg, cb)
-    pdf.cell(w_box_score, 5, conv(f"{score} / 100"), align='C', ln=True)
+    pdf.cell(w_box_score, 5.5, conv(f"{score} / 100"), align='C', ln=True)
     
-    pdf.set_xy(x_box_score, y_box_score + 8.5)
+    pdf.set_xy(x_box_score, y_box_score + 9.0)
     pdf.set_font('Helvetica', 'B', 8.5)
     pdf.set_text_color(cr, cg, cb)
     pdf.cell(w_box_score, 4, conv(f"SCORE GERAL ({status_txt})"), align='C', ln=True)
 
-    # MAIS ESPAÇO ENTRE O SCORE E OS ITENS DE 1 A 9
-    pdf.set_y(y_box_score + 26)
+    # RESPIRO AUMENTADO ANTES DOS ITENS DE 1 A 9
+    pdf.set_y(y_box_score + 25)
 
     pct_avaliacoes = min(int((dados['avaliacoes'] / 50.0) * 100), 100) if dados['avaliacoes'] > 0 else 10
     pct_fotos = 100 if dados['tem_fotos_hd'] else 30
@@ -458,11 +465,11 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     ]
 
     for titulo, pct, rotulo, desc in itens:
-        pdf.set_font('Helvetica', 'B', 10.0)
+        pdf.set_font('Helvetica', 'B', 9.5)
         pdf.set_text_color(30, 41, 59)
         pdf.cell(130, 3.0, conv(titulo), ln=False)
         
-        pdf.set_font('Helvetica', 'B', 10.0)
+        pdf.set_font('Helvetica', 'B', 9.5)
         if pct < 40: pdf.set_text_color(239, 68, 68)
         elif pct < 80: pdf.set_text_color(245, 158, 11)
         else: pdf.set_text_color(22, 128, 61)
@@ -483,11 +490,11 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
         pdf.set_font('Helvetica', '', 8.5)
         pdf.set_text_color(71, 85, 105)
         pdf.cell(0, 2.8, conv(f"  Diagnóstico: {desc}"), ln=True)
-        pdf.ln(1.2)
+        pdf.ln(1.5)
 
-    # MAIS ESPAÇO ANTES DA ANÁLISE COMPARATIVA
+    # MAIS ESPAÇO ANTES DA ANÁLISE COMPARATIVA DE CONCORRENTES
     if concorrentes:
-        pdf.ln(7)
+        pdf.ln(6)
         pdf.set_font('Helvetica', 'B', 10.0)
         pdf.set_text_color(30, 64, 175)
         pdf.cell(0, 4.5, conv("ANÁLISE COMPARATIVA DE CONCORRENTES LOCAIS (MESMO SEGMENTO)"), ln=True)
@@ -522,9 +529,9 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
             pdf.cell(w_col3, 4.0, conv(f"{c['avaliacoes']} avaliações"), border='B', fill=fill_row, align='C')
             pdf.ln()
 
-    # MAIS ESPAÇO ANTES DO PLANO DE AÇÃO
+    # MAIS ESPAÇO ANTES DO QUADRO PLANO DE AÇÃO
     if plano_acao_extra and plano_acao_extra.strip() != "":
-        pdf.ln(10)
+        pdf.ln(8)
         w_extra = 186
         x_extra = (210 - w_extra) / 2.0
         
@@ -533,7 +540,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
         pdf.set_line_width(0.5)
         
         y_extra = pdf.get_y()
-        h_box_extra = 32
+        h_box_extra = 30
         pdf.rounded_rect(x_extra, y_extra, w_extra, h_box_extra, 2.5, 'FD')
         pdf.set_line_width(0.2)
         
@@ -828,7 +835,8 @@ if "1. Consulta" in opcao_menu:
                         types_lista = res_details.get("types", [])
                         loc = res_details.get("geometry", {}).get("location", {})
                         
-                        st.session_state['dados']['nome'] = res_details.get("name") or u.get("name") or nome_input
+                        nome_carregado = res_details.get("name") or u.get("name") or nome_input
+                        st.session_state['dados']['nome'] = nome_carregado
                         st.session_state['dados']['endereco'] = res_details.get("formatted_address") or u.get("formatted_address") or ""
                         st.session_state['dados']['telefone'] = res_details.get("formatted_phone_number") or res_details.get("international_phone_number") or ""
                         st.session_state['dados']['website'] = res_details.get("website") or ""
@@ -855,10 +863,11 @@ if "1. Consulta" in opcao_menu:
 
                         lat = loc.get("lat")
                         lng = loc.get("lng")
-                        categoria_principal = obter_categoria_valida(types_lista)
+                        
+                        termo_segmento = extrair_termo_busca_segmento(nome_carregado, types_lista)
                         
                         st.session_state['concorrentes'] = buscar_concorrentes_proximos(
-                            lat, lng, place_id, categoria_principal, API_KEY_GOOGLE
+                            lat, lng, place_id, termo_segmento, API_KEY_GOOGLE
                         )
                         
                         st.success("Dados da unidade e concorrentes locais do mesmo segmento carregados com sucesso!")
