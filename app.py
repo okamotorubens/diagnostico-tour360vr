@@ -179,15 +179,16 @@ class PDFTour360Oficial(FPDF):
             try: self.image(caminho_logo, 12, 6, 18)
             except: pass
             
-        self.set_xy(34, 6)
+        # ALINHAMENTO DO CABEÇALHO FIXADO À ESQUERDA (X = 32mm)
+        self.set_xy(32, 6)
         self.set_font('Helvetica', 'B', 12)
         self.set_text_color(30, 64, 175)
-        self.cell(164, 4.5, 'TOUR360VR', align='L', ln=True)
+        self.cell(166, 4.5, 'TOUR360VR', align='L', ln=True)
         
-        self.set_x(34)
+        self.set_x(32)
         self.set_font('Helvetica', 'B', 8.5)
         self.set_text_color(100, 116, 139)
-        self.cell(164, 4, conv('Gestão de Perfil & Diagnóstico do Google Meu Negócio'), align='L', ln=True)
+        self.cell(166, 4, conv('Gestão de Perfil & Diagnóstico do Google Meu Negócio'), align='L', ln=True)
         
         self.set_draw_color(226, 232, 240)
         self.line(12, 17.5, 198, 17.5)
@@ -256,7 +257,6 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.cell(0, 8, conv('Tour360VR'), align='C', ln=True)
     pdf.ln(12)
 
-    # QUADRO DE CAPA RECOMPACTADO NAS LATERAIS (170mm)
     w_capa = 170
     x_capa = (210 - w_capa) / 2.0
     pdf.set_fill_color(248, 250, 252)
@@ -282,7 +282,6 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.cell(w_capa, 5.5, conv(f"Telefone: {dados['telefone']}   |   Website: {dados['website']}"), align='C', ln=True)
     pdf.ln(4)
 
-    # TAMANHO AUMENTADO DE "STATUS DA FICHA:"
     pdf.set_font('Helvetica', 'B', 13)
     pdf.set_x(x_capa)
     if score < 50:
@@ -301,34 +300,33 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.cell(0, 7, conv('AUDITORIA DETALHADA DE PONTOS DE BUSCA'), align='C', ln=True)
     pdf.ln(8)
 
-    # QUADRO FICHA ANALISADA COM MARGENS LATERAIS REDUZIDAS (170mm)
     w_ficha = 170
     x_ficha = (210 - w_ficha) / 2.0
     
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
-    pdf.rounded_rect(x_ficha, pdf.get_y(), w_ficha, 25, 3, 'FD')
+    pdf.rounded_rect(x_ficha, pdf.get_y(), w_ficha, 26, 3, 'FD')
     
     y_curr = pdf.get_y()
     pdf.set_xy(x_ficha, y_curr + 2.5)
     
-    # "FICHA ANALISADA DO CLIENTE" COM FONTE AMPLIADA
     pdf.set_font('Helvetica', 'B', 12.0)
     pdf.set_text_color(30, 64, 175)
     pdf.cell(w_ficha, 4.5, conv('FICHA ANALISADA DO CLIENTE'), align='C', ln=True)
     
+    # NOME DO CLIENTE/EMPRESA AUMENTADO NO QUADRO SUPERIOR
     pdf.set_x(x_ficha)
-    pdf.set_font('Helvetica', 'B', 14)
+    pdf.set_font('Helvetica', 'B', 15.0)
     pdf.set_text_color(15, 23, 42)
-    pdf.cell(w_ficha, 6, conv(f"{dados['nome']}"), align='C', ln=True)
+    pdf.cell(w_ficha, 6.5, conv(f"{dados['nome']}"), align='C', ln=True)
     
     pdf.set_x(x_ficha)
     pdf.set_font('Helvetica', 'B', 11.5)
     pdf.set_text_color(245, 158, 11)
     pdf.cell(w_ficha, 5, conv(f"Nota {dados['nota']:.1f} {estrelas_txt}   -   {dados['avaliacoes']} avaliações no Google"), align='C', ln=True)
 
-    # QUADRO SCORE GERAL (75mm DE LARGURA)
-    pdf.set_y(y_curr + 31)
+    # QUADRO SCORE GERAL
+    pdf.set_y(y_curr + 32)
     w_box_score = 75
     x_box_score = (210 - w_box_score) / 2.0
     y_box_score = pdf.get_y()
@@ -364,7 +362,6 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_text_color(15, 23, 42)
     pdf.write(7, conv(str_100))
     
-    # "SCORE GERAL" COM FONTE AMPLIADA
     pdf.set_xy(x_box_score, y_box_score + 10)
     pdf.set_font('Helvetica', 'B', 9.5)
     pdf.set_text_color(cr, cg, cb)
@@ -431,7 +428,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
         pdf.cell(0, 3.5, conv(f"  Diagnóstico: {desc}"), ln=True)
         pdf.ln(2.0)
 
-    # PLANO DE AÇÃO RECOMPACTADO NAS LATERAIS (170mm)
+    # PLANO DE AÇÃO
     if plano_acao_extra and plano_acao_extra.strip() != "":
         pdf.ln(8)
         w_extra = 170
@@ -455,7 +452,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
         pdf.set_text_color(51, 65, 85)
         pdf.multi_cell(w_extra - 8, 3.8, conv(plano_acao_extra), align='L')
 
-    # PÁGINA 3: PLANOS (CONDIÇÕES DE PAGAMENTO AMPLIADAS PARA TAMANHO 9pt)
+    # PÁGINA 3: PLANOS
     pdf.add_page()
     pdf.set_y(30)
     pdf.set_font('Helvetica', 'B', 16)
@@ -485,7 +482,6 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_text_color(62, 161, 219)
     pdf.cell(54, 5, conv(f"R$ {val_start_limpo}"), align='C', ln=True)
     
-    # TAMANHO AUMENTADO PARA 9pt
     pdf.set_xy(12, y_p + 15)
     pdf.set_font('Helvetica', 'B', 9.0)
     pdf.set_text_color(100, 116, 139)
@@ -496,7 +492,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_xy(15, y_p + 21)
     pdf.multi_cell(48, 4.5, conv(planos['start_itens']), align='L')
 
-    # Plano Pro
+    # Plano Pro (CONDIÇÃO DE PAGAMENTO EM 9.5pt IGUAL AOS ITENS)
     val_pro_limpo = str(planos['pro_valor']).replace("/mês", "").replace("/mes", "").strip()
     pdf.set_fill_color(240, 249, 255)
     pdf.set_draw_color(30, 64, 175)
@@ -518,9 +514,9 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_text_color(30, 64, 175)
     pdf.cell(70, 6, conv(f"R$ {val_pro_limpo}"), align='C', ln=True)
     
-    # TAMANHO AUMENTADO PARA 9pt
+    # "(em até 3x)" NO MESMO TAMANHO DOS ITENS DO PLANO PRO (9.5pt)
     pdf.set_xy(70, y_p + 16.5)
-    pdf.set_font('Helvetica', 'B', 9.0)
+    pdf.set_font('Helvetica', 'B', 9.5)
     pdf.set_text_color(100, 116, 139)
     pdf.cell(70, 4, conv('(em até 3x)'), align='C', ln=True)
     
@@ -544,7 +540,6 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_text_color(62, 161, 219)
     pdf.cell(54, 5, conv(f"R$ {val_gestao_limpo}"), align='C', ln=True)
     
-    # TAMANHO AUMENTADO PARA 9pt
     pdf.set_xy(144, y_p + 15)
     pdf.set_font('Helvetica', 'B', 9.0)
     pdf.set_text_color(100, 116, 139)
@@ -555,7 +550,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_xy(147, y_p + 21)
     pdf.multi_cell(48, 4.5, conv(planos['gestao_itens']), align='L')
 
-    # QUADRO INFORMATIVO RECOMPACTADO NAS LATERAIS (170mm)
+    # QUADRO INFORMATIVO
     pdf.set_y(y_p + 74)
     w_info = 170
     x_info = (210 - w_info) / 2.0
@@ -583,7 +578,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_x(x_info)
     pdf.multi_cell(w_info, 4.0, conv(txt_exp), align='C')
 
-    # PÁGINA 4: CONTRATO
+    # PÁGINA 4: CONTRATO (POSIÇÃO PADRONIZADA EM Y = 30)
     pdf.add_page()
     pdf.set_y(30)
     pdf.set_font('Helvetica', 'B', 16)
