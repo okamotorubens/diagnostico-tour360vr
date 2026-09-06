@@ -182,12 +182,12 @@ class PDFTour360Oficial(FPDF):
         self.set_xy(32, 6)
         self.set_font('Helvetica', 'B', 12)
         self.set_text_color(30, 64, 175)
-        self.cell(16, 4.5, 'TOUR360VR', align='L', ln=True)
+        self.cell(166, 4.5, 'TOUR360VR', align='L', ln=True)
         
         self.set_x(32)
         self.set_font('Helvetica', 'B', 8.5)
         self.set_text_color(100, 116, 139)
-        self.cell(16, 4, conv('Gestão de Perfil & Diagnóstico do Google Meu Negócio'), align='L', ln=True)
+        self.cell(166, 4, conv('Gestão de Perfil & Diagnóstico do Google Meu Negócio'), align='L', ln=True)
         
         self.set_draw_color(226, 232, 240)
         self.line(12, 17.5, 198, 17.5)
@@ -202,9 +202,9 @@ class PDFTour360Oficial(FPDF):
         
         if self.page_no() == 1:
             self.set_x(12)
-            self.set_font('Helvetica', 'B', 12)
+            self.set_font('Helvetica', 'B', 9.5)
             self.set_text_color(30, 64, 175)
-            self.cell(186, 5, conv("Tour360VR - 16 99133 2121 - Ribeirão Preto - SP"), align='C')
+            self.cell(186, 5, conv("Tour360VR - Okamoto Mídias Visuais"), align='C')
         else:
             w_col = (198 - 12) / 4.0
             self.set_x(12)
@@ -271,7 +271,6 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_draw_color(203, 213, 225)
     pdf.rounded_rect(x_capa, y_capa, w_capa, h_capa, 4, 'FD')
 
-    # NOME DA EMPRESA NA CAPA AUMENTADO PARA 23pt
     pdf.set_xy(x_capa, y_capa + 6)
     pdf.set_font('Helvetica', 'B', 23)
     pdf.set_text_color(30, 64, 175) 
@@ -323,7 +322,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     
     pdf.set_font('Helvetica', 'B', 11.0)
     pdf.set_text_color(15, 23, 42)
-    pdf.cell(w_ficha, 5.0, conv('FICHA ANALISADA'), align='C', ln=True)
+    pdf.cell(w_ficha, 5.0, conv('FICHA ANALISADA DO CLIENTE'), align='C', ln=True)
     pdf.ln(1)
     
     pdf.set_x(x_ficha)
@@ -361,7 +360,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
 
     pdf.set_xy(x_box_score, y_box_score + 1.5)
     pdf.set_font('Helvetica', 'B', 19)
-    pdf.set_text_color(245, 158, 11)
+    pdf.set_text_color(cr, cg, cb)
     
     str_score = f"{score} "
     str_100 = "/ 100"
@@ -371,7 +370,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     
     pdf.set_x(x_start_text)
     pdf.write(7, conv(str_score))
-    pdf.set_text_color()
+    pdf.set_text_color(15, 23, 42)
     pdf.write(7, conv(str_100))
     
     pdf.set_xy(x_box_score, y_box_score + 10)
@@ -463,7 +462,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
         pdf.set_text_color(51, 65, 85)
         pdf.multi_cell(w_extra - 10, 3.8, conv(plano_acao_extra), align='L')
 
-    # PÁGINA 3: PLANOS (VALORES REDUZIDOS PARA START E GESTÃO, MAIOR ESPAÇAMENTO PARA ITENS)
+    # PÁGINA 3: PLANOS
     pdf.add_page()
     pdf.set_y(30)
     pdf.set_font('Helvetica', 'B', 17)
@@ -490,7 +489,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.cell(54, 5, 'Plano Start', align='C', ln=True)
     
     pdf.set_xy(12, y_p + 10)
-    pdf.set_font('Helvetica', 'B', 15) # VALOR REDUZIDO PARA 15pt
+    pdf.set_font('Helvetica', 'B', 15)
     pdf.set_text_color(30, 64, 175)
     pdf.cell(54, 5, conv(f"R$ {val_start_limpo}"), align='C', ln=True)
     
@@ -499,7 +498,6 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_text_color(15, 23, 42)
     pdf.cell(54, 4, conv('em até 2x'), align='C', ln=True)
     
-    # ESPAÇO AMPLIADO PARA OS ITENS (Y + 26)
     pdf.set_font('Helvetica', '', 9.0)
     pdf.set_text_color(51, 65, 85)
     pdf.set_xy(15, y_p + 26)
@@ -533,7 +531,6 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_text_color(15, 23, 42)
     pdf.cell(70, 4, conv('em até 3x'), align='C', ln=True)
     
-    # ESPAÇO AMPLIADO PARA OS ITENS (Y + 27.5)
     pdf.set_font('Helvetica', 'B', 9.5)
     pdf.set_text_color(15, 23, 42)
     pdf.set_xy(75, y_p + 27.5)
@@ -551,7 +548,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.cell(54, 5, conv('Gestão Mensal'), align='C', ln=True)
     
     pdf.set_xy(144, y_p + 10)
-    pdf.set_font('Helvetica', 'B', 15) # VALOR REDUZIDO PARA 15pt
+    pdf.set_font('Helvetica', 'B', 15)
     pdf.set_text_color(30, 64, 175)
     pdf.cell(54, 5, conv(f"R$ {val_gestao_limpo}"), align='C', ln=True)
     
@@ -560,7 +557,6 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_text_color(15, 23, 42)
     pdf.cell(54, 4, conv('valor mensal'), align='C', ln=True)
     
-    # ESPAÇO AMPLIADO PARA OS ITENS (Y + 26)
     pdf.set_font('Helvetica', '', 9.0)
     pdf.set_text_color(51, 65, 85)
     pdf.set_xy(147, y_p + 26)
@@ -636,12 +632,12 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_font('Helvetica', 'B', 9.0)
     pdf.write(4.5, conv("CLÁUSULA TERCEIRA - SELEÇÃO DO PLANO CONTRATADO:\n"))
     pdf.set_font('Helvetica', '', 9.0)
-    pdf.write(4.5, conv("(    ) Plano Start        (    ) Plano Pro        (    ) Gestão Mensal\n\n"))
+    pdf.write(4.5, conv("(   ) Plano Start        (   ) Plano Pro        (   ) Gestão Mensal\n\n"))
 
     pdf.set_font('Helvetica', 'B', 9.0)
     pdf.write(4.5, conv("CLÁUSULA QUARTA - CONDIÇÕES DE PAGAMENTO:\n"))
     pdf.set_font('Helvetica', '', 9.0)
-    pdf.write(6.0, conv("(    ) À Vista       (    ) 2x Plano Start       (    ) 3x Plano Pro       (    ) Vencimento Todo Dia: _____ - Gesttão Mensal\n\n"))
+    pdf.write(6.0, conv("(   ) À Vista       (   ) 2x Plano Start       (   ) 3x Plano Pro       (   ) Gestão Mensal - Vencimento Todo Dia: _____\n\n"))
 
     pdf.ln(12)
     
@@ -689,7 +685,7 @@ with st.sidebar:
         ]
     )
 
-st.markdown("<div class='main-header'>PLATAFORMA DE CONSULTORIA TOUR360VR - GESTÃO & DIAGNÓSTICO GOOGLE MEU NEGÓCIO</div>", unsafe_allow_html=True)
+st.markdown("<div class='main-header'>PLATAFORMA DE CONSULTORIA <span>TOUR360VR</span> - GESTÃO & DIAGNÓSTICO GOOGLE MEU NEGÓCIO</div>", unsafe_allow_html=True)
 dados = st.session_state['dados']
 score = calcular_score_real(dados)
 
