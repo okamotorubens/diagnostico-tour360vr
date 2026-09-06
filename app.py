@@ -742,27 +742,6 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     pdf.set_x(x_info)
     pdf.multi_cell(w_info, 4.8, conv(txt_exp), align='C')
 
-   # PÁGINA 4: CONTRATO COM ALINHAMENTO JUSTIFICADO E ESPAÇAMENTO PERFEITO
-    pdf.add_page()
-    pdf.set_y(30)
-    pdf.set_font('Helvetica', 'B', 17)
-    pdf.set_text_color(15, 23, 42)
-    pdf.cell(0, 8, conv('CONTRATO DE PRESTAÇÃO DE SERVIÇOS'), align='C', ln=True)
-    pdf.ln(8)
-
-    w_contrato = 186
-
-    def imprimir_paragrafo_formatado(titulo_bold, texto_normal):
-        pdf.set_x(12)
-        pdf.set_font('Helvetica', 'B', 9.5)
-        pdf.set_text_color(15, 23, 42)
-        w_tit = pdf.get_string_width(conv(titulo_bold)) + 1.2
-        pdf.cell(w_tit, 5.2, conv(titulo_bold), ln=False)
-        
-        pdf.set_font('Helvetica', '', 9.5)
-        pdf.set_text_color(51, 65, 85)
-        pdf.multi_cell(w_contrato - w_tit, 5.2, conv(texto_normal), align='J')
-        pdf.ln(3.5)
 
     # PÁGINA 4: CONTRATO (FLUXO CONTÍNUO COM WRITE - NEGRITOS E ALINHAMENTO JUSTIFICADO PERFEITO)
     pdf.add_page()
