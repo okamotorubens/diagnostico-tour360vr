@@ -872,7 +872,7 @@ nome_arquivo_pdf = dados['nome'].replace(' ', '_') if dados['nome'] else 'Novo_C
 st.download_button(
     "📥 Baixar Diagnóstico, Proposta e Contrato Completo em PDF",
     data=pdf_bytes,
-    file_name=f"Diagnóstico & Proposta - {nome_arquivo_pdf}",
+    file_name=f"Diagnóstico & Proposta - {nome_arquivo_pdf}.pdf",
     mime="application/pdf",
     use_container_width=True,
     key="btn_pdf_unico_unificado"
