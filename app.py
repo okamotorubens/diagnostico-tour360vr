@@ -376,7 +376,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_text_color(30, 64, 175)
     pdf.write(7, conv(str_100))
     
-    pdf.set_xy(x_box_score, y_box_score + 11)
+    pdf.set_xy(x_box_score, y_box_score + 10)
     pdf.set_font('Helvetica', 'B', 9.5)
     pdf.set_text_color(cr, cg, cb)
     pdf.cell(w_box_score, 4, conv(f"SCORE GERAL ({status_txt})"), align='C', ln=True)
@@ -872,7 +872,7 @@ nome_arquivo_pdf = dados['nome'].replace(' ', '_') if dados['nome'] else 'Novo_C
 st.download_button(
     "📥 Baixar Diagnóstico, Proposta e Contrato Completo em PDF",
     data=pdf_bytes,
-    file_name=f"Diagnostico_Proposta_Contrato_{nome_arquivo_pdf}.pdf",
+    file_name=f"Diagnóstico & Proposta - {nome_arquivo_pdf}",
     mime="application/pdf",
     use_container_width=True,
     key="btn_pdf_unico_unificado"
