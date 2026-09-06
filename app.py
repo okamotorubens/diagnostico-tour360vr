@@ -130,9 +130,6 @@ def obter_caminho_logo():
     return None
 
 def buscar_detalhes_concorrente_especifico(nome_concorrente, cidade, api_key):
-    """
-    Busca o concorrente indicado pelo usuário no Google e traz nota e total de avaliações reais.
-    """
     if not nome_concorrente or not api_key:
         return None
     try:
@@ -142,10 +139,26 @@ def buscar_detalhes_concorrente_especifico(nome_concorrente, cidade, api_key):
         
         if res.get("status") == "OK" and res.get("results"):
             item = res["results"][0]
+            place_id = item.get("place_id")
+            
+            url_det = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=website,editorial_summary,opening_hours,photos,types&key={api_key}"
+            res_det = requests.get(url_det).json().get("result", {})
+            
+            photos = res_det.get("photos", item.get("photos", []))
+            types_lista = res_det.get("types", [])
+
             return {
                 "nome": item.get("name", nome_concorrente),
                 "nota": float(item.get("rating", 0.0)),
-                "avaliacoes": int(item.get("user_ratings_total", 0))
+                "avaliacoes": int(item.get("user_ratings_total", 0)),
+                "tem_fotos_hd": "Sim" if len(photos) >= 10 else "Não",
+                "tem_tour360": "Não",
+                "categorias_ok": "Sim" if len(types_lista) >= 3 else "Não",
+                "horarios_ok": "Sim" if "opening_hours" in res_det else "Não",
+                "tem_website": "Sim" if res_det.get("website") else "Não",
+                "tem_descricao": "Sim" if "editorial_summary" in res_det else "Não",
+                "atributos_ok": "Não",
+                "respostas_ok": "Não"
             }
     except Exception as e:
         pass
@@ -175,9 +188,9 @@ if 'dados' not in st.session_state:
 
 if 'concorrentes' not in st.session_state:
     st.session_state['concorrentes'] = [
-        {"nome": "", "nota": 0.0, "avaliacoes": 0, "busca_termo": ""},
-        {"nome": "", "nota": 0.0, "avaliacoes": 0, "busca_termo": ""},
-        {"nome": "", "nota": 0.0, "avaliacoes": 0, "busca_termo": ""}
+        {"nome": "", "nota": 0.0, "avaliacoes": 0, "busca_termo": "", "tem_fotos_hd": "Sim", "tem_tour360": "Não", "categorias_ok": "Sim", "horarios_ok": "Sim", "tem_website": "Sim", "tem_descricao": "Sim", "atributos_ok": "Não", "respostas_ok": "Não"},
+        {"nome": "", "nota": 0.0, "avaliacoes": 0, "busca_termo": "", "tem_fotos_hd": "Sim", "tem_tour360": "Não", "categorias_ok": "Sim", "horarios_ok": "Sim", "tem_website": "Sim", "tem_descricao": "Sim", "atributos_ok": "Não", "respostas_ok": "Não"},
+        {"nome": "", "nota": 0.0, "avaliacoes": 0, "busca_termo": "", "tem_fotos_hd": "Sim", "tem_tour360": "Não", "categorias_ok": "Sim", "horarios_ok": "Sim", "tem_website": "Sim", "tem_descricao": "Sim", "atributos_ok": "Não", "respostas_ok": "Não"}
     ]
 
 if 'planos' not in st.session_state:
@@ -373,7 +386,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     pdf.set_text_color(245, 158, 11)
     pdf.cell(w_ficha, 4.5, conv(f"Nota {dados['nota']:.1f} {estrelas_txt}   -   {dados['avaliacoes']} avaliações no Google"), align='C', ln=True)
 
-    # QUADRO SCORE GERAL COM /100 EM AZUL ESCURO
+    # QUADRO SCORE GERAL
     pdf.set_y(y_curr + 30)
     w_box_score = 80
     x_box_score = (210 - w_box_score) / 2.0
@@ -477,43 +490,71 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     concorrentes_filtrados = [c for c in concorrentes if c.get("nome", "").strip() != ""]
 
     if concorrentes_filtrados:
-        pdf.ln(5)
+        pdf.ln(4)
         pdf.set_font('Helvetica', 'B', 10.0)
         pdf.set_text_color(30, 64, 175)
-        pdf.cell(0, 4.5, conv("ANÁLISE COMPARATIVA DE CONCORRENTES LOCAIS (MESMO SEGMENTO)"), ln=True)
+        pdf.cell(0, 4.5, conv("ANÁLISE COMPARATIVA DE CONCORRENTES (9 PONTOS DE DIAGNÓSTICO)"), ln=True)
         pdf.ln(1.5)
 
-        w_col1, w_col2, w_col3 = 106, 35, 45
+        # TABELA COMPLETA COM OS 9 ITENS
+        w_emp = 56
+        w_item = 14.4  # (186 - 56) / 9 = 14.4 mm por item
         
         pdf.set_fill_color(30, 64, 175)
         pdf.set_text_color(255, 255, 255)
-        pdf.set_font('Helvetica', 'B', 8.5)
-        pdf.cell(w_col1, 4.5, conv(" Empresa / Estabelecimento"), border=0, fill=True)
-        pdf.cell(w_col2, 4.5, conv(" Nota Google"), border=0, fill=True, align='C')
-        pdf.cell(w_col3, 4.5, conv(" Total Avaliações"), border=0, fill=True, align='C')
+        pdf.set_font('Helvetica', 'B', 7.0)
+        
+        pdf.cell(w_emp, 4.5, conv(" Empresa / Concorrente"), border=0, fill=True)
+        pdf.cell(w_item, 4.5, conv("1.Fotos"), border=0, fill=True, align='C')
+        pdf.cell(w_item, 4.5, conv("2.360°"), border=0, fill=True, align='C')
+        pdf.cell(w_item, 4.5, conv("3.Categ"), border=0, fill=True, align='C')
+        pdf.cell(w_item, 4.5, conv("4.Horár"), border=0, fill=True, align='C')
+        pdf.cell(w_item, 4.5, conv("5.Web"), border=0, fill=True, align='C')
+        pdf.cell(w_item, 4.5, conv("6.Nota"), border=0, fill=True, align='C')
+        pdf.cell(w_item, 4.5, conv("7.Desc"), border=0, fill=True, align='C')
+        pdf.cell(w_item, 4.5, conv("8.Atrib"), border=0, fill=True, align='C')
+        pdf.cell(w_item, 4.5, conv("9.Resp"), border=0, fill=True, align='C')
         pdf.ln()
 
+        # LINHA DA EMPRESA CLIENTE
         pdf.set_fill_color(240, 249, 255)
         pdf.set_draw_color(191, 219, 254)
-        pdf.set_font('Helvetica', 'B', 8.5)
+        pdf.set_font('Helvetica', 'B', 7.0)
         pdf.set_text_color(30, 64, 175)
-        pdf.cell(w_col1, 4.2, conv(f" {dados['nome']}"), border='B', fill=True)
-        pdf.cell(w_col2, 4.2, conv(f"{dados['nota']:.1f} / 5.0"), border='B', fill=True, align='C')
-        pdf.cell(w_col3, 4.2, conv(f"{dados['avaliacoes']} avaliações"), border='B', fill=True, align='C')
+        
+        pdf.cell(w_emp, 4.2, conv(f" {dados['nome']}"), border='B', fill=True)
+        pdf.cell(w_item, 4.2, conv("Sim" if dados['tem_fotos_hd'] else "Não"), border='B', fill=True, align='C')
+        pdf.cell(w_item, 4.2, conv("Sim" if dados['tem_tour360'] else "Não"), border='B', fill=True, align='C')
+        pdf.cell(w_item, 4.2, conv("Sim" if dados['categorias_completas'] else "Não"), border='B', fill=True, align='C')
+        pdf.cell(w_item, 4.2, conv("Sim" if dados['horarios_ok'] else "Não"), border='B', fill=True, align='C')
+        pdf.cell(w_item, 4.2, conv("Sim" if dados['website'] and dados['website'] != 'Não possui' else "Não"), border='B', fill=True, align='C')
+        pdf.cell(w_item, 4.2, conv(f"{dados['nota']:.1f}"), border='B', fill=True, align='C')
+        pdf.cell(w_item, 4.2, conv("Sim" if dados.get('tem_descricao') else "Não"), border='B', fill=True, align='C')
+        pdf.cell(w_item, 4.2, conv("Sim" if dados.get('atributos_ok') else "Não"), border='B', fill=True, align='C')
+        pdf.cell(w_item, 4.2, conv("Sim" if dados.get('resposta_avaliacoes_ok') else "Não"), border='B', fill=True, align='C')
         pdf.ln()
 
-        pdf.set_font('Helvetica', '', 8.5)
+        # LINHAS DOS CONCORRENTES
+        pdf.set_font('Helvetica', '', 7.0)
         pdf.set_text_color(51, 65, 85)
         for idx_c, c in enumerate(concorrentes_filtrados):
             fill_row = (idx_c % 2 == 1)
             pdf.set_fill_color(248, 250, 252) if fill_row else pdf.set_fill_color(255, 255, 255)
-            pdf.cell(w_col1, 4.0, conv(f" {c['nome']}"), border='B', fill=fill_row)
-            pdf.cell(w_col2, 4.0, conv(f"{float(c['nota']):.1f} / 5.0"), border='B', fill=fill_row, align='C')
-            pdf.cell(w_col3, 4.0, conv(f"{c['avaliacoes']} avaliações"), border='B', fill=fill_row, align='C')
+            
+            pdf.cell(w_emp, 4.0, conv(f" {c['nome']}"), border='B', fill=fill_row)
+            pdf.cell(w_item, 4.0, conv(c.get('tem_fotos_hd', 'Sim')), border='B', fill=fill_row, align='C')
+            pdf.cell(w_item, 4.0, conv(c.get('tem_tour360', 'Não')), border='B', fill=fill_row, align='C')
+            pdf.cell(w_item, 4.0, conv(c.get('categorias_ok', 'Sim')), border='B', fill=fill_row, align='C')
+            pdf.cell(w_item, 4.0, conv(c.get('horarios_ok', 'Sim')), border='B', fill=fill_row, align='C')
+            pdf.cell(w_item, 4.0, conv(c.get('tem_website', 'Sim')), border='B', fill=fill_row, align='C')
+            pdf.cell(w_item, 4.0, conv(f"{float(c['nota']):.1f}"), border='B', fill=fill_row, align='C')
+            pdf.cell(w_item, 4.0, conv(c.get('tem_descricao', 'Sim')), border='B', fill=fill_row, align='C')
+            pdf.cell(w_item, 4.0, conv(c.get('atributos_ok', 'Não')), border='B', fill=fill_row, align='C')
+            pdf.cell(w_item, 4.0, conv(c.get('respostas_ok', 'Não')), border='B', fill=fill_row, align='C')
             pdf.ln()
 
     if plano_acao_extra and plano_acao_extra.strip() != "":
-        pdf.ln(12)
+        pdf.ln(8)
         w_extra = 186
         x_extra = (210 - w_extra) / 2.0
         
@@ -522,7 +563,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
         pdf.set_line_width(0.5)
         
         y_extra = pdf.get_y()
-        h_box_extra = 38
+        h_box_extra = 36
         pdf.rounded_rect(x_extra, y_extra, w_extra, h_box_extra, 2.5, 'FD')
         pdf.set_line_width(0.2)
         
@@ -892,7 +933,7 @@ if "1. Consulta" in opcao_menu:
             st.markdown("---")
             st.markdown("**⚔️ Concorrentes Diretos Cadastrados:**")
             for c in concorrentes_validos:
-                st.markdown(f"• **{c['nome']}** — {float(c['nota']):.1f} ({c['avaliacoes']} avaliações)")
+                st.markdown(f"• **{c['nome']}** — ⭐ {float(c['nota']):.1f} ({c['avaliacoes']} aval.)")
 
         if dados.get('categorias_detectadas'):
             st.markdown("---")
@@ -903,32 +944,45 @@ if "1. Consulta" in opcao_menu:
 
 elif "2. Concorrentes" in opcao_menu:
     st.markdown("<div class='dashboard-card'>", unsafe_allow_html=True)
-    st.markdown("<div class='card-title'>⚔️ BUSCA DIRECIONADA DE CONCORRENTES DO SEGMENTO VIA API</div>", unsafe_allow_html=True)
-    st.info("Digite apenas o Nome do Concorrente e Cidade. O Google trará a Nota Real e Quantidade de Avaliações automaticamente!")
+    st.markdown("<div class='card-title'>⚔️ ANÁLISE COMPARATIVA DE CONCORRENTES DO SEGMENTO (9 ITENS)</div>", unsafe_allow_html=True)
+    st.info("Consulte os dados no Google e ajuste as opções de cada um dos 9 pontos de diagnóstico para os concorrentes.")
 
     for i in range(3):
-        st.markdown(f"#### Concorrente Directo #{i+1}")
-        col_c1, col_c2 = st.columns([2, 1])
+        st.markdown(f"#### Concorrente #{i+1}")
+        col_c1, col_c2 = st.columns([2.5, 1.5])
         
         st.session_state['concorrentes'][i]['busca_termo'] = col_c1.text_input(
-            f"Nome da Empresa Concorrente #{i+1}:", 
+            f"Empresa #{i+1}:", 
             value=st.session_state['concorrentes'][i].get('busca_termo', st.session_state['concorrentes'][i]['nome']), 
             key=f"conc_termo_{i}",
-            placeholder="Ex: Sorveteria do Juarez"
+            placeholder="Ex: Focco Comunicação"
         )
         
         cidade_conc = col_c2.text_input(
             f"Cidade / Região #{i+1}:", 
-            value="Brodowski - SP", 
+            value="Ribeirão Preto - SP", 
             key=f"conc_cidade_{i}"
         )
-        
+
+        st.markdown("**Ajuste fino dos 9 Pontos de Diagnóstico do Concorrente:**")
+        g1, g2, g3, g4, g5 = st.columns(5)
+        st.session_state['concorrentes'][i]['tem_fotos_hd'] = g1.selectbox("1. Fotos HD", ["Sim", "Não"], index=0 if st.session_state['concorrentes'][i].get('tem_fotos_hd') == "Sim" else 1, key=f"c_fhd_{i}")
+        st.session_state['concorrentes'][i]['tem_tour360'] = g2.selectbox("2. Tour 360°", ["Não", "Sim"], index=0 if st.session_state['concorrentes'][i].get('tem_tour360') == "Não" else 1, key=f"c_t360_{i}")
+        st.session_state['concorrentes'][i]['categorias_ok'] = g3.selectbox("3. Categorias", ["Sim", "Não"], index=0 if st.session_state['concorrentes'][i].get('categorias_ok') == "Sim" else 1, key=f"c_cat_{i}")
+        st.session_state['concorrentes'][i]['horarios_ok'] = g4.selectbox("4. Horários", ["Sim", "Não"], index=0 if st.session_state['concorrentes'][i].get('horarios_ok') == "Sim" else 1, key=f"c_hor_{i}")
+        st.session_state['concorrentes'][i]['tem_website'] = g5.selectbox("5. Website", ["Sim", "Não"], index=0 if st.session_state['concorrentes'][i].get('tem_website') == "Sim" else 1, key=f"c_web_{i}")
+
+        g6, g7, g8, g9 = st.columns(4)
+        st.session_state['concorrentes'][i]['tem_descricao'] = g6.selectbox("7. Descrição", ["Sim", "Não"], index=0 if st.session_state['concorrentes'][i].get('tem_descricao') == "Sim" else 1, key=f"c_desc_{i}")
+        st.session_state['concorrentes'][i]['atributos_ok'] = g7.selectbox("8. Atributos", ["Não", "Sim"], index=0 if st.session_state['concorrentes'][i].get('atributos_ok') == "Não" else 1, key=f"c_atrib_{i}")
+        st.session_state['concorrentes'][i]['respostas_ok'] = g8.selectbox("9. Respostas", ["Não", "Sim"], index=0 if st.session_state['concorrentes'][i].get('respostas_ok') == "Não" else 1, key=f"c_resp_{i}")
+
         if st.session_state['concorrentes'][i]['nome']:
-            st.caption(f"📌 **Carregado:** {st.session_state['concorrentes'][i]['nome']} — ⭐ Nota {st.session_state['concorrentes'][i]['nota']:.1f} ({st.session_state['concorrentes'][i]['avaliacoes']} avaliações)")
+            st.caption(f"📌 **Cadastrado:** {st.session_state['concorrentes'][i]['nome']} — ⭐ Nota {st.session_state['concorrentes'][i]['nota']:.1f} ({st.session_state['concorrentes'][i]['avaliacoes']} avaliações)")
         
         st.markdown("---")
 
-    if st.button("🔎 Consultar Nota e Avaliações no Google", use_container_width=True, key="btn_buscar_concorrentes_especificos"):
+    if st.button("🔎 Consultar Notas e Dados Automáticos via Google", use_container_width=True, key="btn_buscar_concorrentes_especificos"):
         if API_KEY_GOOGLE:
             encontrados = 0
             for i in range(3):
@@ -940,9 +994,14 @@ elif "2. Concorrentes" in opcao_menu:
                         st.session_state['concorrentes'][i]['nome'] = detalhes['nome']
                         st.session_state['concorrentes'][i]['nota'] = detalhes['nota']
                         st.session_state['concorrentes'][i]['avaliacoes'] = detalhes['avaliacoes']
+                        st.session_state['concorrentes'][i]['tem_fotos_hd'] = detalhes['tem_fotos_hd']
+                        st.session_state['concorrentes'][i]['categorias_ok'] = detalhes['categorias_ok']
+                        st.session_state['concorrentes'][i]['horarios_ok'] = detalhes['horarios_ok']
+                        st.session_state['concorrentes'][i]['tem_website'] = detalhes['tem_website']
+                        st.session_state['concorrentes'][i]['tem_descricao'] = detalhes['tem_descricao']
                         encontrados += 1
             if encontrados > 0:
-                st.success(f"{encontrados} concorrente(s) consultado(s) e atualizado(s) com dados do Google!")
+                st.success(f"{encontrados} concorrente(s) consultado(s) e atualizado(s) no Google!")
                 st.rerun()
             else:
                 st.warning("Preencha ao menos um nome de concorrente para consultar.")
