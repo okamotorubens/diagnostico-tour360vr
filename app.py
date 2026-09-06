@@ -149,7 +149,7 @@ if 'dados' not in st.session_state:
 
 if 'planos' not in st.session_state:
     st.session_state['planos'] = {
-        "start_valor": "500,00",
+        "start_valor": "400,00",
         "start_itens": "- Correção cadastral\n- Otimização de SEO\n- Ajuste de categorias\n- Inserção de links",
         "pro_valor": "1.200,00",
         "pro_itens": "- Tudo do Plano Start\n- Tour Virtual 360°\n- Ensaio Fotográfico HD\n- Relatório Visual de Entrega",
@@ -290,7 +290,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_x(x_capa)
     pdf.cell(w_capa, 5.5, conv(f"{dados['endereco'] or 'Endereço não informado'}"), align='C', ln=True)
     
-    site_txt = dados['website'] if dados['website'] else 'N/I'
+    site_txt = dados['website'] if dados['Site'] else 'N/I'
     pdf.set_x(x_capa)
     pdf.cell(w_capa, 5.5, conv(f"Telefone: {dados['telefone'] or 'N/I'}   |   {site_txt}"), align='C', ln=True)
     pdf.ln(5)
@@ -376,7 +376,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_text_color(30, 64, 175)
     pdf.write(7, conv(str_100))
     
-    pdf.set_xy(x_box_score, y_box_score + 12)
+    pdf.set_xy(x_box_score, y_box_score + 11)
     pdf.set_font('Helvetica', 'B', 9.5)
     pdf.set_text_color(cr, cg, cb)
     pdf.cell(w_box_score, 4, conv(f"SCORE GERAL ({status_txt})"), align='C', ln=True)
