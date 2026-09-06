@@ -256,7 +256,8 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.cell(0, 8, conv('Tour360VR'), align='C', ln=True)
     pdf.ln(12)
 
-    w_capa = 180
+    # QUADRO DE CAPA RECOMPACTADO NAS LATERAIS (170mm)
+    w_capa = 170
     x_capa = (210 - w_capa) / 2.0
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(203, 213, 225)
@@ -281,36 +282,39 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.cell(w_capa, 5.5, conv(f"Telefone: {dados['telefone']}   |   Website: {dados['website']}"), align='C', ln=True)
     pdf.ln(4)
 
-    pdf.set_font('Helvetica', 'B', 11)
+    # TAMANHO AUMENTADO DE "STATUS DA FICHA:"
+    pdf.set_font('Helvetica', 'B', 13)
     pdf.set_x(x_capa)
     if score < 50:
         pdf.set_text_color(239, 68, 68)
         pdf.cell(w_capa, 6, conv("Status da Ficha: Crítico (Visibilidade Comprometida)"), align='C', ln=True)
     else:
-        pdf.set_text_color(22, 128, 61) # VERDE ESCURO
+        pdf.set_text_color(22, 128, 61)
         pdf.cell(w_capa, 6, conv("Status da Ficha: Otimizado e Em Expansão"), align='C', ln=True)
 
-    # PÁGINA 2: DIAGNÓSTICO (TÍTULO AUMENTADO PARA 16pt E QUADRO DE SCORE REDUZIDO)
+    # PÁGINA 2: DIAGNÓSTICO
     pdf.add_page()
     pdf.set_y(30)
-    pdf.set_font('Helvetica', 'B', 16) # TÍTULO AUMENTADO
+    pdf.set_font('Helvetica', 'B', 16)
     pdf.set_text_color(15, 23, 42)
     
     pdf.cell(0, 7, conv('AUDITORIA DETALHADA DE PONTOS DE BUSCA'), align='C', ln=True)
     pdf.ln(8)
 
-    w_ficha = 186
+    # QUADRO FICHA ANALISADA COM MARGENS LATERAIS REDUZIDAS (170mm)
+    w_ficha = 170
     x_ficha = (210 - w_ficha) / 2.0
     
-    # 1. FICHA ANALISADA DO CLIENTE (FONTE E NOTA AUMENTADAS / SITE EXCLUÍDO)
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
-    pdf.rounded_rect(x_ficha, pdf.get_y(), w_ficha, 24, 3, 'FD')
+    pdf.rounded_rect(x_ficha, pdf.get_y(), w_ficha, 25, 3, 'FD')
     
     y_curr = pdf.get_y()
     pdf.set_xy(x_ficha, y_curr + 2.5)
-    pdf.set_font('Helvetica', 'B', 10.5) # FONTE AUMENTADA
-    pdf.set_text_color(100, 116, 139)
+    
+    # "FICHA ANALISADA DO CLIENTE" COM FONTE AMPLIADA
+    pdf.set_font('Helvetica', 'B', 12.0)
+    pdf.set_text_color(30, 64, 175)
     pdf.cell(w_ficha, 4.5, conv('FICHA ANALISADA DO CLIENTE'), align='C', ln=True)
     
     pdf.set_x(x_ficha)
@@ -319,13 +323,13 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.cell(w_ficha, 6, conv(f"{dados['nome']}"), align='C', ln=True)
     
     pdf.set_x(x_ficha)
-    pdf.set_font('Helvetica', 'B', 11.5) # NOTA AUMENTADA (SEM SITE)
+    pdf.set_font('Helvetica', 'B', 11.5)
     pdf.set_text_color(245, 158, 11)
     pdf.cell(w_ficha, 5, conv(f"Nota {dados['nota']:.1f} {estrelas_txt}   -   {dados['avaliacoes']} avaliações no Google"), align='C', ln=True)
 
-    # 2. SCORE GERAL (LARGURA REDUZIDA PARA 80mm - VERDE ESCURO)
+    # QUADRO SCORE GERAL (75mm DE LARGURA)
     pdf.set_y(y_curr + 31)
-    w_box_score = 80 # LARGURA COMPACTA REDUZIDA
+    w_box_score = 75
     x_box_score = (210 - w_box_score) / 2.0
     y_box_score = pdf.get_y()
     
@@ -336,13 +340,13 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
         cr, cg, cb = 245, 158, 11
         status_txt = "STATUS MÉDIO"
     else:
-        cr, cg, cb = 22, 128, 61 # VERDE ESCURO
+        cr, cg, cb = 22, 128, 61
         status_txt = "ALTO DESEMPENHO"
 
     pdf.set_fill_color(240, 249, 255)
     pdf.set_draw_color(62, 161, 219)
     pdf.set_line_width(0.5)
-    pdf.rounded_rect(x_box_score, y_box_score, w_box_score, 16, 3, 'FD')
+    pdf.rounded_rect(x_box_score, y_box_score, w_box_score, 17, 3, 'FD')
     pdf.set_line_width(0.2)
 
     pdf.set_xy(x_box_score, y_box_score + 1.5)
@@ -360,12 +364,13 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_text_color(15, 23, 42)
     pdf.write(7, conv(str_100))
     
-    pdf.set_xy(x_box_score, y_box_score + 9.5)
-    pdf.set_font('Helvetica', 'B', 8.0)
+    # "SCORE GERAL" COM FONTE AMPLIADA
+    pdf.set_xy(x_box_score, y_box_score + 10)
+    pdf.set_font('Helvetica', 'B', 9.5)
     pdf.set_text_color(cr, cg, cb)
     pdf.cell(w_box_score, 4, conv(f"SCORE GERAL ({status_txt})"), align='C', ln=True)
 
-    # 3. LISTA DA AUDITORIA (VERDE ESCURO NOS STATUS E BARRAS)
+    # AUDITORIA
     pdf.set_y(y_box_score + 24)
 
     pct_avaliacoes = min(int((dados['avaliacoes'] / 50.0) * 100), 100) if dados['avaliacoes'] > 0 else 10
@@ -406,7 +411,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
         pdf.set_font('Helvetica', 'B', 9.5)
         if pct < 40: pdf.set_text_color(239, 68, 68)
         elif pct < 80: pdf.set_text_color(245, 158, 11)
-        else: pdf.set_text_color(22, 128, 61) # VERDE ESCURO
+        else: pdf.set_text_color(22, 128, 61)
             
         pdf.cell(56, 3.5, conv(rotulo), align='R', ln=True)
 
@@ -415,7 +420,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
         
         if pct < 40: pdf.set_fill_color(239, 68, 68)
         elif pct < 80: pdf.set_fill_color(245, 158, 11)
-        else: pdf.set_fill_color(22, 128, 61) # VERDE ESCURO
+        else: pdf.set_fill_color(22, 128, 61)
             
         largura_barra = max(float(pct) * 1.86, 4.0)
         pdf.rounded_rect(12, pdf.get_y(), largura_barra, 2.4, 1.0, 'F')
@@ -426,36 +431,39 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
         pdf.cell(0, 3.5, conv(f"  Diagnóstico: {desc}"), ln=True)
         pdf.ln(2.0)
 
-    # 4. PLANO DE AÇÃO
+    # PLANO DE AÇÃO RECOMPACTADO NAS LATERAIS (170mm)
     if plano_acao_extra and plano_acao_extra.strip() != "":
         pdf.ln(8)
+        w_extra = 170
+        x_extra = (210 - w_extra) / 2.0
+        
         pdf.set_fill_color(240, 249, 255)
         pdf.set_draw_color(62, 161, 219)
         pdf.set_line_width(0.5)
         
         y_extra = pdf.get_y()
-        pdf.rounded_rect(12, y_extra, 186, 25, 2.5, 'FD')
+        pdf.rounded_rect(x_extra, y_extra, w_extra, 25, 2.5, 'FD')
         pdf.set_line_width(0.2)
         
-        pdf.set_xy(12, y_extra + 3)
+        pdf.set_xy(x_extra, y_extra + 3)
         pdf.set_font('Helvetica', 'B', 9.5)
         pdf.set_text_color(30, 64, 175)
-        pdf.cell(186, 4, conv("PLANO DE AÇÃO E APONTAMENTOS ESTRATÉGICOS PERSONALIZADOS:"), align='C', ln=True)
+        pdf.cell(w_extra, 4, conv("PLANO DE AÇÃO E APONTAMENTOS ESTRATÉGICOS PERSONALIZADOS:"), align='C', ln=True)
         
-        pdf.set_xy(16, y_extra + 9)
+        pdf.set_xy(x_extra + 4, y_extra + 9)
         pdf.set_font('Helvetica', '', 8.5)
         pdf.set_text_color(51, 65, 85)
-        pdf.multi_cell(178, 3.8, conv(plano_acao_extra), align='L')
+        pdf.multi_cell(w_extra - 8, 3.8, conv(plano_acao_extra), align='L')
 
-    # PÁGINA 3: PLANOS E PROPOSTA (TÍTULOS AUMENTADOS PARA 16pt / CONDIÇÕES DE PAGAMENTO ABAIXO DOS VALORES)
+    # PÁGINA 3: PLANOS (CONDIÇÕES DE PAGAMENTO AMPLIADAS PARA TAMANHO 9pt)
     pdf.add_page()
     pdf.set_y(30)
-    pdf.set_font('Helvetica', 'B', 16) # TÍTULO AUMENTADO
+    pdf.set_font('Helvetica', 'B', 16)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 7, conv('PROPOSTA COMERCIAL & ESTRUTURAÇÃO ESTRATÉGICA'), align='C', ln=True)
     pdf.ln(10)
 
-    pdf.set_font('Helvetica', 'B', 16) # TÍTULO AUMENTADO
+    pdf.set_font('Helvetica', 'B', 16)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 6, conv('PLANOS E INVESTIMENTO'), align='C', ln=True)
     pdf.ln(10)
@@ -477,10 +485,11 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_text_color(62, 161, 219)
     pdf.cell(54, 5, conv(f"R$ {val_start_limpo}"), align='C', ln=True)
     
+    # TAMANHO AUMENTADO PARA 9pt
     pdf.set_xy(12, y_p + 15)
-    pdf.set_font('Helvetica', 'B', 7.5)
+    pdf.set_font('Helvetica', 'B', 9.0)
     pdf.set_text_color(100, 116, 139)
-    pdf.cell(54, 3.5, conv('(em até 2x)'), align='C', ln=True)
+    pdf.cell(54, 4, conv('(em até 2x)'), align='C', ln=True)
     
     pdf.set_font('Helvetica', '', 9.0)
     pdf.set_text_color(51, 65, 85)
@@ -509,17 +518,18 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_text_color(30, 64, 175)
     pdf.cell(70, 6, conv(f"R$ {val_pro_limpo}"), align='C', ln=True)
     
+    # TAMANHO AUMENTADO PARA 9pt
     pdf.set_xy(70, y_p + 16.5)
-    pdf.set_font('Helvetica', 'B', 8.0)
+    pdf.set_font('Helvetica', 'B', 9.0)
     pdf.set_text_color(100, 116, 139)
-    pdf.cell(70, 3.5, conv('(em até 3x)'), align='C', ln=True)
+    pdf.cell(70, 4, conv('(em até 3x)'), align='C', ln=True)
     
     pdf.set_font('Helvetica', 'B', 9.5)
     pdf.set_text_color(15, 23, 42)
     pdf.set_xy(75, y_p + 22)
     pdf.multi_cell(60, 4.8, conv(planos['pro_itens']), align='L')
 
-    # Gestão Mensal (SEM "/MÊS" NO VALOR PRINCIPAL)
+    # Gestão Mensal
     val_gestao_limpo = str(planos['gestao_valor']).replace("/mês", "").replace("/mes", "").strip()
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
@@ -534,29 +544,33 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_text_color(62, 161, 219)
     pdf.cell(54, 5, conv(f"R$ {val_gestao_limpo}"), align='C', ln=True)
     
+    # TAMANHO AUMENTADO PARA 9pt
     pdf.set_xy(144, y_p + 15)
-    pdf.set_font('Helvetica', 'B', 7.5)
+    pdf.set_font('Helvetica', 'B', 9.0)
     pdf.set_text_color(100, 116, 139)
-    pdf.cell(54, 3.5, conv('(valor mensal)'), align='C', ln=True)
+    pdf.cell(54, 4, conv('(valor mensal)'), align='C', ln=True)
     
     pdf.set_font('Helvetica', '', 9.0)
     pdf.set_text_color(51, 65, 85)
     pdf.set_xy(147, y_p + 21)
     pdf.multi_cell(48, 4.5, conv(planos['gestao_itens']), align='L')
 
-    # QUADRO INFORMATIVO
+    # QUADRO INFORMATIVO RECOMPACTADO NAS LATERAIS (170mm)
     pdf.set_y(y_p + 74)
+    w_info = 170
+    x_info = (210 - w_info) / 2.0
+    
     pdf.set_fill_color(240, 249, 255)
     pdf.set_draw_color(62, 161, 219)
     pdf.set_line_width(0.5)
-    pdf.rounded_rect(12, pdf.get_y(), 186, 28, 2, 'FD')
+    pdf.rounded_rect(x_info, pdf.get_y(), w_info, 28, 2, 'FD')
     pdf.set_line_width(0.2)
 
     y_info = pdf.get_y() + 3
-    pdf.set_xy(12, y_info)
+    pdf.set_xy(x_info, y_info)
     pdf.set_font('Helvetica', 'B', 10)
     pdf.set_text_color(15, 23, 42)
-    pdf.cell(186, 5, conv('POR QUE SEU NEGÓCIO PRECISA DE OTIMIZAÇÃO PROFISSIONAL?'), align='C', ln=True)
+    pdf.cell(w_info, 5, conv('POR QUE SEU NEGÓCIO PRECISA DE OTIMIZAÇÃO PROFISSIONAL?'), align='C', ln=True)
     pdf.ln(1)
 
     pdf.set_font('Helvetica', '', 8.5)
@@ -566,13 +580,13 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
         "Perfis com fotos profissionais e Tour Virtual 360° geram até 2x mais interesse e permanecem no topo das buscas.\n"
         "Fichas incompletas ou desatualizadas perdem clientes diariamente para concorrentes diretos com nota mais alta."
     )
-    pdf.set_x(12)
-    pdf.multi_cell(186, 4.0, conv(txt_exp), align='C')
+    pdf.set_x(x_info)
+    pdf.multi_cell(w_info, 4.0, conv(txt_exp), align='C')
 
-    # PÁGINA 4: CONTRATO (TÍTULO AUMENTADO PARA 16pt)
+    # PÁGINA 4: CONTRATO
     pdf.add_page()
     pdf.set_y(30)
-    pdf.set_font('Helvetica', 'B', 16) # TÍTULO AUMENTADO
+    pdf.set_font('Helvetica', 'B', 16)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 7, conv('CONTRATO DE PRESTAÇÃO DE SERVIÇOS'), align='C', ln=True)
     pdf.ln(8)
