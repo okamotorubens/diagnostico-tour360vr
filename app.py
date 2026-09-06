@@ -204,7 +204,7 @@ class PDFTour360Oficial(FPDF):
             self.set_x(12)
             self.set_font('Helvetica', 'B', 12)
             self.set_text_color(30, 64, 175)
-            self.cell(186, 5, conv("Tour360VR - 16 99133 2121 - Ribeião Preto - SP"), align='C')
+            self.cell(186, 5, conv("Tour360VR - 16 99133 2121 - Ribeirão Preto - SP"), align='C')
         else:
             w_col = (198 - 12) / 4.0
             self.set_x(12)
