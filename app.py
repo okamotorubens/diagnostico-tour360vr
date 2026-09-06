@@ -767,12 +767,12 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     pdf.multi_cell(w_contrato, 5.2, conv(txt_partes), align='J')
     pdf.ln(6)
 
-    pdf.cell (w_contrato, 5.0, conv("CLÁUSULA PRIMEIRA - DO OBJETO:") Os serviços serão iniciados em até 7 dias úteis após o fornecimento de todos os acessos e informações necessárias à gestão do perfil."
+    pdf.cell(w_contrato, 5.0, conv("CLÁUSULA PRIMEIRA - DO OBJETO:") Os serviços serão iniciados em até 7 dias úteis após o fornecimento de todos os acessos e informações necessárias à gestão do perfil."
     pdf.set_x(12)
     pdf.multi_cell(w_contrato, 5.2, conv(c1), align='J')
     pdf.ln(6)
 
-    pdf.cell (w_contrato, 5.0, conv("CLÁUSULA SEGUNDA - DAS OBRIGAÇÕES:") O não pagamento no prazo pactuado sujeitará o presente contrato à incidência de juros moratórios legais e à suspensão temporária dos serviços até a devida regularização."
+    pdf.cell(w_contrato, 5.0, conv("CLÁUSULA SEGUNDA - DAS OBRIGAÇÕES:") O não pagamento no prazo pactuado sujeitará o presente contrato à incidência de juros moratórios legais e à suspensão temporária dos serviços até a devida regularização."
     pdf.set_x(12)
     pdf.multi_cell(w_contrato, 5.2, conv(c2), align='J')
     pdf.ln(8)
