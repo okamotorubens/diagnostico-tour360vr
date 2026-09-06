@@ -868,7 +868,7 @@ st.markdown("<div class='card-title'>GERAR DOCUMENTO OFICIAL</div>", unsafe_allo
 
 pdf_bytes = gerar_pdf_oficial(dados, score, st.session_state['planos'], st.session_state['plano_acao_extra'])
 
-nome_arquivo_pdf = dados['nome'].replace(' ', '_') if dados['nome'] else 'Novo_Cliente'
+nome_arquivo_pdf = dados['nome'].replace(' ', ' ') if dados['nome'] else 'Novo_Cliente'
 st.download_button(
     "📥 Baixar Diagnóstico, Proposta e Contrato Completo em PDF",
     data=pdf_bytes,
