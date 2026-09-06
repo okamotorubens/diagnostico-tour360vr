@@ -202,9 +202,9 @@ class PDFTour360Oficial(FPDF):
         
         if self.page_no() == 1:
             self.set_x(12)
-            self.set_font('Helvetica', 'B', 14)
+            self.set_font('Helvetica', 'B', 16)
             self.set_text_color(30, 64, 175)
-            self.cell(186, 5, conv("Tour360VR - Okamoto Mídias Visuais"), align='C')
+            self.cell(186, 5, conv("Tour360VR - 16 99133 2121 - Ribeirão Preto - SP"), align='C')
         else:
             w_col = (198 - 12) / 4.0
             self.set_x(12)
@@ -271,11 +271,12 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_draw_color(203, 213, 225)
     pdf.rounded_rect(x_capa, y_capa, w_capa, h_capa, 4, 'FD')
 
+    # NOME DA EMPRESA NA CAPA AUMENTADO PARA 23pt
     pdf.set_xy(x_capa, y_capa + 6)
-    pdf.set_font('Helvetica', 'B', 20)
+    pdf.set_font('Helvetica', 'B', 23)
     pdf.set_text_color(30, 64, 175) 
-    pdf.cell(w_capa, 9, conv(f"{dados['nome'] or 'Nome da Empresa'}"), align='C', ln=True)
-    pdf.ln(4)
+    pdf.cell(w_capa, 10, conv(f"{dados['nome'] or 'Nome da Empresa'}"), align='C', ln=True)
+    pdf.ln(3)
 
     pdf.set_font('Helvetica', 'B', 13)
     pdf.set_text_color(15, 23, 42)
@@ -462,7 +463,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
         pdf.set_text_color(51, 65, 85)
         pdf.multi_cell(w_extra - 10, 3.8, conv(plano_acao_extra), align='L')
 
-    # PÁGINA 3: PLANOS (TAMANHOS AUMENTADOS, AZUL ESCURO NOS VALORES, PLANO PRO EM PRETO)
+    # PÁGINA 3: PLANOS (VALORES REDUZIDOS PARA START E GESTÃO, MAIOR ESPAÇAMENTO PARA ITENS)
     pdf.add_page()
     pdf.set_y(30)
     pdf.set_font('Helvetica', 'B', 17)
@@ -481,38 +482,39 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     val_start_limpo = str(planos['start_valor']).replace("/mês", "").replace("/mes", "").strip()
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
-    pdf.rounded_rect(12, y_p, 54, 60, 2, 'FD')
+    pdf.rounded_rect(12, y_p, 54, 62, 2, 'FD')
     
     pdf.set_xy(12, y_p + 3.5)
-    pdf.set_font('Helvetica', 'B', 14) # AUMENTADO PARA 14pt
+    pdf.set_font('Helvetica', 'B', 14)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(54, 5, 'Plano Start', align='C', ln=True)
     
     pdf.set_xy(12, y_p + 10)
-    pdf.set_font('Helvetica', 'B', 17) # VALOR AUMENTADO / AZUL ESCURO
+    pdf.set_font('Helvetica', 'B', 15) # VALOR REDUZIDO PARA 15pt
     pdf.set_text_color(30, 64, 175)
-    pdf.cell(54, 6, conv(f"R$ {val_start_limpo}"), align='C', ln=True)
+    pdf.cell(54, 5, conv(f"R$ {val_start_limpo}"), align='C', ln=True)
     
-    pdf.set_xy(12, y_p + 17)
+    pdf.set_xy(12, y_p + 16)
     pdf.set_font('Helvetica', 'B', 10.0)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(54, 4, conv('em até 2x'), align='C', ln=True)
     
+    # ESPAÇO AMPLIADO PARA OS ITENS (Y + 26)
     pdf.set_font('Helvetica', '', 9.0)
     pdf.set_text_color(51, 65, 85)
-    pdf.set_xy(15, y_p + 24)
+    pdf.set_xy(15, y_p + 26)
     pdf.multi_cell(48, 4.5, conv(planos['start_itens']), align='L')
 
-    # Plano Pro (TÍTULO EM PRETO, VALOR EM AZUL ESCURO E TAMANHOS AMPLIADOS)
+    # Plano Pro
     val_pro_limpo = str(planos['pro_valor']).replace("/mês", "").replace("/mes", "").strip()
     pdf.set_fill_color(240, 249, 255)
     pdf.set_draw_color(30, 64, 175)
     pdf.set_line_width(1.2)
-    pdf.rounded_rect(70, y_p - 4, 70, 68, 3, 'FD')
+    pdf.rounded_rect(70, y_p - 4, 70, 70, 3, 'FD')
     pdf.set_line_width(0.2)
     
     pdf.set_xy(70, y_p - 1)
-    pdf.set_font('Helvetica', 'B', 16) # TÍTULO AUMENTADO PARA 16pt / COR PRETA
+    pdf.set_font('Helvetica', 'B', 16)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(70, 5, conv('Plano Pro'), align='C', ln=True)
     
@@ -522,7 +524,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.cell(70, 4, conv('RECOMENDADO'), align='C', ln=True)
     
     pdf.set_xy(70, y_p + 10.5)
-    pdf.set_font('Helvetica', 'B', 19) # VALOR AUMENTADO PARA 19pt / AZUL ESCURO
+    pdf.set_font('Helvetica', 'B', 19)
     pdf.set_text_color(30, 64, 175)
     pdf.cell(70, 7, conv(f"R$ {val_pro_limpo}"), align='C', ln=True)
     
@@ -531,35 +533,37 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_text_color(15, 23, 42)
     pdf.cell(70, 4, conv('em até 3x'), align='C', ln=True)
     
+    # ESPAÇO AMPLIADO PARA OS ITENS (Y + 27.5)
     pdf.set_font('Helvetica', 'B', 9.5)
     pdf.set_text_color(15, 23, 42)
-    pdf.set_xy(75, y_p + 25.5)
+    pdf.set_xy(75, y_p + 27.5)
     pdf.multi_cell(60, 4.8, conv(planos['pro_itens']), align='L')
 
     # Gestão Mensal
     val_gestao_limpo = str(planos['gestao_valor']).replace("/mês", "").replace("/mes", "").strip()
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
-    pdf.rounded_rect(144, y_p, 54, 60, 2, 'FD')
+    pdf.rounded_rect(144, y_p, 54, 62, 2, 'FD')
     
     pdf.set_xy(144, y_p + 3.5)
-    pdf.set_font('Helvetica', 'B', 14) # AUMENTADO PARA 14pt
+    pdf.set_font('Helvetica', 'B', 14)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(54, 5, conv('Gestão Mensal'), align='C', ln=True)
     
     pdf.set_xy(144, y_p + 10)
-    pdf.set_font('Helvetica', 'B', 17) # VALOR AUMENTADO / AZUL ESCURO
+    pdf.set_font('Helvetica', 'B', 15) # VALOR REDUZIDO PARA 15pt
     pdf.set_text_color(30, 64, 175)
-    pdf.cell(54, 6, conv(f"R$ {val_gestao_limpo}"), align='C', ln=True)
+    pdf.cell(54, 5, conv(f"R$ {val_gestao_limpo}"), align='C', ln=True)
     
-    pdf.set_xy(144, y_p + 17)
+    pdf.set_xy(144, y_p + 16)
     pdf.set_font('Helvetica', 'B', 10.0)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(54, 4, conv('valor mensal'), align='C', ln=True)
     
+    # ESPAÇO AMPLIADO PARA OS ITENS (Y + 26)
     pdf.set_font('Helvetica', '', 9.0)
     pdf.set_text_color(51, 65, 85)
-    pdf.set_xy(147, y_p + 24)
+    pdf.set_xy(147, y_p + 26)
     pdf.multi_cell(48, 4.5, conv(planos['gestao_itens']), align='L')
 
     # QUADRO INFORMATIVO
@@ -590,7 +594,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_x(x_info)
     pdf.multi_cell(w_info, 4.0, conv(txt_exp), align='C')
 
-    # PÁGINA 4: CONTRATO (ESPAÇAMENTO AMPLIADO ENTRE OS PARÊNTESES DA CLÁUSULA QUARTA)
+    # PÁGINA 4: CONTRATO
     pdf.add_page()
     pdf.set_y(30)
     pdf.set_font('Helvetica', 'B', 17)
@@ -634,11 +638,10 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_font('Helvetica', '', 9.0)
     pdf.write(4.5, conv("(   ) Plano Start        (   ) Plano Pro        (   ) Gestão Mensal\n\n"))
 
-    # CLÁUSULA QUARTA COM MAIOR ESPAÇAMENTO ENTRE PARÊNTESES E OPÇÕES
     pdf.set_font('Helvetica', 'B', 9.0)
     pdf.write(4.5, conv("CLÁUSULA QUARTA - CONDIÇÕES DE PAGAMENTO:\n"))
     pdf.set_font('Helvetica', '', 9.0)
-    pdf.write(6.0, conv("(   ) À Vista       (   ) 2x Plano Start       (   ) 3x Plano Pro       (   ) Gestão Mensal - Vencimento Todo Dia: _____\n\n"))
+    pdf.write(6.0, conv("(   ) À Vista       (   ) 2x Plano Start       (   ) 3x Plano Pro       (   ) Vencimento Todo Dia: _____ - Gesttão Mensal\n\n"))
 
     pdf.ln(12)
     
