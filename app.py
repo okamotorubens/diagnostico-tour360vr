@@ -185,12 +185,12 @@ class PDFTour360Oficial(FPDF):
         self.set_xy(32, 10)
         self.set_font('Helvetica', 'B', 12)
         self.set_text_color(30, 64, 175)
-        self.cell(166, 4.5, 'TOUR360VR', align='L', ln=True)
+        self.cell(0, 4.5, 'TOUR360VR', align='L', ln=True)
         
         self.set_x(32)
         self.set_font('Helvetica', 'B', 8.5)
         self.set_text_color(100, 116, 139)
-        self.cell(166, 4, conv('Gestão de Perfil & Diagnóstico do Google Meu Negócio'), align='L', ln=True)
+        self.cell(0, 4, conv('Gestão de Perfil & Diagnóstico do Google Meu Negócio'), align='L', ln=True)
         
         self.set_draw_color(226, 232, 240)
         self.line(12, 21.5, 198, 21.5)
