@@ -778,7 +778,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     pdf.set_x(12)
     pdf.set_font('Helvetica', '', 9.5)
     pdf.set_text_color(51, 65, 85)
-    pdf.write(h_linha, conv("A CONTRATADA compromete-se a executar os serviços de otimização, reestruturação técnica e/ou produção de Tour Virtual 360° para o perfil do Google da CONTRATANTE.\n\n"))
+    pdf.write(h_linha, conv("A CONTRATADA")) compromete-se a executar os serviços de otimização, reestruturação técnica e/ou produção de Tour Virtual 360° para o perfil do Google da conv("CONTRATANTE: "E.\n\n"))
 
     # 4. CLÁUSULA PRIMEIRA
     pdf.set_x(12)
@@ -788,7 +788,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     
     pdf.set_font('Helvetica', '', 9.5)
     pdf.set_text_color(51, 65, 85)
-    pdf.write(h_linha, conv("Os serviços serão iniciados em até 5 dias úteis após o fornecimento de todos os acessos e informações necessárias à gestão do perfil.\n\n"))
+    pdf.write(h_linha, conv("Os serviços serão iniciados em até 7 dias úteis após o fornecimento de todos os acessos e informações necessárias à gestão do perfil.\n\n"))
 
     # 5. CLÁUSULA SEGUNDA
     pdf.set_x(12)
