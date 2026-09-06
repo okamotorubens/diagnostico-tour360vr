@@ -179,6 +179,7 @@ class PDFTour360Oficial(FPDF):
             try: self.image(caminho_logo, 12, 6, 18)
             except: pass
             
+        # CABEÇALHO ALINHADO À ESQUERDA
         self.set_xy(32, 6)
         self.set_font('Helvetica', 'B', 12)
         self.set_text_color(30, 64, 175)
@@ -262,7 +263,6 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_draw_color(203, 213, 225)
     pdf.rounded_rect(x_capa, 122, w_capa, 62, 4, 'FD')
 
-    # NOME DA EMPRESA EM AZUL ESCURO
     pdf.set_xy(x_capa, 127)
     pdf.set_font('Helvetica', 'B', 20)
     pdf.set_text_color(30, 64, 175) 
@@ -278,8 +278,10 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_text_color(71, 85, 105)
     pdf.set_x(x_capa)
     pdf.cell(w_capa, 5.5, conv(f"{dados['endereco'] or 'Endereço não informado'}"), align='C', ln=True)
+    
+    site_txt = dados['website'] if dados['website'] else 'N/I'
     pdf.set_x(x_capa)
-    pdf.cell(w_capa, 5.5, conv(f"Telefone: {dados['telefone'] or 'N/I'}   |   Website: {dados['website'] or 'N/I'}"), align='C', ln=True)
+    pdf.cell(w_capa, 5.5, conv(f"Telefone: {dados['telefone'] or 'N/I'}   |   {site_txt}"), align='C', ln=True)
     pdf.ln(4)
 
     pdf.set_font('Helvetica', 'B', 13)
@@ -291,17 +293,16 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
         pdf.set_text_color(22, 128, 61)
         pdf.cell(w_capa, 6, conv("Status da Ficha: Otimizado e Em Expansão"), align='C', ln=True)
 
-    # PÁGINA 2: DIAGNÓSTICO (TÍTULOS AUMENTADOS PARA 17pt)
+    # PÁGINA 2: DIAGNÓSTICO
     pdf.add_page()
     pdf.set_y(30)
-    pdf.set_font('Helvetica', 'B', 17) # TÍTULO PRINCIPAL AUMENTADO
+    pdf.set_font('Helvetica', 'B', 17)
     pdf.set_text_color(15, 23, 42)
     
     pdf.cell(0, 7, conv('AUDITORIA DETALHADA DE PONTOS DE BUSCA'), align='C', ln=True)
     pdf.ln(8)
 
-    # QUADRO FICHA ANALISADA (TAMANHO REDUZIDO E TEXTO CENTRALIZADO)
-    w_ficha = 160
+    w_ficha = 145
     x_ficha = (210 - w_ficha) / 2.0
     
     pdf.set_fill_color(248, 250, 252)
@@ -312,7 +313,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_xy(x_ficha, y_curr + 3)
     
     pdf.set_font('Helvetica', 'B', 11.0)
-    pdf.set_text_color(30, 64, 175)
+    pdf.set_text_color(15, 23, 42)
     pdf.cell(w_ficha, 4.5, conv('FICHA ANALISADA DO CLIENTE'), align='C', ln=True)
     
     pdf.set_x(x_ficha)
@@ -367,7 +368,6 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_text_color(cr, cg, cb)
     pdf.cell(w_box_score, 4, conv(f"SCORE GERAL ({status_txt})"), align='C', ln=True)
 
-    # MAIS ESPAÇO ENTRE SCORE E ITENS DA AUDITORIA
     pdf.set_y(y_box_score + 28)
 
     pct_avaliacoes = min(int((dados['avaliacoes'] / 50.0) * 100), 100) if dados['avaliacoes'] > 0 else 10
@@ -452,15 +452,15 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
         pdf.set_text_color(51, 65, 85)
         pdf.multi_cell(w_extra - 10, 3.8, conv(plano_acao_extra), align='L')
 
-    # PÁGINA 3: PLANOS (TÍTULOS AUMENTADOS PARA 17pt)
+    # PÁGINA 3: PLANOS (PARÊNTESES REMOVIDOS E FONTE AUMENTADA)
     pdf.add_page()
     pdf.set_y(30)
-    pdf.set_font('Helvetica', 'B', 17) # TÍTULO AUMENTADO
+    pdf.set_font('Helvetica', 'B', 17)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 7, conv('PROPOSTA COMERCIAL & ESTRUTURAÇÃO ESTRATÉGICA'), align='C', ln=True)
     pdf.ln(10)
 
-    pdf.set_font('Helvetica', 'B', 17) # TÍTULO AUMENTADO
+    pdf.set_font('Helvetica', 'B', 17)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 6, conv('PLANOS E INVESTIMENTO'), align='C', ln=True)
     pdf.ln(10)
@@ -482,10 +482,11 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_text_color(62, 161, 219)
     pdf.cell(54, 5, conv(f"R$ {val_start_limpo}"), align='C', ln=True)
     
+    # PARÊNTESES REMOVIDOS E FONTE AMPLIADA PARA 10pt
     pdf.set_xy(12, y_p + 15)
-    pdf.set_font('Helvetica', 'B', 9.0)
+    pdf.set_font('Helvetica', 'B', 10.0)
     pdf.set_text_color(100, 116, 139)
-    pdf.cell(54, 4, conv('(em até 2x)'), align='C', ln=True)
+    pdf.cell(54, 4, conv('em até 2x'), align='C', ln=True)
     
     pdf.set_font('Helvetica', '', 9.0)
     pdf.set_text_color(51, 65, 85)
@@ -507,17 +508,18 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_xy(70, y_p + 4.5)
     pdf.set_font('Helvetica', 'B', 9.0)
     pdf.set_text_color(255, 61, 61)
-    pdf.cell(70, 4, conv('(RECOMENDADO)'), align='C', ln=True)
+    pdf.cell(70, 4, conv('RECOMENDADO'), align='C', ln=True)
     
     pdf.set_xy(70, y_p + 10)
     pdf.set_font('Helvetica', 'B', 15)
     pdf.set_text_color(30, 64, 175)
     pdf.cell(70, 6, conv(f"R$ {val_pro_limpo}"), align='C', ln=True)
     
+    # PARÊNTESES REMOVIDOS E FONTE AMPLIADA PARA 10pt
     pdf.set_xy(70, y_p + 16.5)
-    pdf.set_font('Helvetica', 'B', 9.5)
+    pdf.set_font('Helvetica', 'B', 10.0)
     pdf.set_text_color(100, 116, 139)
-    pdf.cell(70, 4, conv('(em até 3x)'), align='C', ln=True)
+    pdf.cell(70, 4, conv('em até 3x'), align='C', ln=True)
     
     pdf.set_font('Helvetica', 'B', 9.5)
     pdf.set_text_color(15, 23, 42)
@@ -539,10 +541,11 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_text_color(62, 161, 219)
     pdf.cell(54, 5, conv(f"R$ {val_gestao_limpo}"), align='C', ln=True)
     
+    # PARÊNTESES REMOVIDOS E FONTE AMPLIADA PARA 10pt
     pdf.set_xy(144, y_p + 15)
-    pdf.set_font('Helvetica', 'B', 9.0)
+    pdf.set_font('Helvetica', 'B', 10.0)
     pdf.set_text_color(100, 116, 139)
-    pdf.cell(54, 4, conv('(valor mensal)'), align='C', ln=True)
+    pdf.cell(54, 4, conv('valor mensal'), align='C', ln=True)
     
     pdf.set_font('Helvetica', '', 9.0)
     pdf.set_text_color(51, 65, 85)
@@ -577,10 +580,10 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_x(x_info)
     pdf.multi_cell(w_info, 4.0, conv(txt_exp), align='C')
 
-    # PÁGINA 4: CONTRATO (TÍTULO AUMENTADO PARA 17pt / ESPAÇAMENTO AMPLIADO NA CLÁUSULA QUARTA)
+    # PÁGINA 4: CONTRATO
     pdf.add_page()
     pdf.set_y(30)
-    pdf.set_font('Helvetica', 'B', 17) # TÍTULO AUMENTADO
+    pdf.set_font('Helvetica', 'B', 17)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 7, conv('CONTRATO DE PRESTAÇÃO DE SERVIÇOS'), align='C', ln=True)
     pdf.ln(8)
@@ -621,7 +624,6 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_font('Helvetica', '', 9.0)
     pdf.write(4.5, conv("(  ) Plano Start        (  ) Plano Pro        (  ) Gestão Mensal\n\n"))
 
-    # CLÁUSULA QUARTA COM MAIOR ESPAÇAMENTO ENTRE OPÇÕES
     pdf.set_font('Helvetica', 'B', 9.0)
     pdf.write(4.5, conv("CLÁUSULA QUARTA - CONDIÇÕES DE PAGAMENTO:\n"))
     pdf.set_font('Helvetica', '', 9.0)
@@ -681,7 +683,7 @@ score = calcular_score_real(dados)
 # PAINEL CENTRAL - MÓDULOS DE USO
 # -----------------------------------------------------------------------------
 
-# MÓDULO 1: CONSULTA E DIAGNÓSTICO COMPLETO (CAMPOS DE BUSCA INICIAM VAZIOS)
+# MÓDULO 1: CONSULTA E DIAGNÓSTICO COMPLETO (CAMPOS DE BUSCA VAZIOS E PREENCHIMENTO AUTOMÁTICO)
 if "1. Consulta" in opcao_menu:
     col_left, col_right = st.columns([1.5, 1])
     
@@ -691,7 +693,7 @@ if "1. Consulta" in opcao_menu:
         
         c1, c2 = st.columns([2, 1])
         with c1:
-            nome_input = st.text_input("Nome da Empresa:", value=dados['nome'], key="input_empresa_nome", placeholder="Ex: Toque de Letra Comunicação")
+            nome_input = st.text_input("Nome da Empresa:", value="", key="input_empresa_nome", placeholder="Ex: Toque de Letra Comunicação")
         with c2:
             cidade_empresa = st.text_input("Localização:", value="", key="input_empresa_cidade", placeholder="Ex: Ribeirão Preto, SP")
             
@@ -731,12 +733,14 @@ if "1. Consulta" in opcao_menu:
                         photos = res_details.get("photos", u.get("photos", []))
                         types_lista = res_details.get("types", [])
                         
+                        # PREENCHIMENTO AUTOMÁTICO DOS DADOS DA SESSÃO
                         st.session_state['dados']['nome'] = res_details.get("name") or u.get("name") or nome_input
-                        st.session_state['dados']['endereco'] = res_details.get("formatted_address") or u.get("formatted_address")
+                        st.session_state['dados']['endereco'] = res_details.get("formatted_address") or u.get("formatted_address") or ""
                         st.session_state['dados']['telefone'] = res_details.get("formatted_phone_number") or res_details.get("international_phone_number") or ""
                         st.session_state['dados']['website'] = res_details.get("website") or ""
                         st.session_state['dados']['nota'] = float(res_details.get("rating") or u.get("rating") or 0.0)
                         st.session_state['dados']['avaliacoes'] = int(res_details.get("user_ratings_total") or u.get("user_ratings_total") or 0)
+                        st.session_state['dados']['contato'] = "Gerente Responsável"
                         
                         st.session_state['dados']['tem_fotos_hd'] = len(photos) >= 10
                         st.session_state['dados']['horarios_ok'] = "opening_hours" in res_details
@@ -744,7 +748,7 @@ if "1. Consulta" in opcao_menu:
                         st.session_state['dados']['tem_descricao'] = "editorial_summary" in res_details
                         st.session_state['dados']['categorias_detectadas'] = types_lista
                         
-                        st.success("Dados atualizados com sucesso!")
+                        st.success("Dados carregados com sucesso!")
                         st.rerun()
                     except Exception as e:
                         st.error(f"Erro ao obter detalhes: {e}")
@@ -766,15 +770,13 @@ if "1. Consulta" in opcao_menu:
         st.markdown("---")
         st.markdown("### ✍️ Edição dos Dados de Contato:")
         f_c1, f_c2 = st.columns(2)
-        st.session_state['dados']['contato'] = f_c1.text_input("Nome do Responsável:", value=st.session_state['dados']['contato'], key="edit_contato")
-        st.session_state['dados']['telefone'] = f_c2.text_input("Telefone / WhatsApp:", value=st.session_state['dados']['telefone'], key="edit_telefone")
         
-        st.session_state['dados']['website'] = f_c1.text_input(
-            "Website:", 
-            value=st.session_state['dados']['website'], 
-            key=f"edit_website_{st.session_state['dados']['website']}"
-        )
-        st.session_state['dados']['endereco'] = f_c2.text_input("Endereço Completo:", value=st.session_state['dados']['endereco'], key="edit_endereco")
+        # CAMPOS REATIVOS COM CHAVE DINÂMICA
+        st.session_state['dados']['nome'] = f_c1.text_input("Nome da Empresa:", value=st.session_state['dados']['nome'], key=f"edit_nome_{st.session_state['dados']['nome']}")
+        st.session_state['dados']['contato'] = f_c2.text_input("Nome do Responsável:", value=st.session_state['dados']['contato'], key=f"edit_contato_{st.session_state['dados']['contato']}")
+        st.session_state['dados']['telefone'] = f_c1.text_input("Telefone / WhatsApp:", value=st.session_state['dados']['telefone'], key=f"edit_telefone_{st.session_state['dados']['telefone']}")
+        st.session_state['dados']['website'] = f_c2.text_input("Website:", value=st.session_state['dados']['website'], key=f"edit_website_{st.session_state['dados']['website']}")
+        st.session_state['dados']['endereco'] = st.text_input("Endereço Completo:", value=st.session_state['dados']['endereco'], key=f"edit_endereco_{st.session_state['dados']['endereco']}")
 
         st.markdown("</div>", unsafe_allow_html=True)
 
