@@ -302,20 +302,6 @@ class PDFTour360Oficial(FPDF):
         k, hp = self.k, self.h
         self._out(f'{x1*k:.2f} {(hp-y1)*k:.2f} {x2*k:.2f} {(hp-y2)*k:.2f} {x3*k:.2f} {(hp-y3)*k:.2f} c')
 
-    # ESCRITA SEGURA DE PARÁGRAFO DO CONTRATO VIA MULTI_CELL JUSTIFICADO
-    def escrever_paragrafo_contrato(self, titulo_bold, texto_normal, w_tot=186):
-        self.set_x(12)
-        # 1. Imprime o título em negrito
-        self.set_font('Helvetica', 'B', 9.5)
-        self.set_text_color(15, 23, 42)
-        w_tit = self.get_string_width(conv(titulo_bold)) + 1.0
-        self.cell(w_tit, 5.2, conv(titulo_bold), ln=False, align='L')
-        
-        # 2. Imprime o restante do texto com multi_cell e alinhamento J
-        self.set_font('Helvetica', '', 9.5)
-        self.set_text_color(51, 65, 85)
-        self.multi_cell(w_tot - w_tit, 5.2, conv(texto_normal), align='J')
-
 def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorrentes=[]):
     score = calcular_score_real(dados)
     pdf = PDFTour360Oficial()
@@ -756,60 +742,31 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     pdf.set_x(x_info)
     pdf.multi_cell(w_info, 4.8, conv(txt_exp), align='C')
 
-    # PÁGINA 4: CONTRATO (SISTEMA MULTI_CELL JUSTIFICADO SEM ERROS DE LINT/VALUERRO)
+    # PÁGINA 4: CONTRATO (RENDERIZAÇÃO HTML PARA FLUXO E JUSTIFICATIVA PERFEITOS)
     pdf.add_page()
     pdf.set_y(30)
     pdf.set_font('Helvetica', 'B', 17)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 8, conv('CONTRATO DE PRESTAÇÃO DE SERVIÇOS'), align='C', ln=True)
-    pdf.ln(8)
-
-    w_contrato = 186
-
-    # 1. CONTRATADA E CONTRATANTE
-    pdf.escrever_paragrafo_contrato("CONTRATADA: ", "Tour360VR, representada por Rubens H. Okamoto, CPF: 287.932.298-79 e Telefone: (16) 99133-2121.")
-    pdf.ln(3)
-
-    txt_cli = f"{dados['nome'] or 'Empresa Contratante'}, representada por {dados['contato'] or 'Responsável'}, localizada em {dados['endereco'] or 'Endereço não informado'}, Telefone: {dados['telefone'] or 'N/I'}."
-    pdf.escrever_paragrafo_contrato("CONTRATANTE: ", txt_cli)
-    pdf.ln(4)
-
-    pdf.set_x(12)
-    pdf.set_font('Helvetica', '', 9.5)
-    pdf.set_text_color(51, 65, 85)
-    pdf.multi_cell(w_contrato, 5.2, conv("A CONTRATADA compromete-se a executar os serviços de otimização, reestruturação técnica e/ou produção de Tour Virtual 360° para o perfil do Google da CONTRATANTE."), align='J')
     pdf.ln(6)
 
-    # 2. CLÁUSULA PRIMEIRA
-    pdf.escrever_paragrafo_contrato("CLÁUSULA PRIMEIRA - DO OBJETO: ", "Os serviços serão iniciados em até 5 dias úteis após o fornecimento de todos os acessos e informações necessárias à gestão do perfil.")
-    pdf.ln(6)
+    txt_contratante = f"{dados['nome'] or 'Toque de Letra Comunicação'}, representada por {dados['contato'] or 'Marcio Javaroni'}, localizada em {dados['endereco'] or 'R. Espírito Santo, 122 - Ipiranga, Ribeirão Preto - SP, 14055-165, Brasil'}, Telefone: {dados['telefone'] or '(16) 98176-4000'}."
 
-    # 3. CLÁUSULA SEGUNDA
-    pdf.escrever_paragrafo_contrato("CLÁUSULA SEGUNDA - DAS OBRIGAÇÕES: ", "O não pagamento no prazo pactuado sujeitará o presente contrato à incidência de juros moratórios legais e à suspensão temporária dos serviços até a devida regularização.")
-    pdf.ln(8)
+    html_contrato = f"""
+    <p align="justify"><b>CONTRATADA:</b> Tour360VR, representada por Rubens H. Okamoto, CPF: 287.932.298-79 e Telefone: (16) 99133-2121.</p>
+    <p align="justify"><b>CONTRATANTE:</b> {txt_contratante}</p>
+    <p align="justify">A CONTRATADA compromete-se a executar os serviços de otimização, reestruturação técnica e/ou produção de Tour Virtual 360° para o perfil do Google da CONTRATANTE.</p>
+    <p align="justify"><b>CLÁUSULA PRIMEIRA - DO OBJETO:</b> Os serviços serão iniciados em até 5 dias úteis após o fornecimento de todos os acessos e informações necessárias à gestão do perfil.</p>
+    <p align="justify"><b>CLÁUSULA SEGUNDA - DAS OBRIGAÇÕES:</b> O não pagamento no prazo pactuado sujeitará o presente contrato à incidência de juros moratórios legais e à suspensão temporária dos serviços até a devida regularização.</p>
+    <p align="justify"><b>CLÁUSULA TERCEIRA - SELEÇÃO DO PLANO CONTRATADO:</b><br>(      ) Plano Start          (      ) Plano Pro          (      ) Gestão Mensal</p>
+    <p align="justify"><b>CLÁUSULA QUARTA - CONDIÇÕES DE PAGAMENTO:</b><br>(      ) À Vista          (      ) 2x - Plano Start           (      ) 3x - Plano Pro           (      ) Vencimento Dia: _____ - Gestão Mensal</p>
+    """
 
-    # 4. CLÁUSULA TERCEIRA
-    pdf.set_x(12)
-    pdf.set_font('Helvetica', 'B', 9.5)
-    pdf.set_text_color(15, 23, 42)
-    pdf.cell(w_contrato, 5.0, conv("CLÁUSULA TERCEIRA - SELEÇÃO DO PLANO CONTRATADO:"), ln=True)
-    pdf.set_x(12)
     pdf.set_font('Helvetica', '', 9.5)
     pdf.set_text_color(51, 65, 85)
-    pdf.cell(w_contrato, 6.5, conv("(   ) Plano Start        (   ) Plano Pro        (   ) Gestão Mensal"), ln=True)
-    pdf.ln(6)
+    pdf.write_html(html_contrato)
 
-    # 5. CLÁUSULA QUARTA
-    pdf.set_x(12)
-    pdf.set_font('Helvetica', 'B', 9.5)
-    pdf.set_text_color(15, 23, 42)
-    pdf.cell(w_contrato, 5.0, conv("CLÁUSULA QUARTA - CONDIÇÕES DE PAGAMENTO:"), ln=True)
-    pdf.set_x(12)
-    pdf.set_font('Helvetica', '', 9.5)
-    pdf.set_text_color(51, 65, 85)
-    pdf.cell(w_contrato, 6.5, conv("(   ) À Vista       (   ) 2x - Plano Start       (   ) 3x - Plano Pro       (   ) Vencimento Dia: _____ - Gestão Mensal"), ln=True)
-
-    pdf.ln(22)
+    pdf.ln(18)
     
     y_ass = pdf.get_y()
     pdf.set_xy(12, y_ass)
@@ -821,14 +778,14 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     pdf.set_x(12)
     pdf.cell(88, 4.5, 'Rubens H. Okamoto', align='C')
     pdf.set_x(110)
-    pdf.cell(88, 4.5, conv(f"{dados['contato'] or 'Responsável'}"), align='C', ln=True)
+    pdf.cell(88, 4.5, conv(f"{dados['contato'] or 'Marcio Javaroni'}"), align='C', ln=True)
     
     pdf.set_font('Helvetica', 'B', 8.5)
     pdf.set_text_color(100, 116, 139)
     pdf.set_x(12)
     pdf.cell(88, 4.5, 'Tour360VR', align='C')
     pdf.set_x(110)
-    pdf.cell(88, 4.5, conv(f"{dados['nome'] or 'Empresa'}"), align='C', ln=True)
+    pdf.cell(88, 4.5, conv(f"{dados['nome'] or 'Toque de Letra Comunicação'}"), align='C', ln=True)
 
     return bytes(pdf.output())
 
