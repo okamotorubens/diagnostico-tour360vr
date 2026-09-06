@@ -534,7 +534,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_text_color(15, 23, 42)
     pdf.cell(70, 4, conv('em até 3x'), align='C', ln=True)
     
-    pdf.set_font('Helvetica', '', 9.5)
+    pdf.set_font('Helvetica', 'B', 9.5)
     pdf.set_text_color(15, 23, 42)
     pdf.set_xy(75, y_p + 27.5)
     pdf.multi_cell(60, 4.8, conv(planos['pro_itens']), align='L')
@@ -644,9 +644,9 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
 
     pdf.ln(12)
     
-    pdf.cell(88, 5, '__________________________________', align='C')
+    pdf.cell(88, 5, '_____________________________________', align='C')
     pdf.cell(10, 5, '')
-    pdf.cell(88, 5, '__________________________________', align='C', ln=True)
+    pdf.cell(88, 5, '_____________________________________', align='C', ln=True)
     
     pdf.set_font('Helvetica', 'B', 8.5)
     pdf.cell(88, 4.5, 'Rubens H. Okamoto', align='C')
