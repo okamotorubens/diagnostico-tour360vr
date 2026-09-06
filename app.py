@@ -131,14 +131,14 @@ def obter_caminho_logo():
 
 def extrair_termo_busca_segmento(nome_empresa, types_lista):
     """
-    Identifica com altíssima precisão o nicho do negócio para buscar concorrentes diretos.
+    Identifica o nicho exato da empresa para filtrar concorrentes diretos sem mistura de segmentos.
     """
-    genericos = ["establishment", "point_of_interest", "store", "food", "health", "building", "general_contractor"]
-    
+    genericos = ["establishment", "point_of_interest", "store", "food", "health", "building", "general_contractor", "finance"]
     nome_lc = nome_empresa.lower()
+    
     mapeamento_segmentos = [
         ("sorvet", "sorveteria"), ("eskimó", "sorveteria"), ("açaí", "sorveteria açaí"),
-        ("pizzaria", "pizzaria"), ("restaurante", "restaurante"), ("bar", "bar boteco"),
+        ("pizzaria", "pizzaria"), ("restaurante", "restaurante"), ("bar", "bar"),
         ("hotel", "hotel"), ("pousada", "pousada"), ("padaria", "padaria"),
         ("café", "cafeteria"), ("farmácia", "farmácia"), ("drogaria", "drogaria"),
         ("oficina", "oficina mecânica"), ("dentista", "clínica odontológica"),
@@ -174,6 +174,11 @@ def buscar_concorrentes_proximos(lat, lng, place_id_cliente, termo_segmento, api
                 if "locality" in types_item or "administrative_area_level_1" in types_item or "political" in types_item:
                     continue
                 if item.get("user_ratings_total", 0) == 0 and float(item.get("rating", 0.0)) == 0.0:
+                    continue
+
+                # Filtro extra para evitar misturar segmentos discrepantes
+                nome_item = item.get("name", "").lower()
+                if "sorvet" in termo_segmento and ("móveis" in nome_item or "imóveis" in nome_item or "magazine" in nome_item):
                     continue
 
                 concorrentes.append({
@@ -373,7 +378,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
         pdf.set_text_color(22, 128, 61)
         pdf.cell(w_capa, 6, conv("Status da Ficha: Otimizado e Em Expansão"), align='C', ln=True)
 
-    # PÁGINA 2: DIAGNÓSTICO (AJUSTE DE TIPOGRAFIA E ESPAÇAMENTOS)
+    # PÁGINA 2: DIAGNÓSTICO
     pdf.add_page()
     pdf.set_y(32)
     pdf.set_font('Helvetica', 'B', 17)
@@ -405,7 +410,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     pdf.set_text_color(245, 158, 11)
     pdf.cell(w_ficha, 4.5, conv(f"Nota {dados['nota']:.1f} {estrelas_txt}   -   {dados['avaliacoes']} avaliações no Google"), align='C', ln=True)
 
-    # QUADRO SCORE GERAL (MAIOR RESPIRO APÓS A FICHA)
+    # QUADRO SCORE GERAL COM "/100" EM AZUL ESCURO
     pdf.set_y(y_curr + 32)
     w_box_score = 80
     x_box_score = (210 - w_box_score) / 2.0
@@ -427,17 +432,26 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     pdf.rounded_rect(x_box_score, y_box_score, w_box_score, 14, 3, 'FD')
     pdf.set_line_width(0.2)
 
-    pdf.set_xy(x_box_score, y_box_score + 1.5)
+    # IMPRESSÃO DO SCORE COM /100 EM AZUL ESCURO
+    score_str = f"{score}"
     pdf.set_font('Helvetica', 'B', 15)
+    w_num = pdf.get_string_width(score_str)
+    w_den = pdf.get_string_width(" / 100")
+    w_total = w_num + w_den
+    x_start = x_box_score + (w_box_score - w_total) / 2.0
+
+    pdf.set_xy(x_start, y_box_score + 1.5)
     pdf.set_text_color(cr, cg, cb)
-    pdf.cell(w_box_score, 5, conv(f"{score} / 100"), align='C', ln=True)
+    pdf.cell(w_num, 5, score_str, ln=False)
+
+    pdf.set_text_color(30, 64, 175) # Azul Escuro para o /100
+    pdf.cell(w_den, 5, " / 100", ln=True)
     
     pdf.set_xy(x_box_score, y_box_score + 8.5)
     pdf.set_font('Helvetica', 'B', 8.5)
     pdf.set_text_color(cr, cg, cb)
     pdf.cell(w_box_score, 4, conv(f"SCORE GERAL ({status_txt})"), align='C', ln=True)
 
-    # ESPAÇO AMPLIADO ANTES DOS ITENS
     pdf.set_y(y_box_score + 22)
 
     pct_avaliacoes = min(int((dados['avaliacoes'] / 50.0) * 100), 100) if dados['avaliacoes'] > 0 else 10
@@ -470,7 +484,6 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
         ("9. Interação e Resposta a Avaliações", pct_resp, "Ativo" if dados.get('resposta_avaliacoes_ok', False) else "Pendente", desc_resp)
     ]
 
-    # FONTE PADRONIZADA DOS ITENS: 9.5pt (TÍTULO) E 8.5pt (DIAGNÓSTICO)
     for titulo, pct, rotulo, desc in itens:
         pdf.set_font('Helvetica', 'B', 9.5)
         pdf.set_text_color(30, 41, 59)
@@ -535,7 +548,6 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
             pdf.cell(w_col3, 4.0, conv(f"{c['avaliacoes']} avaliações"), border='B', fill=fill_row, align='C')
             pdf.ln()
 
-    # QUADRO DO PLANO DE AÇÃO (ALTURA AMPLIADA PARA COMPORTAR ATÉ 7 LINHAS)
     if plano_acao_extra and plano_acao_extra.strip() != "":
         pdf.ln(5)
         w_extra = 186
@@ -546,7 +558,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
         pdf.set_line_width(0.5)
         
         y_extra = pdf.get_y()
-        h_box_extra = 40  # Altura expandida para suportar 7 linhas completas de texto
+        h_box_extra = 40
         pdf.rounded_rect(x_extra, y_extra, w_extra, h_box_extra, 2.5, 'FD')
         pdf.set_line_width(0.2)
         
@@ -575,7 +587,6 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
 
     y_p = pdf.get_y() + 2
     
-    # Plano Start
     val_start_limpo = str(planos['start_valor']).replace("/mês", "").replace("/mes", "").strip()
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
@@ -601,7 +612,6 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     pdf.set_xy(15, y_p + 26)
     pdf.multi_cell(48, 4.5, conv(planos['start_itens']), align='L')
 
-    # Plano Pro
     val_pro_limpo = str(planos['pro_valor']).replace("/mês", "").replace("/mes", "").strip()
     pdf.set_fill_color(240, 249, 255)
     pdf.set_draw_color(30, 64, 175)
@@ -634,7 +644,6 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     pdf.set_xy(75, y_p + 27.5)
     pdf.multi_cell(60, 4.8, conv(planos['pro_itens']), align='L')
 
-    # Gestão Mensal
     val_gestao_limpo = str(planos['gestao_valor']).replace("/mês", "").replace("/mes", "").strip()
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
@@ -979,7 +988,7 @@ elif "4. Contrato" in opcao_menu:
     st.markdown("</div>", unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# UNIFICADO: ÚNICO BOTÃO GERADOR DE PDF COMPLETO
+# UNIFICADO: ÚNICO BOTÃO GERADOR DE PDF COMPLETO (SEM VAZAMENTO DE NONE)
 # -----------------------------------------------------------------------------
 st.markdown("<div class='dashboard-card'>", unsafe_allow_html=True)
 st.markdown("<div class='card-title'>GERAR DOCUMENTO OFICIAL</div>", unsafe_allow_html=True)
