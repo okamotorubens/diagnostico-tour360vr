@@ -131,18 +131,25 @@ def obter_caminho_logo():
 
 def extrair_termo_busca_segmento(nome_empresa, types_lista):
     """
-    Extrai o nicho/segmento real da empresa para buscar concorrentes diretos e relevantes.
+    Identifica com altíssima precisão o nicho do negócio para buscar concorrentes diretos.
     """
-    genericos = ["establishment", "point_of_interest", "store", "food", "health", "building"]
+    genericos = ["establishment", "point_of_interest", "store", "food", "health", "building", "general_contractor"]
     
-    # 1. Tenta identificar palavras-chave no nome do estabelecimento
     nome_lc = nome_empresa.lower()
-    palavras_chave_comuns = ["sorvet", "sorveteria", "açaí", "hotel", "pousada", "restaurante", "pizzaria", "bar", "café", "padaria", "farmácia", "oficina", "odontologia", "clínica"]
-    for pk in palavras_chave_comuns:
-        if pk in nome_lc:
-            return pk
+    mapeamento_segmentos = [
+        ("sorvet", "sorveteria"), ("eskimó", "sorveteria"), ("açaí", "sorveteria açaí"),
+        ("pizzaria", "pizzaria"), ("restaurante", "restaurante"), ("bar", "bar boteco"),
+        ("hotel", "hotel"), ("pousada", "pousada"), ("padaria", "padaria"),
+        ("café", "cafeteria"), ("farmácia", "farmácia"), ("drogaria", "drogaria"),
+        ("oficina", "oficina mecânica"), ("dentista", "clínica odontológica"),
+        ("odontologia", "clínica odontológica"), ("academia", "academia fitness"),
+        ("imóveis", "imobiliária"), ("imobiliária", "imobiliária"), ("móveis", "loja de móveis")
+    ]
+    
+    for termo_chave, nicho_real in mapeamento_segmentos:
+        if termo_chave in nome_lc:
+            return nicho_real
             
-    # 2. Se não achar no nome, usa a categoria técnica do Google que não seja genérica
     for t in types_lista:
         if t not in genericos:
             return t.replace("_", " ")
@@ -154,8 +161,7 @@ def buscar_concorrentes_proximos(lat, lng, place_id_cliente, termo_segmento, api
         return []
     
     try:
-        # Utiliza keyword para forçar o Google a retornar concorrentes do mesmo nicho comercial
-        url = f"https://maps.googleapis.com/maps/api/place/nearbysearch/json?location={lat},{lng}&radius=10000&keyword={requests.utils.quote(termo_segmento)}&key={api_key}"
+        url = f"https://maps.googleapis.com/maps/api/place/nearbysearch/json?location={lat},{lng}&radius=8000&keyword={requests.utils.quote(termo_segmento)}&key={api_key}"
         res = requests.get(url).json()
         
         concorrentes = []
@@ -367,20 +373,20 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
         pdf.set_text_color(22, 128, 61)
         pdf.cell(w_capa, 6, conv("Status da Ficha: Otimizado e Em Expansão"), align='C', ln=True)
 
-    # PÁGINA 2: DIAGNÓSTICO (ESTRUTURA IDENTICA, AMPLIADA E EQUILIBRADA)
+    # PÁGINA 2: DIAGNÓSTICO (AJUSTE DE TIPOGRAFIA E ESPAÇAMENTOS)
     pdf.add_page()
     pdf.set_y(32)
     pdf.set_font('Helvetica', 'B', 17)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 8, conv('AUDITORIA DETALHADA DE PONTOS DE BUSCA'), align='C', ln=True)
-    pdf.ln(5)
+    pdf.ln(4)
 
     w_ficha = 186
     x_ficha = (210 - w_ficha) / 2.0
     
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
-    pdf.rounded_rect(x_ficha, pdf.get_y(), w_ficha, 24, 3, 'FD')
+    pdf.rounded_rect(x_ficha, pdf.get_y(), w_ficha, 23, 3, 'FD')
     
     y_curr = pdf.get_y()
     pdf.set_xy(x_ficha, y_curr + 2.5)
@@ -392,15 +398,15 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     pdf.set_x(x_ficha)
     pdf.set_font('Helvetica', 'B', 14)
     pdf.set_text_color(30, 64, 175)
-    pdf.cell(w_ficha, 6.0, conv(f"{dados['nome'] or 'Empresa Analisada'}"), align='C', ln=True)
+    pdf.cell(w_ficha, 5.5, conv(f"{dados['nome'] or 'Empresa Analisada'}"), align='C', ln=True)
 
     pdf.set_x(x_ficha)
     pdf.set_font('Helvetica', 'B', 11.5)
     pdf.set_text_color(245, 158, 11)
-    pdf.cell(w_ficha, 5.0, conv(f"Nota {dados['nota']:.1f} {estrelas_txt}   -   {dados['avaliacoes']} avaliações no Google"), align='C', ln=True)
+    pdf.cell(w_ficha, 4.5, conv(f"Nota {dados['nota']:.1f} {estrelas_txt}   -   {dados['avaliacoes']} avaliações no Google"), align='C', ln=True)
 
-    # QUADRO SCORE GERAL
-    pdf.set_y(y_curr + 28)
+    # QUADRO SCORE GERAL (MAIOR RESPIRO APÓS A FICHA)
+    pdf.set_y(y_curr + 32)
     w_box_score = 80
     x_box_score = (210 - w_box_score) / 2.0
     y_box_score = pdf.get_y()
@@ -418,21 +424,21 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     pdf.set_fill_color(240, 249, 255)
     pdf.set_draw_color(62, 161, 219)
     pdf.set_line_width(0.5)
-    pdf.rounded_rect(x_box_score, y_box_score, w_box_score, 15, 3, 'FD')
+    pdf.rounded_rect(x_box_score, y_box_score, w_box_score, 14, 3, 'FD')
     pdf.set_line_width(0.2)
 
-    pdf.set_xy(x_box_score, y_box_score + 1.8)
-    pdf.set_font('Helvetica', 'B', 16)
+    pdf.set_xy(x_box_score, y_box_score + 1.5)
+    pdf.set_font('Helvetica', 'B', 15)
     pdf.set_text_color(cr, cg, cb)
-    pdf.cell(w_box_score, 5.5, conv(f"{score} / 100"), align='C', ln=True)
+    pdf.cell(w_box_score, 5, conv(f"{score} / 100"), align='C', ln=True)
     
-    pdf.set_xy(x_box_score, y_box_score + 9.0)
+    pdf.set_xy(x_box_score, y_box_score + 8.5)
     pdf.set_font('Helvetica', 'B', 8.5)
     pdf.set_text_color(cr, cg, cb)
     pdf.cell(w_box_score, 4, conv(f"SCORE GERAL ({status_txt})"), align='C', ln=True)
 
-    # RESPIRO AUMENTADO ANTES DOS ITENS DE 1 A 9
-    pdf.set_y(y_box_score + 25)
+    # ESPAÇO AMPLIADO ANTES DOS ITENS
+    pdf.set_y(y_box_score + 22)
 
     pct_avaliacoes = min(int((dados['avaliacoes'] / 50.0) * 100), 100) if dados['avaliacoes'] > 0 else 10
     pct_fotos = 100 if dados['tem_fotos_hd'] else 30
@@ -464,6 +470,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
         ("9. Interação e Resposta a Avaliações", pct_resp, "Ativo" if dados.get('resposta_avaliacoes_ok', False) else "Pendente", desc_resp)
     ]
 
+    # FONTE PADRONIZADA DOS ITENS: 9.5pt (TÍTULO) E 8.5pt (DIAGNÓSTICO)
     for titulo, pct, rotulo, desc in itens:
         pdf.set_font('Helvetica', 'B', 9.5)
         pdf.set_text_color(30, 41, 59)
@@ -490,15 +497,14 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
         pdf.set_font('Helvetica', '', 8.5)
         pdf.set_text_color(71, 85, 105)
         pdf.cell(0, 2.8, conv(f"  Diagnóstico: {desc}"), ln=True)
-        pdf.ln(1.5)
+        pdf.ln(1.4)
 
-    # MAIS ESPAÇO ANTES DA ANÁLISE COMPARATIVA DE CONCORRENTES
     if concorrentes:
-        pdf.ln(6)
+        pdf.ln(4)
         pdf.set_font('Helvetica', 'B', 10.0)
         pdf.set_text_color(30, 64, 175)
         pdf.cell(0, 4.5, conv("ANÁLISE COMPARATIVA DE CONCORRENTES LOCAIS (MESMO SEGMENTO)"), ln=True)
-        pdf.ln(2.0)
+        pdf.ln(1.5)
 
         w_col1, w_col2, w_col3 = 106, 35, 45
         
@@ -529,9 +535,9 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
             pdf.cell(w_col3, 4.0, conv(f"{c['avaliacoes']} avaliações"), border='B', fill=fill_row, align='C')
             pdf.ln()
 
-    # MAIS ESPAÇO ANTES DO QUADRO PLANO DE AÇÃO
+    # QUADRO DO PLANO DE AÇÃO (ALTURA AMPLIADA PARA COMPORTAR ATÉ 7 LINHAS)
     if plano_acao_extra and plano_acao_extra.strip() != "":
-        pdf.ln(8)
+        pdf.ln(5)
         w_extra = 186
         x_extra = (210 - w_extra) / 2.0
         
@@ -540,7 +546,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
         pdf.set_line_width(0.5)
         
         y_extra = pdf.get_y()
-        h_box_extra = 30
+        h_box_extra = 40  # Altura expandida para suportar 7 linhas completas de texto
         pdf.rounded_rect(x_extra, y_extra, w_extra, h_box_extra, 2.5, 'FD')
         pdf.set_line_width(0.2)
         
@@ -552,7 +558,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
         pdf.set_xy(x_extra + 5, y_extra + 8.5)
         pdf.set_font('Helvetica', '', 8.5)
         pdf.set_text_color(51, 65, 85)
-        pdf.multi_cell(w_extra - 10, 3.8, conv(plano_acao_extra), align='L')
+        pdf.multi_cell(w_extra - 10, 4.0, conv(plano_acao_extra), align='L')
 
     # PÁGINA 3: PLANOS
     pdf.add_page()
