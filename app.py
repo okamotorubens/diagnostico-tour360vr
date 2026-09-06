@@ -202,7 +202,7 @@ class PDFTour360Oficial(FPDF):
         
         if self.page_no() == 1:
             self.set_x(12)
-            self.set_font('Helvetica', 'B', 14)
+            self.set_font('Helvetica', 'B', 12)
             self.set_text_color(30, 64, 175)
             self.cell(186, 5, conv("Tour360VR - 16 99133 2121 - Ribeirão Preto - SP"), align='C')
         else:
@@ -361,7 +361,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
 
     pdf.set_xy(x_box_score, y_box_score + 1.5)
     pdf.set_font('Helvetica', 'B', 19)
-    pdf.set_text_color(cr, cg, cb)
+    pdf.set_text_color(245, 158, 11)
     
     str_score = f"{score} "
     str_100 = "/ 100"
@@ -371,7 +371,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     
     pdf.set_x(x_start_text)
     pdf.write(7, conv(str_score))
-    pdf.set_text_color(15, 23, 42)
+    pdf.set_text_color()
     pdf.write(7, conv(str_100))
     
     pdf.set_xy(x_box_score, y_box_score + 10)
@@ -485,7 +485,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.rounded_rect(12, y_p, 54, 62, 2, 'FD')
     
     pdf.set_xy(12, y_p + 3.5)
-    pdf.set_font('Helvetica', 'B', 14)
+    pdf.set_font('Helvetica', 'B', 16)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(54, 5, 'Plano Start', align='C', ln=True)
     
@@ -514,7 +514,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_line_width(0.2)
     
     pdf.set_xy(70, y_p - 1)
-    pdf.set_font('Helvetica', 'B', 16)
+    pdf.set_font('Helvetica', 'B', 18)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(70, 5, conv('Plano Pro'), align='C', ln=True)
     
@@ -546,7 +546,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.rounded_rect(144, y_p, 54, 62, 2, 'FD')
     
     pdf.set_xy(144, y_p + 3.5)
-    pdf.set_font('Helvetica', 'B', 14)
+    pdf.set_font('Helvetica', 'B', 16)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(54, 5, conv('Gestão Mensal'), align='C', ln=True)
     
