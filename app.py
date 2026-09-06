@@ -130,7 +130,7 @@ def obter_caminho_logo():
 # -----------------------------------------------------------------------------
 if 'dados' not in st.session_state:
     st.session_state['dados'] = {
-        "nome": "Toque de Letra Comunicação",
+        "nome": "",
         "contato": "Gerente Responsável",
         "endereco": "Ribeirão Preto / SP",
         "telefone": "(16) 98176-4000",
@@ -312,7 +312,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     
     pdf.set_font('Helvetica', 'B', 12.0)
     pdf.set_text_color(30, 64, 175)
-    pdf.cell(w_ficha, 4.5, conv('FICHA ANALISADA DO CLIENTE'), align='C', ln=True)
+    pdf.cell(w_ficha, 4.5, conv('FICHA ANALISADA'), align='C', ln=True)
     
     # NOME DO CLIENTE/EMPRESA AUMENTADO NO QUADRO SUPERIOR
     pdf.set_x(x_ficha)
