@@ -764,57 +764,88 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
         pdf.multi_cell(w_contrato - w_tit, 5.2, conv(texto_normal), align='J')
         pdf.ln(3.5)
 
-    # 1. CONTRATADA E CONTRATANTE
-    imprimir_paragrafo_formatado(
-        "CONTRATADA: ", 
-        "Tour360VR, representada por Rubens H. Okamoto, CPF: 287.932.298-79 e Telefone: (16) 99133-2121."
-    )
+    # PÁGINA 4: CONTRATO (FLUXO CONTÍNUO COM WRITE - NEGRITOS E ALINHAMENTO JUSTIFICADO PERFEITO)
+    pdf.add_page()
+    pdf.set_y(30)
+    pdf.set_font('Helvetica', 'B', 17)
+    pdf.set_text_color(15, 23, 42)
+    pdf.cell(0, 8, conv('CONTRATO DE PRESTAÇÃO DE SERVIÇOS'), align='C', ln=True)
+    pdf.ln(10)
 
-    txt_cli = f"{dados['nome'] or 'Empresa Contratante'}, representada por {dados['contato'] or 'Responsável'}, localizada em {dados['endereco'] or 'Endereço não informado'}, Telefone: {dados['telefone'] or 'N/I'}."
-    imprimir_paragrafo_formatado("CONTRATANTE: ", txt_cli)
+    h_linha = 5.2
 
-    # 2. OBJETO DO CONTRATO
-    pdf.set_x(12)
-    pdf.set_font('Helvetica', '', 9.5)
-    pdf.set_text_color(51, 65, 85)
-    pdf.multi_cell(w_contrato, 5.2, conv("A CONTRATADA compromete-se a executar os serviços de otimização, reestruturação técnica e/ou produção de Tour Virtual 360° para o perfil do Google da CONTRATANTE."), align='J')
-    pdf.ln(4)
-
-    # 3. CLÁUSULA PRIMEIRA
-    imprimir_paragrafo_formatado(
-        "CLÁUSULA PRIMEIRA - DO OBJETO: ", 
-        "Os serviços serão iniciados em até 5 dias úteis após o fornecimento de todos os acessos e informações necessárias à gestão do perfil."
-    )
-
-    # 4. CLÁUSULA SEGUNDA
-    imprimir_paragrafo_formatado(
-        "CLÁUSULA SEGUNDA - DAS OBRIGAÇÕES: ", 
-        "O não pagamento no prazo pactuado sujeitará o presente contrato à incidência de juros moratórios legais e à suspensão temporária dos serviços até a devida regularização."
-    )
-
-    # 5. CLÁUSULA TERCEIRA
+    # 1. CONTRATADA
     pdf.set_x(12)
     pdf.set_font('Helvetica', 'B', 9.5)
     pdf.set_text_color(15, 23, 42)
-    pdf.cell(w_contrato, 5.0, conv("CLÁUSULA TERCEIRA - SELEÇÃO DO PLANO CONTRATADO:"), ln=True)
-    pdf.set_x(12)
+    pdf.write(h_linha, conv("CONTRATADA: "))
+    
     pdf.set_font('Helvetica', '', 9.5)
     pdf.set_text_color(51, 65, 85)
-    pdf.cell(w_contrato, 6.0, conv("(   ) Plano Start          (   ) Plano Pro          (   ) Gestão Mensal"), ln=True)
-    pdf.ln(4)
+    pdf.write(h_linha, conv("Tour360VR, representada por Rubens H. Okamoto, CPF: 287.932.298-79 e Telefone: (16) 99133-2121.\n\n"))
 
-    # 6. CLÁUSULA QUARTA
+    # 2. CONTRATANTE
     pdf.set_x(12)
     pdf.set_font('Helvetica', 'B', 9.5)
     pdf.set_text_color(15, 23, 42)
-    pdf.cell(w_contrato, 5.0, conv("CLÁUSULA QUARTA - CONDIÇÕES DE PAGAMENTO:"), ln=True)
+    pdf.write(h_linha, conv("CONTRATANTE: "))
+    
+    pdf.set_font('Helvetica', '', 9.5)
+    pdf.set_text_color(51, 65, 85)
+    txt_cli = f"{dados['nome'] or 'Empresa Contratante'}, representada por {dados['contato'] or 'Responsável'}, localizada em {dados['endereco'] or 'Endereço não informado'}, Telefone: {dados['telefone'] or 'N/I'}.\n\n"
+    pdf.write(h_linha, conv(txt_cli))
+
+    # 3. OBJETO
     pdf.set_x(12)
     pdf.set_font('Helvetica', '', 9.5)
     pdf.set_text_color(51, 65, 85)
-    pdf.cell(w_contrato, 6.0, conv("(   ) A Vista          (   ) 2x - Plano Start          (   ) 3x - Plano Pro          (   ) Vencimento Dia: _____ - Gestão Mensal"), ln=True)
+    pdf.write(h_linha, conv("A CONTRATADA compromete-se a executar os serviços de otimização, reestruturação técnica e/ou produção de Tour Virtual 360° para o perfil do Google da CONTRATANTE.\n\n"))
 
-    # 7. BLOCO DE ASSINATURAS
-    pdf.ln(18)
+    # 4. CLÁUSULA PRIMEIRA
+    pdf.set_x(12)
+    pdf.set_font('Helvetica', 'B', 9.5)
+    pdf.set_text_color(15, 23, 42)
+    pdf.write(h_linha, conv("CLÁUSULA PRIMEIRA - DO OBJETO: "))
+    
+    pdf.set_font('Helvetica', '', 9.5)
+    pdf.set_text_color(51, 65, 85)
+    pdf.write(h_linha, conv("Os serviços serão iniciados em até 5 dias úteis após o fornecimento de todos os acessos e informações necessárias à gestão do perfil.\n\n"))
+
+    # 5. CLÁUSULA SEGUNDA
+    pdf.set_x(12)
+    pdf.set_font('Helvetica', 'B', 9.5)
+    pdf.set_text_color(15, 23, 42)
+    pdf.write(h_linha, conv("CLÁUSULA SEGUNDA - DAS OBRIGAÇÕES: "))
+    
+    pdf.set_font('Helvetica', '', 9.5)
+    pdf.set_text_color(51, 65, 85)
+    pdf.write(h_linha, conv("O não pagamento no prazo pactuado sujeitará o presente contrato à incidência de juros moratórios legais e à suspensão temporária dos serviços até a devida regularização.\n\n"))
+
+    # 6. CLÁUSULA TERCEIRA
+    pdf.set_x(12)
+    pdf.set_font('Helvetica', 'B', 9.5)
+    pdf.set_text_color(15, 23, 42)
+    pdf.cell(186, 5.0, conv("CLÁUSULA TERCEIRA - SELEÇÃO DO PLANO CONTRATADO:"), ln=True)
+    
+    pdf.set_x(12)
+    pdf.set_font('Helvetica', '', 9.5)
+    pdf.set_text_color(51, 65, 85)
+    pdf.cell(186, 6.0, conv("(   ) Plano Start          (   ) Plano Pro          (   ) Gestão Mensal"), ln=True)
+    pdf.ln(4)
+
+    # 7. CLÁUSULA QUARTA
+    pdf.set_x(12)
+    pdf.set_font('Helvetica', 'B', 9.5)
+    pdf.set_text_color(15, 23, 42)
+    pdf.cell(186, 5.0, conv("CLÁUSULA QUARTA - CONDIÇÕES DE PAGAMENTO:"), ln=True)
+    
+    pdf.set_x(12)
+    pdf.set_font('Helvetica', '', 9.5)
+    pdf.set_text_color(51, 65, 85)
+    pdf.cell(186, 6.0, conv("(   ) A Vista          (   ) 2x - Plano Start          (   ) 3x - Plano Pro          (   ) Vencimento Dia: _____ - Gestão Mensal"), ln=True)
+
+    # 8. ASSINATURAS
+    pdf.ln(20)
     y_ass = pdf.get_y()
     pdf.set_xy(12, y_ass)
     pdf.cell(88, 5, '_____________________________________', align='C')
