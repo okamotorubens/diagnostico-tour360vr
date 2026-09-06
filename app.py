@@ -373,7 +373,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     
     pdf.set_x(x_start_text)
     pdf.write(7, conv(str_score))
-    pdf.set_text_color(15, 23, 42)
+    pdf.set_text_color(30, 64, 175)
     pdf.write(7, conv(str_100))
     
     pdf.set_xy(x_box_score, y_box_score + 10)
@@ -521,7 +521,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     
     pdf.set_xy(70, y_p + 5.0)
     pdf.set_font('Helvetica', 'B', 9.0)
-    pdf.set_text_color(255, 61, 61)
+    pdf.set_text_color(30, 64, 175)
     pdf.cell(70, 4, conv('RECOMENDADO'), align='C', ln=True)
     
     pdf.set_xy(70, y_p + 10.5)
@@ -579,7 +579,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     y_info = pdf.get_y() + 3
     pdf.set_xy(x_info, y_info)
     pdf.set_font('Helvetica', 'B', 10)
-    pdf.set_text_color(15, 23, 42)
+    pdf.set_text_color(30, 64, 175)
     pdf.cell(w_info, 5, conv('POR QUE SEU NEGÓCIO PRECISA DE OTIMIZAÇÃO PROFISSIONAL?'), align='C', ln=True)
     pdf.ln(1)
 
@@ -655,7 +655,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     
     pdf.set_font('Helvetica', 'B', 8.5)
     pdf.set_text_color(100, 116, 139)
-    pdf.cell(88, 4.5, 'TOUR360VR', align='C')
+    pdf.cell(88, 4.5, 'Tour360VR', align='C')
     pdf.cell(10, 4.5, '')
     pdf.cell(88, 4.5, conv(f"{dados['nome'] or 'Empresa'}"), align='C', ln=True)
 
