@@ -179,7 +179,7 @@ class PDFTour360Oficial(FPDF):
             try: self.image(caminho_logo, 12, 6, 18)
             except: pass
             
-        # CABEÇALHO ALINHADO À ESQUERDA
+        # CABEÇALHO COM ALINHAMENTO À ESQUERDA
         self.set_xy(32, 6)
         self.set_font('Helvetica', 'B', 12)
         self.set_text_color(30, 64, 175)
@@ -219,7 +219,7 @@ class PDFTour360Oficial(FPDF):
         self._out(f'{(x+w)*k:.2f} {(hp-yc)*k:.2f} l')
         self._arc(xc + r, yc + r*my_arc, xc + r*my_arc, yc + r, xc, yc + r)
         xc, yc = x + r, y + h - r
-        self._out(f'{xc*k:.2f} {(hp-(y+h))*k:.2f} l')
+        self._out(f'{(x+r)*k:.2f} {(hp-(y+h))*k:.2f} l')
         self._arc(xc - r*my_arc, yc + r, xc - r, yc + r*my_arc, xc - r, yc)
         xc, yc = x + r, y + r
         self._out(f'{x*k:.2f} {(hp-yc)*k:.2f} l')
@@ -236,38 +236,45 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_auto_page_break(auto=True, margin=18)
     estrelas_txt = formatar_estrelas(dados['nota'])
 
-    # PÁGINA 1: CAPA
+    # PÁGINA 1: CAPA (LOGO E QUADROS REORGANIZADOS E CENTRALIZADOS)
     pdf.add_page()
     caminho_logo = obter_caminho_logo()
     if caminho_logo:
-        try: pdf.image(caminho_logo, 82, 18, 46)
-        except: pass
+        try:
+            # LOGO CENTRALIZADO NA CAPA
+            pdf.image(caminho_logo, 82, 22, 46)
+        except:
+            pass
 
-    pdf.set_y(68)
-    pdf.set_font('Helvetica', 'B', 24)
+    pdf.set_y(74)
+    pdf.set_font('Helvetica', 'B', 23)
     pdf.set_text_color(30, 64, 175)
     pdf.cell(0, 10, conv('DIAGNÓSTICO DE PRESENÇA DIGITAL'), align='C', ln=True)
     pdf.ln(2)
 
-    pdf.set_font('Helvetica', 'B', 18)
+    pdf.set_font('Helvetica', 'B', 17)
     pdf.set_text_color(255, 61, 61)
-    pdf.cell(0, 8, conv('GOOGLE MEU NEGÓCIO'), align='C', ln=True)
-    pdf.set_font('Helvetica', 'B', 18)
+    pdf.cell(0, 7.5, conv('GOOGLE MEU NEGÓCIO'), align='C', ln=True)
+    pdf.set_font('Helvetica', 'B', 17)
     pdf.set_text_color(30, 64, 175)
-    pdf.cell(0, 8, conv('Tour360VR'), align='C', ln=True)
-    pdf.ln(12)
+    pdf.cell(0, 7.5, conv('Tour360VR'), align='C', ln=True)
+    pdf.ln(10)
 
+    # QUADRO CENTRALIZADO E HARMONIZADO NA CAPA
     w_capa = 170
+    h_capa = 68
     x_capa = (210 - w_capa) / 2.0
+    y_capa = 126
+
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(203, 213, 225)
-    pdf.rounded_rect(x_capa, 122, w_capa, 62, 4, 'FD')
+    pdf.rounded_rect(x_capa, y_capa, w_capa, h_capa, 4, 'FD')
 
-    pdf.set_xy(x_capa, 127)
+    pdf.set_xy(x_capa, y_capa + 6)
     pdf.set_font('Helvetica', 'B', 20)
     pdf.set_text_color(30, 64, 175) 
     pdf.cell(w_capa, 9, conv(f"{dados['nome'] or 'Nome da Empresa'}"), align='C', ln=True)
-    pdf.ln(3)
+    pdf.ln(4)
 
     pdf.set_font('Helvetica', 'B', 13)
     pdf.set_text_color(15, 23, 42)
@@ -282,7 +289,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     site_txt = dados['website'] if dados['website'] else 'N/I'
     pdf.set_x(x_capa)
     pdf.cell(w_capa, 5.5, conv(f"Telefone: {dados['telefone'] or 'N/I'}   |   {site_txt}"), align='C', ln=True)
-    pdf.ln(4)
+    pdf.ln(5)
 
     pdf.set_font('Helvetica', 'B', 13)
     pdf.set_x(x_capa)
@@ -302,6 +309,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.cell(0, 7, conv('AUDITORIA DETALHADA DE PONTOS DE BUSCA'), align='C', ln=True)
     pdf.ln(8)
 
+    # FICHA ANALISADA (NOME DA EMPRESA EM AZUL ESCURO)
     w_ficha = 145
     x_ficha = (210 - w_ficha) / 2.0
     
@@ -316,9 +324,10 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_text_color(15, 23, 42)
     pdf.cell(w_ficha, 4.5, conv('FICHA ANALISADA DO CLIENTE'), align='C', ln=True)
     
+    # NOME EM AZUL ESCURO (RGB: 30, 64, 175)
     pdf.set_x(x_ficha)
     pdf.set_font('Helvetica', 'B', 14.5)
-    pdf.set_text_color(15, 23, 42)
+    pdf.set_text_color(30, 64, 175)
     pdf.cell(w_ficha, 6, conv(f"{dados['nome'] or 'Empresa Analisada'}"), align='C', ln=True)
     
     pdf.set_x(x_ficha)
@@ -452,7 +461,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
         pdf.set_text_color(51, 65, 85)
         pdf.multi_cell(w_extra - 10, 3.8, conv(plano_acao_extra), align='L')
 
-    # PÁGINA 3: PLANOS (PARÊNTESES REMOVIDOS E FONTE AUMENTADA)
+    # PÁGINA 3: PLANOS (ESPAÇAMENTO VERTICAL AMPLIADO ENTRE CONDIÇÕES E ITENS)
     pdf.add_page()
     pdf.set_y(30)
     pdf.set_font('Helvetica', 'B', 17)
@@ -482,15 +491,15 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_text_color(62, 161, 219)
     pdf.cell(54, 5, conv(f"R$ {val_start_limpo}"), align='C', ln=True)
     
-    # PARÊNTESES REMOVIDOS E FONTE AMPLIADA PARA 10pt
     pdf.set_xy(12, y_p + 15)
     pdf.set_font('Helvetica', 'B', 10.0)
     pdf.set_text_color(100, 116, 139)
     pdf.cell(54, 4, conv('em até 2x'), align='C', ln=True)
     
+    # MAIS ESPAÇO PARA OS ITENS (Y + 23)
     pdf.set_font('Helvetica', '', 9.0)
     pdf.set_text_color(51, 65, 85)
-    pdf.set_xy(15, y_p + 21)
+    pdf.set_xy(15, y_p + 23)
     pdf.multi_cell(48, 4.5, conv(planos['start_itens']), align='L')
 
     # Plano Pro
@@ -515,15 +524,15 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_text_color(30, 64, 175)
     pdf.cell(70, 6, conv(f"R$ {val_pro_limpo}"), align='C', ln=True)
     
-    # PARÊNTESES REMOVIDOS E FONTE AMPLIADA PARA 10pt
     pdf.set_xy(70, y_p + 16.5)
     pdf.set_font('Helvetica', 'B', 10.0)
     pdf.set_text_color(100, 116, 139)
     pdf.cell(70, 4, conv('em até 3x'), align='C', ln=True)
     
+    # MAIS ESPAÇO PARA OS ITENS (Y + 24.5)
     pdf.set_font('Helvetica', 'B', 9.5)
     pdf.set_text_color(15, 23, 42)
-    pdf.set_xy(75, y_p + 22)
+    pdf.set_xy(75, y_p + 24.5)
     pdf.multi_cell(60, 4.8, conv(planos['pro_itens']), align='L')
 
     # Gestão Mensal
@@ -541,15 +550,15 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_text_color(62, 161, 219)
     pdf.cell(54, 5, conv(f"R$ {val_gestao_limpo}"), align='C', ln=True)
     
-    # PARÊNTESES REMOVIDOS E FONTE AMPLIADA PARA 10pt
     pdf.set_xy(144, y_p + 15)
     pdf.set_font('Helvetica', 'B', 10.0)
     pdf.set_text_color(100, 116, 139)
     pdf.cell(54, 4, conv('valor mensal'), align='C', ln=True)
     
+    # MAIS ESPAÇO PARA OS ITENS (Y + 23)
     pdf.set_font('Helvetica', '', 9.0)
     pdf.set_text_color(51, 65, 85)
-    pdf.set_xy(147, y_p + 21)
+    pdf.set_xy(147, y_p + 23)
     pdf.multi_cell(48, 4.5, conv(planos['gestao_itens']), align='L')
 
     # QUADRO INFORMATIVO
@@ -580,7 +589,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_x(x_info)
     pdf.multi_cell(w_info, 4.0, conv(txt_exp), align='C')
 
-    # PÁGINA 4: CONTRATO
+    # PÁGINA 4: CONTRATO (ESPAÇAMENTO AMPLIADO NAS OPÇÕES DA CLÁUSULA QUARTA)
     pdf.add_page()
     pdf.set_y(30)
     pdf.set_font('Helvetica', 'B', 17)
@@ -624,10 +633,11 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_font('Helvetica', '', 9.0)
     pdf.write(4.5, conv("(  ) Plano Start        (  ) Plano Pro        (  ) Gestão Mensal\n\n"))
 
+    # ESPAÇAMENTO EXPANDIDO ENTRE AS OPÇÕES DE PAGAMENTO
     pdf.set_font('Helvetica', 'B', 9.0)
     pdf.write(4.5, conv("CLÁUSULA QUARTA - CONDIÇÕES DE PAGAMENTO:\n"))
     pdf.set_font('Helvetica', '', 9.0)
-    pdf.write(5.5, conv("(  ) À Vista      (  ) 2x Plano Start      (  ) 3x Plano Pro      (  ) Gestão Mensal - Vencimento Todo Dia: _____\n\n"))
+    pdf.write(6.0, conv("(  ) À Vista       (  ) 2x Plano Start       (  ) 3x Plano Pro       (  ) Gestão Mensal - Vencimento Todo Dia: _____\n\n"))
 
     pdf.ln(12)
     
@@ -683,7 +693,7 @@ score = calcular_score_real(dados)
 # PAINEL CENTRAL - MÓDULOS DE USO
 # -----------------------------------------------------------------------------
 
-# MÓDULO 1: CONSULTA E DIAGNÓSTICO COMPLETO (CAMPOS DE BUSCA VAZIOS E PREENCHIMENTO AUTOMÁTICO)
+# MÓDULO 1: CONSULTA E DIAGNÓSTICO COMPLETO
 if "1. Consulta" in opcao_menu:
     col_left, col_right = st.columns([1.5, 1])
     
@@ -733,7 +743,6 @@ if "1. Consulta" in opcao_menu:
                         photos = res_details.get("photos", u.get("photos", []))
                         types_lista = res_details.get("types", [])
                         
-                        # PREENCHIMENTO AUTOMÁTICO DOS DADOS DA SESSÃO
                         st.session_state['dados']['nome'] = res_details.get("name") or u.get("name") or nome_input
                         st.session_state['dados']['endereco'] = res_details.get("formatted_address") or u.get("formatted_address") or ""
                         st.session_state['dados']['telefone'] = res_details.get("formatted_phone_number") or res_details.get("international_phone_number") or ""
@@ -771,7 +780,6 @@ if "1. Consulta" in opcao_menu:
         st.markdown("### ✍️ Edição dos Dados de Contato:")
         f_c1, f_c2 = st.columns(2)
         
-        # CAMPOS REATIVOS COM CHAVE DINÂMICA
         st.session_state['dados']['nome'] = f_c1.text_input("Nome da Empresa:", value=st.session_state['dados']['nome'], key=f"edit_nome_{st.session_state['dados']['nome']}")
         st.session_state['dados']['contato'] = f_c2.text_input("Nome do Responsável:", value=st.session_state['dados']['contato'], key=f"edit_contato_{st.session_state['dados']['contato']}")
         st.session_state['dados']['telefone'] = f_c1.text_input("Telefone / WhatsApp:", value=st.session_state['dados']['telefone'], key=f"edit_telefone_{st.session_state['dados']['telefone']}")
