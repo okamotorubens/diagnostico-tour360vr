@@ -202,7 +202,7 @@ class PDFTour360Oficial(FPDF):
         
         if self.page_no() == 1:
             self.set_x(12)
-            self.set_font('Helvetica', 'B', 9.5)
+            self.set_font('Helvetica', 'B', 12)
             self.set_text_color(30, 64, 175)
             self.cell(186, 5, conv("Tour360VR - Okamoto Mídias Visuais"), align='C')
         else:
@@ -272,7 +272,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.rounded_rect(x_capa, y_capa, w_capa, h_capa, 4, 'FD')
 
     pdf.set_xy(x_capa, y_capa + 6)
-    pdf.set_font('Helvetica', 'B', 23)
+    pdf.set_font('Helvetica', 'B', 21)
     pdf.set_text_color(30, 64, 175) 
     pdf.cell(w_capa, 10, conv(f"{dados['nome'] or 'Nome da Empresa'}"), align='C', ln=True)
     pdf.ln(3)
@@ -322,7 +322,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     
     pdf.set_font('Helvetica', 'B', 11.0)
     pdf.set_text_color(15, 23, 42)
-    pdf.cell(w_ficha, 5.0, conv('FICHA ANALISADA DO CLIENTE'), align='C', ln=True)
+    pdf.cell(w_ficha, 5.0, conv('FICHA ANALISADA'), align='C', ln=True)
     pdf.ln(1)
     
     pdf.set_x(x_ficha)
@@ -332,7 +332,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.ln(1)
 
     pdf.set_x(x_ficha)
-    pdf.set_font('Helvetica', 'B', 11.0)
+    pdf.set_font('Helvetica', 'B', 12.0)
     pdf.set_text_color(245, 158, 11)
     pdf.cell(w_ficha, 5.5, conv(f"Nota {dados['nota']:.1f} {estrelas_txt}   -   {dados['avaliacoes']} avaliações no Google"), align='C', ln=True)
 
@@ -632,12 +632,12 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_font('Helvetica', 'B', 9.0)
     pdf.write(4.5, conv("CLÁUSULA TERCEIRA - SELEÇÃO DO PLANO CONTRATADO:\n"))
     pdf.set_font('Helvetica', '', 9.0)
-    pdf.write(4.5, conv("(   ) Plano Start        (   ) Plano Pro        (   ) Gestão Mensal\n\n"))
+    pdf.write(4.5, conv("(    ) Plano Start        (    ) Plano Pro        (    ) Gestão Mensal\n\n"))
 
     pdf.set_font('Helvetica', 'B', 9.0)
     pdf.write(4.5, conv("CLÁUSULA QUARTA - CONDIÇÕES DE PAGAMENTO:\n"))
     pdf.set_font('Helvetica', '', 9.0)
-    pdf.write(6.0, conv("(   ) À Vista       (   ) 2x Plano Start       (   ) 3x Plano Pro       (   ) Gestão Mensal - Vencimento Todo Dia: _____\n\n"))
+    pdf.write(6.0, conv("(    ) À Vista       (    ) 2x - Plano Start       (    ) 3x - Plano Pro       (    ) Vencimento Dia: _____ - Gestão Mensal\n\n"))
 
     pdf.ln(12)
     
