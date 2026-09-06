@@ -173,7 +173,7 @@ def buscar_detalhes_concorrente_especifico(nome_concorrente, cidade, api_key):
                 "atributos_ok": "Não",
                 "respostas_ok": "Não"
             }
-    except Exception as e:
+    except Exception:
         pass
     return None
 
@@ -242,7 +242,7 @@ class PDFTour360Oficial(FPDF):
         if caminho_logo:
             try: 
                 self.image(caminho_logo, 12, 6, 18)
-            except: 
+            except Exception: 
                 pass
             
         self.set_xy(12, 10)
@@ -314,7 +314,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     if caminho_logo:
         try:
             pdf.image(caminho_logo, 82, 22, 46)
-        except:
+        except Exception:
             pass
 
     pdf.set_y(74)
@@ -503,16 +503,15 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     concorrentes_filtrados = [c for c in concorrentes if c.get("nome", "").strip() != ""]
 
     if concorrentes_filtrados:
-        pdf.ln(8)  # MAIOR ESPAÇAMENTO ANTES DE CONCORRENTES
+        pdf.ln(8)
         pdf.set_font('Helvetica', 'B', 10.0)
         pdf.set_text_color(30, 64, 175)
         pdf.cell(0, 4.5, conv("ANÁLISE AUTOMÁTICA DE CONCORRENTES DO SEGMENTO"), ln=True)
         pdf.ln(2.0)
 
-        # TABELA COM 10 COLUNAS (9 ITENS + SCORE GERAL)
         w_emp = 46
-        w_item = 12.5  # 9 itens * 12.5mm = 112.5mm
-        w_score = 27.5 # Score Geral Final
+        w_item = 12.5
+        w_score = 27.5
         
         pdf.set_fill_color(30, 64, 175)
         pdf.set_text_color(255, 255, 255)
@@ -531,7 +530,6 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
         pdf.cell(w_score, 4.5, conv("Score Geral"), border=0, fill=True, align='C')
         pdf.ln()
 
-        # LINHA DA EMPRESA CLIENTE
         pdf.set_fill_color(240, 249, 255)
         pdf.set_draw_color(191, 219, 254)
         pdf.set_font('Helvetica', 'B', 6.5)
@@ -550,7 +548,6 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
         pdf.cell(w_score, 4.2, conv(f"{score} / 100"), border='B', fill=True, align='C')
         pdf.ln()
 
-        # LINHAS DOS CONCORRENTES COM SCORE AUTOMÁTICO
         pdf.set_font('Helvetica', '', 6.5)
         pdf.set_text_color(51, 65, 85)
         for idx_c, c in enumerate(concorrentes_filtrados):
@@ -575,7 +572,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
             pdf.ln()
 
     if plano_acao_extra and plano_acao_extra.strip() != "":
-        pdf.ln(12)  # MAIOR ESPAÇAMENTO ANTES DO PLANO DE AÇÃO
+        pdf.ln(12)
         w_extra = 186
         x_extra = (210 - w_extra) / 2.0
         
@@ -967,42 +964,39 @@ if "1. Consulta" in opcao_menu:
 elif "2. Concorrentes" in opcao_menu:
     st.markdown("<div class='dashboard-card'>", unsafe_allow_html=True)
     st.markdown("<div class='card-title'>⚔️ ANÁLISE AUTOMÁTICA DE CONCORRENTES DO SEGMENTO</div>", unsafe_allow_html=True)
-    st.info("Digite apenas o nome da empresa concorrente e a cidade. Ao clicar no botão, a API do Google avaliará automaticamente a nota e todos os critérios de diagnóstico!")
+    st.info("Digite apenas o nome da empresa concorrente e a cidade. Ao enviar o formulário, a API do Google avaliará automaticamente a nota e todos os critérios!")
 
-    for i in range(3):
-        st.markdown(f"#### Concorrente #{i+1}")
-        col_c1, col_c2 = st.columns([2.5, 1.5])
-        
-        st.session_state['concorrentes'][i]['busca_termo'] = col_c1.text_input(
-            f"Nome da Empresa Concorrente #{i+1}:", 
-            value=st.session_state['concorrentes'][i].get('busca_termo', ''), 
-            key=f"conc_termo_{i}",
-            placeholder="Ex: Focco Comunicação"
-        )
-        
-        st.session_state['concorrentes'][i]['cidade'] = col_c2.text_input(
-            f"Cidade / Região #{i+1}:", 
-            value=st.session_state['concorrentes'][i].get('cidade', ''), 
-            key=f"conc_cidade_{i}",
-            placeholder="Ex: Ribeirão Preto - SP"
-        )
-
-        if st.session_state['concorrentes'][i]['nome']:
-            c_det = st.session_state['concorrentes'][i]
-            score_c = calcular_score_concorrente(c_det)
-            st.caption(
-                f"📌 **Avaliação Automática Google:** {c_det['nome']} — ⭐ Nota {c_det['nota']:.1f} ({c_det['avaliacoes']} aval.) | "
-                f"Score Calculado: **{score_c}/100**"
+    # FORMULÁRIO ESTÁVEL PARA PREVENIR ERROS DE REMOÇÃO DE NÓS REACT
+    with st.form(key="form_concorrentes_busca"):
+        inputs_busca = []
+        for i in range(3):
+            st.markdown(f"#### Concorrente #{i+1}")
+            col_c1, col_c2 = st.columns([2.5, 1.5])
+            
+            t_val = col_c1.text_input(
+                f"Nome da Empresa Concorrente #{i+1}:", 
+                value=st.session_state['concorrentes'][i].get('busca_termo', ''), 
+                key=f"conc_termo_{i}",
+                placeholder="Ex: Focco Comunicação"
             )
-        
-        st.markdown("---")
+            
+            c_val = col_c2.text_input(
+                f"Cidade / Região #{i+1}:", 
+                value=st.session_state['concorrentes'][i].get('cidade', ''), 
+                key=f"conc_cidade_{i}",
+                placeholder="Ex: Ribeirão Preto - SP"
+            )
+            inputs_busca.append((t_val, c_val))
+            st.markdown("---")
 
-    if st.button("🔎 Avaliar Concorrentes Automático via Google", use_container_width=True, key="btn_buscar_concorrentes_especificos"):
+        btn_sub = st.form_submit_button("🔎 Avaliar Concorrentes Automático via Google", use_container_width=True)
+
+    if btn_sub:
         if API_KEY_GOOGLE:
             encontrados = 0
-            for i in range(3):
-                termo_emp = st.session_state[f"conc_termo_{i}"]
-                cid = st.session_state[f"conc_cidade_{i}"]
+            for i, (termo_emp, cid) in enumerate(inputs_busca):
+                st.session_state['concorrentes'][i]['busca_termo'] = termo_emp
+                st.session_state['concorrentes'][i]['cidade'] = cid
                 if termo_emp.strip() != "":
                     detalhes = buscar_detalhes_concorrente_especifico(termo_emp, cid, API_KEY_GOOGLE)
                     if detalhes:
@@ -1024,6 +1018,17 @@ elif "2. Concorrentes" in opcao_menu:
                 st.warning("Preencha ao menos um nome de concorrente para consultar.")
         else:
             st.error("Chave GOOGLE_API_KEY não configurada.")
+
+    # RESUMO DOS CONCORRENTES CARREGADOS
+    concorrentes_validos = [c for c in st.session_state['concorrentes'] if c.get('nome', '').strip() != '']
+    if concorrentes_validos:
+        st.markdown("### 📌 Concorrentes Avaliados:")
+        for c_det in concorrentes_validos:
+            score_c = calcular_score_concorrente(c_det)
+            st.markdown(
+                f"* **{c_det['nome']}** — ⭐ Nota **{c_det['nota']:.1f}** ({c_det['avaliacoes']} aval.) | "
+                f"Score Geral: **{score_c}/100**"
+            )
 
     st.markdown("</div>", unsafe_allow_html=True)
 
