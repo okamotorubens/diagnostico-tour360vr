@@ -376,7 +376,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_text_color(30, 64, 175)
     pdf.write(7, conv(str_100))
     
-    pdf.set_xy(x_box_score, y_box_score + 10)
+    pdf.set_xy(x_box_score, y_box_score + 12)
     pdf.set_font('Helvetica', 'B', 9.5)
     pdf.set_text_color(cr, cg, cb)
     pdf.cell(w_box_score, 4, conv(f"SCORE GERAL ({status_txt})"), align='C', ln=True)
@@ -520,7 +520,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.cell(70, 5, conv('Plano Pro'), align='C', ln=True)
     
     pdf.set_xy(70, y_p + 5.0)
-    pdf.set_font('Helvetica', 'B', 10)
+    pdf.set_font('Helvetica', 'B', 11)
     pdf.set_text_color(30, 64, 175)
     pdf.cell(70, 4, conv('RECOMENDADO'), align='C', ln=True)
     
