@@ -129,69 +129,6 @@ def obter_caminho_logo():
         if os.path.exists(c): return c
     return None
 
-def extrair_termo_busca_segmento(nome_empresa, types_lista):
-    """
-    Identifica o nicho exato da empresa para filtrar concorrentes diretos sem mistura de segmentos.
-    """
-    genericos = ["establishment", "point_of_interest", "store", "food", "health", "building", "general_contractor", "finance"]
-    nome_lc = nome_empresa.lower()
-    
-    mapeamento_segmentos = [
-        ("sorvet", "sorveteria"), ("eskimó", "sorveteria"), ("açaí", "sorveteria açaí"),
-        ("pizzaria", "pizzaria"), ("restaurante", "restaurante"), ("bar", "bar"),
-        ("hotel", "hotel"), ("pousada", "pousada"), ("padaria", "padaria"),
-        ("café", "cafeteria"), ("farmácia", "farmácia"), ("drogaria", "drogaria"),
-        ("oficina", "oficina mecânica"), ("dentista", "clínica odontológica"),
-        ("odontologia", "clínica odontológica"), ("academia", "academia fitness"),
-        ("imóveis", "imobiliária"), ("imobiliária", "imobiliária"), ("móveis", "loja de móveis")
-    ]
-    
-    for termo_chave, nicho_real in mapeamento_segmentos:
-        if termo_chave in nome_lc:
-            return nicho_real
-            
-    for t in types_lista:
-        if t not in genericos:
-            return t.replace("_", " ")
-            
-    return nome_empresa
-
-def buscar_concorrentes_proximos(lat, lng, place_id_cliente, termo_segmento, api_key):
-    if not lat or not lng or not api_key:
-        return []
-    
-    try:
-        url = f"https://maps.googleapis.com/maps/api/place/nearbysearch/json?location={lat},{lng}&radius=8000&keyword={requests.utils.quote(termo_segmento)}&key={api_key}"
-        res = requests.get(url).json()
-        
-        concorrentes = []
-        if res.get("status") == "OK" and res.get("results"):
-            for item in res.get("results", []):
-                types_item = item.get("types", [])
-                
-                if item.get("place_id") == place_id_cliente:
-                    continue
-                if "locality" in types_item or "administrative_area_level_1" in types_item or "political" in types_item:
-                    continue
-                if item.get("user_ratings_total", 0) == 0 and float(item.get("rating", 0.0)) == 0.0:
-                    continue
-
-                # Filtro extra para evitar misturar segmentos discrepantes
-                nome_item = item.get("name", "").lower()
-                if "sorvet" in termo_segmento and ("móveis" in nome_item or "imóveis" in nome_item or "magazine" in nome_item):
-                    continue
-
-                concorrentes.append({
-                    "nome": item.get("name", "Concorrente Local"),
-                    "nota": float(item.get("rating", 0.0)),
-                    "avaliacoes": int(item.get("user_ratings_total", 0))
-                })
-                if len(concorrentes) >= 3:
-                    break
-        return concorrentes
-    except Exception as e:
-        return []
-
 # -----------------------------------------------------------------------------
 # 3. ESTADOS DA SESSÃO PERSISTENTES
 # -----------------------------------------------------------------------------
@@ -215,7 +152,11 @@ if 'dados' not in st.session_state:
     }
 
 if 'concorrentes' not in st.session_state:
-    st.session_state['concorrentes'] = []
+    st.session_state['concorrentes'] = [
+        {"nome": "", "nota": 0.0, "avaliacoes": 0},
+        {"nome": "", "nota": 0.0, "avaliacoes": 0},
+        {"nome": "", "nota": 0.0, "avaliacoes": 0}
+    ]
 
 if 'planos' not in st.session_state:
     st.session_state['planos'] = {
@@ -378,13 +319,13 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
         pdf.set_text_color(22, 128, 61)
         pdf.cell(w_capa, 6, conv("Status da Ficha: Otimizado e Em Expansão"), align='C', ln=True)
 
-    # PÁGINA 2: DIAGNÓSTICO
+    # PÁGINA 2: DIAGNÓSTICO (ESPAÇAMENTOS AMPLIADOS)
     pdf.add_page()
-    pdf.set_y(32)
+    pdf.set_y(30)
     pdf.set_font('Helvetica', 'B', 17)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 8, conv('AUDITORIA DETALHADA DE PONTOS DE BUSCA'), align='C', ln=True)
-    pdf.ln(4)
+    pdf.ln(3)
 
     w_ficha = 186
     x_ficha = (210 - w_ficha) / 2.0
@@ -410,8 +351,8 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     pdf.set_text_color(245, 158, 11)
     pdf.cell(w_ficha, 4.5, conv(f"Nota {dados['nota']:.1f} {estrelas_txt}   -   {dados['avaliacoes']} avaliações no Google"), align='C', ln=True)
 
-    # QUADRO SCORE GERAL COM "/100" EM AZUL ESCURO
-    pdf.set_y(y_curr + 32)
+    # QUADRO SCORE GERAL - ESPAÇAMENTO AUMENTADO
+    pdf.set_y(y_curr + 30)
     w_box_score = 80
     x_box_score = (210 - w_box_score) / 2.0
     y_box_score = pdf.get_y()
@@ -444,7 +385,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     pdf.set_text_color(cr, cg, cb)
     pdf.cell(w_num, 5, score_str, ln=False)
 
-    pdf.set_text_color(30, 64, 175) # Azul Escuro para o /100
+    pdf.set_text_color(30, 64, 175) # Azul Escuro do /100
     pdf.cell(w_den, 5, " / 100", ln=True)
     
     pdf.set_xy(x_box_score, y_box_score + 8.5)
@@ -452,7 +393,8 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     pdf.set_text_color(cr, cg, cb)
     pdf.cell(w_box_score, 4, conv(f"SCORE GERAL ({status_txt})"), align='C', ln=True)
 
-    pdf.set_y(y_box_score + 22)
+    # ESPAÇO AMPLIADO ANTES DOS ITENS DE 1 A 9
+    pdf.set_y(y_box_score + 28)
 
     pct_avaliacoes = min(int((dados['avaliacoes'] / 50.0) * 100), 100) if dados['avaliacoes'] > 0 else 10
     pct_fotos = 100 if dados['tem_fotos_hd'] else 30
@@ -512,8 +454,11 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
         pdf.cell(0, 2.8, conv(f"  Diagnóstico: {desc}"), ln=True)
         pdf.ln(1.4)
 
-    if concorrentes:
-        pdf.ln(4)
+    # CONCORRENTES VÁLIDOS PREENCHIDOS MANUAMENTE OU VIA BUSCA
+    concorrentes_filtrados = [c for c in concorrentes if c.get("nome", "").strip() != ""]
+
+    if concorrentes_filtrados:
+        pdf.ln(5)
         pdf.set_font('Helvetica', 'B', 10.0)
         pdf.set_text_color(30, 64, 175)
         pdf.cell(0, 4.5, conv("ANÁLISE COMPARATIVA DE CONCORRENTES LOCAIS (MESMO SEGMENTO)"), ln=True)
@@ -540,16 +485,17 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
 
         pdf.set_font('Helvetica', '', 8.5)
         pdf.set_text_color(51, 65, 85)
-        for idx_c, c in enumerate(concorrentes):
+        for idx_c, c in enumerate(concorrentes_filtrados):
             fill_row = (idx_c % 2 == 1)
             pdf.set_fill_color(248, 250, 252) if fill_row else pdf.set_fill_color(255, 255, 255)
             pdf.cell(w_col1, 4.0, conv(f" {c['nome']}"), border='B', fill=fill_row)
-            pdf.cell(w_col2, 4.0, conv(f"{c['nota']:.1f} / 5.0"), border='B', fill=fill_row, align='C')
+            pdf.cell(w_col2, 4.0, conv(f"{float(c['nota']):.1f} / 5.0"), border='B', fill=fill_row, align='C')
             pdf.cell(w_col3, 4.0, conv(f"{c['avaliacoes']} avaliações"), border='B', fill=fill_row, align='C')
             pdf.ln()
 
+    # ESPAÇO AMPLIADO ANTES DO PLANO DE AÇÃO
     if plano_acao_extra and plano_acao_extra.strip() != "":
-        pdf.ln(5)
+        pdf.ln(12)
         w_extra = 186
         x_extra = (210 - w_extra) / 2.0
         
@@ -558,7 +504,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
         pdf.set_line_width(0.5)
         
         y_extra = pdf.get_y()
-        h_box_extra = 40
+        h_box_extra = 38
         pdf.rounded_rect(x_extra, y_extra, w_extra, h_box_extra, 2.5, 'FD')
         pdf.set_line_width(0.2)
         
@@ -786,9 +732,10 @@ with st.sidebar:
         "Navegação do Sistema:",
         [
             "🔍 1. Consulta & Diagnóstico Rápido",
-            "💡 2. Plano de Ação & Persuasão",
-            "📜 3. Proposta Comercial & Planos",
-            "📄 4. Contrato Profissional"
+            "⚔️ 2. Concorrentes do Segmento",
+            "💡 3. Plano de Ação & Persuasão",
+            "📜 4. Proposta Comercial & Planos",
+            "📄 5. Contrato Profissional"
         ]
     )
 
@@ -876,16 +823,7 @@ if "1. Consulta" in opcao_menu:
                         st.session_state['chk_atrib'] = False
                         st.session_state['chk_resp'] = False
 
-                        lat = loc.get("lat")
-                        lng = loc.get("lng")
-                        
-                        termo_segmento = extrair_termo_busca_segmento(nome_carregado, types_lista)
-                        
-                        st.session_state['concorrentes'] = buscar_concorrentes_proximos(
-                            lat, lng, place_id, termo_segmento, API_KEY_GOOGLE
-                        )
-                        
-                        st.success("Dados da unidade e concorrentes locais do mesmo segmento carregados com sucesso!")
+                        st.success("Dados da unidade carregados com sucesso!")
                         st.rerun()
                     except Exception as e:
                         st.error(f"Erro ao obter detalhes: {e}")
@@ -931,11 +869,12 @@ if "1. Consulta" in opcao_menu:
         st.markdown(f"* Atributos de Serviços: {'✓ Ativos' if dados.get('atributos_ok') else '❌ Ausentes / Pendentes'}")
         st.markdown(f"* Respostas a Avaliações: {'✓ Frequentes' if dados.get('resposta_avaliacoes_ok') else '❌ Sem respostas oficiais'}")
         
-        if st.session_state['concorrentes']:
+        concorrentes_validos = [c for c in st.session_state['concorrentes'] if c.get('nome', '').strip() != '']
+        if concorrentes_validos:
             st.markdown("---")
-            st.markdown("**⚔️ Concorrentes Diretos Detectados (Mesmo Segmento):**")
-            for c in st.session_state['concorrentes']:
-                st.markdown(f"• **{c['nome']}** — {c['nota']:.1f} ({c['avaliacoes']} avaliações)")
+            st.markdown("**⚔️ Concorrentes Diretos Cadastrados:**")
+            for c in concorrentes_validos:
+                st.markdown(f"• **{c['nome']}** — {float(c['nota']):.1f} ({c['avaliacoes']} avaliações)")
 
         if dados.get('categorias_detectadas'):
             st.markdown("---")
@@ -944,7 +883,37 @@ if "1. Consulta" in opcao_menu:
             
         st.markdown("</div>", unsafe_allow_html=True)
 
-elif "2. Plano de Ação" in opcao_menu:
+elif "2. Concorrentes" in opcao_menu:
+    st.markdown("<div class='dashboard-card'>", unsafe_allow_html=True)
+    st.markdown("<div class='card-title'>⚔️ CADASTRO MANUALL DE CONCORRENTES DIRETOS (MESMO SEGMENTO)</div>", unsafe_allow_html=True)
+    st.info("Insira os concorrentes diretos e reais do cliente para garantir 100% de precisão na Tabela Comparativa da Página 2.")
+
+    for i in range(3):
+        st.markdown(f"#### Concorrente #{i+1}")
+        col_c1, col_c2, col_c3 = st.columns([2, 1, 1])
+        st.session_state['concorrentes'][i]['nome'] = col_c1.text_input(
+            f"Nome do Concorrente {i+1}:", 
+            value=st.session_state['concorrentes'][i]['nome'], 
+            key=f"conc_nome_{i}"
+        )
+        st.session_state['concorrentes'][i]['nota'] = col_c2.number_input(
+            f"Nota Google (0.0 - 5.0):", 
+            min_value=0.0, max_value=5.0, 
+            value=float(st.session_state['concorrentes'][i]['nota']), 
+            step=0.1, key=f"conc_nota_{i}"
+        )
+        st.session_state['concorrentes'][i]['avaliacoes'] = col_c3.number_input(
+            f"Total Avaliações:", 
+            min_value=0, max_value=50000, 
+            value=int(st.session_state['concorrentes'][i]['avaliacoes']), 
+            step=1, key=f"conc_aval_{i}"
+        )
+        st.markdown("---")
+        
+    st.success("Tabela comparativa de concorrentes atualizada com sucesso para os relatórios/PDFs!")
+    st.markdown("</div>", unsafe_allow_html=True)
+
+elif "3. Plano de Ação" in opcao_menu:
     st.markdown("<div class='dashboard-card'>", unsafe_allow_html=True)
     st.markdown("<div class='card-title'>💡 PLANO DE AÇÃO & APONTAMENTOS ESTRATÉGICOS PERSONALIZADOS</div>", unsafe_allow_html=True)
     
@@ -957,7 +926,7 @@ elif "2. Plano de Ação" in opcao_menu:
     st.success("Plano de Ação salvo e atualizado para os relatórios/PDFs!")
     st.markdown("</div>", unsafe_allow_html=True)
 
-elif "3. Proposta" in opcao_menu:
+elif "4. Proposta" in opcao_menu:
     st.markdown("<div class='dashboard-card'>", unsafe_allow_html=True)
     st.markdown("<div class='card-title'>📜 EDITE OS VALORES E CONTEÚDO DOS PLANOS COMERCIAIS</div>", unsafe_allow_html=True)
     
@@ -981,7 +950,7 @@ elif "3. Proposta" in opcao_menu:
     st.success("Valores e itens dos planos comerciais atualizados com sucesso!")
     st.markdown("</div>", unsafe_allow_html=True)
 
-elif "4. Contrato" in opcao_menu:
+elif "5. Contrato" in opcao_menu:
     st.markdown("<div class='dashboard-card'>", unsafe_allow_html=True)
     st.markdown("<div class='card-title'>📄 CONTRATO DE PRESTAÇÃO DE SERVIÇOS</div>", unsafe_allow_html=True)
     st.info("O contrato é atualizado e gerado automaticamente na 4ª página do arquivo PDF completo com base nos dados informados nas etapas anteriores.")
