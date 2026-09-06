@@ -191,7 +191,9 @@ class PDFTour360Oficial(FPDF):
         
         self.set_draw_color(226, 232, 240)
         self.line(12, 17.5, 198, 17.5)
-        self.set_y(21)
+        self.set_y(21)self.set_draw_color(226, 232, 240)
+        self.line(12, 21.5, 198, 21.5)
+        self.set_y(25)
 
     def footer(self):
         self.set_y(-16)
