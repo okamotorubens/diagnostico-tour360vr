@@ -98,7 +98,7 @@ API_KEY_GOOGLE = (
 # -----------------------------------------------------------------------------
 def conv(texto):
     if not texto: return ""
-    limpo = str(texto).replace("•", "- ").replace("✓", "[OK] ").replace("📍", "").replace("📞", "").replace("🌐", "").replace("Brazil", "Brasil")
+    limpo = str(texto).replace("•", "- ").replace("✓", "[OK] ").replace("📍", "").replace("📞", "").replace("🌐", "").replace("Brazil", "Brasil").replace("⭐", "")
     return limpo.encode('latin-1', 'replace').decode('latin-1')
 
 def formatar_estrelas(nota):
@@ -109,6 +109,8 @@ def formatar_estrelas(nota):
         return "*****"
 
 def calcular_score_real(dados):
+    if not dados.get("nome"):
+        return 0
     score = 100
     if not dados.get("tem_tour360", False): score -= 20
     if dados.get("website") == "Não possui" or not dados.get("website"): score -= 15
@@ -132,7 +134,8 @@ def buscar_concorrentes_proximos(lat, lng, place_id_cliente, tipo_categoria, api
         return []
     
     try:
-        url = f"https://maps.googleapis.com/maps/api/place/nearbysearch/json?location={lat},{lng}&radius=4000&type={tipo_categoria}&key={api_key}"
+        # Busca estrita por tipo de categoria idêntico
+        url = f"https://maps.googleapis.com/maps/api/place/nearbysearch/json?location={lat},{lng}&radius=5000&type={tipo_categoria}&key={api_key}"
         res = requests.get(url).json()
         
         concorrentes = []
@@ -198,6 +201,11 @@ if 'plano_acao_extra' not in st.session_state:
 
 if 'unidades_encontradas' not in st.session_state:
     st.session_state['unidades_encontradas'] = []
+
+# Initialize checkbox states
+for key_chk in ['chk_tour360', 'chk_fotos_hd', 'chk_cat_ok', 'chk_horarios_ok', 'chk_desc', 'chk_atrib', 'chk_resp']:
+    if key_chk not in st.session_state:
+        st.session_state[key_chk] = False
 
 # -----------------------------------------------------------------------------
 # 4. GERADOR PDF TOUR360VR
@@ -340,7 +348,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
         pdf.set_text_color(22, 128, 61)
         pdf.cell(w_capa, 6, conv("Status da Ficha: Otimizado e Em Expansão"), align='C', ln=True)
 
-    # PÁGINA 2: DIAGNÓSTICO (AMPLIADO E REESTRUTURADO)
+    # PÁGINA 2: DIAGNÓSTICO
     pdf.add_page()
     pdf.set_y(32)
     pdf.set_font('Helvetica', 'B', 17)
@@ -394,27 +402,18 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     pdf.rounded_rect(x_box_score, y_box_score, w_box_score, 16, 3, 'FD')
     pdf.set_line_width(0.2)
 
-    pdf.set_xy(x_box_score, y_box_score + 1.5)
-    pdf.set_font('Helvetica', 'B', 18)
+    pdf.set_xy(x_box_score, y_box_score + 2.0)
+    pdf.set_font('Helvetica', 'B', 16)
     pdf.set_text_color(cr, cg, cb)
-    
-    str_score = f"{score} "
-    str_100 = "/ 100"
-    w_part1 = pdf.get_string_width(str_score)
-    w_part2 = pdf.get_string_width(str_100)
-    x_start_text = x_box_score + ((w_box_score - (w_part1 + w_part2)) / 2.0)
-    
-    pdf.set_x(x_start_text)
-    pdf.write(6.5, conv(str_score))
-    pdf.set_text_color(30, 64, 175)
-    pdf.write(6.5, conv(str_100))
+    pdf.cell(w_box_score, 6, conv(f"{score} / 100"), align='C', ln=True)
     
     pdf.set_xy(x_box_score, y_box_score + 9.5)
-    pdf.set_font('Helvetica', 'B', 9.5)
+    pdf.set_font('Helvetica', 'B', 9.0)
     pdf.set_text_color(cr, cg, cb)
     pdf.cell(w_box_score, 4, conv(f"SCORE GERAL ({status_txt})"), align='C', ln=True)
 
-    pdf.set_y(y_box_score + 22)
+    # ESPAÇO AMPLIADO ANTES DOS ITENS DE AUDITORIA
+    pdf.set_y(y_box_score + 24)
 
     pct_avaliacoes = min(int((dados['avaliacoes'] / 50.0) * 100), 100) if dados['avaliacoes'] > 0 else 10
     pct_fotos = 100 if dados['tem_fotos_hd'] else 30
@@ -472,46 +471,48 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
         pdf.set_font('Helvetica', '', 8.0)
         pdf.set_text_color(71, 85, 105)
         pdf.cell(0, 3.0, conv(f"  Diagnóstico: {desc}"), ln=True)
-        pdf.ln(1.5)
+        pdf.ln(1.8)
 
-    # TABELA DE ANÁLISE COMPARATIVA
+    # ESPAÇO AMPLIADO ANTES DA ANÁLISE COMPARATIVA
     if concorrentes:
-        pdf.ln(3)
+        pdf.ln(5)
         pdf.set_font('Helvetica', 'B', 10.5)
         pdf.set_text_color(30, 64, 175)
         pdf.cell(0, 5, conv("ANÁLISE COMPARATIVA DE CONCORRENTES LOCAIS (MESMO SEGMENTO)"), ln=True)
-        pdf.ln(2)
+        pdf.ln(2.5)
 
         w_col1, w_col2, w_col3 = 106, 35, 45
         
         pdf.set_fill_color(30, 64, 175)
         pdf.set_text_color(255, 255, 255)
         pdf.set_font('Helvetica', 'B', 8.5)
-        pdf.cell(w_col1, 5, conv(" Empresa / Estabelecimento"), border=0, fill=True)
-        pdf.cell(w_col2, 5, conv(" Nota Google"), border=0, fill=True, align='C')
-        pdf.cell(w_col3, 5, conv(" Total Avaliações"), border=0, fill=True, align='C')
+        pdf.cell(w_col1, 5.5, conv(" Empresa / Estabelecimento"), border=0, fill=True)
+        pdf.cell(w_col2, 5.5, conv(" Nota Google"), border=0, fill=True, align='C')
+        pdf.cell(w_col3, 5.5, conv(" Total Avaliações"), border=0, fill=True, align='C')
         pdf.ln()
 
+        # Linha do Cliente (Formatada sem interrogação)
         pdf.set_fill_color(240, 249, 255)
         pdf.set_draw_color(191, 219, 254)
         pdf.set_font('Helvetica', 'B', 8.5)
         pdf.set_text_color(30, 64, 175)
-        pdf.cell(w_col1, 4.5, conv(f" {dados['nome']}"), border='B', fill=True)
-        pdf.cell(w_col2, 4.5, conv(f"{dados['nota']:.1f} ⭐"), border='B', fill=True, align='C')
-        pdf.cell(w_col3, 4.5, conv(f"{dados['avaliacoes']} avaliações"), border='B', fill=True, align='C')
+        pdf.cell(w_col1, 5.0, conv(f" {dados['nome']}"), border='B', fill=True)
+        pdf.cell(w_col2, 5.0, conv(f"{dados['nota']:.1f} / 5.0"), border='B', fill=True, align='C')
+        pdf.cell(w_col3, 5.0, conv(f"{dados['avaliacoes']} avaliações"), border='B', fill=True, align='C')
         pdf.ln()
 
+        # Linhas dos Concorrentes com mais espaço
         pdf.set_font('Helvetica', '', 8.5)
         pdf.set_text_color(51, 65, 85)
         for idx_c, c in enumerate(concorrentes):
             fill_row = (idx_c % 2 == 1)
             pdf.set_fill_color(248, 250, 252) if fill_row else pdf.set_fill_color(255, 255, 255)
-            pdf.cell(w_col1, 4.2, conv(f" {c['nome']}"), border='B', fill=fill_row)
-            pdf.cell(w_col2, 4.2, conv(f"{c['nota']:.1f} ⭐"), border='B', fill=fill_row, align='C')
-            pdf.cell(w_col3, 4.2, conv(f"{c['avaliacoes']} avaliações"), border='B', fill=fill_row, align='C')
+            pdf.cell(w_col1, 4.8, conv(f" {c['nome']}"), border='B', fill=fill_row)
+            pdf.cell(w_col2, 4.8, conv(f"{c['nota']:.1f} / 5.0"), border='B', fill=fill_row, align='C')
+            pdf.cell(w_col3, 4.8, conv(f"{c['avaliacoes']} avaliações"), border='B', fill=fill_row, align='C')
             pdf.ln()
 
-    # PLANO DE AÇÃO (QUADRO COM SUPORTE A MAIS LINHAS)
+    # PLANO DE AÇÃO
     if plano_acao_extra and plano_acao_extra.strip() != "":
         pdf.ln(4)
         w_extra = 186
@@ -636,9 +637,9 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     pdf.set_xy(147, y_p + 26)
     pdf.multi_cell(48, 4.5, conv(planos['gestao_itens']), align='L')
 
-    # QUADRO INFORMATIVO
+    # QUADRO INFORMATIVO 100% CENTRALIZADO
     pdf.set_y(y_p + 74)
-    w_info = 170
+    w_info = 186
     x_info = (210 - w_info) / 2.0
     
     pdf.set_fill_color(240, 249, 255)
@@ -662,9 +663,9 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
         "Fichas incompletas ou desatualizadas perdem clientes diariamente para concorrentes diretos com nota mais alta."
     )
     pdf.set_x(x_info)
-    pdf.multi_cell(w_info, 4.0, conv(txt_exp), align='C')
+    pdf.multi_cell(w_info, 4.2, conv(txt_exp), align='C')
 
-    # PÁGINA 4: CONTRATO COM TEXTO PERFECTAMENTE JUSTIFICADO
+    # PÁGINA 4: CONTRATO
     pdf.add_page()
     pdf.set_y(32)
     pdf.set_font('Helvetica', 'B', 17)
@@ -828,6 +829,7 @@ if "1. Consulta" in opcao_menu:
                         st.session_state['dados']['avaliacoes'] = int(res_details.get("user_ratings_total") or u.get("user_ratings_total") or 0)
                         st.session_state['dados']['contato'] = "Gerente Responsável"
                         
+                        # ATUALIZAÇÃO FORÇADA DE CHECKBOXES
                         st.session_state['dados']['tem_fotos_hd'] = len(photos) >= 10
                         st.session_state['dados']['horarios_ok'] = "opening_hours" in res_details
                         st.session_state['dados']['categorias_completas'] = len(types_lista) >= 3
@@ -837,15 +839,23 @@ if "1. Consulta" in opcao_menu:
                         st.session_state['dados']['resposta_avaliacoes_ok'] = False
                         st.session_state['dados']['categorias_detectadas'] = types_lista
 
+                        st.session_state['chk_tour360'] = False
+                        st.session_state['chk_fotos_hd'] = st.session_state['dados']['tem_fotos_hd']
+                        st.session_state['chk_cat_ok'] = st.session_state['dados']['categorias_completas']
+                        st.session_state['chk_horarios_ok'] = st.session_state['dados']['horarios_ok']
+                        st.session_state['chk_desc'] = st.session_state['dados']['tem_descricao']
+                        st.session_state['chk_atrib'] = False
+                        st.session_state['chk_resp'] = False
+
                         lat = loc.get("lat")
                         lng = loc.get("lng")
-                        categoria_principal = types_lista[0] if types_lista else "lodging"
+                        categoria_principal = types_lista[0] if types_lista else "establishment"
                         
                         st.session_state['concorrentes'] = buscar_concorrentes_proximos(
                             lat, lng, place_id, categoria_principal, API_KEY_GOOGLE
                         )
                         
-                        st.success("Dados da unidade e concorrentes locais carregados com sucesso!")
+                        st.success("Dados da unidade e concorrentes locais do mesmo segmento carregados com sucesso!")
                         st.rerun()
                     except Exception as e:
                         st.error(f"Erro ao obter detalhes: {e}")
@@ -854,15 +864,15 @@ if "1. Consulta" in opcao_menu:
         st.markdown("<h3 id='ajuste-fino-dos-itens-da-auditoria' style='color: #ffffff; font-size: 16px; font-weight: 700;'>⚙️ AJUSTE FINO DOS ITENS DA AUDITORIA</h3>", unsafe_allow_html=True)
         
         c_a, c_b, c_c, c_d = st.columns(4)
-        st.session_state['dados']['tem_tour360'] = c_a.checkbox("Tour 360°", value=st.session_state['dados']['tem_tour360'])
-        st.session_state['dados']['tem_fotos_hd'] = c_b.checkbox("Fotos HD", value=st.session_state['dados']['tem_fotos_hd'])
-        st.session_state['dados']['categorias_completas'] = c_c.checkbox("Categorias OK", value=st.session_state['dados']['categorias_completas'])
-        st.session_state['dados']['horarios_ok'] = c_d.checkbox("Horários OK", value=st.session_state['dados']['horarios_ok'])
+        st.session_state['dados']['tem_tour360'] = c_a.checkbox("Tour 360°", key="chk_tour360")
+        st.session_state['dados']['tem_fotos_hd'] = c_b.checkbox("Fotos HD", key="chk_fotos_hd")
+        st.session_state['dados']['categorias_completas'] = c_c.checkbox("Categorias OK", key="chk_cat_ok")
+        st.session_state['dados']['horarios_ok'] = c_d.checkbox("Horários OK", key="chk_horarios_ok")
         
         c_e, c_f, c_g = st.columns(3)
-        st.session_state['dados']['tem_descricao'] = c_e.checkbox("Descrição/Resumo", value=st.session_state['dados'].get('tem_descricao', False))
-        st.session_state['dados']['atributos_ok'] = c_f.checkbox("Atributos Serviços", value=st.session_state['dados'].get('atributos_ok', False))
-        st.session_state['dados']['resposta_avaliacoes_ok'] = c_g.checkbox("Respostas Ativas", value=st.session_state['dados'].get('resposta_avaliacoes_ok', False))
+        st.session_state['dados']['tem_descricao'] = c_e.checkbox("Descrição/Resumo", key="chk_desc")
+        st.session_state['dados']['atributos_ok'] = c_f.checkbox("Atributos Serviços", key="chk_atrib")
+        st.session_state['dados']['resposta_avaliacoes_ok'] = c_g.checkbox("Respostas Ativas", key="chk_resp")
 
         st.markdown("---")
         st.markdown("### ✍️ Edição dos Dados de Contato:")
@@ -893,9 +903,9 @@ if "1. Consulta" in opcao_menu:
         
         if st.session_state['concorrentes']:
             st.markdown("---")
-            st.markdown("**⚔️ Concorrentes Diretos Detectados:**")
+            st.markdown("**⚔️ Concorrentes Diretos Detectados (Mesmo Segmento):**")
             for c in st.session_state['concorrentes']:
-                st.markdown(f"• **{c['nome']}** — {c['nota']:.1f} ⭐ ({c['avaliacoes']} avaliações)")
+                st.markdown(f"• **{c['nome']}** — {c['nota']:.1f} ({c['avaliacoes']} avaliações)")
 
         if dados.get('categorias_detectadas'):
             st.markdown("---")
