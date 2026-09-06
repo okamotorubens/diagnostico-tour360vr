@@ -129,12 +129,21 @@ def obter_caminho_logo():
         if os.path.exists(c): return c
     return None
 
+def obter_categoria_valida(types_lista):
+    """
+    Filtra categorias genéricas do Google Places para focar no segmento real.
+    """
+    genericos = ["establishment", "point_of_interest", "store", "food", "health"]
+    for t in types_lista:
+        if t not in genericos:
+            return t
+    return types_lista[0] if types_lista else "establishment"
+
 def buscar_concorrentes_proximos(lat, lng, place_id_cliente, tipo_categoria, api_key):
     if not lat or not lng or not api_key:
         return []
     
     try:
-        # Busca estrita por tipo de categoria idêntico
         url = f"https://maps.googleapis.com/maps/api/place/nearbysearch/json?location={lat},{lng}&radius=5000&type={tipo_categoria}&key={api_key}"
         res = requests.get(url).json()
         
@@ -202,7 +211,6 @@ if 'plano_acao_extra' not in st.session_state:
 if 'unidades_encontradas' not in st.session_state:
     st.session_state['unidades_encontradas'] = []
 
-# Initialize checkbox states
 for key_chk in ['chk_tour360', 'chk_fotos_hd', 'chk_cat_ok', 'chk_horarios_ok', 'chk_desc', 'chk_atrib', 'chk_resp']:
     if key_chk not in st.session_state:
         st.session_state[key_chk] = False
@@ -380,7 +388,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     pdf.set_text_color(245, 158, 11)
     pdf.cell(w_ficha, 5.5, conv(f"Nota {dados['nota']:.1f} {estrelas_txt}   -   {dados['avaliacoes']} avaliações no Google"), align='C', ln=True)
 
-    # QUADRO SCORE GERAL
+    # QUADRO SCORE GERAL (LIMPO SEM "NONE")
     pdf.set_y(y_curr + 30)
     w_box_score = 80
     x_box_score = (210 - w_box_score) / 2.0
@@ -412,7 +420,6 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     pdf.set_text_color(cr, cg, cb)
     pdf.cell(w_box_score, 4, conv(f"SCORE GERAL ({status_txt})"), align='C', ln=True)
 
-    # ESPAÇO AMPLIADO ANTES DOS ITENS DE AUDITORIA
     pdf.set_y(y_box_score + 24)
 
     pct_avaliacoes = min(int((dados['avaliacoes'] / 50.0) * 100), 100) if dados['avaliacoes'] > 0 else 10
@@ -473,7 +480,6 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
         pdf.cell(0, 3.0, conv(f"  Diagnóstico: {desc}"), ln=True)
         pdf.ln(1.8)
 
-    # ESPAÇO AMPLIADO ANTES DA ANÁLISE COMPARATIVA
     if concorrentes:
         pdf.ln(5)
         pdf.set_font('Helvetica', 'B', 10.5)
@@ -491,7 +497,6 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
         pdf.cell(w_col3, 5.5, conv(" Total Avaliações"), border=0, fill=True, align='C')
         pdf.ln()
 
-        # Linha do Cliente (Formatada sem interrogação)
         pdf.set_fill_color(240, 249, 255)
         pdf.set_draw_color(191, 219, 254)
         pdf.set_font('Helvetica', 'B', 8.5)
@@ -501,7 +506,6 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
         pdf.cell(w_col3, 5.0, conv(f"{dados['avaliacoes']} avaliações"), border='B', fill=True, align='C')
         pdf.ln()
 
-        # Linhas dos Concorrentes com mais espaço
         pdf.set_font('Helvetica', '', 8.5)
         pdf.set_text_color(51, 65, 85)
         for idx_c, c in enumerate(concorrentes):
@@ -512,9 +516,9 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
             pdf.cell(w_col3, 4.8, conv(f"{c['avaliacoes']} avaliações"), border='B', fill=fill_row, align='C')
             pdf.ln()
 
-    # PLANO DE AÇÃO
+    # PLANO DE AÇÃO (FONTE 10.0 E MAIOR ESPAÇAMENTO ANTES)
     if plano_acao_extra and plano_acao_extra.strip() != "":
-        pdf.ln(4)
+        pdf.ln(8) # Espaço ampliado antes do título do Plano de Ação
         w_extra = 186
         x_extra = (210 - w_extra) / 2.0
         
@@ -527,12 +531,12 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
         pdf.rounded_rect(x_extra, y_extra, w_extra, h_box_extra, 2.5, 'FD')
         pdf.set_line_width(0.2)
         
-        pdf.set_xy(x_extra, y_extra + 3)
-        pdf.set_font('Helvetica', 'B', 9.0)
+        pdf.set_xy(x_extra, y_extra + 3.5)
+        pdf.set_font('Helvetica', 'B', 10.0) # Ajustado para tamanho 10.0 igual ao bloco da Pág 3
         pdf.set_text_color(30, 64, 175)
-        pdf.cell(w_extra, 4, conv("PLANO DE AÇÃO E APONTAMENTOS ESTRATÉGICOS PERSONALIZADOS:"), align='C', ln=True)
+        pdf.cell(w_extra, 5, conv("PLANO DE AÇÃO E APONTAMENTOS ESTRATÉGICOS PERSONALIZADOS:"), align='C', ln=True)
         
-        pdf.set_xy(x_extra + 5, y_extra + 8.5)
+        pdf.set_xy(x_extra + 5, y_extra + 9.5)
         pdf.set_font('Helvetica', '', 8.5)
         pdf.set_text_color(51, 65, 85)
         pdf.multi_cell(w_extra - 10, 4.0, conv(plano_acao_extra), align='L')
@@ -637,7 +641,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     pdf.set_xy(147, y_p + 26)
     pdf.multi_cell(48, 4.5, conv(planos['gestao_itens']), align='L')
 
-    # QUADRO INFORMATIVO 100% CENTRALIZADO
+    # QUADRO INFORMATIVO
     pdf.set_y(y_p + 74)
     w_info = 186
     x_info = (210 - w_info) / 2.0
@@ -650,7 +654,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
 
     y_info = pdf.get_y() + 3
     pdf.set_xy(x_info, y_info)
-    pdf.set_font('Helvetica', 'B', 10)
+    pdf.set_font('Helvetica', 'B', 10.0)
     pdf.set_text_color(30, 64, 175)
     pdf.cell(w_info, 5, conv('POR QUE SEU NEGÓCIO PRECISA DE OTIMIZAÇÃO PROFISSIONAL?'), align='C', ln=True)
     pdf.ln(1)
@@ -829,7 +833,6 @@ if "1. Consulta" in opcao_menu:
                         st.session_state['dados']['avaliacoes'] = int(res_details.get("user_ratings_total") or u.get("user_ratings_total") or 0)
                         st.session_state['dados']['contato'] = "Gerente Responsável"
                         
-                        # ATUALIZAÇÃO FORÇADA DE CHECKBOXES
                         st.session_state['dados']['tem_fotos_hd'] = len(photos) >= 10
                         st.session_state['dados']['horarios_ok'] = "opening_hours" in res_details
                         st.session_state['dados']['categorias_completas'] = len(types_lista) >= 3
@@ -849,7 +852,7 @@ if "1. Consulta" in opcao_menu:
 
                         lat = loc.get("lat")
                         lng = loc.get("lng")
-                        categoria_principal = types_lista[0] if types_lista else "establishment"
+                        categoria_principal = obter_categoria_valida(types_lista)
                         
                         st.session_state['concorrentes'] = buscar_concorrentes_proximos(
                             lat, lng, place_id, categoria_principal, API_KEY_GOOGLE
