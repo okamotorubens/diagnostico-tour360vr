@@ -179,15 +179,15 @@ class PDFTour360Oficial(FPDF):
             try: self.image(caminho_logo, 12, 6, 18)
             except: pass
             
-        self.set_xy(32, 6)
+        self.set_xy(12, 6)
         self.set_font('Helvetica', 'B', 12)
         self.set_text_color(30, 64, 175)
-        self.cell(166, 4.5, 'TOUR360VR', align='L', ln=True)
-        
-        self.set_x(32)
+        self.cell(0, 4.5, 'TOUR360VR', align='L', ln=True)
+
+        self.set_x(12)
         self.set_font('Helvetica', 'B', 8.5)
         self.set_text_color(100, 116, 139)
-        self.cell(166, 4, conv('Gestão de Perfil & Diagnóstico do Google Meu Negócio'), align='L', ln=True)
+        self.cell(0, 4, conv('Gestão de Perfil & Diagnóstico do Google Meu Negócio'), align='L', ln=True)
         
         self.set_draw_color(226, 232, 240)
         self.line(12, 17.5, 198, 17.5)
