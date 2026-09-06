@@ -105,7 +105,7 @@ def formatar_estrelas(nota):
     try:
         val = int(round(float(nota)))
         return "*" * max(0, min(5, val))
-    except:
+    except Exception:
         return "*****"
 
 def calcular_score_real(dados):
@@ -509,66 +509,67 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
         pdf.cell(0, 4.5, conv("ANÁLISE AUTOMÁTICA DE CONCORRENTES DO SEGMENTO"), ln=True)
         pdf.ln(2.0)
 
-        w_emp = 46
+        # TABELA COM LETRAS MAIORES (FONTE 7.5) E ESPAÇAMENTO AJUSTADO
+        w_emp = 48
         w_item = 12.5
-        w_score = 27.5
+        w_score = 25.5
         
         pdf.set_fill_color(30, 64, 175)
         pdf.set_text_color(255, 255, 255)
-        pdf.set_font('Helvetica', 'B', 6.5)
+        pdf.set_font('Helvetica', 'B', 7.5)
         
-        pdf.cell(w_emp, 4.5, conv(" Empresa / Concorrente"), border=0, fill=True)
-        pdf.cell(w_item, 4.5, conv("1.Fotos"), border=0, fill=True, align='C')
-        pdf.cell(w_item, 4.5, conv("2.360°"), border=0, fill=True, align='C')
-        pdf.cell(w_item, 4.5, conv("3.Categ"), border=0, fill=True, align='C')
-        pdf.cell(w_item, 4.5, conv("4.Horár"), border=0, fill=True, align='C')
-        pdf.cell(w_item, 4.5, conv("5.Web"), border=0, fill=True, align='C')
-        pdf.cell(w_item, 4.5, conv("6.Nota"), border=0, fill=True, align='C')
-        pdf.cell(w_item, 4.5, conv("7.Desc"), border=0, fill=True, align='C')
-        pdf.cell(w_item, 4.5, conv("8.Atrib"), border=0, fill=True, align='C')
-        pdf.cell(w_item, 4.5, conv("9.Resp"), border=0, fill=True, align='C')
-        pdf.cell(w_score, 4.5, conv("Score Geral"), border=0, fill=True, align='C')
+        pdf.cell(w_emp, 4.8, conv(" Empresa / Concorrente"), border=0, fill=True)
+        pdf.cell(w_item, 4.8, conv("1.Fotos"), border=0, fill=True, align='C')
+        pdf.cell(w_item, 4.8, conv("2.360°"), border=0, fill=True, align='C')
+        pdf.cell(w_item, 4.8, conv("3.Categ"), border=0, fill=True, align='C')
+        pdf.cell(w_item, 4.8, conv("4.Horár"), border=0, fill=True, align='C')
+        pdf.cell(w_item, 4.8, conv("5.Web"), border=0, fill=True, align='C')
+        pdf.cell(w_item, 4.8, conv("6.Nota"), border=0, fill=True, align='C')
+        pdf.cell(w_item, 4.8, conv("7.Desc"), border=0, fill=True, align='C')
+        pdf.cell(w_item, 4.8, conv("8.Atrib"), border=0, fill=True, align='C')
+        pdf.cell(w_item, 4.8, conv("9.Resp"), border=0, fill=True, align='C')
+        pdf.cell(w_score, 4.8, conv("Score Geral"), border=0, fill=True, align='C')
         pdf.ln()
 
         pdf.set_fill_color(240, 249, 255)
         pdf.set_draw_color(191, 219, 254)
-        pdf.set_font('Helvetica', 'B', 6.5)
+        pdf.set_font('Helvetica', 'B', 7.5)
         pdf.set_text_color(30, 64, 175)
         
-        pdf.cell(w_emp, 4.2, conv(f" {dados['nome']}"), border='B', fill=True)
-        pdf.cell(w_item, 4.2, conv("Sim" if dados['tem_fotos_hd'] else "Não"), border='B', fill=True, align='C')
-        pdf.cell(w_item, 4.2, conv("Sim" if dados['tem_tour360'] else "Não"), border='B', fill=True, align='C')
-        pdf.cell(w_item, 4.2, conv("Sim" if dados['categorias_completas'] else "Não"), border='B', fill=True, align='C')
-        pdf.cell(w_item, 4.2, conv("Sim" if dados['horarios_ok'] else "Não"), border='B', fill=True, align='C')
-        pdf.cell(w_item, 4.2, conv("Sim" if dados['website'] and dados['website'] != 'Não possui' else "Não"), border='B', fill=True, align='C')
-        pdf.cell(w_item, 4.2, conv(f"{dados['nota']:.1f}"), border='B', fill=True, align='C')
-        pdf.cell(w_item, 4.2, conv("Sim" if dados.get('tem_descricao') else "Não"), border='B', fill=True, align='C')
-        pdf.cell(w_item, 4.2, conv("Sim" if dados.get('atributos_ok') else "Não"), border='B', fill=True, align='C')
-        pdf.cell(w_item, 4.2, conv("Sim" if dados.get('resposta_avaliacoes_ok') else "Não"), border='B', fill=True, align='C')
-        pdf.cell(w_score, 4.2, conv(f"{score} / 100"), border='B', fill=True, align='C')
+        pdf.cell(w_emp, 4.5, conv(f" {dados['nome']}"), border='B', fill=True)
+        pdf.cell(w_item, 4.5, conv("Sim" if dados['tem_fotos_hd'] else "Não"), border='B', fill=True, align='C')
+        pdf.cell(w_item, 4.5, conv("Sim" if dados['tem_tour360'] else "Não"), border='B', fill=True, align='C')
+        pdf.cell(w_item, 4.5, conv("Sim" if dados['categorias_completas'] else "Não"), border='B', fill=True, align='C')
+        pdf.cell(w_item, 4.5, conv("Sim" if dados['horarios_ok'] else "Não"), border='B', fill=True, align='C')
+        pdf.cell(w_item, 4.5, conv("Sim" if dados['website'] and dados['website'] != 'Não possui' else "Não"), border='B', fill=True, align='C')
+        pdf.cell(w_item, 4.5, conv(f"{dados['nota']:.1f}"), border='B', fill=True, align='C')
+        pdf.cell(w_item, 4.5, conv("Sim" if dados.get('tem_descricao') else "Não"), border='B', fill=True, align='C')
+        pdf.cell(w_item, 4.5, conv("Sim" if dados.get('atributos_ok') else "Não"), border='B', fill=True, align='C')
+        pdf.cell(w_item, 4.5, conv("Sim" if dados.get('resposta_avaliacoes_ok') else "Não"), border='B', fill=True, align='C')
+        pdf.cell(w_score, 4.5, conv(f"{score} / 100"), border='B', fill=True, align='C')
         pdf.ln()
 
-        pdf.set_font('Helvetica', '', 6.5)
+        pdf.set_font('Helvetica', '', 7.5)
         pdf.set_text_color(51, 65, 85)
         for idx_c, c in enumerate(concorrentes_filtrados):
             fill_row = (idx_c % 2 == 1)
             score_conc = calcular_score_concorrente(c)
             pdf.set_fill_color(248, 250, 252) if fill_row else pdf.set_fill_color(255, 255, 255)
             
-            pdf.cell(w_emp, 4.0, conv(f" {c['nome']}"), border='B', fill=fill_row)
-            pdf.cell(w_item, 4.0, conv(c.get('tem_fotos_hd', 'Não')), border='B', fill=fill_row, align='C')
-            pdf.cell(w_item, 4.0, conv(c.get('tem_tour360', 'Não')), border='B', fill=fill_row, align='C')
-            pdf.cell(w_item, 4.0, conv(c.get('categorias_ok', 'Não')), border='B', fill=fill_row, align='C')
-            pdf.cell(w_item, 4.0, conv(c.get('horarios_ok', 'Não')), border='B', fill=fill_row, align='C')
-            pdf.cell(w_item, 4.0, conv(c.get('tem_website', 'Não')), border='B', fill=fill_row, align='C')
-            pdf.cell(w_item, 4.0, conv(f"{float(c['nota']):.1f}"), border='B', fill=fill_row, align='C')
-            pdf.cell(w_item, 4.0, conv(c.get('tem_descricao', 'Não')), border='B', fill=fill_row, align='C')
-            pdf.cell(w_item, 4.0, conv(c.get('atributos_ok', 'Não')), border='B', fill=fill_row, align='C')
-            pdf.cell(w_item, 4.0, conv(c.get('respostas_ok', 'Não')), border='B', fill=fill_row, align='C')
+            pdf.cell(w_emp, 4.5, conv(f" {c['nome']}"), border='B', fill=fill_row)
+            pdf.cell(w_item, 4.5, conv(c.get('tem_fotos_hd', 'Não')), border='B', fill=fill_row, align='C')
+            pdf.cell(w_item, 4.5, conv(c.get('tem_tour360', 'Não')), border='B', fill=fill_row, align='C')
+            pdf.cell(w_item, 4.5, conv(c.get('categorias_ok', 'Não')), border='B', fill=fill_row, align='C')
+            pdf.cell(w_item, 4.5, conv(c.get('horarios_ok', 'Não')), border='B', fill=fill_row, align='C')
+            pdf.cell(w_item, 4.5, conv(c.get('tem_website', 'Não')), border='B', fill=fill_row, align='C')
+            pdf.cell(w_item, 4.5, conv(f"{float(c['nota']):.1f}"), border='B', fill=fill_row, align='C')
+            pdf.cell(w_item, 4.5, conv(c.get('tem_descricao', 'Não')), border='B', fill=fill_row, align='C')
+            pdf.cell(w_item, 4.5, conv(c.get('atributos_ok', 'Não')), border='B', fill=fill_row, align='C')
+            pdf.cell(w_item, 4.5, conv(c.get('respostas_ok', 'Não')), border='B', fill=fill_row, align='C')
             
-            pdf.set_font('Helvetica', 'B', 6.5)
-            pdf.cell(w_score, 4.0, conv(f"{score_conc} / 100"), border='B', fill=fill_row, align='C')
-            pdf.set_font('Helvetica', '', 6.5)
+            pdf.set_font('Helvetica', 'B', 7.5)
+            pdf.cell(w_score, 4.5, conv(f"{score_conc} / 100"), border='B', fill=fill_row, align='C')
+            pdf.set_font('Helvetica', '', 7.5)
             pdf.ln()
 
     if plano_acao_extra and plano_acao_extra.strip() != "":
@@ -595,7 +596,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
         pdf.set_text_color(51, 65, 85)
         pdf.multi_cell(w_extra - 10, 4.0, conv(plano_acao_extra), align='L')
 
-    # PÁGINA 3: PLANOS
+    # PÁGINA 3: PLANOS E QUADRO EXPANDIDO
     pdf.add_page()
     pdf.set_y(32)
     pdf.set_font('Helvetica', 'B', 17)
@@ -692,25 +693,25 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     pdf.set_xy(147, y_p + 26)
     pdf.multi_cell(48, 4.5, conv(planos['gestao_itens']), align='L')
 
-    # QUADRO INFORMATIVO
-    pdf.set_y(y_p + 74)
+    # QUADRO INFORMATIVO (COM MAIOR ESPAÇO VERTICAL)
+    pdf.set_y(y_p + 72)
     w_info = 186
     x_info = (210 - w_info) / 2.0
     
     pdf.set_fill_color(240, 249, 255)
     pdf.set_draw_color(62, 161, 219)
     pdf.set_line_width(0.5)
-    pdf.rounded_rect(x_info, pdf.get_y(), w_info, 28, 2, 'FD')
+    pdf.rounded_rect(x_info, pdf.get_y(), w_info, 34, 3, 'FD')
     pdf.set_line_width(0.2)
 
-    y_info = pdf.get_y() + 3
+    y_info = pdf.get_y() + 4
     pdf.set_xy(x_info, y_info)
-    pdf.set_font('Helvetica', 'B', 10.0)
+    pdf.set_font('Helvetica', 'B', 10.5)
     pdf.set_text_color(30, 64, 175)
     pdf.cell(w_info, 5, conv('POR QUE SEU NEGÓCIO PRECISA DE OTIMIZAÇÃO PROFISSIONAL?'), align='C', ln=True)
-    pdf.ln(1)
+    pdf.ln(2)
 
-    pdf.set_font('Helvetica', '', 8.5)
+    pdf.set_font('Helvetica', '', 9.0)
     pdf.set_text_color(51, 65, 85)
     txt_exp = (
         "Mais de 80% das buscas locais no Google e Maps resultam em uma ação imediata (ligação, rota ou mensagem).\n"
@@ -718,15 +719,15 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
         "Fichas incompletas ou desatualizadas perdem clientes diariamente para concorrentes diretos com nota mais alta."
     )
     pdf.set_x(x_info)
-    pdf.multi_cell(w_info, 4.2, conv(txt_exp), align='C')
+    pdf.multi_cell(w_info, 4.8, conv(txt_exp), align='C')
 
-    # PÁGINA 4: CONTRATO
+    # PÁGINA 4: CONTRATO (COM MAIOR ESPAÇAMENTO VERTICAL)
     pdf.add_page()
-    pdf.set_y(32)
+    pdf.set_y(30)
     pdf.set_font('Helvetica', 'B', 17)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 8, conv('CONTRATO DE PRESTAÇÃO DE SERVIÇOS'), align='C', ln=True)
-    pdf.ln(8)
+    pdf.ln(10)
 
     w_contrato = 186
     pdf.set_x(12)
@@ -740,35 +741,35 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
         f"A CONTRATADA compromete-se a executar os serviços de otimização, reestruturação técnica e/ou produção "
         f"de Tour Virtual 360° para o perfil do Google da CONTRATANTE."
     )
-    pdf.multi_cell(w_contrato, 5.0, conv(txt_partes), align='J')
-    pdf.ln(4)
+    pdf.multi_cell(w_contrato, 5.2, conv(txt_partes), align='J')
+    pdf.ln(6)
 
     c1 = "CLÁUSULA PRIMEIRA - DO OBJETO: Os serviços serão iniciados em até 5 dias úteis após o fornecimento de todos os acessos e informações necessárias à gestão do perfil."
     pdf.set_x(12)
-    pdf.multi_cell(w_contrato, 5.0, conv(c1), align='J')
-    pdf.ln(4)
+    pdf.multi_cell(w_contrato, 5.2, conv(c1), align='J')
+    pdf.ln(6)
 
     c2 = "CLÁUSULA SEGUNDA - DAS OBRIGAÇÕES: O não pagamento no prazo pactuado sujeitará o presente contrato à incidência de juros moratórios legais e à suspensão temporária dos serviços até a devida regularização."
     pdf.set_x(12)
-    pdf.multi_cell(w_contrato, 5.0, conv(c2), align='J')
-    pdf.ln(6)
+    pdf.multi_cell(w_contrato, 5.2, conv(c2), align='J')
+    pdf.ln(8)
 
     pdf.set_x(12)
     pdf.set_font('Helvetica', 'B', 9.5)
     pdf.cell(w_contrato, 5.0, conv("CLÁUSULA TERCEIRA - SELEÇÃO DO PLANO CONTRATADO:"), ln=True)
     pdf.set_x(12)
     pdf.set_font('Helvetica', '', 9.5)
-    pdf.cell(w_contrato, 6.0, conv("(   ) Plano Start        (   ) Plano Pro        (   ) Gestão Mensal"), ln=True)
-    pdf.ln(5)
+    pdf.cell(w_contrato, 6.5, conv("(   ) Plano Start        (   ) Plano Pro        (   ) Gestão Mensal"), ln=True)
+    pdf.ln(6)
 
     pdf.set_x(12)
     pdf.set_font('Helvetica', 'B', 9.5)
     pdf.cell(w_contrato, 5.0, conv("CLÁUSULA QUARTA - CONDIÇÕES DE PAGAMENTO:"), ln=True)
     pdf.set_x(12)
     pdf.set_font('Helvetica', '', 9.5)
-    pdf.cell(w_contrato, 6.0, conv("(   ) À Vista       (   ) 2x - Plano Start       (   ) 3x - Plano Pro       (   ) Vencimento Dia: _____ - Gestão Mensal"), ln=True)
+    pdf.cell(w_contrato, 6.5, conv("(   ) À Vista       (   ) 2x - Plano Start       (   ) 3x - Plano Pro       (   ) Vencimento Dia: _____ - Gestão Mensal"), ln=True)
 
-    pdf.ln(20)
+    pdf.ln(22)
     
     y_ass = pdf.get_y()
     pdf.set_xy(12, y_ass)
@@ -966,8 +967,8 @@ elif "2. Concorrentes" in opcao_menu:
     st.markdown("<div class='card-title'>⚔️ ANÁLISE AUTOMÁTICA DE CONCORRENTES DO SEGMENTO</div>", unsafe_allow_html=True)
     st.info("Digite apenas o nome da empresa concorrente e a cidade. Ao enviar o formulário, a API do Google avaliará automaticamente a nota e todos os critérios!")
 
-    # FORMULÁRIO ESTÁVEL PARA PREVENIR ERROS DE REMOÇÃO DE NÓS REACT
-    with st.form(key="form_concorrentes_busca"):
+    # FORMULÁRIO BLINDADO PARA EVITAR DESMONTAGEM DE NÓS DOM NO REACT
+    with st.form(key="form_concorrentes_busca_estavel", clear_on_submit=False):
         inputs_busca = []
         for i in range(3):
             st.markdown(f"#### Concorrente #{i+1}")
@@ -991,35 +992,33 @@ elif "2. Concorrentes" in opcao_menu:
 
         btn_sub = st.form_submit_button("🔎 Avaliar Concorrentes Automático via Google", use_container_width=True)
 
-    if btn_sub:
-        if API_KEY_GOOGLE:
-            encontrados = 0
-            for i, (termo_emp, cid) in enumerate(inputs_busca):
-                st.session_state['concorrentes'][i]['busca_termo'] = termo_emp
-                st.session_state['concorrentes'][i]['cidade'] = cid
-                if termo_emp.strip() != "":
-                    detalhes = buscar_detalhes_concorrente_especifico(termo_emp, cid, API_KEY_GOOGLE)
-                    if detalhes:
-                        st.session_state['concorrentes'][i]['nome'] = detalhes['nome']
-                        st.session_state['concorrentes'][i]['nota'] = detalhes['nota']
-                        st.session_state['concorrentes'][i]['avaliacoes'] = detalhes['avaliacoes']
-                        st.session_state['concorrentes'][i]['tem_fotos_hd'] = detalhes['tem_fotos_hd']
-                        st.session_state['concorrentes'][i]['categorias_ok'] = detalhes['categorias_ok']
-                        st.session_state['concorrentes'][i]['horarios_ok'] = detalhes['horarios_ok']
-                        st.session_state['concorrentes'][i]['tem_website'] = detalhes['tem_website']
-                        st.session_state['concorrentes'][i]['tem_descricao'] = detalhes['tem_descricao']
-                        st.session_state['concorrentes'][i]['atributos_ok'] = detalhes['atributos_ok']
-                        st.session_state['concorrentes'][i]['respostas_ok'] = detalhes['respostas_ok']
-                        encontrados += 1
-            if encontrados > 0:
-                st.success(f"{encontrados} concorrente(s) avaliado(s) com sucesso pelo Google!")
-                st.rerun()
+        if btn_sub:
+            if API_KEY_GOOGLE:
+                encontrados = 0
+                for i, (termo_emp, cid) in enumerate(inputs_busca):
+                    st.session_state['concorrentes'][i]['busca_termo'] = termo_emp
+                    st.session_state['concorrentes'][i]['cidade'] = cid
+                    if termo_emp.strip() != "":
+                        detalhes = buscar_detalhes_concorrente_especifico(termo_emp, cid, API_KEY_GOOGLE)
+                        if detalhes:
+                            st.session_state['concorrentes'][i]['nome'] = detalhes['nome']
+                            st.session_state['concorrentes'][i]['nota'] = detalhes['nota']
+                            st.session_state['concorrentes'][i]['avaliacoes'] = detalhes['avaliacoes']
+                            st.session_state['concorrentes'][i]['tem_fotos_hd'] = detalhes['tem_fotos_hd']
+                            st.session_state['concorrentes'][i]['categorias_ok'] = detalhes['categorias_ok']
+                            st.session_state['concorrentes'][i]['horarios_ok'] = detalhes['horarios_ok']
+                            st.session_state['concorrentes'][i]['tem_website'] = detalhes['tem_website']
+                            st.session_state['concorrentes'][i]['tem_descricao'] = detalhes['tem_descricao']
+                            st.session_state['concorrentes'][i]['atributos_ok'] = detalhes['atributos_ok']
+                            st.session_state['concorrentes'][i]['respostas_ok'] = detalhes['respostas_ok']
+                            encontrados += 1
+                if encontrados > 0:
+                    st.success(f"{encontrados} concorrente(s) avaliado(s) com sucesso pelo Google!")
+                else:
+                    st.warning("Preencha ao menos um nome de concorrente para consultar.")
             else:
-                st.warning("Preencha ao menos um nome de concorrente para consultar.")
-        else:
-            st.error("Chave GOOGLE_API_KEY não configurada.")
+                st.error("Chave GOOGLE_API_KEY não configurada.")
 
-    # RESUMO DOS CONCORRENTES CARREGADOS
     concorrentes_validos = [c for c in st.session_state['concorrentes'] if c.get('nome', '').strip() != '']
     if concorrentes_validos:
         st.markdown("### 📌 Concorrentes Avaliados:")
