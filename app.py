@@ -129,6 +129,28 @@ def obter_caminho_logo():
         if os.path.exists(c): return c
     return None
 
+def buscar_detalhes_concorrente_especifico(nome_concorrente, cidade, api_key):
+    """
+    Busca o concorrente indicado pelo usuário no Google e traz nota e total de avaliações reais.
+    """
+    if not nome_concorrente or not api_key:
+        return None
+    try:
+        termo = f"{nome_concorrente}, {cidade}" if cidade else nome_concorrente
+        url_search = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={requests.utils.quote(termo)}&key={api_key}"
+        res = requests.get(url_search).json()
+        
+        if res.get("status") == "OK" and res.get("results"):
+            item = res["results"][0]
+            return {
+                "nome": item.get("name", nome_concorrente),
+                "nota": float(item.get("rating", 0.0)),
+                "avaliacoes": int(item.get("user_ratings_total", 0))
+            }
+    except Exception as e:
+        pass
+    return None
+
 # -----------------------------------------------------------------------------
 # 3. ESTADOS DA SESSÃO PERSISTENTES
 # -----------------------------------------------------------------------------
@@ -153,9 +175,9 @@ if 'dados' not in st.session_state:
 
 if 'concorrentes' not in st.session_state:
     st.session_state['concorrentes'] = [
-        {"nome": "", "nota": 0.0, "avaliacoes": 0},
-        {"nome": "", "nota": 0.0, "avaliacoes": 0},
-        {"nome": "", "nota": 0.0, "avaliacoes": 0}
+        {"nome": "", "nota": 0.0, "avaliacoes": 0, "busca_termo": ""},
+        {"nome": "", "nota": 0.0, "avaliacoes": 0, "busca_termo": ""},
+        {"nome": "", "nota": 0.0, "avaliacoes": 0, "busca_termo": ""}
     ]
 
 if 'planos' not in st.session_state:
@@ -319,7 +341,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
         pdf.set_text_color(22, 128, 61)
         pdf.cell(w_capa, 6, conv("Status da Ficha: Otimizado e Em Expansão"), align='C', ln=True)
 
-    # PÁGINA 2: DIAGNÓSTICO (ESPAÇAMENTOS AMPLIADOS)
+    # PÁGINA 2: DIAGNÓSTICO
     pdf.add_page()
     pdf.set_y(30)
     pdf.set_font('Helvetica', 'B', 17)
@@ -351,7 +373,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     pdf.set_text_color(245, 158, 11)
     pdf.cell(w_ficha, 4.5, conv(f"Nota {dados['nota']:.1f} {estrelas_txt}   -   {dados['avaliacoes']} avaliações no Google"), align='C', ln=True)
 
-    # QUADRO SCORE GERAL - ESPAÇAMENTO AUMENTADO
+    # QUADRO SCORE GERAL COM /100 EM AZUL ESCURO
     pdf.set_y(y_curr + 30)
     w_box_score = 80
     x_box_score = (210 - w_box_score) / 2.0
@@ -373,7 +395,6 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     pdf.rounded_rect(x_box_score, y_box_score, w_box_score, 14, 3, 'FD')
     pdf.set_line_width(0.2)
 
-    # IMPRESSÃO DO SCORE COM /100 EM AZUL ESCURO
     score_str = f"{score}"
     pdf.set_font('Helvetica', 'B', 15)
     w_num = pdf.get_string_width(score_str)
@@ -393,7 +414,6 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     pdf.set_text_color(cr, cg, cb)
     pdf.cell(w_box_score, 4, conv(f"SCORE GERAL ({status_txt})"), align='C', ln=True)
 
-    # ESPAÇO AMPLIADO ANTES DOS ITENS DE 1 A 9
     pdf.set_y(y_box_score + 28)
 
     pct_avaliacoes = min(int((dados['avaliacoes'] / 50.0) * 100), 100) if dados['avaliacoes'] > 0 else 10
@@ -454,7 +474,6 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
         pdf.cell(0, 2.8, conv(f"  Diagnóstico: {desc}"), ln=True)
         pdf.ln(1.4)
 
-    # CONCORRENTES VÁLIDOS PREENCHIDOS MANUAMENTE OU VIA BUSCA
     concorrentes_filtrados = [c for c in concorrentes if c.get("nome", "").strip() != ""]
 
     if concorrentes_filtrados:
@@ -493,7 +512,6 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
             pdf.cell(w_col3, 4.0, conv(f"{c['avaliacoes']} avaliações"), border='B', fill=fill_row, align='C')
             pdf.ln()
 
-    # ESPAÇO AMPLIADO ANTES DO PLANO DE AÇÃO
     if plano_acao_extra and plano_acao_extra.strip() != "":
         pdf.ln(12)
         w_extra = 186
@@ -885,32 +903,52 @@ if "1. Consulta" in opcao_menu:
 
 elif "2. Concorrentes" in opcao_menu:
     st.markdown("<div class='dashboard-card'>", unsafe_allow_html=True)
-    st.markdown("<div class='card-title'>⚔️ CADASTRO MANUALL DE CONCORRENTES DIRETOS (MESMO SEGMENTO)</div>", unsafe_allow_html=True)
-    st.info("Insira os concorrentes diretos e reais do cliente para garantir 100% de precisão na Tabela Comparativa da Página 2.")
+    st.markdown("<div class='card-title'>⚔️ BUSCA DIRECIONADA DE CONCORRENTES DO SEGMENTO VIA API</div>", unsafe_allow_html=True)
+    st.info("Digite apenas o Nome do Concorrente e Cidade. O Google trará a Nota Real e Quantidade de Avaliações automaticamente!")
 
     for i in range(3):
-        st.markdown(f"#### Concorrente #{i+1}")
-        col_c1, col_c2, col_c3 = st.columns([2, 1, 1])
-        st.session_state['concorrentes'][i]['nome'] = col_c1.text_input(
-            f"Nome do Concorrente {i+1}:", 
-            value=st.session_state['concorrentes'][i]['nome'], 
-            key=f"conc_nome_{i}"
-        )
-        st.session_state['concorrentes'][i]['nota'] = col_c2.number_input(
-            f"Nota Google (0.0 - 5.0):", 
-            min_value=0.0, max_value=5.0, 
-            value=float(st.session_state['concorrentes'][i]['nota']), 
-            step=0.1, key=f"conc_nota_{i}"
-        )
-        st.session_state['concorrentes'][i]['avaliacoes'] = col_c3.number_input(
-            f"Total Avaliações:", 
-            min_value=0, max_value=50000, 
-            value=int(st.session_state['concorrentes'][i]['avaliacoes']), 
-            step=1, key=f"conc_aval_{i}"
-        )
-        st.markdown("---")
+        st.markdown(f"#### Concorrente Directo #{i+1}")
+        col_c1, col_c2 = st.columns([2, 1])
         
-    st.success("Tabela comparativa de concorrentes atualizada com sucesso para os relatórios/PDFs!")
+        st.session_state['concorrentes'][i]['busca_termo'] = col_c1.text_input(
+            f"Nome da Empresa Concorrente #{i+1}:", 
+            value=st.session_state['concorrentes'][i].get('busca_termo', st.session_state['concorrentes'][i]['nome']), 
+            key=f"conc_termo_{i}",
+            placeholder="Ex: Sorveteria do Juarez"
+        )
+        
+        cidade_conc = col_c2.text_input(
+            f"Cidade / Região #{i+1}:", 
+            value="Brodowski - SP", 
+            key=f"conc_cidade_{i}"
+        )
+        
+        if st.session_state['concorrentes'][i]['nome']:
+            st.caption(f"📌 **Carregado:** {st.session_state['concorrentes'][i]['nome']} — ⭐ Nota {st.session_state['concorrentes'][i]['nota']:.1f} ({st.session_state['concorrentes'][i]['avaliacoes']} avaliações)")
+        
+        st.markdown("---")
+
+    if st.button("🔎 Consultar Nota e Avaliações no Google", use_container_width=True, key="btn_buscar_concorrentes_especificos"):
+        if API_KEY_GOOGLE:
+            encontrados = 0
+            for i in range(3):
+                termo_emp = st.session_state[f"conc_termo_{i}"]
+                cid = st.session_state[f"conc_cidade_{i}"]
+                if termo_emp.strip() != "":
+                    detalhes = buscar_detalhes_concorrente_especifico(termo_emp, cid, API_KEY_GOOGLE)
+                    if detalhes:
+                        st.session_state['concorrentes'][i]['nome'] = detalhes['nome']
+                        st.session_state['concorrentes'][i]['nota'] = detalhes['nota']
+                        st.session_state['concorrentes'][i]['avaliacoes'] = detalhes['avaliacoes']
+                        encontrados += 1
+            if encontrados > 0:
+                st.success(f"{encontrados} concorrente(s) consultado(s) e atualizado(s) com dados do Google!")
+                st.rerun()
+            else:
+                st.warning("Preencha ao menos um nome de concorrente para consultar.")
+        else:
+            st.error("Chave GOOGLE_API_KEY não configurada.")
+
     st.markdown("</div>", unsafe_allow_html=True)
 
 elif "3. Plano de Ação" in opcao_menu:
