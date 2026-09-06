@@ -530,17 +530,15 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
         pdf.cell(w_score, 5.2, conv("Score Geral"), border=0, fill=True, align='C')
         pdf.ln()
 
-        # FUNÇÃO PARA RENDERIZAR CÉLULA COLORIDA (SUAVE)
         def celula_sim_nao(pdf_obj, w, h, valor):
             if valor == "Sim":
-                pdf_obj.set_fill_color(220, 252, 231) # Verde claro
-                pdf_obj.set_text_color(22, 101, 52)   # Verde escuro
+                pdf_obj.set_fill_color(220, 252, 231)
+                pdf_obj.set_text_color(22, 101, 52)
             else:
-                pdf_obj.set_fill_color(254, 226, 226) # Vermelho claro
-                pdf_obj.set_text_color(153, 27, 27)   # Vermelho escuro
+                pdf_obj.set_fill_color(254, 226, 226)
+                pdf_obj.set_text_color(153, 27, 27)
             pdf_obj.cell(w, h, conv(valor), border='B', fill=True, align='C')
 
-        # LINHA DA EMPRESA CLIENTE
         pdf.set_fill_color(240, 249, 255)
         pdf.set_font('Helvetica', 'B', 8.0)
         pdf.set_text_color(30, 64, 175)
@@ -566,7 +564,6 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
         pdf.cell(w_score, 5.2, conv(f"{score} / 100"), border='B', fill=True, align='C')
         pdf.ln()
 
-        # LINHAS DOS CONCORRENTES
         pdf.set_font('Helvetica', '', 8.0)
         for idx_c, c in enumerate(concorrentes_filtrados):
             score_conc = calcular_score_concorrente(c)
@@ -609,7 +606,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
         pdf.rounded_rect(x_extra, y_extra, w_extra, h_box_extra, 2.5, 'FD')
         pdf.set_line_width(0.2)
         
-        pdf.set_xy(x_extra, y_extra + 6.0)
+        pdf.set_xy(x_extra, y_extra + 3.0)
         pdf.set_font('Helvetica', 'B', 10.0)
         pdf.set_text_color(30, 64, 175)
         pdf.cell(w_extra, 4.5, conv("PLANO DE AÇÃO E APONTAMENTOS ESTRATÉGICOS PERSONALIZADOS:"), align='C', ln=True)
@@ -744,7 +741,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     pdf.set_x(x_info)
     pdf.multi_cell(w_info, 4.8, conv(txt_exp), align='C')
 
-    # PÁGINA 4: CONTRATO (COM ALINHAMENTO JUSTIFICADO E FORMATADO)
+    # PÁGINA 4: CONTRATO (CLÁUSULAS, CONTRATADA E CONTRATANTE EM NEGRITO)
     pdf.add_page()
     pdf.set_y(30)
     pdf.set_font('Helvetica', 'B', 17)
@@ -753,30 +750,54 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     pdf.ln(10)
 
     w_contrato = 186
+    
+    # CONTRATADA
     pdf.set_x(12)
+    pdf.set_font('Helvetica', 'B', 9.5)
+    pdf.set_text_color(15, 23, 42)
+    pdf.cell(32, 5.2, conv("CONTRATADA:"), ln=False)
     pdf.set_font('Helvetica', '', 9.5)
     pdf.set_text_color(51, 65, 85)
-    
-    txt_partes = (
-        f"CONTRATADA: Tour360VR, representada por Rubens H. Okamoto, CPF: 287.932.298-79 e Telefone: (16) 99133-2121.\n\n"
-        f"CONTRATANTE: {dados['nome'] or 'Empresa Contratante'}, representada por {dados['contato'] or 'Responsável'}, "
-        f"localizada em {dados['endereco'] or 'Endereço não informado'}, Telefone: {dados['telefone'] or 'N/I'}.\n\n"
-        f"A CONTRATADA compromete-se a executar os serviços de otimização, reestruturação técnica e/ou produção "
-        f"de Tour Virtual 360° para o perfil do Google da CONTRATANTE."
-    )
-    pdf.multi_cell(w_contrato, 5.2, conv(txt_partes), align='J')
+    pdf.multi_cell(154, 5.2, conv("Tour360VR, representada por Rubens H. Okamoto, CPF: 287.932.298-79 e Telefone: (16) 99133-2121."), align='J')
+    pdf.ln(3)
+
+    # CONTRATANTE
+    pdf.set_x(12)
+    pdf.set_font('Helvetica', 'B', 9.5)
+    pdf.set_text_color(15, 23, 42)
+    pdf.cell(32, 5.2, conv("CONTRATANTE:"), ln=False)
+    pdf.set_font('Helvetica', '', 9.5)
+    pdf.set_text_color(51, 65, 85)
+    txt_cliente = f"{dados['nome'] or 'Empresa Contratante'}, representada por {dados['contato'] or 'Responsável'}, localizada em {dados['endereco'] or 'Endereço não informado'}, Telefone: {dados['telefone'] or 'N/I'}."
+    pdf.multi_cell(154, 5.2, conv(txt_cliente), align='J')
+    pdf.ln(4)
+
+    # TEXTO INTRODUTÓRIO
+    pdf.set_x(12)
+    pdf.multi_cell(w_contrato, 5.2, conv("A CONTRATADA compromete-se a executar os serviços de otimização, reestruturação técnica e/ou produção de Tour Virtual 360° para o perfil do Google da CONTRATANTE."), align='J')
     pdf.ln(6)
 
-    pdf.cell(w_contrato, 5.0, conv("CLÁUSULA PRIMEIRA - DO OBJETO:") Os serviços serão iniciados em até 7 dias úteis após o fornecimento de todos os acessos e informações necessárias à gestão do perfil."
+    # CLÁUSULA PRIMEIRA
     pdf.set_x(12)
-    pdf.multi_cell(w_contrato, 5.2, conv(c1), align='J')
+    pdf.set_font('Helvetica', 'B', 9.5)
+    pdf.set_text_color(15, 23, 42)
+    pdf.cell(56, 5.2, conv("CLÁUSULA PRIMEIRA - DO OBJETO:"), ln=False)
+    pdf.set_font('Helvetica', '', 9.5)
+    pdf.set_text_color(51, 65, 85)
+    pdf.multi_cell(130, 5.2, conv("Os serviços serão iniciados em até 5 dias úteis após o fornecimento de todos os acessos e informações necessárias à gestão do perfil."), align='J')
     pdf.ln(6)
 
-    pdf.cell(w_contrato, 5.0, conv("CLÁUSULA SEGUNDA - DAS OBRIGAÇÕES:") O não pagamento no prazo pactuado sujeitará o presente contrato à incidência de juros moratórios legais e à suspensão temporária dos serviços até a devida regularização."
+    # CLÁUSULA SEGUNDA
     pdf.set_x(12)
-    pdf.multi_cell(w_contrato, 5.2, conv(c2), align='J')
+    pdf.set_font('Helvetica', 'B', 9.5)
+    pdf.set_text_color(15, 23, 42)
+    pdf.cell(64, 5.2, conv("CLÁUSULA SEGUNDA - DAS OBRIGAÇÕES:"), ln=False)
+    pdf.set_font('Helvetica', '', 9.5)
+    pdf.set_text_color(51, 65, 85)
+    pdf.multi_cell(122, 5.2, conv("O não pagamento no prazo pactuado sujeitará o presente contrato à incidência de juros moratórios legais e à suspensão temporária dos serviços até a devida regularização."), align='J')
     pdf.ln(8)
 
+    # CLÁUSULA TERCEIRA
     pdf.set_x(12)
     pdf.set_font('Helvetica', 'B', 9.5)
     pdf.set_text_color(15, 23, 42)
@@ -787,6 +808,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     pdf.cell(w_contrato, 6.5, conv("(   ) Plano Start        (   ) Plano Pro        (   ) Gestão Mensal"), ln=True)
     pdf.ln(6)
 
+    # CLÁUSULA QUARTA
     pdf.set_x(12)
     pdf.set_font('Helvetica', 'B', 9.5)
     pdf.set_text_color(15, 23, 42)
@@ -994,7 +1016,9 @@ elif "2. Concorrentes" in opcao_menu:
     st.markdown("<div class='card-title'>⚔️ ANÁLISE AUTOMÁTICA DE CONCORRENTES DO SEGMENTO</div>", unsafe_allow_html=True)
     st.info("Digite apenas o nome da empresa concorrente e a cidade. Ao enviar o formulário, a API do Google avaliará automaticamente a nota e todos os critérios!")
 
-    with st.form(key="form_concorrentes_busca_estavel", clear_on_submit=False):
+    area_notificacao = st.empty()
+
+    with st.form(key="form_concorrentes_busca_limpo", clear_on_submit=False):
         inputs_busca = []
         for i in range(3):
             st.markdown(f"#### Concorrente #{i+1}")
@@ -1038,23 +1062,24 @@ elif "2. Concorrentes" in opcao_menu:
                             st.session_state['concorrentes'][i]['atributos_ok'] = detalhes['atributos_ok']
                             st.session_state['concorrentes'][i]['respostas_ok'] = detalhes['respostas_ok']
                             encontrados += 1
+                
                 if encontrados > 0:
-                    st.success(f"{encontrados} concorrente(s) avaliado(s) com sucesso pelo Google!")
+                    area_notificacao.success(f"{encontrados} concorrente(s) avaliado(s) com sucesso pelo Google!")
                 else:
-                    st.warning("Preencha ao menos um nome de concorrente para consultar.")
+                    area_notificacao.warning("Preencha ao menos um nome de concorrente para consultar.")
             else:
-                st.error("Chave GOOGLE_API_KEY não configurada.")
+                area_notificacao.error("Chave GOOGLE_API_KEY não configurada.")
 
-    with st.container():
-        concorrentes_validos = [c for c in st.session_state['concorrentes'] if c.get('nome', '').strip() != '']
-        if concorrentes_validos:
-            st.markdown("### 📌 Concorrentes Avaliados:")
-            for c_det in concorrentes_validos:
-                score_c = calcular_score_concorrente(c_det)
-                st.markdown(
-                    f"* **{c_det['nome']}** — ⭐ Nota **{c_det['nota']:.1f}** ({c_det['avaliacoes']} aval.) | "
-                    f"Score Geral: **{score_c}/100**"
-                )
+    concorrentes_validos = [c for c in st.session_state['concorrentes'] if c.get('nome', '').strip() != '']
+    if concorrentes_validos:
+        st.markdown("---")
+        st.markdown("### 📌 Concorrentes Avaliados:")
+        for c_det in concorrentes_validos:
+            score_c = calcular_score_concorrente(c_det)
+            st.markdown(
+                f"* **{c_det['nome']}** — ⭐ Nota **{c_det['nota']:.1f}** ({c_det['avaliacoes']} aval.) | "
+                f"Score Geral: **{score_c}/100**"
+            )
 
     st.markdown("</div>", unsafe_allow_html=True)
 
