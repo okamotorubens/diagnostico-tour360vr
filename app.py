@@ -116,6 +116,8 @@ def calcular_score_real(dados):
     if not dados.get("categorias_completas", False): score -= 15
     if not dados.get("horarios_ok", False): score -= 10
     if not dados.get("tem_descricao", False): score -= 10
+    if not dados.get("atributos_ok", False): score -= 10
+    if not dados.get("resposta_avaliacoes_ok", False): score -= 10
     if dados.get("avaliacoes", 0) < 50: score -= 15
     return max(score, 10)
 
@@ -127,22 +129,28 @@ def obter_caminho_logo():
 
 def buscar_concorrentes_proximos(lat, lng, place_id_cliente, tipo_categoria, api_key):
     """
-    Busca concorrentes do mesmo segmento em um raio de 3km usando Nearby Search API.
+    Busca concorrentes do mesmo segmento ignorando divisões administrativas/cidades.
     """
     if not lat or not lng or not api_key:
         return []
     
     try:
-        url = f"https://maps.googleapis.com/maps/api/place/nearbysearch/json?location={lat},{lng}&radius=3000&type={tipo_categoria}&key={api_key}"
+        url = f"https://maps.googleapis.com/maps/api/place/nearbysearch/json?location={lat},{lng}&radius=4000&type={tipo_categoria}&key={api_key}"
         res = requests.get(url).json()
         
         concorrentes = []
         if res.get("status") == "OK" and res.get("results"):
             for item in res.get("results", []):
-                # Ignora a própria empresa do cliente
+                types_item = item.get("types", [])
+                
+                # Filtra locais que sejam cidades, regiões ou o próprio cliente
                 if item.get("place_id") == place_id_cliente:
                     continue
-                
+                if "locality" in types_item or "administrative_area_level_1" in types_item or "political" in types_item:
+                    continue
+                if item.get("user_ratings_total", 0) == 0 and float(item.get("rating", 0.0)) == 0.0:
+                    continue
+
                 concorrentes.append({
                     "nome": item.get("name", "Concorrente Local"),
                     "nota": float(item.get("rating", 0.0)),
@@ -336,41 +344,40 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
         pdf.set_text_color(22, 128, 61)
         pdf.cell(w_capa, 6, conv("Status da Ficha: Otimizado e Em Expansão"), align='C', ln=True)
 
-    # PÁGINA 2: DIAGNÓSTICO
+    # PÁGINA 2: DIAGNÓSTICO (DISTRIBUIÇÃO HARMONIOSA DE ESPAÇOS)
     pdf.add_page()
     pdf.set_y(26)
-    pdf.set_font('Helvetica', 'B', 16)
+    pdf.set_font('Helvetica', 'B', 15)
     pdf.set_text_color(15, 23, 42)
-    
     pdf.cell(0, 6, conv('AUDITORIA DETALHADA DE PONTOS DE BUSCA'), align='C', ln=True)
-    pdf.ln(4)
+    pdf.ln(3)
 
     w_ficha = 186
     x_ficha = (210 - w_ficha) / 2.0
     
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
-    pdf.rounded_rect(x_ficha, pdf.get_y(), w_ficha, 24, 3, 'FD')
+    pdf.rounded_rect(x_ficha, pdf.get_y(), w_ficha, 22, 3, 'FD')
     
     y_curr = pdf.get_y()
-    pdf.set_xy(x_ficha, y_curr + 2.5)
+    pdf.set_xy(x_ficha, y_curr + 2)
     
-    pdf.set_font('Helvetica', 'B', 10.0)
+    pdf.set_font('Helvetica', 'B', 9.5)
     pdf.set_text_color(15, 23, 42)
-    pdf.cell(w_ficha, 4.5, conv('FICHA ANALISADA'), align='C', ln=True)
+    pdf.cell(w_ficha, 4, conv('FICHA ANALISADA'), align='C', ln=True)
     
     pdf.set_x(x_ficha)
-    pdf.set_font('Helvetica', 'B', 13.5)
+    pdf.set_font('Helvetica', 'B', 13)
     pdf.set_text_color(30, 64, 175)
-    pdf.cell(w_ficha, 6.0, conv(f"{dados['nome'] or 'Empresa Analisada'}"), align='C', ln=True)
+    pdf.cell(w_ficha, 5.5, conv(f"{dados['nome'] or 'Empresa Analisada'}"), align='C', ln=True)
 
     pdf.set_x(x_ficha)
-    pdf.set_font('Helvetica', 'B', 11.5)
+    pdf.set_font('Helvetica', 'B', 11)
     pdf.set_text_color(245, 158, 11)
-    pdf.cell(w_ficha, 5.0, conv(f"Nota {dados['nota']:.1f} {estrelas_txt}   -   {dados['avaliacoes']} avaliações no Google"), align='C', ln=True)
+    pdf.cell(w_ficha, 4.5, conv(f"Nota {dados['nota']:.1f} {estrelas_txt}   -   {dados['avaliacoes']} avaliações no Google"), align='C', ln=True)
 
     # QUADRO SCORE GERAL
-    pdf.set_y(y_curr + 28)
+    pdf.set_y(y_curr + 25)
     w_box_score = 75
     x_box_score = (210 - w_box_score) / 2.0
     y_box_score = pdf.get_y()
@@ -388,11 +395,11 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     pdf.set_fill_color(240, 249, 255)
     pdf.set_draw_color(62, 161, 219)
     pdf.set_line_width(0.5)
-    pdf.rounded_rect(x_box_score, y_box_score, w_box_score, 15, 3, 'FD')
+    pdf.rounded_rect(x_box_score, y_box_score, w_box_score, 14, 3, 'FD')
     pdf.set_line_width(0.2)
 
-    pdf.set_xy(x_box_score, y_box_score + 1.2)
-    pdf.set_font('Helvetica', 'B', 17)
+    pdf.set_xy(x_box_score, y_box_score + 1.0)
+    pdf.set_font('Helvetica', 'B', 16)
     pdf.set_text_color(cr, cg, cb)
     
     str_score = f"{score} "
@@ -402,16 +409,16 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     x_start_text = x_box_score + ((w_box_score - (w_part1 + w_part2)) / 2.0)
     
     pdf.set_x(x_start_text)
-    pdf.write(6, conv(str_score))
+    pdf.write(5.5, conv(str_score))
     pdf.set_text_color(30, 64, 175)
-    pdf.write(6, conv(str_100))
+    pdf.write(5.5, conv(str_100))
     
-    pdf.set_xy(x_box_score, y_box_score + 8.5)
-    pdf.set_font('Helvetica', 'B', 9.0)
+    pdf.set_xy(x_box_score, y_box_score + 8.0)
+    pdf.set_font('Helvetica', 'B', 8.5)
     pdf.set_text_color(cr, cg, cb)
-    pdf.cell(w_box_score, 4, conv(f"SCORE GERAL ({status_txt})"), align='C', ln=True)
+    pdf.cell(w_box_score, 3.5, conv(f"SCORE GERAL ({status_txt})"), align='C', ln=True)
 
-    pdf.set_y(y_box_score + 19)
+    pdf.set_y(y_box_score + 17)
 
     pct_avaliacoes = min(int((dados['avaliacoes'] / 50.0) * 100), 100) if dados['avaliacoes'] > 0 else 10
     pct_fotos = 100 if dados['tem_fotos_hd'] else 30
@@ -444,74 +451,74 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     ]
 
     for titulo, pct, rotulo, desc in itens:
-        pdf.set_font('Helvetica', 'B', 8.5)
+        pdf.set_font('Helvetica', 'B', 8.0)
         pdf.set_text_color(30, 41, 59)
-        pdf.cell(130, 3.0, conv(titulo), ln=False)
+        pdf.cell(130, 2.6, conv(titulo), ln=False)
         
-        pdf.set_font('Helvetica', 'B', 8.5)
+        pdf.set_font('Helvetica', 'B', 8.0)
         if pct < 40: pdf.set_text_color(239, 68, 68)
         elif pct < 80: pdf.set_text_color(245, 158, 11)
         else: pdf.set_text_color(22, 128, 61)
             
-        pdf.cell(56, 3.0, conv(rotulo), align='R', ln=True)
+        pdf.cell(56, 2.6, conv(rotulo), align='R', ln=True)
 
         pdf.set_fill_color(226, 232, 240)
-        pdf.rounded_rect(12, pdf.get_y(), 186, 2.0, 1.0, 'F')
+        pdf.rounded_rect(12, pdf.get_y(), 186, 1.8, 0.8, 'F')
         
         if pct < 40: pdf.set_fill_color(239, 68, 68)
         elif pct < 80: pdf.set_fill_color(245, 158, 11)
         else: pdf.set_fill_color(22, 128, 61)
             
         largura_barra = max(float(pct) * 1.86, 4.0)
-        pdf.rounded_rect(12, pdf.get_y(), largura_barra, 2.0, 1.0, 'F')
-        pdf.ln(2.2)
+        pdf.rounded_rect(12, pdf.get_y(), largura_barra, 1.8, 0.8, 'F')
+        pdf.ln(2.0)
 
-        pdf.set_font('Helvetica', '', 7.5)
+        pdf.set_font('Helvetica', '', 7.2)
         pdf.set_text_color(71, 85, 105)
-        pdf.cell(0, 3.0, conv(f"  Diagnóstico: {desc}"), ln=True)
-        pdf.ln(1.5)
+        pdf.cell(0, 2.6, conv(f"  Diagnóstico: {desc}"), ln=True)
+        pdf.ln(1.0)
 
-    # TABELA DE CONCORRENTES DIRETOS LOCAIS
+    # TABELA DE ANÁLISE COMPARATIVA (SEM "[SUA EMPRESA]")
     if concorrentes:
-        pdf.ln(3)
-        pdf.set_font('Helvetica', 'B', 10)
+        pdf.ln(2)
+        pdf.set_font('Helvetica', 'B', 9.5)
         pdf.set_text_color(30, 64, 175)
-        pdf.cell(0, 5, conv("ANÁLISE COMPARATIVA DE CONCORRENTES LOCAIS (MESMO SEGMENTO)"), ln=True)
-        pdf.ln(1.5)
+        pdf.cell(0, 4.5, conv("ANÁLISE COMPARATIVA DE CONCORRENTES LOCAIS (MESMO SEGMENTO)"), ln=True)
+        pdf.ln(1)
 
         w_col1, w_col2, w_col3 = 106, 35, 45
         
         # Cabeçalho Tabela
         pdf.set_fill_color(30, 64, 175)
         pdf.set_text_color(255, 255, 255)
-        pdf.set_font('Helvetica', 'B', 8)
-        pdf.cell(w_col1, 5, conv(" Empresa / Estabelecimento"), border=0, fill=True)
-        pdf.cell(w_col2, 5, conv(" Nota Google"), border=0, fill=True, align='C')
-        pdf.cell(w_col3, 5, conv(" Total Avaliações"), border=0, fill=True, align='C')
+        pdf.set_font('Helvetica', 'B', 7.5)
+        pdf.cell(w_col1, 4.2, conv(" Empresa / Estabelecimento"), border=0, fill=True)
+        pdf.cell(w_col2, 4.2, conv(" Nota Google"), border=0, fill=True, align='C')
+        pdf.cell(w_col3, 4.2, conv(" Total Avaliações"), border=0, fill=True, align='C')
         pdf.ln()
 
-        # Linha do Cliente (Destaque Azul Claro)
+        # Linha do Cliente (Nome Direto sem [SUA EMPRESA])
         pdf.set_fill_color(240, 249, 255)
         pdf.set_draw_color(191, 219, 254)
-        pdf.set_font('Helvetica', 'B', 8)
+        pdf.set_font('Helvetica', 'B', 7.5)
         pdf.set_text_color(30, 64, 175)
-        pdf.cell(w_col1, 4.8, conv(f" [SUA EMPRESA] {dados['nome']}"), border='B', fill=True)
-        pdf.cell(w_col2, 4.8, conv(f"{dados['nota']:.1f} ⭐"), border='B', fill=True, align='C')
-        pdf.cell(w_col3, 4.8, conv(f"{dados['avaliacoes']} avaliações"), border='B', fill=True, align='C')
+        pdf.cell(w_col1, 4.0, conv(f" {dados['nome']}"), border='B', fill=True)
+        pdf.cell(w_col2, 4.0, conv(f"{dados['nota']:.1f} ⭐"), border='B', fill=True, align='C')
+        pdf.cell(w_col3, 4.0, conv(f"{dados['avaliacoes']} avaliações"), border='B', fill=True, align='C')
         pdf.ln()
 
         # Linhas dos Concorrentes
-        pdf.set_font('Helvetica', '', 8)
+        pdf.set_font('Helvetica', '', 7.5)
         pdf.set_text_color(51, 65, 85)
         for idx_c, c in enumerate(concorrentes):
             fill_row = (idx_c % 2 == 1)
             pdf.set_fill_color(248, 250, 252) if fill_row else pdf.set_fill_color(255, 255, 255)
-            pdf.cell(w_col1, 4.5, conv(f" {c['nome']}"), border='B', fill=fill_row)
-            pdf.cell(w_col2, 4.5, conv(f"{c['nota']:.1f} ⭐"), border='B', fill=fill_row, align='C')
-            pdf.cell(w_col3, 4.5, conv(f"{c['avaliacoes']} avaliações"), border='B', fill=fill_row, align='C')
+            pdf.cell(w_col1, 3.8, conv(f" {c['nome']}"), border='B', fill=fill_row)
+            pdf.cell(w_col2, 3.8, conv(f"{c['nota']:.1f} ⭐"), border='B', fill=fill_row, align='C')
+            pdf.cell(w_col3, 3.8, conv(f"{c['avaliacoes']} avaliações"), border='B', fill=fill_row, align='C')
             pdf.ln()
 
-    # PLANO DE AÇÃO
+    # PLANO DE AÇÃO COM ESPAÇO AMPLIADO (EXPANDIDO PARA +5 LINHAS)
     if plano_acao_extra and plano_acao_extra.strip() != "":
         pdf.ln(3)
         w_extra = 186
@@ -522,18 +529,19 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
         pdf.set_line_width(0.5)
         
         y_extra = pdf.get_y()
-        pdf.rounded_rect(x_extra, y_extra, w_extra, 20, 2.5, 'FD')
+        h_box_extra = 35 # Aumentado de 20 para 35 para dar suporte a textos mais extensos
+        pdf.rounded_rect(x_extra, y_extra, w_extra, h_box_extra, 2.5, 'FD')
         pdf.set_line_width(0.2)
         
         pdf.set_xy(x_extra, y_extra + 2.5)
-        pdf.set_font('Helvetica', 'B', 9.0)
+        pdf.set_font('Helvetica', 'B', 8.5)
         pdf.set_text_color(30, 64, 175)
         pdf.cell(w_extra, 4, conv("PLANO DE AÇÃO E APONTAMENTOS ESTRATÉGICOS PERSONALIZADOS:"), align='C', ln=True)
         
         pdf.set_xy(x_extra + 4, y_extra + 7.5)
         pdf.set_font('Helvetica', '', 8.0)
         pdf.set_text_color(51, 65, 85)
-        pdf.multi_cell(w_extra - 8, 3.5, conv(plano_acao_extra), align='L')
+        pdf.multi_cell(w_extra - 8, 3.8, conv(plano_acao_extra), align='L')
 
     # PÁGINA 3: PLANOS
     pdf.add_page()
@@ -663,70 +671,70 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     pdf.set_x(x_info)
     pdf.multi_cell(w_info, 4.0, conv(txt_exp), align='C')
 
-    # PÁGINA 4: CONTRATO
+    # PÁGINA 4: CONTRATO COM TEXTO TOTALMENTE JUSTIFICADO
     pdf.add_page()
-    pdf.set_y(30)
-    pdf.set_font('Helvetica', 'B', 17)
+    pdf.set_y(28)
+    pdf.set_font('Helvetica', 'B', 16)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 7, conv('CONTRATO DE PRESTAÇÃO DE SERVIÇOS'), align='C', ln=True)
-    pdf.ln(8)
+    pdf.ln(6)
 
+    w_contrato = 186
+    pdf.set_x(12)
     pdf.set_font('Helvetica', '', 9.0)
     pdf.set_text_color(51, 65, 85)
-    pdf.set_font('Helvetica', 'B', 9.0)
-    pdf.write(4.5, conv("CONTRATADA: "))
-    pdf.set_font('Helvetica', '', 9.0)
-    pdf.write(4.5, conv("Tour360VR, representada por Rubens H. Okamoto, CPF: 287.932.298-79 e Telefone: (16) 99133-2121.\n\n"))
     
+    # Texto inicial
+    txt_intro = (
+        f"CONTRATADA: Tour360VR, representada por Rubens H. Okamoto, CPF: 287.932.298-79 e Telefone: (16) 99133-2121.\n\n"
+        f"CONTRATANTE: {dados['nome'] or 'Empresa Contratante'}, representada por {dados['contato'] or 'Responsável'}, "
+        f"localizada em {dados['endereco'] or 'Endereço não informado'}, Telefone: {dados['telefone'] or 'N/I'}.\n\n"
+        f"A CONTRATADA compromete-se a executar os serviços de otimização, reestruturação técnica e/ou produção "
+        f"de Tour Virtual 360° para o perfil do Google da CONTRATANTE."
+    )
+    pdf.multi_cell(w_contrato, 4.8, conv(txt_intro), align='J')
+    pdf.ln(4)
+
+    # Cláusulas Justificadas
+    c1 = "CLÁUSULA PRIMEIRA - DO OBJETO: Os serviços serão iniciados em até 5 dias úteis após o fornecimento de todos os acessos e informações necessárias à gestão do perfil."
+    pdf.multi_cell(w_contrato, 4.8, conv(c1), align='J')
+    pdf.ln(3)
+
+    c2 = "CLÁUSULA SEGUNDA - DAS OBRIGAÇÕES: O não pagamento no prazo pactuado sujeitará o presente contrato à incidência de juros moratórios legais e à suspensão temporária dos serviços até a devida regularização."
+    pdf.multi_cell(w_contrato, 4.8, conv(c2), align='J')
+    pdf.ln(5)
+
     pdf.set_font('Helvetica', 'B', 9.0)
-    pdf.write(4.5, conv("CONTRATANTE: "))
+    pdf.cell(w_contrato, 4.5, conv("CLÁUSULA TERCEIRA - SELEÇÃO DO PLANO CONTRATADO:"), ln=True)
     pdf.set_font('Helvetica', '', 9.0)
-    pdf.write(4.5, conv(f"{dados['nome'] or 'Empresa Contratante'}, representada por {dados['contato'] or 'Responsável'}, {dados['endereco'] or 'Endereço'}, Telefone: {dados['telefone'] or 'N/I'}.\n\n"))
+    pdf.cell(w_contrato, 5.5, conv("(   ) Plano Start        (   ) Plano Pro        (   ) Gestão Mensal"), ln=True)
+    pdf.ln(4)
+
+    pdf.set_font('Helvetica', 'B', 9.0)
+    pdf.cell(w_contrato, 4.5, conv("CLÁUSULA QUARTA - CONDIÇÕES DE PAGAMENTO:"), ln=True)
+    pdf.set_font('Helvetica', '', 9.0)
+    pdf.cell(w_contrato, 5.5, conv("(   ) À Vista       (   ) 2x - Plano Start       (   ) 3x - Plano Pro       (   ) Vencimento Dia: _____ - Gestão Mensal"), ln=True)
+
+    pdf.ln(18)
     
-    pdf.set_font('Helvetica', '', 9.0)
-    pdf.write(4.5, conv("A "))
-    pdf.set_font('Helvetica', 'B', 9.0)
-    pdf.write(4.5, conv("CONTRATADA "))
-    pdf.set_font('Helvetica', '', 9.0)
-    pdf.write(4.5, conv("compromete-se a executar os serviços de otimização, reestruturação técnica e/ou produção de Tour Virtual 360° para o perfil do Google da "))
-    pdf.set_font('Helvetica', 'B', 9.0)
-    pdf.write(4.5, conv("CONTRATANTE.\n\n"))
-
-    pdf.set_font('Helvetica', 'B', 9.0)
-    pdf.write(4.5, conv("CLÁUSULA PRIMEIRA - DO OBJETO: "))
-    pdf.set_font('Helvetica', '', 9.0)
-    pdf.write(4.5, conv("Os serviços serão iniciados em até 5 dias úteis após o fornecimento dos acessos e informações necessárias ao perfil.\n\n"))
-
-    pdf.set_font('Helvetica', 'B', 9.0)
-    pdf.write(4.5, conv("CLÁUSULA SEGUNDA - DAS OBRIGAÇÕES: "))
-    pdf.set_font('Helvetica', '', 9.0)
-    pdf.write(4.5, conv("O não pagamento na data acordada sujeitará o presente contrato à incidência de juros legais de mora e interrupção temporária dos serviços.\n\n"))
-
-    pdf.set_font('Helvetica', 'B', 9.0)
-    pdf.write(4.5, conv("CLÁUSULA TERCEIRA - SELEÇÃO DO PLANO CONTRATADO:\n"))
-    pdf.set_font('Helvetica', '', 9.0)
-    pdf.write(4.5, conv("(   ) Plano Start        (   ) Plano Pro        (   ) Gestão Mensal\n\n"))
-
-    pdf.set_font('Helvetica', 'B', 9.0)
-    pdf.write(4.5, conv("CLÁUSULA QUARTA - CONDIÇÕES DE PAGAMENTO:\n"))
-    pdf.set_font('Helvetica', '', 9.0)
-    pdf.write(6.0, conv("(   ) À Vista       (   ) 2x - Plano Start       (   ) 3x - Plano Pro       (   ) Vencimento Dia: _____ - Gestão Mensal\n\n"))
-
-    pdf.ln(12)
-    
+    # Linhas de Assinatura
+    y_ass = pdf.get_y()
+    pdf.set_xy(12, y_ass)
     pdf.cell(88, 5, '_____________________________________', align='C')
-    pdf.cell(10, 5, '')
+    pdf.set_xy(110, y_ass)
     pdf.cell(88, 5, '_____________________________________', align='C', ln=True)
     
     pdf.set_font('Helvetica', 'B', 8.5)
+    pdf.set_x(12)
     pdf.cell(88, 4.5, 'Rubens H. Okamoto', align='C')
-    pdf.cell(10, 4.5, '')
+    pdf.set_x(110)
     pdf.cell(88, 4.5, conv(f"{dados['contato'] or 'Responsável'}"), align='C', ln=True)
     
     pdf.set_font('Helvetica', 'B', 8.5)
     pdf.set_text_color(100, 116, 139)
+    pdf.set_x(12)
     pdf.cell(88, 4.5, 'Tour360VR', align='C')
-    pdf.cell(10, 4.5, '')
+    pdf.set_x(110)
     pdf.cell(88, 4.5, conv(f"{dados['nome'] or 'Empresa'}"), align='C', ln=True)
 
     buffer = io.BytesIO()
@@ -776,7 +784,7 @@ if "1. Consulta" in opcao_menu:
         
         c1, c2 = st.columns([2, 1])
         with c1:
-            nome_input = st.text_input("Nome da Empresa:", value="", key="input_empresa_nome", placeholder="Ex: Toque de Letra Comunicação")
+            nome_input = st.text_input("Nome da Empresa:", value="", key="input_empresa_nome", placeholder="Ex: Taiwan Hotel Ltda")
         with c2:
             cidade_empresa = st.text_input("Localização:", value="", key="input_empresa_cidade", placeholder="Ex: Ribeirão Preto, SP")
             
@@ -825,6 +833,7 @@ if "1. Consulta" in opcao_menu:
                         st.session_state['dados']['avaliacoes'] = int(res_details.get("user_ratings_total") or u.get("user_ratings_total") or 0)
                         st.session_state['dados']['contato'] = "Gerente Responsável"
                         
+                        # AJUSTE FINO ASSINALADO AUTOMATICAMENTE
                         st.session_state['dados']['tem_fotos_hd'] = len(photos) >= 10
                         st.session_state['dados']['horarios_ok'] = "opening_hours" in res_details
                         st.session_state['dados']['categorias_completas'] = len(types_lista) >= 3
@@ -834,10 +843,10 @@ if "1. Consulta" in opcao_menu:
                         st.session_state['dados']['resposta_avaliacoes_ok'] = False
                         st.session_state['dados']['categorias_detectadas'] = types_lista
 
-                        # Busca Concorrentes Próximos via Nearby Search API
+                        # Busca Concorrentes Próximos Válidos
                         lat = loc.get("lat")
                         lng = loc.get("lng")
-                        categoria_principal = types_lista[0] if types_lista else "establishment"
+                        categoria_principal = types_lista[0] if types_lista else "lodging"
                         
                         st.session_state['concorrentes'] = buscar_concorrentes_proximos(
                             lat, lng, place_id, categoria_principal, API_KEY_GOOGLE
@@ -886,6 +895,8 @@ if "1. Consulta" in opcao_menu:
         st.markdown(f"* Categorias: {'✓ Atualizadas' if dados['categorias_completas'] else '❌ Incompletas (Ajustar Secundárias)'}")
         st.markdown(f"* Horários: {'✓ OK' if dados['horarios_ok'] else '❌ Falta atualizar'}")
         st.markdown(f"* Descrição: {'✓ Ativa' if dados.get('tem_descricao') else '❌ Ausente'}")
+        st.markdown(f"* Atributos de Serviços: {'✓ Ativos' if dados.get('atributos_ok') else '❌ Ausentes / Pendentes'}")
+        st.markdown(f"* Respostas a Avaliações: {'✓ Frequentes' if dados.get('resposta_avaliacoes_ok') else '❌ Sem respostas oficiais'}")
         
         if st.session_state['concorrentes']:
             st.markdown("---")
@@ -960,11 +971,11 @@ pdf_bytes = gerar_pdf_oficial(
     st.session_state['concorrentes']
 )
 
-nome_arquivo_pdf = dados['nome'].replace(' ', '_') if dados['nome'] else 'Novo_Cliente'
+nome_empresa_formatado = dados['nome'].strip() if dados['nome'] else 'Empresa'
 st.download_button(
     "📥 Baixar Diagnóstico, Proposta e Contrato Completo em PDF",
     data=pdf_bytes,
-    file_name=f"Diagnostico_Proposta_Contrato_{nome_arquivo_pdf}.pdf",
+    file_name=f"Diagnóstico & Proposta - {nome_empresa_formatado}.pdf",
     mime="application/pdf",
     use_container_width=True,
     key="btn_pdf_unico_unificado"
