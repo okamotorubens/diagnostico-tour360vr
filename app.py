@@ -123,6 +123,19 @@ def calcular_score_real(dados):
     if dados.get("avaliacoes", 0) < 50: score -= 15
     return max(score, 10)
 
+def calcular_score_concorrente(c):
+    score = 100
+    if c.get("tem_tour360") == "Não": score -= 20
+    if c.get("tem_website") == "Não": score -= 15
+    if c.get("tem_fotos_hd") == "Não": score -= 15
+    if c.get("categorias_ok") == "Não": score -= 15
+    if c.get("horarios_ok") == "Não": score -= 10
+    if c.get("tem_descricao") == "Não": score -= 10
+    if c.get("atributos_ok") == "Não": score -= 10
+    if c.get("respostas_ok") == "Não": score -= 10
+    if c.get("avaliacoes", 0) < 50: score -= 15
+    return max(score, 10)
+
 def obter_caminho_logo():
     caminhos = ['assets/Logo_TOUR_transparente.png', 'Logo_TOUR_transparente.png', 'assets/Logo TOUR transparente.png']
     for c in caminhos:
@@ -165,7 +178,7 @@ def buscar_detalhes_concorrente_especifico(nome_concorrente, cidade, api_key):
     return None
 
 # -----------------------------------------------------------------------------
-# 3. ESTADOS DA SESSÃO PERSISTENTES (INICIAM EM BRANCO)
+# 3. ESTADOS DA SESSÃO PERSISTENTES
 # -----------------------------------------------------------------------------
 if 'dados' not in st.session_state:
     st.session_state['dados'] = {
@@ -490,18 +503,20 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     concorrentes_filtrados = [c for c in concorrentes if c.get("nome", "").strip() != ""]
 
     if concorrentes_filtrados:
-        pdf.ln(4)
+        pdf.ln(8)  # MAIOR ESPAÇAMENTO ANTES DE CONCORRENTES
         pdf.set_font('Helvetica', 'B', 10.0)
         pdf.set_text_color(30, 64, 175)
-        pdf.cell(0, 4.5, conv("ANÁLISE COMPARATIVA DE CONCORRENTES (9 PONTOS DE DIAGNÓSTICO)"), ln=True)
-        pdf.ln(1.5)
+        pdf.cell(0, 4.5, conv("ANÁLISE AUTOMÁTICA DE CONCORRENTES DO SEGMENTO"), ln=True)
+        pdf.ln(2.0)
 
-        w_emp = 56
-        w_item = 14.4
+        # TABELA COM 10 COLUNAS (9 ITENS + SCORE GERAL)
+        w_emp = 46
+        w_item = 12.5  # 9 itens * 12.5mm = 112.5mm
+        w_score = 27.5 # Score Geral Final
         
         pdf.set_fill_color(30, 64, 175)
         pdf.set_text_color(255, 255, 255)
-        pdf.set_font('Helvetica', 'B', 7.0)
+        pdf.set_font('Helvetica', 'B', 6.5)
         
         pdf.cell(w_emp, 4.5, conv(" Empresa / Concorrente"), border=0, fill=True)
         pdf.cell(w_item, 4.5, conv("1.Fotos"), border=0, fill=True, align='C')
@@ -513,11 +528,13 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
         pdf.cell(w_item, 4.5, conv("7.Desc"), border=0, fill=True, align='C')
         pdf.cell(w_item, 4.5, conv("8.Atrib"), border=0, fill=True, align='C')
         pdf.cell(w_item, 4.5, conv("9.Resp"), border=0, fill=True, align='C')
+        pdf.cell(w_score, 4.5, conv("Score Geral"), border=0, fill=True, align='C')
         pdf.ln()
 
+        # LINHA DA EMPRESA CLIENTE
         pdf.set_fill_color(240, 249, 255)
         pdf.set_draw_color(191, 219, 254)
-        pdf.set_font('Helvetica', 'B', 7.0)
+        pdf.set_font('Helvetica', 'B', 6.5)
         pdf.set_text_color(30, 64, 175)
         
         pdf.cell(w_emp, 4.2, conv(f" {dados['nome']}"), border='B', fill=True)
@@ -530,12 +547,15 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
         pdf.cell(w_item, 4.2, conv("Sim" if dados.get('tem_descricao') else "Não"), border='B', fill=True, align='C')
         pdf.cell(w_item, 4.2, conv("Sim" if dados.get('atributos_ok') else "Não"), border='B', fill=True, align='C')
         pdf.cell(w_item, 4.2, conv("Sim" if dados.get('resposta_avaliacoes_ok') else "Não"), border='B', fill=True, align='C')
+        pdf.cell(w_score, 4.2, conv(f"{score} / 100"), border='B', fill=True, align='C')
         pdf.ln()
 
-        pdf.set_font('Helvetica', '', 7.0)
+        # LINHAS DOS CONCORRENTES COM SCORE AUTOMÁTICO
+        pdf.set_font('Helvetica', '', 6.5)
         pdf.set_text_color(51, 65, 85)
         for idx_c, c in enumerate(concorrentes_filtrados):
             fill_row = (idx_c % 2 == 1)
+            score_conc = calcular_score_concorrente(c)
             pdf.set_fill_color(248, 250, 252) if fill_row else pdf.set_fill_color(255, 255, 255)
             
             pdf.cell(w_emp, 4.0, conv(f" {c['nome']}"), border='B', fill=fill_row)
@@ -548,10 +568,14 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
             pdf.cell(w_item, 4.0, conv(c.get('tem_descricao', 'Não')), border='B', fill=fill_row, align='C')
             pdf.cell(w_item, 4.0, conv(c.get('atributos_ok', 'Não')), border='B', fill=fill_row, align='C')
             pdf.cell(w_item, 4.0, conv(c.get('respostas_ok', 'Não')), border='B', fill=fill_row, align='C')
+            
+            pdf.set_font('Helvetica', 'B', 6.5)
+            pdf.cell(w_score, 4.0, conv(f"{score_conc} / 100"), border='B', fill=fill_row, align='C')
+            pdf.set_font('Helvetica', '', 6.5)
             pdf.ln()
 
     if plano_acao_extra and plano_acao_extra.strip() != "":
-        pdf.ln(8)
+        pdf.ln(12)  # MAIOR ESPAÇAMENTO ANTES DO PLANO DE AÇÃO
         w_extra = 186
         x_extra = (210 - w_extra) / 2.0
         
@@ -930,7 +954,8 @@ if "1. Consulta" in opcao_menu:
             st.markdown("---")
             st.markdown("**⚔️ Concorrentes Diretos Cadastrados:**")
             for c in concorrentes_validos:
-                st.markdown(f"• **{c['nome']}** — ⭐ {float(c['nota']):.1f} ({c['avaliacoes']} aval.)")
+                score_c = calcular_score_concorrente(c)
+                st.markdown(f"• **{c['nome']}** — ⭐ {float(c['nota']):.1f} | Score: **{score_c}/100**")
 
         if dados.get('categorias_detectadas'):
             st.markdown("---")
@@ -964,9 +989,10 @@ elif "2. Concorrentes" in opcao_menu:
 
         if st.session_state['concorrentes'][i]['nome']:
             c_det = st.session_state['concorrentes'][i]
+            score_c = calcular_score_concorrente(c_det)
             st.caption(
                 f"📌 **Avaliação Automática Google:** {c_det['nome']} — ⭐ Nota {c_det['nota']:.1f} ({c_det['avaliacoes']} aval.) | "
-                f"Fotos HD: **{c_det['tem_fotos_hd']}** | Horários: **{c_det['horarios_ok']}** | Website: **{c_det['tem_website']}** | Descrição: **{c_det['tem_descricao']}**"
+                f"Score Calculado: **{score_c}/100**"
             )
         
         st.markdown("---")
