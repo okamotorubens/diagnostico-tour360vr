@@ -94,7 +94,7 @@ API_KEY_GOOGLE = (
 )
 
 # -----------------------------------------------------------------------------
-# 2. FUNÇÕES UTILITÁRIAS
+# 2. FUNÇÕES UTILITÁRIAS & INTEGRAÇÃO COM A GOOGLE PLACES API
 # -----------------------------------------------------------------------------
 def conv(texto):
     if not texto: return ""
@@ -125,6 +125,35 @@ def obter_caminho_logo():
         if os.path.exists(c): return c
     return None
 
+def buscar_concorrentes_proximos(lat, lng, place_id_cliente, tipo_categoria, api_key):
+    """
+    Busca concorrentes do mesmo segmento em um raio de 3km usando Nearby Search API.
+    """
+    if not lat or not lng or not api_key:
+        return []
+    
+    try:
+        url = f"https://maps.googleapis.com/maps/api/place/nearbysearch/json?location={lat},{lng}&radius=3000&type={tipo_categoria}&key={api_key}"
+        res = requests.get(url).json()
+        
+        concorrentes = []
+        if res.get("status") == "OK" and res.get("results"):
+            for item in res.get("results", []):
+                # Ignora a própria empresa do cliente
+                if item.get("place_id") == place_id_cliente:
+                    continue
+                
+                concorrentes.append({
+                    "nome": item.get("name", "Concorrente Local"),
+                    "nota": float(item.get("rating", 0.0)),
+                    "avaliacoes": int(item.get("user_ratings_total", 0))
+                })
+                if len(concorrentes) >= 3:
+                    break
+        return concorrentes
+    except Exception as e:
+        return []
+
 # -----------------------------------------------------------------------------
 # 3. ESTADOS DA SESSÃO PERSISTENTES
 # -----------------------------------------------------------------------------
@@ -146,6 +175,9 @@ if 'dados' not in st.session_state:
         "resposta_avaliacoes_ok": False,
         "categorias_detectadas": []
     }
+
+if 'concorrentes' not in st.session_state:
+    st.session_state['concorrentes'] = []
 
 if 'planos' not in st.session_state:
     st.session_state['planos'] = {
@@ -239,7 +271,7 @@ class PDFTour360Oficial(FPDF):
         k, hp = self.k, self.h
         self._out(f'{x1*k:.2f} {(hp-y1)*k:.2f} {x2*k:.2f} {(hp-y2)*k:.2f} {x3*k:.2f} {(hp-y3)*k:.2f} c')
 
-def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
+def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorrentes=[]):
     score = calcular_score_real(dados)
     pdf = PDFTour360Oficial()
     pdf.set_auto_page_break(auto=True, margin=18)
@@ -306,41 +338,39 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
 
     # PÁGINA 2: DIAGNÓSTICO
     pdf.add_page()
-    pdf.set_y(30)
-    pdf.set_font('Helvetica', 'B', 17)
+    pdf.set_y(26)
+    pdf.set_font('Helvetica', 'B', 16)
     pdf.set_text_color(15, 23, 42)
     
-    pdf.cell(0, 7, conv('AUDITORIA DETALHADA DE PONTOS DE BUSCA'), align='C', ln=True)
-    pdf.ln(8)
+    pdf.cell(0, 6, conv('AUDITORIA DETALHADA DE PONTOS DE BUSCA'), align='C', ln=True)
+    pdf.ln(4)
 
-    w_ficha = 145
+    w_ficha = 186
     x_ficha = (210 - w_ficha) / 2.0
     
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
-    pdf.rounded_rect(x_ficha, pdf.get_y(), w_ficha, 28, 3, 'FD')
+    pdf.rounded_rect(x_ficha, pdf.get_y(), w_ficha, 24, 3, 'FD')
     
     y_curr = pdf.get_y()
-    pdf.set_xy(x_ficha, y_curr + 3.5)
+    pdf.set_xy(x_ficha, y_curr + 2.5)
     
-    pdf.set_font('Helvetica', 'B', 11.0)
+    pdf.set_font('Helvetica', 'B', 10.0)
     pdf.set_text_color(15, 23, 42)
-    pdf.cell(w_ficha, 5.0, conv('FICHA ANALISADA'), align='C', ln=True)
-    pdf.ln(1)
+    pdf.cell(w_ficha, 4.5, conv('FICHA ANALISADA'), align='C', ln=True)
     
     pdf.set_x(x_ficha)
-    pdf.set_font('Helvetica', 'B', 14.5)
+    pdf.set_font('Helvetica', 'B', 13.5)
     pdf.set_text_color(30, 64, 175)
-    pdf.cell(w_ficha, 7.0, conv(f"{dados['nome'] or 'Empresa Analisada'}"), align='C', ln=True)
-    pdf.ln(1)
+    pdf.cell(w_ficha, 6.0, conv(f"{dados['nome'] or 'Empresa Analisada'}"), align='C', ln=True)
 
     pdf.set_x(x_ficha)
-    pdf.set_font('Helvetica', 'B', 13.0)
+    pdf.set_font('Helvetica', 'B', 11.5)
     pdf.set_text_color(245, 158, 11)
-    pdf.cell(w_ficha, 5.5, conv(f"Nota {dados['nota']:.1f} {estrelas_txt}   -   {dados['avaliacoes']} avaliações no Google"), align='C', ln=True)
+    pdf.cell(w_ficha, 5.0, conv(f"Nota {dados['nota']:.1f} {estrelas_txt}   -   {dados['avaliacoes']} avaliações no Google"), align='C', ln=True)
 
     # QUADRO SCORE GERAL
-    pdf.set_y(y_curr + 35)
+    pdf.set_y(y_curr + 28)
     w_box_score = 75
     x_box_score = (210 - w_box_score) / 2.0
     y_box_score = pdf.get_y()
@@ -358,11 +388,11 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_fill_color(240, 249, 255)
     pdf.set_draw_color(62, 161, 219)
     pdf.set_line_width(0.5)
-    pdf.rounded_rect(x_box_score, y_box_score, w_box_score, 17, 3, 'FD')
+    pdf.rounded_rect(x_box_score, y_box_score, w_box_score, 15, 3, 'FD')
     pdf.set_line_width(0.2)
 
-    pdf.set_xy(x_box_score, y_box_score + 1.5)
-    pdf.set_font('Helvetica', 'B', 19)
+    pdf.set_xy(x_box_score, y_box_score + 1.2)
+    pdf.set_font('Helvetica', 'B', 17)
     pdf.set_text_color(cr, cg, cb)
     
     str_score = f"{score} "
@@ -372,16 +402,16 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     x_start_text = x_box_score + ((w_box_score - (w_part1 + w_part2)) / 2.0)
     
     pdf.set_x(x_start_text)
-    pdf.write(7, conv(str_score))
+    pdf.write(6, conv(str_score))
     pdf.set_text_color(30, 64, 175)
-    pdf.write(7, conv(str_100))
+    pdf.write(6, conv(str_100))
     
-    pdf.set_xy(x_box_score, y_box_score + 10)
-    pdf.set_font('Helvetica', 'B', 9.5)
+    pdf.set_xy(x_box_score, y_box_score + 8.5)
+    pdf.set_font('Helvetica', 'B', 9.0)
     pdf.set_text_color(cr, cg, cb)
     pdf.cell(w_box_score, 4, conv(f"SCORE GERAL ({status_txt})"), align='C', ln=True)
 
-    pdf.set_y(y_box_score + 28)
+    pdf.set_y(y_box_score + 19)
 
     pct_avaliacoes = min(int((dados['avaliacoes'] / 50.0) * 100), 100) if dados['avaliacoes'] > 0 else 10
     pct_fotos = 100 if dados['tem_fotos_hd'] else 30
@@ -395,56 +425,96 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
 
     desc_fotos = "Atende ao volume recomendado de fotos em HD." if dados['tem_fotos_hd'] else "Poucas fotos encontradas / antigas no perfil."
     desc_tour = "Tour Virtual 360° ativo e integrado." if dados['tem_tour360'] else "Nenhum Tour 360 detectado no perfil do Google."
-    desc_cat = "Atende às categorias principais e secundárias recomendadas." if dados['categorias_completas'] else "Ajuste necessário em categorias secundárias no perfil."
+    desc_cat = "Atende às categorias recomendadas." if dados['categorias_completas'] else "Ajuste necessário em categorias secundárias."
     desc_web = f"Website oficial: {dados['website']}" if dados['website'] != 'Não possui' and dados['website'] != '' else "Falta link de website cadastrado para conversão."
     desc_desc = "Resumo editorial ativo no perfil." if dados.get('tem_descricao', True) else "Descrição da empresa incompleta ou ausente."
     desc_atrib = "Atributos de serviços e acessibilidade ativos." if dados.get('atributos_ok', True) else "Falta cadastrar atributos de acessibilidade/serviços."
-    desc_resp = "Boa frequência de respostas do proprietário." if dados.get('resposta_avaliacoes_ok', False) else "Falta de respostas oficiais do proprietário às avaliações."
+    desc_resp = "Boa frequência de respostas do proprietário." if dados.get('resposta_avaliacoes_ok', False) else "Falta de respostas oficiais às avaliações."
 
     itens = [
         ("1. Fotos e Resolução Visual", pct_fotos, "Alto" if dados['tem_fotos_hd'] else "Baixo", desc_fotos),
         ("2. Tour Virtual 360° Interativo", pct_tour, "Ativo" if dados['tem_tour360'] else "Ausente", desc_tour),
         ("3. Categorias Principal e Secundárias", pct_cat, "Completo" if dados['categorias_completas'] else "Incompleto", desc_cat),
-        ("4. Horários e Exceções (Feriados)", pct_hor, "Atualizado" if dados['horarios_ok'] else "Desatualizado", "Falta de horários especiais em feriados."),
+        ("4. Horários e Exceções (Feriados)", pct_hor, "Atualizado" if dados['horarios_ok'] else "Desatualizado", "Falta de horários em feriados."),
         ("5. Website e Links de Conversão", pct_web, "Ativo" if dados['website'] != 'Não possui' and dados['website'] != '' else "Falho", desc_web),
-        ("6. Avaliações no Google (Prova Social)", pct_avaliacoes, f"{dados['nota']}/5.0", f"{dados['avaliacoes']} avaliações registradas."),
+        ("6. Avaliações no Google (Prova Social)", pct_avaliacoes, f"{dados['nota']}/5.0", f"{dados['avaliacoes']} avaliações."),
         ("7. Resumo Editorial & Descrição", pct_desc, "Completo" if dados.get('tem_descricao', True) else "Ausente", desc_desc),
         ("8. Atributos de Acessibilidade/Serviços", pct_atrib, "Ativo" if dados.get('atributos_ok', True) else "Pendente", desc_atrib),
         ("9. Interação e Resposta a Avaliações", pct_resp, "Ativo" if dados.get('resposta_avaliacoes_ok', False) else "Pendente", desc_resp)
     ]
 
     for titulo, pct, rotulo, desc in itens:
-        pdf.set_font('Helvetica', 'B', 9.5)
+        pdf.set_font('Helvetica', 'B', 8.5)
         pdf.set_text_color(30, 41, 59)
-        pdf.cell(130, 3.5, conv(titulo), ln=False)
+        pdf.cell(130, 3.0, conv(titulo), ln=False)
         
-        pdf.set_font('Helvetica', 'B', 9.5)
+        pdf.set_font('Helvetica', 'B', 8.5)
         if pct < 40: pdf.set_text_color(239, 68, 68)
         elif pct < 80: pdf.set_text_color(245, 158, 11)
         else: pdf.set_text_color(22, 128, 61)
             
-        pdf.cell(56, 3.5, conv(rotulo), align='R', ln=True)
+        pdf.cell(56, 3.0, conv(rotulo), align='R', ln=True)
 
         pdf.set_fill_color(226, 232, 240)
-        pdf.rounded_rect(12, pdf.get_y(), 186, 2.4, 1.0, 'F')
+        pdf.rounded_rect(12, pdf.get_y(), 186, 2.0, 1.0, 'F')
         
         if pct < 40: pdf.set_fill_color(239, 68, 68)
         elif pct < 80: pdf.set_fill_color(245, 158, 11)
         else: pdf.set_fill_color(22, 128, 61)
             
         largura_barra = max(float(pct) * 1.86, 4.0)
-        pdf.rounded_rect(12, pdf.get_y(), largura_barra, 2.4, 1.0, 'F')
-        pdf.ln(3.0)
+        pdf.rounded_rect(12, pdf.get_y(), largura_barra, 2.0, 1.0, 'F')
+        pdf.ln(2.2)
 
-        pdf.set_font('Helvetica', '', 8.5)
+        pdf.set_font('Helvetica', '', 7.5)
         pdf.set_text_color(71, 85, 105)
-        pdf.cell(0, 3.5, conv(f"  Diagnóstico: {desc}"), ln=True)
-        pdf.ln(2.0)
+        pdf.cell(0, 3.0, conv(f"  Diagnóstico: {desc}"), ln=True)
+        pdf.ln(1.5)
+
+    # TABELA DE CONCORRENTES DIRETOS LOCAIS
+    if concorrentes:
+        pdf.ln(3)
+        pdf.set_font('Helvetica', 'B', 10)
+        pdf.set_text_color(30, 64, 175)
+        pdf.cell(0, 5, conv("ANÁLISE COMPARATIVA DE CONCORRENTES LOCAIS (MESMO SEGMENTO)"), ln=True)
+        pdf.ln(1.5)
+
+        w_col1, w_col2, w_col3 = 106, 35, 45
+        
+        # Cabeçalho Tabela
+        pdf.set_fill_color(30, 64, 175)
+        pdf.set_text_color(255, 255, 255)
+        pdf.set_font('Helvetica', 'B', 8)
+        pdf.cell(w_col1, 5, conv(" Empresa / Estabelecimento"), border=0, fill=True)
+        pdf.cell(w_col2, 5, conv(" Nota Google"), border=0, fill=True, align='C')
+        pdf.cell(w_col3, 5, conv(" Total Avaliações"), border=0, fill=True, align='C')
+        pdf.ln()
+
+        # Linha do Cliente (Destaque Azul Claro)
+        pdf.set_fill_color(240, 249, 255)
+        pdf.set_draw_color(191, 219, 254)
+        pdf.set_font('Helvetica', 'B', 8)
+        pdf.set_text_color(30, 64, 175)
+        pdf.cell(w_col1, 4.8, conv(f" [SUA EMPRESA] {dados['nome']}"), border='B', fill=True)
+        pdf.cell(w_col2, 4.8, conv(f"{dados['nota']:.1f} ⭐"), border='B', fill=True, align='C')
+        pdf.cell(w_col3, 4.8, conv(f"{dados['avaliacoes']} avaliações"), border='B', fill=True, align='C')
+        pdf.ln()
+
+        # Linhas dos Concorrentes
+        pdf.set_font('Helvetica', '', 8)
+        pdf.set_text_color(51, 65, 85)
+        for idx_c, c in enumerate(concorrentes):
+            fill_row = (idx_c % 2 == 1)
+            pdf.set_fill_color(248, 250, 252) if fill_row else pdf.set_fill_color(255, 255, 255)
+            pdf.cell(w_col1, 4.5, conv(f" {c['nome']}"), border='B', fill=fill_row)
+            pdf.cell(w_col2, 4.5, conv(f"{c['nota']:.1f} ⭐"), border='B', fill=fill_row, align='C')
+            pdf.cell(w_col3, 4.5, conv(f"{c['avaliacoes']} avaliações"), border='B', fill=fill_row, align='C')
+            pdf.ln()
 
     # PLANO DE AÇÃO
     if plano_acao_extra and plano_acao_extra.strip() != "":
-        pdf.ln(6)
-        w_extra = 170
+        pdf.ln(3)
+        w_extra = 186
         x_extra = (210 - w_extra) / 2.0
         
         pdf.set_fill_color(240, 249, 255)
@@ -452,18 +522,18 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
         pdf.set_line_width(0.5)
         
         y_extra = pdf.get_y()
-        pdf.rounded_rect(x_extra, y_extra, w_extra, 25, 2.5, 'FD')
+        pdf.rounded_rect(x_extra, y_extra, w_extra, 20, 2.5, 'FD')
         pdf.set_line_width(0.2)
         
-        pdf.set_xy(x_extra, y_extra + 3)
-        pdf.set_font('Helvetica', 'B', 9.5)
+        pdf.set_xy(x_extra, y_extra + 2.5)
+        pdf.set_font('Helvetica', 'B', 9.0)
         pdf.set_text_color(30, 64, 175)
         pdf.cell(w_extra, 4, conv("PLANO DE AÇÃO E APONTAMENTOS ESTRATÉGICOS PERSONALIZADOS:"), align='C', ln=True)
         
-        pdf.set_xy(x_extra + 5, y_extra + 9)
-        pdf.set_font('Helvetica', '', 8.5)
+        pdf.set_xy(x_extra + 4, y_extra + 7.5)
+        pdf.set_font('Helvetica', '', 8.0)
         pdf.set_text_color(51, 65, 85)
-        pdf.multi_cell(w_extra - 10, 3.8, conv(plano_acao_extra), align='L')
+        pdf.multi_cell(w_extra - 8, 3.5, conv(plano_acao_extra), align='L')
 
     # PÁGINA 3: PLANOS
     pdf.add_page()
@@ -635,12 +705,12 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_font('Helvetica', 'B', 9.0)
     pdf.write(4.5, conv("CLÁUSULA TERCEIRA - SELEÇÃO DO PLANO CONTRATADO:\n"))
     pdf.set_font('Helvetica', '', 9.0)
-    pdf.write(4.5, conv("(    ) Plano Start        (    ) Plano Pro        (    ) Gestão Mensal\n\n"))
+    pdf.write(4.5, conv("(   ) Plano Start        (   ) Plano Pro        (   ) Gestão Mensal\n\n"))
 
     pdf.set_font('Helvetica', 'B', 9.0)
     pdf.write(4.5, conv("CLÁUSULA QUARTA - CONDIÇÕES DE PAGAMENTO:\n"))
     pdf.set_font('Helvetica', '', 9.0)
-    pdf.write(6.0, conv("(    ) À Vista       (    ) 2x - Plano Start       (    ) 3x - Plano Pro       (    ) Vencimento Dia: _____ - Gestão Mensal\n\n"))
+    pdf.write(6.0, conv("(   ) À Vista       (   ) 2x - Plano Start       (   ) 3x - Plano Pro       (   ) Vencimento Dia: _____ - Gestão Mensal\n\n"))
 
     pdf.ln(12)
     
@@ -740,11 +810,12 @@ if "1. Consulta" in opcao_menu:
                 
                 if API_KEY_GOOGLE:
                     try:
-                        url_details = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=name,formatted_address,formatted_phone_number,international_phone_number,website,rating,user_ratings_total,photos,opening_hours,types,editorial_summary&key={API_KEY_GOOGLE}"
+                        url_details = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=name,formatted_address,formatted_phone_number,international_phone_number,website,rating,user_ratings_total,photos,opening_hours,types,editorial_summary,geometry&key={API_KEY_GOOGLE}"
                         res_details = requests.get(url_details).json().get("result", {})
                         
                         photos = res_details.get("photos", u.get("photos", []))
                         types_lista = res_details.get("types", [])
+                        loc = res_details.get("geometry", {}).get("location", {})
                         
                         st.session_state['dados']['nome'] = res_details.get("name") or u.get("name") or nome_input
                         st.session_state['dados']['endereco'] = res_details.get("formatted_address") or u.get("formatted_address") or ""
@@ -762,8 +833,17 @@ if "1. Consulta" in opcao_menu:
                         st.session_state['dados']['atributos_ok'] = False
                         st.session_state['dados']['resposta_avaliacoes_ok'] = False
                         st.session_state['dados']['categorias_detectadas'] = types_lista
+
+                        # Busca Concorrentes Próximos via Nearby Search API
+                        lat = loc.get("lat")
+                        lng = loc.get("lng")
+                        categoria_principal = types_lista[0] if types_lista else "establishment"
                         
-                        st.success("Dados carregados com sucesso!")
+                        st.session_state['concorrentes'] = buscar_concorrentes_proximos(
+                            lat, lng, place_id, categoria_principal, API_KEY_GOOGLE
+                        )
+                        
+                        st.success("Dados da unidade e concorrentes locais carregados com sucesso!")
                         st.rerun()
                     except Exception as e:
                         st.error(f"Erro ao obter detalhes: {e}")
@@ -807,6 +887,12 @@ if "1. Consulta" in opcao_menu:
         st.markdown(f"* Horários: {'✓ OK' if dados['horarios_ok'] else '❌ Falta atualizar'}")
         st.markdown(f"* Descrição: {'✓ Ativa' if dados.get('tem_descricao') else '❌ Ausente'}")
         
+        if st.session_state['concorrentes']:
+            st.markdown("---")
+            st.markdown("**⚔️ Concorrentes Diretos Detectados:**")
+            for c in st.session_state['concorrentes']:
+                st.markdown(f"• **{c['nome']}** — {c['nota']:.1f} ⭐ ({c['avaliacoes']} avaliações)")
+
         if dados.get('categorias_detectadas'):
             st.markdown("---")
             st.markdown("**Tags/Categorias Apuradas no Google:**")
@@ -866,13 +952,19 @@ elif "4. Contrato" in opcao_menu:
 st.markdown("<div class='dashboard-card'>", unsafe_allow_html=True)
 st.markdown("<div class='card-title'>GERAR DOCUMENTO OFICIAL</div>", unsafe_allow_html=True)
 
-pdf_bytes = gerar_pdf_oficial(dados, score, st.session_state['planos'], st.session_state['plano_acao_extra'])
+pdf_bytes = gerar_pdf_oficial(
+    dados, 
+    score, 
+    st.session_state['planos'], 
+    st.session_state['plano_acao_extra'],
+    st.session_state['concorrentes']
+)
 
-nome_arquivo_pdf = dados['nome'].replace(' ', ' ') if dados['nome'] else 'Novo_Cliente'
+nome_arquivo_pdf = dados['nome'].replace(' ', '_') if dados['nome'] else 'Novo_Cliente'
 st.download_button(
     "📥 Baixar Diagnóstico, Proposta e Contrato Completo em PDF",
     data=pdf_bytes,
-    file_name=f"Diagnóstico & Proposta - {nome_arquivo_pdf}.pdf",
+    file_name=f"Diagnostico_Proposta_Contrato_{nome_arquivo_pdf}.pdf",
     mime="application/pdf",
     use_container_width=True,
     key="btn_pdf_unico_unificado"
