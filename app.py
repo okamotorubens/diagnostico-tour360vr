@@ -94,7 +94,7 @@ API_KEY_GOOGLE = (
 )
 
 # -----------------------------------------------------------------------------
-# 2. FUNÇÕES UTILITÁRIAS & INTEGRAÇÃO COM A GOOGLE PLACES API
+# 2. FUNÇÕES UTILITÁRIAS & API GOOGLE PLACES
 # -----------------------------------------------------------------------------
 def conv(texto):
     if not texto: return ""
@@ -128,9 +128,6 @@ def obter_caminho_logo():
     return None
 
 def buscar_concorrentes_proximos(lat, lng, place_id_cliente, tipo_categoria, api_key):
-    """
-    Busca concorrentes do mesmo segmento ignorando divisões administrativas/cidades.
-    """
     if not lat or not lng or not api_key:
         return []
     
@@ -143,7 +140,6 @@ def buscar_concorrentes_proximos(lat, lng, place_id_cliente, tipo_categoria, api
             for item in res.get("results", []):
                 types_item = item.get("types", [])
                 
-                # Filtra locais que sejam cidades, regiões ou o próprio cliente
                 if item.get("place_id") == place_id_cliente:
                     continue
                 if "locality" in types_item or "administrative_area_level_1" in types_item or "political" in types_item:
@@ -344,41 +340,41 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
         pdf.set_text_color(22, 128, 61)
         pdf.cell(w_capa, 6, conv("Status da Ficha: Otimizado e Em Expansão"), align='C', ln=True)
 
-    # PÁGINA 2: DIAGNÓSTICO (DISTRIBUIÇÃO HARMONIOSA DE ESPAÇOS)
+    # PÁGINA 2: DIAGNÓSTICO (AMPLIADO E REESTRUTURADO)
     pdf.add_page()
-    pdf.set_y(26)
-    pdf.set_font('Helvetica', 'B', 15)
+    pdf.set_y(32)
+    pdf.set_font('Helvetica', 'B', 17)
     pdf.set_text_color(15, 23, 42)
-    pdf.cell(0, 6, conv('AUDITORIA DETALHADA DE PONTOS DE BUSCA'), align='C', ln=True)
-    pdf.ln(3)
+    pdf.cell(0, 8, conv('AUDITORIA DETALHADA DE PONTOS DE BUSCA'), align='C', ln=True)
+    pdf.ln(6)
 
     w_ficha = 186
     x_ficha = (210 - w_ficha) / 2.0
     
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
-    pdf.rounded_rect(x_ficha, pdf.get_y(), w_ficha, 22, 3, 'FD')
+    pdf.rounded_rect(x_ficha, pdf.get_y(), w_ficha, 25, 3, 'FD')
     
     y_curr = pdf.get_y()
-    pdf.set_xy(x_ficha, y_curr + 2)
+    pdf.set_xy(x_ficha, y_curr + 3)
     
-    pdf.set_font('Helvetica', 'B', 9.5)
+    pdf.set_font('Helvetica', 'B', 11)
     pdf.set_text_color(15, 23, 42)
-    pdf.cell(w_ficha, 4, conv('FICHA ANALISADA'), align='C', ln=True)
+    pdf.cell(w_ficha, 5, conv('FICHA ANALISADA'), align='C', ln=True)
     
     pdf.set_x(x_ficha)
-    pdf.set_font('Helvetica', 'B', 13)
+    pdf.set_font('Helvetica', 'B', 14)
     pdf.set_text_color(30, 64, 175)
-    pdf.cell(w_ficha, 5.5, conv(f"{dados['nome'] or 'Empresa Analisada'}"), align='C', ln=True)
+    pdf.cell(w_ficha, 6.5, conv(f"{dados['nome'] or 'Empresa Analisada'}"), align='C', ln=True)
 
     pdf.set_x(x_ficha)
-    pdf.set_font('Helvetica', 'B', 11)
+    pdf.set_font('Helvetica', 'B', 12)
     pdf.set_text_color(245, 158, 11)
-    pdf.cell(w_ficha, 4.5, conv(f"Nota {dados['nota']:.1f} {estrelas_txt}   -   {dados['avaliacoes']} avaliações no Google"), align='C', ln=True)
+    pdf.cell(w_ficha, 5.5, conv(f"Nota {dados['nota']:.1f} {estrelas_txt}   -   {dados['avaliacoes']} avaliações no Google"), align='C', ln=True)
 
     # QUADRO SCORE GERAL
-    pdf.set_y(y_curr + 25)
-    w_box_score = 75
+    pdf.set_y(y_curr + 30)
+    w_box_score = 80
     x_box_score = (210 - w_box_score) / 2.0
     y_box_score = pdf.get_y()
     
@@ -395,11 +391,11 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     pdf.set_fill_color(240, 249, 255)
     pdf.set_draw_color(62, 161, 219)
     pdf.set_line_width(0.5)
-    pdf.rounded_rect(x_box_score, y_box_score, w_box_score, 14, 3, 'FD')
+    pdf.rounded_rect(x_box_score, y_box_score, w_box_score, 16, 3, 'FD')
     pdf.set_line_width(0.2)
 
-    pdf.set_xy(x_box_score, y_box_score + 1.0)
-    pdf.set_font('Helvetica', 'B', 16)
+    pdf.set_xy(x_box_score, y_box_score + 1.5)
+    pdf.set_font('Helvetica', 'B', 18)
     pdf.set_text_color(cr, cg, cb)
     
     str_score = f"{score} "
@@ -409,16 +405,16 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     x_start_text = x_box_score + ((w_box_score - (w_part1 + w_part2)) / 2.0)
     
     pdf.set_x(x_start_text)
-    pdf.write(5.5, conv(str_score))
+    pdf.write(6.5, conv(str_score))
     pdf.set_text_color(30, 64, 175)
-    pdf.write(5.5, conv(str_100))
+    pdf.write(6.5, conv(str_100))
     
-    pdf.set_xy(x_box_score, y_box_score + 8.0)
-    pdf.set_font('Helvetica', 'B', 8.5)
+    pdf.set_xy(x_box_score, y_box_score + 9.5)
+    pdf.set_font('Helvetica', 'B', 9.5)
     pdf.set_text_color(cr, cg, cb)
-    pdf.cell(w_box_score, 3.5, conv(f"SCORE GERAL ({status_txt})"), align='C', ln=True)
+    pdf.cell(w_box_score, 4, conv(f"SCORE GERAL ({status_txt})"), align='C', ln=True)
 
-    pdf.set_y(y_box_score + 17)
+    pdf.set_y(y_box_score + 22)
 
     pct_avaliacoes = min(int((dados['avaliacoes'] / 50.0) * 100), 100) if dados['avaliacoes'] > 0 else 10
     pct_fotos = 100 if dados['tem_fotos_hd'] else 30
@@ -451,76 +447,73 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     ]
 
     for titulo, pct, rotulo, desc in itens:
-        pdf.set_font('Helvetica', 'B', 8.0)
+        pdf.set_font('Helvetica', 'B', 9.0)
         pdf.set_text_color(30, 41, 59)
-        pdf.cell(130, 2.6, conv(titulo), ln=False)
+        pdf.cell(130, 3.0, conv(titulo), ln=False)
         
-        pdf.set_font('Helvetica', 'B', 8.0)
+        pdf.set_font('Helvetica', 'B', 9.0)
         if pct < 40: pdf.set_text_color(239, 68, 68)
         elif pct < 80: pdf.set_text_color(245, 158, 11)
         else: pdf.set_text_color(22, 128, 61)
             
-        pdf.cell(56, 2.6, conv(rotulo), align='R', ln=True)
+        pdf.cell(56, 3.0, conv(rotulo), align='R', ln=True)
 
         pdf.set_fill_color(226, 232, 240)
-        pdf.rounded_rect(12, pdf.get_y(), 186, 1.8, 0.8, 'F')
+        pdf.rounded_rect(12, pdf.get_y(), 186, 2.2, 1.0, 'F')
         
         if pct < 40: pdf.set_fill_color(239, 68, 68)
         elif pct < 80: pdf.set_fill_color(245, 158, 11)
         else: pdf.set_fill_color(22, 128, 61)
             
         largura_barra = max(float(pct) * 1.86, 4.0)
-        pdf.rounded_rect(12, pdf.get_y(), largura_barra, 1.8, 0.8, 'F')
-        pdf.ln(2.0)
+        pdf.rounded_rect(12, pdf.get_y(), largura_barra, 2.2, 1.0, 'F')
+        pdf.ln(2.5)
 
-        pdf.set_font('Helvetica', '', 7.2)
+        pdf.set_font('Helvetica', '', 8.0)
         pdf.set_text_color(71, 85, 105)
-        pdf.cell(0, 2.6, conv(f"  Diagnóstico: {desc}"), ln=True)
-        pdf.ln(1.0)
+        pdf.cell(0, 3.0, conv(f"  Diagnóstico: {desc}"), ln=True)
+        pdf.ln(1.5)
 
-    # TABELA DE ANÁLISE COMPARATIVA (SEM "[SUA EMPRESA]")
+    # TABELA DE ANÁLISE COMPARATIVA
     if concorrentes:
-        pdf.ln(2)
-        pdf.set_font('Helvetica', 'B', 9.5)
+        pdf.ln(3)
+        pdf.set_font('Helvetica', 'B', 10.5)
         pdf.set_text_color(30, 64, 175)
-        pdf.cell(0, 4.5, conv("ANÁLISE COMPARATIVA DE CONCORRENTES LOCAIS (MESMO SEGMENTO)"), ln=True)
-        pdf.ln(1)
+        pdf.cell(0, 5, conv("ANÁLISE COMPARATIVA DE CONCORRENTES LOCAIS (MESMO SEGMENTO)"), ln=True)
+        pdf.ln(2)
 
         w_col1, w_col2, w_col3 = 106, 35, 45
         
-        # Cabeçalho Tabela
         pdf.set_fill_color(30, 64, 175)
         pdf.set_text_color(255, 255, 255)
-        pdf.set_font('Helvetica', 'B', 7.5)
-        pdf.cell(w_col1, 4.2, conv(" Empresa / Estabelecimento"), border=0, fill=True)
-        pdf.cell(w_col2, 4.2, conv(" Nota Google"), border=0, fill=True, align='C')
-        pdf.cell(w_col3, 4.2, conv(" Total Avaliações"), border=0, fill=True, align='C')
+        pdf.set_font('Helvetica', 'B', 8.5)
+        pdf.cell(w_col1, 5, conv(" Empresa / Estabelecimento"), border=0, fill=True)
+        pdf.cell(w_col2, 5, conv(" Nota Google"), border=0, fill=True, align='C')
+        pdf.cell(w_col3, 5, conv(" Total Avaliações"), border=0, fill=True, align='C')
         pdf.ln()
 
-        # Linha do Cliente (Nome Direto sem [SUA EMPRESA])
         pdf.set_fill_color(240, 249, 255)
         pdf.set_draw_color(191, 219, 254)
-        pdf.set_font('Helvetica', 'B', 7.5)
+        pdf.set_font('Helvetica', 'B', 8.5)
         pdf.set_text_color(30, 64, 175)
-        pdf.cell(w_col1, 4.0, conv(f" {dados['nome']}"), border='B', fill=True)
-        pdf.cell(w_col2, 4.0, conv(f"{dados['nota']:.1f} ⭐"), border='B', fill=True, align='C')
-        pdf.cell(w_col3, 4.0, conv(f"{dados['avaliacoes']} avaliações"), border='B', fill=True, align='C')
+        pdf.cell(w_col1, 4.5, conv(f" {dados['nome']}"), border='B', fill=True)
+        pdf.cell(w_col2, 4.5, conv(f"{dados['nota']:.1f} ⭐"), border='B', fill=True, align='C')
+        pdf.cell(w_col3, 4.5, conv(f"{dados['avaliacoes']} avaliações"), border='B', fill=True, align='C')
         pdf.ln()
 
-        # Linhas dos Concorrentes
-        pdf.set_font('Helvetica', '', 7.5)
+        pdf.set_font('Helvetica', '', 8.5)
         pdf.set_text_color(51, 65, 85)
         for idx_c, c in enumerate(concorrentes):
             fill_row = (idx_c % 2 == 1)
             pdf.set_fill_color(248, 250, 252) if fill_row else pdf.set_fill_color(255, 255, 255)
-            pdf.cell(w_col1, 3.8, conv(f" {c['nome']}"), border='B', fill=fill_row)
-            pdf.cell(w_col2, 3.8, conv(f"{c['nota']:.1f} ⭐"), border='B', fill=fill_row, align='C')
-            pdf.cell(w_col3, 3.8, conv(f"{c['avaliacoes']} avaliações"), border='B', fill=fill_row, align='C')
+            pdf.cell(w_col1, 4.2, conv(f" {c['nome']}"), border='B', fill=fill_row)
+            pdf.cell(w_col2, 4.2, conv(f"{c['nota']:.1f} ⭐"), border='B', fill=fill_row, align='C')
+            pdf.cell(w_col3, 4.2, conv(f"{c['avaliacoes']} avaliações"), border='B', fill=fill_row, align='C')
             pdf.ln()
 
-    # PLANO DE AÇÃO COM ESPAÇO AMPLIADO (EXPANDIDO PARA +5 LINHAS)
+    # PLANO DE AÇÃO (QUADRO COM SUPORTE A MAIS LINHAS)
     if plano_acao_extra and plano_acao_extra.strip() != "":
-        pdf.ln(3)
+        pdf.ln(4)
         w_extra = 186
         x_extra = (210 - w_extra) / 2.0
         
@@ -529,26 +522,26 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
         pdf.set_line_width(0.5)
         
         y_extra = pdf.get_y()
-        h_box_extra = 35 # Aumentado de 20 para 35 para dar suporte a textos mais extensos
+        h_box_extra = 36
         pdf.rounded_rect(x_extra, y_extra, w_extra, h_box_extra, 2.5, 'FD')
         pdf.set_line_width(0.2)
         
-        pdf.set_xy(x_extra, y_extra + 2.5)
-        pdf.set_font('Helvetica', 'B', 8.5)
+        pdf.set_xy(x_extra, y_extra + 3)
+        pdf.set_font('Helvetica', 'B', 9.0)
         pdf.set_text_color(30, 64, 175)
         pdf.cell(w_extra, 4, conv("PLANO DE AÇÃO E APONTAMENTOS ESTRATÉGICOS PERSONALIZADOS:"), align='C', ln=True)
         
-        pdf.set_xy(x_extra + 4, y_extra + 7.5)
-        pdf.set_font('Helvetica', '', 8.0)
+        pdf.set_xy(x_extra + 5, y_extra + 8.5)
+        pdf.set_font('Helvetica', '', 8.5)
         pdf.set_text_color(51, 65, 85)
-        pdf.multi_cell(w_extra - 8, 3.8, conv(plano_acao_extra), align='L')
+        pdf.multi_cell(w_extra - 10, 4.0, conv(plano_acao_extra), align='L')
 
     # PÁGINA 3: PLANOS
     pdf.add_page()
-    pdf.set_y(30)
+    pdf.set_y(32)
     pdf.set_font('Helvetica', 'B', 17)
     pdf.set_text_color(15, 23, 42)
-    pdf.cell(0, 7, conv('PROPOSTA COMERCIAL & ESTRUTURAÇÃO ESTRATÉGICA'), align='C', ln=True)
+    pdf.cell(0, 8, conv('PROPOSTA COMERCIAL & ESTRUTURAÇÃO ESTRATÉGICA'), align='C', ln=True)
     pdf.ln(10)
 
     pdf.set_font('Helvetica', 'B', 17)
@@ -671,53 +664,56 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     pdf.set_x(x_info)
     pdf.multi_cell(w_info, 4.0, conv(txt_exp), align='C')
 
-    # PÁGINA 4: CONTRATO COM TEXTO TOTALMENTE JUSTIFICADO
+    # PÁGINA 4: CONTRATO COM TEXTO PERFECTAMENTE JUSTIFICADO
     pdf.add_page()
-    pdf.set_y(28)
-    pdf.set_font('Helvetica', 'B', 16)
+    pdf.set_y(32)
+    pdf.set_font('Helvetica', 'B', 17)
     pdf.set_text_color(15, 23, 42)
-    pdf.cell(0, 7, conv('CONTRATO DE PRESTAÇÃO DE SERVIÇOS'), align='C', ln=True)
-    pdf.ln(6)
+    pdf.cell(0, 8, conv('CONTRATO DE PRESTAÇÃO DE SERVIÇOS'), align='C', ln=True)
+    pdf.ln(8)
 
     w_contrato = 186
     pdf.set_x(12)
-    pdf.set_font('Helvetica', '', 9.0)
+    pdf.set_font('Helvetica', '', 9.5)
     pdf.set_text_color(51, 65, 85)
     
-    # Texto inicial
-    txt_intro = (
+    txt_partes = (
         f"CONTRATADA: Tour360VR, representada por Rubens H. Okamoto, CPF: 287.932.298-79 e Telefone: (16) 99133-2121.\n\n"
         f"CONTRATANTE: {dados['nome'] or 'Empresa Contratante'}, representada por {dados['contato'] or 'Responsável'}, "
         f"localizada em {dados['endereco'] or 'Endereço não informado'}, Telefone: {dados['telefone'] or 'N/I'}.\n\n"
         f"A CONTRATADA compromete-se a executar os serviços de otimização, reestruturação técnica e/ou produção "
         f"de Tour Virtual 360° para o perfil do Google da CONTRATANTE."
     )
-    pdf.multi_cell(w_contrato, 4.8, conv(txt_intro), align='J')
+    pdf.multi_cell(w_contrato, 5.0, conv(txt_partes), align='J')
     pdf.ln(4)
 
-    # Cláusulas Justificadas
     c1 = "CLÁUSULA PRIMEIRA - DO OBJETO: Os serviços serão iniciados em até 5 dias úteis após o fornecimento de todos os acessos e informações necessárias à gestão do perfil."
-    pdf.multi_cell(w_contrato, 4.8, conv(c1), align='J')
-    pdf.ln(3)
+    pdf.set_x(12)
+    pdf.multi_cell(w_contrato, 5.0, conv(c1), align='J')
+    pdf.ln(4)
 
     c2 = "CLÁUSULA SEGUNDA - DAS OBRIGAÇÕES: O não pagamento no prazo pactuado sujeitará o presente contrato à incidência de juros moratórios legais e à suspensão temporária dos serviços até a devida regularização."
-    pdf.multi_cell(w_contrato, 4.8, conv(c2), align='J')
+    pdf.set_x(12)
+    pdf.multi_cell(w_contrato, 5.0, conv(c2), align='J')
+    pdf.ln(6)
+
+    pdf.set_x(12)
+    pdf.set_font('Helvetica', 'B', 9.5)
+    pdf.cell(w_contrato, 5.0, conv("CLÁUSULA TERCEIRA - SELEÇÃO DO PLANO CONTRATADO:"), ln=True)
+    pdf.set_x(12)
+    pdf.set_font('Helvetica', '', 9.5)
+    pdf.cell(w_contrato, 6.0, conv("(   ) Plano Start        (   ) Plano Pro        (   ) Gestão Mensal"), ln=True)
     pdf.ln(5)
 
-    pdf.set_font('Helvetica', 'B', 9.0)
-    pdf.cell(w_contrato, 4.5, conv("CLÁUSULA TERCEIRA - SELEÇÃO DO PLANO CONTRATADO:"), ln=True)
-    pdf.set_font('Helvetica', '', 9.0)
-    pdf.cell(w_contrato, 5.5, conv("(   ) Plano Start        (   ) Plano Pro        (   ) Gestão Mensal"), ln=True)
-    pdf.ln(4)
+    pdf.set_x(12)
+    pdf.set_font('Helvetica', 'B', 9.5)
+    pdf.cell(w_contrato, 5.0, conv("CLÁUSULA QUARTA - CONDIÇÕES DE PAGAMENTO:"), ln=True)
+    pdf.set_x(12)
+    pdf.set_font('Helvetica', '', 9.5)
+    pdf.cell(w_contrato, 6.0, conv("(   ) À Vista       (   ) 2x - Plano Start       (   ) 3x - Plano Pro       (   ) Vencimento Dia: _____ - Gestão Mensal"), ln=True)
 
-    pdf.set_font('Helvetica', 'B', 9.0)
-    pdf.cell(w_contrato, 4.5, conv("CLÁUSULA QUARTA - CONDIÇÕES DE PAGAMENTO:"), ln=True)
-    pdf.set_font('Helvetica', '', 9.0)
-    pdf.cell(w_contrato, 5.5, conv("(   ) À Vista       (   ) 2x - Plano Start       (   ) 3x - Plano Pro       (   ) Vencimento Dia: _____ - Gestão Mensal"), ln=True)
-
-    pdf.ln(18)
+    pdf.ln(20)
     
-    # Linhas de Assinatura
     y_ass = pdf.get_y()
     pdf.set_xy(12, y_ass)
     pdf.cell(88, 5, '_____________________________________', align='C')
@@ -774,7 +770,6 @@ score = calcular_score_real(dados)
 # PAINEL CENTRAL - MÓDULOS DE USO
 # -----------------------------------------------------------------------------
 
-# MÓDULO 1: CONSULTA E DIAGNÓSTICO COMPLETO
 if "1. Consulta" in opcao_menu:
     col_left, col_right = st.columns([1.5, 1])
     
@@ -833,7 +828,6 @@ if "1. Consulta" in opcao_menu:
                         st.session_state['dados']['avaliacoes'] = int(res_details.get("user_ratings_total") or u.get("user_ratings_total") or 0)
                         st.session_state['dados']['contato'] = "Gerente Responsável"
                         
-                        # AJUSTE FINO ASSINALADO AUTOMATICAMENTE
                         st.session_state['dados']['tem_fotos_hd'] = len(photos) >= 10
                         st.session_state['dados']['horarios_ok'] = "opening_hours" in res_details
                         st.session_state['dados']['categorias_completas'] = len(types_lista) >= 3
@@ -843,7 +837,6 @@ if "1. Consulta" in opcao_menu:
                         st.session_state['dados']['resposta_avaliacoes_ok'] = False
                         st.session_state['dados']['categorias_detectadas'] = types_lista
 
-                        # Busca Concorrentes Próximos Válidos
                         lat = loc.get("lat")
                         lng = loc.get("lng")
                         categoria_principal = types_lista[0] if types_lista else "lodging"
@@ -861,25 +854,25 @@ if "1. Consulta" in opcao_menu:
         st.markdown("<h3 id='ajuste-fino-dos-itens-da-auditoria' style='color: #ffffff; font-size: 16px; font-weight: 700;'>⚙️ AJUSTE FINO DOS ITENS DA AUDITORIA</h3>", unsafe_allow_html=True)
         
         c_a, c_b, c_c, c_d = st.columns(4)
-        st.session_state['dados']['tem_tour360'] = c_a.checkbox("Tour 360°", value=st.session_state['dados']['tem_tour360'], key="chk_tour360_val")
-        st.session_state['dados']['tem_fotos_hd'] = c_b.checkbox("Fotos HD", value=st.session_state['dados']['tem_fotos_hd'], key="chk_fotos_hd_val")
-        st.session_state['dados']['categorias_completas'] = c_c.checkbox("Categorias OK", value=st.session_state['dados']['categorias_completas'], key="chk_cat_ok_val")
-        st.session_state['dados']['horarios_ok'] = c_d.checkbox("Horários OK", value=st.session_state['dados']['horarios_ok'], key="chk_horarios_ok_val")
+        st.session_state['dados']['tem_tour360'] = c_a.checkbox("Tour 360°", value=st.session_state['dados']['tem_tour360'])
+        st.session_state['dados']['tem_fotos_hd'] = c_b.checkbox("Fotos HD", value=st.session_state['dados']['tem_fotos_hd'])
+        st.session_state['dados']['categorias_completas'] = c_c.checkbox("Categorias OK", value=st.session_state['dados']['categorias_completas'])
+        st.session_state['dados']['horarios_ok'] = c_d.checkbox("Horários OK", value=st.session_state['dados']['horarios_ok'])
         
         c_e, c_f, c_g = st.columns(3)
-        st.session_state['dados']['tem_descricao'] = c_e.checkbox("Descrição/Resumo", value=st.session_state['dados'].get('tem_descricao', False), key="chk_desc_val")
-        st.session_state['dados']['atributos_ok'] = c_f.checkbox("Atributos Serviços", value=st.session_state['dados'].get('atributos_ok', False), key="chk_atrib_val")
-        st.session_state['dados']['resposta_avaliacoes_ok'] = c_g.checkbox("Respostas Ativas", value=st.session_state['dados'].get('resposta_avaliacoes_ok', False), key="chk_resp_val")
+        st.session_state['dados']['tem_descricao'] = c_e.checkbox("Descrição/Resumo", value=st.session_state['dados'].get('tem_descricao', False))
+        st.session_state['dados']['atributos_ok'] = c_f.checkbox("Atributos Serviços", value=st.session_state['dados'].get('atributos_ok', False))
+        st.session_state['dados']['resposta_avaliacoes_ok'] = c_g.checkbox("Respostas Ativas", value=st.session_state['dados'].get('resposta_avaliacoes_ok', False))
 
         st.markdown("---")
         st.markdown("### ✍️ Edição dos Dados de Contato:")
         f_c1, f_c2 = st.columns(2)
         
-        st.session_state['dados']['nome'] = f_c1.text_input("Nome da Empresa:", value=st.session_state['dados']['nome'], key=f"edit_nome_{st.session_state['dados']['nome']}")
-        st.session_state['dados']['contato'] = f_c2.text_input("Nome do Responsável:", value=st.session_state['dados']['contato'], key=f"edit_contato_{st.session_state['dados']['contato']}")
-        st.session_state['dados']['telefone'] = f_c1.text_input("Telefone / WhatsApp:", value=st.session_state['dados']['telefone'], key=f"edit_telefone_{st.session_state['dados']['telefone']}")
-        st.session_state['dados']['website'] = f_c2.text_input("Website:", value=st.session_state['dados']['website'], key=f"edit_website_{st.session_state['dados']['website']}")
-        st.session_state['dados']['endereco'] = st.text_input("Endereço Completo:", value=st.session_state['dados']['endereco'], key=f"edit_endereco_{st.session_state['dados']['endereco']}")
+        st.session_state['dados']['nome'] = f_c1.text_input("Nome da Empresa:", value=st.session_state['dados']['nome'])
+        st.session_state['dados']['contato'] = f_c2.text_input("Nome do Responsável:", value=st.session_state['dados']['contato'])
+        st.session_state['dados']['telefone'] = f_c1.text_input("Telefone / WhatsApp:", value=st.session_state['dados']['telefone'])
+        st.session_state['dados']['website'] = f_c2.text_input("Website:", value=st.session_state['dados']['website'])
+        st.session_state['dados']['endereco'] = st.text_input("Endereço Completo:", value=st.session_state['dados']['endereco'])
 
         st.markdown("</div>", unsafe_allow_html=True)
 
@@ -911,7 +904,6 @@ if "1. Consulta" in opcao_menu:
             
         st.markdown("</div>", unsafe_allow_html=True)
 
-# MÓDULO 2: PLANO DE AÇÃO
 elif "2. Plano de Ação" in opcao_menu:
     st.markdown("<div class='dashboard-card'>", unsafe_allow_html=True)
     st.markdown("<div class='card-title'>💡 PLANO DE AÇÃO & APONTAMENTOS ESTRATÉGICOS PERSONALIZADOS</div>", unsafe_allow_html=True)
@@ -925,7 +917,6 @@ elif "2. Plano de Ação" in opcao_menu:
     st.success("Plano de Ação salvo e atualizado para os relatórios/PDFs!")
     st.markdown("</div>", unsafe_allow_html=True)
 
-# MÓDULO 3: PROPOSTA COMERCIAL & VALORES
 elif "3. Proposta" in opcao_menu:
     st.markdown("<div class='dashboard-card'>", unsafe_allow_html=True)
     st.markdown("<div class='card-title'>📜 EDITE OS VALORES E CONTEÚDO DOS PLANOS COMERCIAIS</div>", unsafe_allow_html=True)
@@ -950,7 +941,6 @@ elif "3. Proposta" in opcao_menu:
     st.success("Valores e itens dos planos comerciais atualizados com sucesso!")
     st.markdown("</div>", unsafe_allow_html=True)
 
-# MÓDULO 4: CONTRATO
 elif "4. Contrato" in opcao_menu:
     st.markdown("<div class='dashboard-card'>", unsafe_allow_html=True)
     st.markdown("<div class='card-title'>📄 CONTRATO DE PRESTAÇÃO DE SERVIÇOS</div>", unsafe_allow_html=True)
