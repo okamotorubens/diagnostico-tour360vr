@@ -290,7 +290,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_x(x_capa)
     pdf.cell(w_capa, 5.5, conv(f"{dados['endereco'] or 'Endereço não informado'}"), align='C', ln=True)
     
-    site_txt = dados['website'] if dados['Site'] else 'N/I'
+    site_txt = dados['website'] if dados['Website'] else 'N/I'
     pdf.set_x(x_capa)
     pdf.cell(w_capa, 5.5, conv(f"Telefone: {dados['telefone'] or 'N/I'}   |   {site_txt}"), align='C', ln=True)
     pdf.ln(5)
