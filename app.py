@@ -332,7 +332,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.ln(1)
 
     pdf.set_x(x_ficha)
-    pdf.set_font('Helvetica', 'B', 12.0)
+    pdf.set_font('Helvetica', 'B', 14.0)
     pdf.set_text_color(245, 158, 11)
     pdf.cell(w_ficha, 5.5, conv(f"Nota {dados['nota']:.1f} {estrelas_txt}   -   {dados['avaliacoes']} avaliações no Google"), align='C', ln=True)
 
