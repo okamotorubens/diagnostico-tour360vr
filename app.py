@@ -204,7 +204,7 @@ class PDFTour360Oficial(FPDF):
             self.set_x(12)
             self.set_font('Helvetica', 'B', 12)
             self.set_text_color(30, 64, 175)
-            self.cell(186, 5, conv("Tour360VR - Okamoto Mídias Visuais"), align='C')
+            self.cell(186, 5, conv("Tour360VR - 16 99133 2121 - Ribeião Preto - SP"), align='C')
         else:
             w_col = (198 - 12) / 4.0
             self.set_x(12)
@@ -332,7 +332,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.ln(1)
 
     pdf.set_x(x_ficha)
-    pdf.set_font('Helvetica', 'B', 14.0)
+    pdf.set_font('Helvetica', 'B', 13.0)
     pdf.set_text_color(245, 158, 11)
     pdf.cell(w_ficha, 5.5, conv(f"Nota {dados['nota']:.1f} {estrelas_txt}   -   {dados['avaliacoes']} avaliações no Google"), align='C', ln=True)
 
