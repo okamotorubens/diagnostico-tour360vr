@@ -685,7 +685,7 @@ with st.sidebar:
         ]
     )
 
-st.markdown("<div class='main-header'>PLATAFORMA DE CONSULTORIA <span>TOUR360VR</span> - GESTÃO & DIAGNÓSTICO GOOGLE MEU NEGÓCIO</div>", unsafe_allow_html=True)
+st.markdown("<div class='main-header'>PLATAFORMA DE CONSULTORIA TOUR360VR - GESTÃO & DIAGNÓSTICO GOOGLE MEU NEGÓCIO</div>", unsafe_allow_html=True)
 dados = st.session_state['dados']
 score = calcular_score_real(dados)
 
