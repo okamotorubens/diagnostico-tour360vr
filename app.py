@@ -182,12 +182,12 @@ class PDFTour360Oficial(FPDF):
             except: 
                 pass
             
-        self.set_xy(32, 10)
+        self.set_xy(12, 10)
         self.set_font('Helvetica', 'B', 12)
         self.set_text_color(30, 64, 175)
         self.cell(0, 4.5, 'TOUR360VR', align='L', ln=True)
         
-        self.set_x(32)
+        self.set_x(12)
         self.set_font('Helvetica', 'B', 8.5)
         self.set_text_color(100, 116, 139)
         self.cell(0, 4, conv('Gestão de Perfil & Diagnóstico do Google Meu Negócio'), align='L', ln=True)
@@ -534,7 +534,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_text_color(15, 23, 42)
     pdf.cell(70, 4, conv('em até 3x'), align='C', ln=True)
     
-    pdf.set_font('Helvetica', 'B', 9.5)
+    pdf.set_font('Helvetica', '', 9.5)
     pdf.set_text_color(15, 23, 42)
     pdf.set_xy(75, y_p + 27.5)
     pdf.multi_cell(60, 4.8, conv(planos['pro_itens']), align='L')
