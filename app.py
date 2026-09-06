@@ -609,7 +609,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
         pdf.rounded_rect(x_extra, y_extra, w_extra, h_box_extra, 2.5, 'FD')
         pdf.set_line_width(0.2)
         
-        pdf.set_xy(x_extra, y_extra + 3.0)
+        pdf.set_xy(x_extra, y_extra + 4.0)
         pdf.set_font('Helvetica', 'B', 10.0)
         pdf.set_text_color(30, 64, 175)
         pdf.cell(w_extra, 4.5, conv("PLANO DE AÇÃO E APONTAMENTOS ESTRATÉGICOS PERSONALIZADOS:"), align='C', ln=True)
