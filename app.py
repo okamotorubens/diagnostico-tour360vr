@@ -182,12 +182,12 @@ class PDFTour360Oficial(FPDF):
         self.set_xy(32, 6)
         self.set_font('Helvetica', 'B', 12)
         self.set_text_color(30, 64, 175)
-        self.cell(166, 4.5, 'TOUR360VR', align='L', ln=True)
+        self.cell(16, 4.5, 'TOUR360VR', align='L', ln=True)
         
         self.set_x(32)
         self.set_font('Helvetica', 'B', 8.5)
         self.set_text_color(100, 116, 139)
-        self.cell(166, 4, conv('Gestão de Perfil & Diagnóstico do Google Meu Negócio'), align='L', ln=True)
+        self.cell(16, 4, conv('Gestão de Perfil & Diagnóstico do Google Meu Negócio'), align='L', ln=True)
         
         self.set_draw_color(226, 232, 240)
         self.line(12, 17.5, 198, 17.5)
@@ -202,7 +202,7 @@ class PDFTour360Oficial(FPDF):
         
         if self.page_no() == 1:
             self.set_x(12)
-            self.set_font('Helvetica', 'B', 16)
+            self.set_font('Helvetica', 'B', 14)
             self.set_text_color(30, 64, 175)
             self.cell(186, 5, conv("Tour360VR - 16 99133 2121 - Ribeirão Preto - SP"), align='C')
         else:
@@ -636,12 +636,12 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_font('Helvetica', 'B', 9.0)
     pdf.write(4.5, conv("CLÁUSULA TERCEIRA - SELEÇÃO DO PLANO CONTRATADO:\n"))
     pdf.set_font('Helvetica', '', 9.0)
-    pdf.write(4.5, conv("(   ) Plano Start        (   ) Plano Pro        (   ) Gestão Mensal\n\n"))
+    pdf.write(4.5, conv("(    ) Plano Start        (    ) Plano Pro        (    ) Gestão Mensal\n\n"))
 
     pdf.set_font('Helvetica', 'B', 9.0)
     pdf.write(4.5, conv("CLÁUSULA QUARTA - CONDIÇÕES DE PAGAMENTO:\n"))
     pdf.set_font('Helvetica', '', 9.0)
-    pdf.write(6.0, conv("(   ) À Vista       (   ) 2x Plano Start       (   ) 3x Plano Pro       (   ) Vencimento Todo Dia: _____ - Gesttão Mensal\n\n"))
+    pdf.write(6.0, conv("(    ) À Vista       (    ) 2x Plano Start       (    ) 3x Plano Pro       (    ) Vencimento Todo Dia: _____ - Gesttão Mensal\n\n"))
 
     pdf.ln(12)
     
@@ -689,7 +689,7 @@ with st.sidebar:
         ]
     )
 
-st.markdown("<div class='main-header'>PLATAFORMA DE CONSULTORIA <span>TOUR360VR</span> - GESTÃO & DIAGNÓSTICO GOOGLE MEU NEGÓCIO</div>", unsafe_allow_html=True)
+st.markdown("<div class='main-header'>PLATAFORMA DE CONSULTORIA TOUR360VR - GESTÃO & DIAGNÓSTICO GOOGLE MEU NEGÓCIO</div>", unsafe_allow_html=True)
 dados = st.session_state['dados']
 score = calcular_score_real(dados)
 
