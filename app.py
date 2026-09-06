@@ -140,9 +140,9 @@ if 'dados' not in st.session_state:
         "tem_tour360": False,
         "tem_fotos_hd": False,
         "categorias_completas": False,
-        "horarios_ok": True,
+        "horarios_ok": False,
         "tem_descricao": False,
-        "atributos_ok": True,
+        "atributos_ok": False,
         "resposta_avaliacoes_ok": False,
         "categorias_detectadas": []
     }
@@ -179,7 +179,6 @@ class PDFTour360Oficial(FPDF):
             try: self.image(caminho_logo, 12, 6, 18)
             except: pass
             
-        # CABEÇALHO COM ALINHAMENTO À ESQUERDA
         self.set_xy(32, 6)
         self.set_font('Helvetica', 'B', 12)
         self.set_text_color(30, 64, 175)
@@ -200,12 +199,20 @@ class PDFTour360Oficial(FPDF):
         self.set_text_color(100, 116, 139)
         self.line(12, self.get_y(), 198, self.get_y())
         self.set_y(-13)
-        w_col = (198 - 12) / 4.0
-        self.set_x(12)
-        self.cell(w_col, 5, 'www.tour360vr.com.br', link='https://tour360vr.com.br', align='C')
-        self.cell(w_col, 5, 'contato@tour360vr.com.br', link='mailto:contato@tour360vr.com.br', align='C')
-        self.cell(w_col, 5, 'WhatsApp: (16) 99133-2121', link='https://wa.me/5516991332121', align='C')
-        self.cell(w_col, 5, f'Página {self.page_no()} de 4', align='C')
+        
+        # RODAPÉ DIFERENCIADO EXCLUSIVO PARA A CAPA (PÁGINA 1)
+        if self.page_no() == 1:
+            self.set_x(12)
+            self.set_font('Helvetica', 'B', 9.5)
+            self.set_text_color(30, 64, 175)
+            self.cell(186, 5, conv("Tour360VR - Okamoto Mídias Visuais"), align='C')
+        else:
+            w_col = (198 - 12) / 4.0
+            self.set_x(12)
+            self.cell(w_col, 5, 'www.tour360vr.com.br', link='https://tour360vr.com.br', align='C')
+            self.cell(w_col, 5, 'contato@tour360vr.com.br', link='mailto:contato@tour360vr.com.br', align='C')
+            self.cell(w_col, 5, 'WhatsApp: (16) 99133-2121', link='https://wa.me/5516991332121', align='C')
+            self.cell(w_col, 5, f'Página {self.page_no()} de 4', align='C')
 
     def rounded_rect(self, x, y, w, h, r, style=''):
         k, hp = self.k, self.h
@@ -236,12 +243,11 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_auto_page_break(auto=True, margin=18)
     estrelas_txt = formatar_estrelas(dados['nota'])
 
-    # PÁGINA 1: CAPA (LOGO E QUADROS REORGANIZADOS E CENTRALIZADOS)
+    # PÁGINA 1: CAPA
     pdf.add_page()
     caminho_logo = obter_caminho_logo()
     if caminho_logo:
         try:
-            # LOGO CENTRALIZADO NA CAPA
             pdf.image(caminho_logo, 82, 22, 46)
         except:
             pass
@@ -250,17 +256,14 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_font('Helvetica', 'B', 23)
     pdf.set_text_color(30, 64, 175)
     pdf.cell(0, 10, conv('DIAGNÓSTICO DE PRESENÇA DIGITAL'), align='C', ln=True)
-    pdf.ln(2)
+    pdf.ln(3)
 
-    pdf.set_font('Helvetica', 'B', 17)
-    pdf.set_text_color(255, 61, 61)
-    pdf.cell(0, 7.5, conv('GOOGLE MEU NEGÓCIO'), align='C', ln=True)
-    pdf.set_font('Helvetica', 'B', 17)
+    # "GOOGLE MEU NEGÓCIO" EM AZUL ESCURO (SEM O TEXTO "TOUR360VR" ABAIXO)
+    pdf.set_font('Helvetica', 'B', 19)
     pdf.set_text_color(30, 64, 175)
-    pdf.cell(0, 7.5, conv('Tour360VR'), align='C', ln=True)
-    pdf.ln(10)
+    pdf.cell(0, 8, conv('GOOGLE MEU NEGÓCIO'), align='C', ln=True)
+    pdf.ln(12)
 
-    # QUADRO CENTRALIZADO E HARMONIZADO NA CAPA
     w_capa = 170
     h_capa = 68
     x_capa = (210 - w_capa) / 2.0
@@ -309,34 +312,35 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.cell(0, 7, conv('AUDITORIA DETALHADA DE PONTOS DE BUSCA'), align='C', ln=True)
     pdf.ln(8)
 
-    # FICHA ANALISADA (NOME DA EMPRESA EM AZUL ESCURO)
+    # FICHA ANALISADA COM MAIS ESPAÇAMENTO ENTRE AS LINHAS
     w_ficha = 145
     x_ficha = (210 - w_ficha) / 2.0
     
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
-    pdf.rounded_rect(x_ficha, pdf.get_y(), w_ficha, 23, 3, 'FD')
+    pdf.rounded_rect(x_ficha, pdf.get_y(), w_ficha, 28, 3, 'FD')
     
     y_curr = pdf.get_y()
-    pdf.set_xy(x_ficha, y_curr + 3)
+    pdf.set_xy(x_ficha, y_curr + 3.5)
     
     pdf.set_font('Helvetica', 'B', 11.0)
     pdf.set_text_color(15, 23, 42)
-    pdf.cell(w_ficha, 4.5, conv('FICHA ANALISADA DO CLIENTE'), align='C', ln=True)
+    pdf.cell(w_ficha, 5.0, conv('FICHA ANALISADA DO CLIENTE'), align='C', ln=True)
+    pdf.ln(1)
     
-    # NOME EM AZUL ESCURO (RGB: 30, 64, 175)
     pdf.set_x(x_ficha)
     pdf.set_font('Helvetica', 'B', 14.5)
     pdf.set_text_color(30, 64, 175)
-    pdf.cell(w_ficha, 6, conv(f"{dados['nome'] or 'Empresa Analisada'}"), align='C', ln=True)
-    
+    pdf.cell(w_ficha, 7.0, conv(f"{dados['nome'] or 'Empresa Analisada'}"), align='C', ln=True)
+    pdf.ln(1)
+
     pdf.set_x(x_ficha)
     pdf.set_font('Helvetica', 'B', 11.0)
     pdf.set_text_color(245, 158, 11)
-    pdf.cell(w_ficha, 5, conv(f"Nota {dados['nota']:.1f} {estrelas_txt}   -   {dados['avaliacoes']} avaliações no Google"), align='C', ln=True)
+    pdf.cell(w_ficha, 5.5, conv(f"Nota {dados['nota']:.1f} {estrelas_txt}   -   {dados['avaliacoes']} avaliações no Google"), align='C', ln=True)
 
     # QUADRO SCORE GERAL
-    pdf.set_y(y_curr + 30)
+    pdf.set_y(y_curr + 35)
     w_box_score = 75
     x_box_score = (210 - w_box_score) / 2.0
     y_box_score = pdf.get_y()
@@ -461,7 +465,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
         pdf.set_text_color(51, 65, 85)
         pdf.multi_cell(w_extra - 10, 3.8, conv(plano_acao_extra), align='L')
 
-    # PÁGINA 3: PLANOS (ESPAÇAMENTO VERTICAL AMPLIADO ENTRE CONDIÇÕES E ITENS)
+    # PÁGINA 3: PLANOS (CONDIÇÕES DE PAGAMENTO EM PRETO)
     pdf.add_page()
     pdf.set_y(30)
     pdf.set_font('Helvetica', 'B', 17)
@@ -491,12 +495,12 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_text_color(62, 161, 219)
     pdf.cell(54, 5, conv(f"R$ {val_start_limpo}"), align='C', ln=True)
     
+    # CONDIÇÃO DE PAGAMENTO EM PRETO (RGB: 15, 23, 42)
     pdf.set_xy(12, y_p + 15)
     pdf.set_font('Helvetica', 'B', 10.0)
-    pdf.set_text_color(100, 116, 139)
+    pdf.set_text_color(15, 23, 42)
     pdf.cell(54, 4, conv('em até 2x'), align='C', ln=True)
     
-    # MAIS ESPAÇO PARA OS ITENS (Y + 23)
     pdf.set_font('Helvetica', '', 9.0)
     pdf.set_text_color(51, 65, 85)
     pdf.set_xy(15, y_p + 23)
@@ -524,12 +528,12 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_text_color(30, 64, 175)
     pdf.cell(70, 6, conv(f"R$ {val_pro_limpo}"), align='C', ln=True)
     
+    # CONDIÇÃO DE PAGAMENTO EM PRETO (RGB: 15, 23, 42)
     pdf.set_xy(70, y_p + 16.5)
     pdf.set_font('Helvetica', 'B', 10.0)
-    pdf.set_text_color(100, 116, 139)
+    pdf.set_text_color(15, 23, 42)
     pdf.cell(70, 4, conv('em até 3x'), align='C', ln=True)
     
-    # MAIS ESPAÇO PARA OS ITENS (Y + 24.5)
     pdf.set_font('Helvetica', 'B', 9.5)
     pdf.set_text_color(15, 23, 42)
     pdf.set_xy(75, y_p + 24.5)
@@ -550,12 +554,12 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_text_color(62, 161, 219)
     pdf.cell(54, 5, conv(f"R$ {val_gestao_limpo}"), align='C', ln=True)
     
+    # CONDIÇÃO DE PAGAMENTO EM PRETO (RGB: 15, 23, 42)
     pdf.set_xy(144, y_p + 15)
     pdf.set_font('Helvetica', 'B', 10.0)
-    pdf.set_text_color(100, 116, 139)
+    pdf.set_text_color(15, 23, 42)
     pdf.cell(54, 4, conv('valor mensal'), align='C', ln=True)
     
-    # MAIS ESPAÇO PARA OS ITENS (Y + 23)
     pdf.set_font('Helvetica', '', 9.0)
     pdf.set_text_color(51, 65, 85)
     pdf.set_xy(147, y_p + 23)
@@ -589,7 +593,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_x(x_info)
     pdf.multi_cell(w_info, 4.0, conv(txt_exp), align='C')
 
-    # PÁGINA 4: CONTRATO (ESPAÇAMENTO AMPLIADO NAS OPÇÕES DA CLÁUSULA QUARTA)
+    # PÁGINA 4: CONTRATO
     pdf.add_page()
     pdf.set_y(30)
     pdf.set_font('Helvetica', 'B', 17)
@@ -633,7 +637,6 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra=""):
     pdf.set_font('Helvetica', '', 9.0)
     pdf.write(4.5, conv("(  ) Plano Start        (  ) Plano Pro        (  ) Gestão Mensal\n\n"))
 
-    # ESPAÇAMENTO EXPANDIDO ENTRE AS OPÇÕES DE PAGAMENTO
     pdf.set_font('Helvetica', 'B', 9.0)
     pdf.write(4.5, conv("CLÁUSULA QUARTA - CONDIÇÕES DE PAGAMENTO:\n"))
     pdf.set_font('Helvetica', '', 9.0)
@@ -751,10 +754,14 @@ if "1. Consulta" in opcao_menu:
                         st.session_state['dados']['avaliacoes'] = int(res_details.get("user_ratings_total") or u.get("user_ratings_total") or 0)
                         st.session_state['dados']['contato'] = "Gerente Responsável"
                         
+                        # PREENCHIMENTO AUTOMÁTICO E DINÂMICO DOS CHECKBOXES
                         st.session_state['dados']['tem_fotos_hd'] = len(photos) >= 10
                         st.session_state['dados']['horarios_ok'] = "opening_hours" in res_details
                         st.session_state['dados']['categorias_completas'] = len(types_lista) >= 3
                         st.session_state['dados']['tem_descricao'] = "editorial_summary" in res_details
+                        st.session_state['dados']['tem_tour360'] = False
+                        st.session_state['dados']['atributos_ok'] = False
+                        st.session_state['dados']['resposta_avaliacoes_ok'] = False
                         st.session_state['dados']['categorias_detectadas'] = types_lista
                         
                         st.success("Dados carregados com sucesso!")
@@ -772,8 +779,8 @@ if "1. Consulta" in opcao_menu:
         st.session_state['dados']['horarios_ok'] = c_d.checkbox("Horários OK", value=st.session_state['dados']['horarios_ok'], key="chk_horarios_ok_val")
         
         c_e, c_f, c_g = st.columns(3)
-        st.session_state['dados']['tem_descricao'] = c_e.checkbox("Descrição/Resumo", value=st.session_state['dados'].get('tem_descricao', True), key="chk_desc_val")
-        st.session_state['dados']['atributos_ok'] = c_f.checkbox("Atributos Serviços", value=st.session_state['dados'].get('atributos_ok', True), key="chk_atrib_val")
+        st.session_state['dados']['tem_descricao'] = c_e.checkbox("Descrição/Resumo", value=st.session_state['dados'].get('tem_descricao', False), key="chk_desc_val")
+        st.session_state['dados']['atributos_ok'] = c_f.checkbox("Atributos Serviços", value=st.session_state['dados'].get('atributos_ok', False), key="chk_atrib_val")
         st.session_state['dados']['resposta_avaliacoes_ok'] = c_g.checkbox("Respostas Ativas", value=st.session_state['dados'].get('resposta_avaliacoes_ok', False), key="chk_resp_val")
 
         st.markdown("---")
