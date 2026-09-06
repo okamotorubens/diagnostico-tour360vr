@@ -302,50 +302,19 @@ class PDFTour360Oficial(FPDF):
         k, hp = self.k, self.h
         self._out(f'{x1*k:.2f} {(hp-y1)*k:.2f} {x2*k:.2f} {(hp-y2)*k:.2f} {x3*k:.2f} {(hp-y3)*k:.2f} c')
 
-    # FUNÇÃO DE ESCRITA COMPLETA COM ALINHAMENTO JUSTIFICADO E MANUTENÇÃO DA MARGEM ESQUERDA
+    # ESCRITA SEGURA DE PARÁGRAFO DO CONTRATO VIA MULTI_CELL JUSTIFICADO
     def escrever_paragrafo_contrato(self, titulo_bold, texto_normal, w_tot=186):
         self.set_x(12)
-        full_text = f"{titulo_bold}{texto_normal}"
-        
-        # Cria a quebra de linhas para justificar sem perder a posição X inicial
+        # 1. Imprime o título em negrito
         self.set_font('Helvetica', 'B', 9.5)
-        w_tit = self.get_string_width(conv(titulo_bold))
+        self.set_text_color(15, 23, 42)
+        w_tit = self.get_string_width(conv(titulo_bold)) + 1.0
+        self.cell(w_tit, 5.2, conv(titulo_bold), ln=False, align='L')
         
+        # 2. Imprime o restante do texto com multi_cell e alinhamento J
         self.set_font('Helvetica', '', 9.5)
-        words = conv(texto_normal).split(' ')
-        
-        # Processa primeiro bloco em linha única caso necessário
-        lines = []
-        current_line = conv(titulo_bold)
-        
-        for word in words:
-            test_line = current_line + " " + word if current_line else word
-            self.set_font('Helvetica', 'B' if current_line == conv(titulo_bold) else '', 9.5)
-            if self.get_string_width(test_line) <= w_tot:
-                current_line = test_line
-            else:
-                lines.append(current_line)
-                current_line = word
-        if current_line:
-            lines.append(current_line)
-
-        # Renderiza com multi_cell / cell linha a linha mantendo margem 12 mm
-        for idx, line in enumerate(lines):
-            self.set_x(12)
-            if idx == 0 and line.startswith(conv(titulo_bold)):
-                self.set_font('Helvetica', 'B', 9.5)
-                self.set_text_color(15, 23, 42)
-                self.cell(w_tit, 5.2, conv(titulo_bold), ln=False)
-                
-                self.set_font('Helvetica', '', 9.5)
-                self.set_text_color(51, 65, 85)
-                rest_line = line[len(conv(titulo_bold)):]
-                self.cell(0, 5.2, rest_line, ln=True, align='L' if len(lines) == 1 else 'J')
-            else:
-                self.set_font('Helvetica', '', 9.5)
-                self.set_text_color(51, 65, 85)
-                align_type = 'L' if idx == len(lines) - 1 else 'J'
-                self.cell(w_tot, 5.2, line, ln=True, align=align_type)
+        self.set_text_color(51, 65, 85)
+        self.multi_cell(w_tot - w_tit, 5.2, conv(texto_normal), align='J')
 
 def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorrentes=[]):
     score = calcular_score_real(dados)
@@ -412,7 +381,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
         pdf.set_text_color(22, 128, 61)
         pdf.cell(w_capa, 6, conv("Status da Ficha: Otimizado e Em Expansão"), align='C', ln=True)
 
-    # PÁGINA 2: DIAGNÓSTICO (MAIS ESPAÇO DADOS->SCORE E SCORE->ITEM 1)
+    # PÁGINA 2: DIAGNÓSTICO
     pdf.add_page()
     pdf.set_y(28)
     pdf.set_font('Helvetica', 'B', 16)
@@ -444,7 +413,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     pdf.set_text_color(245, 158, 11)
     pdf.cell(w_ficha, 4.0, conv(f"Nota {dados['nota']:.1f} {estrelas_txt}   -   {dados['avaliacoes']} avaliações no Google"), align='C', ln=True)
 
-    # QUADRO SCORE GERAL (AUMENTADO O ESPAÇAMENTO PARA 32 mm)
+    # QUADRO SCORE GERAL
     pdf.set_y(y_curr + 32)
     w_box_score = 80
     x_box_score = (210 - w_box_score) / 2.0
@@ -485,7 +454,6 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     pdf.set_text_color(cr, cg, cb)
     pdf.cell(w_box_score, 3.8, conv(f"SCORE GERAL ({status_txt})"), align='C', ln=True)
 
-    # DISTÂNCIA DO SCORE GERAL PARA O ITEM 1 AUMENTADA PARA 22 mm
     pdf.set_y(y_box_score + 22)
 
     pct_avaliacoes = min(int((dados['avaliacoes'] / 50.0) * 100), 100) if dados['avaliacoes'] > 0 else 10
@@ -548,7 +516,6 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
 
     concorrentes_filtrados = [c for c in concorrentes if c.get("nome", "").strip() != ""]
 
-    # TABELA DE CONCORRENTES COM FONTE AMPLIADA PARA 8.5 PT
     if concorrentes_filtrados:
         pdf.ln(6)
         pdf.set_font('Helvetica', 'B', 10.5)
@@ -789,7 +756,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     pdf.set_x(x_info)
     pdf.multi_cell(w_info, 4.8, conv(txt_exp), align='C')
 
-    # PÁGINA 4: CONTRATO COM PARÁGRAFOS PERFEITAMENTE JUSTIFICADOS
+    # PÁGINA 4: CONTRATO (SISTEMA MULTI_CELL JUSTIFICADO SEM ERROS DE LINT/VALUERRO)
     pdf.add_page()
     pdf.set_y(30)
     pdf.set_font('Helvetica', 'B', 17)
