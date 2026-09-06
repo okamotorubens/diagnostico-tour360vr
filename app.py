@@ -742,23 +742,29 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     pdf.set_x(x_info)
     pdf.multi_cell(w_info, 4.8, conv(txt_exp), align='C')
 
-    # PÁGINA 4: CONTRATO (RENDERIZAÇÃO HTML PARA FLUXO E JUSTIFICATIVA PERFEITOS)
+    # PÁGINA 4: CONTRATO (COM ALINHAMENTO JUSTIFICADO E FORMATADO COM NEGRITOS)
     pdf.add_page()
     pdf.set_y(30)
     pdf.set_font('Helvetica', 'B', 17)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 8, conv('CONTRATO DE PRESTAÇÃO DE SERVIÇOS'), align='C', ln=True)
-    pdf.ln(6)
+    pdf.ln(10)
 
-    txt_contratante = f"{dados['nome'] or 'Toque de Letra Comunicação'}, representada por {dados['contato'] or 'Marcio Javaroni'}, localizada em {dados['endereco'] or 'R. Espírito Santo, 122 - Ipiranga, Ribeirão Preto - SP, 14055-165, Brasil'}, Telefone: {dados['telefone'] or '(16) 98176-4000'}."
+    txt_contratante = f"{dados['nome'] or 'Empresa Contratante'}, representada por {dados['contato'] or 'Responsável'}, localizada em {dados['endereco'] or 'Endereço não informado'}, Telefone: {dados['telefone'] or 'N/I'}."
 
     html_contrato = f"""
     <p align="justify"><b>CONTRATADA:</b> Tour360VR, representada por Rubens H. Okamoto, CPF: 287.932.298-79 e Telefone: (16) 99133-2121.</p>
+    <br>
     <p align="justify"><b>CONTRATANTE:</b> {txt_contratante}</p>
-    <p align="justify">A CONTRATADA compromete-se a executar os serviços de otimização, reestruturação técnica e/ou produção de Tour Virtual 360° para o perfil do Google da CONTRATANTE.</p>
+    <br>
+    <p align="justify">A <b>CONTRATADA</b> compromete-se a executar os serviços de otimização, reestruturação técnica e/ou produção de Tour Virtual 360° para o perfil do Google da <b>CONTRATANTE</b>.</p>
+    <br>
     <p align="justify"><b>CLÁUSULA PRIMEIRA - DO OBJETO:</b> Os serviços serão iniciados em até 5 dias úteis após o fornecimento de todos os acessos e informações necessárias à gestão do perfil.</p>
+    <br>
     <p align="justify"><b>CLÁUSULA SEGUNDA - DAS OBRIGAÇÕES:</b> O não pagamento no prazo pactuado sujeitará o presente contrato à incidência de juros moratórios legais e à suspensão temporária dos serviços até a devida regularização.</p>
+    <br>
     <p align="justify"><b>CLÁUSULA TERCEIRA - SELEÇÃO DO PLANO CONTRATADO:</b><br>(      ) Plano Start          (      ) Plano Pro          (      ) Gestão Mensal</p>
+    <br>
     <p align="justify"><b>CLÁUSULA QUARTA - CONDIÇÕES DE PAGAMENTO:</b><br>(      ) À Vista          (      ) 2x - Plano Start           (      ) 3x - Plano Pro           (      ) Vencimento Dia: _____ - Gestão Mensal</p>
     """
 
@@ -778,14 +784,14 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     pdf.set_x(12)
     pdf.cell(88, 4.5, 'Rubens H. Okamoto', align='C')
     pdf.set_x(110)
-    pdf.cell(88, 4.5, conv(f"{dados['contato'] or 'Marcio Javaroni'}"), align='C', ln=True)
+    pdf.cell(88, 4.5, conv(f"{dados['contato'] or 'Responsável'}"), align='C', ln=True)
     
     pdf.set_font('Helvetica', 'B', 8.5)
     pdf.set_text_color(100, 116, 139)
     pdf.set_x(12)
     pdf.cell(88, 4.5, 'Tour360VR', align='C')
     pdf.set_x(110)
-    pdf.cell(88, 4.5, conv(f"{dados['nome'] or 'Toque de Letra Comunicação'}"), align='C', ln=True)
+    pdf.cell(88, 4.5, conv(f"{dados['nome'] or 'Empresa'}"), align='C', ln=True)
 
     return bytes(pdf.output())
 
