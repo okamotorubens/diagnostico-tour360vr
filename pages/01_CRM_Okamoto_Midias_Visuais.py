@@ -12,28 +12,15 @@ from streamlit_gsheets import GSheetsConnection
 # -----------------------------------------------------------------------------
 # 1. CONFIGURAÇÃO DA PÁGINA E ESTILIZAÇÃO VISUAL MODERNA (SaaS / CRM)
 # -----------------------------------------------------------------------------
-import streamlit as st
-
-# Configuração da Página Principal
 st.set_page_config(
-    page_title="Consultoria & Diagnóstico Tour360VR",
-    page_icon="🔎",
-    layout="wide"
+    page_title="CRM Okamoto Mídias Visuais",
+    page_icon="💼",
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
-# Assinatura limpa na barra lateral
-st.sidebar.markdown("""
-<div style="padding: 10px 0px;">
-    <h3 style="margin: 0; color: #f8fafc; font-size: 18px;">OKAMOTO MÍDIAS VISUAIS</h3>
-    <p style="margin: 2px 0 0 0; color: #94a3b8; font-size: 12px;">criado por Rubens Okamoto</p>
-</div>
-<hr style="margin: 10px 0; border-color: #334155;"/>
-""", unsafe_allow_html=True)
-
-# Injeção CSS para visual elegante escuro (estilo software pago)
 st.markdown("""
 <style>
-    /* Estilo do Fundo e Barra Lateral */
     .stApp {
         background-color: #0b0f17;
     }
@@ -41,8 +28,6 @@ st.markdown("""
         background-color: #111827;
         border-right: 1px solid #1f2937;
     }
-    
-    /* Header Principal */
     .header-box {
         background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
         border: 1px solid #334155;
@@ -62,8 +47,6 @@ st.markdown("""
         font-size: 14px;
         margin-top: 6px;
     }
-    
-    /* Cards de Indicadores (KPIs) */
     .kpi-card {
         background: #1e293b;
         border: 1px solid #334155;
@@ -76,7 +59,6 @@ st.markdown("""
         font-size: 12px;
         font-weight: 600;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
     }
     .kpi-value {
         color: #38bdf8;
@@ -84,8 +66,6 @@ st.markdown("""
         font-weight: 700;
         margin-top: 6px;
     }
-    
-    /* Cards do Funil Kanban */
     .kanban-card {
         background: #1e293b;
         border: 1px solid #334155;
@@ -93,7 +73,6 @@ st.markdown("""
         border-radius: 10px;
         padding: 14px;
         margin-bottom: 12px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
     }
     .kanban-title {
         color: #f8fafc;
@@ -111,8 +90,6 @@ st.markdown("""
         font-size: 11px;
         margin-top: 6px;
     }
-    
-    /* Estilização de Botões */
     .stButton>button {
         border-radius: 10px;
         font-weight: 600;
@@ -120,7 +97,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Assinatura Atualizada na Barra Lateral
 st.sidebar.markdown("""
 <div style="padding: 10px 0px;">
     <h3 style="margin: 0; color: #f8fafc; font-size: 18px;">OKAMOTO MÍDIAS VISUAIS</h3>
