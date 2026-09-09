@@ -10,7 +10,7 @@ from reportlab.pdfgen import canvas
 from streamlit_gsheets import GSheetsConnection
 
 # -----------------------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA E AUTENTICAÇÃO / LOGIN
+# 1. CONFIGURAÇÃO DA PÁGINA E LOGIN SEGURO
 # -----------------------------------------------------------------------------
 st.set_page_config(
     page_title="Sistema Okamoto & Tour360",
@@ -53,17 +53,17 @@ df_clientes = carregar_dados_aba("Clientes")
 df_servicos = carregar_dados_aba("Servicos")
 df_pedidos = carregar_dados_aba("Pedidos")
 
-# Fallback para serviços caso a planilha esteja vazia
+# Fallback para catálogo de serviços caso a planilha esteja vazia
 if df_servicos.empty:
     df_servicos = pd.DataFrame([
         {"Nome_Servico": "Cobertura fotográfica", "Tipo_Cobranca": "Hora", "Valor_Base": 180.0, "Descricao": "Registros fotográficos de alta resolução com edição de cores e contraste."},
         {"Nome_Servico": "Captação de vídeo", "Tipo_Cobranca": "Hora", "Valor_Base": 200.0, "Descricao": "Gravação em Full HD/4K (material bruto entregue via link)."},
         {"Nome_Servico": "Tour Virtual 360°", "Tipo_Cobranca": "Pacote", "Valor_Base": 800.0, "Descricao": "Mapeamento completo e publicação no Google Street View e ambiente web."},
-        {"Nome_Servico": "Retrato corporativo", "Tipo_Cobranca": "Unidade", "Valor_Base": 150.0, "Descricao": "Retratos individuais com esquema dedicado de iluminação móvel."}
+        {"Nome_Servico": "Otimização Ficha Google", "Tipo_Cobranca": "Pacote", "Valor_Base": 400.0, "Descricao": "Estruturação técnica e atualização de atributos no Google Meu Negócio."}
     ])
 
 # -----------------------------------------------------------------------------
-# 3. GERADOR DE PDF COM 2 PÁGINAS (REPORTLAB)
+# 3. GERADOR DE PDF DE 2 PÁGINAS (REPORTLAB)
 # -----------------------------------------------------------------------------
 class NumberedCanvas(canvas.Canvas):
     def __init__(self, *args, **kwargs):
@@ -178,8 +178,6 @@ def gerar_pdf_proposta(dados):
         ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#cbd5e1')),
         ('PADDING', (0, 0), (-1, -1), 7),
     ]))
-    for i in range(3):
-        t_srv.setStyle(TableStyle([('TEXTCOLOR', (i, 0), (i, 0), colors.white)]))
     story.append(t_srv)
     story.append(Spacer(1, 10))
 
@@ -210,7 +208,7 @@ def gerar_pdf_proposta(dados):
     return buffer
 
 # -----------------------------------------------------------------------------
-# 4. NAVEGAÇÃO POR ABAS (INTERFACE PRINCIPAL)
+# 4. INTERFACE PRINCIPAL E ABAS DE NAVEGAÇÃO
 # -----------------------------------------------------------------------------
 st.title("💼 Sistema Unificado - Okamoto Mídias & Tour360VR")
 
@@ -222,7 +220,7 @@ aba_orcamento, aba_kanban, aba_clientes, aba_catalogo = st.tabs([
 ])
 
 # -----------------------------------------------------------------------------
-# ABA 1: GERAR ORÇAMENTO E SALVAR
+# ABA 1: GERAR ORÇAMENTO E SALVAR NO GOOGLE SHEETS
 # -----------------------------------------------------------------------------
 with aba_orcamento:
     st.subheader("Emissão de Proposta Comercial em PDF")
@@ -231,13 +229,14 @@ with aba_orcamento:
     with col1:
         num_pedido = st.text_input("Número do Pedido/Orçamento", f"PED-{datetime.now().strftime('%Y%m%d%H%M')}")
         
-        lista_empresas = ["Outro / Cliente Novo"] + (df_clientes["Empresa"].dropna().tolist() if not df_clientes.empty else [])
+        lista_empresas = ["Outro / Cliente Novo"] + (df_clientes["Empresa"].dropna().unique().tolist() if not df_clientes.empty and "Empresa" in df_clientes.columns else [])
         empresa_sel = st.selectbox("Selecione a Empresa / Cliente", lista_empresas)
         
         if empresa_sel != "Outro / Cliente Novo" and not df_clientes.empty:
             dados_cli = df_clientes[df_clientes["Empresa"] == empresa_sel].iloc[0]
             contato = st.text_input("Pessoa de Contato", str(dados_cli.get("Contato", "")))
-            local = st.text_input("Local do Evento / Atendimento", f"{dados_cli.get('Cidade', '')} - SP")
+            cidade_cli = str(dados_cli.get("Cidade", ""))
+            local = st.text_input("Local do Evento / Atendimento", cidade_cli if cidade_cli else "Ribeirão Preto - SP")
         else:
             empresa_sel = st.text_input("Nome da Empresa", "Ambient Serviços Ambientais S/A")
             contato = st.text_input("Pessoa de Contato", "Natalia")
@@ -288,7 +287,7 @@ with aba_orcamento:
     
     with col_btn1:
         st.download_button(
-            label="📥 1. Baixar Proposta em PDF",
+            label="📥 1. Baixar Proposta Comercial em PDF",
             data=pdf_bytes,
             file_name=f"Proposta_{num_pedido}_{empresa_sel.replace(' ', '_')}.pdf",
             mime="application/pdf",
@@ -317,7 +316,7 @@ with aba_orcamento:
                 st.error(f"Erro ao salvar no Google Sheets: {e}")
 
 # -----------------------------------------------------------------------------
-# ABA 2: FUNIL KANBAN (BIGIN - COM DADOS DA PLANILHA)
+# ABA 2: FUNIL KANBAN (BIGIN)
 # -----------------------------------------------------------------------------
 with aba_kanban:
     st.subheader("Funil de Vendas - Estágios do Atendimento")
@@ -340,20 +339,22 @@ with aba_kanban:
                 st.caption("0 Projetos")
 
 # -----------------------------------------------------------------------------
-# ABA 3: GESTÃO DE CLIENTES
+# ABA 3: GESTÃO DE CLIENTES (BUSCA AVANÇADA POR NOME, CIDADE OU TAG)
 # -----------------------------------------------------------------------------
 with aba_clientes:
     st.subheader("Base de Empresas e Contatos")
-    termo_busca = st.text_input("🔍 Buscar por Nome da Empresa, Contato ou Cidade:")
+    termo_busca = st.text_input("🔍 Pesquisar por Nome da Empresa, Cidade, Tag ou Segmento:")
     
     if not df_clientes.empty:
         df_exibir = df_clientes.copy()
         if termo_busca:
             mask = df_exibir.astype(str).apply(lambda row: row.str.contains(termo_busca, case=False).any(), axis=1)
             df_exibir = df_exibir[mask]
+        
         st.dataframe(df_exibir, use_container_width=True)
+        st.caption(f"Exibindo {len(df_exibir)} de {len(df_clientes)} cadastros.")
     else:
-        st.warning("Nenhum cliente cadastrado no Google Sheets. Faça a importação da sua planilha.")
+        st.warning("Nenhum cliente cadastrado na aba 'Clientes' do Google Sheets.")
 
 # -----------------------------------------------------------------------------
 # ABA 4: CATÁLOGO DE SERVIÇOS (AGENDA BOA)
