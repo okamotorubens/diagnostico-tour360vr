@@ -121,17 +121,40 @@ if 'df_pedidos' not in st.session_state:
             "Captacao": "Registros fotográficos e captações pontuais em vídeo (participantes, autoridades, apresentações, intervalos, entre outros momentos do evento).",
             "Entrega": "Todo material fotográfico será editado e enviado, em alta e baixa resolução.\n• Todo material em vídeo será enviado bruto (sem edição).\nOs materiais serão enviados via link e ficará disponível pelo prazo de 30 dias para download.",
             "Prazo_Entrega": "Até 72h após o término do evento.",
+            "Valor_Subtotal": 5200.0,
+            "Desconto_Pct": 0.0,
             "Valor_Total": 5200.0,
             "Valor_Extenso": "(Cinco mil e duzentos reais)",
             "Condicoes_Pag": "Até 20 dias após o evento.",
-            "Status": "Orçamento / Proposta"
+            "Status": "Orçamento / Proposta",
+            "Servicos": "Cobertura Fotográfica e Captação de Vídeo"
         }
     ])
 
 if 'df_clientes' not in st.session_state:
     st.session_state['df_clientes'] = pd.DataFrame([
-        {"Empresa": "Ambient Serviços Ambientais de Ribeirão Preto S/A", "Contato": "Natalia", "Cidade": "Ribeirão Preto - SP", "Telefone": "(16) 99133-2121", "Email": "contato@ambient.com.br", "Categoria / TAG": "COMÉRCIO"},
-        {"Empresa": "Clínica Personalitté", "Contato": "Joseph", "Cidade": "Ribeirão Preto - SP", "Telefone": "+55 (16) 99767-8802", "Email": "joseph@personalitte.com.br", "Categoria / TAG": "CLÍNICAS"}
+        {
+            "Empresa": "Ambient Serviços Ambientais de Ribeirão Preto S/A", 
+            "Contato": "Natalia", 
+            "Cidade": "Ribeirão Preto - SP", 
+            "Telefone": "(16) 99133-2121", 
+            "Email": "contato@ambient.com.br", 
+            "Categoria / TAG": "COMÉRCIO",
+            "Atividade": "Engenharia e Tratamento Ambiental",
+            "Website": "www.ambientservicos.com.br",
+            "Instagram": "@ambientservicos"
+        },
+        {
+            "Empresa": "Clínica Personalitté", 
+            "Contato": "Joseph", 
+            "Cidade": "Ribeirão Preto - SP", 
+            "Telefone": "+55 (16) 99767-8802", 
+            "Email": "joseph@personalitte.com.br", 
+            "Categoria / TAG": "CLÍNICAS",
+            "Atividade": "Estética Avançada e Saúde",
+            "Website": "www.clinicapersonalitte.com.br",
+            "Instagram": "@clinicapersonalitte"
+        }
     ])
 
 if 'df_servicos' not in st.session_state:
@@ -203,9 +226,7 @@ def gerar_pdf_3_paginas(dados, texto_institucional):
                 pass
         return Paragraph("<font size='14' color='#2563eb'><b>OKAMOTO MÍDIAS VISUAIS</b></font>", style_label)
 
-    # =========================================================================
     # PÁGINA 1: APRESENTAÇÃO INSTITUCIONAL
-    # =========================================================================
     logo_p1 = obter_bloco_logo(140, 45)
     t_top_p1 = Table([[logo_p1, Paragraph("<b>OKAMOTO MÍDIAS VISUAIS</b><br/><font color='#64748b' size='8'>Fotografia Profissional & Tours Virtuais 360°</font>", style_txt_block)]], colWidths=[160, 365])
     t_top_p1.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'MIDDLE'), ('ALIGN', (1,0), (1,0), 'RIGHT')]))
@@ -235,9 +256,7 @@ def gerar_pdf_3_paginas(dados, texto_institucional):
     ]))
     story.append(t_dif)
 
-    # =========================================================================
     # PÁGINA 2: ORÇAMENTO COMERCIAL COMPLETO
-    # =========================================================================
     story.append(PageBreak())
 
     col_tit = [
@@ -314,9 +333,7 @@ def gerar_pdf_3_paginas(dados, texto_institucional):
     story.append(Spacer(1, 10))
     story.append(Paragraph("Atenciosamente,<br/><b>Rubens Okamoto</b><br/>16 99133 2121 | okamotomidiasvisuais.com.br", style_txt_block))
 
-    # =========================================================================
     # PÁGINA 3: DADOS DA EMPRESA, PESSOAIS E BANCÁRIOS
-    # =========================================================================
     story.append(PageBreak())
 
     story.append(obter_bloco_logo(120, 38))
@@ -380,6 +397,7 @@ def gerar_pdf_ficha_cliente(cliente_data, pedidos_cli):
         Spacer(1, 12)
     ]
 
+    # OCULTADOS: ATIVIDADE, WEBSITE E INSTAGRAM DO PDF
     info_table = [
         [Paragraph("<b>Empresa:</b>", style_td), Paragraph(str(cliente_data.get('Empresa', '')), style_td)],
         [Paragraph("<b>Pessoa de Contato:</b>", style_td), Paragraph(str(cliente_data.get('Contato', '')), style_td)],
@@ -451,7 +469,6 @@ with aba_orcamento:
     opcoes_pedidos = ["➕ Criar Novo Pedido do Zero"] + [f"{p['Numero_Pedido']} - {p['Empresa']} ({p['Contato']})" for _, p in df_pedidos.iterrows()]
     pedido_selecionado = st.selectbox("📌 Selecione um Pedido / Orçamento Existente para Carregar:", opcoes_pedidos)
     
-    # VALORES PADRÃO INICIAIS
     val_num_ped = f"Pedido {len(df_pedidos)+1:04d}"
     val_empresa = "Ambient Serviços Ambientais de Ribeirão Preto S/A"
     val_contato = "Natalia"
@@ -464,6 +481,9 @@ with aba_orcamento:
     val_captacao = "Registros fotográficos e captações pontuais em vídeo (participantes, autoridades, apresentações, intervalos, entre outros momentos do evento)."
     val_entrega = "Todo material fotográfico será editado e enviado, em alta e baixa resolução.\n• Todo material em vídeo será enviado bruto (sem edição).\nOs materiais serão enviados via link e ficará disponível pelo prazo de 30 dias para download."
     val_prazo = "Até 72h após o término do evento."
+    val_servicos_sel = [df_servicos["Nome_Servico"].iloc[0]]
+    val_subtotal = 5200.0
+    val_desconto_pct = 0.0
     val_total = 5200.0
     val_extenso = "(Cinco mil e duzentos reais)"
     val_cond_pag = "Até 20 dias após o evento."
@@ -486,14 +506,30 @@ with aba_orcamento:
             val_captacao = str(p_data.get("Captacao", ""))
             val_entrega = str(p_data.get("Entrega", ""))
             val_prazo = str(p_data.get("Prazo_Entrega", ""))
-            val_total = float(p_data.get("Valor_Total", 0.0))
+            val_subtotal = float(p_data.get("Valor_Subtotal", 5200.0))
+            val_desconto_pct = float(p_data.get("Desconto_Pct", 0.0))
+            val_total = float(p_data.get("Valor_Total", 5200.0))
             val_extenso = str(p_data.get("Valor_Extenso", ""))
             val_cond_pag = str(p_data.get("Condicoes_Pag", ""))
             val_status = str(p_data.get("Status", "Orçamento / Proposta"))
+            
+            srv_str = str(p_data.get("Servicos", ""))
+            val_servicos_sel = [s.strip() for s in srv_str.split(",") if s.strip() in df_servicos["Nome_Servico"].tolist()]
+            if not val_servicos_sel:
+                val_servicos_sel = [df_servicos["Nome_Servico"].iloc[0]]
 
     c1, c2 = st.columns(2)
     with c1:
         num_pedido = st.text_input("Número do Pedido/Proposta:", value=val_num_ped)
+        lista_cli_dropdown = ["Digitado Manualmente"] + df_clientes["Empresa"].tolist()
+        cli_sel_box = st.selectbox("Buscar Dados do Cliente Cadastrado:", lista_cli_dropdown)
+        if cli_sel_box != "Digitado Manualmente":
+            match_c = df_clientes[df_clientes["Empresa"] == cli_sel_box].iloc[0]
+            val_empresa = match_c["Empresa"]
+            val_contato = match_c["Contato"]
+            val_tel = match_c["Telefone"]
+            val_local = match_c["Cidade"]
+
         empresa_sel = st.text_input("Empresa:", value=val_empresa)
         contato = st.text_input("Contato:", value=val_contato)
         tel_cli = st.text_input("Telefone:", value=val_tel)
@@ -501,7 +537,7 @@ with aba_orcamento:
 
     with c2:
         data_orcamento = st.text_input("Data de Emissão:", value=val_data_emissao)
-        status_sel = st.selectbox("Status do Pedido:", ["Orçamento / Proposta", "Em atendimento", "Negociação/Revisão", "Aprovado", "Produção", "Concluído"], index=0)
+        status_sel = st.selectbox("Status do Pedido (Funil de Vendas):", ["Orçamento / Proposta", "Em atendimento", "Negociação/Revisão", "Aprovado", "Produção", "Concluído", "Cancelado"], index=["Orçamento / Proposta", "Em atendimento", "Negociação/Revisão", "Aprovado", "Produção", "Concluído", "Cancelado"].index(val_status) if val_status in ["Orçamento / Proposta", "Em atendimento", "Negociação/Revisão", "Aprovado", "Produção", "Concluído", "Cancelado"] else 0)
         condicoes_pag = st.text_input("Forma de Pagamento:", value=val_cond_pag)
         prazo_entrega = st.text_input("Prazo de Entrega:", value=val_prazo)
 
@@ -518,9 +554,25 @@ with aba_orcamento:
 
     st.markdown("---")
     st.markdown("### 💰 INVESTIMENTO & APRESENTAÇÃO INSTITUCIONAL")
-    ci1, ci2 = st.columns(2)
-    valor_total = ci1.number_input("Valor Total (R$):", value=float(val_total), step=100.0)
-    valor_extenso = ci2.text_input("Valor por Extenso:", value=val_extenso)
+    
+    servicos_solicitados = st.multiselect("Selecione os Serviços do Catálogo para o Cálculo:", df_servicos["Nome_Servico"].tolist(), default=val_servicos_sel)
+    
+    subtotal_calculado_srv = 0.0
+    for s_nome in servicos_solicitados:
+        row_s = df_servicos[df_servicos["Nome_Servico"] == s_nome].iloc[0]
+        subtotal_calculado_srv += float(row_s["Valor_Base"])
+
+    if subtotal_calculado_srv == 0.0:
+        subtotal_calculado_srv = val_subtotal
+
+    ci1, ci2, ci3 = st.columns([1.5, 1, 1.5])
+    subtotal_input = ci1.number_input("Subtotal dos Serviços (R$):", value=float(subtotal_calculado_srv), step=100.0)
+    desconto_pct_input = ci2.number_input("Desconto (%):", value=float(val_desconto_pct), min_value=0.0, max_value=100.0, step=5.0)
+    
+    valor_final_com_desc = max(0.0, subtotal_input * (1.0 - (desconto_pct_input / 100.0)))
+    ci3.metric("Valor Total com Desconto", f"R$ {valor_final_com_desc:,.2f}")
+
+    valor_extenso = st.text_input("Valor por Extenso:", value=val_extenso)
 
     st.session_state['texto_institucional'] = st.text_area(
         "Apresentação Institucional da Empresa (exibida na Página 1 do PDF):",
@@ -541,7 +593,7 @@ with aba_orcamento:
         "captacao": captacao_txt,
         "entrega": entrega_txt,
         "prazo_entrega": prazo_entrega,
-        "valor_total": valor_total,
+        "valor_total": valor_final_com_desc,
         "valor_extenso": valor_extenso,
         "condicoes_pag": condicoes_pag
     }
@@ -569,23 +621,26 @@ with aba_orcamento:
                 "Captacao": captacao_txt,
                 "Entrega": entrega_txt,
                 "Prazo_Entrega": prazo_entrega,
-                "Valor_Total": valor_total,
+                "Valor_Subtotal": subtotal_input,
+                "Desconto_Pct": desconto_pct_input,
+                "Valor_Total": valor_final_com_desc,
                 "Valor_Extenso": valor_extenso,
                 "Condicoes_Pag": condicoes_pag,
-                "Status": status_sel
+                "Status": status_sel,
+                "Servicos": ", ".join(servicos_solicitados) if servicos_solicitados else "Serviço Personalizado"
             }
             if not idx_existente.empty:
                 for k, v in novo_d.items():
                     st.session_state['df_pedidos'].loc[idx_existente[0], k] = v
-                st.success(f"Pedido {num_pedido} atualizado com sucesso!")
+                st.success(f"Pedido {num_pedido} atualizado no CRM e Funil de Vendas!")
             else:
                 st.session_state['df_pedidos'] = pd.concat([st.session_state['df_pedidos'], pd.DataFrame([novo_d])], ignore_index=True)
-                st.success(f"Novo pedido {num_pedido} salvo com sucesso!")
+                st.success(f"Novo pedido {num_pedido} registrado no CRM!")
             st.rerun()
 
 # ABA 2: FUNIL KANBAN
 with aba_kanban:
-    st.subheader("Estágios do Atendimento Comercial")
+    st.subheader("📊 Estágios do Atendimento Comercial (Funil de Vendas)")
     fases = ["Orçamento / Proposta", "Em atendimento", "Negociação/Revisão", "Aprovado", "Produção", "Concluído", "Cancelado"]
     cols = st.columns(len(fases))
     
@@ -599,9 +654,10 @@ with aba_kanban:
                 for _, p in p_fase.iterrows():
                     st.markdown(f"""
                     <div class="card-kanban">
-                        <b>{p['Empresa'][:18]}</b><br/>
-                        R$ {float(p['Valor_Total']):,.2f}<br/>
-                        <span style="color:#94a3b8;">📅 {p['Data_Emissao']}</span>
+                        <b>{p['Numero_Pedido']}</b><br/>
+                        <span>{p['Empresa'][:20]}</span><br/>
+                        <b style="color: #38bdf8;">R$ {float(p['Valor_Total']):,.2f}</b><br/>
+                        <span style="color:#94a3b8; font-size:10px;">📅 {p['Data_Emissao']}</span>
                     </div>
                     """, unsafe_allow_html=True)
 
@@ -609,19 +665,30 @@ with aba_kanban:
 with aba_clientes:
     st.subheader("🏢 Cadastrar / Consultar Cliente Individual")
     
-    with st.expander("➕ Formulario para Cadastrar Novo Cliente"):
+    with st.expander("➕ Formulário para Cadastrar Novo Cliente"):
         with st.form("form_novo_cliente", clear_on_submit=True):
             c1, c2, c3 = st.columns(3)
             n_empresa = c1.text_input("Empresa:")
             n_contato = c2.text_input("Contato:")
             n_cidade = c3.text_input("Cidade:")
+            
             c4, c5, c6 = st.columns(3)
             n_tel = c4.text_input("Telefone:")
             n_email = c5.text_input("Email:")
             n_cat = c6.selectbox("Categoria / TAG:", LISTA_TAGS)
+            
+            c7, c8, c9 = st.columns(3)
+            n_atividade = c7.text_input("Atividade / Ramo de Atuação:", placeholder="Ex: Estética, Hotelaria, Engenharia")
+            n_site = c8.text_input("Website Oficial:", placeholder="www.suaempresa.com.br")
+            n_insta = c9.text_input("Instagram:", placeholder="@seuinstagram")
+            
             if st.form_submit_button("➕ Salvar Cliente"):
                 if n_empresa:
-                    novo_c = pd.DataFrame([{"Empresa": n_empresa, "Contato": n_contato, "Cidade": n_cidade, "Telefone": n_tel, "Email": n_email, "Categoria / TAG": n_cat}])
+                    novo_c = pd.DataFrame([{
+                        "Empresa": n_empresa, "Contato": n_contato, "Cidade": n_cidade, 
+                        "Telefone": n_tel, "Email": n_email, "Categoria / TAG": n_cat,
+                        "Atividade": n_atividade, "Website": n_site, "Instagram": n_insta
+                    }])
                     st.session_state['df_clientes'] = pd.concat([st.session_state['df_clientes'], novo_c], ignore_index=True)
                     st.success(f"Cliente {n_empresa} cadastrado!")
                     st.rerun()
@@ -630,7 +697,7 @@ with aba_clientes:
     st.subheader("🔍 Base de Clientes Cadastrados & Acesso Individual")
     
     col_f1, col_f2 = st.columns([2, 1])
-    termo = col_f1.text_input("Pesquisar Cliente:")
+    termo = col_f1.text_input("Pesquisar Cliente por Nome, Atividade, Cidade ou Contato:")
     tag_filtro = col_f2.selectbox("Filtrar por Categoria / TAG:", ["TODAS"] + LISTA_TAGS)
     
     df_c_exibir = st.session_state['df_clientes'].copy()
@@ -653,9 +720,11 @@ with aba_clientes:
         box1, box2 = st.columns([2, 1])
         with box1:
             st.markdown(f"**Empresa:** {c_dados.get('Empresa')}")
+            st.markdown(f"**Atividade:** {c_dados.get('Atividade', 'N/I')}")
             st.markdown(f"**Contato:** {c_dados.get('Contato')} | **Telefone:** {c_dados.get('Telefone')}")
             st.markdown(f"**Cidade:** {c_dados.get('Cidade')} | **TAG:** `{c_dados.get('Categoria / TAG')}`")
             st.markdown(f"**Email:** {c_dados.get('Email')}")
+            st.markdown(f"**Website:** {c_dados.get('Website', 'N/I')} | **Instagram:** {c_dados.get('Instagram', 'N/I')}")
 
         with box2:
             st.metric("Pedidos do Cliente", f"{len(pedidos_cliente)}")
