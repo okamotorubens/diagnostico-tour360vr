@@ -200,7 +200,7 @@ df_clientes = st.session_state['df_clientes']
 df_servicos = st.session_state['df_servicos']
 
 # -----------------------------------------------------------------------------
-# 5. GERADOR DE PDF CORRIGIDO (3 PÁGINAS ORGANIZADAS)
+# 5. GERADOR DE PDF AJUSTADO E REFINADO
 # -----------------------------------------------------------------------------
 class CanvasExecutivoAlinhado(canvas.Canvas):
     def __init__(self, *args, **kwargs):
@@ -272,19 +272,18 @@ def gerar_pdf_3_paginas_corrigido(dados, texto_institucional):
         return Paragraph("<font size='16' color='#0284c7'><b>OKAMOTO MÍDIAS VISUAIS</b></font>", style_label)
 
     # =========================================================================
-    # PÁGINA 1: APRESENTAÇÃO INSTITUCIONAL COM BLOCO EM DESTAQUE E TÓPICOS
+    # PÁGINA 1: APRESENTAÇÃO INSTITUCIONAL
     # =========================================================================
     logo_p1 = obter_bloco_logo(150, 48)
     t_top_p1 = Table([[logo_p1, Paragraph("<b>OKAMOTO MÍDIAS VISUAIS</b><br/><font color='#0284c7' size='9'>Fotografia Profissional & Tours Virtuais 360°</font>", ParagraphStyle('RHead', fontName='Helvetica', alignment=2, leading=12))]], colWidths=[170, 355])
     t_top_p1.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'MIDDLE')]))
     story.append(t_top_p1)
-    story.append(Spacer(1, 15))
+    story.append(Spacer(1, 20))
 
     story.append(Paragraph("Apresentação Institucional", style_tit_capa))
     story.append(Paragraph("Excelência em Registros Visuais e Soluções Tecnológicas de Imagem", style_sub_capa))
-    story.append(Spacer(1, 12))
+    story.append(Spacer(1, 15))
 
-    # DESTAQUE DA APRESENTAÇÃO INSTITUCIONAL (CARD COM FUNDO SUTIL)
     card_inst = [Paragraph(texto_institucional.replace('\n', '<br/>'), style_inst)]
     t_card_inst = Table([[card_inst]], colWidths=[525])
     t_card_inst.setStyle(TableStyle([
@@ -293,11 +292,10 @@ def gerar_pdf_3_paginas_corrigido(dados, texto_institucional):
         ('PADDING', (0,0), (-1,-1), 12),
     ]))
     story.append(t_card_inst)
-    story.append(Spacer(1, 20))
+    story.append(Spacer(1, 22))
 
-    # ÁREAS DE ATUAÇÃO E SOLUÇÕES ESPECIALIZADAS EM TÓPICOS (SEM TABELA)
     story.append(Paragraph("<b>Áreas de Atuação & Soluções Especializadas</b>", style_sec_tit))
-    story.append(Spacer(1, 10))
+    story.append(Spacer(1, 12))
 
     solucoes = [
         ("• Eventos Corporativos & Científicos", "Cobertura fotográfica e em vídeo com equipamentos Full Frame e captações pontuais de alta precisão."),
@@ -312,7 +310,7 @@ def gerar_pdf_3_paginas_corrigido(dados, texto_institucional):
         story.append(Spacer(1, 6))
 
     # =========================================================================
-    # PÁGINA 2: ORÇAMENTO COMERCIAL COMPLETO (SISTEMA DE ITEM 1 A 5 E VALOR)
+    # PÁGINA 2: ORÇAMENTO COMERCIAL (COM ITEM 6 E MAIOR ESPAÇAMENTO)
     # =========================================================================
     story.append(PageBreak())
 
@@ -342,12 +340,13 @@ def gerar_pdf_3_paginas_corrigido(dados, texto_institucional):
         ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#f8fafc')),
     ]))
     story.append(t_cli)
-    story.append(Spacer(1, 12))
+    
+    # ESPAÇO AUMENTADO ANTES DO ESCOPO DO SERVIÇO
+    story.append(Spacer(1, 18))
 
     story.append(Paragraph("<b>Escopo do Serviço</b>", style_sec_tit))
-    story.append(Spacer(1, 8))
+    story.append(Spacer(1, 10))
 
-    # CORREÇÃO DE ALINHAMENTO DA COLUNA DOS NÚMEROS (COLWIDTHS = 25, 500)
     def criar_bloco_escopo_item(numero, titulo, conteudo):
         c1 = Paragraph(f"<b>{numero}</b>", style_sec_num)
         c2 = [
@@ -355,7 +354,7 @@ def gerar_pdf_3_paginas_corrigido(dados, texto_institucional):
             Spacer(1, 2),
             Paragraph(conteudo.replace('\n', '<br/>'), style_txt_block)
         ]
-        t = Table([[c1, c2]], colWidths=[25, 500])
+        t = Table([[c1, c2]], colWidths=[20, 505])
         t.setStyle(TableStyle([
             ('VALIGN', (0,0), (-1,-1), 'TOP'),
             ('BOTTOMPADDING', (0,0), (-1,-1), 5)
@@ -367,33 +366,36 @@ def gerar_pdf_3_paginas_corrigido(dados, texto_institucional):
     story.append(criar_bloco_escopo_item("3", "Captação", dados['captacao']))
     story.append(criar_bloco_escopo_item("4", "Entrega", dados['entrega']))
     story.append(criar_bloco_escopo_item("5", "Prazo de Entrega", dados['prazo_entrega']))
-    story.append(Spacer(1, 8))
+    
+    # ITEM 6: FORMA DE PAGAMENTO COMO PARTE INTEGRANTE DO ESCOPO
+    story.append(criar_bloco_escopo_item("6", "Forma de Pagamento", dados['condicoes_pag']))
+    story.append(Spacer(1, 10))
 
-    # INVESTIMENTO EM CARD DE DESTAQUE COM VALOR AUTOMÁTICO
+    # FONTE DO VALOR REDUZIDA PARA 12pt
     card_investimento = [
         Paragraph("<font color='#0284c7' size='9'><b>INVESTIMENTO DO SERVIÇO</b></font>", style_label),
         Spacer(1, 3),
-        Paragraph(f"<font size='15' color='#0f172a'><b>Valor Total: R$ {dados['valor_total']:,.2f}</b></font>", style_label),
-        Paragraph(f"<i>{dados['valor_extenso']}</i>", style_txt_block),
-        Spacer(1, 4),
-        Paragraph(f"<b>Forma de pagamento:</b> {dados['condicoes_pag']}", style_txt_block)
+        Paragraph(f"<font size='12' color='#0f172a'><b>Valor Total: R$ {dados['valor_total']:,.2f}</b></font>", style_label),
+        Paragraph(f"<i>{dados['valor_extenso']}</i>", style_txt_block)
     ]
     t_card_inv = Table([[card_investimento]], colWidths=[525])
     t_card_inv.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#f0f9ff')),
         ('BOX', (0,0), (-1,-1), 1, colors.HexColor('#0284c7')),
-        ('PADDING', (0,0), (-1,-1), 9),
+        ('PADDING', (0,0), (-1,-1), 8),
     ]))
     story.append(t_card_inv)
-    story.append(Spacer(1, 10))
+    story.append(Spacer(1, 12))
 
     story.append(Paragraph("Estamos à disposição para qualquer esclarecimento adicional, ou alteração, caso seja necessário.", style_txt_block))
-    story.append(Spacer(1, 12))
+    
+    # MAIOR ESPAÇO ANTES DE ATENCIOSAMENTE
+    story.append(Spacer(1, 22))
 
     story.append(Paragraph("Atenciosamente,<br/><b>Rubens Okamoto</b><br/><font color='#0284c7'><b>OKAMOTO MÍDIAS VISUAIS</b></font><br/>16 99133 2121  |  okamotomidiasvisuais.com.br", style_center))
 
     # =========================================================================
-    # PÁGINA 3: DADOS CADASTRAIS UM ABAIXO DO OUTRO
+    # PÁGINA 3: DADOS CADASTRAIS (COM MAIOR ESPAÇAMENTO ENTRE BLOCOS)
     # =========================================================================
     story.append(PageBreak())
 
@@ -401,7 +403,9 @@ def gerar_pdf_3_paginas_corrigido(dados, texto_institucional):
     story.append(Spacer(1, 12))
 
     story.append(Paragraph("Dados Cadastrais & Informações Bancárias", style_tit_prop))
-    story.append(Spacer(1, 15))
+    
+    # MAIOR ESPAÇO ANTES DOS BLOCOS DE DADOS
+    story.append(Spacer(1, 20))
 
     def criar_bloco_vertical(titulo, linhas):
         c_tot = [Paragraph(f"<b><font color='#0284c7'>{titulo}</font></b>", style_sec_tit), Spacer(1, 4)]
@@ -411,11 +415,10 @@ def gerar_pdf_3_paginas_corrigido(dados, texto_institucional):
         t.setStyle(TableStyle([
             ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#f8fafc')),
             ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1')),
-            ('PADDING', (0,0), (-1,-1), 8),
+            ('PADDING', (0,0), (-1,-1), 9),
         ]))
         return t
 
-    # DISPOSIÇÃO VERTICAL (UM ABAIXO DO OUTRO)
     b_emp_vert = criar_bloco_vertical("Dados da Empresa", [
         ("Razão Social", "Okamoto Reportagens Fotográficas SS Ltda"),
         ("CNPJ", "04.824.331/0001-05"),
@@ -438,9 +441,9 @@ def gerar_pdf_3_paginas_corrigido(dados, texto_institucional):
     ])
 
     story.append(b_emp_vert)
-    story.append(Spacer(1, 12))
+    story.append(Spacer(1, 16))
     story.append(b_pes_vert)
-    story.append(Spacer(1, 12))
+    story.append(Spacer(1, 16))
     story.append(b_ban_vert)
 
     doc.build(story, canvasmaker=CanvasExecutivoAlinhado)
@@ -602,7 +605,7 @@ with aba_orcamento:
     with c2:
         data_orcamento = st.text_input("Data de Emissão:", value=val_data_emissao)
         status_sel = st.selectbox("Status do Pedido (Funil de Vendas):", ["Orçamento / Proposta", "Em atendimento", "Negociação/Revisão", "Aprovado", "Produção", "Concluído", "Cancelado"], index=["Orçamento / Proposta", "Em atendimento", "Negociação/Revisão", "Aprovado", "Produção", "Concluído", "Cancelado"].index(val_status) if val_status in ["Orçamento / Proposta", "Em atendimento", "Negociação/Revisão", "Aprovado", "Produção", "Concluído", "Cancelado"] else 0)
-        condicoes_pag = st.text_input("Forma de Pagamento:", value=val_cond_pag)
+        condicoes_pag = st.text_input("6. Forma de Pagamento:", value=val_cond_pag)
         prazo_entrega = st.text_input("5. Prazo de Entrega:", value=val_prazo)
 
     st.markdown("---")
@@ -636,7 +639,6 @@ with aba_orcamento:
     valor_final_com_desc = max(0.0, subtotal_input * (1.0 - (desconto_pct_input / 100.0)))
     ci3.metric("Valor Total com Desconto", f"R$ {valor_final_com_desc:,.2f}")
 
-    # CONVERSÃO AUTOMÁTICA EM TEMPO REAL DO VALOR POR EXTENSO
     valor_extenso_auto = converter_valor_extenso(valor_final_com_desc)
     valor_extenso = st.text_input("Valor por Extenso (Gerado Automático):", value=valor_extenso_auto)
 
