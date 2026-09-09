@@ -200,7 +200,7 @@ df_clientes = st.session_state['df_clientes']
 df_servicos = st.session_state['df_servicos']
 
 # -----------------------------------------------------------------------------
-# 5. GERADOR DE PDF AJUSTADO E REFINADO
+# 5. GERADOR DE PDF 3 PÁGINAS COM AJUSTES SOLICITADOS
 # -----------------------------------------------------------------------------
 class CanvasExecutivoAlinhado(canvas.Canvas):
     def __init__(self, *args, **kwargs):
@@ -258,7 +258,7 @@ def gerar_pdf_3_paginas_corrigido(dados, texto_institucional):
     style_sec_tit = ParagraphStyle('SecTit', fontName='Helvetica-Bold', fontSize=11.5, leading=15, textColor=colors.HexColor('#0f172a'))
     style_txt_block = ParagraphStyle('TxtBlock', fontName='Helvetica', fontSize=9, leading=13, textColor=colors.HexColor('#334155'))
     style_inst = ParagraphStyle('Inst', fontName='Helvetica', fontSize=9.5, leading=15, textColor=colors.HexColor('#1e293b'))
-    style_center = ParagraphStyle('CenterText', fontName='Helvetica', fontSize=9, leading=14, textColor=colors.HexColor('#334155'), alignment=1)
+    style_center = ParagraphStyle('CenterText', fontName='Helvetica', fontSize=9.5, leading=14, textColor=colors.HexColor('#334155'), alignment=1)
 
     story = []
 
@@ -310,7 +310,7 @@ def gerar_pdf_3_paginas_corrigido(dados, texto_institucional):
         story.append(Spacer(1, 6))
 
     # =========================================================================
-    # PÁGINA 2: ORÇAMENTO COMERCIAL (COM ITEM 6 E MAIOR ESPAÇAMENTO)
+    # PÁGINA 2: ORÇAMENTO COMERCIAL
     # =========================================================================
     story.append(PageBreak())
 
@@ -341,7 +341,6 @@ def gerar_pdf_3_paginas_corrigido(dados, texto_institucional):
     ]))
     story.append(t_cli)
     
-    # ESPAÇO AUMENTADO ANTES DO ESCOPO DO SERVIÇO
     story.append(Spacer(1, 18))
 
     story.append(Paragraph("<b>Escopo do Serviço</b>", style_sec_tit))
@@ -366,12 +365,9 @@ def gerar_pdf_3_paginas_corrigido(dados, texto_institucional):
     story.append(criar_bloco_escopo_item("3", "Captação", dados['captacao']))
     story.append(criar_bloco_escopo_item("4", "Entrega", dados['entrega']))
     story.append(criar_bloco_escopo_item("5", "Prazo de Entrega", dados['prazo_entrega']))
-    
-    # ITEM 6: FORMA DE PAGAMENTO COMO PARTE INTEGRANTE DO ESCOPO
     story.append(criar_bloco_escopo_item("6", "Forma de Pagamento", dados['condicoes_pag']))
     story.append(Spacer(1, 10))
 
-    # FONTE DO VALOR REDUZIDA PARA 12pt
     card_investimento = [
         Paragraph("<font color='#0284c7' size='9'><b>INVESTIMENTO DO SERVIÇO</b></font>", style_label),
         Spacer(1, 3),
@@ -389,13 +385,13 @@ def gerar_pdf_3_paginas_corrigido(dados, texto_institucional):
 
     story.append(Paragraph("Estamos à disposição para qualquer esclarecimento adicional, ou alteração, caso seja necessário.", style_txt_block))
     
-    # MAIOR ESPAÇO ANTES DE ATENCIOSAMENTE
-    story.append(Spacer(1, 22))
+    story.append(Spacer(1, 24))
 
-    story.append(Paragraph("Atenciosamente,<br/><b>Rubens Okamoto</b><br/><font color='#0284c7'><b>OKAMOTO MÍDIAS VISUAIS</b></font><br/>16 99133 2121  |  okamotomidiasvisuais.com.br", style_center))
+    # REMOVIDA A LINHA DE CONTATOS DUPLICADA APÓS "OKAMOTO MÍDIAS VISUAIS"
+    story.append(Paragraph("Atenciosamente,<br/><b>Rubens Okamoto</b><br/><font color='#0284c7'><b>OKAMOTO MÍDIAS VISUAIS</b></font>", style_center))
 
     # =========================================================================
-    # PÁGINA 3: DADOS CADASTRAIS (COM MAIOR ESPAÇAMENTO ENTRE BLOCOS)
+    # PÁGINA 3: DADOS CADASTRAIS
     # =========================================================================
     story.append(PageBreak())
 
@@ -403,8 +399,6 @@ def gerar_pdf_3_paginas_corrigido(dados, texto_institucional):
     story.append(Spacer(1, 12))
 
     story.append(Paragraph("Dados Cadastrais & Informações Bancárias", style_tit_prop))
-    
-    # MAIOR ESPAÇO ANTES DOS BLOCOS DE DADOS
     story.append(Spacer(1, 20))
 
     def criar_bloco_vertical(titulo, linhas):
@@ -615,9 +609,10 @@ with aba_orcamento:
     nome_evento = col_e1.text_input("1. Nome do Evento:", value=val_nome_evento)
     data_evento_detalhada = col_e2.text_input("1. Datas e Horários do Evento:", value=val_data_evento_det)
     
-    objetivo_txt = st.text_area("2. Objetivo:", value=val_objetivo, height=80)
-    captacao_txt = st.text_area("3. Captação:", value=val_captacao, height=80)
-    entrega_txt = st.text_area("4. Entrega:", value=val_entrega, height=100)
+    # AMPLIADO O TAMANHO DAS CAIXAS DE TEXTO (HEIGHT AUMENTADO)
+    objetivo_txt = st.text_area("2. Objetivo:", value=val_objetivo, height=160)
+    captacao_txt = st.text_area("3. Captação:", value=val_captacao, height=160)
+    entrega_txt = st.text_area("4. Entrega:", value=val_entrega, height=180)
 
     st.markdown("---")
     st.markdown("### 💰 INVESTIMENTO & APRESENTAÇÃO INSTITUCIONAL")
@@ -642,10 +637,11 @@ with aba_orcamento:
     valor_extenso_auto = converter_valor_extenso(valor_final_com_desc)
     valor_extenso = st.text_input("Valor por Extenso (Gerado Automático):", value=valor_extenso_auto)
 
+    # AMPLIADA A CAIXA DE TEXTO DA APRESENTAÇÃO INSTITUCIONAL
     st.session_state['texto_institucional'] = st.text_area(
         "Apresentação Institucional da Empresa (exibida na Página 1 do PDF):",
         value=st.session_state['texto_institucional'],
-        height=90
+        height=220
     )
 
     dados_pdf = {
