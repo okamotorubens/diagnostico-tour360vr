@@ -33,21 +33,47 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-def obter_caminho_logo():
+# LISTA OFICIAL DE TAGS / CATEGORIAS
+LISTA_TAGS = [
+    "ACADEMIA", "COMÉRCIO", "CONCESSIONÁRIA", "SALÃO DE BELEZA", 
+    "IMOBILIÁRIA", "ESCOLAS", "ESPAÇO DE EVENTOS", "CLÍNICAS", 
+    "VEICULOS", "AVIRRP", "SEBRAE", "HOTELARIA", "GASTRONOMIA", 
+    "PREFEITURA", "TURISMO", "MOTEL", "BARZINHO", "OUTROS"
+]
+
+# -----------------------------------------------------------------------------
+# 2. GERENCIAMENTO DA LOGO (ARQUIVO OU UPLOAD DIRETO)
+# -----------------------------------------------------------------------------
+if 'logo_bytes' not in st.session_state:
+    st.session_state['logo_bytes'] = None
+
+def obter_logo_imagem():
     caminhos = [
         'assets/logo_okamoto.png', 'logo_okamoto.png', 
         'assets/Logo_TOUR_transparente.png', 'Logo_TOUR_transparente.png'
     ]
     for c in caminhos:
         if os.path.exists(c):
-            return c
+            with open(c, "rb") as f:
+                return f.read()
     return None
 
-caminho_logo = obter_caminho_logo()
+if st.session_state['logo_bytes'] is None:
+    st.session_state['logo_bytes'] = obter_logo_imagem()
 
 with st.sidebar:
-    if caminho_logo:
-        st.image(caminho_logo, use_container_width=True)
+    st.markdown("### 🖼️ Logo do Sistema")
+    if st.session_state['logo_bytes']:
+        st.image(st.session_state['logo_bytes'], use_container_width=True)
+    else:
+        st.info("Logo não encontrada no servidor.")
+    
+    upload_logo = st.file_uploader("Enviar/Atualizar Logo (PNG/JPG):", type=["png", "jpg", "jpeg"], key="upl_logo_side")
+    if upload_logo:
+        st.session_state['logo_bytes'] = upload_logo.getvalue()
+        st.success("Logo carregada!")
+        st.rerun()
+
     st.markdown("""
     <div style="padding: 5px 0px;">
         <h3 style="margin: 0; color: #f8fafc; font-size: 18px;">OKAMOTO MÍDIAS VISUAIS</h3>
@@ -57,7 +83,7 @@ with st.sidebar:
     """, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# 2. AUTENTICAÇÃO
+# 3. AUTENTICAÇÃO
 # -----------------------------------------------------------------------------
 def verificar_senha():
     if "autenticado" not in st.session_state:
@@ -79,7 +105,7 @@ if not verificar_senha():
     st.stop()
 
 # -----------------------------------------------------------------------------
-# 3. BANCO DE DADOS EM SESSÃO PERSISTENTE
+# 4. BANCO DE DADOS EM SESSÃO PERSISTENTE
 # -----------------------------------------------------------------------------
 if 'df_pedidos' not in st.session_state:
     st.session_state['df_pedidos'] = pd.DataFrame([
@@ -97,8 +123,8 @@ if 'df_pedidos' not in st.session_state:
 
 if 'df_clientes' not in st.session_state:
     st.session_state['df_clientes'] = pd.DataFrame([
-        {"Empresa": "Ambient Serviços Ambientais S/A", "Contato": "Natalia", "Cidade": "Ribeirão Preto - SP", "Telefone": "(16) 99999-0000", "Email": "contato@ambient.com.br", "Categoria": "CORPORATIVO"},
-        {"Empresa": "Taiwan Hotel Ltda", "Contato": "Gerência", "Cidade": "Ribeirão Preto - SP", "Telefone": "(16) 3900-0000", "Email": "reservas@taiwanhotel.com.br", "Categoria": "HOTELARIA"}
+        {"Empresa": "Ambient Serviços Ambientais S/A", "Contato": "Natalia", "Cidade": "Ribeirão Preto - SP", "Telefone": "(16) 99999-0000", "Email": "contato@ambient.com.br", "Categoria / TAG": "COMÉRCIO"},
+        {"Empresa": "Taiwan Hotel Ltda", "Contato": "Gerência", "Cidade": "Ribeirão Preto - SP", "Telefone": "(16) 3900-0000", "Email": "reservas@taiwanhotel.com.br", "Categoria / TAG": "HOTELARIA"}
     ])
 
 if 'df_servicos' not in st.session_state:
@@ -114,7 +140,7 @@ df_clientes = st.session_state['df_clientes']
 df_servicos = st.session_state['df_servicos']
 
 # -----------------------------------------------------------------------------
-# 4. GERADOR DE PDF
+# 5. GERADOR DE PDF DA PROPOSTA
 # -----------------------------------------------------------------------------
 class NumberedCanvas(canvas.Canvas):
     def __init__(self, *args, **kwargs):
@@ -145,10 +171,11 @@ def gerar_pdf_proposta(dados):
     style_bold = ParagraphStyle('Bold', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=15, textColor=colors.HexColor('#0f172a'))
     
     story = []
-    logo_path = obter_caminho_logo()
-    if logo_path:
+
+    if st.session_state['logo_bytes']:
         try:
-            story.append(Image(logo_path, width=150, height=48))
+            img_buf = io.BytesIO(st.session_state['logo_bytes'])
+            story.append(Image(img_buf, width=150, height=48))
             story.append(Spacer(1, 10))
         except Exception:
             pass
@@ -166,9 +193,10 @@ def gerar_pdf_proposta(dados):
     story.append(Spacer(1, 20))
     story.append(PageBreak())
 
-    if logo_path:
+    if st.session_state['logo_bytes']:
         try:
-            story.append(Image(logo_path, width=120, height=38))
+            img_buf2 = io.BytesIO(st.session_state['logo_bytes'])
+            story.append(Image(img_buf2, width=120, height=38))
             story.append(Spacer(1, 10))
         except Exception:
             pass
@@ -207,7 +235,7 @@ def gerar_pdf_proposta(dados):
     return buffer
 
 # -----------------------------------------------------------------------------
-# 5. DASHBOARD & ABAS
+# 6. DASHBOARD & ABAS
 # -----------------------------------------------------------------------------
 st.title("💼 CRM Okamoto Mídias Visuais")
 
@@ -271,7 +299,7 @@ with aba_orcamento:
             st.success("Pedido registrado!")
             st.rerun()
 
-# ABA 2: FUNIL KANBAN (LINHA ÚNICA ALINHADA)
+# ABA 2: FUNIL KANBAN
 with aba_kanban:
     st.subheader("Estágios do Atendimento Comercial")
     fases = ["Orçamento / Proposta", "Em atendimento", "Negociação/Revisão", "Aprovado", "Produção", "Concluído", "Cancelado"]
@@ -304,21 +332,30 @@ with aba_clientes:
         c4, c5, c6 = st.columns(3)
         n_tel = c4.text_input("Telefone:")
         n_email = c5.text_input("Email:")
-        n_cat = c6.selectbox("Categoria:", ["CORPORATIVO", "HOTELARIA", "GASTRONOMIA", "SERVIÇOS", "OUTROS"])
+        n_cat = c6.selectbox("Categoria / TAG:", LISTA_TAGS)
         if st.form_submit_button("➕ Adicionar Cliente à Base"):
             if n_empresa:
-                novo_c = pd.DataFrame([{"Empresa": n_empresa, "Contato": n_contato, "Cidade": n_cidade, "Telefone": n_tel, "Email": n_email, "Categoria": n_cat}])
+                novo_c = pd.DataFrame([{"Empresa": n_empresa, "Contato": n_contato, "Cidade": n_cidade, "Telefone": n_tel, "Email": n_email, "Categoria / TAG": n_cat}])
                 st.session_state['df_clientes'] = pd.concat([st.session_state['df_clientes'], novo_c], ignore_index=True)
                 st.success(f"Cliente {n_empresa} cadastrado com sucesso!")
                 st.rerun()
 
     st.markdown("---")
     st.subheader("Base de Clientes Cadastrados")
-    termo = st.text_input("🔍 Pesquisar Cliente:")
+    
+    col_f1, col_f2 = st.columns([2, 1])
+    termo = col_f1.text_input("🔍 Pesquisar por Nome, Cidade, Contato:")
+    tag_filtro = col_f2.selectbox("Filtrar por Categoria / TAG:", ["TODAS"] + LISTA_TAGS)
+    
     df_c_exibir = st.session_state['df_clientes'].copy()
+    
+    if tag_filtro != "TODAS":
+        df_c_exibir = df_c_exibir[df_c_exibir["Categoria / TAG"] == tag_filtro]
+        
     if termo:
         mask = df_c_exibir.astype(str).apply(lambda row: row.str.contains(termo, case=False).any(), axis=1)
         df_c_exibir = df_c_exibir[mask]
+        
     st.dataframe(df_c_exibir, use_container_width=True)
 
 # ABA 4: CATÁLOGO DE SERVIÇOS
