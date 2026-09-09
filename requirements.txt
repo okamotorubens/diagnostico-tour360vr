@@ -1,7 +1,4 @@
 streamlit
-requests
-fpdf2
-streamlit
 pandas
 reportlab
 st-gsheets-connection
