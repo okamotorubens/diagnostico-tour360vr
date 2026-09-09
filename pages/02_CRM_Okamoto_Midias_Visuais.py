@@ -10,7 +10,7 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from reportlab.pdfgen import canvas
 
 # -----------------------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA
+# 1. CONFIGURAÇÃO DA PÁGINA E ESTILOS
 # -----------------------------------------------------------------------------
 st.set_page_config(
     page_title="CRM Okamoto Mídias Visuais",
@@ -109,17 +109,21 @@ if not verificar_senha():
 if 'df_pedidos' not in st.session_state:
     st.session_state['df_pedidos'] = pd.DataFrame([
         {
-            "Numero_Pedido": "007-2026",
+            "Numero_Pedido": "Pedido 0001",
             "Empresa": "Clínica Personalitté",
             "Contato": "Joseph",
             "Telefone": "+55 (16) 99767-8802",
             "Data_Emissao": "09/09/2026",
             "Data_Evento": "09/09/2026",
-            "Valor_Total": 560.0,
+            "Periodo_Servico": "2 horas e 30 minutos",
+            "Forma_Entrega": "Link exclusivo Google Drive e plataforma web",
+            "Prazo_Entrega": "Até 72 horas após a execução do serviço",
+            "Valor_Total": 440.0,
+            "Desconto_Pct": 20.0,
             "Status": "Orçamento / Proposta",
-            "Servicos": "Google Street View",
+            "Servicos": "Cobertura fotográfica",
             "Condicoes_Pag": "Parcelas: 2",
-            "Info_Adicionais": "• Captação;\n• Edição;\n• Envio de 06 (seis) imagens 360° para o Google."
+            "Info_Adicionais": "• Captação;\n• Edição;\n• Envio de imagens em alta resolução."
         }
     ])
 
@@ -131,9 +135,9 @@ if 'df_clientes' not in st.session_state:
 
 if 'df_servicos' not in st.session_state:
     st.session_state['df_servicos'] = pd.DataFrame([
-        {"Nome_Servico": "Google Street View", "Tipo_Cobranca": "Pacote", "Valor_Base": 560.0, "Descricao": "Envio de 06 imagens 360° para o perfil do Google."},
         {"Nome_Servico": "Cobertura fotográfica", "Tipo_Cobranca": "Hora", "Valor_Base": 180.0, "Descricao": "Registros fotográficos de alta resolução com edição de cores."},
         {"Nome_Servico": "Captação de vídeo", "Tipo_Cobranca": "Hora", "Valor_Base": 200.0, "Descricao": "Gravação em Full HD/4K (material bruto entregue via link)."},
+        {"Nome_Servico": "Google Street View", "Tipo_Cobranca": "Pacote", "Valor_Base": 560.0, "Descricao": "Envio de 06 imagens 360° para o perfil do Google."},
         {"Nome_Servico": "Tour Virtual 360°", "Tipo_Cobranca": "Pacote", "Valor_Base": 800.0, "Descricao": "Mapeamento completo e publicação em ambiente web."}
     ])
 
@@ -142,7 +146,7 @@ df_clientes = st.session_state['df_clientes']
 df_servicos = st.session_state['df_servicos']
 
 # -----------------------------------------------------------------------------
-# 5. GERADOR DE PDF LAYOUT OFICIAL PROPOSTA COMERCIAL 007-2026
+# 5. GERADOR DE PDF DA PROPOSTA COMERCIAL
 # -----------------------------------------------------------------------------
 class NumberedCanvas(canvas.Canvas):
     def __init__(self, *args, **kwargs):
@@ -208,21 +212,28 @@ def gerar_pdf_layout_oficial(dados):
     story.append(t_header)
     story.append(Spacer(1, 15))
 
-    srv_table_data = [[Paragraph("Serviços", style_th), Paragraph("Descrição", style_th), Paragraph("Qtd.", style_th)]]
+    srv_table_data = [[Paragraph("Serviços", style_th), Paragraph("Descrição / Escopo", style_th), Paragraph("Detalhes", style_th)]]
     for item in dados['itens']:
         srv_table_data.append([
             Paragraph(f"<b>{item['nome']}</b>", style_td),
             Paragraph(item.get('desc', ''), style_td),
-            Paragraph(str(item.get('qtd', 1)), style_td)
+            Paragraph(f"Período: {dados.get('periodo_servico', 'Atendimento Padrão')}", style_td)
         ])
     
+    if dados.get('desconto_pct', 0) > 0:
+        srv_table_data.append([
+            Paragraph("<b>Desconto Aplicado</b>", style_td),
+            "",
+            Paragraph(f"- {dados['desconto_pct']:.0f}%", style_td)
+        ])
+
     srv_table_data.append([
-        Paragraph("<b>Total</b>", style_th),
+        Paragraph("<b>Total Final</b>", style_th),
         "",
         Paragraph(f"<b>R$ {dados['valor_final']:,.2f}</b>", style_th)
     ])
 
-    t_servicos = Table(srv_table_data, colWidths=[180, 270, 70])
+    t_servicos = Table(srv_table_data, colWidths=[160, 240, 120])
     t_servicos.setStyle(TableStyle([
         ('LINEABOVE', (0,0), (-1,0), 1, colors.HexColor('#0284c7')),
         ('LINEBELOW', (0,0), (-1,0), 1, colors.HexColor('#cbd5e1')),
@@ -231,7 +242,7 @@ def gerar_pdf_layout_oficial(dados):
         ('PADDING', (0,0), (-1,-1), 5),
     ]))
     story.append(t_servicos)
-    story.append(Spacer(1, 15))
+    story.append(Spacer(1, 12))
 
     col_pagamento = [
         Paragraph("Pagamento", style_sec),
@@ -244,15 +255,19 @@ def gerar_pdf_layout_oficial(dados):
     ]
 
     col_info = [
-        Paragraph("Informações adicionais", style_sec),
+        Paragraph("Entrega e Informações Adicionais", style_sec),
         Spacer(1, 3),
+        Paragraph(f"<b>Forma de Entrega:</b> {dados.get('forma_entrega', 'Link exclusivo')}", style_td),
+        Paragraph(f"<b>Prazo de Entrega:</b> {dados.get('prazo_entrega', 'Até 72h')}", style_td),
+        Spacer(1, 4),
+        Paragraph("<b>Observações:</b>", style_td),
         Paragraph(dados.get('info_adicionais', '').replace('\n', '<br/>'), style_td)
     ]
 
     t_rodape = Table([[col_pagamento, col_info]], colWidths=[260, 260])
     t_rodape.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'TOP')]))
     story.append(t_rodape)
-    story.append(Spacer(1, 25))
+    story.append(Spacer(1, 20))
 
     ass_data = [
         [
@@ -265,6 +280,65 @@ def gerar_pdf_layout_oficial(dados):
     story.append(t_ass)
 
     doc.build(story, canvasmaker=NumberedCanvas)
+    buffer.seek(0)
+    return buffer
+
+def gerar_pdf_ficha_cliente(cliente_data, pedidos_cli):
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=35, rightMargin=35, topMargin=30, bottomMargin=35)
+    styles = getSampleStyleSheet()
+    
+    style_tit = ParagraphStyle('Tit', fontName='Helvetica-Bold', fontSize=16, leading=20, textColor=colors.HexColor('#0f172a'))
+    style_sub = ParagraphStyle('Sub', fontName='Helvetica-Bold', fontSize=11, leading=14, textColor=colors.HexColor('#0284c7'))
+    style_td = ParagraphStyle('TD', fontName='Helvetica', fontSize=9, leading=13, textColor=colors.HexColor('#334155'))
+
+    story = [
+        Paragraph("OKAMOTO MÍDIAS VISUAIS", style_sub),
+        Paragraph(f"Ficha Cadastral de Cliente: {cliente_data.get('Empresa', '')}", style_tit),
+        Spacer(1, 12)
+    ]
+
+    info_table = [
+        [Paragraph("<b>Empresa:</b>", style_td), Paragraph(str(cliente_data.get('Empresa', '')), style_td)],
+        [Paragraph("<b>Pessoa de Contato:</b>", style_td), Paragraph(str(cliente_data.get('Contato', '')), style_td)],
+        [Paragraph("<b>Cidade / Local:</b>", style_td), Paragraph(str(cliente_data.get('Cidade', '')), style_td)],
+        [Paragraph("<b>Telefone / WhatsApp:</b>", style_td), Paragraph(str(cliente_data.get('Telefone', '')), style_td)],
+        [Paragraph("<b>Email:</b>", style_td), Paragraph(str(cliente_data.get('Email', '')), style_td)],
+        [Paragraph("<b>Categoria / TAG:</b>", style_td), Paragraph(str(cliente_data.get('Categoria / TAG', '')), style_td)]
+    ]
+    t_info = Table(info_table, colWidths=[140, 380])
+    t_info.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (0,-1), colors.HexColor('#f8fafc')),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1')),
+        ('PADDING', (0,0), (-1,-1), 6),
+    ]))
+    story.append(t_info)
+    story.append(Spacer(1, 15))
+
+    story.append(Paragraph("Histórico de Pedidos e Propostas Emitidas", style_sub))
+    story.append(Spacer(1, 6))
+
+    if not pedidos_cli.empty:
+        p_table = [[Paragraph("<b>Nº Pedido</b>", style_td), Paragraph("<b>Data Emissao</b>", style_td), Paragraph("<b>Valor Total</b>", style_td), Paragraph("<b>Status</b>", style_td)]]
+        for _, p in pedidos_cli.iterrows():
+            p_table.append([
+                Paragraph(str(p.get('Numero_Pedido', '')), style_td),
+                Paragraph(str(p.get('Data_Emissao', '')), style_td),
+                Paragraph(f"R$ {float(p.get('Valor_Total', 0)):,.2f}", style_td),
+                Paragraph(str(p.get('Status', '')), style_td)
+            ])
+        t_ped = Table(p_table, colWidths=[120, 120, 130, 150])
+        t_ped.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#0f172a')),
+            ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+            ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1')),
+            ('PADDING', (0,0), (-1,-1), 5),
+        ]))
+        story.append(t_ped)
+    else:
+        story.append(Paragraph("Nenhum pedido registrado para este cliente até o momento.", style_td))
+
+    doc.build(story)
     buffer.seek(0)
     return buffer
 
@@ -292,11 +366,11 @@ aba_orcamento, aba_kanban, aba_clientes, aba_catalogo = st.tabs([
 with aba_orcamento:
     st.subheader("📄 Visualização e Emissão de Propostas Comerciais")
     
-    # SELETOR PARA CARREGAR UM PEDIDO JÁ EXISTENTE
     opcoes_pedidos = ["➕ Criar Novo Pedido do Zero"] + [f"{p['Numero_Pedido']} - {p['Empresa']} ({p['Contato']})" for _, p in df_pedidos.iterrows()]
     pedido_selecionado = st.selectbox("📌 Selecione um Pedido / Orçamento Existente para Carregar:", opcoes_pedidos)
     
-    val_num_ped = f"PED-{datetime.now().strftime('%Y%m%d%H%M')}"
+    # VALORES PADRÃO INICIAIS
+    val_num_ped = f"Pedido {len(df_pedidos)+1:04d}"
     val_empresa = "Clínica Personalitté"
     val_contato = "Joseph"
     val_tel = "+55 (16) 99767-8802"
@@ -304,8 +378,12 @@ with aba_orcamento:
     val_servicos_sel = [df_servicos["Nome_Servico"].iloc[0]]
     val_status = "Orçamento / Proposta"
     val_cond_pag = "Parcelas: 2"
-    val_info_adj = "• Captação;\n• Edição;\n• Envio de 06 (seis) imagens 360° para o Google."
-    val_total = 560.0
+    val_info_adj = "• Captação;\n• Edição;\n• Envio de imagens em alta resolução."
+    val_forma_entrega = "Link exclusivo Google Drive e plataforma web"
+    val_prazo_entrega = "Até 72 horas após a execução do serviço"
+    val_horas = 2
+    val_minutos = 30
+    val_desconto = 20.0
 
     if pedido_selecionado != "➕ Criar Novo Pedido do Zero":
         num_p_extraido = pedido_selecionado.split(" - ")[0]
@@ -319,7 +397,9 @@ with aba_orcamento:
             val_status = str(p_data.get("Status", "Orçamento / Proposta"))
             val_cond_pag = str(p_data.get("Condicoes_Pag", "Parcelas: 2"))
             val_info_adj = str(p_data.get("Info_Adicionais", ""))
-            val_total = float(p_data.get("Valor_Total", 0.0))
+            val_forma_entrega = str(p_data.get("Forma_Entrega", val_forma_entrega))
+            val_prazo_entrega = str(p_data.get("Prazo_Entrega", val_prazo_entrega))
+            val_desconto = float(p_data.get("Desconto_Pct", 0.0))
             
             srv_str = str(p_data.get("Servicos", ""))
             val_servicos_sel = [s.strip() for s in srv_str.split(",") if s.strip() in df_servicos["Nome_Servico"].tolist()]
@@ -338,17 +418,44 @@ with aba_orcamento:
         servicos_sel = st.multiselect("Serviços Solicitados", df_servicos["Nome_Servico"].tolist(), default=val_servicos_sel)
         status_sel = st.selectbox("Status do Pedido", ["Orçamento / Proposta", "Em atendimento", "Negociação/Revisão", "Aprovado", "Produção", "Concluído"], index=0)
         condicoes_pag = st.text_input("Condições de Pagamento", value=val_cond_pag)
-        info_adicionais = st.text_area("Informações Adicionais (Itemizável)", value=val_info_adj, height=100)
+
+    st.markdown("---")
+    st.markdown("### ⏱️ Período do Serviço & Cálculo de Valores")
+    
+    cp1, cp2, cp3, cp4 = st.columns(4)
+    qtd_horas = cp1.number_input("Horas de Serviço:", min_value=0, max_value=24, value=val_horas, step=1)
+    qtd_minutos = cp2.selectbox("Minutos:", [0, 15, 30, 45], index=[0, 15, 30, 45].index(val_minutos) if val_minutos in [0, 15, 30, 45] else 2)
+    pct_desconto = cp3.number_input("Desconto (%):", min_value=0.0, max_value=100.0, value=val_desconto, step=5.0)
+    
+    # CÁLCULO AUTOMÁTICO DE VALOR COM BASE NAS HORAS
+    tempo_total_horas = qtd_horas + (qtd_minutos / 60.0)
+    valor_hora_base = 180.0
+    
+    if servicos_sel:
+        r_primeiro = df_servicos[df_servicos["Nome_Servico"] == servicos_sel[0]].iloc[0]
+        if str(r_primeiro.get("Tipo_Cobranca", "")).lower() == "hora":
+            valor_hora_base = float(r_primeiro.get("Valor_Base", 180.0))
+
+    subtotal_calculado = tempo_total_horas * valor_hora_base if tempo_total_horas > 0 else valor_hora_base
+    valor_desconto = subtotal_calculado * (pct_desconto / 100.0)
+    valor_final_calculado = max(0.0, subtotal_calculado - valor_desconto)
+    
+    cp4.metric("Valor Final Calculado", f"R$ {valor_final_calculado:,.2f}", delta=f"- R$ {valor_desconto:,.2f}" if pct_desconto > 0 else None)
+
+    str_periodo = f"{qtd_horas}h" + (f"{qtd_minutos}min" if qtd_minutos > 0 else "")
+
+    st.markdown("---")
+    st.markdown("### 📦 Condições de Entrega & Observações")
+    ce1, ce2 = st.columns(2)
+    forma_entrega = ce1.text_input("Forma de Entrega:", value=val_forma_entrega)
+    prazo_entrega = ce2.text_input("Prazo de Entrega:", value=val_prazo_entrega)
+    info_adicionais = st.text_area("Informações Adicionais", value=val_info_adj, height=100)
 
     itens_detalhados = []
-    valor_calculado = 0.0
     for s in servicos_sel:
         r = df_servicos[df_servicos["Nome_Servico"] == s].iloc[0]
         v = float(r["Valor_Base"])
-        itens_detalhados.append({"nome": s, "desc": str(r.get("Descricao", "")), "qtd": 1, "valor": v})
-        valor_calculado += v
-
-    valor_final = st.number_input("Valor Total da Proposta (R$)", value=float(val_total if pedido_selecionado != "➕ Criar Novo Pedido do Zero" else valor_calculado), step=50.0)
+        itens_detalhados.append({"nome": s, "desc": str(r.get("Descricao", "")), "valor": v})
 
     dados_pdf = {
         "num_pedido": num_pedido,
@@ -357,9 +464,13 @@ with aba_orcamento:
         "telefone_cli": tel_cli,
         "data_orcamento": data_orcamento,
         "condicoes_pag": condicoes_pag,
+        "periodo_servico": str_periodo,
+        "forma_entrega": forma_entrega,
+        "prazo_entrega": prazo_entrega,
         "info_adicionais": info_adicionais,
+        "desconto_pct": pct_desconto,
         "itens": itens_detalhados,
-        "valor_final": valor_final
+        "valor_final": valor_final_calculado
     }
     
     pdf_bytes = gerar_pdf_layout_oficial(dados_pdf)
@@ -378,7 +489,11 @@ with aba_orcamento:
                 "Telefone": tel_cli,
                 "Data_Emissao": data_orcamento,
                 "Data_Evento": data_orcamento,
-                "Valor_Total": valor_final,
+                "Periodo_Servico": str_periodo,
+                "Forma_Entrega": forma_entrega,
+                "Prazo_Entrega": prazo_entrega,
+                "Valor_Total": valor_final_calculado,
+                "Desconto_Pct": pct_desconto,
                 "Status": status_sel,
                 "Servicos": ", ".join(servicos_sel),
                 "Condicoes_Pag": condicoes_pag,
@@ -415,42 +530,69 @@ with aba_kanban:
                     </div>
                     """, unsafe_allow_html=True)
 
-# ABA 3: GESTÃO DE CLIENTES
+# ABA 3: GESTÃO DE CLIENTES (ACESSO E PDF INDIVIDUAL)
 with aba_clientes:
-    st.subheader("Cadastrar Novo Cliente")
-    with st.form("form_novo_cliente", clear_on_submit=True):
-        c1, c2, c3 = st.columns(3)
-        n_empresa = c1.text_input("Empresa:")
-        n_contato = c2.text_input("Contato:")
-        n_cidade = c3.text_input("Cidade:")
-        c4, c5, c6 = st.columns(3)
-        n_tel = c4.text_input("Telefone:")
-        n_email = c5.text_input("Email:")
-        n_cat = c6.selectbox("Categoria / TAG:", LISTA_TAGS)
-        if st.form_submit_button("➕ Adicionar Cliente à Base"):
-            if n_empresa:
-                novo_c = pd.DataFrame([{"Empresa": n_empresa, "Contato": n_contato, "Cidade": n_cidade, "Telefone": n_tel, "Email": n_email, "Categoria / TAG": n_cat}])
-                st.session_state['df_clientes'] = pd.concat([st.session_state['df_clientes'], novo_c], ignore_index=True)
-                st.success(f"Cliente {n_empresa} cadastrado com sucesso!")
-                st.rerun()
+    st.subheader("🏢 Cadastrar / Consultar Cliente Individual")
+    
+    with st.expander("➕ Formulario para Cadastrar Novo Cliente"):
+        with st.form("form_novo_cliente", clear_on_submit=True):
+            c1, c2, c3 = st.columns(3)
+            n_empresa = c1.text_input("Empresa:")
+            n_contato = c2.text_input("Contato:")
+            n_cidade = c3.text_input("Cidade:")
+            c4, c5, c6 = st.columns(3)
+            n_tel = c4.text_input("Telefone:")
+            n_email = c5.text_input("Email:")
+            n_cat = c6.selectbox("Categoria / TAG:", LISTA_TAGS)
+            if st.form_submit_button("➕ Salvar Cliente"):
+                if n_empresa:
+                    novo_c = pd.DataFrame([{"Empresa": n_empresa, "Contato": n_contato, "Cidade": n_cidade, "Telefone": n_tel, "Email": n_email, "Categoria / TAG": n_cat}])
+                    st.session_state['df_clientes'] = pd.concat([st.session_state['df_clientes'], novo_c], ignore_index=True)
+                    st.success(f"Cliente {n_empresa} cadastrado!")
+                    st.rerun()
 
     st.markdown("---")
-    st.subheader("Base de Clientes Cadastrados")
+    st.subheader("🔍 Base de Clientes Cadastrados & Acesso Individual")
     
     col_f1, col_f2 = st.columns([2, 1])
-    termo = col_f1.text_input("🔍 Pesquisar por Nome, Cidade, Contato:")
+    termo = col_f1.text_input("Pesquisar Cliente:")
     tag_filtro = col_f2.selectbox("Filtrar por Categoria / TAG:", ["TODAS"] + LISTA_TAGS)
     
     df_c_exibir = st.session_state['df_clientes'].copy()
-    
     if tag_filtro != "TODAS":
         df_c_exibir = df_c_exibir[df_c_exibir["Categoria / TAG"] == tag_filtro]
-        
     if termo:
         mask = df_c_exibir.astype(str).apply(lambda row: row.str.contains(termo, case=False).any(), axis=1)
         df_c_exibir = df_c_exibir[mask]
         
     st.dataframe(df_c_exibir, use_container_width=True)
+
+    # VISUALIZAÇÃO E PDF INDIVIDUAL DO CLIENTE
+    if not df_c_exibir.empty:
+        st.markdown("---")
+        st.markdown("### 📄 Visualizar Ficha Individual do Cliente")
+        cli_selecionado = st.selectbox("Selecione uma empresa para abrir a ficha:", df_c_exibir["Empresa"].tolist())
+        
+        c_dados = df_c_exibir[df_c_exibir["Empresa"] == cli_selecionado].iloc[0]
+        pedidos_cliente = df_pedidos[df_pedidos["Empresa"] == cli_selecionado] if not df_pedidos.empty else pd.DataFrame()
+
+        box1, box2 = st.columns([2, 1])
+        with box1:
+            st.markdown(f"**Empresa:** {c_dados.get('Empresa')}")
+            st.markdown(f"**Contato:** {c_dados.get('Contato')} | **Telefone:** {c_dados.get('Telefone')}")
+            st.markdown(f"**Cidade:** {c_dados.get('Cidade')} | **TAG:** `{c_dados.get('Categoria / TAG')}`")
+            st.markdown(f"**Email:** {c_dados.get('Email')}")
+
+        with box2:
+            st.metric("Pedidos do Cliente", f"{len(pedidos_cliente)}")
+            pdf_ficha_bytes = gerar_pdf_ficha_cliente(c_dados, pedidos_cliente)
+            st.download_button(
+                "📥 Baixar Ficha do Cliente em PDF",
+                data=pdf_ficha_bytes,
+                file_name=f"Ficha_{cli_selecionado.replace(' ', '_')}.pdf",
+                mime="application/pdf",
+                use_container_width=True
+            )
 
 # ABA 4: CATÁLOGO DE SERVIÇOS
 with aba_catalogo:
