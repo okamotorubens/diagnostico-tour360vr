@@ -26,7 +26,7 @@ def verificar_senha():
         st.title("🔒 Acesso Restrito - Okamoto Mídias Visuais")
         senha = st.text_input("Digite a senha de acesso ao sistema:", type="password")
         if st.button("Entrar"):
-            if senha == "okamoto2026":  # Você pode alterar esta senha
+            if senha == "okamoto2026":  # Altere esta senha se desejar
                 st.session_state["autenticado"] = True
                 st.rerun()
             else:
@@ -38,14 +38,13 @@ if not verificar_senha():
     st.stop()
 
 # -----------------------------------------------------------------------------
-# 2. CONEXÃO COM O GOOGLE SHEETS E DADOS BASE
+# 2. CONEXÃO COM O GOOGLE SHEETS
 # -----------------------------------------------------------------------------
 conn = st.connection("gsheets", type=GSheetsConnection)
 
-@st.cache_data(ttl=60)
 def carregar_dados_aba(aba_nome):
     try:
-        df = conn.read(worksheet=aba_nome)
+        df = conn.read(worksheet=aba_nome, ttl=0)
         return df
     except Exception:
         return pd.DataFrame()
@@ -223,7 +222,7 @@ aba_orcamento, aba_kanban, aba_clientes, aba_catalogo = st.tabs([
 ])
 
 # -----------------------------------------------------------------------------
-# ABA 1: GERAR ORÇAMENTO
+# ABA 1: GERAR ORÇAMENTO E SALVAR
 # -----------------------------------------------------------------------------
 with aba_orcamento:
     st.subheader("Emissão de Proposta Comercial em PDF")
@@ -232,7 +231,6 @@ with aba_orcamento:
     with col1:
         num_pedido = st.text_input("Número do Pedido/Orçamento", f"PED-{datetime.now().strftime('%Y%m%d%H%M')}")
         
-        # Seleção de cliente cadastrado
         lista_empresas = ["Outro / Cliente Novo"] + (df_clientes["Empresa"].dropna().tolist() if not df_clientes.empty else [])
         empresa_sel = st.selectbox("Selecione a Empresa / Cliente", lista_empresas)
         
@@ -252,7 +250,6 @@ with aba_orcamento:
     with col2:
         periodo = st.selectbox("Carga Horária / Período Base", ["1 hora", "2 horas", "4 horas", "10 horas (Diária)", "Personalizado"])
         
-        # Seleção dos serviços do catálogo
         servicos_nomes = df_servicos["Nome_Servico"].tolist() if not df_servicos.empty else []
         servicos_sel = st.multiselect("Serviços Incluídos na Proposta", servicos_nomes, default=servicos_nomes[:1] if servicos_nomes else [])
         
@@ -260,7 +257,6 @@ with aba_orcamento:
         prazo_entrega = st.text_input("Prazo de Entrega", "Até 72h após o término do evento.")
         forma_pagamento = st.text_input("Condições de Pagamento", "Faturamento em até 20 dias após o evento.")
 
-    # Detalhamento e cálculo de valores
     itens_detalhados = []
     valor_calculado = 0.0
     for s in servicos_sel:
@@ -287,33 +283,67 @@ with aba_orcamento:
     }
 
     pdf_bytes = gerar_pdf_proposta(dados_pdf)
-    st.download_button(
-        label="📥 Baixar Proposta Comercial em PDF (2 Páginas)",
-        data=pdf_bytes,
-        file_name=f"Proposta_{num_pedido}_{empresa_sel.replace(' ', '_')}.pdf",
-        mime="application/pdf"
-    )
+    
+    col_btn1, col_btn2 = st.columns(2)
+    
+    with col_btn1:
+        st.download_button(
+            label="📥 1. Baixar Proposta em PDF",
+            data=pdf_bytes,
+            file_name=f"Proposta_{num_pedido}_{empresa_sel.replace(' ', '_')}.pdf",
+            mime="application/pdf",
+            use_container_width=True
+        )
+        
+    with col_btn2:
+        if st.button("💾 2. Salvar Pedido no Google Sheets", use_container_width=True):
+            novo_registro = pd.DataFrame([{
+                "Numero_Pedido": num_pedido,
+                "Empresa": empresa_sel,
+                "Contato": contato,
+                "Data_Emissao": data_orcamento,
+                "Data_Evento": data_evento,
+                "Valor_Total": valor_final,
+                "Status": "Orçamento / Proposta",
+                "Servicos": ", ".join(servicos_sel)
+            }])
+            
+            df_atualizado = pd.concat([df_pedidos, novo_registro], ignore_index=True)
+            try:
+                conn.update(worksheet="Pedidos", data=df_atualizado)
+                st.success(f"Pedido {num_pedido} salvo com sucesso no Google Sheets!")
+                st.rerun()
+            except Exception as e:
+                st.error(f"Erro ao salvar no Google Sheets: {e}")
 
 # -----------------------------------------------------------------------------
-# ABA 2: FUNIL KANBAN (BIGIN)
+# ABA 2: FUNIL KANBAN (BIGIN - COM DADOS DA PLANILHA)
 # -----------------------------------------------------------------------------
 with aba_kanban:
     st.subheader("Funil de Vendas - Estágios do Atendimento")
-    fases = ["Em atendimento", "Orçamento / Proposta", "Negociação/Revisão", "Aprovado", "Produção", "Concluído", "Cancelado"]
+    fases = ["Orçamento / Proposta", "Em atendimento", "Negociação/Revisão", "Aprovado", "Produção", "Concluído", "Cancelado"]
     
     cols = st.columns(len(fases))
     for idx, fase in enumerate(fases):
         with cols[idx]:
             st.markdown(f"**{fase}**")
-            st.caption("0 Projetos")
-            st.info("Nenhum item nesta fase.")
+            if not df_pedidos.empty and "Status" in df_pedidos.columns:
+                pedidos_fase = df_pedidos[df_pedidos["Status"] == fase]
+                st.caption(f"{len(pedidos_fase)} Projeto(s)")
+                for _, ped in pedidos_fase.iterrows():
+                    with st.container():
+                        st.write(f"**{ped.get('Empresa', 'N/I')}**")
+                        st.write(f"R$ {float(ped.get('Valor_Total', 0)):.2f}")
+                        st.caption(f"Data: {ped.get('Data_Evento', '')}")
+                        st.markdown("---")
+            else:
+                st.caption("0 Projetos")
 
 # -----------------------------------------------------------------------------
 # ABA 3: GESTÃO DE CLIENTES
 # -----------------------------------------------------------------------------
 with aba_clientes:
     st.subheader("Base de Empresas e Contatos")
-    
     termo_busca = st.text_input("🔍 Buscar por Nome da Empresa, Contato ou Cidade:")
     
     if not df_clientes.empty:
