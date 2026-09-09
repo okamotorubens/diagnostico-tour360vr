@@ -9,39 +9,92 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, Image
 from reportlab.pdfgen import canvas
 
-# TENTATIVA DE IMPORTAR NUM2WORDS PARA VALOR POR EXTENSO AUTOMÁTICO
-try:
-    from num2words import num2words
-    HAS_NUM2WORDS = True
-except ImportError:
-    HAS_NUM2WORDS = False
+# -----------------------------------------------------------------------------
+# ALGORITMO NATIVO EM PYTHON PURO PARA VALOR POR EXTENSO (SEM NUM2WORDS)
+# -----------------------------------------------------------------------------
+UNIDADES = ["", "um", "dois", "três", "quatro", "cinco", "seis", "sete", "oito", "nove"]
+DEZ_A_DEZANOVE = ["dez", "onze", "doze", "treze", "quatorze", "quinze", "dezesseis", "dezessete", "dezoito", "dezenove"]
+DEZENAS = ["", "", "vinte", "trinta", "quarenta", "cinquenta", "sessenta", "setenta", "oitenta", "noventa"]
+CENTENAS = ["", "cento", "duzentos", "trezentos", "quatrocentos", "quinhentos", "seiscentos", "setecentos", "oitocentos", "novecentos"]
+
+def _converter_grupo_3(n):
+    if n == 0:
+        return ""
+    if n == 100:
+        return "cem"
+    
+    c = n // 100
+    d = (n % 100) // 10
+    u = n % 10
+    
+    partes = []
+    if c > 0:
+        partes.append(CENTENAS[c])
+    
+    dezena_unidade = n % 100
+    if 10 <= dezena_unidade <= 19:
+        partes.append(DEZ_A_DEZANOVE[dezena_unidade - 10])
+    else:
+        if d > 0:
+            partes.append(DEZENAS[d])
+        if u > 0:
+            partes.append(UNIDADES[u])
+            
+    return " e ".join(partes)
+
+def numero_por_extenso(valor):
+    if valor == 0:
+        return "zero"
+    
+    milhares = valor // 1000
+    unidades = valor % 1000
+    
+    partes = []
+    if milhares > 0:
+        if milhares == 1:
+            partes.append("um mil")
+        else:
+            partes.append(f"{_converter_grupo_3(milhares)} mil")
+            
+    if unidades > 0:
+        ext_u = _converter_grupo_3(unidades)
+        if ext_u:
+            partes.append(ext_u)
+            
+    return " e ".join(partes)
 
 def converter_valor_extenso(valor):
-    if HAS_NUM2WORDS:
-        try:
-            inteiro = int(valor)
-            centavos = int(round((valor - inteiro) * 100))
+    try:
+        val_float = float(valor)
+        inteiro = int(val_float)
+        centavos = int(round((val_float - inteiro) * 100))
+        
+        str_int = ""
+        if inteiro == 1:
+            str_int = "um real"
+        elif inteiro > 1:
+            ext_int = numero_por_extenso(inteiro)
+            str_int = f"{ext_int} reais"
             
-            extenso_int = num2words(inteiro, lang='pt_BR')
-            if inteiro == 1:
-                str_int = f"{extenso_int} real"
-            elif inteiro > 1:
-                str_int = f"{extenso_int} reais"
-            else:
-                str_int = ""
-                
-            if centavos > 0:
-                extenso_cent = num2words(centavos, lang='pt_BR')
-                str_cent = f"{extenso_cent} centavos"
-                if str_int:
-                    return f"({str_int} e {str_cent})".capitalize()
-                else:
-                    return f"({str_cent})".capitalize()
-            else:
-                return f"({str_int})".capitalize()
-        except Exception:
-            pass
-    return f"({valor:,.2f} reais)"
+        str_cent = ""
+        if centavos == 1:
+            str_cent = "um centavo"
+        elif centavos > 1:
+            ext_cent = numero_por_extenso(centavos)
+            str_cent = f"{ext_cent} centavos"
+            
+        if str_int and str_cent:
+            res = f"({str_int} e {str_cent})"
+        elif str_int:
+            res = f"({str_int})"
+        elif str_cent:
+            res = f"({str_cent})"
+        else:
+            res = "(zero reais)"
+            
+        return res.capitalize()
+    except Exception:
+        return f"({valor:,.2f} reais)"
 
 # -----------------------------------------------------------------------------
 # 1. CONFIGURAÇÃO DA PÁGINA E CSS TEMA DASHBOARD
@@ -155,10 +208,10 @@ if 'df_pedidos' not in st.session_state:
             "Captacao": "Registros fotográficos e captações pontuais em vídeo (participantes, autoridades, apresentações, intervalos, entre outros momentos do evento).",
             "Entrega": "Todo material fotográfico será editado e enviado, em alta e baixa resolução.\n• Todo material em vídeo será enviado bruto (sem edição).\nOs materiais serão enviados via link e ficará disponível pelo prazo de 30 dias para download.",
             "Prazo_Entrega": "Até 72h após o término do evento.",
-            "Valor_Subtotal": 2600.0,
+            "Valor_Subtotal": 3200.0,
             "Desconto_Pct": 0.0,
-            "Valor_Total": 2600.0,
-            "Valor_Extenso": converter_valor_extenso(2600.0),
+            "Valor_Total": 3200.0,
+            "Valor_Extenso": converter_valor_extenso(3200.0),
             "Condicoes_Pag": "Até 20 dias após o evento.",
             "Status": "Orçamento / Proposta",
             "Servicos": "Cobertura Fotográfica e Captação de Vídeo"
@@ -182,7 +235,7 @@ if 'df_clientes' not in st.session_state:
 
 if 'df_servicos' not in st.session_state:
     st.session_state['df_servicos'] = pd.DataFrame([
-        {"Nome_Servico": "Cobertura Fotográfica e Captação de Vídeo", "Tipo_Cobranca": "Diária", "Valor_Base": 2600.0, "Descricao": "Cobertura completa em foto e vídeo para eventos institucionais."},
+        {"Nome_Servico": "Cobertura Fotográfica e Captação de Vídeo", "Tipo_Cobranca": "Diária", "Valor_Base": 3200.0, "Descricao": "Cobertura completa em foto e vídeo para eventos institucionais."},
         {"Nome_Servico": "Google Street View / Tour 360°", "Tipo_Cobranca": "Pacote", "Valor_Base": 800.0, "Descricao": "Mapeamento panorâmico 360° e integração com Google Meu Negócio."}
     ])
 
@@ -200,7 +253,7 @@ df_clientes = st.session_state['df_clientes']
 df_servicos = st.session_state['df_servicos']
 
 # -----------------------------------------------------------------------------
-# 5. GERADOR DE PDF 3 PÁGINAS COM AJUSTES SOLICITADOS
+# 5. GERADOR DE PDF EXECUTIVO MODERNO DE 3 PÁGINAS
 # -----------------------------------------------------------------------------
 class CanvasExecutivoAlinhado(canvas.Canvas):
     def __init__(self, *args, **kwargs):
@@ -217,13 +270,13 @@ class CanvasExecutivoAlinhado(canvas.Canvas):
             self.__dict__.update(state)
             self.saveState()
             
-            # Linha decorativa superior
+            # Linha decorativa superior azul
             self.setStrokeColor(colors.HexColor('#0284c7'))
-            self.setLineWidth(1.5)
+            self.setLineWidth(2.0)
             self.line(35, 815, 560, 815)
             
-            # Rodapé alinhado
-            self.setStrokeColor(colors.HexColor('#cbd5e1'))
+            # Linha e rodapé fixo
+            self.setStrokeColor(colors.HexColor('#e2e8f0'))
             self.setLineWidth(0.5)
             self.line(35, 35, 560, 35)
             
@@ -340,7 +393,6 @@ def gerar_pdf_3_paginas_corrigido(dados, texto_institucional):
         ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#f8fafc')),
     ]))
     story.append(t_cli)
-    
     story.append(Spacer(1, 18))
 
     story.append(Paragraph("<b>Escopo do Serviço</b>", style_sec_tit))
@@ -368,26 +420,26 @@ def gerar_pdf_3_paginas_corrigido(dados, texto_institucional):
     story.append(criar_bloco_escopo_item("6", "Forma de Pagamento", dados['condicoes_pag']))
     story.append(Spacer(1, 10))
 
+    # CARD DE INVESTIMENTO LIMPO E DESTAQUE VISUAL
     card_investimento = [
         Paragraph("<font color='#0284c7' size='9'><b>INVESTIMENTO DO SERVIÇO</b></font>", style_label),
         Spacer(1, 3),
         Paragraph(f"<font size='12' color='#0f172a'><b>Valor Total: R$ {dados['valor_total']:,.2f}</b></font>", style_label),
-        Paragraph(f"<i>{dados['valor_extenso']}</i>", style_txt_block)
+        Paragraph(f"<b>{dados['valor_extenso']}</b>", style_txt_block)
     ]
     t_card_inv = Table([[card_investimento]], colWidths=[525])
     t_card_inv.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#f0f9ff')),
         ('BOX', (0,0), (-1,-1), 1, colors.HexColor('#0284c7')),
-        ('PADDING', (0,0), (-1,-1), 8),
+        ('PADDING', (0,0), (-1,-1), 9),
     ]))
     story.append(t_card_inv)
-    story.append(Spacer(1, 12))
+    story.append(Spacer(1, 14))
 
     story.append(Paragraph("Estamos à disposição para qualquer esclarecimento adicional, ou alteração, caso seja necessário.", style_txt_block))
-    
-    story.append(Spacer(1, 24))
+    story.append(Spacer(1, 25))
 
-    # REMOVIDA A LINHA DE CONTATOS DUPLICADA APÓS "OKAMOTO MÍDIAS VISUAIS"
+    # ASSINATURA CENTRALIZADA SEM DUPLICAÇÃO DE CONTATOS
     story.append(Paragraph("Atenciosamente,<br/><b>Rubens Okamoto</b><br/><font color='#0284c7'><b>OKAMOTO MÍDIAS VISUAIS</b></font>", style_center))
 
     # =========================================================================
@@ -543,10 +595,10 @@ with aba_orcamento:
     val_entrega = "Todo material fotográfico será editado e enviado, em alta e baixa resolução.\n• Todo material em vídeo será enviado bruto (sem edição).\nOs materiais serão enviados via link e ficará disponível pelo prazo de 30 dias para download."
     val_prazo = "Até 72h após o término do evento."
     val_servicos_sel = [df_servicos["Nome_Servico"].iloc[0]]
-    val_subtotal = 2600.0
+    val_subtotal = 3200.0
     val_desconto_pct = 0.0
-    val_total = 2600.0
-    val_extenso = converter_valor_extenso(2600.0)
+    val_total = 3200.0
+    val_extenso = converter_valor_extenso(3200.0)
     val_cond_pag = "Até 20 dias após o evento."
     val_status = "Orçamento / Proposta"
 
@@ -567,9 +619,9 @@ with aba_orcamento:
             val_captacao = str(p_data.get("Captacao", ""))
             val_entrega = str(p_data.get("Entrega", ""))
             val_prazo = str(p_data.get("Prazo_Entrega", ""))
-            val_subtotal = float(p_data.get("Valor_Subtotal", 2600.0))
+            val_subtotal = float(p_data.get("Valor_Subtotal", 3200.0))
             val_desconto_pct = float(p_data.get("Desconto_Pct", 0.0))
-            val_total = float(p_data.get("Valor_Total", 2600.0))
+            val_total = float(p_data.get("Valor_Total", 3200.0))
             val_extenso = str(p_data.get("Valor_Extenso", converter_valor_extenso(val_total)))
             val_cond_pag = str(p_data.get("Condicoes_Pag", ""))
             val_status = str(p_data.get("Status", "Orçamento / Proposta"))
@@ -609,7 +661,6 @@ with aba_orcamento:
     nome_evento = col_e1.text_input("1. Nome do Evento:", value=val_nome_evento)
     data_evento_detalhada = col_e2.text_input("1. Datas e Horários do Evento:", value=val_data_evento_det)
     
-    # AMPLIADO O TAMANHO DAS CAIXAS DE TEXTO (HEIGHT AUMENTADO)
     objetivo_txt = st.text_area("2. Objetivo:", value=val_objetivo, height=160)
     captacao_txt = st.text_area("3. Captação:", value=val_captacao, height=160)
     entrega_txt = st.text_area("4. Entrega:", value=val_entrega, height=180)
@@ -634,10 +685,10 @@ with aba_orcamento:
     valor_final_com_desc = max(0.0, subtotal_input * (1.0 - (desconto_pct_input / 100.0)))
     ci3.metric("Valor Total com Desconto", f"R$ {valor_final_com_desc:,.2f}")
 
+    # GERAÇÃO AUTOMÁTICA EM PORTUGUÊS PURO DO VALOR POR EXTENSO
     valor_extenso_auto = converter_valor_extenso(valor_final_com_desc)
     valor_extenso = st.text_input("Valor por Extenso (Gerado Automático):", value=valor_extenso_auto)
 
-    # AMPLIADA A CAIXA DE TEXTO DA APRESENTAÇÃO INSTITUCIONAL
     st.session_state['texto_institucional'] = st.text_area(
         "Apresentação Institucional da Empresa (exibida na Página 1 do PDF):",
         value=st.session_state['texto_institucional'],
