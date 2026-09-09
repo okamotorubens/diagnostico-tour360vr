@@ -10,7 +10,7 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from reportlab.pdfgen import canvas
 
 # -----------------------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA
+# 1. CONFIGURAÇÃO DA PÁGINA E CSS TEMA DASHBOARD
 # -----------------------------------------------------------------------------
 st.set_page_config(
     page_title="CRM Okamoto Mídias Visuais",
@@ -33,7 +33,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# LISTA OFICIAL DE TAGS / CATEGORIAS
 LISTA_TAGS = [
     "ACADEMIA", "COMÉRCIO", "CONCESSIONÁRIA", "SALÃO DE BELEZA", 
     "IMOBILIÁRIA", "ESCOLAS", "ESPAÇO DE EVENTOS", "CLÍNICAS", 
@@ -42,7 +41,7 @@ LISTA_TAGS = [
 ]
 
 # -----------------------------------------------------------------------------
-# 2. GERENCIAMENTO DA LOGO (ARQUIVO OU UPLOAD DIRETO)
+# 2. GERENCIAMENTO DA LOGO
 # -----------------------------------------------------------------------------
 if 'logo_bytes' not in st.session_state:
     st.session_state['logo_bytes'] = None
@@ -135,12 +134,20 @@ if 'df_servicos' not in st.session_state:
         {"Nome_Servico": "Otimização Ficha Google", "Tipo_Cobranca": "Pacote", "Valor_Base": 400.0, "Descricao": "Estruturação técnica e atualização de atributos no Google Meu Negócio."}
     ])
 
+if 'texto_institucional' not in st.session_state:
+    st.session_state['texto_institucional'] = (
+        "Com sólida experiência no mercado de imagem e fotografia profissional com mais de 30 anos de atuação, "
+        "a Okamoto Mídias Visuais é especializada na cobertura completa de eventos corporativos, institucionais "
+        "e científicos, além da produção de tours virtuais 360° de alta definição.\n\n"
+        "Nossa missão é registrar cada projeto com precisão técnica, agilidade e excelência visual."
+    )
+
 df_pedidos = st.session_state['df_pedidos']
 df_clientes = st.session_state['df_clientes']
 df_servicos = st.session_state['df_servicos']
 
 # -----------------------------------------------------------------------------
-# 5. GERADOR DE PDF DA PROPOSTA
+# 5. GERADOR DE PDF COM DESIGN MODERNO
 # -----------------------------------------------------------------------------
 class NumberedCanvas(canvas.Canvas):
     def __init__(self, *args, **kwargs):
@@ -155,87 +162,163 @@ class NumberedCanvas(canvas.Canvas):
         num_pages = len(self._saved_page_states)
         for state in self._saved_page_states:
             self.__dict__.update(state)
-            self.drawString(40, 30, "Okamoto Mídias Visuais | (16) 99133-2121 | okamotomidiasvisuais.com.br")
-            self.drawRightString(555, 30, f"Página {self._pageNumber} de {num_pages}")
+            self.saveState()
+            self.setFont("Helvetica", 8)
+            self.setFillColor(colors.HexColor("#64748b"))
+            self.setStrokeColor(colors.HexColor("#cbd5e1"))
+            self.setLineWidth(0.5)
+            self.line(40, 40, 555, 40)
+            self.drawString(40, 25, "Okamoto Mídias Visuais | (16) 99133-2121 | okamotomidiasvisuais.com.br")
+            self.drawRightString(555, 25, f"Página {self._pageNumber} de {num_pages}")
+            self.restoreState()
             super().showPage()
         super().save()
 
-def gerar_pdf_proposta(dados):
+def gerar_pdf_proposta_moderna(dados, texto_institucional):
     buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=40, rightMargin=40, topMargin=40, bottomMargin=60)
+    doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=35, rightMargin=35, topMargin=35, bottomMargin=50)
     styles = getSampleStyleSheet()
     
-    style_titulo = ParagraphStyle('Titulo', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=20, leading=24, textColor=colors.HexColor('#0f172a'))
-    style_subtitulo = ParagraphStyle('Subtitulo', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=13, leading=17, textColor=colors.HexColor('#2563eb'))
-    style_corpo = ParagraphStyle('Corpo', parent=styles['Normal'], fontName='Helvetica', fontSize=10, leading=15, textColor=colors.HexColor('#334155'))
-    style_bold = ParagraphStyle('Bold', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=15, textColor=colors.HexColor('#0f172a'))
+    style_tit_principal = ParagraphStyle('TitP', fontName='Helvetica-Bold', fontSize=22, leading=26, textColor=colors.HexColor('#0f172a'))
+    style_sub = ParagraphStyle('Sub', fontName='Helvetica-Bold', fontSize=12, leading=16, textColor=colors.HexColor('#2563eb'))
+    style_corpo = ParagraphStyle('Corpo', fontName='Helvetica', fontSize=9.5, leading=14, textColor=colors.HexColor('#334155'))
+    style_bold = ParagraphStyle('Bold', fontName='Helvetica-Bold', fontSize=9.5, leading=14, textColor=colors.HexColor('#0f172a'))
     
     story = []
 
+    # BANNER SUPERIOR DE CABEÇALHO COM LOGO
+    header_data = []
     if st.session_state['logo_bytes']:
         try:
             img_buf = io.BytesIO(st.session_state['logo_bytes'])
-            story.append(Image(img_buf, width=150, height=48))
-            story.append(Spacer(1, 10))
+            img = Image(img_buf, width=140, height=45)
+            header_data = [[img, Paragraph("<b>OKAMOTO MÍDIAS VISUAIS</b><br/><font color='#64748b' size='8'>Fotografia Profissional & Tours Virtuais 360°<br/>Contato: (16) 99133-2121 | Brodowski - SP</font>", style_corpo)]]
         except Exception:
-            pass
+            header_data = [[Paragraph("<b>OKAMOTO MÍDIAS VISUAIS</b>", style_tit_principal), ""]]
+    else:
+        header_data = [[Paragraph("<b>OKAMOTO MÍDIAS VISUAIS</b>", style_tit_principal), Paragraph("<font color='#64748b' size='8'>Contato: (16) 99133-2121</font>", style_corpo)]]
 
-    story.append(Paragraph("OKAMOTO MÍDIAS VISUAIS", style_subtitulo))
-    story.append(Spacer(1, 4))
-    story.append(Paragraph("Apresentação Institucional & Portfólio de Serviços", style_titulo))
-    story.append(Spacer(1, 15))
-    
-    apresentacao = (
-        "Com sólida experiência no mercado de imagem e fotografia profissional, a <b>Okamoto Mídias Visuais</b> "
-        "é especializada na cobertura completa de eventos corporativos, institucionais e científicos."
-    )
-    story.append(Paragraph(apresentacao, style_corpo))
-    story.append(Spacer(1, 20))
-    story.append(PageBreak())
-
-    if st.session_state['logo_bytes']:
-        try:
-            img_buf2 = io.BytesIO(st.session_state['logo_bytes'])
-            story.append(Image(img_buf2, width=120, height=38))
-            story.append(Spacer(1, 10))
-        except Exception:
-            pass
-
-    story.append(Paragraph("PROPOSTA COMERCIAL", style_titulo))
-    story.append(Paragraph(f"Emissão: {dados['data_orcamento']} | Pedido nº: {dados['num_pedido']}", style_corpo))
-    story.append(Spacer(1, 12))
-
-    cliente_data = [
-        [Paragraph("<b>Empresa:</b>", style_bold), Paragraph(dados['empresa'], style_corpo)],
-        [Paragraph("<b>Contato:</b>", style_bold), Paragraph(dados['contato'], style_corpo)],
-        [Paragraph("<b>Data Evento:</b>", style_bold), Paragraph(dados['data_evento'], style_corpo)],
-        [Paragraph("<b>Local:</b>", style_bold), Paragraph(dados['local'], style_corpo)],
-    ]
-    t_cli = Table(cliente_data, colWidths=[110, 405])
-    t_cli.setStyle(TableStyle([('BACKGROUND', (0,0), (0,-1), colors.HexColor('#f1f5f9')), ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#e2e8f0'))]))
-    story.append(t_cli)
-    story.append(Spacer(1, 12))
-
-    itens_data = [[Paragraph("<b>Serviço</b>", style_bold), Paragraph("<b>Subtotal</b>", style_bold)]]
-    for srv in dados['itens']:
-        itens_data.append([Paragraph(srv['nome'], style_corpo), Paragraph(f"R$ {srv['valor']:.2f}", style_corpo)])
-    
-    t_srv = Table(itens_data, colWidths=[415, 100])
-    t_srv.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), colors.HexColor('#0f172a')), ('TEXTCOLOR', (0,0), (-1,0), colors.white), ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1'))]))
-    story.append(t_srv)
+    t_head = Table(header_data, colWidths=[180, 345])
+    t_head.setStyle(TableStyle([
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 10),
+    ]))
+    story.append(t_head)
     story.append(Spacer(1, 10))
 
-    invest_data = [[Paragraph("<b>INVESTIMENTO TOTAL:</b>", style_bold), Paragraph(f"<b>R$ {dados['valor_final']:.2f}</b>", style_bold)]]
-    t_inv = Table(invest_data, colWidths=[180, 335])
-    t_inv.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#dbeafe')), ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#93c5fd'))]))
+    # PÁGINA 1: APRESENTAÇÃO INSTITUCIONAL
+    story.append(Paragraph("APRESENTAÇÃO INSTITUCIONAL", style_sub))
+    story.append(Spacer(1, 6))
+    story.append(Paragraph(texto_institucional.replace('\n', '<br/>'), style_corpo))
+    story.append(Spacer(1, 18))
+
+    story.append(Paragraph("Diferenciais Estratégicos", style_sub))
+    story.append(Spacer(1, 6))
+    
+    dif_data = [
+        [Paragraph("<b>Diferencial Técnico</b>", style_bold), Paragraph("<b>Garantia de Qualidade</b>", style_bold)],
+        [Paragraph("Equipamentos Câmera Full Frame e 360°", style_corpo), Paragraph("Alta nitidez e fidelidade de cores.", style_corpo)],
+        [Paragraph("Agilidade na Entrega", style_corpo), Paragraph("Preview rápido enviado para cobertura ao vivo.", style_corpo)],
+        [Paragraph("Download em Nuvem", style_corpo), Paragraph("Acesso por link exclusivo e seguro.", style_corpo)]
+    ]
+    t_dif = Table(dif_data, colWidths=[220, 305])
+    t_dif.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#f1f5f9')),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1')),
+        ('PADDING', (0,0), (-1,-1), 6),
+    ]))
+    story.append(t_dif)
+    story.append(PageBreak())
+
+    # PÁGINA 2: PROPOSTA COMERCIAL DETALHADA
+    story.append(Paragraph("PROPOSTA COMERCIAL", style_tit_principal))
+    story.append(Paragraph(f"<font color='#2563eb'><b>Nº do Pedido:</b> {dados['num_pedido']}</font> | <b>Emissão:</b> {dados['data_orcamento']}", style_corpo))
+    story.append(Spacer(1, 10))
+
+    cli_info = [
+        [Paragraph("<b>Cliente / Empresa:</b>", style_bold), Paragraph(dados['empresa'], style_corpo)],
+        [Paragraph("<b>Pessoa de Contato:</b>", style_bold), Paragraph(dados['contato'], style_corpo)],
+        [Paragraph("<b>Data do Evento/Serviço:</b>", style_bold), Paragraph(dados['data_evento'], style_corpo)],
+        [Paragraph("<b>Local do Atendimento:</b>", style_bold), Paragraph(dados['local'], style_corpo)]
+    ]
+    t_cli = Table(cli_info, colWidths=[130, 395])
+    t_cli.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (0,-1), colors.HexColor('#f8fafc')),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#e2e8f0')),
+        ('PADDING', (0,0), (-1,-1), 6),
+    ]))
+    story.append(t_cli)
+    story.append(Spacer(1, 14))
+
+    story.append(Paragraph("Escopo dos Serviços Solicitados", style_sub))
+    story.append(Spacer(1, 6))
+
+    srv_data = [[Paragraph("<b>Serviço</b>", style_bold), Paragraph("<b>Descrição do Escopo</b>", style_bold), Paragraph("<b>Valor (R$)</b>", style_bold)]]
+    for item in dados['itens']:
+        srv_data.append([
+            Paragraph(item['nome'], style_corpo),
+            Paragraph(item.get('desc', 'Atendimento conforme especificação.'), style_corpo),
+            Paragraph(f"R$ {item['valor']:.2f}", style_corpo)
+        ])
+    
+    t_srv = Table(srv_data, colWidths=[140, 285, 100])
+    t_srv.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#0f172a')),
+        ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1')),
+        ('PADDING', (0,0), (-1,-1), 6),
+    ]))
+    story.append(t_srv)
+    story.append(Spacer(1, 12))
+
+    inv_data = [[Paragraph("<b>INVESTIMENTO TOTAL RECOMENDADO:</b>", style_bold), Paragraph(f"<b>R$ {dados['valor_final']:.2f}</b>", style_bold)]]
+    t_inv = Table(inv_data, colWidths=[220, 305])
+    t_inv.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#dbeafe')),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#93c5fd')),
+        ('PADDING', (0,0), (-1,-1), 8),
+    ]))
     story.append(t_inv)
 
     doc.build(story, canvasmaker=NumberedCanvas)
     buffer.seek(0)
     return buffer
 
+def gerar_pdf_relatorio_clientes(df, tag_filtro):
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=35, rightMargin=35, topMargin=35, bottomMargin=40)
+    styles = getSampleStyleSheet()
+    
+    story = [
+        Paragraph("OKAMOTO MÍDIAS VISUAIS", ParagraphStyle('Sub', fontName='Helvetica-Bold', fontSize=12, textColor=colors.HexColor('#2563eb'))),
+        Paragraph(f"Relatório de Base de Clientes - Categoria: {tag_filtro}", ParagraphStyle('Tit', fontName='Helvetica-Bold', fontSize=16, leading=20, textColor=colors.HexColor('#0f172a'))),
+        Spacer(1, 12)
+    ]
+    
+    t_data = [[Paragraph("<b>Empresa</b>", styles['Normal']), Paragraph("<b>Contato</b>", styles['Normal']), Paragraph("<b>Cidade</b>", styles['Normal']), Paragraph("<b>Telefone</b>", styles['Normal']), Paragraph("<b>TAG</b>", styles['Normal'])]]
+    for _, row in df.iterrows():
+        t_data.append([
+            Paragraph(str(row.get('Empresa', '')), styles['Normal']),
+            Paragraph(str(row.get('Contato', '')), styles['Normal']),
+            Paragraph(str(row.get('Cidade', '')), styles['Normal']),
+            Paragraph(str(row.get('Telefone', '')), styles['Normal']),
+            Paragraph(str(row.get('Categoria / TAG', '')), styles['Normal'])
+        ])
+        
+    t_table = Table(t_data, colWidths=[130, 90, 100, 90, 115])
+    t_table.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#0f172a')),
+        ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1')),
+        ('PADDING', (0,0), (-1,-1), 5),
+    ]))
+    story.append(t_table)
+    doc.build(story)
+    buffer.seek(0)
+    return buffer
+
 # -----------------------------------------------------------------------------
-# 6. DASHBOARD & ABAS
+# 6. DASHBOARD & ABAS PRINCIPAIS
 # -----------------------------------------------------------------------------
 st.title("💼 CRM Okamoto Mídias Visuais")
 
@@ -276,22 +359,30 @@ with aba_orcamento:
         servicos_sel = st.multiselect("Serviços Solicitados", df_servicos["Nome_Servico"].tolist(), default=[df_servicos["Nome_Servico"].iloc[0]])
         status_sel = st.selectbox("Status Inicial do Pedido", ["Orçamento / Proposta", "Em atendimento", "Negociação/Revisão", "Aprovado", "Produção", "Concluído"])
 
+    st.markdown("---")
+    st.markdown("### ✍️ Descritivo Institucional da Empresa no PDF")
+    st.session_state['texto_institucional'] = st.text_area(
+        "Edite a apresentação da empresa que vai na 1ª página da proposta:",
+        value=st.session_state['texto_institucional'],
+        height=100
+    )
+
     itens_detalhados = []
     valor_calculado = 0.0
     for s in servicos_sel:
         r = df_servicos[df_servicos["Nome_Servico"] == s].iloc[0]
         v = float(r["Valor_Base"])
-        itens_detalhados.append({"nome": s, "valor": v})
+        itens_detalhados.append({"nome": s, "desc": str(r.get("Descricao", "")), "valor": v})
         valor_calculado += v
 
-    valor_final = st.number_input("Valor Final (R$)", value=float(valor_calculado), step=50.0)
+    valor_final = st.number_input("Valor Final da Proposta (R$)", value=float(valor_calculado), step=50.0)
 
     dados_pdf = {"num_pedido": num_pedido, "empresa": empresa_sel, "contato": contato, "local": local, "data_orcamento": data_orcamento, "data_evento": data_evento, "itens": itens_detalhados, "valor_final": valor_final}
-    pdf_bytes = gerar_pdf_proposta(dados_pdf)
+    pdf_bytes = gerar_pdf_proposta_moderna(dados_pdf, st.session_state['texto_institucional'])
 
     cb1, cb2 = st.columns(2)
     with cb1:
-        st.download_button("📥 Baixar Proposta em PDF", data=pdf_bytes, file_name=f"Proposta_{num_pedido}.pdf", mime="application/pdf", use_container_width=True)
+        st.download_button("📥 Baixar Proposta Comercial em PDF", data=pdf_bytes, file_name=f"Proposta_{num_pedido}.pdf", mime="application/pdf", use_container_width=True)
     with cb2:
         if st.button("💾 Salvar Pedido no CRM", use_container_width=True):
             novo_p = pd.DataFrame([{"Numero_Pedido": num_pedido, "Empresa": empresa_sel, "Contato": contato, "Data_Emissao": data_orcamento, "Data_Evento": data_evento, "Valor_Total": valor_final, "Status": status_sel, "Servicos": ", ".join(servicos_sel)}])
@@ -357,21 +448,59 @@ with aba_clientes:
         df_c_exibir = df_c_exibir[mask]
         
     st.dataframe(df_c_exibir, use_container_width=True)
+    
+    pdf_cli_bytes = gerar_pdf_relatorio_clientes(df_c_exibir, tag_filtro)
+    st.download_button("📄 Gerar Relatório de Clientes em PDF", data=pdf_cli_bytes, file_name=f"Relatorio_Clientes_{tag_filtro}.pdf", mime="application/pdf")
 
-# ABA 4: CATÁLOGO DE SERVIÇOS
+# ABA 4: CATÁLOGO DE SERVIÇOS (EDIÇÃO E EXCLUSÃO)
 with aba_catalogo:
-    st.subheader("Cadastrar Novo Serviço / Preço")
-    with st.form("form_novo_servico", clear_on_submit=True):
-        cs1, cs2, cs3 = st.columns([2, 1, 1])
-        s_nome = cs1.text_input("Nome do Serviço:")
-        s_tipo = cs2.selectbox("Tipo de Cobrança:", ["Hora", "Pacote", "Diária", "Unidade", "Mensal"])
-        s_valor = cs3.number_input("Valor Base (R$):", min_value=0.0, step=50.0)
-        s_desc = st.text_area("Descrição do Serviço:")
-        if st.form_submit_button("➕ Salvar Serviço no Catálogo"):
-            if s_nome:
-                novo_s = pd.DataFrame([{"Nome_Servico": s_nome, "Tipo_Cobranca": s_tipo, "Valor_Base": s_valor, "Descricao": s_desc}])
-                st.session_state['df_servicos'] = pd.concat([st.session_state['df_servicos'], novo_s], ignore_index=True)
-                st.success(f"Serviço '{s_nome}' adicionado ao catálogo!")
+    st.subheader("🛠️ Gestão do Catálogo de Serviços")
+    
+    modo_acao = st.radio("Selecione a ação:", ["➕ Adicionar Novo Serviço", "✏️ Editar Serviço Existente", "❌ Excluir Serviço"], horizontal=True)
+    
+    if modo_acao == "➕ Adicionar Novo Serviço":
+        with st.form("form_novo_servico", clear_on_submit=True):
+            cs1, cs2, cs3 = st.columns([2, 1, 1])
+            s_nome = cs1.text_input("Nome do Serviço:")
+            s_tipo = cs2.selectbox("Tipo de Cobrança:", ["Hora", "Pacote", "Diária", "Unidade", "Mensal"])
+            s_valor = cs3.number_input("Valor Base (R$):", min_value=0.0, step=50.0)
+            s_desc = st.text_area("Descrição do Serviço:")
+            if st.form_submit_button("➕ Salvar Serviço"):
+                if s_nome:
+                    novo_s = pd.DataFrame([{"Nome_Servico": s_nome, "Tipo_Cobranca": s_tipo, "Valor_Base": s_valor, "Descricao": s_desc}])
+                    st.session_state['df_servicos'] = pd.concat([st.session_state['df_servicos'], novo_s], ignore_index=True)
+                    st.success("Serviço adicionado!")
+                    st.rerun()
+
+    elif modo_acao == "✏️ Editar Serviço Existente":
+        lista_s = st.session_state['df_servicos']["Nome_Servico"].tolist()
+        if lista_s:
+            servico_edit_sel = st.selectbox("Selecione o serviço para editar:", lista_s)
+            idx_s = st.session_state['df_servicos'][st.session_state['df_servicos']["Nome_Servico"] == servico_edit_sel].index[0]
+            dados_s = st.session_state['df_servicos'].loc[idx_s]
+            
+            with st.form("form_edit_servico"):
+                ce1, ce2, ce3 = st.columns([2, 1, 1])
+                e_nome = ce1.text_input("Nome:", value=dados_s["Nome_Servico"])
+                e_tipo = ce2.selectbox("Tipo:", ["Hora", "Pacote", "Diária", "Unidade", "Mensal"], index=["Hora", "Pacote", "Diária", "Unidade", "Mensal"].index(dados_s["Tipo_Cobranca"]) if dados_s["Tipo_Cobranca"] in ["Hora", "Pacote", "Diária", "Unidade", "Mensal"] else 0)
+                e_valor = ce3.number_input("Valor (R$):", value=float(dados_s["Valor_Base"]))
+                e_desc = st.text_area("Descrição:", value=dados_s["Descricao"])
+                
+                if st.form_submit_button("💾 Salvar Alterações"):
+                    st.session_state['df_servicos'].loc[idx_s, "Nome_Servico"] = e_nome
+                    st.session_state['df_servicos'].loc[idx_s, "Tipo_Cobranca"] = e_tipo
+                    st.session_state['df_servicos'].loc[idx_s, "Valor_Base"] = e_valor
+                    st.session_state['df_servicos'].loc[idx_s, "Descricao"] = e_desc
+                    st.success("Serviço atualizado com sucesso!")
+                    st.rerun()
+
+    elif modo_acao == "❌ Excluir Serviço":
+        lista_s = st.session_state['df_servicos']["Nome_Servico"].tolist()
+        if lista_s:
+            servico_del = st.selectbox("Selecione o serviço para remover:", lista_s)
+            if st.button("🚨 Confirmar Exclusão do Serviço", use_container_width=True):
+                st.session_state['df_servicos'] = st.session_state['df_servicos'][st.session_state['df_servicos']["Nome_Servico"] != servico_del].reset_index(drop=True)
+                st.success("Serviço removido!")
                 st.rerun()
 
     st.markdown("---")
