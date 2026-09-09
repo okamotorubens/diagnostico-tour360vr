@@ -63,7 +63,7 @@ if df_servicos.empty:
     ])
 
 # -----------------------------------------------------------------------------
-# 3. GERADOR DE PDF DE 2 PÁGINAS (REPORTLAB)
+# 3. GERADOR DE PDF DE PROPOSTA COMERCIAL (2 PÁGINAS)
 # -----------------------------------------------------------------------------
 class NumberedCanvas(canvas.Canvas):
     def __init__(self, *args, **kwargs):
@@ -178,6 +178,8 @@ def gerar_pdf_proposta(dados):
         ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#cbd5e1')),
         ('PADDING', (0, 0), (-1, -1), 7),
     ]))
+    for i in range(3):
+        t_srv.setStyle(TableStyle([('TEXTCOLOR', (i, 0), (i, 0), colors.white)]))
     story.append(t_srv)
     story.append(Spacer(1, 10))
 
@@ -208,7 +210,7 @@ def gerar_pdf_proposta(dados):
     return buffer
 
 # -----------------------------------------------------------------------------
-# 4. INTERFACE PRINCIPAL E ABAS DE NAVEGAÇÃO
+# 4. INTERFACE PRINCIPAL E ABAS
 # -----------------------------------------------------------------------------
 st.title("💼 Sistema Unificado - Okamoto Mídias & Tour360VR")
 
@@ -220,7 +222,7 @@ aba_orcamento, aba_kanban, aba_clientes, aba_catalogo = st.tabs([
 ])
 
 # -----------------------------------------------------------------------------
-# ABA 1: GERAR ORÇAMENTO E SALVAR NO GOOGLE SHEETS
+# ABA 1: GERAR ORÇAMENTO
 # -----------------------------------------------------------------------------
 with aba_orcamento:
     st.subheader("Emissão de Proposta Comercial em PDF")
@@ -339,11 +341,11 @@ with aba_kanban:
                 st.caption("0 Projetos")
 
 # -----------------------------------------------------------------------------
-# ABA 3: GESTÃO DE CLIENTES (BUSCA AVANÇADA POR NOME, CIDADE OU TAG)
+# ABA 3: GESTÃO DE CLIENTES & RELATÓRIO PDF POR CATEGORIA
 # -----------------------------------------------------------------------------
 with aba_clientes:
     st.subheader("Base de Empresas e Contatos")
-    termo_busca = st.text_input("🔍 Pesquisar por Nome da Empresa, Cidade, Tag ou Segmento:")
+    termo_busca = st.text_input("🔍 Pesquisar por Categoria, Nome da Empresa, Cidade ou Tag (ex: HOTELARIA, Ribeirão Preto, AVIRRP):")
     
     if not df_clientes.empty:
         df_exibir = df_clientes.copy()
@@ -352,7 +354,54 @@ with aba_clientes:
             df_exibir = df_exibir[mask]
         
         st.dataframe(df_exibir, use_container_width=True)
-        st.caption(f"Exibindo {len(df_exibir)} de {len(df_clientes)} cadastros.")
+        st.caption(f"Exibindo {len(df_exibir)} de {len(df_clientes)} cadastros encontrados.")
+        
+        # Gerador do PDF do relatório filtrado por Categoria/Tag/Cidade
+        if not df_exibir.empty:
+            def gerar_pdf_relatorio_clientes(df, filtro):
+                buffer = io.BytesIO()
+                doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=30, rightMargin=30, topMargin=30, bottomMargin=40)
+                styles = getSampleStyleSheet()
+                
+                story = [
+                    Paragraph("OKAMOTO MÍDIAS VISUAIS & TOUR360VR", ParagraphStyle('Sub', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, textColor=colors.HexColor('#2563eb'))),
+                    Paragraph(f"Relatório de Clientes / Filtro: {filtro.upper() if filtro else 'GERAL'}", ParagraphStyle('Tit', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=16, leading=20)),
+                    Spacer(1, 12)
+                ]
+                
+                t_data = [[Paragraph("<b>Empresa</b>", styles['Normal']), Paragraph("<b>Cidade</b>", styles['Normal']), Paragraph("<b>Telefone</b>", styles['Normal']), Paragraph("<b>Contato / Email</b>", styles['Normal'])]]
+                for _, row in df.iterrows():
+                    emp = str(row.get('Empresa', ''))
+                    cid = str(row.get('Cidade', ''))
+                    tel = str(row.get('Telefone', ''))
+                    cto = f"{str(row.get('Contato', ''))}<br/>{str(row.get('Email', ''))}"
+                    
+                    t_data.append([
+                        Paragraph(emp, styles['Normal']),
+                        Paragraph(cid, styles['Normal']),
+                        Paragraph(tel, styles['Normal']),
+                        Paragraph(cto, styles['Normal'])
+                    ])
+                
+                t_table = Table(t_data, colWidths=[170, 110, 100, 155])
+                t_table.setStyle(TableStyle([
+                    ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#0f172a')),
+                    ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+                    ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1')),
+                    ('PADDING', (0,0), (-1,-1), 5),
+                ]))
+                story.append(t_table)
+                doc.build(story)
+                buffer.seek(0)
+                return buffer
+
+            pdf_relatorio = gerar_pdf_relatorio_clientes(df_exibir, termo_busca)
+            st.download_button(
+                label=f"📥 Baixar Relatório em PDF ({len(df_exibir)} empresas listadas)",
+                data=pdf_relatorio,
+                file_name=f"Relatorio_{termo_busca if termo_busca else 'Geral'}.pdf",
+                mime="application/pdf"
+            )
     else:
         st.warning("Nenhum cliente cadastrado na aba 'Clientes' do Google Sheets.")
 
