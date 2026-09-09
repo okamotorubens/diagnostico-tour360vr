@@ -9,6 +9,40 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, Image
 from reportlab.pdfgen import canvas
 
+# TENTATIVA DE IMPORTAR NUM2WORDS PARA VALOR POR EXTENSO AUTOMÁTICO
+try:
+    from num2words import num2words
+    HAS_NUM2WORDS = True
+except ImportError:
+    HAS_NUM2WORDS = False
+
+def converter_valor_extenso(valor):
+    if HAS_NUM2WORDS:
+        try:
+            inteiro = int(valor)
+            centavos = int(round((valor - inteiro) * 100))
+            
+            extenso_int = num2words(inteiro, lang='pt_BR')
+            if inteiro == 1:
+                str_int = f"{extenso_int} real"
+            elif inteiro > 1:
+                str_int = f"{extenso_int} reais"
+            else:
+                str_int = ""
+                
+            if centavos > 0:
+                extenso_cent = num2words(centavos, lang='pt_BR')
+                str_cent = f"{extenso_cent} centavos"
+                if str_int:
+                    return f"({str_int} e {str_cent})".capitalize()
+                else:
+                    return f"({str_cent})".capitalize()
+            else:
+                return f"({str_int})".capitalize()
+        except Exception:
+            pass
+    return f"({valor:,.2f} reais)"
+
 # -----------------------------------------------------------------------------
 # 1. CONFIGURAÇÃO DA PÁGINA E CSS TEMA DASHBOARD
 # -----------------------------------------------------------------------------
@@ -124,7 +158,7 @@ if 'df_pedidos' not in st.session_state:
             "Valor_Subtotal": 2600.0,
             "Desconto_Pct": 0.0,
             "Valor_Total": 2600.0,
-            "Valor_Extenso": "(Dois mil e seiscentos reais)",
+            "Valor_Extenso": converter_valor_extenso(2600.0),
             "Condicoes_Pag": "Até 20 dias após o evento.",
             "Status": "Orçamento / Proposta",
             "Servicos": "Cobertura Fotográfica e Captação de Vídeo"
@@ -166,7 +200,7 @@ df_clientes = st.session_state['df_clientes']
 df_servicos = st.session_state['df_servicos']
 
 # -----------------------------------------------------------------------------
-# 5. GERADOR DE PDF DE 3 PÁGINAS COM DESIGN EXECUTIVO PREMIUM
+# 5. GERADOR DE PDF CORRIGIDO (3 PÁGINAS ORGANIZADAS)
 # -----------------------------------------------------------------------------
 class CanvasExecutivoAlinhado(canvas.Canvas):
     def __init__(self, *args, **kwargs):
@@ -183,13 +217,13 @@ class CanvasExecutivoAlinhado(canvas.Canvas):
             self.__dict__.update(state)
             self.saveState()
             
-            # Linha decorativa superior sutil
+            # Linha decorativa superior
             self.setStrokeColor(colors.HexColor('#0284c7'))
             self.setLineWidth(1.5)
             self.line(35, 815, 560, 815)
             
-            # Rodapé alinhado com separador
-            self.setStrokeColor(colors.HexColor('#e2e8f0'))
+            # Rodapé alinhado
+            self.setStrokeColor(colors.HexColor('#cbd5e1'))
             self.setLineWidth(0.5)
             self.line(35, 35, 560, 35)
             
@@ -205,27 +239,26 @@ class CanvasExecutivoAlinhado(canvas.Canvas):
             super().showPage()
         super().save()
 
-def gerar_pdf_3_paginas_moderno(dados, texto_institucional):
+def gerar_pdf_3_paginas_corrigido(dados, texto_institucional):
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=35, rightMargin=35, topMargin=35, bottomMargin=45)
     styles = getSampleStyleSheet()
     
-    style_tit_capa = ParagraphStyle('TitCapa', fontName='Helvetica-Bold', fontSize=22, leading=26, textColor=colors.HexColor('#0f172a'))
-    style_sub_capa = ParagraphStyle('SubCapa', fontName='Helvetica', fontSize=11, leading=15, textColor=colors.HexColor('#0284c7'))
+    style_tit_capa = ParagraphStyle('TitCapa', fontName='Helvetica-Bold', fontSize=20, leading=24, textColor=colors.HexColor('#0f172a'))
+    style_sub_capa = ParagraphStyle('SubCapa', fontName='Helvetica', fontSize=10.5, leading=14, textColor=colors.HexColor('#0284c7'))
     style_tit_prop = ParagraphStyle('TitP', fontName='Helvetica-Bold', fontSize=18, leading=22, textColor=colors.HexColor('#0f172a'))
     style_data = ParagraphStyle('DataP', fontName='Helvetica-Bold', fontSize=9, leading=12, textColor=colors.HexColor('#0284c7'))
     
-    # Fontes destacadas para a área do cliente
-    style_label_cli = ParagraphStyle('LblCli', fontName='Helvetica-Bold', fontSize=11, leading=15, textColor=colors.HexColor('#0f172a'))
-    style_val_cli = ParagraphStyle('ValCli', fontName='Helvetica', fontSize=11, leading=15, textColor=colors.HexColor('#1e293b'))
+    style_label_cli = ParagraphStyle('LblCli', fontName='Helvetica-Bold', fontSize=10.5, leading=14, textColor=colors.HexColor('#0f172a'))
+    style_val_cli = ParagraphStyle('ValCli', fontName='Helvetica', fontSize=10.5, leading=14, textColor=colors.HexColor('#1e293b'))
     
     style_label = ParagraphStyle('Lbl', fontName='Helvetica-Bold', fontSize=9, leading=12, textColor=colors.HexColor('#0f172a'))
-    style_val = ParagraphStyle('Val', fontName='Helvetica', fontSize=9, leading=12, textColor=colors.HexColor('#334155'))
+    style_val = ParagraphStyle('Val', fontName='Helvetica', fontSize=9, leading=13, textColor=colors.HexColor('#334155'))
     style_sec_num = ParagraphStyle('SecNum', fontName='Helvetica-Bold', fontSize=12, leading=15, textColor=colors.HexColor('#0284c7'))
-    style_sec_tit = ParagraphStyle('SecTit', fontName='Helvetica-Bold', fontSize=12, leading=15, textColor=colors.HexColor('#0f172a'))
+    style_sec_tit = ParagraphStyle('SecTit', fontName='Helvetica-Bold', fontSize=11.5, leading=15, textColor=colors.HexColor('#0f172a'))
     style_txt_block = ParagraphStyle('TxtBlock', fontName='Helvetica', fontSize=9, leading=13, textColor=colors.HexColor('#334155'))
-    style_inst = ParagraphStyle('Inst', fontName='Helvetica', fontSize=10, leading=16, textColor=colors.HexColor('#334155'))
-    style_center = ParagraphStyle('CenterText', fontName='Helvetica', fontSize=9.5, leading=14, textColor=colors.HexColor('#334155'), alignment=1)
+    style_inst = ParagraphStyle('Inst', fontName='Helvetica', fontSize=9.5, leading=15, textColor=colors.HexColor('#1e293b'))
+    style_center = ParagraphStyle('CenterText', fontName='Helvetica', fontSize=9, leading=14, textColor=colors.HexColor('#334155'), alignment=1)
 
     story = []
 
@@ -239,47 +272,47 @@ def gerar_pdf_3_paginas_moderno(dados, texto_institucional):
         return Paragraph("<font size='16' color='#0284c7'><b>OKAMOTO MÍDIAS VISUAIS</b></font>", style_label)
 
     # =========================================================================
-    # PÁGINA 1: APRESENTAÇÃO INSTITUCIONAL COM CARDS DE SOLUÇÕES (SEM TABELA)
+    # PÁGINA 1: APRESENTAÇÃO INSTITUCIONAL COM BLOCO EM DESTAQUE E TÓPICOS
     # =========================================================================
     logo_p1 = obter_bloco_logo(150, 48)
     t_top_p1 = Table([[logo_p1, Paragraph("<b>OKAMOTO MÍDIAS VISUAIS</b><br/><font color='#0284c7' size='9'>Fotografia Profissional & Tours Virtuais 360°</font>", ParagraphStyle('RHead', fontName='Helvetica', alignment=2, leading=12))]], colWidths=[170, 355])
     t_top_p1.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'MIDDLE')]))
     story.append(t_top_p1)
-    story.append(Spacer(1, 20))
+    story.append(Spacer(1, 15))
 
     story.append(Paragraph("Apresentação Institucional", style_tit_capa))
     story.append(Paragraph("Excelência em Registros Visuais e Soluções Tecnológicas de Imagem", style_sub_capa))
-    story.append(Spacer(1, 15))
+    story.append(Spacer(1, 12))
 
-    story.append(Paragraph(texto_institucional.replace('\n', '<br/>'), style_inst))
-    story.append(Spacer(1, 25))
+    # DESTAQUE DA APRESENTAÇÃO INSTITUCIONAL (CARD COM FUNDO SUTIL)
+    card_inst = [Paragraph(texto_institucional.replace('\n', '<br/>'), style_inst)]
+    t_card_inst = Table([[card_inst]], colWidths=[525])
+    t_card_inst.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#f8fafc')),
+        ('BOX', (0,0), (-1,-1), 1, colors.HexColor('#0284c7')),
+        ('PADDING', (0,0), (-1,-1), 12),
+    ]))
+    story.append(t_card_inst)
+    story.append(Spacer(1, 20))
 
+    # ÁREAS DE ATUAÇÃO E SOLUÇÕES ESPECIALIZADAS EM TÓPICOS (SEM TABELA)
     story.append(Paragraph("<b>Áreas de Atuação & Soluções Especializadas</b>", style_sec_tit))
     story.append(Spacer(1, 10))
 
-    # CARDS VISUAIS DE Destaque Institucional (Substituindo a antiga tabela)
-    card1 = [Paragraph("<b>📸 Eventos Corporativos & Científicos</b>", style_label), Spacer(1, 3), Paragraph("Cobertura fotográfica e em vídeo com equipamentos Full Frame e captações de alta precisão.", style_txt_block)]
-    card2 = [Paragraph("<b>🌐 Tours Virtuais 360° & Google GSV</b>", style_label), Spacer(1, 3), Paragraph("Mapeamento panorâmico imersivo de alta resolução com integração ao Google Meu Negócio.", style_txt_block)]
-    card3 = [Paragraph("<b>⚡ Agilidade para Mídias Sociais</b>", style_label), Spacer(1, 3), Paragraph("Envio acelerado de prévias em tempo real para ações de assessoria de imprensa e redes.", style_txt_block)]
-    card4 = [Paragraph("<b>☁️ Plataforma Nuvem Exclusiva</b>", style_label), Spacer(1, 3), Paragraph("Acesso seguro, organizado e permanente para download em alta e baixa resolução.", style_txt_block)]
+    solucoes = [
+        ("• Eventos Corporativos & Científicos", "Cobertura fotográfica e em vídeo com equipamentos Full Frame e captações pontuais de alta precisão."),
+        ("• Tours Virtuais 360° & Google GSV", "Mapeamento panorâmico imersivo de alta resolução com integração direta ao Google Meu Negócio."),
+        ("• Agilidade para Mídias Sociais & Assessoria", "Envio acelerado de prévias em tempo real durante a execução do evento para publicações estratégicas."),
+        ("• Plataforma Nuvem Exclusiva", "Acesso seguro, organizado e permanente para download dos acervos em alta e baixa resolução.")
+    ]
 
-    t_grid_cards = Table([[card1, card2], [card3, card4]], colWidths=[255, 255])
-    t_grid_cards.setStyle(TableStyle([
-        ('BACKGROUND', (0,0), (0,0), colors.HexColor('#f8fafc')),
-        ('BACKGROUND', (1,0), (1,0), colors.HexColor('#f8fafc')),
-        ('BACKGROUND', (0,1), (0,1), colors.HexColor('#f8fafc')),
-        ('BACKGROUND', (1,1), (1,1), colors.HexColor('#f8fafc')),
-        ('BOX', (0,0), (0,0), 0.5, colors.HexColor('#cbd5e1')),
-        ('BOX', (1,0), (1,0), 0.5, colors.HexColor('#cbd5e1')),
-        ('BOX', (0,1), (0,1), 0.5, colors.HexColor('#cbd5e1')),
-        ('BOX', (1,1), (1,1), 0.5, colors.HexColor('#cbd5e1')),
-        ('PADDING', (0,0), (-1,-1), 10),
-        ('VALIGN', (0,0), (-1,-1), 'TOP'),
-    ]))
-    story.append(t_grid_cards)
+    for tit_sol, desc_sol in solucoes:
+        story.append(Paragraph(f"<b><font color='#0284c7'>{tit_sol}</font></b>", style_label))
+        story.append(Paragraph(desc_sol, style_txt_block))
+        story.append(Spacer(1, 6))
 
     # =========================================================================
-    # PÁGINA 2: ORÇAMENTO COMERCIAL COMPLETO (DESTACADO & ITEM 5)
+    # PÁGINA 2: ORÇAMENTO COMERCIAL COMPLETO (SISTEMA DE ITEM 1 A 5 E VALOR)
     # =========================================================================
     story.append(PageBreak())
 
@@ -293,9 +326,8 @@ def gerar_pdf_3_paginas_moderno(dados, texto_institucional):
     t_top_p2 = Table([[col_tit, col_logo]], colWidths=[330, 195])
     t_top_p2.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'TOP'), ('ALIGN', (1,0), (1,0), 'RIGHT')]))
     story.append(t_top_p2)
-    story.append(Spacer(1, 15))
+    story.append(Spacer(1, 12))
 
-    # EMPRESA, CONTATO E LOCAL COM FONTE AUMENTADA E DESTAQUE VISUAL
     t_cli_data = [
         [Paragraph("Empresa:", style_label_cli), Paragraph(f"<b>{dados['empresa']}</b>", style_val_cli)],
         [Paragraph("Contato:", style_label_cli), Paragraph(dados['contato'], style_val_cli)],
@@ -304,67 +336,64 @@ def gerar_pdf_3_paginas_moderno(dados, texto_institucional):
     t_cli = Table(t_cli_data, colWidths=[75, 450])
     t_cli.setStyle(TableStyle([
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 6),
-        ('TOPPADDING', (0,0), (-1,-1), 6),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 5),
+        ('TOPPADDING', (0,0), (-1,-1), 5),
         ('LINEBELOW', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1')),
         ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#f8fafc')),
     ]))
     story.append(t_cli)
-    story.append(Spacer(1, 15))
+    story.append(Spacer(1, 12))
 
-    # DESTAQUE DE ESCOPO DO SERVIÇO
     story.append(Paragraph("<b>Escopo do Serviço</b>", style_sec_tit))
     story.append(Spacer(1, 8))
 
-    def criar_bloco_escopo(numero, titulo, conteudo):
+    # CORREÇÃO DE ALINHAMENTO DA COLUNA DOS NÚMEROS (COLWIDTHS = 25, 500)
+    def criar_bloco_escopo_item(numero, titulo, conteudo):
         c1 = Paragraph(f"<b>{numero}</b>", style_sec_num)
         c2 = [
             Paragraph(f"<b>{titulo}</b>", style_sec_tit),
             Spacer(1, 2),
             Paragraph(conteudo.replace('\n', '<br/>'), style_txt_block)
         ]
-        t = Table([[c1, c2]], colWidths=[24, 501])
+        t = Table([[c1, c2]], colWidths=[25, 500])
         t.setStyle(TableStyle([
             ('VALIGN', (0,0), (-1,-1), 'TOP'),
-            ('BOTTOMPADDING', (0,0), (-1,-1), 6)
+            ('BOTTOMPADDING', (0,0), (-1,-1), 5)
         ]))
         return t
 
-    story.append(criar_bloco_escopo("1", "Evento", f"{dados['nome_evento']}\n• {dados['data_evento_detalhada']}\n{dados['local']}"))
-    story.append(criar_bloco_escopo("2", "Objetivo", dados['objetivo']))
-    story.append(criar_bloco_escopo("3", "Captação", dados['captacao']))
-    story.append(criar_bloco_escopo("4", "Entrega", dados['entrega']))
-    
-    # ITEM 5: PRAZO DE ENTREGA (INCLUÍDO NA SEQUÊNCIA DO ESCOPO)
-    story.append(criar_bloco_escopo("5", "Prazo de Entrega", dados['prazo_entrega']))
-    story.append(Spacer(1, 10))
+    story.append(criar_bloco_escopo_item("1", "Evento", f"{dados['nome_evento']}\n• {dados['data_evento_detalhada']}\n{dados['local']}"))
+    story.append(criar_bloco_escopo_item("2", "Objetivo", dados['objetivo']))
+    story.append(criar_bloco_escopo_item("3", "Captação", dados['captacao']))
+    story.append(criar_bloco_escopo_item("4", "Entrega", dados['entrega']))
+    story.append(criar_bloco_escopo_item("5", "Prazo de Entrega", dados['prazo_entrega']))
+    story.append(Spacer(1, 8))
 
-    # INVESTIMENTO EM DESTAQUE (BLOCO CARD MODERNO - SEM SER TABELA DE DADOS)
+    # INVESTIMENTO EM CARD DE DESTAQUE COM VALOR AUTOMÁTICO
     card_investimento = [
         Paragraph("<font color='#0284c7' size='9'><b>INVESTIMENTO DO SERVIÇO</b></font>", style_label),
-        Spacer(1, 4),
-        Paragraph(f"<font size='16' color='#0f172a'><b>Valor Total: R$ {dados['valor_total']:,.2f}</b></font>", style_label),
+        Spacer(1, 3),
+        Paragraph(f"<font size='15' color='#0f172a'><b>Valor Total: R$ {dados['valor_total']:,.2f}</b></font>", style_label),
         Paragraph(f"<i>{dados['valor_extenso']}</i>", style_txt_block),
-        Spacer(1, 6),
+        Spacer(1, 4),
         Paragraph(f"<b>Forma de pagamento:</b> {dados['condicoes_pag']}", style_txt_block)
     ]
     t_card_inv = Table([[card_investimento]], colWidths=[525])
     t_card_inv.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#f0f9ff')),
         ('BOX', (0,0), (-1,-1), 1, colors.HexColor('#0284c7')),
-        ('PADDING', (0,0), (-1,-1), 10),
+        ('PADDING', (0,0), (-1,-1), 9),
     ]))
     story.append(t_card_inv)
-    story.append(Spacer(1, 12))
+    story.append(Spacer(1, 10))
 
     story.append(Paragraph("Estamos à disposição para qualquer esclarecimento adicional, ou alteração, caso seja necessário.", style_txt_block))
-    story.append(Spacer(1, 15))
+    story.append(Spacer(1, 12))
 
-    # ASSINATURA TOTALMENTE CENTRALIZADA
     story.append(Paragraph("Atenciosamente,<br/><b>Rubens Okamoto</b><br/><font color='#0284c7'><b>OKAMOTO MÍDIAS VISUAIS</b></font><br/>16 99133 2121  |  okamotomidiasvisuais.com.br", style_center))
 
     # =========================================================================
-    # PÁGINA 3: DADOS DA EMPRESA, PESSOAIS E BANCÁRIOS
+    # PÁGINA 3: DADOS CADASTRAIS UM ABAIXO DO OUTRO
     # =========================================================================
     story.append(PageBreak())
 
@@ -374,41 +403,45 @@ def gerar_pdf_3_paginas_moderno(dados, texto_institucional):
     story.append(Paragraph("Dados Cadastrais & Informações Bancárias", style_tit_prop))
     story.append(Spacer(1, 15))
 
-    def bloco_dados(titulo, linhas):
-        c_tot = [Paragraph(f"<b>{titulo}</b>", style_sec_tit), Spacer(1, 6)]
+    def criar_bloco_vertical(titulo, linhas):
+        c_tot = [Paragraph(f"<b><font color='#0284c7'>{titulo}</font></b>", style_sec_tit), Spacer(1, 4)]
         for lbl, val in linhas:
             c_tot.append(Paragraph(f"<b>{lbl}:</b> {val}", style_val))
-        return c_tot
+        t = Table([[c_tot]], colWidths=[525])
+        t.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#f8fafc')),
+            ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1')),
+            ('PADDING', (0,0), (-1,-1), 8),
+        ]))
+        return t
 
-    b_emp = bloco_dados("Dados da Empresa", [
+    # DISPOSIÇÃO VERTICAL (UM ABAIXO DO OUTRO)
+    b_emp_vert = criar_bloco_vertical("Dados da Empresa", [
         ("Razão Social", "Okamoto Reportagens Fotográficas SS Ltda"),
         ("CNPJ", "04.824.331/0001-05"),
         ("Endereço", "Rua General Carneiro, 860 - Centro"),
         ("Cidade/UF", "Brodowski - SP | CEP: 14.340-023")
     ])
 
-    b_pes = bloco_dados("Dados Pessoais", [
+    b_pes_vert = criar_bloco_vertical("Dados Pessoais", [
         ("Responsável", "Rubens Heigasi Okamoto"),
         ("CPF", "287.932.298-79"),
         ("Telefone/WhatsApp", "16 99133 2121"),
         ("E-mail", "contato@okamotomidiasvisuais.com.br")
     ])
 
-    b_ban = bloco_dados("Dados Bancários", [
+    b_ban_vert = criar_bloco_vertical("Dados Bancários", [
         ("Banco", "Banco do Brasil"),
         ("Agência", "3235-2"),
         ("Conta Corrente", "11.935-0"),
         ("Chave PIX (CNPJ)", "04824331000105")
     ])
 
-    t_dados_2col = Table([[b_emp, b_pes]], colWidths=[260, 265])
-    t_dados_2col.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'TOP')]))
-    story.append(t_dados_2col)
-    story.append(Spacer(1, 20))
-
-    t_dados_ban = Table([[b_ban, ""]], colWidths=[260, 265])
-    t_dados_ban.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'TOP')]))
-    story.append(t_dados_ban)
+    story.append(b_emp_vert)
+    story.append(Spacer(1, 12))
+    story.append(b_pes_vert)
+    story.append(Spacer(1, 12))
+    story.append(b_ban_vert)
 
     doc.build(story, canvasmaker=CanvasExecutivoAlinhado)
     buffer.seek(0)
@@ -516,7 +549,7 @@ with aba_orcamento:
     val_subtotal = 2600.0
     val_desconto_pct = 0.0
     val_total = 2600.0
-    val_extenso = "(Dois mil e seiscentos reais)"
+    val_extenso = converter_valor_extenso(2600.0)
     val_cond_pag = "Até 20 dias após o evento."
     val_status = "Orçamento / Proposta"
 
@@ -540,7 +573,7 @@ with aba_orcamento:
             val_subtotal = float(p_data.get("Valor_Subtotal", 2600.0))
             val_desconto_pct = float(p_data.get("Desconto_Pct", 0.0))
             val_total = float(p_data.get("Valor_Total", 2600.0))
-            val_extenso = str(p_data.get("Valor_Extenso", ""))
+            val_extenso = str(p_data.get("Valor_Extenso", converter_valor_extenso(val_total)))
             val_cond_pag = str(p_data.get("Condicoes_Pag", ""))
             val_status = str(p_data.get("Status", "Orçamento / Proposta"))
             
@@ -603,7 +636,9 @@ with aba_orcamento:
     valor_final_com_desc = max(0.0, subtotal_input * (1.0 - (desconto_pct_input / 100.0)))
     ci3.metric("Valor Total com Desconto", f"R$ {valor_final_com_desc:,.2f}")
 
-    valor_extenso = st.text_input("Valor por Extenso:", value=val_extenso)
+    # CONVERSÃO AUTOMÁTICA EM TEMPO REAL DO VALOR POR EXTENSO
+    valor_extenso_auto = converter_valor_extenso(valor_final_com_desc)
+    valor_extenso = st.text_input("Valor por Extenso (Gerado Automático):", value=valor_extenso_auto)
 
     st.session_state['texto_institucional'] = st.text_area(
         "Apresentação Institucional da Empresa (exibida na Página 1 do PDF):",
@@ -629,7 +664,7 @@ with aba_orcamento:
         "condicoes_pag": condicoes_pag
     }
     
-    pdf_bytes = gerar_pdf_3_paginas_moderno(dados_pdf, st.session_state['texto_institucional'])
+    pdf_bytes = gerar_pdf_3_paginas_corrigido(dados_pdf, st.session_state['texto_institucional'])
 
     st.markdown("---")
     cb1, cb2 = st.columns(2)
