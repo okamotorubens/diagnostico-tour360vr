@@ -1,7 +1,6 @@
 streamlit
 requests
 fpdf2
-
 streamlit
 pandas
 reportlab
