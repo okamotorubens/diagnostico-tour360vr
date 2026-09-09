@@ -6,11 +6,11 @@ import os
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, Image
 from reportlab.pdfgen import canvas
 
 # -----------------------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA E ESTILOS
+# 1. CONFIGURAÇÃO DA PÁGINA E CSS TEMA DASHBOARD
 # -----------------------------------------------------------------------------
 st.set_page_config(
     page_title="CRM Okamoto Mídias Visuais",
@@ -110,45 +110,53 @@ if 'df_pedidos' not in st.session_state:
     st.session_state['df_pedidos'] = pd.DataFrame([
         {
             "Numero_Pedido": "Pedido 0001",
-            "Empresa": "Clínica Personalitté",
-            "Contato": "Joseph",
-            "Telefone": "+55 (16) 99767-8802",
-            "Data_Emissao": "09/09/2026",
-            "Data_Evento": "09/09/2026",
-            "Periodo_Servico": "2 horas e 30 minutos",
-            "Forma_Entrega": "Link exclusivo Google Drive e plataforma web",
-            "Prazo_Entrega": "Até 72 horas após a execução do serviço",
-            "Valor_Total": 440.0,
-            "Desconto_Pct": 20.0,
-            "Status": "Orçamento / Proposta",
-            "Servicos": "Cobertura fotográfica",
-            "Condicoes_Pag": "Parcelas: 2",
-            "Info_Adicionais": "• Captação;\n• Edição;\n• Envio de imagens em alta resolução."
+            "Empresa": "Ambient Serviços Ambientais de Ribeirão Preto S/A",
+            "Contato": "Natalia",
+            "Telefone": "(16) 99133-2121",
+            "Local": "Rod. Alexandre Balbo km 334,6 - Ribeirão Preto - SP",
+            "Data_Emissao": "08 de Setembro de 2026",
+            "Nome_Evento": "2º Encontro Internacional Técnico GS Inima Brasil",
+            "Data_Evento_Detalhada": "Dias 04 e 05/11/2026, das 8h00 as 18h00",
+            "Objetivo": "Cobertura fotográfica do evento\n• Captação de vídeo em Full HD\n• Período das 08h00 as 18h00\nIntervalo de 1h30 de almoço",
+            "Captacao": "Registros fotográficos e captações pontuais em vídeo (participantes, autoridades, apresentações, intervalos, entre outros momentos do evento).",
+            "Entrega": "Todo material fotográfico será editado e enviado, em alta e baixa resolução.\n• Todo material em vídeo será enviado bruto (sem edição).\nOs materiais serão enviados via link e ficará disponível pelo prazo de 30 dias para download.",
+            "Prazo_Entrega": "Até 72h após o término do evento.",
+            "Valor_Total": 5200.0,
+            "Valor_Extenso": "(Cinco mil e duzentos reais)",
+            "Condicoes_Pag": "Até 20 dias após o evento.",
+            "Status": "Orçamento / Proposta"
         }
     ])
 
 if 'df_clientes' not in st.session_state:
     st.session_state['df_clientes'] = pd.DataFrame([
-        {"Empresa": "Clínica Personalitté", "Contato": "Joseph", "Cidade": "Ribeirão Preto - SP", "Telefone": "+55 (16) 99767-8802", "Email": "joseph@personalitte.com.br", "Categoria / TAG": "CLÍNICAS"},
-        {"Empresa": "Taiwan Hotel Ltda", "Contato": "Gerência", "Cidade": "Ribeirão Preto - SP", "Telefone": "(16) 3900-0000", "Email": "reservas@taiwanhotel.com.br", "Categoria / TAG": "HOTELARIA"}
+        {"Empresa": "Ambient Serviços Ambientais de Ribeirão Preto S/A", "Contato": "Natalia", "Cidade": "Ribeirão Preto - SP", "Telefone": "(16) 99133-2121", "Email": "contato@ambient.com.br", "Categoria / TAG": "COMÉRCIO"},
+        {"Empresa": "Clínica Personalitté", "Contato": "Joseph", "Cidade": "Ribeirão Preto - SP", "Telefone": "+55 (16) 99767-8802", "Email": "joseph@personalitte.com.br", "Categoria / TAG": "CLÍNICAS"}
     ])
 
 if 'df_servicos' not in st.session_state:
     st.session_state['df_servicos'] = pd.DataFrame([
-        {"Nome_Servico": "Cobertura fotográfica", "Tipo_Cobranca": "Hora", "Valor_Base": 180.0, "Descricao": "Registros fotográficos de alta resolução com edição de cores."},
-        {"Nome_Servico": "Captação de vídeo", "Tipo_Cobranca": "Hora", "Valor_Base": 200.0, "Descricao": "Gravação em Full HD/4K (material bruto entregue via link)."},
-        {"Nome_Servico": "Google Street View", "Tipo_Cobranca": "Pacote", "Valor_Base": 560.0, "Descricao": "Envio de 06 imagens 360° para o perfil do Google."},
-        {"Nome_Servico": "Tour Virtual 360°", "Tipo_Cobranca": "Pacote", "Valor_Base": 800.0, "Descricao": "Mapeamento completo e publicação em ambiente web."}
+        {"Nome_Servico": "Cobertura Fotográfica e Captação de Vídeo", "Tipo_Cobranca": "Diária", "Valor_Base": 2600.0, "Descricao": "Cobertura completa em foto e vídeo para eventos institucionais."},
+        {"Nome_Servico": "Google Street View / Tour 360°", "Tipo_Cobranca": "Pacote", "Valor_Base": 800.0, "Descricao": "Mapeamento panorâmico 360° e integração com Google Meu Negócio."}
     ])
+
+if 'texto_institucional' not in st.session_state:
+    st.session_state['texto_institucional'] = (
+        "Com sólida experiência no mercado de imagem e fotografia profissional com mais de 30 anos de atuação, "
+        "a Okamoto Mídias Visuais é especializada na cobertura completa de eventos corporativos, institucionais "
+        "e científicos, além da produção de tours virtuais 360° de alta definição.\n\n"
+        "Nossa missão é registrar cada projeto com precisão técnica, agilidade e excelência visual, "
+        "garantindo um acervo de alta qualidade para ações de comunicação, mídias sociais e divulgação institucional."
+    )
 
 df_pedidos = st.session_state['df_pedidos']
 df_clientes = st.session_state['df_clientes']
 df_servicos = st.session_state['df_servicos']
 
 # -----------------------------------------------------------------------------
-# 5. GERADOR DE PDF DA PROPOSTA COMERCIAL
+# 5. GERADOR DE PDF DE 3 PÁGINAS (INSTITUCIONAL | ORÇAMENTO | DADOS)
 # -----------------------------------------------------------------------------
-class NumberedCanvas(canvas.Canvas):
+class NumberedCanvas3Paginas(canvas.Canvas):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._saved_page_states = []
@@ -164,122 +172,196 @@ class NumberedCanvas(canvas.Canvas):
             self.saveState()
             self.setFont("Helvetica", 8)
             self.setFillColor(colors.HexColor("#64748b"))
-            self.drawRightString(555, 20, f"Página {self._pageNumber}/{num_pages}")
+            self.drawString(35, 20, "16 99133 2121 | okamotomidiasvisuais.com.br")
+            self.drawRightString(560, 20, f"Página {self._pageNumber}/{num_pages}")
             self.restoreState()
             super().showPage()
         super().save()
 
-def gerar_pdf_layout_oficial(dados):
+def gerar_pdf_3_paginas(dados, texto_institucional):
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=35, rightMargin=35, topMargin=30, bottomMargin=35)
     styles = getSampleStyleSheet()
     
-    style_tit_empresa = ParagraphStyle('TitEmp', fontName='Helvetica-Bold', fontSize=10, leading=13, textColor=colors.HexColor('#0f172a'))
-    style_sub_empresa = ParagraphStyle('SubEmp', fontName='Helvetica', fontSize=8, leading=11, textColor=colors.HexColor('#475569'))
-    style_tit_proposta = ParagraphStyle('TitProp', fontName='Helvetica-Bold', fontSize=13, leading=16, textColor=colors.HexColor('#0284c7'))
-    style_cliente = ParagraphStyle('Cli', fontName='Helvetica', fontSize=9, leading=12, textColor=colors.HexColor('#334155'))
-    style_th = ParagraphStyle('TH', fontName='Helvetica-Bold', fontSize=9, leading=12, textColor=colors.HexColor('#0f172a'))
-    style_td = ParagraphStyle('TD', fontName='Helvetica', fontSize=8.5, leading=12, textColor=colors.HexColor('#334155'))
-    style_sec = ParagraphStyle('Sec', fontName='Helvetica-Bold', fontSize=9.5, leading=13, textColor=colors.HexColor('#0284c7'))
+    style_tit_prop = ParagraphStyle('TitP', fontName='Helvetica-Bold', fontSize=18, leading=22, textColor=colors.HexColor('#000000'))
+    style_data = ParagraphStyle('DataP', fontName='Helvetica', fontSize=9, leading=12, textColor=colors.HexColor('#64748b'))
+    style_label = ParagraphStyle('Lbl', fontName='Helvetica-Bold', fontSize=9, leading=12, textColor=colors.HexColor('#1e293b'))
+    style_val = ParagraphStyle('Val', fontName='Helvetica', fontSize=9, leading=12, textColor=colors.HexColor('#334155'))
+    style_sec_num = ParagraphStyle('SecNum', fontName='Helvetica-Bold', fontSize=11, leading=14, textColor=colors.HexColor('#2563eb'))
+    style_sec_tit = ParagraphStyle('SecTit', fontName='Helvetica-Bold', fontSize=11, leading=14, textColor=colors.HexColor('#0f172a'))
+    style_txt_block = ParagraphStyle('TxtBlock', fontName='Helvetica', fontSize=8.5, leading=12, textColor=colors.HexColor('#334155'))
+    style_inst = ParagraphStyle('Inst', fontName='Helvetica', fontSize=10, leading=15, textColor=colors.HexColor('#334155'))
 
     story = []
 
-    col_esquerda = []
-    if st.session_state.get('logo_bytes'):
-        try:
-            img_buf = io.BytesIO(st.session_state['logo_bytes'])
-            col_esquerda.append(Image(img_buf, width=70, height=70))
-            col_esquerda.append(Spacer(1, 4))
-        except Exception:
-            pass
-            
-    col_esquerda.extend([
-        Paragraph("<b>OKAMOTO REPORTAGENS FOTOGRAFICAS S/S LTDA</b>", style_tit_empresa),
-        Paragraph("CNPJ: 04.824.331/0001-05<br/>contato@tour360vr.com.br<br/>+55 (16) 99133-2121<br/>+55 (16) 99622-2121<br/><i>A mais nova forma de ver o mundo</i>", style_sub_empresa)
-    ])
+    def obter_bloco_logo(w=130, h=42):
+        if st.session_state.get('logo_bytes'):
+            try:
+                img_buf = io.BytesIO(st.session_state['logo_bytes'])
+                return Image(img_buf, width=w, height=h)
+            except Exception:
+                pass
+        return Paragraph("<font size='14' color='#2563eb'><b>OKAMOTO MÍDIAS VISUAIS</b></font>", style_label)
 
-    col_direita = [
-        Paragraph(f"Proposta comercial {dados['num_pedido']}", style_tit_proposta),
-        Spacer(1, 6),
-        Paragraph(f"<b>{dados['empresa']}</b><br/>Cliente: {dados['contato']}<br/>{dados.get('telefone_cli', '')}", style_cliente)
-    ]
-
-    t_header = Table([[col_esquerda, col_direita]], colWidths=[270, 250])
-    t_header.setStyle(TableStyle([
-        ('VALIGN', (0,0), (-1,-1), 'TOP'),
-        ('ALIGN', (1,0), (1,0), 'RIGHT'),
-    ]))
-    story.append(t_header)
+    # =========================================================================
+    # PÁGINA 1: APRESENTAÇÃO INSTITUCIONAL
+    # =========================================================================
+    logo_p1 = obter_bloco_logo(140, 45)
+    t_top_p1 = Table([[logo_p1, Paragraph("<b>OKAMOTO MÍDIAS VISUAIS</b><br/><font color='#64748b' size='8'>Fotografia Profissional & Tours Virtuais 360°</font>", style_txt_block)]], colWidths=[160, 365])
+    t_top_p1.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'MIDDLE'), ('ALIGN', (1,0), (1,0), 'RIGHT')]))
+    story.append(t_top_p1)
     story.append(Spacer(1, 15))
 
-    srv_table_data = [[Paragraph("Serviços", style_th), Paragraph("Descrição / Escopo", style_th), Paragraph("Detalhes", style_th)]]
-    for item in dados['itens']:
-        srv_table_data.append([
-            Paragraph(f"<b>{item['nome']}</b>", style_td),
-            Paragraph(item.get('desc', ''), style_td),
-            Paragraph(f"Período: {dados.get('periodo_servico', 'Atendimento Padrão')}", style_td)
-        ])
-    
-    if dados.get('desconto_pct', 0) > 0:
-        srv_table_data.append([
-            Paragraph("<b>Desconto Aplicado</b>", style_td),
-            "",
-            Paragraph(f"- {dados['desconto_pct']:.0f}%", style_td)
-        ])
+    story.append(Paragraph("<b>Apresentação Institucional</b>", style_tit_prop))
+    story.append(Spacer(1, 10))
 
-    srv_table_data.append([
-        Paragraph("<b>Total Final</b>", style_th),
-        "",
-        Paragraph(f"<b>R$ {dados['valor_final']:,.2f}</b>", style_th)
-    ])
-
-    t_servicos = Table(srv_table_data, colWidths=[160, 240, 120])
-    t_servicos.setStyle(TableStyle([
-        ('LINEABOVE', (0,0), (-1,0), 1, colors.HexColor('#0284c7')),
-        ('LINEBELOW', (0,0), (-1,0), 1, colors.HexColor('#cbd5e1')),
-        ('LINEBELOW', (0,-1), (-1,-1), 1, colors.HexColor('#0f172a')),
-        ('ALIGN', (2,0), (2,-1), 'RIGHT'),
-        ('PADDING', (0,0), (-1,-1), 5),
-    ]))
-    story.append(t_servicos)
-    story.append(Spacer(1, 12))
-
-    col_pagamento = [
-        Paragraph("Pagamento", style_sec),
-        Spacer(1, 3),
-        Paragraph("<b>Meios de pagamento</b><br/>Transferência bancária, cartão de crédito ou pix.", style_td),
-        Spacer(1, 4),
-        Paragraph("<b>Dados bancários</b><br/>Banco: Banco do Brasil<br/>Agência: 3235-2 | Conta: 11935-0 (Corrente)<br/>Titular: 04.824.331/0001-05", style_td),
-        Spacer(1, 4),
-        Paragraph(f"<b>PIX:</b> 04824331000105<br/><b>Condições:</b> {dados.get('condicoes_pag', 'Parcelas: 2')}", style_td)
-    ]
-
-    col_info = [
-        Paragraph("Entrega e Informações Adicionais", style_sec),
-        Spacer(1, 3),
-        Paragraph(f"<b>Forma de Entrega:</b> {dados.get('forma_entrega', 'Link exclusivo')}", style_td),
-        Paragraph(f"<b>Prazo de Entrega:</b> {dados.get('prazo_entrega', 'Até 72h')}", style_td),
-        Spacer(1, 4),
-        Paragraph("<b>Observações:</b>", style_td),
-        Paragraph(dados.get('info_adicionais', '').replace('\n', '<br/>'), style_td)
-    ]
-
-    t_rodape = Table([[col_pagamento, col_info]], colWidths=[260, 260])
-    t_rodape.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'TOP')]))
-    story.append(t_rodape)
+    story.append(Paragraph(texto_institucional.replace('\n', '<br/>'), style_inst))
     story.append(Spacer(1, 20))
 
-    ass_data = [
-        [
-            Paragraph("___________________________________<br/><b>Rubens Okamoto</b><br/>Tour360VR", style_td),
-            Paragraph(f"___________________________________<br/><b>{dados['contato']}</b><br/>Data: {dados['data_orcamento']}", style_td)
-        ]
-    ]
-    t_ass = Table(ass_data, colWidths=[260, 260])
-    t_ass.setStyle(TableStyle([('ALIGN', (0,0), (-1,-1), 'CENTER')]))
-    story.append(t_ass)
+    story.append(Paragraph("<b>Diferenciais Competitivos & Estrutura Técnica</b>", style_sec_tit))
+    story.append(Spacer(1, 8))
 
-    doc.build(story, canvasmaker=NumberedCanvas)
+    dif_data = [
+        [Paragraph("<b>Diferencial Técnico</b>", style_label), Paragraph("<b>Garantia e Benefício</b>", style_label)],
+        [Paragraph("Equipamentos Full Frame e Câmeras 360°", style_val), Paragraph("Alta nitidez, resolução e fidelidade de cores.", style_val)],
+        [Paragraph("Agilidade no Atendimento", style_val), Paragraph("Prévia de fotos enviada rapidamente para cobertura em tempo real.", style_val)],
+        [Paragraph("Plataforma de Download em Nuvem", style_val), Paragraph("Acesso seguro via link exclusivo com prazo estendido.", style_val)]
+    ]
+    t_dif = Table(dif_data, colWidths=[220, 305])
+    t_dif.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#f1f5f9')),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1')),
+        ('PADDING', (0,0), (-1,-1), 8),
+    ]))
+    story.append(t_dif)
+
+    # =========================================================================
+    # PÁGINA 2: ORÇAMENTO COMERCIAL COMPLETO
+    # =========================================================================
+    story.append(PageBreak())
+
+    col_tit = [
+        Paragraph("<b>PROPOSTA COMERCIAL</b>", style_tit_prop),
+        Spacer(1, 2),
+        Paragraph(f"Proposta {dados['num_pedido']} | {dados['data_orcamento']}", style_data)
+    ]
+    col_logo = [obter_bloco_logo(110, 36)]
+
+    t_top_p2 = Table([[col_tit, col_logo]], colWidths=[330, 195])
+    t_top_p2.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'TOP'), ('ALIGN', (1,0), (1,0), 'RIGHT')]))
+    story.append(t_top_p2)
+    story.append(Spacer(1, 10))
+
+    t_cli_data = [
+        [Paragraph("Empresa:", style_label), Paragraph(dados['empresa'], style_val)],
+        [Paragraph("Contato:", style_label), Paragraph(dados['contato'], style_val)],
+        [Paragraph("Local:", style_label), Paragraph(dados['local'], style_val)]
+    ]
+    t_cli = Table(t_cli_data, colWidths=[65, 460])
+    t_cli.setStyle(TableStyle([
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 4),
+        ('LINEBELOW', (0,0), (-1,-1), 0.5, colors.HexColor('#e2e8f0')),
+    ]))
+    story.append(t_cli)
+    story.append(Spacer(1, 10))
+
+    story.append(Paragraph("<b>Escopo do Serviço</b>", style_sec_tit))
+    story.append(Spacer(1, 6))
+
+    def criar_bloco_escopo(numero, titulo, conteudo):
+        c1 = Paragraph(f"<b>{numero}</b>", style_sec_num)
+        c2 = [
+            Paragraph(f"<b>{titulo}</b>", style_sec_tit),
+            Paragraph(conteudo.replace('\n', '<br/>'), style_txt_block)
+        ]
+        t = Table([[c1, c2]], colWidths=[20, 505])
+        t.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'TOP'), ('BOTTOMPADDING', (0,0), (-1,-1), 5)]))
+        return t
+
+    story.append(criar_bloco_escopo("1", "Evento", f"{dados['nome_evento']}\n• {dados['data_evento_detalhada']}\n{dados['local']}"))
+    story.append(criar_bloco_escopo("2", "Objetivo", dados['objetivo']))
+    story.append(criar_bloco_escopo("3", "Captação", dados['captacao']))
+    story.append(criar_bloco_escopo("4", "Entrega", dados['entrega']))
+    story.append(Spacer(1, 4))
+
+    t_prazo_data = [[Paragraph("<b>Prazo de Entrega</b>", style_label), Paragraph(dados['prazo_entrega'], style_val)]]
+    t_prazo = Table(t_prazo_data, colWidths=[110, 415])
+    t_prazo.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'TOP'), ('LINEBELOW', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1'))]))
+    story.append(t_prazo)
+    story.append(Spacer(1, 6))
+
+    t_inv_data = [
+        [Paragraph("<b>Investimento do serviço:</b>", style_label), Paragraph(f"Valor total: <b>R$ {dados['valor_total']:,.2f}</b>", style_val)],
+        ["", Paragraph(dados['valor_extenso'], style_val)]
+    ]
+    t_inv = Table(t_inv_data, colWidths=[130, 395])
+    t_inv.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#f8fafc')),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1')),
+        ('PADDING', (0,0), (-1,-1), 5),
+    ]))
+    story.append(t_inv)
+    story.append(Spacer(1, 6))
+
+    t_obs_data = [[Paragraph("Forma de pagamento:", style_label), Paragraph(dados['condicoes_pag'], style_val)]]
+    t_obs = Table(t_obs_data, colWidths=[110, 415])
+    t_obs.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'TOP')]))
+    story.append(t_obs)
+    story.append(Spacer(1, 8))
+
+    story.append(Paragraph("Estamos à disposição para qualquer esclarecimento adicional, ou alteração, caso seja necessário.", style_txt_block))
+    story.append(Spacer(1, 10))
+    story.append(Paragraph("Atenciosamente,<br/><b>Rubens Okamoto</b><br/>16 99133 2121 | okamotomidiasvisuais.com.br", style_txt_block))
+
+    # =========================================================================
+    # PÁGINA 3: DADOS DA EMPRESA, PESSOAIS E BANCÁRIOS
+    # =========================================================================
+    story.append(PageBreak())
+
+    story.append(obter_bloco_logo(120, 38))
+    story.append(Spacer(1, 10))
+
+    story.append(Paragraph("<b>Dados Cadastrais & Informações Bancárias</b>", style_tit_prop))
+    story.append(Spacer(1, 12))
+
+    def bloco_dados(titulo, linhas):
+        c_tot = [Paragraph(f"<b>{titulo}</b>", style_sec_tit), Spacer(1, 4)]
+        for lbl, val in linhas:
+            c_tot.append(Paragraph(f"<b>{lbl}:</b> {val}", style_val))
+        return c_tot
+
+    b_emp = bloco_dados("Dados da Empresa", [
+        ("Razão Social", "Okamoto Reportagens Fotográficas SS Ltda"),
+        ("CNPJ", "04.824.331/0001-05"),
+        ("Endereço", "Rua General Carneiro, 860 - Centro"),
+        ("Cidade/UF", "Brodowski - SP | CEP: 14.340-023")
+    ])
+
+    b_pes = bloco_dados("Dados Pessoais", [
+        ("Responsável", "Rubens Heigasi Okamoto"),
+        ("CPF", "287.932.298-79"),
+        ("Telefone/WhatsApp", "16 99133 2121"),
+        ("E-mail", "contato@okamotomidiasvisuais.com.br")
+    ])
+
+    b_ban = bloco_dados("Dados Bancários", [
+        ("Banco", "Banco do Brasil"),
+        ("Agência", "3235-2"),
+        ("Conta Corrente", "11.935-0"),
+        ("Chave PIX (CNPJ)", "04824331000105")
+    ])
+
+    t_dados_2col = Table([[b_emp, b_pes]], colWidths=[260, 265])
+    t_dados_2col.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'TOP')]))
+    story.append(t_dados_2col)
+    story.append(Spacer(1, 16))
+
+    t_dados_ban = Table([[b_ban, ""]], colWidths=[260, 265])
+    t_dados_ban.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'TOP')]))
+    story.append(t_dados_ban)
+
+    doc.build(story, canvasmaker=NumberedCanvas3Paginas)
     buffer.seek(0)
     return buffer
 
@@ -289,7 +371,7 @@ def gerar_pdf_ficha_cliente(cliente_data, pedidos_cli):
     styles = getSampleStyleSheet()
     
     style_tit = ParagraphStyle('Tit', fontName='Helvetica-Bold', fontSize=16, leading=20, textColor=colors.HexColor('#0f172a'))
-    style_sub = ParagraphStyle('Sub', fontName='Helvetica-Bold', fontSize=11, leading=14, textColor=colors.HexColor('#0284c7'))
+    style_sub = ParagraphStyle('Sub', fontName='Helvetica-Bold', fontSize=11, leading=14, textColor=colors.HexColor('#2563eb'))
     style_td = ParagraphStyle('TD', fontName='Helvetica', fontSize=9, leading=13, textColor=colors.HexColor('#334155'))
 
     story = [
@@ -371,19 +453,21 @@ with aba_orcamento:
     
     # VALORES PADRÃO INICIAIS
     val_num_ped = f"Pedido {len(df_pedidos)+1:04d}"
-    val_empresa = "Clínica Personalitté"
-    val_contato = "Joseph"
-    val_tel = "+55 (16) 99767-8802"
-    val_data_emissao = datetime.now()
-    val_servicos_sel = [df_servicos["Nome_Servico"].iloc[0]]
+    val_empresa = "Ambient Serviços Ambientais de Ribeirão Preto S/A"
+    val_contato = "Natalia"
+    val_tel = "(16) 99133-2121"
+    val_local = "Rod. Alexandre Balbo km 334,6 - Ribeirão Preto - SP"
+    val_data_emissao = "08 de Setembro de 2026"
+    val_nome_evento = "2º Encontro Internacional Técnico GS Inima Brasil"
+    val_data_evento_det = "Dias 04 e 05/11/2026, das 8h00 as 18h00"
+    val_objetivo = "Cobertura fotográfica do evento\n• Captação de vídeo em Full HD\n• Período das 08h00 as 18h00\nIntervalo de 1h30 de almoço"
+    val_captacao = "Registros fotográficos e captações pontuais em vídeo (participantes, autoridades, apresentações, intervalos, entre outros momentos do evento)."
+    val_entrega = "Todo material fotográfico será editado e enviado, em alta e baixa resolução.\n• Todo material em vídeo será enviado bruto (sem edição).\nOs materiais serão enviados via link e ficará disponível pelo prazo de 30 dias para download."
+    val_prazo = "Até 72h após o término do evento."
+    val_total = 5200.0
+    val_extenso = "(Cinco mil e duzentos reais)"
+    val_cond_pag = "Até 20 dias após o evento."
     val_status = "Orçamento / Proposta"
-    val_cond_pag = "Parcelas: 2"
-    val_info_adj = "• Captação;\n• Edição;\n• Envio de imagens em alta resolução."
-    val_forma_entrega = "Link exclusivo Google Drive e plataforma web"
-    val_prazo_entrega = "Até 72 horas após a execução do serviço"
-    val_horas = 2
-    val_minutos = 30
-    val_desconto = 20.0
 
     if pedido_selecionado != "➕ Criar Novo Pedido do Zero":
         num_p_extraido = pedido_selecionado.split(" - ")[0]
@@ -394,91 +478,80 @@ with aba_orcamento:
             val_empresa = str(p_data.get("Empresa", ""))
             val_contato = str(p_data.get("Contato", ""))
             val_tel = str(p_data.get("Telefone", ""))
+            val_local = str(p_data.get("Local", ""))
+            val_data_emissao = str(p_data.get("Data_Emissao", ""))
+            val_nome_evento = str(p_data.get("Nome_Evento", ""))
+            val_data_evento_det = str(p_data.get("Data_Evento_Detalhada", ""))
+            val_objetivo = str(p_data.get("Objetivo", ""))
+            val_captacao = str(p_data.get("Captacao", ""))
+            val_entrega = str(p_data.get("Entrega", ""))
+            val_prazo = str(p_data.get("Prazo_Entrega", ""))
+            val_total = float(p_data.get("Valor_Total", 0.0))
+            val_extenso = str(p_data.get("Valor_Extenso", ""))
+            val_cond_pag = str(p_data.get("Condicoes_Pag", ""))
             val_status = str(p_data.get("Status", "Orçamento / Proposta"))
-            val_cond_pag = str(p_data.get("Condicoes_Pag", "Parcelas: 2"))
-            val_info_adj = str(p_data.get("Info_Adicionais", ""))
-            val_forma_entrega = str(p_data.get("Forma_Entrega", val_forma_entrega))
-            val_prazo_entrega = str(p_data.get("Prazo_Entrega", val_prazo_entrega))
-            val_desconto = float(p_data.get("Desconto_Pct", 0.0))
-            
-            srv_str = str(p_data.get("Servicos", ""))
-            val_servicos_sel = [s.strip() for s in srv_str.split(",") if s.strip() in df_servicos["Nome_Servico"].tolist()]
-            if not val_servicos_sel:
-                val_servicos_sel = [df_servicos["Nome_Servico"].iloc[0]]
 
-    col1, col2 = st.columns(2)
-    with col1:
-        num_pedido = st.text_input("Número do Pedido/Proposta", value=val_num_ped)
-        empresa_sel = st.text_input("Empresa / Cliente", value=val_empresa)
-        contato = st.text_input("Pessoa de Contato", value=val_contato)
-        tel_cli = st.text_input("Telefone do Cliente", value=val_tel)
-        data_orcamento = st.date_input("Data de Emissão", value=val_data_emissao).strftime('%d/%m/%Y')
+    c1, c2 = st.columns(2)
+    with c1:
+        num_pedido = st.text_input("Número do Pedido/Proposta:", value=val_num_ped)
+        empresa_sel = st.text_input("Empresa:", value=val_empresa)
+        contato = st.text_input("Contato:", value=val_contato)
+        tel_cli = st.text_input("Telefone:", value=val_tel)
+        local_cli = st.text_input("Local do Evento:", value=val_local)
 
-    with col2:
-        servicos_sel = st.multiselect("Serviços Solicitados", df_servicos["Nome_Servico"].tolist(), default=val_servicos_sel)
-        status_sel = st.selectbox("Status do Pedido", ["Orçamento / Proposta", "Em atendimento", "Negociação/Revisão", "Aprovado", "Produção", "Concluído"], index=0)
-        condicoes_pag = st.text_input("Condições de Pagamento", value=val_cond_pag)
+    with c2:
+        data_orcamento = st.text_input("Data de Emissão:", value=val_data_emissao)
+        status_sel = st.selectbox("Status do Pedido:", ["Orçamento / Proposta", "Em atendimento", "Negociação/Revisão", "Aprovado", "Produção", "Concluído"], index=0)
+        condicoes_pag = st.text_input("Forma de Pagamento:", value=val_cond_pag)
+        prazo_entrega = st.text_input("Prazo de Entrega:", value=val_prazo)
 
     st.markdown("---")
-    st.markdown("### ⏱️ Período do Serviço & Cálculo de Valores")
+    st.markdown("### 📝 ESCOPO DO SERVIÇO (DETALHAMENTO TÉCNICO)")
     
-    cp1, cp2, cp3, cp4 = st.columns(4)
-    qtd_horas = cp1.number_input("Horas de Serviço:", min_value=0, max_value=24, value=val_horas, step=1)
-    qtd_minutos = cp2.selectbox("Minutos:", [0, 15, 30, 45], index=[0, 15, 30, 45].index(val_minutos) if val_minutos in [0, 15, 30, 45] else 2)
-    pct_desconto = cp3.number_input("Desconto (%):", min_value=0.0, max_value=100.0, value=val_desconto, step=5.0)
+    col_e1, col_e2 = st.columns(2)
+    nome_evento = col_e1.text_input("1. Nome do Evento:", value=val_nome_evento)
+    data_evento_detalhada = col_e2.text_input("1. Datas e Horários do Evento:", value=val_data_evento_det)
     
-    # CÁLCULO AUTOMÁTICO DE VALOR COM BASE NAS HORAS
-    tempo_total_horas = qtd_horas + (qtd_minutos / 60.0)
-    valor_hora_base = 180.0
-    
-    if servicos_sel:
-        r_primeiro = df_servicos[df_servicos["Nome_Servico"] == servicos_sel[0]].iloc[0]
-        if str(r_primeiro.get("Tipo_Cobranca", "")).lower() == "hora":
-            valor_hora_base = float(r_primeiro.get("Valor_Base", 180.0))
-
-    subtotal_calculado = tempo_total_horas * valor_hora_base if tempo_total_horas > 0 else valor_hora_base
-    valor_desconto = subtotal_calculado * (pct_desconto / 100.0)
-    valor_final_calculado = max(0.0, subtotal_calculado - valor_desconto)
-    
-    cp4.metric("Valor Final Calculado", f"R$ {valor_final_calculado:,.2f}", delta=f"- R$ {valor_desconto:,.2f}" if pct_desconto > 0 else None)
-
-    str_periodo = f"{qtd_horas}h" + (f"{qtd_minutos}min" if qtd_minutos > 0 else "")
+    objetivo_txt = st.text_area("2. Objetivo:", value=val_objetivo, height=80)
+    captacao_txt = st.text_area("3. Captação:", value=val_captacao, height=80)
+    entrega_txt = st.text_area("4. Entrega:", value=val_entrega, height=100)
 
     st.markdown("---")
-    st.markdown("### 📦 Condições de Entrega & Observações")
-    ce1, ce2 = st.columns(2)
-    forma_entrega = ce1.text_input("Forma de Entrega:", value=val_forma_entrega)
-    prazo_entrega = ce2.text_input("Prazo de Entrega:", value=val_prazo_entrega)
-    info_adicionais = st.text_area("Informações Adicionais", value=val_info_adj, height=100)
+    st.markdown("### 💰 INVESTIMENTO & APRESENTAÇÃO INSTITUCIONAL")
+    ci1, ci2 = st.columns(2)
+    valor_total = ci1.number_input("Valor Total (R$):", value=float(val_total), step=100.0)
+    valor_extenso = ci2.text_input("Valor por Extenso:", value=val_extenso)
 
-    itens_detalhados = []
-    for s in servicos_sel:
-        r = df_servicos[df_servicos["Nome_Servico"] == s].iloc[0]
-        v = float(r["Valor_Base"])
-        itens_detalhados.append({"nome": s, "desc": str(r.get("Descricao", "")), "valor": v})
+    st.session_state['texto_institucional'] = st.text_area(
+        "Apresentação Institucional da Empresa (exibida na Página 1 do PDF):",
+        value=st.session_state['texto_institucional'],
+        height=90
+    )
 
     dados_pdf = {
         "num_pedido": num_pedido,
         "empresa": empresa_sel,
         "contato": contato,
         "telefone_cli": tel_cli,
+        "local": local_cli,
         "data_orcamento": data_orcamento,
-        "condicoes_pag": condicoes_pag,
-        "periodo_servico": str_periodo,
-        "forma_entrega": forma_entrega,
+        "nome_evento": nome_evento,
+        "data_evento_detalhada": data_evento_detalhada,
+        "objetivo": objetivo_txt,
+        "captacao": captacao_txt,
+        "entrega": entrega_txt,
         "prazo_entrega": prazo_entrega,
-        "info_adicionais": info_adicionais,
-        "desconto_pct": pct_desconto,
-        "itens": itens_detalhados,
-        "valor_final": valor_final_calculado
+        "valor_total": valor_total,
+        "valor_extenso": valor_extenso,
+        "condicoes_pag": condicoes_pag
     }
     
-    pdf_bytes = gerar_pdf_layout_oficial(dados_pdf)
+    pdf_bytes = gerar_pdf_3_paginas(dados_pdf, st.session_state['texto_institucional'])
 
     st.markdown("---")
     cb1, cb2 = st.columns(2)
     with cb1:
-        st.download_button("📥 Baixar PDF da Proposta Comercial", data=pdf_bytes, file_name=f"Proposta_{num_pedido}.pdf", mime="application/pdf", use_container_width=True)
+        st.download_button("📥 Baixar PDF da Proposta Comercial (3 Páginas)", data=pdf_bytes, file_name=f"Proposta_{num_pedido}.pdf", mime="application/pdf", use_container_width=True)
     with cb2:
         if st.button("💾 Salvar / Atualizar Pedido no CRM", use_container_width=True):
             idx_existente = df_pedidos[df_pedidos["Numero_Pedido"] == num_pedido].index
@@ -487,17 +560,19 @@ with aba_orcamento:
                 "Empresa": empresa_sel,
                 "Contato": contato,
                 "Telefone": tel_cli,
+                "Local": local_cli,
                 "Data_Emissao": data_orcamento,
                 "Data_Evento": data_orcamento,
-                "Periodo_Servico": str_periodo,
-                "Forma_Entrega": forma_entrega,
+                "Nome_Evento": nome_evento,
+                "Data_Evento_Detalhada": data_evento_detalhada,
+                "Objetivo": objetivo_txt,
+                "Captacao": captacao_txt,
+                "Entrega": entrega_txt,
                 "Prazo_Entrega": prazo_entrega,
-                "Valor_Total": valor_final_calculado,
-                "Desconto_Pct": pct_desconto,
-                "Status": status_sel,
-                "Servicos": ", ".join(servicos_sel),
+                "Valor_Total": valor_total,
+                "Valor_Extenso": valor_extenso,
                 "Condicoes_Pag": condicoes_pag,
-                "Info_Adicionais": info_adicionais
+                "Status": status_sel
             }
             if not idx_existente.empty:
                 for k, v in novo_d.items():
@@ -530,7 +605,7 @@ with aba_kanban:
                     </div>
                     """, unsafe_allow_html=True)
 
-# ABA 3: GESTÃO DE CLIENTES (ACESSO E PDF INDIVIDUAL)
+# ABA 3: GESTÃO DE CLIENTES
 with aba_clientes:
     st.subheader("🏢 Cadastrar / Consultar Cliente Individual")
     
@@ -567,7 +642,6 @@ with aba_clientes:
         
     st.dataframe(df_c_exibir, use_container_width=True)
 
-    # VISUALIZAÇÃO E PDF INDIVIDUAL DO CLIENTE
     if not df_c_exibir.empty:
         st.markdown("---")
         st.markdown("### 📄 Visualizar Ficha Individual do Cliente")
