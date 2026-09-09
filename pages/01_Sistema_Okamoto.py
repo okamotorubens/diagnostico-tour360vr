@@ -10,27 +10,143 @@ from reportlab.pdfgen import canvas
 from streamlit_gsheets import GSheetsConnection
 
 # -----------------------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA E LOGIN SEGURO
+# 1. CONFIGURAÇÃO DA PÁGINA E ESTILIZAÇÃO CSS AVANÇADA (SaaS LOOK)
 # -----------------------------------------------------------------------------
 st.set_page_config(
-    page_title="Sistema Okamoto & Tour360",
-    page_icon="💼",
-    layout="wide"
+    page_title="Okamoto Mídias & Tour360VR",
+    page_icon="⚡",
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
+# Injeção de CSS para layout moderno de software pago
+st.markdown("""
+<style>
+    /* Estilização Geral do Fundo e Fontes */
+    .stApp {
+        background-color: #0b0f17;
+    }
+    
+    /* Ocultar elementos desnecessários da barra lateral */
+    [data-testid="stSidebar"] {
+        background-color: #111827;
+        border-right: 1px solid #1f2937;
+    }
+    
+    /* Header do Dashboard */
+    .header-box {
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        border: 1px solid #334155;
+        border-radius: 16px;
+        padding: 24px 30px;
+        margin-bottom: 25px;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+    }
+    
+    .header-title {
+        color: #f8fafc;
+        font-size: 26px;
+        font-weight: 700;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    
+    .header-subtitle {
+        color: #94a3b8;
+        font-size: 14px;
+        margin-top: 6px;
+    }
+    
+    /* Cards de Métricas (KPIs) */
+    .kpi-card {
+        background: #1e293b;
+        border: 1px solid #334155;
+        border-radius: 14px;
+        padding: 18px 20px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    
+    .kpi-title {
+        color: #94a3b8;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .kpi-value {
+        color: #38bdf8;
+        font-size: 24px;
+        font-weight: 700;
+        margin-top: 6px;
+    }
+
+    /* Cards do Kanban */
+    .kanban-card {
+        background: #1e293b;
+        border: 1px solid #334155;
+        border-left: 4px solid #3b82f6;
+        border-radius: 10px;
+        padding: 14px;
+        margin-bottom: 12px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+    }
+    
+    .kanban-title {
+        color: #f8fafc;
+        font-weight: 600;
+        font-size: 14px;
+    }
+    
+    .kanban-price {
+        color: #10b981;
+        font-weight: 700;
+        font-size: 15px;
+        margin-top: 4px;
+    }
+    
+    .kanban-date {
+        color: #64748b;
+        font-size: 11px;
+        margin-top: 6px;
+    }
+
+    /* Ajuste de Botões */
+    .stButton>button {
+        border-radius: 10px;
+        font-weight: 600;
+        border: none;
+        transition: all 0.2s ease;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# -----------------------------------------------------------------------------
+# 2. LOGIN E SEGURANÇA
+# -----------------------------------------------------------------------------
 def verificar_senha():
     if "autenticado" not in st.session_state:
         st.session_state["autenticado"] = False
 
     if not st.session_state["autenticado"]:
-        st.title("🔒 Acesso Restrito - Okamoto Mídias Visuais")
-        senha = st.text_input("Digite a senha de acesso ao sistema:", type="password")
-        if st.button("Entrar"):
-            if senha == "okamoto2026":  # Altere esta senha se desejar
-                st.session_state["autenticado"] = True
-                st.rerun()
-            else:
-                st.error("Senha incorreta!")
+        st.markdown("<br/><br/>", unsafe_allow_html=True)
+        col_c1, col_c2, col_c3 = st.columns([1, 2, 1])
+        with col_c2:
+            st.markdown("""
+            <div class="header-box" style="text-align: center;">
+                <h2 style="color: #f8fafc; margin-bottom: 8px;">🔐 Acesso Restrito</h2>
+                <p style="color: #94a3b8; font-size: 14px;">Okamoto Mídias Visuais & Tour360VR</p>
+            </div>
+            """, unsafe_allow_html=True)
+            senha = st.text_input("Senha de Acesso", type="password", placeholder="Digite a senha...")
+            if st.button("Acessar Plataforma", use_container_width=True):
+                if senha == "okamoto2026":
+                    st.session_state["autenticado"] = True
+                    st.rerun()
+                else:
+                    st.error("Senha incorreta! Tente novamente.")
         return False
     return True
 
@@ -38,7 +154,7 @@ if not verificar_senha():
     st.stop()
 
 # -----------------------------------------------------------------------------
-# 2. CONEXÃO COM O GOOGLE SHEETS
+# 3. CONEXÃO COM O GOOGLE SHEETS
 # -----------------------------------------------------------------------------
 conn = st.connection("gsheets", type=GSheetsConnection)
 
@@ -53,7 +169,6 @@ df_clientes = carregar_dados_aba("Clientes")
 df_servicos = carregar_dados_aba("Servicos")
 df_pedidos = carregar_dados_aba("Pedidos")
 
-# Fallback para catálogo de serviços caso a planilha esteja vazia
 if df_servicos.empty:
     df_servicos = pd.DataFrame([
         {"Nome_Servico": "Cobertura fotográfica", "Tipo_Cobranca": "Hora", "Valor_Base": 180.0, "Descricao": "Registros fotográficos de alta resolução com edição de cores e contraste."},
@@ -63,7 +178,7 @@ if df_servicos.empty:
     ])
 
 # -----------------------------------------------------------------------------
-# 3. GERADOR DE PDF DE PROPOSTA COMERCIAL (2 PÁGINAS)
+# 4. GERADOR DE PDF DA PROPOSTA COMERCIAL (2 PÁGINAS)
 # -----------------------------------------------------------------------------
 class NumberedCanvas(canvas.Canvas):
     def __init__(self, *args, **kwargs):
@@ -105,7 +220,7 @@ def gerar_pdf_proposta(dados):
     
     story = []
 
-    # PÁGINA 1: APRESENTAÇÃO INSTITUCIONAL
+    # PÁGINA 1: INSTITUCIONAL
     story.append(Paragraph("OKAMOTO MÍDIAS VISUAIS", style_subtitulo))
     story.append(Spacer(1, 4))
     story.append(Paragraph("Apresentação Institucional & Portfólio de Serviços", style_titulo))
@@ -139,7 +254,7 @@ def gerar_pdf_proposta(dados):
     story.append(t_dif)
     story.append(PageBreak())
 
-    # PÁGINA 2: PROPOSTA COMERCIAL DETALHADA
+    # PÁGINA 2: PROPOSTA COMERCIAL
     story.append(Paragraph("PROPOSTA COMERCIAL", style_titulo))
     story.append(Paragraph(f"Emissão: {dados['data_orcamento']} | Pedido nº: {dados['num_pedido']}", style_corpo))
     story.append(Spacer(1, 12))
@@ -210,15 +325,64 @@ def gerar_pdf_proposta(dados):
     return buffer
 
 # -----------------------------------------------------------------------------
-# 4. INTERFACE PRINCIPAL E ABAS
+# 5. HEADER INSTITUCIONAL & PAINEL DE MÉTRICAS (KPIs)
 # -----------------------------------------------------------------------------
-st.title("💼 Sistema Unificado - Okamoto Mídias & Tour360VR")
+st.markdown("""
+<div class="header-box">
+    <div class="header-title">⚡ Okamoto Mídias Visuais & Tour360VR</div>
+    <div class="header-subtitle">Plataforma Integrada de Gestão de Clientes, Propostas Comerciais e Funil de Vendas</div>
+</div>
+""", unsafe_allow_html=True)
 
+# Cálculo dos valores para os KPIs
+total_clientes = len(df_clientes) if not df_clientes.empty else 0
+total_pedidos = len(df_pedidos) if not df_pedidos.empty else 0
+valor_total_propostas = df_pedidos["Valor_Total"].astype(float).sum() if not df_pedidos.empty and "Valor_Total" in df_pedidos.columns else 0.0
+total_servicos = len(df_servicos) if not df_servicos.empty else 0
+
+k1, k2, k3, k4 = st.columns(4)
+with k1:
+    st.markdown(f"""
+    <div class="kpi-card">
+        <div class="kpi-title">🏢 Base de Clientes</div>
+        <div class="kpi-value">{total_clientes:,}</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+with k2:
+    st.markdown(f"""
+    <div class="kpi-card">
+        <div class="kpi-title">📄 Propostas Emitidas</div>
+        <div class="kpi-value">{total_pedidos}</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+with k3:
+    st.markdown(f"""
+    <div class="kpi-card">
+        <div class="kpi-title">💰 Volume em Negociação</div>
+        <div class="kpi-value">R$ {valor_total_propostas:,.2f}</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+with k4:
+    st.markdown(f"""
+    <div class="kpi-card">
+        <div class="kpi-title">🛠️ Servicos Ativos</div>
+        <div class="kpi-value">{total_servicos}</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+st.markdown("<br/>", unsafe_allow_html=True)
+
+# -----------------------------------------------------------------------------
+# 6. INTERFACE EM ABAS NATIVAS
+# -----------------------------------------------------------------------------
 aba_orcamento, aba_kanban, aba_clientes, aba_catalogo = st.tabs([
     "📄 Gerar Orçamento / Pedido",
-    "📊 Funil Kanban (Bigin)",
+    "📊 Funil de Vendas",
     "🏢 Gestão de Clientes",
-    "🛠️ Catálogo de Serviços (Agenda Boa)"
+    "🛠️ Catálogo de Serviços"
 ])
 
 # -----------------------------------------------------------------------------
@@ -289,7 +453,7 @@ with aba_orcamento:
     
     with col_btn1:
         st.download_button(
-            label="📥 1. Baixar Proposta Comercial em PDF",
+            label="📥 Baixar Proposta Comercial em PDF",
             data=pdf_bytes,
             file_name=f"Proposta_{num_pedido}_{empresa_sel.replace(' ', '_')}.pdf",
             mime="application/pdf",
@@ -297,7 +461,7 @@ with aba_orcamento:
         )
         
     with col_btn2:
-        if st.button("💾 2. Salvar Pedido no Google Sheets", use_container_width=True):
+        if st.button("💾 Salvar Pedido no Google Sheets", use_container_width=True):
             novo_registro = pd.DataFrame([{
                 "Numero_Pedido": num_pedido,
                 "Empresa": empresa_sel,
@@ -318,10 +482,10 @@ with aba_orcamento:
                 st.error(f"Erro ao salvar no Google Sheets: {e}")
 
 # -----------------------------------------------------------------------------
-# ABA 2: FUNIL KANBAN (BIGIN)
+# ABA 2: FUNIL KANBAN ESTILIZADO
 # -----------------------------------------------------------------------------
 with aba_kanban:
-    st.subheader("Funil de Vendas - Estágios do Atendimento")
+    st.subheader("Estágios do Atendimento Comercial")
     fases = ["Orçamento / Proposta", "Em atendimento", "Negociação/Revisão", "Aprovado", "Produção", "Concluído", "Cancelado"]
     
     cols = st.columns(len(fases))
@@ -332,19 +496,25 @@ with aba_kanban:
                 pedidos_fase = df_pedidos[df_pedidos["Status"] == fase]
                 st.caption(f"{len(pedidos_fase)} Projeto(s)")
                 for _, ped in pedidos_fase.iterrows():
-                    with st.container():
-                        st.write(f"**{ped.get('Empresa', 'N/I')}**")
-                        st.write(f"R$ {float(ped.get('Valor_Total', 0)):.2f}")
-                        st.caption(f"Data: {ped.get('Data_Evento', '')}")
-                        st.markdown("---")
+                    emp_nome = ped.get('Empresa', 'N/I')
+                    v_tot = float(ped.get('Valor_Total', 0))
+                    dt_ev = ped.get('Data_Evento', '')
+                    
+                    st.markdown(f"""
+                    <div class="kanban-card">
+                        <div class="kanban-title">{emp_nome}</div>
+                        <div class="kanban-price">R$ {v_tot:,.2f}</div>
+                        <div class="kanban-date">📅 Data: {dt_ev}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
             else:
                 st.caption("0 Projetos")
 
 # -----------------------------------------------------------------------------
-# ABA 3: GESTÃO DE CLIENTES & RELATÓRIO PDF POR CATEGORIA
+# ABA 3: GESTÃO DE CLIENTES & EXPORTAÇÃO PDF POR CATEGORIA
 # -----------------------------------------------------------------------------
 with aba_clientes:
-    st.subheader("Base de Empresas e Contatos")
+    st.subheader("Base de Empresas e Contatos Cadastrados")
     termo_busca = st.text_input("🔍 Pesquisar por Categoria, Nome da Empresa, Cidade ou Tag (ex: HOTELARIA, Ribeirão Preto, AVIRRP):")
     
     if not df_clientes.empty:
@@ -356,7 +526,6 @@ with aba_clientes:
         st.dataframe(df_exibir, use_container_width=True)
         st.caption(f"Exibindo {len(df_exibir)} de {len(df_clientes)} cadastros encontrados.")
         
-        # Gerador do PDF do relatório filtrado por Categoria/Tag/Cidade
         if not df_exibir.empty:
             def gerar_pdf_relatorio_clientes(df, filtro):
                 buffer = io.BytesIO()
@@ -406,7 +575,7 @@ with aba_clientes:
         st.warning("Nenhum cliente cadastrado na aba 'Clientes' do Google Sheets.")
 
 # -----------------------------------------------------------------------------
-# ABA 4: CATÁLOGO DE SERVIÇOS (AGENDA BOA)
+# ABA 4: CATÁLOGO DE SERVIÇOS
 # -----------------------------------------------------------------------------
 with aba_catalogo:
     st.subheader("Catálogo Geral de Serviços e Preços Base")
