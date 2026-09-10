@@ -253,7 +253,7 @@ df_clientes = st.session_state['df_clientes']
 df_servicos = st.session_state['df_servicos']
 
 # -----------------------------------------------------------------------------
-# 5. GERADOR DE PDF AJUSTADO (RODAPÉ ESTÁVEL E NATIVO)
+# 5. GERADOR DE PDF COM TITULO DINÂMICO E ESTRUTURA MODERNA
 # -----------------------------------------------------------------------------
 class CanvasExecutivoAlinhado(canvas.Canvas):
     def __init__(self, *args, **kwargs):
@@ -280,7 +280,7 @@ class CanvasExecutivoAlinhado(canvas.Canvas):
             self.setLineWidth(0.5)
             self.line(35, 35, 560, 35)
             
-            # RODAPÉ ESTÁVEL
+            # RODAPÉ COM ORDEM INVERTIDA
             self.setFont("Helvetica-Bold", 8)
             self.setFillColor(colors.HexColor("#0284c7"))
             self.drawString(35, 20, "okamotomidiasvisuais.com.br")
@@ -302,7 +302,20 @@ class CanvasExecutivoAlinhado(canvas.Canvas):
 
 def gerar_pdf_3_paginas_corrigido(dados, texto_institucional):
     buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=35, rightMargin=35, topMargin=40, bottomMargin=45)
+    
+    # TITULO DINÂMICO INTERNO DO PDF
+    num_limpo = str(dados.get('num_pedido', '')).replace('Pedido ', '')
+    titulo_documento = f"Pedido nº {num_limpo} - {dados.get('empresa', '')}"
+    
+    doc = SimpleDocTemplate(
+        buffer, 
+        pagesize=A4, 
+        leftMargin=35, 
+        rightMargin=35, 
+        topMargin=40, 
+        bottomMargin=45,
+        title=titulo_documento
+    )
     styles = getSampleStyleSheet()
     
     style_tit_capa = ParagraphStyle('TitCapa', fontName='Helvetica-Bold', fontSize=20, leading=24, textColor=colors.HexColor('#0f172a'))
@@ -728,10 +741,20 @@ with aba_orcamento:
     
     pdf_bytes = gerar_pdf_3_paginas_corrigido(dados_pdf, st.session_state['texto_institucional'])
 
+    # NOME DO ARQUIVO PARA DOWNLOAD
+    num_limpo_file = num_pedido.replace("Pedido ", "")
+    nome_arquivo_pdf = f"Pedido nº {num_limpo_file} - {empresa_sel}.pdf"
+
     st.markdown("---")
     cb1, cb2 = st.columns(2)
     with cb1:
-        st.download_button("📥 Baixar PDF da Proposta Comercial (3 Páginas)", data=pdf_bytes, file_name=f"Proposta_{num_pedido}.pdf", mime="application/pdf", use_container_width=True)
+        st.download_button(
+            "📥 Baixar PDF da Proposta Comercial (3 Páginas)", 
+            data=pdf_bytes, 
+            file_name=nome_arquivo_pdf, 
+            mime="application/pdf", 
+            use_container_width=True
+        )
     with cb2:
         if st.button("💾 Salvar / Atualizar Pedido no CRM", use_container_width=True):
             idx_existente = df_pedidos[df_pedidos["Numero_Pedido"] == num_pedido].index
