@@ -280,7 +280,7 @@ class CanvasExecutivoAlinhado(canvas.Canvas):
             self.setLineWidth(0.5)
             self.line(35, 35, 560, 35)
             
-            # RODAPÉ COM INVERSÃO: ENDEREÇO DO SITE PRIMEIRO, DEPOIS TELEFONE (AMBOS COM LINKS)
+            # RODAPÉ COM INVERSÃO: ENDEREÇO DO SITE PRIMEIRO, DEPOIS TELEFONE
             self.setFont("Helvetica-Bold", 8)
             self.setFillColor(colors.HexColor("#0284c7"))
             
@@ -310,13 +310,11 @@ def gerar_pdf_3_paginas_corrigido(dados, texto_institucional):
     doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=35, rightMargin=35, topMargin=40, bottomMargin=45)
     styles = getSampleStyleSheet()
     
-    # TIPOGRAFIA AJUSTADA E RECALIBRADA
     style_tit_capa = ParagraphStyle('TitCapa', fontName='Helvetica-Bold', fontSize=20, leading=24, textColor=colors.HexColor('#0f172a'))
     style_sub_capa = ParagraphStyle('SubCapa', fontName='Helvetica', fontSize=10.5, leading=14, textColor=colors.HexColor('#0284c7'))
     style_tit_prop = ParagraphStyle('TitP', fontName='Helvetica-Bold', fontSize=18, leading=22, textColor=colors.HexColor('#0f172a'))
     style_data = ParagraphStyle('DataP', fontName='Helvetica-Bold', fontSize=9, leading=12, textColor=colors.HexColor('#0284c7'))
     
-    # REDUZIDO TAMANHO DAS INFORMAÇÕES DO CLIENTE
     style_label_cli = ParagraphStyle('LblCli', fontName='Helvetica-Bold', fontSize=9.5, leading=13, textColor=colors.HexColor('#0f172a'))
     style_val_cli = ParagraphStyle('ValCli', fontName='Helvetica', fontSize=9.5, leading=13, textColor=colors.HexColor('#1e293b'))
     
@@ -324,7 +322,6 @@ def gerar_pdf_3_paginas_corrigido(dados, texto_institucional):
     style_val = ParagraphStyle('Val', fontName='Helvetica', fontSize=9, leading=13, textColor=colors.HexColor('#334155'))
     style_sec_num = ParagraphStyle('SecNum', fontName='Helvetica-Bold', fontSize=12, leading=15, textColor=colors.HexColor('#0284c7'))
     
-    # TITULOS PRINCIPAIS AUMENTADOS
     style_sec_tit = ParagraphStyle('SecTit', fontName='Helvetica-Bold', fontSize=13.5, leading=17, textColor=colors.HexColor('#0f172a'))
     style_sec_tit_sub = ParagraphStyle('SecTitSub', fontName='Helvetica-Bold', fontSize=10.5, leading=14, textColor=colors.HexColor('#0284c7'))
     
@@ -348,7 +345,6 @@ def gerar_pdf_3_paginas_corrigido(dados, texto_institucional):
     # =========================================================================
     logo_p1 = obter_bloco_logo(155, 50)
     
-    # TITULO "OKAMOTO MÍDIAS VISUAIS" AUMENTADO E "Fotografia Profissional..." REDUZIDO
     cabecalho_p1_text = (
         "<font size='18' color='#0f172a'><b>OKAMOTO MÍDIAS VISUAIS</b></font><br/>"
         "<font color='#0284c7' size='8.5'>Fotografia Profissional & Tours Virtuais 360°</font>"
@@ -390,14 +386,14 @@ def gerar_pdf_3_paginas_corrigido(dados, texto_institucional):
         story.append(Spacer(1, 10))
 
     # =========================================================================
-    # PÁGINA 2: ORÇAMENTO COMERCIAL (COM ESPAÇOS DESCOMPACTADOS)
+    # PÁGINA 2: ORÇAMENTO COMERCIAL
     # =========================================================================
     story.append(PageBreak())
 
     col_tit = [
         Paragraph("PROPOSTA COMERCIAL", style_tit_prop),
         Spacer(1, 4),
-        Paragraph(f"Proposta {dados['num_pedido']}  |  {dados['data_orcamento']}", style_data)
+        Paragraph(f"Proposta {dados.get('num_pedido', '')}  |  {dados.get('data_orcamento', '')}", style_data)
     ]
     col_logo = [obter_bloco_logo(125, 40)]
 
@@ -406,11 +402,10 @@ def gerar_pdf_3_paginas_corrigido(dados, texto_institucional):
     story.append(t_top_p2)
     story.append(Spacer(1, 18))
 
-    # REDUZIDO O TAMANHO DOS CAMPOS DE EMPRESA, CONTATO E LOCAL
     t_cli_data = [
-        [Paragraph("Empresa:", style_label_cli), Paragraph(f"<b>{dados['empresa']}</b>", style_val_cli)],
-        [Paragraph("Contato:", style_label_cli), Paragraph(dados['contato'], style_val_cli)],
-        [Paragraph("Local:", style_label_cli), Paragraph(dados['local'], style_val_cli)]
+        [Paragraph("Empresa:", style_label_cli), Paragraph(f"<b>{dados.get('empresa', '')}</b>", style_val_cli)],
+        [Paragraph("Contato:", style_label_cli), Paragraph(str(dados.get('contato', '')), style_val_cli)],
+        [Paragraph("Local:", style_label_cli), Paragraph(str(dados.get('local', '')), style_val_cli)]
     ]
     t_cli = Table(t_cli_data, colWidths=[70, 455])
     t_cli.setStyle(TableStyle([
@@ -423,7 +418,6 @@ def gerar_pdf_3_paginas_corrigido(dados, texto_institucional):
     story.append(t_cli)
     story.append(Spacer(1, 24))
 
-    # TÍTULO AUMENTADO PARA "Escopo do Serviço"
     story.append(Paragraph("Escopo do Serviço", style_sec_tit))
     story.append(Spacer(1, 14))
 
@@ -432,7 +426,7 @@ def gerar_pdf_3_paginas_corrigido(dados, texto_institucional):
         c2 = [
             Paragraph(f"<b>{titulo}</b>", style_sec_tit_sub),
             Spacer(1, 3),
-            Paragraph(conteudo.replace('\n', '<br/>'), style_txt_block)
+            Paragraph(str(conteudo).replace('\n', '<br/>'), style_txt_block)
         ]
         t = Table([[c1, c2]], colWidths=[22, 503])
         t.setStyle(TableStyle([
@@ -441,25 +435,24 @@ def gerar_pdf_3_paginas_corrigido(dados, texto_institucional):
         ]))
         return t
 
-    story.append(criar_bloco_escopo_item("1", "Evento", f"{dados['nome_evento']}\n• {dados['data_evento_detalhada']}\n{dados['local']}"))
+    story.append(criar_bloco_escopo_item("1", "Evento", f"{dados.get('nome_evento', '')}\n• {dados.get('data_evento_detalhada', '')}\n{dados.get('local', '')}"))
     story.append(Spacer(1, 6))
-    story.append(criar_bloco_escopo_item("2", "Objetivo", dados['objetivo']))
+    story.append(criar_bloco_escopo_item("2", "Objetivo", dados.get('objetivo', '')))
     story.append(Spacer(1, 6))
-    story.append(criar_bloco_escopo_item("3", "Captação", dados['captacao']))
+    story.append(criar_bloco_escopo_item("3", "Captação", dados.get('captacao', '')))
     story.append(Spacer(1, 6))
-    story.append(criar_bloco_escopo_item("4", "Entrega", dados['entrega']))
+    story.append(criar_bloco_escopo_item("4", "Entrega", dados.get('entrega', '')))
     story.append(Spacer(1, 6))
-    story.append(criar_bloco_escopo_item("5", "Prazo de Entrega", dados['prazo_entrega']))
+    story.append(criar_bloco_escopo_item("5", "Prazo de Entrega", dados.get('prazo_entrega', '')))
     story.append(Spacer(1, 6))
-    story.append(criar_bloco_escopo_item("6", "Forma de Pagamento", dados['condicoes_pag']))
+    story.append(criar_bloco_escopo_item("6", "Forma de Pagamento", dados.get('condicoes_pag', '')))
     story.append(Spacer(1, 20))
 
-    # REMOVIDO O QUADRO DO VALOR DO INVESTIMENTO - AGORA É TEXTO LIMPO NO CORPO
     story.append(Paragraph("<font color='#0284c7' size='11'><b>INVESTIMENTO DO SERVIÇO</b></font>", style_label))
     story.append(Spacer(1, 4))
-    story.append(Paragraph(f"<font size='13' color='#0f172a'><b>Valor Total: R$ {dados['valor_total']:,.2f}</b></font>", style_label))
+    story.append(Paragraph(f"<font size='13' color='#0f172a'><b>Valor Total: R$ {dados.get('valor_total', 0.0):,.2f}</b></font>", style_label))
     story.append(Spacer(1, 2))
-    story.append(Paragraph(f"<b>{dados['valor_extenso']}</b>", style_txt_block))
+    story.append(Paragraph(f"<b>{dados.get('valor_extenso', '')}</b>", style_txt_block))
     story.append(Spacer(1, 20))
 
     story.append(Paragraph("Estamos à disposição para qualquer esclarecimento adicional, ou alteração, caso seja necessário.", style_txt_block))
@@ -468,7 +461,7 @@ def gerar_pdf_3_paginas_corrigido(dados, texto_institucional):
     story.append(Paragraph("Atenciosamente,<br/><b>Rubens Okamoto</b><br/><font color='#0284c7'><b>OKAMOTO MÍDIAS VISUAIS</b></font>", style_center))
 
     # =========================================================================
-    # PÁGINA 3: DADOS CADASTRAIS (COM ESPAÇAMENTO RECALIBRADO)
+    # PÁGINA 3: DADOS CADASTRAIS
     # =========================================================================
     story.append(PageBreak())
 
@@ -720,6 +713,7 @@ with aba_orcamento:
         height=220
     )
 
+    # DADOS PREPARADOS COM GARANTIA DE CHAVES VÁLIDAS
     dados_pdf = {
         "num_pedido": num_pedido,
         "empresa": empresa_sel,
