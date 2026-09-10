@@ -253,7 +253,7 @@ df_clientes = st.session_state['df_clientes']
 df_servicos = st.session_state['df_servicos']
 
 # -----------------------------------------------------------------------------
-# 5. GERADOR DE PDF COM TITULO DINÂMICO E ESTRUTURA MODERNA
+# 5. GERADOR DE PDF CUSTOMIZADO COM LAYOUT REFINADO
 # -----------------------------------------------------------------------------
 class CanvasExecutivoAlinhado(canvas.Canvas):
     def __init__(self, *args, **kwargs):
@@ -270,29 +270,27 @@ class CanvasExecutivoAlinhado(canvas.Canvas):
             self.__dict__.update(state)
             self.saveState()
             
+            # CABEÇALHO PADRONIZADO EM TODAS AS PÁGINAS
+            self.setFont("Helvetica-Bold", 10)
+            self.setFillColor(colors.HexColor("#0f172a")) # Preto/Grafite elegante
+            self.drawRightString(560, 822, "OKAMOTO MÍDIAS VISUAIS  |  16 99133 2121")
+            
             # Linha decorativa superior azul
             self.setStrokeColor(colors.HexColor('#0284c7'))
-            self.setLineWidth(2.0)
+            self.setLineWidth(1.5)
             self.line(35, 815, 560, 815)
             
-            # Linha e rodapé fixo
-            self.setStrokeColor(colors.HexColor('#e2e8f0'))
+            # Linha de rodapé
+            self.setStrokeColor(colors.HexColor('#cbd5e1'))
             self.setLineWidth(0.5)
             self.line(35, 35, 560, 35)
             
-            # RODAPÉ COM ORDEM INVERTIDA
+            # RODAPÉ CENTRALIZADO
             self.setFont("Helvetica-Bold", 8)
             self.setFillColor(colors.HexColor("#0284c7"))
-            self.drawString(35, 20, "okamotomidiasvisuais.com.br")
+            self.drawCentredString(297.5, 20, "okamotomidiasvisuais.com.br  |  16 99133 2121")
             
-            self.setFont("Helvetica", 8)
-            self.setFillColor(colors.HexColor("#475569"))
-            self.drawString(165, 20, "|")
-            
-            self.setFont("Helvetica-Bold", 8)
-            self.setFillColor(colors.HexColor("#0284c7"))
-            self.drawString(175, 20, "16 99133 2121")
-            
+            # PÁGINA X/Y À DIREITA
             self.setFont("Helvetica", 8)
             self.setFillColor(colors.HexColor("#475569"))
             self.drawRightString(560, 20, f"Página {self._pageNumber}/{num_pages}")
@@ -303,9 +301,8 @@ class CanvasExecutivoAlinhado(canvas.Canvas):
 def gerar_pdf_3_paginas_corrigido(dados, texto_institucional):
     buffer = io.BytesIO()
     
-    # TITULO DINÂMICO INTERNO DO PDF
-    num_limpo = str(dados.get('num_pedido', '')).replace('Pedido ', '')
-    titulo_documento = f"Pedido {num_limpo} - {dados.get('empresa', '')}"
+    num_limpo = str(dados.get('num_pedido', '')).replace('Pedido ', '').replace('Nº ', '').replace('nº ', '').strip()
+    titulo_documento = f"Proposta {num_limpo} - {dados.get('empresa', '')}"
     
     doc = SimpleDocTemplate(
         buffer, 
@@ -318,169 +315,145 @@ def gerar_pdf_3_paginas_corrigido(dados, texto_institucional):
     )
     styles = getSampleStyleSheet()
     
-    style_tit_capa = ParagraphStyle('TitCapa', fontName='Helvetica-Bold', fontSize=20, leading=24, textColor=colors.HexColor('#0f172a'))
-    style_sub_capa = ParagraphStyle('SubCapa', fontName='Helvetica', fontSize=10.5, leading=14, textColor=colors.HexColor('#0284c7'))
-    style_tit_prop = ParagraphStyle('TitP', fontName='Helvetica-Bold', fontSize=18, leading=22, textColor=colors.HexColor('#0f172a'))
-    style_data = ParagraphStyle('DataP', fontName='Helvetica-Bold', fontSize=9, leading=12, textColor=colors.HexColor('#0284c7'))
+    # PADRONIZAÇÃO TIPOGRÁFICA DE TAMANHOS E CORES
+    style_sec_tit = ParagraphStyle('SecTit', fontName='Helvetica-Bold', fontSize=13, leading=16, textColor=colors.HexColor('#0284c7'))
+    style_sec_tit_black = ParagraphStyle('SecTitBlack', fontName='Helvetica-Bold', fontSize=13, leading=16, textColor=colors.HexColor('#0f172a'))
+    style_sub_black = ParagraphStyle('SubBlack', fontName='Helvetica', fontSize=10, leading=14, textColor=colors.HexColor('#1e293b'))
     
-    style_label_cli = ParagraphStyle('LblCli', fontName='Helvetica-Bold', fontSize=9.5, leading=13, textColor=colors.HexColor('#0f172a'))
-    style_val_cli = ParagraphStyle('ValCli', fontName='Helvetica', fontSize=9.5, leading=13, textColor=colors.HexColor('#1e293b'))
-    
-    style_label = ParagraphStyle('Lbl', fontName='Helvetica-Bold', fontSize=9, leading=12, textColor=colors.HexColor('#0f172a'))
-    style_val = ParagraphStyle('Val', fontName='Helvetica', fontSize=9, leading=13, textColor=colors.HexColor('#334155'))
-    style_sec_num = ParagraphStyle('SecNum', fontName='Helvetica-Bold', fontSize=12, leading=15, textColor=colors.HexColor('#0284c7'))
-    
-    style_sec_tit = ParagraphStyle('SecTit', fontName='Helvetica-Bold', fontSize=13.5, leading=17, textColor=colors.HexColor('#0f172a'))
-    style_sec_tit_sub = ParagraphStyle('SecTitSub', fontName='Helvetica-Bold', fontSize=10.5, leading=14, textColor=colors.HexColor('#0284c7'))
-    
-    style_txt_block = ParagraphStyle('TxtBlock', fontName='Helvetica', fontSize=9, leading=14, textColor=colors.HexColor('#334155'))
-    style_inst = ParagraphStyle('Inst', fontName='Helvetica', fontSize=9.5, leading=15, textColor=colors.HexColor('#1e293b'))
+    style_label = ParagraphStyle('Lbl', fontName='Helvetica-Bold', fontSize=9.5, leading=13, textColor=colors.HexColor('#0f172a'))
+    style_val = ParagraphStyle('Val', fontName='Helvetica', fontSize=9.5, leading=13, textColor=colors.HexColor('#334155'))
+    style_txt_just = ParagraphStyle('TxtJust', fontName='Helvetica', fontSize=9.5, leading=14.5, textColor=colors.HexColor('#334155'), alignment=4)
     style_center = ParagraphStyle('CenterText', fontName='Helvetica', fontSize=9.5, leading=14, textColor=colors.HexColor('#334155'), alignment=1)
+
+    style_escopo_tit = ParagraphStyle('EscTit', fontName='Helvetica-Bold', fontSize=10, leading=13, textColor=colors.HexColor('#0284c7'))
+    style_escopo_txt = ParagraphStyle('EscTxt', fontName='Helvetica', fontSize=9, leading=13.5, textColor=colors.HexColor('#334155'))
 
     story = []
 
-    def obter_bloco_logo(w=140, h=45):
+    def obter_bloco_logo(w=140, h=42):
         if st.session_state.get('logo_bytes'):
             try:
                 img_buf = io.BytesIO(st.session_state['logo_bytes'])
                 return Image(img_buf, width=w, height=h)
             except Exception:
                 pass
-        return Paragraph("<font size='16' color='#0284c7'><b>OKAMOTO MÍDIAS VISUAIS</b></font>", style_label)
+        return Paragraph("<b><font size='14' color='#0f172a'>OKAMOTO MÍDIAS VISUAIS</font></b>", style_label)
 
     # =========================================================================
     # PÁGINA 1: APRESENTAÇÃO INSTITUCIONAL
     # =========================================================================
-    logo_p1 = obter_bloco_logo(155, 50)
-    
-    cabecalho_p1_text = (
-        "<font size='18' color='#0f172a'><b>OKAMOTO MÍDIAS VISUAIS</b></font><br/>"
-        "<font color='#0284c7' size='8.5'>Fotografia Profissional & Tours Virtuais 360°</font>"
-    )
-    t_top_p1 = Table([[logo_p1, Paragraph(cabecalho_p1_text, ParagraphStyle('RHead', fontName='Helvetica', alignment=2, leading=16))]], colWidths=[160, 365])
+    logo_p1 = obter_bloco_logo(150, 45)
+    t_top_p1 = Table([[logo_p1, Paragraph("", style_label)]], colWidths=[200, 325])
     t_top_p1.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'MIDDLE')]))
     story.append(t_top_p1)
-    story.append(Spacer(1, 25))
+    story.append(Spacer(1, 20))
 
-    story.append(Paragraph("Apresentação Institucional", style_sec_tit))
+    story.append(Paragraph("APRESENTAÇÃO", style_sec_tit))
     story.append(Spacer(1, 4))
-    story.append(Paragraph("Excelência em Registros Visuais e Soluções Tecnológicas de Imagem", style_sub_capa))
-    story.append(Spacer(1, 18))
+    story.append(Paragraph("Excelência em registros visuais e Soluções tecnológicas de imagem", style_sub_black))
+    story.append(Spacer(1, 16))
 
-    card_inst = [Paragraph(texto_institucional.replace('\n', '<br/>'), style_inst)]
-    t_card_inst = Table([[card_inst]], colWidths=[525])
-    t_card_inst.setStyle(TableStyle([
-        ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#f8fafc')),
-        ('BOX', (0,0), (-1,-1), 1, colors.HexColor('#0284c7')),
-        ('PADDING', (0,0), (-1,-1), 14),
-    ]))
-    story.append(t_card_inst)
+    # TEXTO INSTITUCIONAL SOLTO E JUSTIFICADO
+    story.append(Paragraph(texto_institucional.replace('\n', '<br/>'), style_txt_just))
     story.append(Spacer(1, 28))
 
     story.append(Paragraph("Áreas de Atuação & Soluções Especializadas", style_sec_tit))
-    story.append(Spacer(1, 16))
+    story.append(Spacer(1, 14))
 
-    solucoes = [
-        ("• Eventos Corporativos & Científicos", "Cobertura fotográfica e em vídeo com equipamentos Full Frame e captações pontuais de alta precisão."),
-        ("• Tours Virtuais 360° & Google GSV", "Mapeamento panorâmico imersivo de alta resolução com integração direta ao Google Meu Negócio."),
-        ("• Agilidade para Mídias Sociais & Assessoria", "Envio acelerado de prévias em tempo real durante a execução do evento para publicações estratégicas."),
-        ("• Plataforma Nuvem Exclusiva", "Acesso seguro, organizado e permanente para download dos acervos em alta e baixa resolução.")
+    solucoes_simplificadas = [
+        "• Eventos Corporativos",
+        "• Institucional",
+        "• Mídias Sociais",
+        "• Tour Virtual 360°"
     ]
 
-    for tit_sol, desc_sol in solucoes:
-        story.append(Paragraph(f"<b><font color='#0284c7'>{tit_sol}</font></b>", style_label))
-        story.append(Spacer(1, 2))
-        story.append(Paragraph(desc_sol, style_txt_block))
-        story.append(Spacer(1, 10))
+    for item_sol in solucoes_simplificadas:
+        story.append(Paragraph(f"<b><font color='#0284c7'>{item_sol}</font></b>", style_label))
+        story.append(Spacer(1, 6))
 
     # =========================================================================
-    # PÁGINA 2: ORÇAMENTO COMERCIAL
+    # PÁGINA 2: PROPOSTA COMERCIAL
     # =========================================================================
     story.append(PageBreak())
 
-    col_tit = [
-        Paragraph("PROPOSTA COMERCIAL", style_tit_prop),
-        Spacer(1, 4),
-        Paragraph(f"Proposta {dados.get('num_pedido', '')}  |  {dados.get('data_orcamento', '')}", style_data)
-    ]
-    col_logo = [obter_bloco_logo(125, 40)]
-
-    t_top_p2 = Table([[col_tit, col_logo]], colWidths=[330, 195])
-    t_top_p2.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'TOP'), ('ALIGN', (1,0), (1,0), 'RIGHT')]))
+    t_top_p2 = Table([[obter_bloco_logo(125, 38), Paragraph("", style_label)]], colWidths=[200, 325])
     story.append(t_top_p2)
+    story.append(Spacer(1, 15))
+
+    # SUBTÍTULO: PEDIDO À ESQUERDA, DATA À DIREITA NA MESMA LINHA
+    txt_ped_esq = f"<b><font size='11' color='#0f172a'>Pedido {num_limpo}</font></b>"
+    txt_data_dir = f"<b><font size='9.5' color='#475569'>{dados.get('data_orcamento', '')}</font></b>"
+    
+    p_ped = Paragraph(txt_ped_esq, style_label)
+    p_dat = Paragraph(txt_data_dir, ParagraphStyle('RDat', fontName='Helvetica-Bold', alignment=2))
+    
+    t_header_ped = Table([[p_ped, p_dat]], colWidths=[260, 265])
+    t_header_ped.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'MIDDLE')]))
+    story.append(t_header_ped)
+    story.append(Spacer(1, 12))
+
+    # DADOS DO CLIENTE EM TEXTO SIMPLES
+    story.append(Paragraph(f"<b>Empresa:</b> {dados.get('empresa', '')}", style_val))
+    story.append(Spacer(1, 2))
+    story.append(Paragraph(f"<b>Contato:</b> {dados.get('contato', '')}", style_val))
+    story.append(Spacer(1, 2))
+    story.append(Paragraph(f"<b>Local:</b> {dados.get('local', '')}", style_val))
     story.append(Spacer(1, 18))
 
-    t_cli_data = [
-        [Paragraph("Empresa:", style_label_cli), Paragraph(f"<b>{dados.get('empresa', '')}</b>", style_val_cli)],
-        [Paragraph("Contato:", style_label_cli), Paragraph(str(dados.get('contato', '')), style_val_cli)],
-        [Paragraph("Local:", style_label_cli), Paragraph(str(dados.get('local', '')), style_val_cli)]
-    ]
-    t_cli = Table(t_cli_data, colWidths=[70, 455])
-    t_cli.setStyle(TableStyle([
-        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 5),
-        ('TOPPADDING', (0,0), (-1,-1), 5),
-        ('LINEBELOW', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1')),
-        ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#f8fafc')),
-    ]))
-    story.append(t_cli)
-    story.append(Spacer(1, 24))
+    story.append(Paragraph("ESCOPO DO SERVIÇO", style_sec_tit))
+    story.append(Spacer(1, 10))
 
-    story.append(Paragraph("Escopo do Serviço", style_sec_tit))
-    story.append(Spacer(1, 14))
-
-    def criar_bloco_escopo_item(numero, titulo, conteudo):
-        c1 = Paragraph(f"<b>{numero}</b>", style_sec_num)
-        c2 = [
-            Paragraph(f"<b>{titulo}</b>", style_sec_tit_sub),
-            Spacer(1, 3),
-            Paragraph(str(conteudo).replace('\n', '<br/>'), style_txt_block)
-        ]
-        t = Table([[c1, c2]], colWidths=[22, 503])
-        t.setStyle(TableStyle([
-            ('VALIGN', (0,0), (-1,-1), 'TOP'),
-            ('BOTTOMPADDING', (0,0), (-1,-1), 6)
+    def criar_quadro_escopo(numero, titulo, conteudo):
+        p_tit = Paragraph(f"<b><font color='#0284c7'>{numero}. {titulo}</font></b>", style_escopo_tit)
+        p_cnt = Paragraph(str(conteudo).replace('\n', '<br/>'), style_escopo_txt)
+        
+        box_data = [[p_tit], [Spacer(1, 2)], [p_cnt]]
+        t_box = Table(box_data, colWidths=[525])
+        t_box.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#f8fafc')),
+            ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1')),
+            ('PADDING', (0,0), (-1,-1), 8),
+            ('TOPPADDING', (0,0), (-1,-1), 6),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 6),
         ]))
-        return t
+        return t_box
 
-    story.append(criar_bloco_escopo_item("1", "Evento", f"{dados.get('nome_evento', '')}\n• {dados.get('data_evento_detalhada', '')}\n{dados.get('local', '')}"))
+    story.append(criar_quadro_escopo("1", "Evento", f"{dados.get('nome_evento', '')}\n• {dados.get('data_evento_detalhada', '')}\n{dados.get('local', '')}"))
     story.append(Spacer(1, 6))
-    story.append(criar_bloco_escopo_item("2", "Objetivo", dados.get('objetivo', '')))
+    story.append(criar_quadro_escopo("2", "Objetivo", dados.get('objetivo', '')))
     story.append(Spacer(1, 6))
-    story.append(criar_bloco_escopo_item("3", "Captação", dados.get('captacao', '')))
+    story.append(criar_quadro_escopo("3", "Captação", dados.get('captacao', '')))
     story.append(Spacer(1, 6))
-    story.append(criar_bloco_escopo_item("4", "Entrega", dados.get('entrega', '')))
+    story.append(criar_quadro_escopo("4", "Entrega", dados.get('entrega', '')))
     story.append(Spacer(1, 6))
-    story.append(criar_bloco_escopo_item("5", "Prazo de Entrega", dados.get('prazo_entrega', '')))
+    story.append(criar_quadro_escopo("5", "Prazo de Entrega", dados.get('prazo_entrega', '')))
     story.append(Spacer(1, 6))
-    story.append(criar_bloco_escopo_item("6", "Forma de Pagamento", dados.get('condicoes_pag', '')))
-    story.append(Spacer(1, 20))
+    story.append(criar_quadro_escopo("6", "Forma de Pagamento", dados.get('condicoes_pag', '')))
+    story.append(Spacer(1, 16))
 
-    story.append(Paragraph("<font color='#0284c7' size='11'><b>INVESTIMENTO DO SERVIÇO</b></font>", style_label))
+    story.append(Paragraph("INVESTIMENTO", style_sec_tit_black))
     story.append(Spacer(1, 4))
-    story.append(Paragraph(f"<font size='13' color='#0f172a'><b>Valor Total: R$ {dados.get('valor_total', 0.0):,.2f}</b></font>", style_label))
-    story.append(Spacer(1, 2))
-    story.append(Paragraph(f"<b>{dados.get('valor_extenso', '')}</b>", style_txt_block))
-    story.append(Spacer(1, 20))
+    story.append(Paragraph(f"<b>Valor:</b> R$ {dados.get('valor_total', 0.0):,.2f} {dados.get('valor_extenso', '')}", style_val))
+    story.append(Spacer(1, 18))
 
-    story.append(Paragraph("Estamos à disposição para qualquer esclarecimento adicional, ou alteração, caso seja necessário.", style_txt_block))
-    story.append(Spacer(1, 30))
+    story.append(Paragraph("Estamos à disposição para qualquer esclarecimento adicional, ou alteração, caso seja necessário.", style_center))
+    story.append(Spacer(1, 22))
 
-    story.append(Paragraph("Atenciosamente,<br/><b>Rubens Okamoto</b><br/><font color='#0284c7'>", style_center))
+    story.append(Paragraph("Atenciosamente,<br/><b>Rubens Okamoto</b>", style_center))
 
     # =========================================================================
     # PÁGINA 3: DADOS CADASTRAIS
     # =========================================================================
     story.append(PageBreak())
 
-    story.append(obter_bloco_logo(135, 44))
+    story.append(obter_bloco_logo(135, 40))
     story.append(Spacer(1, 16))
 
-    story.append(Paragraph("Dados Cadastrais & Informações Bancárias", style_sec_tit))
-    story.append(Spacer(1, 24))
+    story.append(Paragraph("DADOS CADASTRAIS", style_sec_tit))
+    story.append(Spacer(1, 18))
 
     def criar_bloco_vertical(titulo, linhas):
-        c_tot = [Paragraph(f"<b><font color='#0284c7'>{titulo}</font></b>", style_sec_tit_sub), Spacer(1, 6)]
+        c_tot = [Paragraph(f"<b><font color='#0284c7'>{titulo}</font></b>", style_escopo_tit), Spacer(1, 4)]
         for lbl, val in linhas:
             c_tot.append(Paragraph(f"<b>{lbl}:</b> {val}", style_val))
             c_tot.append(Spacer(1, 2))
@@ -488,36 +461,32 @@ def gerar_pdf_3_paginas_corrigido(dados, texto_institucional):
         t.setStyle(TableStyle([
             ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#f8fafc')),
             ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1')),
-            ('PADDING', (0,0), (-1,-1), 10),
+            ('PADDING', (0,0), (-1,-1), 8),
         ]))
         return t
 
-    b_emp_vert = criar_bloco_vertical("Dados da Empresa", [
+    story.append(criar_bloco_vertical("Dados da Empresa", [
         ("Razão Social", "Okamoto Reportagens Fotográficas SS Ltda"),
         ("CNPJ", "04.824.331/0001-05"),
         ("Endereço", "Rua General Carneiro, 860 - Centro"),
         ("Cidade/UF", "Brodowski - SP | CEP: 14.340-023")
-    ])
+    ]))
+    story.append(Spacer(1, 12))
 
-    b_pes_vert = criar_bloco_vertical("Dados Pessoais", [
+    story.append(criar_bloco_vertical("Dados Pessoais", [
         ("Responsável", "Rubens Heigasi Okamoto"),
         ("CPF", "287.932.298-79"),
         ("Telefone/WhatsApp", "16 99133 2121"),
         ("E-mail", "contato@okamotomidiasvisuais.com.br")
-    ])
+    ]))
+    story.append(Spacer(1, 12))
 
-    b_ban_vert = criar_bloco_vertical("Dados Bancários", [
+    story.append(criar_bloco_vertical("Dados Bancários", [
         ("Banco", "Banco do Brasil"),
         ("Agência", "3235-2"),
         ("Conta Corrente", "11.935-0"),
         ("Chave PIX (CNPJ)", "04824331000105")
-    ])
-
-    story.append(b_emp_vert)
-    story.append(Spacer(1, 20))
-    story.append(b_pes_vert)
-    story.append(Spacer(1, 20))
-    story.append(b_ban_vert)
+    ]))
 
     doc.build(story, canvasmaker=CanvasExecutivoAlinhado)
     buffer.seek(0)
@@ -526,7 +495,6 @@ def gerar_pdf_3_paginas_corrigido(dados, texto_institucional):
 def gerar_pdf_ficha_cliente(cliente_data, pedidos_cli):
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=35, rightMargin=35, topMargin=35, bottomMargin=45)
-    styles = getSampleStyleSheet()
     
     style_tit = ParagraphStyle('Tit', fontName='Helvetica-Bold', fontSize=16, leading=20, textColor=colors.HexColor('#0f172a'))
     style_sub = ParagraphStyle('Sub', fontName='Helvetica-Bold', fontSize=11, leading=14, textColor=colors.HexColor('#0284c7'))
@@ -741,9 +709,9 @@ with aba_orcamento:
     
     pdf_bytes = gerar_pdf_3_paginas_corrigido(dados_pdf, st.session_state['texto_institucional'])
 
-    # NOME DO ARQUIVO PARA DOWNLOAD
-    num_limpo_file = num_pedido.replace("Pedido ", "")
-    nome_arquivo_pdf = f"Pedido nº {num_limpo_file} - {empresa_sel}.pdf"
+    # NOMENCLATURA PADRONIZADA DO ARQUIVO PARA DOWNLOAD
+    num_limpo_file = num_pedido.replace("Pedido ", "").replace("Nº ", "").replace("nº ", "").strip()
+    nome_arquivo_pdf = f"Proposta {num_limpo_file} - {empresa_sel}.pdf"
 
     st.markdown("---")
     cb1, cb2 = st.columns(2)
