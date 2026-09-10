@@ -305,7 +305,7 @@ def gerar_pdf_3_paginas_corrigido(dados, texto_institucional):
     
     # TITULO DINÂMICO INTERNO DO PDF
     num_limpo = str(dados.get('num_pedido', '')).replace('Pedido ', '')
-    titulo_documento = f"Pedido nº {num_limpo} - {dados.get('empresa', '')}"
+    titulo_documento = f"Pedido {num_limpo} - {dados.get('empresa', '')}"
     
     doc = SimpleDocTemplate(
         buffer, 
@@ -466,7 +466,7 @@ def gerar_pdf_3_paginas_corrigido(dados, texto_institucional):
     story.append(Paragraph("Estamos à disposição para qualquer esclarecimento adicional, ou alteração, caso seja necessário.", style_txt_block))
     story.append(Spacer(1, 30))
 
-    story.append(Paragraph("Atenciosamente,<br/><b>Rubens Okamoto</b><br/><font color='#0284c7'><b>OKAMOTO MÍDIAS VISUAIS</b></font>", style_center))
+    story.append(Paragraph("Atenciosamente,<br/><b>Rubens Okamoto</b><br/><font color='#0284c7'>", style_center))
 
     # =========================================================================
     # PÁGINA 3: DADOS CADASTRAIS
