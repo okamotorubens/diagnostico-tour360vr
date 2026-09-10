@@ -253,7 +253,7 @@ df_clientes = st.session_state['df_clientes']
 df_servicos = st.session_state['df_servicos']
 
 # -----------------------------------------------------------------------------
-# 5. GERADOR DE PDF AJUSTADO COM RODAPÉ COM LINKS E LAYOUT DESCOMPACTADO
+# 5. GERADOR DE PDF AJUSTADO (RODAPÉ ESTÁVEL E NATIVO)
 # -----------------------------------------------------------------------------
 class CanvasExecutivoAlinhado(canvas.Canvas):
     def __init__(self, *args, **kwargs):
@@ -270,7 +270,7 @@ class CanvasExecutivoAlinhado(canvas.Canvas):
             self.__dict__.update(state)
             self.saveState()
             
-            # Linha decorativa superior
+            # Linha decorativa superior azul
             self.setStrokeColor(colors.HexColor('#0284c7'))
             self.setLineWidth(2.0)
             self.line(35, 815, 560, 815)
@@ -280,23 +280,18 @@ class CanvasExecutivoAlinhado(canvas.Canvas):
             self.setLineWidth(0.5)
             self.line(35, 35, 560, 35)
             
-            # RODAPÉ COM INVERSÃO: ENDEREÇO DO SITE PRIMEIRO, DEPOIS TELEFONE
+            # RODAPÉ ESTÁVEL
             self.setFont("Helvetica-Bold", 8)
             self.setFillColor(colors.HexColor("#0284c7"))
-            
-            # Link para o site
             self.drawString(35, 20, "okamotomidiasvisuais.com.br")
-            self.linkURL("https://okamotomidiasvisuais.com.br", (35, 15, 160, 28), relative=0)
             
             self.setFont("Helvetica", 8)
             self.setFillColor(colors.HexColor("#475569"))
             self.drawString(165, 20, "|")
             
-            # Link para o telefone/WhatsApp
             self.setFont("Helvetica-Bold", 8)
             self.setFillColor(colors.HexColor("#0284c7"))
             self.drawString(175, 20, "16 99133 2121")
-            self.linkURL("https://wa.me/5516991332121", (175, 15, 240, 28), relative=0)
             
             self.setFont("Helvetica", 8)
             self.setFillColor(colors.HexColor("#475569"))
@@ -713,7 +708,6 @@ with aba_orcamento:
         height=220
     )
 
-    # DADOS PREPARADOS COM GARANTIA DE CHAVES VÁLIDAS
     dados_pdf = {
         "num_pedido": num_pedido,
         "empresa": empresa_sel,
