@@ -313,22 +313,26 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     pdf.cell(0, 5.0, conv(sub_txt_2), align='C', ln=True)
 
   # =========================================================================
-    # PÁGINA 2: AUDITORIA DETALHADA (DISTRIBUIÇÃO MATEMÁTICA PERFEITA)
+    # PÁGINA 2: AUDITORIA DETALHADA (ESPAÇAMENTO AMPLIADO E HARMONIOSO)
     # =========================================================================
     pdf.add_page()
-    pdf.set_y(24)
+    
+    # 1. TÍTULO PRINCIPAL (MAIS ESPAÇO EM RELAÇÃO AO CABEÇALHO)
+    pdf.set_y(27)
     pdf.set_font('Helvetica', 'B', 15)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 7, conv('AUDITORIA DETALHADA DE PONTOS DE BUSCA'), align='C', ln=True)
 
+    # 2. QUADRO DE DADOS DA EMPRESA (MAIS ESPAÇO APÓS O TÍTULO)
     w_ficha = 164
     x_ficha = (210 - w_ficha) / 2.0
+    y_ficha = 37.0
     
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
-    pdf.rounded_rect(x_ficha, 33, w_ficha, 12, 2, 'FD')
+    pdf.rounded_rect(x_ficha, y_ficha, w_ficha, 12, 2, 'FD')
     
-    pdf.set_xy(x_ficha, 34.5)
+    pdf.set_xy(x_ficha, y_ficha + 1.5)
     pdf.set_font('Helvetica', 'B', 10.5)
     pdf.set_text_color(30, 64, 175)
     pdf.cell(w_ficha, 4.2, conv(f"{dados['nome'] or 'Empresa Analisada'}"), align='C', ln=True)
@@ -338,9 +342,10 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     pdf.set_text_color(245, 158, 11)
     pdf.cell(w_ficha, 3.8, conv(f"Nota {dados['nota']:.1f} *   -   {dados['avaliacoes']} avaliações no Google"), align='C', ln=True)
 
+    # 3. QUADRO DE SCORE GERAL (MAIS ESPAÇO APÓS O QUADRO DA EMPRESA)
     w_box_score = 90
     x_box_score = (210 - w_box_score) / 2.0
-    y_box_score = 48
+    y_box_score = 54.0
     
     if score < 50: cr, cg, cb, status_txt = 239, 68, 68, "STATUS CRÍTICO"
     elif score < 80: cr, cg, cb, status_txt = 245, 158, 11, "STATUS MÉDIO"
@@ -370,6 +375,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     pdf.set_text_color(cr, cg, cb)
     pdf.cell(w_box_score, 3.0, conv(f"SCORE GERAL ({status_txt})"), align='C', ln=True)
 
+    # PREPARAÇÃO DOS ITENS
     pct_avaliacoes = min(int((dados['avaliacoes'] / 50.0) * 100), 100) if dados['avaliacoes'] > 0 else 10
     pct_fotos = 100 if dados['tem_fotos_hd'] else 30
     pct_tour = 100 if dados['tem_tour360'] else 0
@@ -400,9 +406,9 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
         ("9. Interação e Resposta a Avaliações", pct_resp, "Ativo" if dados.get('resposta_avaliacoes_ok', False) else "Pendente", desc_resp)
     ]
 
-    # DISTRIBUIÇÃO ABSOLUTA POR SLOT PARA EVITAR ACÚMULO DE ERROS DE ALTURA
-    y_start_itens = 64.0
-    h_slot = 11.8
+    # 4. ITENS DE 1 A 9 (MAIS ESPAÇO APÓS O QUADRO DO SCORE)
+    y_start_itens = 70.0
+    h_slot = 12.0
 
     for idx_item, (titulo, pct, rotulo, desc) in enumerate(itens):
         y_curr = y_start_itens + (idx_item * h_slot)
@@ -435,9 +441,10 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
         pdf.set_text_color(71, 85, 105)
         pdf.cell(186, 2.8, conv(f"   Diagnóstico: {desc[:95]}"), border=0)
 
+    # 5. ANÁLISE DE CONCORRENTES (MAIS ESPAÇO APÓS O ITEM 9)
     concorrentes_filtrados = [c for c in concorrentes if c.get("nome", "").strip() != ""]
     if concorrentes_filtrados:
-        y_conc_title = 173.0
+        y_conc_title = 182.0
         pdf.set_xy(12, y_conc_title)
         pdf.set_font('Helvetica', 'B', 9.0)
         pdf.set_text_color(30, 64, 175)
@@ -446,9 +453,9 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
         w_emp = 56
         w_item = 11.5
         w_score = 26.5
-        h_row = 5.2
+        h_row = 4.8
         
-        y_table = 178.0
+        y_table = 187.0
         pdf.set_xy(12, y_table)
         pdf.set_fill_color(30, 64, 175)
         pdf.set_text_color(255, 255, 255)
@@ -530,16 +537,17 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
             pdf.cell(w_score, h_row, conv(f"{score_conc} / 100"), border='B', fill=True, align='C')
             pdf.set_font('Helvetica', '', 8.0)
 
+    # 6. PLANO DE AÇÃO (MAIS ESPAÇO APÓS A TABELA DE CONCORRENTES)
     if plano_acao_extra and plano_acao_extra.strip() != "":
         w_extra = 186
         x_extra = (210 - w_extra) / 2.0
-        y_extra = 226.0
+        y_extra = 235.0
         
         pdf.set_fill_color(240, 249, 255)
         pdf.set_draw_color(62, 161, 219)
         pdf.set_line_width(0.4)
         
-        h_box_extra = 21.0
+        h_box_extra = 20.0
         pdf.rounded_rect(x_extra, y_extra, w_extra, h_box_extra, 2.0, 'FD')
         pdf.set_line_width(0.2)
         
@@ -548,11 +556,10 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
         pdf.set_text_color(30, 64, 175)
         pdf.cell(w_extra, 3.5, conv("PLANO DE AÇÃO E APONTAMENTOS ESTRATÉGICOS PERSONALIZADOS:"), align='C', border=0)
         
-        pdf.set_xy(x_extra + 4, y_extra + 6.8)
+        pdf.set_xy(x_extra + 4, y_extra + 6.5)
         pdf.set_font('Helvetica', '', 7.8)
         pdf.set_text_color(51, 65, 85)
         pdf.multi_cell(w_extra - 8, 3.6, conv(plano_acao_extra), align='C')
-
     # =========================================================================
     # PÁGINA 3: PROPOSTA COMERCIAL
     # =========================================================================
