@@ -716,7 +716,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     # PARÁGRAFOS DO CONTRATO
     paragrafo_justificado(
         pdf, 
-        "**CONTRATADA:** Tour360VR, representada por Rubens H. Okamoto, CPF: 287.932.298-79 e Telefone: (16) 99133-2121."
+        "**CONTRATADA:** Tour360VR, representada por Rubens H. Okamoto, CNPJ 04.824.331/0001-05 e Telefone: (16) 99133-2121."
     )
 
     paragrafo_justificado(
