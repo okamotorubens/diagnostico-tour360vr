@@ -676,7 +676,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     pdf.multi_cell(w_info, 4.5, conv(txt_exp), align='C')
 
     # =========================================================================
-    # PÁGINA 4: CONTRATO (SISTEMA FLUIDO, JUSTIFICADO E Destaques Exatos)
+    # PÁGINA 4: CONTRATO (PARÁGRAFOS 100% JUSTIFICADOS COM NEGRITO PONTUAL)
     # =========================================================================
     pdf.add_page()
     
@@ -694,70 +694,51 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     end_cli = str(dados.get('endereco') or 'Endereço não informado')
     tel_cli = str(dados.get('telefone') or 'N/I')
 
-    # Função para renderizar blocos de parágrafos com partes intercaladas entre Negrito e Normal (Mantendo alinhamento justificado)
-    def renderizar_paragrafo_misto(pdf_obj, partes, espaco_final=2.5):
+    # Função para renderizar parágrafos em markdown (negritos pontuais + justificado puro)
+    def paragrafo_justificado(pdf_obj, texto_md, espaco_extra=2.5):
         pdf_obj.set_x(12)
-        margin_orig = pdf_obj.l_margin
-        pdf_obj.set_left_margin(12)
-        
-        for e_bold, texto_trecho in partes:
-            if e_bold:
-                pdf_obj.set_font('Helvetica', 'B', 8.5)
-                pdf_obj.set_text_color(15, 23, 42)
-            else:
-                pdf_obj.set_font('Helvetica', '', 8.5)
-                pdf_obj.set_text_color(51, 65, 85)
-            pdf_obj.write(h_line, conv(texto_trecho))
-            
-        pdf_obj.set_left_margin(margin_orig)
-        pdf_obj.ln(h_line + espaco_final)
-
-    # PARÁGRAFO 1: CONTRATADA
-    renderizar_paragrafo_misto(
-        pdf, 
-        [
-            (True, "CONTRATADA: "),
-            (False, "Tour360VR, representada por Rubens H. Okamoto, CPF: 287.932.298-79 e Telefone: (16) 99133-2121.")
-        ]
-    )
-
-    # PARÁGRAFO 2: CONTRATANTE
-    renderizar_paragrafo_misto(
-        pdf, 
-        [
-            (True, "CONTRATANTE: "),
-            (False, f"{nome_cli}, representada por {resp_cli}, localizada em {end_cli}, Telefone: {tel_cli}.")
-        ]
-    )
-
-    # INTRODUÇÃO DO CONTRATO (Com "CONTRATADA" e "CONTRATANTE" em negrito)
-    renderizar_paragrafo_misto(
-        pdf, 
-        [
-            (False, "A "),
-            (True, "CONTRATADA"),
-            (False, " compromete-se a executar os serviços de otimização, reestruturação técnica e/ou produção de Tour Virtual 360° para o perfil do Google da "),
-            (True, "CONTRATANTE"),
-            (False, ".")
-        ],
-        espaco_final=3.0
-    )
-
-    # CLÁUSULAS
-    clausulas = [
-        ("CLÁUSULA PRIMEIRA - DO OBJETO: ", "Os serviços serão iniciados em até 5 dias úteis após o fornecimento de todos os acessos e informações necessárias à gestão do perfil."),
-        ("CLÁUSULA SEGUNDA - DAS OBRIGAÇÕES: ", "O não pagamento no prazo pactuado sujeitará o presente contrato à incidência de juros moratórios legais e à suspensão temporária dos serviços até a devida regularização."),
-        ("CLÁUSULA TERCEIRA - DOS DIREITOS DE USO E PROPRIEDADE: ", "Os direitos de uso do Tour Virtual 360° e fotos HD serão cedidos em caráter ilimitado à CONTRATANTE para veiculação no Google. A CONTRATADA reserva-se o direito de utilizar o material em seu portfólio de divulgação.")
-    ]
-
-    for pref_clausula, corpo_clausula in clausulas:
-        renderizar_paragrafo_misto(
-            pdf,
-            [
-                (True, pref_clausula),
-                (False, corpo_clausula)
-            ]
+        pdf_obj.set_font('Helvetica', '', 8.5)
+        pdf_obj.set_text_color(51, 65, 85)
+        pdf_obj.multi_cell(
+            w_text, 
+            h_line, 
+            conv(texto_md), 
+            align='J', 
+            markdown=True
         )
+        pdf_obj.ln(espaco_extra)
+
+    # PARÁGRAFOS DO CONTRATO
+    paragrafo_justificado(
+        pdf, 
+        "**CONTRATADA:** Tour360VR, representada por Rubens H. Okamoto, CPF: 287.932.298-79 e Telefone: (16) 99133-2121."
+    )
+
+    paragrafo_justificado(
+        pdf, 
+        f"**CONTRATANTE:** {nome_cli}, representada por {resp_cli}, localizada em {end_cli}, Telefone: {tel_cli}."
+    )
+
+    paragrafo_justificado(
+        pdf, 
+        "A **CONTRATADA** compromete-se a executar os serviços de otimização, reestruturação técnica e/ou produção de Tour Virtual 360° para o perfil do Google da **CONTRATANTE**.",
+        espaco_extra=3.0
+    )
+
+    paragrafo_justificado(
+        pdf, 
+        "**CLÁUSULA PRIMEIRA - DO OBJETO:** Os serviços serão iniciados em até 5 dias úteis após o fornecimento de todos os acessos e informações necessárias à gestão do perfil."
+    )
+
+    paragrafo_justificado(
+        pdf, 
+        "**CLÁUSULA SEGUNDA - DAS OBRIGAÇÕES:** O não pagamento no prazo pactuado sujeitará o presente contrato à incidência de juros moratórios legais e à suspensão temporária dos serviços até a devida regularização."
+    )
+
+    paragrafo_justificado(
+        pdf, 
+        "**CLÁUSULA TERCEIRA - DOS DIREITOS DE USO E PROPRIEDADE:** Os direitos de uso do Tour Virtual 360° e fotos HD serão cedidos em caráter ilimitado à CONTRATANTE para veiculação no Google. A CONTRATADA reserva-se o direito de utilizar o material em seu portfólio de divulgação."
+    )
 
     # SELEÇÃO DO PLANO
     pdf.set_x(12)
@@ -770,6 +751,17 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     pdf.set_text_color(51, 65, 85)
     pdf.cell(w_text, 4.8, conv("(   ) Plano Start          (   ) Plano Pro          (   ) Gestão Mensal"), ln=True)
     pdf.ln(2.5)
+
+    # CONDIÇÕES DE PAGAMENTO
+    pdf.set_x(12)
+    pdf.set_font('Helvetica', 'B', 8.5)
+    pdf.set_text_color(15, 23, 42)
+    pdf.cell(w_text, h_line, conv("CLÁUSULA QUINTA - CONDIÇÕES DE PAGAMENTO:"), ln=True)
+    
+    pdf.set_x(12)
+    pdf.set_font('Helvetica', '', 8.5)
+    pdf.set_text_color(51, 65, 85)
+    pdf.cell(w_text, 4.8, conv("(   ) À Vista          (   ) 2x Plano Start          (   ) 3x Plano Pro          (   ) Vencimento Dia: _____ - Gestão Mensal"), ln=True)
 
     # CONDIÇÕES DE PAGAMENTO
     pdf.set_x(12)
