@@ -312,7 +312,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     pdf.cell(0, 5.0, conv(sub_txt_1), align='C', ln=True)
     pdf.cell(0, 5.0, conv(sub_txt_2), align='C', ln=True)
 
-    # =========================================================================
+  # =========================================================================
     # PÁGINA 2: AUDITORIA DETALHADA
     # =========================================================================
     pdf.add_page()
@@ -322,24 +322,29 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     pdf.set_text_color(15, 23, 42)
     pdf.cell(186, 8, conv('AUDITORIA DETALHADA DE PONTOS DE BUSCA'), align='C', ln=True)
 
-    w_ficha = 164
+    # Quadro com os dados da empresa e nota de avaliações (ampliado)
+    w_ficha = 170
     x_ficha = (210 - w_ficha) / 2.0
-    y_ficha = 49.0
+    y_ficha = 47.0
+    h_ficha = 15.0  # Altura ampliada de 12 para 15
     
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
-    pdf.rounded_rect(x_ficha, y_ficha, w_ficha, 12, 2, 'FD')
+    pdf.rounded_rect(x_ficha, y_ficha, w_ficha, h_ficha, 2.5, 'FD')
     
-    pdf.set_xy(x_ficha, y_ficha + 1.5)
-    pdf.set_font('Helvetica', 'B', 10.5)
+    # Nome da Empresa (Fonte ampliada de 10.5 para 12.0)
+    pdf.set_xy(x_ficha, y_ficha + 2.0)
+    pdf.set_font('Helvetica', 'B', 12.0)
     pdf.set_text_color(30, 64, 175)
-    pdf.cell(w_ficha, 4.2, conv(f"{dados.get('nome') or 'Empresa Analisada'}"), align='C', ln=True)
+    pdf.cell(w_ficha, 5.0, conv(f"{dados.get('nome') or 'Empresa Analisada'}"), align='C', ln=True)
 
+    # Nota e Avaliações (Fonte ampliada de 8.2 para 9.5)
     pdf.set_x(x_ficha)
-    pdf.set_font('Helvetica', 'B', 8.2)
+    pdf.set_font('Helvetica', 'B', 9.5)
     pdf.set_text_color(245, 158, 11)
-    pdf.cell(w_ficha, 3.8, conv(f"Nota {dados.get('nota', 0.0):.1f} *   -   {dados.get('avaliacoes', 0)} avaliações no Google"), align='C', ln=True)
+    pdf.cell(w_ficha, 4.5, conv(f"Nota {dados.get('nota', 0.0):.1f} *   -   {dados.get('avaliacoes', 0)} avaliações no Google"), align='C', ln=True)
 
+    # Reajuste da posição do Score Geral para manter o espaçamento proporcional
     w_box_score = 90
     x_box_score = (210 - w_box_score) / 2.0
     y_box_score = 68.0
