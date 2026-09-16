@@ -676,7 +676,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     pdf.multi_cell(w_info, 4.5, conv(txt_exp), align='C')
 
     # =========================================================================
-    # PÁGINA 4: CONTRATO (NEGRITO SOMENTE NAS PALAVRAS-CHAVE + TEXTO JUSTIFICADO)
+    # PÁGINA 4: CONTRATO (SISTEMA FLUIDO, JUSTIFICADO E Destaques Exatos)
     # =========================================================================
     pdf.add_page()
     
@@ -694,44 +694,54 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     end_cli = str(dados.get('endereco') or 'Endereço não informado')
     tel_cli = str(dados.get('telefone') or 'N/I')
 
-    # Função auxiliar para renderizar Parágrafos com Prefixo em Negrito e Corpo Justificado
-    def bloco_prefixo_negrito(pdf_obj, prefixo_bold, texto_normal):
+    # Função para renderizar blocos de parágrafos com partes intercaladas entre Negrito e Normal (Mantendo alinhamento justificado)
+    def renderizar_paragrafo_misto(pdf_obj, partes, espaco_final=2.5):
         pdf_obj.set_x(12)
-        pdf_obj.set_font('Helvetica', 'B', 8.5)
-        pdf_obj.set_text_color(15, 23, 42)
-        pdf_obj.write(h_line, conv(prefixo_bold))
-        
-        pdf_obj.set_font('Helvetica', '', 8.5)
-        pdf_obj.set_text_color(51, 65, 85)
-        
-        # Define margem temporária para as próximas linhas do mesmo bloco ficarem 100% justificadas na margem esquerda
         margin_orig = pdf_obj.l_margin
         pdf_obj.set_left_margin(12)
-        pdf_obj.write(h_line, conv(texto_normal))
+        
+        for e_bold, texto_trecho in partes:
+            if e_bold:
+                pdf_obj.set_font('Helvetica', 'B', 8.5)
+                pdf_obj.set_text_color(15, 23, 42)
+            else:
+                pdf_obj.set_font('Helvetica', '', 8.5)
+                pdf_obj.set_text_color(51, 65, 85)
+            pdf_obj.write(h_line, conv(texto_trecho))
+            
         pdf_obj.set_left_margin(margin_orig)
-        pdf_obj.ln(h_line + 2.5)
+        pdf_obj.ln(h_line + espaco_final)
 
     # PARÁGRAFO 1: CONTRATADA
-    bloco_prefixo_negrito(
+    renderizar_paragrafo_misto(
         pdf, 
-        "CONTRATADA: ", 
-        "Tour360VR, representada por Rubens H. Okamoto, CPF: 287.932.298-79 e Telefone: (16) 99133-2121."
+        [
+            (True, "CONTRATADA: "),
+            (False, "Tour360VR, representada por Rubens H. Okamoto, CPF: 287.932.298-79 e Telefone: (16) 99133-2121.")
+        ]
     )
 
     # PARÁGRAFO 2: CONTRATANTE
-    txt_cliente_full = f"{nome_cli}, representada por {resp_cli}, localizada em {end_cli}, Telefone: {tel_cli}."
-    bloco_prefixo_negrito(
+    renderizar_paragrafo_misto(
         pdf, 
-        "CONTRATANTE: ", 
-        txt_cliente_full
+        [
+            (True, "CONTRATANTE: "),
+            (False, f"{nome_cli}, representada por {resp_cli}, localizada em {end_cli}, Telefone: {tel_cli}.")
+        ]
     )
 
-    # INTRODUÇÃO DO CONTRATO
-    pdf.set_x(12)
-    pdf.set_font('Helvetica', '', 8.5)
-    pdf.set_text_color(51, 65, 85)
-    pdf.multi_cell(w_text, h_line, conv("A CONTRATADA compromete-se a executar os serviços de otimização, reestruturação técnica e/ou produção de Tour Virtual 360° para o perfil do Google da CONTRATANTE."), align='J')
-    pdf.ln(3.0)
+    # INTRODUÇÃO DO CONTRATO (Com "CONTRATADA" e "CONTRATANTE" em negrito)
+    renderizar_paragrafo_misto(
+        pdf, 
+        [
+            (False, "A "),
+            (True, "CONTRATADA"),
+            (False, " compromete-se a executar os serviços de otimização, reestruturação técnica e/ou produção de Tour Virtual 360° para o perfil do Google da "),
+            (True, "CONTRATANTE"),
+            (False, ".")
+        ],
+        espaco_final=3.0
+    )
 
     # CLÁUSULAS
     clausulas = [
@@ -741,7 +751,13 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     ]
 
     for pref_clausula, corpo_clausula in clausulas:
-        bloco_prefixo_negrito(pdf, pref_clausula, corpo_clausula)
+        renderizar_paragrafo_misto(
+            pdf,
+            [
+                (True, pref_clausula),
+                (False, corpo_clausula)
+            ]
+        )
 
     # SELEÇÃO DO PLANO
     pdf.set_x(12)
