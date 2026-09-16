@@ -145,7 +145,6 @@ def calcular_score_concorrente(c):
     return max(score, 10)
 
 def obter_caminho_logo():
-    # Inclui o novo nome totalmente em minúsculas como prioridade
     caminhos = [
         'assets/logo_tour_transparente.png',
         'logo_tour_transparente.png',
@@ -274,26 +273,27 @@ class PDFTour360Oficial(FPDF):
         if self.page_no() == 1: 
             return
         
+        # LOGO REDIMENSIONADA E ALINHADA NO CABEÇALHO
         caminho_logo = obter_caminho_logo()
         if caminho_logo:
             try: 
-                self.image(caminho_logo, 12, 6, 18)
+                self.image(caminho_logo, 12, 5, 14)
             except Exception: 
                 pass
             
-        self.set_xy(12, 8)
-        self.set_font('Helvetica', 'B', 12)
+        self.set_xy(28, 7)
+        self.set_font('Helvetica', 'B', 11)
         self.set_text_color(30, 64, 175)
         self.cell(0, 4.5, 'Tour360VR', align='L', ln=True)
         
-        self.set_x(12)
-        self.set_font('Helvetica', 'B', 8.5)
+        self.set_x(28)
+        self.set_font('Helvetica', 'B', 8.0)
         self.set_text_color(100, 116, 139)
         self.cell(0, 4, conv('Gestão de Perfil & Diagnóstico do Google Meu Negócio'), align='L', ln=True)
         
         self.set_draw_color(226, 232, 240)
-        self.line(12, 20, 198, 20)
-        self.set_y(23)
+        self.line(12, 19, 198, 19)
+        self.set_y(22)
 
     def footer(self):
         self.set_y(-16)
@@ -347,10 +347,11 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     # -------------------------------------------------------------------------
     pdf.add_page()
     
+    # LOGO PROPORCIONAL E CENTRALIZADA NA CAPA
     caminho_logo = obter_caminho_logo()
     if caminho_logo:
         try:
-            pdf.image(caminho_logo, 82, 10, 46)
+            pdf.image(caminho_logo, 86, 12, 38)
         except Exception:
             pass
 
@@ -427,11 +428,11 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     # PÁGINA 2: AUDITORIA DETALHADA
     # -------------------------------------------------------------------------
     pdf.add_page()
-    pdf.set_y(30)
+    pdf.set_y(28)
     pdf.set_font('Helvetica', 'B', 16)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 8, conv('AUDITORIA DETALHADA DE PONTOS DE BUSCA'), align='C', ln=True)
-    pdf.ln(10)
+    pdf.ln(8)
 
     w_ficha = 160
     x_ficha = (210 - w_ficha) / 2.0
@@ -667,7 +668,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     # PÁGINA 3: PROPOSTA COMERCIAL
     # -------------------------------------------------------------------------
     pdf.add_page()
-    pdf.set_y(30)
+    pdf.set_y(28)
     pdf.set_font('Helvetica', 'B', 16)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 8, conv('PROPOSTA COMERCIAL & ESTRUTURAÇÃO ESTRATÉGICA'), align='C', ln=True)
@@ -790,115 +791,73 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     pdf.multi_cell(w_info, 4.5, conv(txt_exp), align='C')
 
     # -------------------------------------------------------------------------
-    # PÁGINA 4: CONTRATO
+    # PÁGINA 4: CONTRATO (TEXTO JUSTIFICADO)
     # -------------------------------------------------------------------------
     pdf.add_page()
-    pdf.set_y(30)
+    pdf.set_y(28)
     pdf.set_font('Helvetica', 'B', 16)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 8, conv('CONTRATO DE PRESTAÇÃO DE SERVIÇOS'), align='C', ln=True)
     pdf.ln(10)
 
-    h_linha = 5.0
+    w_text = 186
 
-    # 1. CONTRATADA
+    # 1. CONTRATADA E CONTRATANTE (JUSTIFICADOS)
     pdf.set_x(12)
-    pdf.set_font('Helvetica', 'B', 8.5)
-    pdf.set_text_color(15, 23, 42)
-    pdf.write(h_linha, conv("CONTRATADA: "))
     pdf.set_font('Helvetica', '', 8.5)
     pdf.set_text_color(51, 65, 85)
-    pdf.write(h_linha, conv("Tour360VR, representada por Rubens H. Okamoto, CPF: 287.932.298-79 e Telefone: (16) 99133-2121.\n\n"))
+    txt_qualificacao = (
+        f"CONTRATADA: Tour360VR, representada por Rubens H. Okamoto, CPF: 287.932.298-79 e Telefone: (16) 99133-2121.\n"
+        f"CONTRATANTE: {dados['nome'] or 'Empresa Contratante'}, representada por {dados['contato'] or 'Responsável'}, "
+        f"localizada em {dados['endereco'] or 'Endereço não informado'}, Telefone: {dados['telefone'] or 'N/I'}."
+    )
+    pdf.multi_cell(w_text, 4.8, conv(txt_qualificacao), align='J')
+    pdf.ln(4)
 
-    # 2. CONTRATANTE
+    # 2. OBJETO
     pdf.set_x(12)
-    pdf.set_font('Helvetica', 'B', 8.5)
-    pdf.set_text_color(15, 23, 42)
-    pdf.write(h_linha, conv("CONTRATANTE: "))
-    pdf.set_font('Helvetica', '', 8.5)
-    pdf.set_text_color(51, 65, 85)
-    txt_cli = f"{dados['nome'] or 'Empresa Contratante'}, representada por {dados['contato'] or 'Responsável'}, localizada em {dados['endereco'] or 'Endereço não informado'}, Telefone: {dados['telefone'] or 'N/I'}.\n\n"
-    pdf.write(h_linha, conv(txt_cli))
+    txt_obj = "A CONTRATADA compromete-se a executar os serviços de otimização, reestruturação técnica e/ou produção de Tour Virtual 360° para o perfil do Google da CONTRATANTE."
+    pdf.multi_cell(w_text, 4.8, conv(txt_obj), align='J')
+    pdf.ln(4)
 
-    # 3. OBJETO
+    # 3. CLÁUSULAS 1 A 3 (JUSTIFICADAS)
     pdf.set_x(12)
-    pdf.set_font('Helvetica', '', 8.5)
-    pdf.set_text_color(51, 65, 85)
-    pdf.write(h_linha, conv("A "))
-    pdf.set_font('Helvetica', 'B', 8.5)
-    pdf.set_text_color(15, 23, 42)
-    pdf.write(h_linha, conv("CONTRATADA"))
-    pdf.set_font('Helvetica', '', 8.5)
-    pdf.set_text_color(51, 65, 85)
-    pdf.write(h_linha, conv(" compromete-se a executar os serviços de otimização, reestruturação técnica e/ou produção de Tour Virtual 360° para o perfil do Google da "))
-    pdf.set_font('Helvetica', 'B', 8.5)
-    pdf.set_text_color(15, 23, 42)
-    pdf.write(h_linha, conv("CONTRATANTE"))
-    pdf.set_font('Helvetica', '', 8.5)
-    pdf.set_text_color(51, 65, 85)
-    pdf.write(h_linha, conv(".\n\n"))
+    txt_cl1 = "CLÁUSULA PRIMEIRA - DO OBJETO: Os serviços serão iniciados em até 5 dias úteis após o fornecimento de todos os acessos e informações necessárias à gestão do perfil."
+    pdf.multi_cell(w_text, 4.8, conv(txt_cl1), align='J')
+    pdf.ln(3)
 
-    # 4. CLÁUSULA PRIMEIRA
     pdf.set_x(12)
-    pdf.set_font('Helvetica', 'B', 8.5)
-    pdf.set_text_color(15, 23, 42)
-    pdf.write(h_linha, conv("CLÁUSULA PRIMEIRA - DO OBJETO: "))
-    pdf.set_font('Helvetica', '', 8.5)
-    pdf.set_text_color(51, 65, 85)
-    pdf.write(h_linha, conv("Os serviços serão iniciados em até 5 dias úteis após o fornecimento de todos os acessos e informações necessárias à gestão do perfil.\n\n"))
+    txt_cl2 = "CLÁUSULA SEGUNDA - DAS OBRIGAÇÕES: O não pagamento no prazo pactuado sujeitará o presente contrato à incidência de juros moratórios legais e à suspensão temporária dos serviços até a devida regularização."
+    pdf.multi_cell(w_text, 4.8, conv(txt_cl2), align='J')
+    pdf.ln(3)
 
-    # 5. CLÁUSULA SEGUNDA
     pdf.set_x(12)
-    pdf.set_font('Helvetica', 'B', 8.5)
-    pdf.set_text_color(15, 23, 42)
-    pdf.write(h_linha, conv("CLÁUSULA SEGUNDA - DAS OBRIGAÇÕES: "))
-    pdf.set_font('Helvetica', '', 8.5)
-    pdf.set_text_color(51, 65, 85)
-    pdf.write(h_linha, conv("O não pagamento no prazo pactuado sujeitará o presente contrato à incidência de juros moratórios legais e à suspensão temporária dos serviços até a devida regularização.\n\n"))
+    txt_cl3 = "CLÁUSULA TERCEIRA - DOS DIREITOS DE USO E PROPRIEDADE: Os direitos de uso do Tour Virtual 360° e fotos HD serão cedidos em caráter ilimitado à CONTRATANTE para veiculação no Google. A CONTRATADA reserva-se o direito de utilizar o material em seu portfólio de divulgação."
+    pdf.multi_cell(w_text, 4.8, conv(txt_cl3), align='J')
+    pdf.ln(5)
 
-    # 6. CLÁUSULA TERCEIRA
+    # 4. CLÁUSULA QUARTA
     pdf.set_x(12)
     pdf.set_font('Helvetica', 'B', 8.5)
     pdf.set_text_color(15, 23, 42)
-    pdf.write(h_linha, conv("CLÁUSULA TERCEIRA - DOS DIREITOS DE USO E PROPRIEDADE: "))
-    pdf.set_font('Helvetica', '', 8.5)
-    pdf.set_text_color(51, 65, 85)
-    pdf.write(h_linha, conv("Os direitos de uso do Tour Virtual 360° e fotos HD serão cedidos em caráter ilimitado à "))
-    pdf.set_font('Helvetica', 'B', 8.5)
-    pdf.set_text_color(15, 23, 42)
-    pdf.write(h_linha, conv("CONTRATANTE"))
-    pdf.set_font('Helvetica', '', 8.5)
-    pdf.set_text_color(51, 65, 85)
-    pdf.write(h_linha, conv(" para veiculação no Google. A "))
-    pdf.set_font('Helvetica', 'B', 8.5)
-    pdf.set_text_color(15, 23, 42)
-    pdf.write(h_linha, conv("CONTRATADA"))
-    pdf.set_font('Helvetica', '', 8.5)
-    pdf.set_text_color(51, 65, 85)
-    pdf.write(h_linha, conv(" reserva-se o direito de utilizar o material em seu portfólio de divulgação.\n\n"))
-
-    # 7. CLÁUSULA QUARTA
-    pdf.set_x(12)
-    pdf.set_font('Helvetica', 'B', 8.5)
-    pdf.set_text_color(15, 23, 42)
-    pdf.cell(186, 4.5, conv("CLÁUSULA QUARTA - SELEÇÃO DO PLANO CONTRATADO:"), ln=True)
+    pdf.cell(w_text, 4.5, conv("CLÁUSULA QUARTA - SELEÇÃO DO PLANO CONTRATADO:"), ln=True)
     pdf.set_x(12)
     pdf.set_font('Helvetica', '', 8.5)
     pdf.set_text_color(51, 65, 85)
-    pdf.cell(186, 5.5, conv("(   ) Plano Start          (   ) Plano Pro          (   ) Gestão Mensal"), ln=True)
+    pdf.cell(w_text, 5.5, conv("(   ) Plano Start          (   ) Plano Pro          (   ) Gestão Mensal"), ln=True)
     pdf.ln(2)
 
-    # 8. CLÁUSULA QUINTA
+    # 5. CLÁUSULA QUINTA
     pdf.set_x(12)
     pdf.set_font('Helvetica', 'B', 8.5)
     pdf.set_text_color(15, 23, 42)
-    pdf.cell(186, 4.5, conv("CLÁUSULA QUINTA - CONDIÇÕES DE PAGAMENTO:"), ln=True)
+    pdf.cell(w_text, 4.5, conv("CLÁUSULA QUINTA - CONDIÇÕES DE PAGAMENTO:"), ln=True)
     pdf.set_x(12)
     pdf.set_font('Helvetica', '', 8.5)
     pdf.set_text_color(51, 65, 85)
-    pdf.cell(186, 5.5, conv("(   ) À Vista          (   ) 2x Plano Start          (   ) 3x Plano Pro          (   ) Vencimento Dia: _____ - Gestão Mensal"), ln=True)
+    pdf.cell(w_text, 5.5, conv("(   ) À Vista          (   ) 2x Plano Start          (   ) 3x Plano Pro          (   ) Vencimento Dia: _____ - Gestão Mensal"), ln=True)
 
-    # 9. ASSINATURAS
+    # 6. ASSINATURAS
     pdf.ln(18)
     y_ass = pdf.get_y()
     pdf.set_xy(12, y_ass)
