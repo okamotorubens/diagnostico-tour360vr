@@ -159,7 +159,6 @@ for key_chk in ['chk_tour360', 'chk_fotos_hd', 'chk_cat_ok', 'chk_horarios_ok', 
 # -----------------------------------------------------------------------------
 class PDFTour360Oficial(FPDF):
     def header(self):
-        # TARJA COLORIDA NO TOPO (Y: 0 A 4mm)
         self.set_fill_color(30, 64, 175)
         self.rect(0, 0, 105, 4, 'F')
         self.set_fill_color(255, 61, 61)
@@ -168,7 +167,6 @@ class PDFTour360Oficial(FPDF):
         if self.page_no() == 1: 
             return
         
-        # LOGO E TEXTO CENTRALIZADOS VERTICALMENTE ENTRE Y=4 E Y=19 (CENTRO Y=11.5)
         caminho_logo = obter_caminho_logo("tour360")
         if caminho_logo:
             try: self.image(caminho_logo, 12, 6.0, 11, 11)
@@ -240,7 +238,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     pdf.set_auto_page_break(auto=False)
 
     # =========================================================================
-    # PÁGINA 1: CAPA (ESPAÇAMENTO AMPLIADO ENTRE LOGO E TÍTULO)
+    # PÁGINA 1: CAPA
     # =========================================================================
     pdf.add_page()
     caminho_logo = obter_caminho_logo("tour360")
@@ -248,7 +246,6 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
         try: pdf.image(caminho_logo, 86, 16, 38, 38)
         except Exception: pass
 
-    # TÍTULO REBAIXADO PARA MAIS RESPIRO
     pdf.set_y(68)
     pdf.set_font('Helvetica', 'B', 21)
     pdf.set_text_color(30, 64, 175)
@@ -404,7 +401,6 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
         ("9. Interação e Resposta a Avaliações", pct_resp, "Ativo" if dados.get('resposta_avaliacoes_ok', False) else "Pendente", desc_resp)
     ]
 
-    # ESPAÇO AMPLIADO ENTRE O SCORE E O ITEM 1
     y_start_itens = 72.0
     h_slot = 11.8
 
@@ -439,7 +435,6 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
         pdf.set_text_color(71, 85, 105)
         pdf.cell(186, 2.8, conv(f"   Diagnóstico: {desc[:95]}"), border=0)
 
-    # ESPAÇO AMPLIADO ENTRE O ITEM 9 E A ANÁLISE DE CONCORRENTES
     concorrentes_filtrados = [c for c in concorrentes if c.get("nome", "").strip() != ""]
     if concorrentes_filtrados:
         y_conc_title = 185.0
@@ -680,7 +675,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     pdf.multi_cell(w_info, 4.5, conv(txt_exp), align='C')
 
     # =========================================================================
-    # PÁGINA 4: CONTRATO (MARGENS E ALINHAMENTO JUSTIFICADO PERFEITOS)
+    # PÁGINA 4: CONTRATO (UNIFICADO COM MULTI_CELL JUSTIFICADO PERFEITO)
     # =========================================================================
     pdf.add_page()
     
@@ -695,8 +690,8 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
 
     # CONTRATADA
     pdf.set_x(12)
-    pdf.set_font('Helvetica', 'B', 8.5)
-    pdf.set_text_color(15, 23, 42)
+    pdf.set_font('Helvetica', '', 8.5)
+    pdf.set_text_color(51, 65, 85)
     txt_contratada = "CONTRATADA: Tour360VR, representada por Rubens H. Okamoto, CPF: 287.932.298-79 e Telefone: (16) 99133-2121."
     pdf.multi_cell(w_text, h_line, conv(txt_contratada), align='J')
     pdf.ln(3.0)
@@ -709,12 +704,10 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
 
     # INTRODUÇÃO
     pdf.set_x(12)
-    pdf.set_font('Helvetica', '', 8.5)
-    pdf.set_text_color(51, 65, 85)
     pdf.multi_cell(w_text, h_line, conv("A CONTRATADA compromete-se a executar os serviços de otimização, reestruturação técnica e/ou produção de Tour Virtual 360° para o perfil do Google da CONTRATANTE."), align='J')
     pdf.ln(3.5)
 
-    # CLÁUSULAS
+    # CLÁUSULAS UNIFICADAS EM SINGLE STRING PARA IMPEDIR VAZAMENTO LATERAL
     clausulas = [
         ("CLÁUSULA PRIMEIRA - DO OBJETO: ", "Os serviços serão iniciados em até 5 dias úteis após o fornecimento de todos os acessos e informações necessárias à gestão do perfil."),
         ("CLÁUSULA SEGUNDA - DAS OBRIGAÇÕES: ", "O não pagamento no prazo pactuado sujeitará o presente contrato à incidência de juros moratórios legais e à suspensão temporária dos serviços até a devida regularização."),
@@ -723,9 +716,6 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
 
     for tit_c, txt_c in clausulas:
         pdf.set_x(12)
-        pdf.set_font('Helvetica', '', 8.5)
-        pdf.set_text_color(51, 65, 85)
-        # CONCATENA TÍTULO E CORPO EM UMA ÚNICA CHAMADA PARA EVITAR ERROS DE MARGEM
         full_c = f"{tit_c}{txt_c}"
         pdf.multi_cell(w_text, h_line, conv(full_c), align='J')
         pdf.ln(3.0)
@@ -771,6 +761,8 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     pdf.cell(88, 4.2, 'Tour360VR', align='C')
     pdf.set_x(110)
     pdf.cell(88, 4.2, conv(f"{dados['nome'] or 'Empresa'}"), align='C', ln=True)
+
+    return bytes(pdf.output())
 
 # -----------------------------------------------------------------------------
 # 6. SIDEBAR / MENU LATERAL
