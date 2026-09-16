@@ -282,27 +282,27 @@ class PDFTour360Oficial(FPDF):
         if self.page_no() == 1: 
             return
         
-        # LOGO COM RESPIRO PERFEITO NO CABEÇALHO (PÁGINAS 2, 3, 4)
+        # LOGO AJUSTADA SEM CORTES NO CABEÇALHO
         caminho_logo = obter_caminho_logo("tour360")
         if caminho_logo:
             try: 
-                self.image(caminho_logo, 12, 5.5, 11)
+                self.image(caminho_logo, 14, 6, 10)
             except Exception: 
                 pass
             
-        self.set_xy(26, 6)
+        self.set_xy(27, 6)
         self.set_font('Helvetica', 'B', 11)
         self.set_text_color(30, 64, 175)
         self.cell(0, 4.0, 'Tour360VR', align='L', ln=True)
         
-        self.set_x(26)
+        self.set_x(27)
         self.set_font('Helvetica', 'B', 7.5)
         self.set_text_color(100, 116, 139)
         self.cell(0, 3.5, conv('Gestão de Perfil & Diagnóstico do Google Meu Negócio'), align='L', ln=True)
         
         self.set_draw_color(226, 232, 240)
-        self.line(12, 17, 198, 17)
-        self.set_y(20)
+        self.line(12, 18, 198, 18)
+        self.set_y(22)
 
     def footer(self):
         self.set_y(-16)
@@ -352,20 +352,20 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     pdf.set_auto_page_break(auto=True, margin=18)
 
     # -------------------------------------------------------------------------
-    # PÁGINA 1: CAPA (REESTRUTURADA COM RESPIRO INTEGRAL)
+    # PÁGINA 1: CAPA
     # -------------------------------------------------------------------------
     pdf.add_page()
     
-    # 1. LOGO TOPO DA CAPA
+    # LOGO DA CAPA
     caminho_logo = obter_caminho_logo("tour360")
     if caminho_logo:
         try:
-            pdf.image(caminho_logo, 88, 8, 34)
+            pdf.image(caminho_logo, 91, 10, 28)
         except Exception:
             pass
 
-    # 2. TÍTULOS E SUBTÍTULOS REBAIXADOS (SEM SOBREPOSIÇÃO)
-    pdf.set_y(44)
+    # TÍTULOS DESLOCADOS PARA BAIXO COM RESPIRO ELEGANTE
+    pdf.set_y(48)
     pdf.set_font('Helvetica', 'B', 21)
     pdf.set_text_color(30, 64, 175)
     pdf.cell(0, 8, conv('DIAGNÓSTICO DE PRESENÇA DIGITAL'), align='C', ln=True)
@@ -381,9 +381,9 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     sub_txt_2 = "E ZERO FOTOS 360° DEIXAM DINHEIRO NA MESA."
     pdf.cell(0, 4.5, conv(sub_txt_1), align='C', ln=True)
     pdf.cell(0, 4.5, conv(sub_txt_2), align='C', ln=True)
-    pdf.ln(6)
+    pdf.ln(8)
 
-    # 3. CARD COMPACTO DO CLIENTE (34mm DE ALTURA SEM ESPAÇO SOBRANDO)
+    # QUADRO DE DADOS DO CLIENTE
     w_capa = 186
     h_capa = 34
     x_capa = (210 - w_capa) / 2.0
@@ -412,8 +412,8 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     pdf.set_x(x_capa)
     pdf.cell(w_capa, 5, conv(f"Telefone: {dados['telefone'] or 'N/I'}   |   {site_txt}"), align='C', ln=True)
 
-    # 4. IMAGEM DA FACHADA
-    y_foto = y_capa + h_capa + 8
+    # IMAGEM DA FACHADA
+    y_foto = y_capa + h_capa + 10
     foto_renderizada = False
     if dados.get("foto_reference") and API_KEY_GOOGLE:
         try:
@@ -421,7 +421,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
             resp_img = requests.get(url_img, timeout=4)
             if resp_img.status_code == 200:
                 img_stream = io.BytesIO(resp_img.content)
-                pdf.image(img_stream, x_capa, y_foto, w_capa, 115)
+                pdf.image(img_stream, x_capa, y_foto, w_capa, 110)
                 foto_renderizada = True
         except Exception:
             pass
@@ -438,11 +438,11 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     # PÁGINA 2: AUDITORIA DETALHADA
     # -------------------------------------------------------------------------
     pdf.add_page()
-    pdf.set_y(24)
+    pdf.set_y(26)
     pdf.set_font('Helvetica', 'B', 16)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 8, conv('AUDITORIA DETALHADA DE PONTOS DE BUSCA'), align='C', ln=True)
-    pdf.ln(6)
+    pdf.ln(8)
 
     w_ficha = 160
     x_ficha = (210 - w_ficha) / 2.0
@@ -678,7 +678,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     # PÁGINA 3: PROPOSTA COMERCIAL
     # -------------------------------------------------------------------------
     pdf.add_page()
-    pdf.set_y(24)
+    pdf.set_y(26)
     pdf.set_font('Helvetica', 'B', 16)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 8, conv('PROPOSTA COMERCIAL & ESTRUTURAÇÃO ESTRATÉGICA'), align='C', ln=True)
@@ -801,24 +801,23 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     pdf.multi_cell(w_info, 4.5, conv(txt_exp), align='C')
 
     # -------------------------------------------------------------------------
-    # PÁGINA 4: CONTRATO (FORMATADO COM NEGRITO E JUSTIFICADO)
+    # PÁGINA 4: CONTRATO (AJUSTE FINO DE NEGRITO E ESPAÇAMENTO)
     # -------------------------------------------------------------------------
     pdf.add_page()
-    pdf.set_y(24)
+    pdf.set_y(26)
     pdf.set_font('Helvetica', 'B', 16)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 8, conv('CONTRATO DE PRESTAÇÃO DE SERVIÇOS'), align='C', ln=True)
     pdf.ln(8)
 
     w_text = 186
-    h_line = 4.8
+    h_line = 5.2
 
     # Função auxiliar para imprimir bloco com rótulo em NEGRITO
     def escrever_paragrafo_bold_inicio(rotulo_bold, texto_normal):
         pdf.set_x(12)
         pdf.set_font('Helvetica', 'B', 8.5)
         pdf.set_text_color(15, 23, 42)
-        w_bold = pdf.get_string_width(conv(rotulo_bold))
         pdf.write(h_line, conv(rotulo_bold))
         
         pdf.set_font('Helvetica', '', 8.5)
@@ -838,12 +837,27 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     )
     escrever_paragrafo_bold_inicio("CONTRATANTE: ", txt_cliente_full)
 
-    # OBJETO GERAL
+    # OBJETO GERAL COM CONTRATADA E CONTRATANTE EM NEGRITO
     pdf.set_x(12)
     pdf.set_font('Helvetica', '', 8.5)
     pdf.set_text_color(51, 65, 85)
-    txt_obj = "A CONTRATADA compromete-se a executar os serviços de otimização, reestruturação técnica e/ou produção de Tour Virtual 360° para o perfil do Google da CONTRATANTE.\n\n"
-    pdf.write(h_line, conv(txt_obj))
+    pdf.write(h_line, conv("A "))
+    
+    pdf.set_font('Helvetica', 'B', 8.5)
+    pdf.set_text_color(15, 23, 42)
+    pdf.write(h_line, conv("CONTRATADA"))
+    
+    pdf.set_font('Helvetica', '', 8.5)
+    pdf.set_text_color(51, 65, 85)
+    pdf.write(h_line, conv(" compromete-se a executar os serviços de otimização, reestruturação técnica e/ou produção de Tour Virtual 360° para o perfil do Google da "))
+    
+    pdf.set_font('Helvetica', 'B', 8.5)
+    pdf.set_text_color(15, 23, 42)
+    pdf.write(h_line, conv("CONTRATANTE"))
+    
+    pdf.set_font('Helvetica', '', 8.5)
+    pdf.set_text_color(51, 65, 85)
+    pdf.write(h_line, conv(".\n\n"))
 
     # CLÁUSULA PRIMEIRA
     escrever_paragrafo_bold_inicio(
