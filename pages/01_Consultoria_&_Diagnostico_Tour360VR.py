@@ -763,16 +763,6 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     pdf.set_text_color(51, 65, 85)
     pdf.cell(w_text, 4.8, conv("(   ) À Vista          (   ) 2x Plano Start          (   ) 3x Plano Pro          (   ) Vencimento Dia: _____ - Gestão Mensal"), ln=True)
 
-    # CONDIÇÕES DE PAGAMENTO
-    pdf.set_x(12)
-    pdf.set_font('Helvetica', 'B', 8.5)
-    pdf.set_text_color(15, 23, 42)
-    pdf.cell(w_text, h_line, conv("CLÁUSULA QUINTA - CONDIÇÕES DE PAGAMENTO:"), ln=True)
-    
-    pdf.set_x(12)
-    pdf.set_font('Helvetica', '', 8.5)
-    pdf.set_text_color(51, 65, 85)
-    pdf.cell(w_text, 4.8, conv("(   ) À Vista          (   ) 2x Plano Start          (   ) 3x Plano Pro          (   ) Vencimento Dia: _____ - Gestão Mensal"), ln=True)
 
     # ASSINATURAS
     pdf.ln(16)
