@@ -238,12 +238,12 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     pdf.set_auto_page_break(auto=False)
 
     # =========================================================================
-    # PÁGINA 1: CAPA (LOGO CENTRALIZADA PERFEITAMENTE EM Y=28.0)
+    # PÁGINA 1: CAPA (LOGO ELEVADA PARA Y=23.0 - CENTRALIZADA)
     # =========================================================================
     pdf.add_page()
     caminho_logo = obter_caminho_logo("tour360")
     if caminho_logo:
-        try: pdf.image(caminho_logo, 86, 28.0, 38, 38)
+        try: pdf.image(caminho_logo, 86, 23.0, 38, 38)
         except Exception: pass
 
     pdf.set_y(82)
@@ -313,7 +313,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     pdf.cell(0, 5.0, conv(sub_txt_2), align='C', ln=True)
 
     # =========================================================================
-    # PÁGINA 2: AUDITORIA DETALHADA (+2 LINHAS DE ESPAÇO ITEM 9 ➔ TABELA)
+    # PÁGINA 2: AUDITORIA DETALHADA (+2 LINHAS NO QUADRO DE PLANO DE AÇÃO)
     # =========================================================================
     pdf.add_page()
     
@@ -436,10 +436,9 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
         pdf.set_text_color(71, 85, 105)
         pdf.cell(186, 3.0, conv(f"   Diagnóstico: {desc[:95]}"), border=0)
 
-    # +2 LINHAS ADICIONAIS DE ESPAÇO APÓS O ITEM 9 (Y_CONC_TITLE = 198.0)
     concorrentes_filtrados = [c for c in concorrentes if c.get("nome", "").strip() != ""]
     if concorrentes_filtrados:
-        y_conc_title = 198.0
+        y_conc_title = 196.0
         pdf.set_xy(12, y_conc_title)
         pdf.set_font('Helvetica', 'B', 9.5)
         pdf.set_text_color(30, 64, 175)
@@ -450,7 +449,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
         w_score = 26.5
         h_row = 4.6
         
-        y_table = 203.0
+        y_table = 201.0
         pdf.set_xy(12, y_table)
         pdf.set_fill_color(30, 64, 175)
         pdf.set_text_color(255, 255, 255)
@@ -532,31 +531,32 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
             pdf.cell(w_score, h_row, conv(f"{score_conc} / 100"), border='B', fill=True, align='C')
             pdf.set_font('Helvetica', '', 8.5)
 
+    # EXPANDIDO PARA +2 LINHAS DE ESPAÇO INTERNO (ALTURA=27.0MM, ESPAÇAMENTO DO TÍTULO=6.0MM)
     if plano_acao_extra and plano_acao_extra.strip() != "":
         w_extra = 186
         x_extra = (210 - w_extra) / 2.0
-        y_extra = 240.0
+        y_extra = 237.0
         
         pdf.set_fill_color(240, 249, 255)
         pdf.set_draw_color(62, 161, 219)
         pdf.set_line_width(0.4)
         
-        h_box_extra = 22.0
+        h_box_extra = 27.0
         pdf.rounded_rect(x_extra, y_extra, w_extra, h_box_extra, 2.0, 'FD')
         pdf.set_line_width(0.2)
         
-        pdf.set_xy(x_extra, y_extra + 2.2)
+        pdf.set_xy(x_extra, y_extra + 2.5)
         pdf.set_font('Helvetica', 'B', 8.2)
         pdf.set_text_color(30, 64, 175)
         pdf.cell(w_extra, 3.5, conv("PLANO DE AÇÃO E APONTAMENTOS ESTRATÉGICOS PERSONALIZADOS:"), align='C', border=0)
         
-        pdf.set_xy(x_extra + 4, y_extra + 6.2)
+        pdf.set_xy(x_extra + 4, y_extra + 8.5)
         pdf.set_font('Helvetica', '', 7.8)
         pdf.set_text_color(51, 65, 85)
         pdf.multi_cell(w_extra - 8, 3.5, conv(plano_acao_extra), align='C')
 
     # =========================================================================
-    # PÁGINA 3: PROPOSTA COMERCIAL
+    # PÁGINA 3: PROPOSTA COMERCIAL (+1 LINHA NA CAIXA INFORMATIVA, ESPAÇAMENTO 6.0MM)
     # =========================================================================
     pdf.add_page()
     pdf.set_xy(12, 31)
@@ -652,16 +652,17 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     pdf.set_xy(147, y_p + 25)
     pdf.multi_cell(48, 4.5, conv(planos['gestao_itens']), align='L')
 
+    # EXPANDIDO PARA ALTURA DE 36.0MM E ESPAÇAMENTO UNIFICADO EM 6.0MM APÓS O TÍTULO
     w_info = 186
     x_info = (210 - w_info) / 2.0
     
     pdf.set_fill_color(240, 249, 255)
     pdf.set_draw_color(62, 161, 219)
     pdf.set_line_width(0.5)
-    pdf.rounded_rect(x_info, 144, w_info, 32, 2.5, 'FD')
+    pdf.rounded_rect(x_info, 142, w_info, 36, 2.5, 'FD')
     pdf.set_line_width(0.2)
 
-    pdf.set_xy(x_info, 147.5)
+    pdf.set_xy(x_info, 144.5)
     pdf.set_font('Helvetica', 'B', 10.0)
     pdf.set_text_color(30, 64, 175)
     pdf.cell(w_info, 4, conv('POR QUE SEU NEGÓCIO PRECISA DE OTIMIZAÇÃO PROFISSIONAL?'), align='C', ln=True)
@@ -673,11 +674,11 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
         "Perfis com fotos profissionais e Tour Virtual 360° geram até 2x mais interesse e permanecem no topo das buscas.\n"
         "Fichas incompletas ou desatualizadas perdem clientes diariamente para concorrentes diretos com nota mais alta."
     )
-    pdf.set_xy(x_info, 153.5)
+    pdf.set_xy(x_info, 150.5)
     pdf.multi_cell(w_info, 4.5, conv(txt_exp), align='C')
 
     # =========================================================================
-    # PÁGINA 4: CONTRATO (SISTEMA DE TEXTO FLUIDO E TOTALMENTE JUSTIFICADO)
+    # PÁGINA 4: CONTRATO (ALINHAMENTO TOTALMENTE JUSTIFICADO SEM RECUO)
     # =========================================================================
     pdf.add_page()
     
@@ -690,8 +691,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     w_text = 186
     h_line = 4.8
 
-    # Método unificado para montar o parágrafo justificado do início ao fim
-    def escrever_paragrafo_justificado(pdf_obj, titulo_bold, texto_normal):
+    def escrever_paragrafo_justificado_continuo(pdf_obj, titulo_bold, texto_normal):
         pdf_obj.set_x(12)
         pdf_obj.set_font('Helvetica', 'B', 8.5)
         pdf_obj.set_text_color(15, 23, 42)
@@ -699,23 +699,29 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
         
         pdf_obj.set_font('Helvetica', '', 8.5)
         pdf_obj.set_text_color(51, 65, 85)
-        pdf_obj.multi_cell(w_text - pdf_obj.get_x() + 12, h_line, conv(texto_normal), align='J')
-        pdf_obj.ln(2.5)
+        pdf_obj.write(h_line, conv(texto_normal))
+        pdf_obj.ln(h_line + 2.5)
 
     # PARÁGRAFO 1: CONTRATADA
-    escrever_paragrafo_justificado(
-        pdf, 
-        "CONTRATADA: ", 
-        "Tour360VR, representada por Rubens H. Okamoto, CPF: 287.932.298-79 e Telefone: (16) 99133-2121."
-    )
+    pdf.set_x(12)
+    pdf.set_font('Helvetica', 'B', 8.5)
+    pdf.set_text_color(15, 23, 42)
+    pdf.write(h_line, conv("CONTRATADA: "))
+    pdf.set_font('Helvetica', '', 8.5)
+    pdf.set_text_color(51, 65, 85)
+    pdf.multi_cell(w_text, h_line, conv("Tour360VR, representada por Rubens H. Okamoto, CPF: 287.932.298-79 e Telefone: (16) 99133-2121."), align='J')
+    pdf.ln(2.5)
 
     # PARÁGRAFO 2: CONTRATANTE
+    pdf.set_x(12)
+    pdf.set_font('Helvetica', 'B', 8.5)
+    pdf.set_text_color(15, 23, 42)
+    pdf.write(h_line, conv("CONTRATANTE: "))
+    pdf.set_font('Helvetica', '', 8.5)
+    pdf.set_text_color(51, 65, 85)
     txt_cliente_full = f"{dados['nome'] or 'Empresa Contratante'}, representada por {dados['contato'] or 'Responsável'}, localizada em {dados['endereco'] or 'Endereço não informado'}, Telefone: {dados['telefone'] or 'N/I'}."
-    escrever_paragrafo_justificado(
-        pdf, 
-        "CONTRATANTE: ", 
-        txt_cliente_full
-    )
+    pdf.multi_cell(w_text, h_line, conv(txt_cliente_full), align='J')
+    pdf.ln(2.5)
 
     # INTRODUÇÃO DO CONTRATO
     pdf.set_x(12)
@@ -724,7 +730,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     pdf.multi_cell(w_text, h_line, conv("A CONTRATADA compromete-se a executar os serviços de otimização, reestruturação técnica e/ou produção de Tour Virtual 360° para o perfil do Google da CONTRATANTE."), align='J')
     pdf.ln(3.0)
 
-    # CLÁUSULAS
+    # CLÁUSULAS 1 A 3 COM TEXTO JUSTIFICADO COMPLETO
     clausulas = [
         ("CLÁUSULA PRIMEIRA - DO OBJETO: ", "Os serviços serão iniciados em até 5 dias úteis após o fornecimento de todos os acessos e informações necessárias à gestão do perfil."),
         ("CLÁUSULA SEGUNDA - DAS OBRIGAÇÕES: ", "O não pagamento no prazo pactuado sujeitará o presente contrato à incidência de juros moratórios legais e à suspensão temporária dos serviços até a devida regularização."),
@@ -732,7 +738,14 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     ]
 
     for tit_c, txt_c in clausulas:
-        escrever_paragrafo_justificado(pdf, tit_c, txt_c)
+        pdf.set_x(12)
+        pdf.set_font('Helvetica', 'B', 8.5)
+        pdf.set_text_color(15, 23, 42)
+        pdf.write(h_line, conv(tit_c))
+        pdf.set_font('Helvetica', '', 8.5)
+        pdf.set_text_color(51, 65, 85)
+        pdf.multi_cell(w_text, h_line, conv(txt_c), align='J')
+        pdf.ln(2.5)
 
     # SELEÇÃO DO PLANO
     pdf.set_x(12)
