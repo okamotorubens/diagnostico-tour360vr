@@ -677,100 +677,33 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     pdf.set_xy(x_info, 150.5)
     pdf.multi_cell(w_info, 4.5, conv(txt_exp), align='C')
 
-  # =========================================================================
-    # PÁGINA 4: CONTRATO (FLUIDO, JUSTIFICADO E TOTALMENTE ALINHADO À MARGEM)
-    # =========================================================================
-    pdf.add_page()
-    
-    pdf.set_xy(12, 31)
-    pdf.set_font('Helvetica', 'B', 16)
-    pdf.set_text_color(15, 23, 42)
-    pdf.cell(186, 8, conv('CONTRATO DE PRESTAÇÃO DE SERVIÇOS'), align='C', ln=True)
+  # DISPARADOR DO PDF PROTEGIDO
+st.markdown("<div class='dashboard-card'>", unsafe_allow_html=True)
+st.markdown("<div class='card-title'>GERAR DOCUMENTO OFICIAL</div>", unsafe_allow_html=True)
 
-    pdf.set_y(50.0)
-    w_text = 186
-    h_line = 4.8
+nome_empresa_formatado = str(st.session_state['dados'].get('nome') or 'Empresa').strip()
 
-    # PARÁGRAFO 1: CONTRATADA
-    pdf.set_x(12)
-    pdf.set_font('Helvetica', 'B', 8.5)
-    pdf.set_text_color(15, 23, 42)
-    txt_contratada = "CONTRATADA: Tour360VR, representada por Rubens H. Okamoto, CPF: 287.932.298-79 e Telefone: (16) 99133-2121."
-    pdf.multi_cell(w_text, h_line, conv(txt_contratada), align='J')
-    pdf.ln(2.5)
+try:
+    pdf_bytes = gerar_pdf_oficial(
+        st.session_state['dados'], 
+        st.session_state['planos'], 
+        st.session_state.get('plano_acao_extra', ''), 
+        st.session_state.get('concorrentes', [])
+    )
 
-    # PARÁGRAFO 2: CONTRATANTE
-    pdf.set_x(12)
-    pdf.set_font('Helvetica', 'B', 8.5)
-    pdf.set_text_color(15, 23, 42)
-    txt_cliente_full = f"CONTRATANTE: {dados['nome'] or 'Empresa Contratante'}, representada por {dados['contato'] or 'Responsável'}, localizada em {dados['endereco'] or 'Endereço não informado'}, Telefone: {dados['telefone'] or 'N/I'}."
-    pdf.multi_cell(w_text, h_line, conv(txt_cliente_full), align='J')
-    pdf.ln(2.5)
+    st.download_button(
+        label="📥 Baixar Diagnóstico, Proposta e Contrato Completo em PDF",
+        data=pdf_bytes,
+        file_name=f"Diagnóstico & Proposta - {nome_empresa_formatado}.pdf",
+        mime="application/pdf",
+        use_container_width=True,
+        key="btn_download_ondemand_realtime"
+    )
+except Exception as e:
+    st.error(f"Erro ao gerar o arquivo PDF: {e}")
 
-    # INTRODUÇÃO DO CONTRATO
-    pdf.set_x(12)
-    pdf.set_font('Helvetica', '', 8.5)
-    pdf.set_text_color(51, 65, 85)
-    pdf.multi_cell(w_text, h_line, conv("A CONTRATADA compromete-se a executar os serviços de otimização, reestruturação técnica e/ou produção de Tour Virtual 360° para o perfil do Google da CONTRATANTE."), align='J')
-    pdf.ln(3.0)
+st.markdown("</div>", unsafe_allow_html=True)
 
-    # CLÁUSULAS INDIVIDUAIS JUSTIFICADAS
-    clausulas = [
-        ("CLÁUSULA PRIMEIRA - DO OBJETO: Os serviços serão iniciados em até 5 dias úteis após o fornecimento de todos os acessos e informações necessárias à gestão do perfil."),
-        ("CLÁUSULA SEGUNDA - DAS OBRIGAÇÕES: O não pagamento no prazo pactuado sujeitará o presente contrato à incidência de juros moratórios legais e à suspensão temporária dos serviços até a devida regularização."),
-        ("CLÁUSULA TERCEIRA - DOS DIREITOS DE USO E PROPRIEDADE: Os direitos de uso do Tour Virtual 360° e fotos HD serão cedidos em caráter ilimitado à CONTRATANTE para veiculação no Google. A CONTRATADA reserva-se o direito de utilizar o material em seu portfólio de divulgação.")
-    ]
-
-    for txt_clausula in clausulas:
-        pdf.set_x(12)
-        pdf.set_font('Helvetica', 'B', 8.5)
-        pdf.set_text_color(15, 23, 42)
-        pdf.multi_cell(w_text, h_line, conv(txt_clausula), align='J')
-        pdf.ln(2.5)
-
-    # SELEÇÃO DO PLANO
-    pdf.set_x(12)
-    pdf.set_font('Helvetica', 'B', 8.5)
-    pdf.set_text_color(15, 23, 42)
-    pdf.cell(w_text, h_line, conv("CLÁUSULA QUARTA - SELEÇÃO DO PLANO CONTRATADO:"), ln=True)
-    
-    pdf.set_x(12)
-    pdf.set_font('Helvetica', '', 8.5)
-    pdf.set_text_color(51, 65, 85)
-    pdf.cell(w_text, 4.8, conv("(   ) Plano Start          (   ) Plano Pro          (   ) Gestão Mensal"), ln=True)
-    pdf.ln(2.5)
-
-    # CONDIÇÕES DE PAGAMENTO
-    pdf.set_x(12)
-    pdf.set_font('Helvetica', 'B', 8.5)
-    pdf.set_text_color(15, 23, 42)
-    pdf.cell(w_text, h_line, conv("CLÁUSULA QUINTA - CONDIÇÕES DE PAGAMENTO:"), ln=True)
-    
-    pdf.set_x(12)
-    pdf.set_font('Helvetica', '', 8.5)
-    pdf.set_text_color(51, 65, 85)
-    pdf.cell(w_text, 4.8, conv("(   ) À Vista          (   ) 2x Plano Start          (   ) 3x Plano Pro          (   ) Vencimento Dia: _____ - Gestão Mensal"), ln=True)
-
-    # ASSINATURAS
-    pdf.ln(16)
-    y_ass = pdf.get_y()
-    pdf.set_xy(12, y_ass)
-    pdf.cell(88, 5, '_____________________________________', align='C')
-    pdf.set_xy(110, y_ass)
-    pdf.cell(88, 5, '_____________________________________', align='C', ln=True)
-    
-    pdf.set_font('Helvetica', 'B', 8.5)
-    pdf.set_x(12)
-    pdf.cell(88, 4.2, 'Rubens H. Okamoto', align='C')
-    pdf.set_x(110)
-    pdf.cell(88, 4.2, conv(f"{dados['contato'] or 'Responsável'}"), align='C', ln=True)
-    
-    pdf.set_font('Helvetica', 'B', 8.5)
-    pdf.set_text_color(100, 116, 139)
-    pdf.set_x(12)
-    pdf.cell(88, 4.2, 'Tour360VR', align='C')
-    pdf.set_x(110)
-    pdf.cell(88, 4.2, conv(f"{dados['nome'] or 'Empresa'}"), align='C', ln=True)
 # -----------------------------------------------------------------------------
 # 6. SIDEBAR / MENU LATERAL
 # -----------------------------------------------------------------------------
