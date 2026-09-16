@@ -677,8 +677,8 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     pdf.set_xy(x_info, 150.5)
     pdf.multi_cell(w_info, 4.5, conv(txt_exp), align='C')
 
-    # =========================================================================
-    # PÁGINA 4: CONTRATO (ALINHAMENTO TOTALMENTE JUSTIFICADO SEM RECUO)
+  # =========================================================================
+    # PÁGINA 4: CONTRATO (FLUIDO, JUSTIFICADO E TOTALMENTE ALINHADO À MARGEM)
     # =========================================================================
     pdf.add_page()
     
@@ -691,35 +691,19 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     w_text = 186
     h_line = 4.8
 
-    def escrever_paragrafo_justificado_continuo(pdf_obj, titulo_bold, texto_normal):
-        pdf_obj.set_x(12)
-        pdf_obj.set_font('Helvetica', 'B', 8.5)
-        pdf_obj.set_text_color(15, 23, 42)
-        pdf_obj.write(h_line, conv(titulo_bold))
-        
-        pdf_obj.set_font('Helvetica', '', 8.5)
-        pdf_obj.set_text_color(51, 65, 85)
-        pdf_obj.write(h_line, conv(texto_normal))
-        pdf_obj.ln(h_line + 2.5)
-
     # PARÁGRAFO 1: CONTRATADA
     pdf.set_x(12)
     pdf.set_font('Helvetica', 'B', 8.5)
     pdf.set_text_color(15, 23, 42)
-    pdf.write(h_line, conv("CONTRATADA: "))
-    pdf.set_font('Helvetica', '', 8.5)
-    pdf.set_text_color(51, 65, 85)
-    pdf.multi_cell(w_text, h_line, conv("Tour360VR, representada por Rubens H. Okamoto, CPF: 287.932.298-79 e Telefone: (16) 99133-2121."), align='J')
+    txt_contratada = "CONTRATADA: Tour360VR, representada por Rubens H. Okamoto, CPF: 287.932.298-79 e Telefone: (16) 99133-2121."
+    pdf.multi_cell(w_text, h_line, conv(txt_contratada), align='J')
     pdf.ln(2.5)
 
     # PARÁGRAFO 2: CONTRATANTE
     pdf.set_x(12)
     pdf.set_font('Helvetica', 'B', 8.5)
     pdf.set_text_color(15, 23, 42)
-    pdf.write(h_line, conv("CONTRATANTE: "))
-    pdf.set_font('Helvetica', '', 8.5)
-    pdf.set_text_color(51, 65, 85)
-    txt_cliente_full = f"{dados['nome'] or 'Empresa Contratante'}, representada por {dados['contato'] or 'Responsável'}, localizada em {dados['endereco'] or 'Endereço não informado'}, Telefone: {dados['telefone'] or 'N/I'}."
+    txt_cliente_full = f"CONTRATANTE: {dados['nome'] or 'Empresa Contratante'}, representada por {dados['contato'] or 'Responsável'}, localizada em {dados['endereco'] or 'Endereço não informado'}, Telefone: {dados['telefone'] or 'N/I'}."
     pdf.multi_cell(w_text, h_line, conv(txt_cliente_full), align='J')
     pdf.ln(2.5)
 
@@ -730,21 +714,18 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     pdf.multi_cell(w_text, h_line, conv("A CONTRATADA compromete-se a executar os serviços de otimização, reestruturação técnica e/ou produção de Tour Virtual 360° para o perfil do Google da CONTRATANTE."), align='J')
     pdf.ln(3.0)
 
-    # CLÁUSULAS 1 A 3 COM TEXTO JUSTIFICADO COMPLETO
+    # CLÁUSULAS INDIVIDUAIS JUSTIFICADAS
     clausulas = [
-        ("CLÁUSULA PRIMEIRA - DO OBJETO: ", "Os serviços serão iniciados em até 5 dias úteis após o fornecimento de todos os acessos e informações necessárias à gestão do perfil."),
-        ("CLÁUSULA SEGUNDA - DAS OBRIGAÇÕES: ", "O não pagamento no prazo pactuado sujeitará o presente contrato à incidência de juros moratórios legais e à suspensão temporária dos serviços até a devida regularização."),
-        ("CLÁUSULA TERCEIRA - DOS DIREITOS DE USO E PROPRIEDADE: ", "Os direitos de uso do Tour Virtual 360° e fotos HD serão cedidos em caráter ilimitado à CONTRATANTE para veiculação no Google. A CONTRATADA reserva-se o direito de utilizar o material em seu portfólio de divulgação.")
+        ("CLÁUSULA PRIMEIRA - DO OBJETO: Os serviços serão iniciados em até 5 dias úteis após o fornecimento de todos os acessos e informações necessárias à gestão do perfil."),
+        ("CLÁUSULA SEGUNDA - DAS OBRIGAÇÕES: O não pagamento no prazo pactuado sujeitará o presente contrato à incidência de juros moratórios legais e à suspensão temporária dos serviços até a devida regularização."),
+        ("CLÁUSULA TERCEIRA - DOS DIREITOS DE USO E PROPRIEDADE: Os direitos de uso do Tour Virtual 360° e fotos HD serão cedidos em caráter ilimitado à CONTRATANTE para veiculação no Google. A CONTRATADA reserva-se o direito de utilizar o material em seu portfólio de divulgação.")
     ]
 
-    for tit_c, txt_c in clausulas:
+    for txt_clausula in clausulas:
         pdf.set_x(12)
         pdf.set_font('Helvetica', 'B', 8.5)
         pdf.set_text_color(15, 23, 42)
-        pdf.write(h_line, conv(tit_c))
-        pdf.set_font('Helvetica', '', 8.5)
-        pdf.set_text_color(51, 65, 85)
-        pdf.multi_cell(w_text, h_line, conv(txt_c), align='J')
+        pdf.multi_cell(w_text, h_line, conv(txt_clausula), align='J')
         pdf.ln(2.5)
 
     # SELEÇÃO DO PLANO
@@ -790,9 +771,6 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     pdf.cell(88, 4.2, 'Tour360VR', align='C')
     pdf.set_x(110)
     pdf.cell(88, 4.2, conv(f"{dados['nome'] or 'Empresa'}"), align='C', ln=True)
-
-    return bytes(pdf.output())
-
 # -----------------------------------------------------------------------------
 # 6. SIDEBAR / MENU LATERAL
 # -----------------------------------------------------------------------------
