@@ -111,13 +111,6 @@ def conv(texto):
                       .replace("À", "A")
     return limpo.encode('latin-1', 'replace').decode('latin-1')
 
-def formatar_estrelas(nota):
-    try:
-        val = int(round(float(nota)))
-        return "*" * max(0, min(5, val))
-    except Exception:
-        return "*****"
-
 def calcular_score_real(dados):
     if not dados.get("nome"):
         return 0
@@ -147,23 +140,15 @@ def calcular_score_concorrente(c):
     return max(score, 10)
 
 def obter_caminho_logo(tipo="tour360"):
-    if tipo == "okamoto":
-        caminhos = [
-            'assets/logo_okamoto.png',
-            'logo_okamoto.png',
-            'assets/Logo_Okamoto.png',
-            'logo_okamoto.jpg'
-        ]
-    else:
-        caminhos = [
-            'assets/logo_tour_transparente.png',
-            'logo_tour_transparente.png',
-            'assets/Logo_TOUR_transparente.png', 
-            'Logo_TOUR_transparente.png', 
-            'assets/Logo TOUR transparente.png',
-            'assets/logo.png',
-            'logo.png'
-        ]
+    caminhos = [
+        'assets/logo_tour_transparente.png',
+        'logo_tour_transparente.png',
+        'assets/Logo_TOUR_transparente.png', 
+        'Logo_TOUR_transparente.png', 
+        'assets/Logo TOUR transparente.png',
+        'assets/logo.png',
+        'logo.png'
+    ]
         
     for c in caminhos:
         if os.path.exists(c): 
@@ -275,7 +260,6 @@ for key_chk in ['chk_tour360', 'chk_fotos_hd', 'chk_cat_ok', 'chk_horarios_ok', 
 # -----------------------------------------------------------------------------
 class PDFTour360Oficial(FPDF):
     def header(self):
-        # Tarja colorida no topo
         self.set_fill_color(30, 64, 175)
         self.rect(0, 0, 105, 4, 'F')
         self.set_fill_color(255, 61, 61)
@@ -284,27 +268,26 @@ class PDFTour360Oficial(FPDF):
         if self.page_no() == 1: 
             return
         
-        # LOGO CORRIGIDA E PROPORCIONAL
         caminho_logo = obter_caminho_logo("tour360")
         if caminho_logo:
             try: 
-                self.image(caminho_logo, 12, 6, 11, 11)
+                self.image(caminho_logo, 12, 5, 11, 11)
             except Exception: 
                 pass
             
-        self.set_xy(26, 6)
-        self.set_font('Helvetica', 'B', 11)
+        self.set_xy(25, 5)
+        self.set_font('Helvetica', 'B', 10.5)
         self.set_text_color(30, 64, 175)
         self.cell(0, 4.0, 'Tour360VR', align='L', ln=True)
         
-        self.set_x(26)
-        self.set_font('Helvetica', 'B', 7.5)
+        self.set_x(25)
+        self.set_font('Helvetica', 'B', 7.2)
         self.set_text_color(100, 116, 139)
-        self.cell(0, 3.5, conv('Gestão de Perfil & Diagnóstico do Google Meu Negócio'), align='L', ln=True)
+        self.cell(0, 3.8, conv('Gestão de Perfil & Diagnóstico do Google Meu Negócio'), align='L', ln=True)
         
         self.set_draw_color(226, 232, 240)
-        self.line(12, 20, 198, 20)
-        self.set_y(24)
+        self.line(12, 18.5, 198, 18.5)
+        self.set_y(22)
 
     def footer(self):
         self.set_y(-16)
@@ -361,11 +344,11 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     caminho_logo = obter_caminho_logo("tour360")
     if caminho_logo:
         try:
-            pdf.image(caminho_logo, 91, 14, 28, 28)
+            pdf.image(caminho_logo, 91, 18, 28, 28)
         except Exception:
             pass
 
-    pdf.set_y(56)
+    pdf.set_y(62)
     pdf.set_font('Helvetica', 'B', 21)
     pdf.set_text_color(30, 64, 175)
     pdf.cell(0, 8, conv('DIAGNÓSTICO DE PRESENÇA DIGITAL'), align='C', ln=True)
@@ -419,27 +402,27 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
             resp_img = requests.get(url_img, timeout=4)
             if resp_img.status_code == 200:
                 img_stream = io.BytesIO(resp_img.content)
-                pdf.image(img_stream, x_capa, y_foto, w_capa, 104)
+                pdf.image(img_stream, x_capa, y_foto, w_capa, 100)
                 foto_renderizada = True
         except Exception:
             pass
 
     if not foto_renderizada:
         pdf.set_fill_color(240, 243, 246)
-        pdf.rounded_rect(x_capa, y_foto, w_capa, 104, 3, 'F')
-        pdf.set_xy(x_capa, y_foto + 46)
+        pdf.rounded_rect(x_capa, y_foto, w_capa, 100, 3, 'F')
+        pdf.set_xy(x_capa, y_foto + 44)
         pdf.set_font('Helvetica', 'B', 11)
         pdf.set_text_color(100, 116, 139)
         pdf.cell(w_capa, 6, conv("[ IMAGEM DA FICHA GOOGLE DO CLIENTE ]"), align='C', ln=True)
 
     # -------------------------------------------------------------------------
-    # PÁGINA 2: AUDITORIA DETALHADA
+    # PÁGINA 2: AUDITORIA DETALHADA (DISTRIBUIÇÃO HARMÔNICA DOS ESPAÇOS)
     # -------------------------------------------------------------------------
     pdf.add_page()
-    pdf.set_y(26)
-    pdf.set_font('Helvetica', 'B', 16)
+    pdf.set_y(24)
+    pdf.set_font('Helvetica', 'B', 15)
     pdf.set_text_color(15, 23, 42)
-    pdf.cell(0, 8, conv('AUDITORIA DETALHADA DE PONTOS DE BUSCA'), align='C', ln=True)
+    pdf.cell(0, 6, conv('AUDITORIA DETALHADA DE PONTOS DE BUSCA'), align='C', ln=True)
     pdf.ln(4)
 
     w_ficha = 160
@@ -447,21 +430,21 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
-    pdf.rounded_rect(x_ficha, pdf.get_y(), w_ficha, 16, 2, 'FD')
+    pdf.rounded_rect(x_ficha, pdf.get_y(), w_ficha, 14, 2, 'FD')
     
     y_curr = pdf.get_y()
-    pdf.set_xy(x_ficha, y_curr + 2.5)
-    pdf.set_font('Helvetica', 'B', 12.5)
+    pdf.set_xy(x_ficha, y_curr + 2.0)
+    pdf.set_font('Helvetica', 'B', 11.5)
     pdf.set_text_color(30, 64, 175)
-    pdf.cell(w_ficha, 5.0, conv(f"{dados['nome'] or 'Empresa Analisada'}"), align='C', ln=True)
+    pdf.cell(w_ficha, 4.5, conv(f"{dados['nome'] or 'Empresa Analisada'}"), align='C', ln=True)
 
     pdf.set_x(x_ficha)
-    pdf.set_font('Helvetica', 'B', 10)
+    pdf.set_font('Helvetica', 'B', 9.0)
     pdf.set_text_color(245, 158, 11)
-    pdf.cell(w_ficha, 4.5, conv(f"Nota {dados['nota']:.1f} *   -   {dados['avaliacoes']} avaliações no Google"), align='C', ln=True)
+    pdf.cell(w_ficha, 4.0, conv(f"Nota {dados['nota']:.1f} *   -   {dados['avaliacoes']} avaliações no Google"), align='C', ln=True)
 
-    pdf.set_y(y_curr + 20)
-    w_box_score = 100
+    pdf.set_y(y_curr + 18)
+    w_box_score = 90
     x_box_score = (210 - w_box_score) / 2.0
     y_box_score = pdf.get_y()
     
@@ -471,29 +454,30 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
 
     pdf.set_fill_color(240, 249, 255)
     pdf.set_draw_color(62, 161, 219)
-    pdf.set_line_width(0.5)
-    pdf.rounded_rect(x_box_score, y_box_score, w_box_score, 15, 2, 'FD')
+    pdf.set_line_width(0.4)
+    pdf.rounded_rect(x_box_score, y_box_score, w_box_score, 13, 2, 'FD')
     pdf.set_line_width(0.2)
 
-    pdf.set_font('Helvetica', 'B', 20)
+    pdf.set_font('Helvetica', 'B', 18)
     w_num = pdf.get_string_width(f"{score} ")
     w_bar = pdf.get_string_width("/ 100")
     w_total = w_num + w_bar
     x_start = x_box_score + (w_box_score - w_total) / 2.0
 
-    pdf.set_xy(x_start, y_box_score + 1.5)
+    pdf.set_xy(x_start, y_box_score + 1.0)
     pdf.set_text_color(cr, cg, cb)
-    pdf.cell(w_num, 7.0, f"{score} ", align='L')
+    pdf.cell(w_num, 6.0, f"{score} ", align='L')
     
     pdf.set_text_color(15, 23, 42)
-    pdf.cell(w_bar, 7.0, "/ 100", align='L', ln=True)
+    pdf.cell(w_bar, 6.0, "/ 100", align='L', ln=True)
     
-    pdf.set_xy(x_box_score, y_box_score + 9.5)
-    pdf.set_font('Helvetica', 'B', 8.0)
+    pdf.set_xy(x_box_score, y_box_score + 8.0)
+    pdf.set_font('Helvetica', 'B', 7.5)
     pdf.set_text_color(cr, cg, cb)
     pdf.cell(w_box_score, 3.5, conv(f"SCORE GERAL ({status_txt})"), align='C', ln=True)
 
-    pdf.set_y(y_box_score + 22)
+    # MAIOR RESPIRO ANTES DOS ITENS DA AUDITORIA
+    pdf.set_y(y_box_score + 20)
 
     pct_avaliacoes = min(int((dados['avaliacoes'] / 50.0) * 100), 100) if dados['avaliacoes'] > 0 else 10
     pct_fotos = 100 if dados['tem_fotos_hd'] else 30
@@ -526,11 +510,11 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     ]
 
     for titulo, pct, rotulo, desc in itens:
-        pdf.set_font('Helvetica', 'B', 8.8)
+        pdf.set_font('Helvetica', 'B', 8.2)
         pdf.set_text_color(30, 41, 59)
         pdf.cell(130, 3.0, conv(titulo), ln=False)
         
-        pdf.set_font('Helvetica', 'B', 8.8)
+        pdf.set_font('Helvetica', 'B', 8.2)
         if pct < 40: pdf.set_text_color(239, 68, 68)
         elif pct < 80: pdf.set_text_color(245, 158, 11)
         else: pdf.set_text_color(22, 128, 61)
@@ -538,28 +522,28 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
         pdf.cell(56, 3.0, conv(rotulo), align='R', ln=True)
 
         pdf.set_fill_color(226, 232, 240)
-        pdf.rounded_rect(12, pdf.get_y(), 186, 1.8, 0.8, 'F')
+        pdf.rounded_rect(12, pdf.get_y(), 186, 1.5, 0.6, 'F')
         
         if pct < 40: pdf.set_fill_color(239, 68, 68)
         elif pct < 80: pdf.set_fill_color(245, 158, 11)
         else: pdf.set_fill_color(22, 128, 61)
             
         largura_barra = max(float(pct) * 1.86, 4.0)
-        pdf.rounded_rect(12, pdf.get_y(), largura_barra, 1.8, 0.8, 'F')
+        pdf.rounded_rect(12, pdf.get_y(), largura_barra, 1.5, 0.6, 'F')
         pdf.ln(2.0)
 
-        pdf.set_font('Helvetica', '', 7.8)
+        pdf.set_font('Helvetica', '', 7.5)
         pdf.set_text_color(71, 85, 105)
         pdf.cell(0, 2.8, conv(f"   Diagnóstico: {desc}"), ln=True)
-        pdf.ln(1.5)
+        pdf.ln(2.5) # Maior espaçamento individual por item para preencher a folha
 
     concorrentes_filtrados = [c for c in concorrentes if c.get("nome", "").strip() != ""]
     if concorrentes_filtrados:
-        pdf.ln(5)
-        pdf.set_font('Helvetica', 'B', 9.5)
+        pdf.ln(10) # Espaçamento gerando transição suave
+        pdf.set_font('Helvetica', 'B', 9.0)
         pdf.set_text_color(30, 64, 175)
-        pdf.cell(0, 4.5, conv("ANÁLISE AUTOMÁTICA DE CONCORRENTES DO SEGMENTO"), ln=True)
-        pdf.ln(2)
+        pdf.cell(0, 4.0, conv("ANÁLISE AUTOMÁTICA DE CONCORRENTES DO SEGMENTO"), ln=True)
+        pdf.ln(3)
 
         w_emp = 56
         w_item = 11.5
@@ -567,7 +551,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
         
         pdf.set_fill_color(30, 64, 175)
         pdf.set_text_color(255, 255, 255)
-        pdf.set_font('Helvetica', 'B', 7.5)
+        pdf.set_font('Helvetica', 'B', 7.0)
         
         pdf.cell(w_emp, 4.5, conv(" Empresa / Concorrente"), border=0, fill=True)
         pdf.cell(w_item, 4.5, conv("1.Fotos"), border=0, fill=True, align='C')
@@ -592,7 +576,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
             pdf_obj.cell(w, h, conv(valor), border='B', fill=True, align='C')
 
         pdf.set_fill_color(240, 249, 255)
-        pdf.set_font('Helvetica', 'B', 7.5)
+        pdf.set_font('Helvetica', 'B', 7.0)
         pdf.set_text_color(30, 64, 175)
         pdf.cell(w_emp, 4.5, conv(f" {dados['nome'][:28]}"), border='B', fill=True)
         
@@ -611,12 +595,12 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
         celula_sim_nao(pdf, w_item, 4.5, "Sim" if dados.get('resposta_avaliacoes_ok') else "Não")
         
         pdf.set_fill_color(240, 249, 255)
-        pdf.set_font('Helvetica', 'B', 7.5)
+        pdf.set_font('Helvetica', 'B', 7.0)
         pdf.set_text_color(30, 64, 175)
         pdf.cell(w_score, 4.5, conv(f"{score} / 100"), border='B', fill=True, align='C')
         pdf.ln()
 
-        pdf.set_font('Helvetica', '', 7.5)
+        pdf.set_font('Helvetica', '', 7.0)
         for idx_c, c in enumerate(concorrentes_filtrados):
             score_conc = calcular_score_concorrente(c)
             pdf.set_fill_color(255, 255, 255)
@@ -638,35 +622,35 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
             celula_sim_nao(pdf, w_item, 4.5, c.get('respostas_ok', 'Não'))
             
             pdf.set_fill_color(255, 255, 255)
-            pdf.set_font('Helvetica', 'B', 7.5)
+            pdf.set_font('Helvetica', 'B', 7.0)
             pdf.set_text_color(51, 65, 85)
             pdf.cell(w_score, 4.5, conv(f"{score_conc} / 100"), border='B', fill=True, align='C')
-            pdf.set_font('Helvetica', '', 7.5)
+            pdf.set_font('Helvetica', '', 7.0)
             pdf.ln()
 
     if plano_acao_extra and plano_acao_extra.strip() != "":
-        pdf.ln(5)
+        pdf.ln(8)
         w_extra = 186
         x_extra = (210 - w_extra) / 2.0
         
         pdf.set_fill_color(240, 249, 255)
         pdf.set_draw_color(62, 161, 219)
-        pdf.set_line_width(0.5)
+        pdf.set_line_width(0.4)
         
         y_extra = pdf.get_y()
         h_box_extra = 18
-        pdf.rounded_rect(x_extra, y_extra, w_extra, h_box_extra, 2.5, 'FD')
+        pdf.rounded_rect(x_extra, y_extra, w_extra, h_box_extra, 2.0, 'FD')
         pdf.set_line_width(0.2)
         
-        pdf.set_xy(x_extra, y_extra + 2.0)
-        pdf.set_font('Helvetica', 'B', 8.5)
+        pdf.set_xy(x_extra, y_extra + 2.5)
+        pdf.set_font('Helvetica', 'B', 8.0)
         pdf.set_text_color(30, 64, 175)
-        pdf.cell(w_extra, 3.8, conv("PLANO DE AÇÃO E APONTAMENTOS ESTRATÉGICOS PERSONALIZADOS:"), align='C', ln=True)
+        pdf.cell(w_extra, 3.5, conv("PLANO DE AÇÃO E APONTAMENTOS ESTRATÉGICOS PERSONALIZADOS:"), align='C', ln=True)
         
-        pdf.set_xy(x_extra + 5, y_extra + 6.5)
-        pdf.set_font('Helvetica', '', 8.0)
+        pdf.set_xy(x_extra + 5, y_extra + 7.0)
+        pdf.set_font('Helvetica', '', 7.8)
         pdf.set_text_color(51, 65, 85)
-        pdf.multi_cell(w_extra - 10, 3.6, conv(plano_acao_extra), align='C')
+        pdf.multi_cell(w_extra - 10, 3.5, conv(plano_acao_extra), align='C')
 
     # -------------------------------------------------------------------------
     # PÁGINA 3: PROPOSTA COMERCIAL
@@ -794,7 +778,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     pdf.multi_cell(w_info, 4.5, conv(txt_exp), align='C')
 
     # -------------------------------------------------------------------------
-    # PÁGINA 4: CONTRATO (JUSTIFICAÇÃO PERFEITA)
+    # PÁGINA 4: CONTRATO (GARANTIA DE ALINHAMENTO JUSTIFICADO 'J')
     # -------------------------------------------------------------------------
     pdf.add_page()
     pdf.set_y(26)
@@ -804,29 +788,44 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     pdf.ln(6)
 
     w_text = 186
-    h_line = 5.0
+    h_line = 4.8
 
-    def escrever_paragrafo_justificado(rotulo_bold, texto_normal):
+    def bloco_paragrafo_justificado(titulo_bold, corpo_texto):
         pdf.set_x(12)
         pdf.set_font('Helvetica', 'B', 8.5)
         pdf.set_text_color(15, 23, 42)
-        pdf.write(h_line, conv(rotulo_bold))
+        w_tit = pdf.get_string_width(conv(titulo_bold))
+        pdf.write(h_line, conv(titulo_bold))
         
         pdf.set_font('Helvetica', '', 8.5)
         pdf.set_text_color(51, 65, 85)
-        pdf.write(h_line, conv(texto_normal + "\n\n"))
+        pdf.multi_cell(w_text - w_tit, h_line, conv(corpo_texto), align='J')
+        pdf.ln(2.5)
 
-    escrever_paragrafo_justificado(
-        "CONTRATADA: ", 
-        "Tour360VR, representada por Rubens H. Okamoto, CPF: 287.932.298-79 e Telefone: (16) 99133-2121."
-    )
+    # 1. CONTRATADA E CONTRATANTE
+    pdf.set_x(12)
+    pdf.set_font('Helvetica', 'B', 8.5)
+    pdf.set_text_color(15, 23, 42)
+    pdf.write(h_line, conv("CONTRATADA: "))
+    pdf.set_font('Helvetica', '', 8.5)
+    pdf.set_text_color(51, 65, 85)
+    pdf.multi_cell(160, h_line, conv("Tour360VR, representada por Rubens H. Okamoto, CPF: 287.932.298-79 e Telefone: (16) 99133-2121."), align='J')
+    pdf.ln(2)
 
+    pdf.set_x(12)
+    pdf.set_font('Helvetica', 'B', 8.5)
+    pdf.set_text_color(15, 23, 42)
+    pdf.write(h_line, conv("CONTRATANTE: "))
+    pdf.set_font('Helvetica', '', 8.5)
+    pdf.set_text_color(51, 65, 85)
     txt_cliente_full = (
         f"{dados['nome'] or 'Empresa Contratante'}, representada por {dados['contato'] or 'Responsável'}, "
         f"localizada em {dados['endereco'] or 'Endereço não informado'}, Telefone: {dados['telefone'] or 'N/I'}."
     )
-    escrever_paragrafo_justificado("CONTRATANTE: ", txt_cliente_full)
+    pdf.multi_cell(158, h_line, conv(txt_cliente_full), align='J')
+    pdf.ln(3)
 
+    # 2. OBJETO DO CONTRATO
     pdf.set_x(12)
     pdf.set_font('Helvetica', '', 8.5)
     pdf.set_text_color(51, 65, 85)
@@ -842,23 +841,26 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     pdf.write(h_line, conv("CONTRATANTE"))
     pdf.set_font('Helvetica', '', 8.5)
     pdf.set_text_color(51, 65, 85)
-    pdf.write(h_line, conv(".\n\n"))
+    pdf.multi_cell(0, h_line, conv("."), align='J')
+    pdf.ln(3)
 
-    escrever_paragrafo_justificado(
+    # 3. CLÁUSULAS PRIMEIRA A TERCEIRA
+    bloco_paragrafo_justificado(
         "CLÁUSULA PRIMEIRA - DO OBJETO: ", 
         "Os serviços serão iniciados em até 5 dias úteis após o fornecimento de todos os acessos e informações necessárias à gestão do perfil."
     )
 
-    escrever_paragrafo_justificado(
+    bloco_paragrafo_justificado(
         "CLÁUSULA SEGUNDA - DAS OBRIGAÇÕES: ", 
         "O não pagamento no prazo pactuado sujeitará o presente contrato à incidência de juros moratórios legais e à suspensão temporária dos serviços até a devida regularização."
     )
 
-    escrever_paragrafo_justificado(
+    bloco_paragrafo_justificado(
         "CLÁUSULA TERCEIRA - DOS DIREITOS DE USO E PROPRIEDADE: ", 
         "Os direitos de uso do Tour Virtual 360° e fotos HD serão cedidos em caráter ilimitado à CONTRATANTE para veiculação no Google. A CONTRATADA reserva-se o direito de utilizar o material em seu portfólio de divulgação."
     )
 
+    # 4. CLÁUSULA QUARTA
     pdf.set_x(12)
     pdf.set_font('Helvetica', 'B', 8.5)
     pdf.set_text_color(15, 23, 42)
@@ -869,6 +871,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     pdf.cell(w_text, 5.5, conv("(   ) Plano Start          (   ) Plano Pro          (   ) Gestão Mensal"), ln=True)
     pdf.ln(2)
 
+    # 5. CLÁUSULA QUINTA
     pdf.set_x(12)
     pdf.set_font('Helvetica', 'B', 8.5)
     pdf.set_text_color(15, 23, 42)
