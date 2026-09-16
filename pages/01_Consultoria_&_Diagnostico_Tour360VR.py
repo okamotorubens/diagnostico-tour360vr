@@ -246,7 +246,6 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
         try: pdf.image(caminho_logo, 86, 28, 38, 38)
         except Exception: pass
 
-    # TÍTULO REBAIXADO
     pdf.set_y(82)
     pdf.set_font('Helvetica', 'B', 21)
     pdf.set_text_color(30, 64, 175)
@@ -305,7 +304,6 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
         pdf.set_text_color(100, 116, 139)
         pdf.cell(w_capa, 6, conv("[ IMAGEM DA FICHA GOOGLE DO CLIENTE ]"), align='C', ln=True)
 
-    # +1 LINHA DE ESPAÇO ANTES DA AVALIAÇÃO
     pdf.set_y(252.0)
     pdf.set_font('Helvetica', 'B', 10.5)
     pdf.set_text_color(239, 68, 68)
@@ -315,20 +313,19 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     pdf.cell(0, 5.0, conv(sub_txt_2), align='C', ln=True)
 
     # =========================================================================
-    # PÁGINA 2: AUDITORIA DETALHADA (EXATIDÃO DE ESPAÇOS SOLICITADOS)
+    # PÁGINA 2: AUDITORIA DETALHADA (ESPAÇAMENTOS E QUADRO EXPANDIDO)
     # =========================================================================
     pdf.add_page()
     
-    # +2 LINHAS DE ESPAÇO APÓS A LINHA DO CABEÇALHO (Y=19)
     pdf.set_y(31)
     pdf.set_font('Helvetica', 'B', 15)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 7, conv('AUDITORIA DETALHADA DE PONTOS DE BUSCA'), align='C', ln=True)
 
-    # 2 LINHAS ENTRE O TÍTULO E QUADRO DA EMPRESA
+    # +1 LINHA DE ESPAÇO ADICIONAL ANTES DO QUADRO DA EMPRESA (Y=49.0)
     w_ficha = 164
     x_ficha = (210 - w_ficha) / 2.0
-    y_ficha = 44.0
+    y_ficha = 49.0
     
     pdf.set_fill_color(248, 250, 252)
     pdf.set_draw_color(226, 232, 240)
@@ -344,10 +341,9 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     pdf.set_text_color(245, 158, 11)
     pdf.cell(w_ficha, 3.8, conv(f"Nota {dados['nota']:.1f} *   -   {dados['avaliacoes']} avaliações no Google"), align='C', ln=True)
 
-    # 2 LINHAS ENTRE O QUADRO DA EMPRESA E O SCORE GERAL
     w_box_score = 90
     x_box_score = (210 - w_box_score) / 2.0
-    y_box_score = 65.0
+    y_box_score = 68.0
     
     if score < 50: cr, cg, cb, status_txt = 239, 68, 68, "STATUS CRÍTICO"
     elif score < 80: cr, cg, cb, status_txt = 245, 158, 11, "STATUS MÉDIO"
@@ -407,9 +403,9 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
         ("9. Interação e Resposta a Avaliações", pct_resp, "Ativo" if dados.get('resposta_avaliacoes_ok', False) else "Pendente", desc_resp)
     ]
 
-    # 3 LINHAS DE ESPAÇO ENTRE O SCORE E O ITEM 1
-    y_start_itens = 88.0
-    h_slot = 11.2
+    # +1 LINHA DE ESPAÇO ADICIONAL ANTES DO ITEM 1 (Y=93.0)
+    y_start_itens = 93.0
+    h_slot = 10.5
 
     for idx_item, (titulo, pct, rotulo, desc) in enumerate(itens):
         y_curr = y_start_itens + (idx_item * h_slot)
@@ -442,10 +438,9 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
         pdf.set_text_color(71, 85, 105)
         pdf.cell(186, 2.8, conv(f"   Diagnóstico: {desc[:95]}"), border=0)
 
-    # 1 LINHA DE ESPAÇO ENTRE O ITEM 9 E A ANÁLISE
     concorrentes_filtrados = [c for c in concorrentes if c.get("nome", "").strip() != ""]
     if concorrentes_filtrados:
-        y_conc_title = 198.0
+        y_conc_title = 192.0
         pdf.set_xy(12, y_conc_title)
         pdf.set_font('Helvetica', 'B', 9.0)
         pdf.set_text_color(30, 64, 175)
@@ -454,9 +449,9 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
         w_emp = 56
         w_item = 11.5
         w_score = 26.5
-        h_row = 4.6
+        h_row = 4.5
         
-        y_table = 203.0
+        y_table = 197.0
         pdf.set_xy(12, y_table)
         pdf.set_fill_color(30, 64, 175)
         pdf.set_text_color(255, 255, 255)
@@ -538,31 +533,32 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
             pdf.cell(w_score, h_row, conv(f"{score_conc} / 100"), border='B', fill=True, align='C')
             pdf.set_font('Helvetica', '', 8.0)
 
+    # QUADRO DE PLANO DE AÇÃO AMPLIADO PARA +5 LINHAS INTERNAS (ALTURA=25.0MM)
     if plano_acao_extra and plano_acao_extra.strip() != "":
         w_extra = 186
         x_extra = (210 - w_extra) / 2.0
-        y_extra = 244.0
+        y_extra = 237.0
         
         pdf.set_fill_color(240, 249, 255)
         pdf.set_draw_color(62, 161, 219)
         pdf.set_line_width(0.4)
         
-        h_box_extra = 18.0
+        h_box_extra = 25.0
         pdf.rounded_rect(x_extra, y_extra, w_extra, h_box_extra, 2.0, 'FD')
         pdf.set_line_width(0.2)
         
-        pdf.set_xy(x_extra, y_extra + 2.0)
+        pdf.set_xy(x_extra, y_extra + 2.5)
         pdf.set_font('Helvetica', 'B', 8.2)
         pdf.set_text_color(30, 64, 175)
         pdf.cell(w_extra, 3.5, conv("PLANO DE AÇÃO E APONTAMENTOS ESTRATÉGICOS PERSONALIZADOS:"), align='C', border=0)
         
-        pdf.set_xy(x_extra + 4, y_extra + 6.0)
+        pdf.set_xy(x_extra + 4, y_extra + 6.8)
         pdf.set_font('Helvetica', '', 7.8)
         pdf.set_text_color(51, 65, 85)
-        pdf.multi_cell(w_extra - 8, 3.6, conv(plano_acao_extra), align='C')
+        pdf.multi_cell(w_extra - 8, 3.5, conv(plano_acao_extra), align='C')
 
     # =========================================================================
-    # PÁGINA 3: PROPOSTA COMERCIAL (+2 LINHAS APÓS CABEÇALHO)
+    # PÁGINA 3: PROPOSTA COMERCIAL (+1 LINHA ENTRE PROPOSTA E PLANOS)
     # =========================================================================
     pdf.add_page()
     pdf.set_y(31)
@@ -570,11 +566,12 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 8, conv('PROPOSTA COMERCIAL & ESTRUTURAÇÃO ESTRATÉGICA'), align='C', ln=True)
 
-    pdf.set_y(44)
+    # +1 LINHA DE ESPAÇO ADICIONAL ANTES DO SUBTÍTULO (Y=48.0)
+    pdf.set_y(48.0)
     pdf.set_font('Helvetica', 'B', 14)
     pdf.cell(0, 6, conv('PLANOS E INVESTIMENTO'), align='C', ln=True)
 
-    y_p = 56
+    y_p = 58.0
     
     val_start_limpo = str(planos['start_valor']).replace("/mês", "").replace("/mes", "").strip()
     pdf.set_fill_color(248, 250, 252)
@@ -683,42 +680,48 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     pdf.multi_cell(w_info, 4.5, conv(txt_exp), align='C')
 
     # =========================================================================
-    # PÁGINA 4: CONTRATO (UNIFICADO, MARGENS RIGOROSAS, +3 LINHAS APÓS TÍTULO)
+    # PÁGINA 4: CONTRATO (NEGRITO EM TODAS AS PALAVRAS CONTRATADA/CONTRATANTE/CLÁUSULAS)
     # =========================================================================
     pdf.add_page()
     
-    # +2 LINHAS DE ESPAÇO APÓS A LINHA DO CABEÇALHO (Y=19)
     pdf.set_xy(12, 31)
     pdf.set_font('Helvetica', 'B', 15)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(186, 7, conv('CONTRATO DE PRESTAÇÃO DE SERVIÇOS'), align='C', ln=True)
 
-    # +3 LINHAS DE ESPAÇO ENTRE O TÍTULO E O TEXTO DO CONTRATO
     pdf.set_y(50.0)
-
     w_text = 186
     h_line = 4.8
 
     # CONTRATADA
     pdf.set_x(12)
+    pdf.set_font('Helvetica', 'B', 8.5)
+    pdf.set_text_color(15, 23, 42)
+    pdf.write(h_line, conv("CONTRATADA: "))
     pdf.set_font('Helvetica', '', 8.5)
     pdf.set_text_color(51, 65, 85)
-    txt_contratada = "CONTRATADA: Tour360VR, representada por Rubens H. Okamoto, CPF: 287.932.298-79 e Telefone: (16) 99133-2121."
-    pdf.multi_cell(w_text, h_line, conv(txt_contratada), align='J')
+    pdf.multi_cell(w_text, h_line, conv("Tour360VR, representada por Rubens H. Okamoto, CPF: 287.932.298-79 e Telefone: (16) 99133-2121."), align='J')
     pdf.ln(2.8)
 
     # CONTRATANTE
     pdf.set_x(12)
-    txt_cliente_full = f"CONTRATANTE: {dados['nome'] or 'Empresa Contratante'}, representada por {dados['contato'] or 'Responsável'}, localizada em {dados['endereco'] or 'Endereço não informado'}, Telefone: {dados['telefone'] or 'N/I'}."
+    pdf.set_font('Helvetica', 'B', 8.5)
+    pdf.set_text_color(15, 23, 42)
+    pdf.write(h_line, conv("CONTRATANTE: "))
+    pdf.set_font('Helvetica', '', 8.5)
+    pdf.set_text_color(51, 65, 85)
+    txt_cliente_full = f"{dados['nome'] or 'Empresa Contratante'}, representada por {dados['contato'] or 'Responsável'}, localizada em {dados['endereco'] or 'Endereço não informado'}, Telefone: {dados['telefone'] or 'N/I'}."
     pdf.multi_cell(w_text, h_line, conv(txt_cliente_full), align='J')
     pdf.ln(2.8)
 
     # INTRODUÇÃO
     pdf.set_x(12)
+    pdf.set_font('Helvetica', '', 8.5)
+    pdf.set_text_color(51, 65, 85)
     pdf.multi_cell(w_text, h_line, conv("A CONTRATADA compromete-se a executar os serviços de otimização, reestruturação técnica e/ou produção de Tour Virtual 360° para o perfil do Google da CONTRATANTE."), align='J')
     pdf.ln(3.2)
 
-    # CLÁUSULAS UNIFICADAS EM SINGLE STRING
+    # CLÁUSULAS
     clausulas = [
         ("CLÁUSULA PRIMEIRA - DO OBJETO: ", "Os serviços serão iniciados em até 5 dias úteis após o fornecimento de todos os acessos e informações necessárias à gestão do perfil."),
         ("CLÁUSULA SEGUNDA - DAS OBRIGAÇÕES: ", "O não pagamento no prazo pactuado sujeitará o presente contrato à incidência de juros moratórios legais e à suspensão temporária dos serviços até a devida regularização."),
@@ -727,23 +730,33 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
 
     for tit_c, txt_c in clausulas:
         pdf.set_x(12)
-        full_c = f"{tit_c}{txt_c}"
-        pdf.multi_cell(w_text, h_line, conv(full_c), align='J')
+        pdf.set_font('Helvetica', 'B', 8.5)
+        pdf.set_text_color(15, 23, 42)
+        pdf.write(h_line, conv(tit_c))
+        pdf.set_font('Helvetica', '', 8.5)
+        pdf.set_text_color(51, 65, 85)
+        pdf.multi_cell(w_text, h_line, conv(txt_c), align='J')
         pdf.ln(2.8)
 
     # SELEÇÃO DE PLANO
     pdf.set_x(12)
+    pdf.set_font('Helvetica', 'B', 8.5)
+    pdf.set_text_color(15, 23, 42)
+    pdf.write(h_line, conv("CLÁUSULA QUARTA - SELEÇÃO DO PLANO CONTRATADO:\n"))
+    pdf.set_x(12)
     pdf.set_font('Helvetica', '', 8.5)
     pdf.set_text_color(51, 65, 85)
-    pdf.multi_cell(w_text, h_line, conv("CLÁUSULA QUARTA - SELEÇÃO DO PLANO CONTRATADO:"), align='J')
-    pdf.set_x(12)
     pdf.cell(w_text, 4.8, conv("(   ) Plano Start          (   ) Plano Pro          (   ) Gestão Mensal"), ln=True)
     pdf.ln(2.8)
 
     # CONDIÇÕES DE PAGAMENTO
     pdf.set_x(12)
-    pdf.multi_cell(w_text, h_line, conv("CLÁUSULA QUINTA - CONDIÇÕES DE PAGAMENTO:"), align='J')
+    pdf.set_font('Helvetica', 'B', 8.5)
+    pdf.set_text_color(15, 23, 42)
+    pdf.write(h_line, conv("CLÁUSULA QUINTA - CONDIÇÕES DE PAGAMENTO:\n"))
     pdf.set_x(12)
+    pdf.set_font('Helvetica', '', 8.5)
+    pdf.set_text_color(51, 65, 85)
     pdf.cell(w_text, 4.8, conv("(   ) À Vista          (   ) 2x Plano Start          (   ) 3x Plano Pro          (   ) Vencimento Dia: _____ - Gestão Mensal"), ln=True)
 
     # ASSINATURAS
