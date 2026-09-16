@@ -17,72 +17,14 @@ st.set_page_config(
 
 st.markdown("""
     <style>
-    .stApp {
-        background-color: #0b0f19;
-        color: #f8fafc;
-    }
-    
-    [data-testid="stSidebar"] {
-        background-color: #111827;
-        border-right: 1px solid #1f2937;
-        padding-top: 10px;
-    }
-    
-    .main-header {
-        font-size: 22px;
-        font-weight: 800;
-        color: #ffffff;
-        letter-spacing: -0.5px;
-        margin-top: 0px;
-        margin-bottom: 20px;
-        padding-top: 0px;
-    }
-    .main-header span { color: #ff3d3d; }
-    
-    .dashboard-card {
-        background-color: #131b2e;
-        border: 1px solid #1e293b;
-        border-radius: 12px;
-        padding: 20px;
-        margin-bottom: 20px;
-    }
-
-    .card-title {
-        font-size: 15px;
-        font-weight: 700;
-        color: #ffffff;
-        margin-bottom: 12px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-    
-    .stButton > button {
-        background-color: #1e293b;
-        color: #ffffff;
-        border: 1px solid #334155;
-        border-radius: 8px;
-        font-weight: 600;
-        transition: all 0.2s ease;
-    }
-    .stButton > button:hover {
-        background-color: #1e40af;
-        border-color: #3b82f6;
-        color: #ffffff;
-    }
-
-    .custom-footer {
-        position: fixed;
-        left: 0;
-        bottom: 0;
-        width: 100%;
-        background-color: #070a10;
-        color: #94a3b8;
-        text-align: center;
-        padding: 10px;
-        border-top: 1px solid #1e293b;
-        font-size: 12px;
-        z-index: 999;
-    }
+    .stApp { background-color: #0b0f19; color: #f8fafc; }
+    [data-testid="stSidebar"] { background-color: #111827; border-right: 1px solid #1f2937; padding-top: 10px; }
+    .main-header { font-size: 22px; font-weight: 800; color: #ffffff; letter-spacing: -0.5px; margin-top: 0px; margin-bottom: 20px; }
+    .dashboard-card { background-color: #131b2e; border: 1px solid #1e293b; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+    .card-title { font-size: 15px; font-weight: 700; color: #ffffff; margin-bottom: 12px; text-transform: uppercase; }
+    .stButton > button { background-color: #1e293b; color: #ffffff; border: 1px solid #334155; border-radius: 8px; font-weight: 600; }
+    .stButton > button:hover { background-color: #1e40af; border-color: #3b82f6; color: #ffffff; }
+    .custom-footer { position: fixed; left: 0; bottom: 0; width: 100%; background-color: #070a10; color: #94a3b8; text-align: center; padding: 10px; border-top: 1px solid #1e293b; font-size: 12px; z-index: 999; }
     .custom-footer a { color: #3ea1db; text-decoration: none; }
     </style>
 """, unsafe_allow_html=True)
@@ -95,25 +37,19 @@ API_KEY_GOOGLE = (
 )
 
 # -----------------------------------------------------------------------------
-# 2. FUNÇÕES UTILITÁRIAS & GARANTIA DAS LOGOS
+# 2. FUNÇÕES UTILITÁRIAS
 # -----------------------------------------------------------------------------
 def conv(texto):
     if not texto: return ""
     limpo = str(texto).replace("★", "*")\
                       .replace("•", "- ")\
                       .replace("✓", "[OK] ")\
-                      .replace("📲", "")\
-                      .replace("📍", "")\
-                      .replace("📞", "")\
-                      .replace("🌐", "")\
-                      .replace("Brazil", "Brasil")\
                       .replace("à", "a")\
                       .replace("À", "A")
     return limpo.encode('latin-1', 'replace').decode('latin-1')
 
 def calcular_score_real(dados):
-    if not dados.get("nome"):
-        return 0
+    if not dados.get("nome"): return 0
     score = 100
     if not dados.get("tem_tour360", False): score -= 20
     if dados.get("website") == "Não possui" or not dados.get("website"): score -= 15
@@ -140,54 +76,33 @@ def calcular_score_concorrente(c):
     return max(score, 10)
 
 def obter_caminho_logo(tipo="tour360"):
-    caminhos = [
-        'assets/logo_tour_transparente.png',
-        'logo_tour_transparente.png',
-        'assets/Logo_TOUR_transparente.png', 
-        'Logo_TOUR_transparente.png', 
-        'assets/Logo TOUR transparente.png',
-        'assets/logo.png',
-        'logo.png'
-    ]
-        
+    caminhos = ['assets/logo_tour_transparente.png', 'logo_tour_transparente.png', 'assets/logo.png', 'logo.png']
     for c in caminhos:
-        if os.path.exists(c): 
-            return c
-            
+        if os.path.exists(c): return c
     temp_logo = f'/tmp/logo_{tipo}_temp.png'
-    if os.path.exists(temp_logo):
-        return temp_logo
-        
+    if os.path.exists(temp_logo): return temp_logo
     try:
         url_logo_oficial = "https://tour360vr.com.br/assets/img/logo.png"
         resp = requests.get(url_logo_oficial, timeout=3)
         if resp.status_code == 200:
-            with open(temp_logo, 'wb') as f:
-                f.write(resp.content)
+            with open(temp_logo, 'wb') as f: f.write(resp.content)
             return temp_logo
-    except Exception:
-        pass
-        
+    except Exception: pass
     return None
 
 def buscar_detalhes_concorrente_especifico(nome_concorrente, cidade, api_key):
-    if not nome_concorrente or not api_key:
-        return None
+    if not nome_concorrente or not api_key: return None
     try:
         termo = f"{nome_concorrente}, {cidade}" if cidade else nome_concorrente
         url_search = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={requests.utils.quote(termo)}&key={api_key}"
         res = requests.get(url_search).json()
-        
         if res.get("status") == "OK" and res.get("results"):
             item = res["results"][0]
             place_id = item.get("place_id")
-            
             url_det = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=website,editorial_summary,opening_hours,photos,types&key={api_key}"
             res_det = requests.get(url_det).json().get("result", {})
-            
             photos = res_det.get("photos", item.get("photos", []))
             types_lista = res_det.get("types", [])
-
             return {
                 "nome": item.get("name", nome_concorrente),
                 "nota": float(item.get("rating", 0.0)),
@@ -201,31 +116,18 @@ def buscar_detalhes_concorrente_especifico(nome_concorrente, cidade, api_key):
                 "atributos_ok": "Não",
                 "respostas_ok": "Não"
             }
-    except Exception:
-        pass
+    except Exception: pass
     return None
 
 # -----------------------------------------------------------------------------
-# 3. ESTADOS DA SESSÃO PERSISTENTES
+# 3. ESTADOS PERSISTENTES
 # -----------------------------------------------------------------------------
 if 'dados' not in st.session_state:
     st.session_state['dados'] = {
-        "nome": "",
-        "contato": "",
-        "endereco": "",
-        "telefone": "",
-        "website": "",
-        "nota": 0.0,
-        "avaliacoes": 0,
-        "tem_tour360": False,
-        "tem_fotos_hd": False,
-        "categorias_completas": False,
-        "horarios_ok": False,
-        "tem_descricao": False,
-        "atributos_ok": False,
-        "resposta_avaliacoes_ok": False,
-        "categorias_detectadas": [],
-        "foto_reference": ""
+        "nome": "", "contato": "", "endereco": "", "telefone": "", "website": "",
+        "nota": 0.0, "avaliacoes": 0, "tem_tour360": False, "tem_fotos_hd": False,
+        "categorias_completas": False, "horarios_ok": False, "tem_descricao": False,
+        "atributos_ok": False, "resposta_avaliacoes_ok": False, "categorias_detectadas": [], "foto_reference": ""
     }
 
 if 'concorrentes' not in st.session_state:
@@ -237,12 +139,9 @@ if 'concorrentes' not in st.session_state:
 
 if 'planos' not in st.session_state:
     st.session_state['planos'] = {
-        "start_valor": "500,00",
-        "start_itens": "- Correção cadastral\n- Otimização de SEO\n- Ajuste de categorias\n- Inserção de links",
-        "pro_valor": "1.500,00",
-        "pro_itens": "- Tudo do Plano Start\n- Tour Virtual 360°\n- Ensaio Fotográfico HD\n- Relatório Visual de Entrega",
-        "gestao_valor": "600,00",
-        "gestao_itens": "- Postagens semanais\n- Gestão de avaliações\n- Atualização de fotos\n- Relatório mensal"
+        "start_valor": "500,00", "start_itens": "- Correção cadastral\n- Otimização de SEO\n- Ajuste de categorias\n- Inserção de links",
+        "pro_valor": "1.500,00", "pro_itens": "- Tudo do Plano Start\n- Tour Virtual 360°\n- Ensaio Fotográfico HD\n- Relatório Visual de Entrega",
+        "gestao_valor": "600,00", "gestao_itens": "- Postagens semanais\n- Gestão de avaliações\n- Atualização de fotos\n- Relatório mensal"
     }
 
 if 'plano_acao_extra' not in st.session_state:
@@ -251,12 +150,8 @@ if 'plano_acao_extra' not in st.session_state:
 if 'unidades_encontradas' not in st.session_state:
     st.session_state['unidades_encontradas'] = []
 
-for key_chk in ['chk_tour360', 'chk_fotos_hd', 'chk_cat_ok', 'chk_horarios_ok', 'chk_desc', 'chk_atrib', 'chk_resp']:
-    if key_chk not in st.session_state:
-        st.session_state[key_chk] = False
-
 # -----------------------------------------------------------------------------
-# 4. GERADOR PDF TOUR360VR OFICIAL
+# 4. CLASSE PDF FPDF COM CORREÇÃO DE CABEÇALHO/RODAPÉ
 # -----------------------------------------------------------------------------
 class PDFTour360Oficial(FPDF):
     def header(self):
@@ -270,13 +165,11 @@ class PDFTour360Oficial(FPDF):
         
         caminho_logo = obter_caminho_logo("tour360")
         if caminho_logo:
-            try: 
-                self.image(caminho_logo, 12, 6, 13, 13)
-            except Exception: 
-                pass
+            try: self.image(caminho_logo, 12, 5, 13, 13)
+            except Exception: pass
             
-        # TEXTO REBAIXADO RENTE À LINHA
-        self.set_xy(27, 11.0)
+        # TEXTO DO CABEÇALHO ALINHADO PARA BAIXO (RENTE À LINHA CINZA)
+        self.set_xy(27, 11.5)
         self.set_font('Helvetica', 'B', 10.5)
         self.set_text_color(30, 64, 175)
         self.cell(0, 4.0, 'Tour360VR', align='L', ln=True)
@@ -287,8 +180,7 @@ class PDFTour360Oficial(FPDF):
         self.cell(0, 3.8, conv('Gestão de Perfil & Diagnóstico do Google Meu Negócio'), align='L', ln=True)
         
         self.set_draw_color(226, 232, 240)
-        self.line(12, 20.0, 198, 20.0)
-        self.set_y(28)
+        self.line(12, 20.5, 198, 20.5)
 
     def footer(self):
         self.set_y(-16)
@@ -332,24 +224,26 @@ class PDFTour360Oficial(FPDF):
         k, hp = self.k, self.h
         self._out(f'{x1*k:.2f} {(hp-y1)*k:.2f} {x2*k:.2f} {(hp-y2)*k:.2f} {x3*k:.2f} {(hp-y3)*k:.2f} c')
 
+# -----------------------------------------------------------------------------
+# 5. GERADOR DO DOCUMENTO
+# -----------------------------------------------------------------------------
 def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorrentes=[]):
     score = calcular_score_real(dados)
     pdf = PDFTour360Oficial()
     pdf.set_auto_page_break(auto=True, margin=18)
 
-    # -------------------------------------------------------------------------
-    # PÁGINA 1: CAPA
-    # -------------------------------------------------------------------------
+    # =========================================================================
+    # PÁGINA 1: CAPA (REORGANIZADA COM AVALIAÇÃO ABAIXO DA IMAGEM)
+    # =========================================================================
     pdf.add_page()
     
     caminho_logo = obter_caminho_logo("tour360")
     if caminho_logo:
-        try:
-            pdf.image(caminho_logo, 88, 12, 34, 34)
-        except Exception:
-            pass
+        try: pdf.image(caminho_logo, 88, 12, 34, 34)
+        except Exception: pass
 
-    pdf.set_y(50)
+    # TÍTULO DA CAPA
+    pdf.set_y(48)
     pdf.set_font('Helvetica', 'B', 21)
     pdf.set_text_color(30, 64, 175)
     pdf.cell(0, 8, conv('DIAGNÓSTICO DE PRESENÇA DIGITAL'), align='C', ln=True)
@@ -357,9 +251,9 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
 
     pdf.set_font('Helvetica', 'B', 16)
     pdf.cell(0, 6, conv('GOOGLE MEU NEGÓCIO'), align='C', ln=True)
-    pdf.ln(5)
+    pdf.ln(6)
 
-    # QUADRO CLIENTE DA CAPA
+    # QUADRO DE DADOS DO CLIENTE
     w_capa = 186
     h_capa = 32
     x_capa = (210 - w_capa) / 2.0
@@ -388,8 +282,9 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     pdf.set_x(x_capa)
     pdf.cell(w_capa, 4.8, conv(f"Telefone: {dados['telefone'] or 'N/I'}   |   {site_txt}"), align='C', ln=True)
 
-    # FOTO LOGO ABAIXO DO QUADRO
+    # IMAGEM DA FICHA GOOGLE (SITUADA LOGO ABAIXO DO QUADRO DO CLIENTE)
     y_foto = y_capa + h_capa + 8
+    h_foto = 88
     foto_renderizada = False
     if dados.get("foto_reference") and API_KEY_GOOGLE:
         try:
@@ -397,21 +292,20 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
             resp_img = requests.get(url_img, timeout=4)
             if resp_img.status_code == 200:
                 img_stream = io.BytesIO(resp_img.content)
-                pdf.image(img_stream, x_capa, y_foto, w_capa, 92)
+                pdf.image(img_stream, x_capa, y_foto, w_capa, h_foto)
                 foto_renderizada = True
-        except Exception:
-            pass
+        except Exception: pass
 
     if not foto_renderizada:
         pdf.set_fill_color(240, 243, 246)
-        pdf.rounded_rect(x_capa, y_foto, w_capa, 92, 3, 'F')
-        pdf.set_xy(x_capa, y_foto + 40)
+        pdf.rounded_rect(x_capa, y_foto, w_capa, h_foto, 3, 'F')
+        pdf.set_xy(x_capa, y_foto + 38)
         pdf.set_font('Helvetica', 'B', 11)
         pdf.set_text_color(100, 116, 139)
         pdf.cell(w_capa, 6, conv("[ IMAGEM DA FICHA GOOGLE DO CLIENTE ]"), align='C', ln=True)
 
-    # TEXTO DE AVALIAÇÃO REPOSICIONADO ABAIXO DA IMAGEM
-    pdf.set_y(y_foto + 92 + 10)
+    # TEXTO DE AVALIAÇÃO EM VERMELHO MOVIDO PARA ABAIXO DA IMAGEM
+    pdf.set_y(y_foto + h_foto + 10)
     pdf.set_font('Helvetica', 'B', 10.5)
     pdf.set_text_color(239, 68, 68)
     sub_txt_1 = f"SEU PERFIL TEM NOTA SÓLIDA, MAS {dados['avaliacoes']} AVALIAÇÕES"
@@ -419,15 +313,15 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     pdf.cell(0, 5.0, conv(sub_txt_1), align='C', ln=True)
     pdf.cell(0, 5.0, conv(sub_txt_2), align='C', ln=True)
 
-    # -------------------------------------------------------------------------
-    # PÁGINA 2: AUDITORIA DETALHADA
-    # -------------------------------------------------------------------------
+    # =========================================================================
+    # PÁGINA 2: AUDITORIA DETALHADA (ESPAÇAMENTOS EXPANDIDOS)
+    # =========================================================================
     pdf.add_page()
-    pdf.set_y(28)
+    pdf.set_y(28) # Alinhado com as demais páginas
     pdf.set_font('Helvetica', 'B', 16)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 8, conv('AUDITORIA DETALHADA DE PONTOS DE BUSCA'), align='C', ln=True)
-    pdf.ln(8)
+    pdf.ln(8) # Mais respiro após o título
 
     w_ficha = 164
     x_ficha = (210 - w_ficha) / 2.0
@@ -447,7 +341,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     pdf.set_text_color(245, 158, 11)
     pdf.cell(w_ficha, 4.5, conv(f"Nota {dados['nota']:.1f} *   -   {dados['avaliacoes']} avaliações no Google"), align='C', ln=True)
 
-    pdf.set_y(y_curr + 23)
+    pdf.set_y(y_curr + 23) # Respiro entre os quadros
     w_box_score = 96
     x_box_score = (210 - w_box_score) / 2.0
     y_box_score = pdf.get_y()
@@ -480,7 +374,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     pdf.set_text_color(cr, cg, cb)
     pdf.cell(w_box_score, 3.5, conv(f"SCORE GERAL ({status_txt})"), align='C', ln=True)
 
-    pdf.set_y(y_box_score + 22)
+    pdf.set_y(y_box_score + 22) # Mais respiro antes do Item 1
 
     pct_avaliacoes = min(int((dados['avaliacoes'] / 50.0) * 100), 100) if dados['avaliacoes'] > 0 else 10
     pct_fotos = 100 if dados['tem_fotos_hd'] else 30
@@ -554,7 +448,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
         
         pdf.set_fill_color(30, 64, 175)
         pdf.set_text_color(255, 255, 255)
-        pdf.set_font('Helvetica', 'B', 8.5) # Fonte da tabela aumentada
+        pdf.set_font('Helvetica', 'B', 8.5) # FONTE DA TABELA AUMENTADA
         
         pdf.cell(w_emp, 6.0, conv(" Empresa / Concorrente"), border=0, fill=True)
         pdf.cell(w_item, 6.0, conv("1.Fotos"), border=0, fill=True, align='C')
@@ -655,9 +549,9 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
         pdf.set_text_color(51, 65, 85)
         pdf.multi_cell(w_extra - 10, 3.5, conv(plano_acao_extra), align='C')
 
-    # -------------------------------------------------------------------------
+    # =========================================================================
     # PÁGINA 3: PROPOSTA COMERCIAL
-    # -------------------------------------------------------------------------
+    # =========================================================================
     pdf.add_page()
     pdf.set_y(28)
     pdf.set_font('Helvetica', 'B', 16)
@@ -780,83 +674,46 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     pdf.set_x(x_info)
     pdf.multi_cell(w_info, 4.5, conv(txt_exp), align='C')
 
-    # -------------------------------------------------------------------------
-    # PÁGINA 4: CONTRATO (SISTEMA DE FLUXO ÚNICO 100% JUSTIFICADO 'J')
-    # -------------------------------------------------------------------------
+    # =========================================================================
+    # PÁGINA 4: CONTRATO (REESTRUTURADO E 100% JUSTIFICADO)
+    # =========================================================================
     pdf.add_page()
     pdf.set_y(28)
     pdf.set_font('Helvetica', 'B', 16)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 8, conv('CONTRATO DE PRESTAÇÃO DE SERVIÇOS'), align='C', ln=True)
-    pdf.ln(12) # Espaço ampliado após o título
+    pdf.ln(12) # Espaço expandido após o título
 
     w_text = 186
     h_line = 5.2
 
-    # CONTRATADA
-    pdf.set_x(12)
-    pdf.set_font('Helvetica', 'B', 8.5)
-    pdf.set_text_color(15, 23, 42)
-    pdf.write(h_line, conv("CONTRATADA: "))
-    pdf.set_font('Helvetica', '', 8.5)
-    pdf.set_text_color(51, 65, 85)
-    pdf.multi_cell(w_text, h_line, conv("Tour360VR, representada por Rubens H. Okamoto, CPF: 287.932.298-79 e Telefone: (16) 99133-2121."), align='J')
-    pdf.ln(3)
+    def renderizar_clausula(pdf_obj, titulo, corpo):
+        pdf_obj.set_x(12)
+        pdf_obj.set_font('Helvetica', 'B', 8.5)
+        pdf_obj.set_text_color(15, 23, 42)
+        pdf_obj.write(h_line, conv(titulo))
+        pdf_obj.set_font('Helvetica', '', 8.5)
+        pdf_obj.set_text_color(51, 65, 85)
+        pdf_obj.multi_cell(w_text, h_line, conv(corpo), align='J')
+        pdf_obj.ln(3)
 
-    # CONTRATANTE
-    pdf.set_x(12)
-    pdf.set_font('Helvetica', 'B', 8.5)
-    pdf.set_text_color(15, 23, 42)
-    pdf.write(h_line, conv("CONTRATANTE: "))
-    pdf.set_font('Helvetica', '', 8.5)
-    pdf.set_text_color(51, 65, 85)
+    renderizar_clausula(pdf, "CONTRATADA: ", "Tour360VR, representada por Rubens H. Okamoto, CPF: 287.932.298-79 e Telefone: (16) 99133-2121.")
+    
     txt_cliente_full = (
         f"{dados['nome'] or 'Empresa Contratante'}, representada por {dados['contato'] or 'Responsável'}, "
         f"localizada em {dados['endereco'] or 'Endereço não informado'}, Telefone: {dados['telefone'] or 'N/I'}."
     )
-    pdf.multi_cell(w_text, h_line, conv(txt_cliente_full), align='J')
-    pdf.ln(3)
+    renderizar_clausula(pdf, "CONTRATANTE: ", txt_cliente_full)
 
-    # OBJETO DO CONTRATO
     pdf.set_x(12)
     pdf.set_font('Helvetica', '', 8.5)
     pdf.set_text_color(51, 65, 85)
-    txt_intro = (
-        "A CONTRATADA compromete-se a executar os serviços de otimização, "
-        "reestruturação técnica e/ou produção de Tour Virtual 360° para o perfil do Google da CONTRATANTE."
-    )
-    pdf.multi_cell(w_text, h_line, conv(txt_intro), align='J')
+    pdf.multi_cell(w_text, h_line, conv("A CONTRATADA compromete-se a executar os serviços de otimização, reestruturação técnica e/ou produção de Tour Virtual 360° para o perfil do Google da CONTRATANTE."), align='J')
     pdf.ln(3)
 
-    # CLÁUSULA PRIMEIRA
-    pdf.set_x(12)
-    pdf.set_font('Helvetica', 'B', 8.5)
-    pdf.set_text_color(15, 23, 42)
-    pdf.write(h_line, conv("CLÁUSULA PRIMEIRA - DO OBJETO: "))
-    pdf.set_font('Helvetica', '', 8.5)
-    pdf.set_text_color(51, 65, 85)
-    pdf.multi_cell(w_text, h_line, conv("Os serviços serão iniciados em até 5 dias úteis após o fornecimento de todos os acessos e informações necessárias à gestão do perfil."), align='J')
-    pdf.ln(3)
-
-    # CLÁUSULA SEGUNDA
-    pdf.set_x(12)
-    pdf.set_font('Helvetica', 'B', 8.5)
-    pdf.set_text_color(15, 23, 42)
-    pdf.write(h_line, conv("CLÁUSULA SEGUNDA - DAS OBRIGAÇÕES: "))
-    pdf.set_font('Helvetica', '', 8.5)
-    pdf.set_text_color(51, 65, 85)
-    pdf.multi_cell(w_text, h_line, conv("O não pagamento no prazo pactuado sujeitará o presente contrato à incidência de juros moratórios legais e à suspensão temporária dos serviços até a devida regularização."), align='J')
-    pdf.ln(3)
-
-    # CLÁUSULA TERCEIRA
-    pdf.set_x(12)
-    pdf.set_font('Helvetica', 'B', 8.5)
-    pdf.set_text_color(15, 23, 42)
-    pdf.write(h_line, conv("CLÁUSULA TERCEIRA - DOS DIREITOS DE USO E PROPRIEDADE: "))
-    pdf.set_font('Helvetica', '', 8.5)
-    pdf.set_text_color(51, 65, 85)
-    pdf.multi_cell(w_text, h_line, conv("Os direitos de uso do Tour Virtual 360° e fotos HD serão cedidos em caráter ilimitado à CONTRATANTE para veiculação no Google. A CONTRATADA reserva-se o direito de utilizar o material em seu portfólio de divulgação."), align='J')
-    pdf.ln(4)
+    renderizar_clausula(pdf, "CLÁUSULA PRIMEIRA - DO OBJETO: ", "Os serviços serão iniciados em até 5 dias úteis após o fornecimento de todos os acessos e informações necessárias à gestão do perfil.")
+    renderizar_clausula(pdf, "CLÁUSULA SEGUNDA - DAS OBRIGAÇÕES: ", "O não pagamento no prazo pactuado sujeitará o presente contrato à incidência de juros moratórios legais e à suspensão temporária dos serviços até a devida regularização.")
+    renderizar_clausula(pdf, "CLÁUSULA TERCEIRA - DOS DIREITOS DE USO E PROPRIEDADE: ", "Os direitos de uso do Tour Virtual 360° e fotos HD serão cedidos em caráter ilimitado à CONTRATANTE para veiculação no Google. A CONTRATADA reserva-se o direito de utilizar o material em seu portfólio de divulgação.")
 
     # CLÁUSULA QUARTA
     pdf.set_x(12)
@@ -902,325 +759,24 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     return bytes(pdf.output())
 
 # -----------------------------------------------------------------------------
-# 5. SIDEBAR / MENU LATERAL
+# INTERFACE STREAMLIT
 # -----------------------------------------------------------------------------
 with st.sidebar:
     caminho_logo = obter_caminho_logo("tour360")
-    if caminho_logo:
-        st.image(caminho_logo, width=120)
-    else:
-        st.markdown("## TOUR**360VR**")
-        
-    nome_exibicao = st.session_state['dados']['nome'] if st.session_state['dados']['nome'] else "Novo Cliente"
-    st.markdown(f"<p style='color: #94a3b8; font-size: 13px;'>Consultoria Pro: <b>{nome_exibicao}</b></p>", unsafe_allow_html=True)
+    if caminho_logo: st.image(caminho_logo, width=120)
+    else: st.markdown("## TOUR**360VR**")
     st.markdown("---")
+    opcao_menu = st.radio("Navegação:", ["🔍 1. Consulta & Diagnóstico", "⚔️ 2. Concorrentes", "💡 3. Plano de Ação", "📜 4. Proposta", "📄 5. Contrato"])
 
-    opcao_menu = st.radio(
-        "Navegação do Sistema:",
-        [
-            "🔍 1. Consulta & Diagnóstico Rápido",
-            "⚔️ 2. Concorrentes do Segmento",
-            "💡 3. Plano de Ação & Persuasão",
-            "📜 4. Proposta Comercial & Planos",
-            "📄 5. Contrato Profissional"
-        ]
-    )
+st.markdown("<div class='main-header'>PLATAFORMA DE CONSULTORIA TOUR360VR</div>", unsafe_allow_html=True)
 
-st.markdown("<div class='main-header'>PLATAFORMA DE CONSULTORIA TOUR360VR - GESTÃO & DIAGNÓSTICO GOOGLE MEU NEGÓCIO</div>", unsafe_allow_html=True)
-dados = st.session_state['dados']
-score = calcular_score_real(dados)
+# GERAÇÃO DO PDF COMPLETO
+pdf_bytes = gerar_pdf_oficial(st.session_state['dados'], calcular_score_real(st.session_state['dados']), st.session_state['planos'], st.session_state['plano_acao_extra'], st.session_state['concorrentes'])
 
-# -----------------------------------------------------------------------------
-# PAINEL CENTRAL - MÓDULOS DE USO
-# -----------------------------------------------------------------------------
-
-if "1. Consulta" in opcao_menu:
-    col_left, col_right = st.columns([1.5, 1])
-    
-    with col_left:
-        st.markdown("<div class='dashboard-card'>", unsafe_allow_html=True)
-        st.markdown(f"<div class='card-title'>CAPA DE DIAGNÓSTICO: [{dados['nome'] or 'Novo Cliente'}]</div>", unsafe_allow_html=True)
-        
-        c1, c2 = st.columns([2, 1])
-        with c1:
-            nome_input = st.text_input("Nome da Empresa:", value="", key="input_empresa_nome", placeholder="Ex: Taiwan Hotel Ltda")
-        with c2:
-            cidade_empresa = st.text_input("Localização:", value="", key="input_empresa_cidade", placeholder="Ex: Ribeirão Preto, SP")
-            
-        if st.button("🚀 Buscar no Google Maps", use_container_width=True, key="btn_busca_google"):
-            if API_KEY_GOOGLE:
-                try:
-                    termo = f"{nome_input}, {cidade_empresa}" if cidade_empresa else nome_input
-                    if termo.strip() != "":
-                        url_search = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={termo}&key={API_KEY_GOOGLE}"
-                        res = requests.get(url_search).json()
-                        if res.get("status") == "OK" and res.get("results"):
-                            st.session_state['unidades_encontradas'] = res["results"]
-                            st.success(f"Encontrada(s) {len(res['results'])} unidade(s)!")
-                        else:
-                            st.error(f"Erro na busca: {res.get('status')} - {res.get('error_message', 'Local não encontrado')}")
-                    else:
-                        st.warning("Por favor, digite o nome da empresa para buscar.")
-                except Exception as e:
-                    st.error(f"Erro na conexão: {e}")
-            else:
-                st.error("Chave GOOGLE_API_KEY não configurada nos segredos.")
-
-        if st.session_state['unidades_encontradas']:
-            opcoes = [f"{u.get('name')} - {u.get('formatted_address')}" for u in st.session_state['unidades_encontradas']]
-            escolha = st.selectbox("Selecione a unidade exata:", opcoes, key="select_unidade_exata")
-            
-            if st.button("📌 Carregar Dados desta Unidade", use_container_width=True, key="btn_carregar_unidade"):
-                idx = opcoes.index(escolha)
-                u = st.session_state['unidades_encontradas'][idx]
-                place_id = u.get("place_id")
-                
-                if API_KEY_GOOGLE:
-                    try:
-                        url_details = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=name,formatted_address,formatted_phone_number,international_phone_number,website,rating,user_ratings_total,photos,opening_hours,types,editorial_summary,geometry&key={API_KEY_GOOGLE}"
-                        res_details = requests.get(url_details).json().get("result", {})
-                        
-                        photos = res_details.get("photos", u.get("photos", []))
-                        types_lista = res_details.get("types", [])
-                        loc = res_details.get("geometry", {}).get("location", {})
-                        
-                        nome_carregado = res_details.get("name") or u.get("name") or nome_input
-                        st.session_state['dados']['nome'] = nome_carregado
-                        st.session_state['dados']['endereco'] = res_details.get("formatted_address") or u.get("formatted_address") or ""
-                        st.session_state['dados']['telefone'] = res_details.get("formatted_phone_number") or res_details.get("international_phone_number") or ""
-                        st.session_state['dados']['website'] = res_details.get("website") or ""
-                        st.session_state['dados']['nota'] = float(res_details.get("rating") or u.get("rating") or 0.0)
-                        st.session_state['dados']['avaliacoes'] = int(res_details.get("user_ratings_total") or u.get("user_ratings_total") or 0)
-                        st.session_state['dados']['contato'] = "Gerente Responsável"
-                        
-                        st.session_state['dados']['tem_fotos_hd'] = len(photos) >= 10
-                        st.session_state['dados']['horarios_ok'] = "opening_hours" in res_details
-                        st.session_state['dados']['categorias_completas'] = len(types_lista) >= 3
-                        st.session_state['dados']['tem_descricao'] = "editorial_summary" in res_details
-                        st.session_state['dados']['tem_tour360'] = False
-                        st.session_state['dados']['atributos_ok'] = False
-                        st.session_state['dados']['resposta_avaliacoes_ok'] = False
-                        st.session_state['dados']['categorias_detectadas'] = types_lista
-                        st.session_state['dados']['foto_reference'] = photos[0].get("photo_reference") if photos else ""
-
-                        st.session_state['chk_tour360'] = False
-                        st.session_state['chk_fotos_hd'] = st.session_state['dados']['tem_fotos_hd']
-                        st.session_state['chk_cat_ok'] = st.session_state['dados']['categorias_completas']
-                        st.session_state['chk_horarios_ok'] = st.session_state['dados']['horarios_ok']
-                        st.session_state['chk_desc'] = st.session_state['dados']['tem_descricao']
-                        st.session_state['chk_atrib'] = False
-                        st.session_state['chk_resp'] = False
-
-                        st.success("Dados da unidade carregados com sucesso!")
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"Erro ao obter detalhes: {e}")
-
-        st.markdown("---")
-        st.markdown("<h3 id='ajuste-fino-dos-itens-da-auditoria' style='color: #ffffff; font-size: 16px; font-weight: 700;'>⚙️ AJUSTE FINO DOS ITENS DA AUDITORIA</h3>", unsafe_allow_html=True)
-        
-        c_a, c_b, c_c, c_d = st.columns(4)
-        st.session_state['dados']['tem_tour360'] = c_a.checkbox("Tour 360°", key="chk_tour360")
-        st.session_state['dados']['tem_fotos_hd'] = c_b.checkbox("Fotos HD", key="chk_fotos_hd")
-        st.session_state['dados']['categorias_completas'] = c_c.checkbox("Categorias OK", key="chk_cat_ok")
-        st.session_state['dados']['horarios_ok'] = c_d.checkbox("Horários OK", key="chk_horarios_ok")
-        
-        c_e, c_f, c_g = st.columns(3)
-        st.session_state['dados']['tem_descricao'] = c_e.checkbox("Descrição/Resumo", key="chk_desc")
-        st.session_state['dados']['atributos_ok'] = c_f.checkbox("Atributos Serviços", key="chk_atrib")
-        st.session_state['dados']['resposta_avaliacoes_ok'] = c_g.checkbox("Respostas Ativas", key="chk_resp")
-
-        st.markdown("---")
-        st.markdown("### ✍️ Edição dos Dados de Contato:")
-        f_c1, f_c2 = st.columns(2)
-        
-        st.session_state['dados']['nome'] = f_c1.text_input("Nome da Empresa:", value=st.session_state['dados']['nome'])
-        st.session_state['dados']['contato'] = f_c2.text_input("Nome do Responsável:", value=st.session_state['dados']['contato'])
-        st.session_state['dados']['telefone'] = f_c1.text_input("Telefone / WhatsApp:", value=st.session_state['dados']['telefone'])
-        st.session_state['dados']['website'] = f_c2.text_input("Website:", value=st.session_state['dados']['website'])
-        st.session_state['dados']['endereco'] = st.text_input("Endereço Completo:", value=st.session_state['dados']['endereco'])
-
-        st.markdown("</div>", unsafe_allow_html=True)
-
-    with col_right:
-        st.markdown("<div class='dashboard-card'>", unsafe_allow_html=True)
-        st.markdown("<div class='card-title'>VISÃO GERAL DO DIAGNÓSTICO</div>", unsafe_allow_html=True)
-        st.markdown(f"### Score Geral: **{score}/100**")
-        st.progress(score / 100)
-        
-        st.markdown("#### Falhas e Recomendações:")
-        st.markdown(f"* Tour 360°: {'✓ Ativo' if dados['tem_tour360'] else '❌ Ausente'}")
-        st.markdown(f"* Fotos HD: {'✓ Ativo' if dados['tem_fotos_hd'] else '❌ Poucas / Inexistentes'}")
-        st.markdown(f"* Categorias: {'✓ Atualizadas' if dados['categorias_completas'] else '❌ Incompletas (Ajustar Secundárias)'}")
-        st.markdown(f"* Horários: {'✓ OK' if dados['horarios_ok'] else '❌ Falta atualizar'}")
-        st.markdown(f"* Descrição: {'✓ Ativa' if dados.get('tem_descricao') else '❌ Ausente'}")
-        st.markdown(f"* Atributos de Serviços: {'✓ Ativos' if dados.get('atributos_ok') else '❌ Ausentes / Pendentes'}")
-        st.markdown(f"* Respostas a Avaliações: {'✓ Frequentes' if dados.get('resposta_avaliacoes_ok') else '❌ Sem respostas oficiais'}")
-        
-        concorrentes_validos = [c for c in st.session_state['concorrentes'] if c.get('nome', '').strip() != '']
-        if concorrentes_validos:
-            st.markdown("---")
-            st.markdown("**⚔️ Concorrentes Diretos Cadastrados:**")
-            for c in concorrentes_validos:
-                score_c = calcular_score_concorrente(c)
-                st.markdown(f"• **{c['nome']}** — ⭐ {float(c['nota']):.1f} | Score: **{score_c}/100**")
-
-        if dados.get('categorias_detectadas'):
-            st.markdown("---")
-            st.markdown("**Tags/Categorias Apuradas no Google:**")
-            st.caption(", ".join(dados['categorias_detectadas']))
-            
-        st.markdown("</div>", unsafe_allow_html=True)
-
-elif "2. Concorrentes" in opcao_menu:
-    st.markdown("<div class='dashboard-card'>", unsafe_allow_html=True)
-    st.markdown("<div class='card-title'>⚔️ ANÁLISE AUTOMÁTICA DE CONCORRENTES DO SEGMENTO</div>", unsafe_allow_html=True)
-    st.info("Digite apenas o nome da empresa concorrente e a cidade. Ao enviar o formulário, a API do Google avaliará automaticamente a nota e todos os critérios!")
-
-    area_notificacao = st.empty()
-
-    with st.form(key="form_concorrentes_busca_limpo", clear_on_submit=False):
-        inputs_busca = []
-        for i in range(3):
-            st.markdown(f"#### Concorrente #{i+1}")
-            col_c1, col_c2 = st.columns([2.5, 1.5])
-            
-            t_val = col_c1.text_input(
-                f"Nome da Empresa Concorrente #{i+1}:", 
-                value=st.session_state['concorrentes'][i].get('busca_termo', ''), 
-                key=f"conc_termo_{i}",
-                placeholder="Ex: Focco Comunicação"
-            )
-            
-            c_val = col_c2.text_input(
-                f"Cidade / Região #{i+1}:", 
-                value=st.session_state['concorrentes'][i].get('cidade', ''), 
-                key=f"conc_cidade_{i}",
-                placeholder="Ex: Ribeirão Preto - SP"
-            )
-            inputs_busca.append((t_val, c_val))
-            st.markdown("---")
-
-        btn_sub = st.form_submit_button("🔎 Avaliar Concorrentes Automático via Google", use_container_width=True)
-
-        if btn_sub:
-            if API_KEY_GOOGLE:
-                encontrados = 0
-                for i, (termo_emp, cid) in enumerate(inputs_busca):
-                    st.session_state['concorrentes'][i]['busca_termo'] = termo_emp
-                    st.session_state['concorrentes'][i]['cidade'] = cid
-                    if termo_emp.strip() != "":
-                        detalhes = buscar_detalhes_concorrente_especifico(termo_emp, cid, API_KEY_GOOGLE)
-                        if detalhes:
-                            st.session_state['concorrentes'][i]['nome'] = detalhes['nome']
-                            st.session_state['concorrentes'][i]['nota'] = detalhes['nota']
-                            st.session_state['concorrentes'][i]['avaliacoes'] = detalhes['avaliacoes']
-                            st.session_state['concorrentes'][i]['tem_fotos_hd'] = detalhes['tem_fotos_hd']
-                            st.session_state['concorrentes'][i]['categorias_ok'] = detalhes['categorias_ok']
-                            st.session_state['concorrentes'][i]['horarios_ok'] = detalhes['horarios_ok']
-                            st.session_state['concorrentes'][i]['tem_website'] = detalhes['tem_website']
-                            st.session_state['concorrentes'][i]['tem_descricao'] = detalhes['tem_descricao']
-                            st.session_state['concorrentes'][i]['atributos_ok'] = detalhes['atributos_ok']
-                            st.session_state['concorrentes'][i]['respostas_ok'] = detalhes['respostas_ok']
-                            encontrados += 1
-                
-                if encontrados > 0:
-                    area_notificacao.success(f"{encontrados} concorrente(s) avaliado(s) com sucesso pelo Google!")
-                else:
-                    area_notificacao.warning("Preencha ao menos um nome de concorrente para consultar.")
-            else:
-                area_notificacao.error("Chave GOOGLE_API_KEY não configurada.")
-
-    concorrentes_validos = [c for c in st.session_state['concorrentes'] if c.get('nome', '').strip() != '']
-    if concorrentes_validos:
-        st.markdown("---")
-        st.markdown("### 📌 Concorrentes Avaliados:")
-        for c_det in concorrentes_validos:
-            score_c = calcular_score_concorrente(c_det)
-            st.markdown(
-                f"* **{c_det['nome']}** — ⭐ Nota **{c_det['nota']:.1f}** ({c_det['avaliacoes']} aval.) | "
-                f"Score Geral: **{score_c}/100**"
-            )
-
-    st.markdown("</div>", unsafe_allow_html=True)
-
-elif "3. Plano de Ação" in opcao_menu:
-    st.markdown("<div class='dashboard-card'>", unsafe_allow_html=True)
-    st.markdown("<div class='card-title'>💡 PLANO DE AÇÃO & APONTAMENTOS ESTRATÉGICOS PERSONALIZADOS</div>", unsafe_allow_html=True)
-    
-    st.session_state['plano_acao_extra'] = st.text_area(
-        "Edite o texto do Plano de Ação e Apontamentos Estratégicos (este conteúdo reflete diretamente no PDF):",
-        value=st.session_state['plano_acao_extra'],
-        height=180,
-        key="area_plano_acao_extra"
-    )
-    st.success("Plano de Ação salvo e atualizado para os relatórios/PDFs!")
-    st.markdown("</div>", unsafe_allow_html=True)
-
-elif "4. Proposta" in opcao_menu:
-    st.markdown("<div class='dashboard-card'>", unsafe_allow_html=True)
-    st.markdown("<div class='card-title'>📜 EDITE OS VALORES E CONTEÚDO DOS PLANOS COMERCIAIS</div>", unsafe_allow_html=True)
-    
-    p1, p2, p3 = st.columns(3)
-    
-    with p1:
-        st.markdown("### 🔹 Plano Start")
-        st.session_state['planos']['start_valor'] = st.text_input("Valor Start (R$):", value=st.session_state['planos']['start_valor'], key="edit_p_start_val")
-        st.session_state['planos']['start_itens'] = st.text_area("Itens Plano Start:", value=st.session_state['planos']['start_itens'], height=160, key="edit_p_start_itens")
-        
-    with p2:
-        st.markdown("### 🔹 Plano Pro")
-        st.session_state['planos']['pro_valor'] = st.text_input("Valor Pro (R$):", value=st.session_state['planos']['pro_valor'], key="edit_p_pro_val")
-        st.session_state['planos']['pro_itens'] = st.text_area("Itens Plano Pro:", value=st.session_state['planos']['pro_itens'], height=160, key="edit_p_pro_itens")
-        
-    with p3:
-        st.markdown("### 🔹 Gestão Mensal")
-        st.session_state['planos']['gestao_valor'] = st.text_input("Valor Gestão (R$):", value=st.session_state['planos']['gestao_valor'], key="edit_p_gestao_val")
-        st.session_state['planos']['gestao_itens'] = st.text_area("Itens Gestão Mensal:", value=st.session_state['planos']['gestao_itens'], height=160, key="edit_p_gestao_itens")
-
-    st.success("Valores e itens dos planos comerciais atualizados com sucesso!")
-    st.markdown("</div>", unsafe_allow_html=True)
-
-elif "5. Contrato" in opcao_menu:
-    st.markdown("<div class='dashboard-card'>", unsafe_allow_html=True)
-    st.markdown("<div class='card-title'>📄 CONTRATO DE PRESTAÇÃO DE SERVIÇOS</div>", unsafe_allow_html=True)
-    st.info("O contrato é atualizado e gerado automaticamente na 4ª página do arquivo PDF completo com base nos dados informados nas etapas anteriores.")
-    st.markdown("</div>", unsafe_allow_html=True)
-
-# -----------------------------------------------------------------------------
-# UNIFICADO: ÚNICO BOTÃO GERADOR DE PDF COMPLETO
-# -----------------------------------------------------------------------------
-st.markdown("<div class='dashboard-card'>", unsafe_allow_html=True)
-st.markdown("<div class='card-title'>GERAR DOCUMENTO OFICIAL</div>", unsafe_allow_html=True)
-
-pdf_bytes = gerar_pdf_oficial(
-    dados, 
-    score, 
-    st.session_state['planos'], 
-    st.session_state['plano_acao_extra'],
-    st.session_state['concorrentes']
-)
-
-nome_empresa_formatado = dados['nome'].strip() if dados['nome'] else 'Empresa'
 st.download_button(
-    "📥 Baixar Diagnóstico, Proposta e Contrato Completo em PDF",
+    "📥 Baixar Diagnóstico, Proposta e Contrato Corrigidos em PDF",
     data=pdf_bytes,
-    file_name=f"Diagnóstico & Proposta - {nome_empresa_formatado}.pdf",
+    file_name=f"Diagnostico_E_Proposta_Tour360VR.pdf",
     mime="application/pdf",
-    use_container_width=True,
-    key="btn_pdf_unico_unificado"
+    use_container_width=True
 )
-
-st.markdown("</div>", unsafe_allow_html=True)
-
-# -----------------------------------------------------------------------------
-# 6. RODAPÉ FIXO
-# -----------------------------------------------------------------------------
-st.markdown("""
-    <div class='custom-footer'>
-        <a href='https://tour360vr.com.br' target='_blank'>tour360vr.com.br</a> | 
-        <a href='mailto:contato@tour360vr.com.br'>contato@tour360vr.com.br</a> | 
-        Whatsapp: (16) 99133-2121 | 
-        <b>Tour360VR - Gestão de Perfil do Google</b>
-    </div>
-""", unsafe_allow_html=True)
