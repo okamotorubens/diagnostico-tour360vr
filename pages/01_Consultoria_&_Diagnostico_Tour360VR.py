@@ -268,26 +268,27 @@ class PDFTour360Oficial(FPDF):
         if self.page_no() == 1: 
             return
         
+        # CABEÇALHO COM LOGO PROPORCIONAL E TEXTO ALINHADO AO CENTRO VERTICAL
         caminho_logo = obter_caminho_logo("tour360")
         if caminho_logo:
             try: 
-                self.image(caminho_logo, 12, 5, 11, 11)
+                self.image(caminho_logo, 12, 5, 10, 10)
             except Exception: 
                 pass
             
-        self.set_xy(25, 5)
+        self.set_xy(24, 5.5)
         self.set_font('Helvetica', 'B', 10.5)
         self.set_text_color(30, 64, 175)
         self.cell(0, 4.0, 'Tour360VR', align='L', ln=True)
         
-        self.set_x(25)
+        self.set_x(24)
         self.set_font('Helvetica', 'B', 7.2)
         self.set_text_color(100, 116, 139)
         self.cell(0, 3.8, conv('Gestão de Perfil & Diagnóstico do Google Meu Negócio'), align='L', ln=True)
         
         self.set_draw_color(226, 232, 240)
-        self.line(12, 18.5, 198, 18.5)
-        self.set_y(22)
+        self.line(12, 17.5, 198, 17.5)
+        self.set_y(21)
 
     def footer(self):
         self.set_y(-16)
@@ -337,18 +338,18 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     pdf.set_auto_page_break(auto=True, margin=18)
 
     # -------------------------------------------------------------------------
-    # PÁGINA 1: CAPA
+    # PÁGINA 1: CAPA (LOGO AUMENTADA E ELEMENTOS REBAIXADOS)
     # -------------------------------------------------------------------------
     pdf.add_page()
     
     caminho_logo = obter_caminho_logo("tour360")
     if caminho_logo:
         try:
-            pdf.image(caminho_logo, 91, 18, 28, 28)
+            pdf.image(caminho_logo, 89, 16, 32, 32)
         except Exception:
             pass
 
-    pdf.set_y(62)
+    pdf.set_y(64)
     pdf.set_font('Helvetica', 'B', 21)
     pdf.set_text_color(30, 64, 175)
     pdf.cell(0, 8, conv('DIAGNÓSTICO DE PRESENÇA DIGITAL'), align='C', ln=True)
@@ -394,7 +395,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     pdf.set_x(x_capa)
     pdf.cell(w_capa, 5, conv(f"Telefone: {dados['telefone'] or 'N/I'}   |   {site_txt}"), align='C', ln=True)
 
-    y_foto = y_capa + h_capa + 10
+    y_foto = y_capa + h_capa + 8
     foto_renderizada = False
     if dados.get("foto_reference") and API_KEY_GOOGLE:
         try:
@@ -402,28 +403,28 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
             resp_img = requests.get(url_img, timeout=4)
             if resp_img.status_code == 200:
                 img_stream = io.BytesIO(resp_img.content)
-                pdf.image(img_stream, x_capa, y_foto, w_capa, 100)
+                pdf.image(img_stream, x_capa, y_foto, w_capa, 98)
                 foto_renderizada = True
         except Exception:
             pass
 
     if not foto_renderizada:
         pdf.set_fill_color(240, 243, 246)
-        pdf.rounded_rect(x_capa, y_foto, w_capa, 100, 3, 'F')
-        pdf.set_xy(x_capa, y_foto + 44)
+        pdf.rounded_rect(x_capa, y_foto, w_capa, 98, 3, 'F')
+        pdf.set_xy(x_capa, y_foto + 43)
         pdf.set_font('Helvetica', 'B', 11)
         pdf.set_text_color(100, 116, 139)
         pdf.cell(w_capa, 6, conv("[ IMAGEM DA FICHA GOOGLE DO CLIENTE ]"), align='C', ln=True)
 
     # -------------------------------------------------------------------------
-    # PÁGINA 2: AUDITORIA DETALHADA (DISTRIBUIÇÃO HARMÔNICA DOS ESPAÇOS)
+    # PÁGINA 2: AUDITORIA DETALHADA (ESPAÇAMENTO PREENCHIDO E EQUILIBRADO)
     # -------------------------------------------------------------------------
     pdf.add_page()
-    pdf.set_y(24)
+    pdf.set_y(23)
     pdf.set_font('Helvetica', 'B', 15)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 6, conv('AUDITORIA DETALHADA DE PONTOS DE BUSCA'), align='C', ln=True)
-    pdf.ln(4)
+    pdf.ln(3)
 
     w_ficha = 160
     x_ficha = (210 - w_ficha) / 2.0
@@ -476,8 +477,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     pdf.set_text_color(cr, cg, cb)
     pdf.cell(w_box_score, 3.5, conv(f"SCORE GERAL ({status_txt})"), align='C', ln=True)
 
-    # MAIOR RESPIRO ANTES DOS ITENS DA AUDITORIA
-    pdf.set_y(y_box_score + 20)
+    pdf.set_y(y_box_score + 19)
 
     pct_avaliacoes = min(int((dados['avaliacoes'] / 50.0) * 100), 100) if dados['avaliacoes'] > 0 else 10
     pct_fotos = 100 if dados['tem_fotos_hd'] else 30
@@ -535,11 +535,11 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
         pdf.set_font('Helvetica', '', 7.5)
         pdf.set_text_color(71, 85, 105)
         pdf.cell(0, 2.8, conv(f"   Diagnóstico: {desc}"), ln=True)
-        pdf.ln(2.5) # Maior espaçamento individual por item para preencher a folha
+        pdf.ln(3.8) # Espaçamento maior entre itens para ocupar melhor a folha
 
     concorrentes_filtrados = [c for c in concorrentes if c.get("nome", "").strip() != ""]
     if concorrentes_filtrados:
-        pdf.ln(10) # Espaçamento gerando transição suave
+        pdf.ln(12)
         pdf.set_font('Helvetica', 'B', 9.0)
         pdf.set_text_color(30, 64, 175)
         pdf.cell(0, 4.0, conv("ANÁLISE AUTOMÁTICA DE CONCORRENTES DO SEGMENTO"), ln=True)
@@ -778,10 +778,10 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     pdf.multi_cell(w_info, 4.5, conv(txt_exp), align='C')
 
     # -------------------------------------------------------------------------
-    # PÁGINA 4: CONTRATO (GARANTIA DE ALINHAMENTO JUSTIFICADO 'J')
+    # PÁGINA 4: CONTRATO (ESTRUTURA CONTÍNUA TOTALMENTE JUSTIFICADA)
     # -------------------------------------------------------------------------
     pdf.add_page()
-    pdf.set_y(26)
+    pdf.set_y(25)
     pdf.set_font('Helvetica', 'B', 16)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 8, conv('CONTRATO DE PRESTAÇÃO DE SERVIÇOS'), align='C', ln=True)
@@ -790,28 +790,17 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     w_text = 186
     h_line = 4.8
 
-    def bloco_paragrafo_justificado(titulo_bold, corpo_texto):
-        pdf.set_x(12)
-        pdf.set_font('Helvetica', 'B', 8.5)
-        pdf.set_text_color(15, 23, 42)
-        w_tit = pdf.get_string_width(conv(titulo_bold))
-        pdf.write(h_line, conv(titulo_bold))
-        
-        pdf.set_font('Helvetica', '', 8.5)
-        pdf.set_text_color(51, 65, 85)
-        pdf.multi_cell(w_text - w_tit, h_line, conv(corpo_texto), align='J')
-        pdf.ln(2.5)
-
-    # 1. CONTRATADA E CONTRATANTE
+    # CONTRATADA
     pdf.set_x(12)
     pdf.set_font('Helvetica', 'B', 8.5)
     pdf.set_text_color(15, 23, 42)
     pdf.write(h_line, conv("CONTRATADA: "))
     pdf.set_font('Helvetica', '', 8.5)
     pdf.set_text_color(51, 65, 85)
-    pdf.multi_cell(160, h_line, conv("Tour360VR, representada por Rubens H. Okamoto, CPF: 287.932.298-79 e Telefone: (16) 99133-2121."), align='J')
-    pdf.ln(2)
+    pdf.multi_cell(w_text - 25, h_line, conv("Tour360VR, representada por Rubens H. Okamoto, CPF: 287.932.298-79 e Telefone: (16) 99133-2121."), align='J')
+    pdf.ln(3)
 
+    # CONTRATANTE
     pdf.set_x(12)
     pdf.set_font('Helvetica', 'B', 8.5)
     pdf.set_text_color(15, 23, 42)
@@ -822,45 +811,51 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
         f"{dados['nome'] or 'Empresa Contratante'}, representada por {dados['contato'] or 'Responsável'}, "
         f"localizada em {dados['endereco'] or 'Endereço não informado'}, Telefone: {dados['telefone'] or 'N/I'}."
     )
-    pdf.multi_cell(158, h_line, conv(txt_cliente_full), align='J')
+    pdf.multi_cell(w_text - 28, h_line, conv(txt_cliente_full), align='J')
     pdf.ln(3)
 
-    # 2. OBJETO DO CONTRATO
+    # OBJETO DO CONTRATO
     pdf.set_x(12)
     pdf.set_font('Helvetica', '', 8.5)
     pdf.set_text_color(51, 65, 85)
-    pdf.write(h_line, conv("A "))
-    pdf.set_font('Helvetica', 'B', 8.5)
-    pdf.set_text_color(15, 23, 42)
-    pdf.write(h_line, conv("CONTRATADA"))
-    pdf.set_font('Helvetica', '', 8.5)
-    pdf.set_text_color(51, 65, 85)
-    pdf.write(h_line, conv(" compromete-se a executar os serviços de otimização, reestruturação técnica e/ou produção de Tour Virtual 360° para o perfil do Google da "))
-    pdf.set_font('Helvetica', 'B', 8.5)
-    pdf.set_text_color(15, 23, 42)
-    pdf.write(h_line, conv("CONTRATANTE"))
-    pdf.set_font('Helvetica', '', 8.5)
-    pdf.set_text_color(51, 65, 85)
-    pdf.multi_cell(0, h_line, conv("."), align='J')
+    txt_intro = (
+        "A CONTRATADA compromete-se a executar os serviços de otimização, "
+        "reestruturação técnica e/ou produção de Tour Virtual 360° para o perfil do Google da CONTRATANTE."
+    )
+    pdf.multi_cell(w_text, h_line, conv(txt_intro), align='J')
     pdf.ln(3)
 
-    # 3. CLÁUSULAS PRIMEIRA A TERCEIRA
-    bloco_paragrafo_justificado(
-        "CLÁUSULA PRIMEIRA - DO OBJETO: ", 
-        "Os serviços serão iniciados em até 5 dias úteis após o fornecimento de todos os acessos e informações necessárias à gestão do perfil."
-    )
+    # CLÁUSULA PRIMEIRA
+    pdf.set_x(12)
+    pdf.set_font('Helvetica', 'B', 8.5)
+    pdf.set_text_color(15, 23, 42)
+    pdf.write(h_line, conv("CLÁUSULA PRIMEIRA - DO OBJETO: "))
+    pdf.set_font('Helvetica', '', 8.5)
+    pdf.set_text_color(51, 65, 85)
+    pdf.multi_cell(w_text - 52, h_line, conv("Os serviços serão iniciados em até 5 dias úteis após o fornecimento de todos os acessos e informações necessárias à gestão do perfil."), align='J')
+    pdf.ln(3)
 
-    bloco_paragrafo_justificado(
-        "CLÁUSULA SEGUNDA - DAS OBRIGAÇÕES: ", 
-        "O não pagamento no prazo pactuado sujeitará o presente contrato à incidência de juros moratórios legais e à suspensão temporária dos serviços até a devida regularização."
-    )
+    # CLÁUSULA SEGUNDA
+    pdf.set_x(12)
+    pdf.set_font('Helvetica', 'B', 8.5)
+    pdf.set_text_color(15, 23, 42)
+    pdf.write(h_line, conv("CLÁUSULA SEGUNDA - DAS OBRIGAÇÕES: "))
+    pdf.set_font('Helvetica', '', 8.5)
+    pdf.set_text_color(51, 65, 85)
+    pdf.multi_cell(w_text - 58, h_line, conv("O não pagamento no prazo pactuado sujeitará o presente contrato à incidência de juros moratórios legais e à suspensão temporária dos serviços até a devida regularização."), align='J')
+    pdf.ln(3)
 
-    bloco_paragrafo_justificado(
-        "CLÁUSULA TERCEIRA - DOS DIREITOS DE USO E PROPRIEDADE: ", 
-        "Os direitos de uso do Tour Virtual 360° e fotos HD serão cedidos em caráter ilimitado à CONTRATANTE para veiculação no Google. A CONTRATADA reserva-se o direito de utilizar o material em seu portfólio de divulgação."
-    )
+    # CLÁUSULA TERCEIRA
+    pdf.set_x(12)
+    pdf.set_font('Helvetica', 'B', 8.5)
+    pdf.set_text_color(15, 23, 42)
+    pdf.write(h_line, conv("CLÁUSULA TERCEIRA - DOS DIREITOS DE USO E PROPRIEDADE: "))
+    pdf.set_font('Helvetica', '', 8.5)
+    pdf.set_text_color(51, 65, 85)
+    pdf.multi_cell(w_text - 92, h_line, conv("Os direitos de uso do Tour Virtual 360° e fotos HD serão cedidos em caráter ilimitado à CONTRATANTE para veiculação no Google. A CONTRATADA reserva-se o direito de utilizar o material em seu portfólio de divulgação."), align='J')
+    pdf.ln(4)
 
-    # 4. CLÁUSULA QUARTA
+    # CLÁUSULA QUARTA
     pdf.set_x(12)
     pdf.set_font('Helvetica', 'B', 8.5)
     pdf.set_text_color(15, 23, 42)
@@ -869,9 +864,9 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     pdf.set_font('Helvetica', '', 8.5)
     pdf.set_text_color(51, 65, 85)
     pdf.cell(w_text, 5.5, conv("(   ) Plano Start          (   ) Plano Pro          (   ) Gestão Mensal"), ln=True)
-    pdf.ln(2)
+    pdf.ln(3)
 
-    # 5. CLÁUSULA QUINTA
+    # CLÁUSULA QUINTA
     pdf.set_x(12)
     pdf.set_font('Helvetica', 'B', 8.5)
     pdf.set_text_color(15, 23, 42)
@@ -881,7 +876,7 @@ def gerar_pdf_oficial(dados, score_input, planos, plano_acao_extra="", concorren
     pdf.set_text_color(51, 65, 85)
     pdf.cell(w_text, 5.5, conv("(   ) À Vista          (   ) 2x Plano Start          (   ) 3x Plano Pro          (   ) Vencimento Dia: _____ - Gestão Mensal"), ln=True)
 
-    pdf.ln(16)
+    pdf.ln(18)
     y_ass = pdf.get_y()
     pdf.set_xy(12, y_ass)
     pdf.cell(88, 5, '_____________________________________', align='C')
