@@ -168,7 +168,7 @@ class PDFTour360Oficial(FPDF):
             try: self.image(caminho_logo, 12, 5, 13, 13)
             except Exception: pass
             
-        # TEXTO REBAIXADO ALINHADO RENTE À LINHA SEPARADORA
+        # CABEÇALHO REBAIXADO E ALINHADO À LINHA CINZA
         self.set_xy(27, 11.5)
         self.set_font('Helvetica', 'B', 10.5)
         self.set_text_color(30, 64, 175)
@@ -233,7 +233,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     pdf.set_auto_page_break(auto=True, margin=18)
 
     # =========================================================================
-    # PÁGINA 1: CAPA (REORDENADA: TÍTULO -> QUADRO -> FOTO -> AVALIAÇÃO)
+    # PÁGINA 1: CAPA (Ajustes: Texto em vermelho posicionado ABAIXO da Imagem)
     # =========================================================================
     pdf.add_page()
     
@@ -242,7 +242,6 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
         try: pdf.image(caminho_logo, 88, 12, 34, 34)
         except Exception: pass
 
-    # 1. TÍTULO
     pdf.set_y(48)
     pdf.set_font('Helvetica', 'B', 21)
     pdf.set_text_color(30, 64, 175)
@@ -253,7 +252,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     pdf.cell(0, 6, conv('GOOGLE MEU NEGÓCIO'), align='C', ln=True)
     pdf.ln(6)
 
-    # 2. QUADRO DE DADOS DO CLIENTE
+    # QUADRO CLIENTE
     w_capa = 186
     h_capa = 32
     x_capa = (210 - w_capa) / 2.0
@@ -282,7 +281,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     pdf.set_x(x_capa)
     pdf.cell(w_capa, 4.8, conv(f"Telefone: {dados['telefone'] or 'N/I'}   |   {site_txt}"), align='C', ln=True)
 
-    # 3. IMAGEM DA FICHA GOOGLE DO CLIENTE
+    # IMAGEM FICHA GOOGLE
     y_foto = y_capa + h_capa + 8
     h_foto = 88
     foto_renderizada = False
@@ -304,7 +303,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
         pdf.set_text_color(100, 116, 139)
         pdf.cell(w_capa, 6, conv("[ IMAGEM DA FICHA GOOGLE DO CLIENTE ]"), align='C', ln=True)
 
-    # 4. AVALIAÇÃO EM VERMELHO POSICIONADA ABAIXO DA IMAGEM
+    # CHAMADA EM VERMELHO MOVIDA PARA ABAIXO DA IMAGEM
     pdf.set_y(y_foto + h_foto + 10)
     pdf.set_font('Helvetica', 'B', 10.5)
     pdf.set_text_color(239, 68, 68)
@@ -314,7 +313,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     pdf.cell(0, 5.0, conv(sub_txt_2), align='C', ln=True)
 
     # =========================================================================
-    # PÁGINA 2: AUDITORIA DETALHADA
+    # PÁGINA 2: AUDITORIA DETALHADA (Ajustes: Espaçamento expandido e fonte maior)
     # =========================================================================
     pdf.add_page()
     pdf.set_y(28)
@@ -675,7 +674,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     pdf.multi_cell(w_info, 4.5, conv(txt_exp), align='C')
 
     # =========================================================================
-    # PÁGINA 4: CONTRATO (SISTEMA DE FLUXO ÚNICO JUSTIFICADO)
+    # PÁGINA 4: CONTRATO (Ajustes: Alinhamento 'J' contínuo de ponta a ponta)
     # =========================================================================
     pdf.add_page()
     pdf.set_y(28)
@@ -759,7 +758,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     return bytes(pdf.output())
 
 # -----------------------------------------------------------------------------
-# INTERFACE E DISPARADOR ON-DEMAND (SEM CACHE)
+# INTERFACE E DISPARADOR ON-DEMAND REAL-TIME
 # -----------------------------------------------------------------------------
 with st.sidebar:
     caminho_logo = obter_caminho_logo("tour360")
@@ -770,7 +769,6 @@ with st.sidebar:
 
 st.markdown("<div class='main-header'>PLATAFORMA DE CONSULTORIA TOUR360VR</div>", unsafe_allow_html=True)
 
-# PAINEL DE DOWNLOAD DIRETO E REPROCESSADO NA HORA
 st.markdown("<div class='dashboard-card'>", unsafe_allow_html=True)
 st.markdown("<div class='card-title'>GERAR DOCUMENTO OFICIAL</div>", unsafe_allow_html=True)
 
