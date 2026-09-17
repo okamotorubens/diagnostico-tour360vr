@@ -19,12 +19,12 @@ st.set_page_config(
 
 st.markdown("""
     <style>
-    /* Oculta navegação padrão automática e reduz margens superiores */
+    /* Oculta navegação padrão automática e ajusta margens superiores */
     [data-testid="stSidebarNav"] { display: none !important; }
     
     .block-container {
-        padding-top: 1rem !important;
-        padding-bottom: 2rem !important;
+        padding-top: 1.5rem !important;
+        padding-bottom: 4rem !important;
     }
 
     .stApp { 
@@ -36,37 +36,39 @@ st.markdown("""
     [data-testid="stSidebar"] { 
         background-color: #111827; 
         border-right: 1px solid #1f2937; 
-        padding-top: 10px; 
     }
     
     .sidebar-title-main {
-        font-size: 14px;
+        font-size: 16px;
         font-weight: 800;
         color: #f8fafc;
-        line-height: 1.3;
-        margin-bottom: 2px;
+        line-height: 1.4;
+        margin-bottom: 4px;
+        overflow: visible;
     }
     .sidebar-title-sub {
         font-size: 13px;
         font-weight: 600;
         color: #38bdf8;
-        line-height: 1.3;
+        line-height: 1.4;
     }
 
     .dashboard-card { 
         background-color: #131b2e; 
         border: 1px solid #1e293b; 
         border-radius: 14px; 
-        padding: 18px; 
-        margin-bottom: 12px; 
+        padding: 20px; 
+        margin-bottom: 15px; 
     }
     .card-title { 
-        font-size: 14px; 
+        font-size: 15px; 
         font-weight: 700; 
         color: #38bdf8; 
-        margin-bottom: 12px; 
+        margin-bottom: 14px; 
         text-transform: uppercase; 
         letter-spacing: 0.8px; 
+        overflow: visible;
+        line-height: 1.4;
     }
     
     .stButton > button { 
@@ -87,9 +89,9 @@ st.markdown("""
         display: flex;
         justify-content: space-between;
         margin-top: 0px;
-        margin-bottom: 15px;
+        margin-bottom: 20px;
         background: #111827;
-        padding: 10px 18px;
+        padding: 12px 20px;
         border-radius: 12px;
         border: 1px solid #1e293b;
     }
@@ -859,7 +861,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     pdf.set_x(12)
     pdf.set_font('Helvetica', 'B', 8.5)
     pdf.set_text_color(15, 23, 42)
-    pdf.cell(w_text, h_line, conv("CLÁUSULA QUINТА - CONDIÇÕES DE PAGAMENTO:"), ln=True)
+    pdf.cell(w_text, h_line, conv("CLÁUSULA QUINTA - CONDIÇÕES DE PAGAMENTO:"), ln=True)
     
     pdf.set_x(12)
     pdf.set_font('Helvetica', '', 8.5)
@@ -889,32 +891,38 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     return bytes(pdf.output())
 
 # -----------------------------------------------------------------------------
-# 5. SIDEBAR ORDENADA: LOGO OKAMOTO ACIMA -> LOGO TOUR360 ABAIXO
+# 5. SIDEBAR: TÍTULO NO TOPO (5 LINHAS ESPAÇO), 3 LINHAS ESPAÇO, LOGO OKAMOTO E LOGO TOUR (-30%)
 # -----------------------------------------------------------------------------
 with st.sidebar:
-    # Okamoto Mídias Visuais em cima
-    logo_okamoto = obter_caminho_logo("okamoto")
-    if logo_okamoto:
-        st.image(logo_okamoto, use_container_width=True)
-    else:
-        st.markdown("### **OKAMOTO MÍDIAS VISUAIS**")
+    # 5 Linhas de espaço do topo
+    st.markdown("<br><br><br><br><br>", unsafe_allow_html=True)
 
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    # Tour360VR abaixo
-    logo_tour = obter_caminho_logo("tour360")
-    if logo_tour:
-        st.image(logo_tour, use_container_width=True)
-    else:
-        st.markdown("### **TOUR360VR**")
-
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    # Títulos institucionais
+    # Títulos institucionais no topo absoluto
     st.markdown("""
         <div class='sidebar-title-main'>Sistema de Consultoria - Proposta - CRM</div>
         <div class='sidebar-title-sub'>Okamoto Mídias Visuais</div>
     """, unsafe_allow_html=True)
+
+    # 3 Linhas de espaço antes das logos
+    st.markdown("<br><br><br>", unsafe_allow_html=True)
+
+    # Logo Okamoto (tamanho padrão)
+    logo_okamoto = obter_caminho_logo("okamoto")
+    if logo_okamoto:
+        st.image(logo_okamoto, use_container_width=True)
+    else:
+        st.markdown("**Okamoto Mídias Visuais**")
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # Logo Tour360 (reduzida em ~30% via colunas)
+    logo_tour = obter_caminho_logo("tour360")
+    if logo_tour:
+        col_t1, col_t2, col_t3 = st.columns([0.15, 0.7, 0.15])
+        with col_t2:
+            st.image(logo_tour, use_container_width=True)
+    else:
+        st.markdown("**Tour360VR**")
 
     st.markdown("<br>", unsafe_allow_html=True)
 
@@ -974,7 +982,7 @@ with st.sidebar:
         st.caption("Nenhuma proposta salva ainda.")
 
 # -----------------------------------------------------------------------------
-# 6. BARRA DE ETAPAS (SEM CABEÇALHOS OU CARDS REDUNDANTES)
+# 6. BARRA DE ETAPAS
 # -----------------------------------------------------------------------------
 score_atual = calcular_score_real(st.session_state['dados'])
 etapa = st.session_state['etapa_atual']
@@ -1094,6 +1102,9 @@ if etapa == 1:
         st.session_state['etapa_atual'] = 2
         st.rerun()
 
+    # 4 linhas de espaço antes do fim da página
+    st.markdown("<br><br><br><br>", unsafe_allow_html=True)
+
 # ETAPA 2: AVALIAÇÃO DE CONCORRENTES
 elif etapa == 2:
     st.markdown("<div class='dashboard-card'>", unsafe_allow_html=True)
@@ -1161,6 +1172,9 @@ elif etapa == 2:
             st.session_state['etapa_atual'] = 3
             st.rerun()
 
+    # 4 linhas de espaço antes do fim da página
+    st.markdown("<br><br><br><br>", unsafe_allow_html=True)
+
 # ETAPA 3: PLANO DE AÇÃO ESTRATÉGICO
 elif etapa == 3:
     st.markdown("<div class='dashboard-card'>", unsafe_allow_html=True)
@@ -1183,6 +1197,9 @@ elif etapa == 3:
         if st.button("Avançar para Planos & Valores ➡️", use_container_width=True):
             st.session_state['etapa_atual'] = 4
             st.rerun()
+
+    # 4 linhas de espaço antes do fim da página
+    st.markdown("<br><br><br><br>", unsafe_allow_html=True)
 
 # ETAPA 4: PLANOS & VALORES COMERCIAIS
 elif etapa == 4:
@@ -1214,6 +1231,9 @@ elif etapa == 4:
         if st.button("Avançar para PDF & WhatsApp ➡️", use_container_width=True):
             st.session_state['etapa_atual'] = 5
             st.rerun()
+
+    # 4 linhas de espaço antes do fim da página
+    st.markdown("<br><br><br><br>", unsafe_allow_html=True)
 
 # ETAPA 5: GERAR PDF, WHATSAPP & HISTÓRICO
 elif etapa == 5:
@@ -1297,6 +1317,9 @@ elif etapa == 5:
     if st.button("⬅️ Voltar para Ajuste de Valores", use_container_width=True):
         st.session_state['etapa_atual'] = 4
         st.rerun()
+
+    # 4 linhas de espaço antes do fim da página
+    st.markdown("<br><br><br><br>", unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
 # 8. RODAPÉ FIXO
