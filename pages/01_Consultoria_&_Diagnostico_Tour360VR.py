@@ -19,7 +19,7 @@ st.set_page_config(
 
 st.markdown("""
     <style>
-    /* Estilização da navegação multipage nativa sem esconder os links */
+    /* Estilização da navegação multipage nativa */
     [data-testid="stSidebarNav"] {
         padding-top: 10px;
     }
@@ -893,8 +893,8 @@ with st.sidebar:
         
     st.caption("Sistema de Consultoria - Proposta - CRM")
     
-    # Adicionando botão explícito de direcionamento ao CRM
-    st.page_link("pages/02_CRM_Okamoto_Midias_Visuais.py", label="📊 Acessar CRM Okamoto Mídias Visuais", icon="🚀")
+    # Botão com direcionamento explícito para a página do CRM
+    st.page_link("pages/02_CRM_Okamoto_Midias_Visuais.py", label="📊 CRM Okamoto Mídias Visuais", icon="🚀")
 
     st.markdown("---")
 
@@ -1250,22 +1250,19 @@ elif etapa == 5:
         st.markdown("---")
         st.markdown("#### 👁️ PRÉ-VISUALIZAÇÃO DO PDF:")
         
-        # Renderização universal com iframe e fallback via Mozilla PDF.js
+        # Renderização via leitor Mozilla PDF.js para desbloquear visualização no Chrome
         base64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
-        data_url = f"data:application/pdf;base64,{base64_pdf}"
         
-        st.markdown(
-            f'''
+        pdf_display = f'''
             <iframe 
-                src="{data_url}" 
+                src="https://mozilla.github.io/pdf.js/web/viewer.html?file=data:application/pdf;base64,{base64_pdf}" 
                 width="100%" 
                 height="750px" 
-                style="border: 1px solid #1e293b; border-radius: 12px; background-color: #ffffff;"
+                style="border: 1px solid #1e293b; border-radius: 12px;"
             >
             </iframe>
-            ''', 
-            unsafe_allow_html=True
-        )
+        '''
+        st.markdown(pdf_display, unsafe_allow_html=True)
 
     except Exception as e:
         st.error(f"Erro ao processar PDF: {e}")
