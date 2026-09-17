@@ -4,6 +4,7 @@ import json
 import requests
 import base64
 import streamlit as st
+import streamlit.components.v1 as components
 from datetime import datetime
 from fpdf import FPDF
 
@@ -430,11 +431,12 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     pdf.set_font('Helvetica', 'B', 10.5)
     
     qtd_aval = dados.get('avaliacoes', 0)
+    nota_cli = dados.get('nota', 0.0)
     tem_tour = dados.get('tem_tour360', False)
     
     if tem_tour:
         pdf.set_text_color(22, 128, 61)
-        sub_txt_1 = f"SEU PERFIL POSSUI EXCELENTE PRESENÇA VISUAL E {qtd_aval} AVALIAÇÕES."
+        sub_txt_1 = f"SEU PERFIL POSSUI EXCELENTE PRESENÇA VISUAL, NOTA {nota_cli:.1f} E {qtd_aval} AVALIAÇÕES."
         sub_txt_2 = "MANTER A FICHA ATUALIZADA É O SEGREDO PARA LIDERAR O MERCADO."
     else:
         pdf.set_text_color(239, 68, 68)
@@ -442,10 +444,10 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
             sub_txt_1 = "SEU PERFIL AINDA NÃO POSSUI AVALIAÇÕES CADASTRADAS NO GOOGLE,"
             sub_txt_2 = "E A FALTA DE IMPACTO VISUAL FAZ VOCÊ PERDER CLIENTES DIARIAMENTE."
         elif qtd_aval < 15:
-            sub_txt_1 = f"SEU PERFIL TEM APENAS {qtd_aval} AVALIAÇÕES NO GOOGLE,"
+            sub_txt_1 = f"SEU PERFIL TEM NOTA {nota_cli:.1f} E APENAS {qtd_aval} AVALIAÇÕES NO GOOGLE,"
             sub_txt_2 = "E A AUSÊNCIA DE CONTEÚDO IMERSIVO LIMITA O SEU CRESCIMENTO."
         else:
-            sub_txt_1 = f"SEU PERFIL TEM NOTA SÓLIDA E {qtd_aval} AVALIAÇÕES NO GOOGLE,"
+            sub_txt_1 = f"SEU PERFIL TEM NOTA SÓLIDA DE {nota_cli:.1f} COM {qtd_aval} AVALIAÇÕES NO GOOGLE,"
             sub_txt_2 = "MAS A FALTA DE EXPERIÊNCIA IMERSIVA DEIXA DINHEIRO NA MESA."
 
     pdf.cell(0, 5.0, conv(sub_txt_1), align='C', ln=True)
@@ -891,8 +893,9 @@ with st.sidebar:
 
     # Títulos institucionais no topo (mesmo tamanho e alinhados)
     st.markdown("""
-        <div class='sidebar-title-main'>Consultoria - Proposta - CRM</div>
-        """, unsafe_allow_html=True)
+        <div class='sidebar-title-main'>Sistema de Consultoria - Proposta</div>
+        <div class='sidebar-title-sub'>Okamoto Mídias Visuais</div>
+    """, unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
 
@@ -1276,22 +1279,18 @@ elif etapa == 5:
         
         base64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
         
-        # Uso do leitor nativo via <object> para contornar problemas de CORS/CSP do browser
+        # Renderização do PDF usando st.components.v1.html para isolar o iframe
         pdf_display = f'''
-            <object 
-                data="data:application/pdf;base64,{base64_pdf}" 
-                type="application/pdf" 
+            <iframe 
+                src="data:application/pdf;base64,{base64_pdf}" 
                 width="100%" 
                 height="750px" 
+                type="application/pdf"
                 style="border: 1px solid #1e293b; border-radius: 12px;"
             >
-                <p style="color: #cbd5e1; padding: 20px;">
-                    Seu navegador não suporta a pré-visualização direta. 
-                    Utilize o botão <b>📥 Baixar PDF Oficial Completo</b> acima para salvar e visualizar o documento.
-                </p>
-            </object>
+            </iframe>
         '''
-        st.markdown(pdf_display, unsafe_allow_html=True)
+        components.html(pdf_display, height=760, scrolling=False)
 
     except Exception as e:
         st.error(f"Erro ao processar PDF: {e}")
