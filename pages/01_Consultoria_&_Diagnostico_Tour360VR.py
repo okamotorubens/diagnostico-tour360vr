@@ -19,14 +19,8 @@ st.set_page_config(
 
 st.markdown("""
     <style>
-    /* Oculta navegação padrão do Streamlit */
+    /* Oculta apenas o menu de navegação automático da sidebar para manter nosso controle personalizado */
     [data-testid="stSidebarNav"] { display: none !important; }
-    
-    /* Remove todo o espaço em branco do topo da página principal */
-    .block-container {
-        padding-top: 0.5rem !important;
-        padding-bottom: 1.5rem !important;
-    }
 
     .stApp { 
         background-color: #0b0f19; 
@@ -37,7 +31,6 @@ st.markdown("""
     [data-testid="stSidebar"] { 
         background-color: #111827; 
         border-right: 1px solid #1f2937; 
-        padding-top: 0px !important;
     }
     
     .sidebar-title-main {
@@ -46,14 +39,12 @@ st.markdown("""
         color: #f8fafc;
         line-height: 1.3;
         margin-bottom: 2px;
-        overflow: visible;
     }
     .sidebar-title-sub {
         font-size: 15px;
         font-weight: 800;
         color: #38bdf8;
         line-height: 1.3;
-        overflow: visible;
     }
 
     .dashboard-card { 
@@ -70,7 +61,6 @@ st.markdown("""
         margin-bottom: 14px; 
         text-transform: uppercase; 
         letter-spacing: 0.8px; 
-        overflow: visible;
         line-height: 1.3;
     }
     
@@ -899,9 +889,9 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
 with st.sidebar:
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # Títulos institucionais no topo (Sem CRM e com fonte ajustada)
+    # Títulos institucionais no topo
     st.markdown("""
-        <div class='sidebar-title-main'>Consultoria - Proposta - CRM</div>
+        <div class='sidebar-title-main'>Sistema de Consultoria - Proposta</div>
         <div class='sidebar-title-sub'>Okamoto Mídias Visuais</div>
     """, unsafe_allow_html=True)
 
