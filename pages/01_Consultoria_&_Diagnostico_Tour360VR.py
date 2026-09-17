@@ -183,7 +183,7 @@ def obter_caminho_logo(tipo="okamoto"):
     except Exception: pass
     return None
 
-def salvar_no_historico(dados, score):
+def salvar_no_historico(dados, score, concorrentes=[], planos={}, plano_acao_extra=""):
     if not dados.get("nome"): return
     historico = []
     if os.path.exists(ARQUIVO_HISTORICO):
@@ -209,7 +209,10 @@ def salvar_no_historico(dados, score):
         "tem_descricao": dados.get("tem_descricao", False),
         "atributos_ok": dados.get("atributos_ok", False),
         "resposta_avaliacoes_ok": dados.get("resposta_avaliacoes_ok", False),
-        "foto_reference": dados.get("foto_reference", "")
+        "foto_reference": dados.get("foto_reference", ""),
+        "concorrentes": concorrentes,
+        "planos": planos,
+        "plano_acao_extra": plano_acao_extra
     }
     
     historico = [h for h in historico if h.get("nome") != registro["nome"]]
@@ -404,7 +407,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     pdf.set_x(x_capa)
     pdf.cell(w_capa, 4.8, conv(f"Telefone: {dados.get('telefone') or 'N/I'}   |   {site_txt}"), align='C', ln=True)
 
-    # RENDERIZAÇÃO DA FOTO SEM DISTORÇÃO (ASPECT RATIO PRESERVADO)
+    # RENDERIZAÇÃO DA FOTO SEM DISTORÇÃO
     y_foto, h_container, w_container = 150.0, 84.0, 186.0
     foto_renderizada = False
 
@@ -417,7 +420,6 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
                 img = Image.open(img_data)
                 orig_w, orig_h = img.size
 
-                # Cálculo de escala proporcional para caber dentro da caixa sem esticar
                 ratio_w = w_container / orig_w
                 ratio_h = h_container / orig_h
                 scale = min(ratio_w, ratio_h)
@@ -425,7 +427,6 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
                 final_w = orig_w * scale
                 final_h = orig_h * scale
 
-                # Centralização horizontal e vertical
                 offset_x = x_capa + (w_container - final_w) / 2.0
                 offset_y = y_foto + (h_container - final_h) / 2.0
 
@@ -901,22 +902,19 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     return bytes(pdf.output())
 
 # -----------------------------------------------------------------------------
-# 5. SIDEBAR: TÍTULO AMPLIPADO E LOGOS VERTICAIS COMPACTAS
+# 5. SIDEBAR: TÍTULO AMPLIADO E LOGOS VERTICAIS COMPACTAS
 # -----------------------------------------------------------------------------
 with st.sidebar:
-    # Título em linha única com fonte ampliada para 18px
     st.markdown("""
         <div class='sidebar-title-single'>Consultoria - Proposta - CRM</div>
     """, unsafe_allow_html=True)
 
-    # Logo Okamoto Mídias Visuais
     logo_okamoto = obter_caminho_logo("okamoto")
     if logo_okamoto:
         st.image(logo_okamoto, use_container_width=True)
     else:
         st.markdown("**Okamoto Mídias Visuais**")
 
-    # Logo Tour360VR centralizada e colada na vertical
     logo_tour = obter_caminho_logo("tour360")
     if logo_tour:
         col_t1, col_t2, col_t3 = st.columns([0.25, 0.50, 0.25])
@@ -927,7 +925,6 @@ with st.sidebar:
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # Navegação explícita
     st.page_link("app.py", label="📋 Consultoria & Diagnóstico", icon="🔍")
     st.page_link("pages/02_CRM_Okamoto_Midias_Visuais.py", label="📊 CRM Okamoto Mídias Visuais", icon="🚀")
 
@@ -950,6 +947,17 @@ with st.sidebar:
             "categorias_completas": False, "horarios_ok": False, "tem_descricao": False,
             "atributos_ok": False, "resposta_avaliacoes_ok": False, "categorias_detectadas": [], "foto_reference": ""
         }
+        st.session_state['concorrentes'] = [
+            {"nome": "", "nota": 0.0, "avaliacoes": 0, "busca_termo": "", "cidade": "", "tem_fotos_hd": "Não", "tem_tour360": "Não", "categorias_ok": "Não", "horarios_ok": "Não", "tem_website": "Não", "tem_descricao": "Não", "atributos_ok": "Não", "respostas_ok": "Não"},
+            {"nome": "", "nota": 0.0, "avaliacoes": 0, "busca_termo": "", "cidade": "", "tem_fotos_hd": "Não", "tem_tour360": "Não", "categorias_ok": "Não", "horarios_ok": "Não", "tem_website": "Não", "tem_descricao": "Não", "atributos_ok": "Não", "respostas_ok": "Não"},
+            {"nome": "", "nota": 0.0, "avaliacoes": 0, "busca_termo": "", "cidade": "", "tem_fotos_hd": "Não", "tem_tour360": "Não", "categorias_ok": "Não", "horarios_ok": "Não", "tem_website": "Não", "tem_descricao": "Não", "atributos_ok": "Não", "respostas_ok": "Não"}
+        ]
+        st.session_state['planos'] = {
+            "start_valor": "500,00", "start_itens": "- Correção cadastral\n- Otimização de SEO\n- Ajuste de categorias\n- Inserção de links",
+            "pro_valor": "1.500,00", "pro_itens": "- Tudo do Plano Start\n- Tour Virtual 360°\n- Ensaio Fotográfico HD\n- Relatório Visual de Entrega",
+            "gestao_valor": "600,00", "gestao_itens": "- Postagens semanais\n- Gestão de avaliações\n- Atualização de fotos\n- Relatório mensal"
+        }
+        st.session_state['plano_acao_extra'] = "O perfil precisa de otimização urgente! Veja as falhas apontadas no relatório."
         st.rerun()
 
     st.markdown("---")
@@ -977,6 +985,13 @@ with st.sidebar:
                     "foto_reference": item.get("foto_reference", ""),
                     "categorias_detectadas": []
                 }
+                if item.get("concorrentes"):
+                    st.session_state['concorrentes'] = item.get("concorrentes")
+                if item.get("planos"):
+                    st.session_state['planos'] = item.get("planos")
+                if item.get("plano_acao_extra"):
+                    st.session_state['plano_acao_extra'] = item.get("plano_acao_extra")
+
                 st.session_state['etapa_atual'] = 5
                 st.rerun()
     else:
@@ -1263,7 +1278,13 @@ elif etapa == 5:
             st.session_state.get('concorrentes', [])
         )
 
-        salvar_no_historico(st.session_state['dados'], score_atual)
+        salvar_no_historico(
+            st.session_state['dados'], 
+            score_atual, 
+            concorrentes=st.session_state.get('concorrentes', []), 
+            planos=st.session_state.get('planos', {}), 
+            plano_acao_extra=st.session_state.get('plano_acao_extra', '')
+        )
 
         with col_down1:
             st.download_button(
