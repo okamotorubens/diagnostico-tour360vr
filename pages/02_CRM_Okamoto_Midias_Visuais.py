@@ -1,916 +1,1289 @@
-import streamlit as st
-import pandas as pd
-from datetime import datetime
-import io
 import os
-from reportlab.lib.pagesizes import A4
-from reportlab.lib import colors
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, Image
-from reportlab.pdfgen import canvas
+import io
+import json
+import requests
+import base64
+import streamlit as st
+from datetime import datetime
+from fpdf import FPDF
 
 # -----------------------------------------------------------------------------
-# ALGORITMO NATIVO EM PYTHON PURO PARA VALOR POR EXTENSO
-# -----------------------------------------------------------------------------
-UNIDADES = ["", "um", "dois", "três", "quatro", "cinco", "seis", "sete", "oito", "nove"]
-DEZ_A_DEZANOVE = ["dez", "onze", "doze", "treze", "quatorze", "quinze", "dezesseis", "dezessete", "dezoito", "dezenove"]
-DEZENAS = ["", "", "vinte", "trinta", "quarenta", "quinquenta", "sessenta", "setenta", "oitenta", "noventa"]
-CENTENAS = ["", "cento", "duzentos", "trezentos", "quatrocentos", "quinhentos", "seiscentos", "setecentos", "oitocentos", "novecentos"]
-
-def _converter_grupo_3(n):
-    if n == 0:
-        return ""
-    if n == 100:
-        return "cem"
-    
-    c = n // 100
-    d = (n % 100) // 10
-    u = n % 10
-    
-    partes = []
-    if c > 0:
-        partes.append(CENTENAS[c])
-    
-    dezena_unidade = n % 100
-    if 10 <= dezena_unidade <= 19:
-        partes.append(DEZ_A_DEZANOVE[dezena_unidade - 10])
-    else:
-        if d > 0:
-            partes.append(DEZENAS[d])
-        if u > 0:
-            partes.append(UNIDADES[u])
-            
-    return " e ".join(partes)
-
-def numero_por_extenso(valor):
-    if valor == 0:
-        return "zero"
-    
-    milhares = valor // 1000
-    unidades = valor % 1000
-    
-    partes = []
-    if milhares > 0:
-        if milhares == 1:
-            partes.append("um mil")
-        else:
-            partes.append(f"{_converter_grupo_3(milhares)} mil")
-            
-    if unidades > 0:
-        ext_u = _converter_grupo_3(unidades)
-        if ext_u:
-            partes.append(ext_u)
-            
-    return " e ".join(partes)
-
-def converter_valor_extenso(valor):
-    try:
-        val_float = float(valor)
-        inteiro = int(val_float)
-        centavos = int(round((val_float - inteiro) * 100))
-        
-        str_int = ""
-        if inteiro == 1:
-            str_int = "um real"
-        elif inteiro > 1:
-            ext_int = numero_por_extenso(inteiro)
-            str_int = f"{ext_int} reais"
-            
-        str_cent = ""
-        if centavos == 1:
-            str_cent = "um centavo"
-        elif centavos > 1:
-            ext_cent = numero_por_extenso(centavos)
-            str_cent = f"{ext_cent} centavos"
-            
-        if str_int and str_cent:
-            res = f"({str_int} e {str_cent})"
-        elif str_int:
-            res = f"({str_int})"
-        elif str_cent:
-            res = f"({str_cent})"
-        else:
-            res = "(zero reais)"
-            
-        return res.capitalize()
-    except Exception:
-        return f"({valor:,.2f} reais)"
-
-# -----------------------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA E CSS TEMA DASHBOARD
+# 1. CONFIGURAÇÃO DA PÁGINA E CSS MODERNO
 # -----------------------------------------------------------------------------
 st.set_page_config(
-    page_title="CRM Okamoto Mídias Visuais",
-    page_icon="💼",
-    layout="wide"
+    page_title="Sistema de Consultoria - Proposta - CRM da Okamoto Mídias Visuais",
+    page_icon="🌐",
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
 st.markdown("""
-<style>
-    .stApp { background-color: #0b0f17; }
-    [data-testid="stSidebar"] { background-color: #111827; border-right: 1px solid #1f2937; }
-    .card-kanban {
-        background: #1e293b;
-        border: 1px solid #334155;
-        border-radius: 8px;
-        padding: 10px;
-        margin-bottom: 8px;
-        font-size: 12px;
+    <style>
+    /* Estilização da navegação multipage nativa sem esconder os links */
+    [data-testid="stSidebarNav"] {
+        padding-top: 10px;
     }
-</style>
+    [data-testid="stSidebarNav"] span {
+        font-weight: 600;
+        color: #e2e8f0;
+    }
+
+    .stApp { 
+        background-color: #0b0f19; 
+        color: #f1f5f9; 
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+    
+    [data-testid="stSidebar"] { 
+        background-color: #111827; 
+        border-right: 1px solid #1f2937; 
+        padding-top: 10px; 
+    }
+    
+    .brand-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        padding: 18px 24px;
+        border-radius: 16px;
+        border: 1px solid #334155;
+        margin-bottom: 15px;
+    }
+    .brand-title { font-size: 20px; font-weight: 800; color: #ffffff; margin: 0; }
+    .brand-subtitle { font-size: 13px; color: #94a3b8; margin-top: 2px; }
+    
+    .kpi-card {
+        background-color: #131b2e;
+        border: 1px solid #1e293b;
+        border-radius: 12px;
+        padding: 12px;
+        text-align: center;
+    }
+    .kpi-value { font-size: 20px; font-weight: 800; color: #3b82f6; }
+    .kpi-label { font-size: 11px; color: #94a3b8; text-transform: uppercase; font-weight: 600; margin-top: 2px; }
+
+    .dashboard-card { 
+        background-color: #131b2e; 
+        border: 1px solid #1e293b; 
+        border-radius: 14px; 
+        padding: 20px; 
+        margin-bottom: 15px; 
+    }
+    .card-title { 
+        font-size: 14px; 
+        font-weight: 700; 
+        color: #38bdf8; 
+        margin-bottom: 14px; 
+        text-transform: uppercase; 
+        letter-spacing: 0.8px; 
+    }
+    
+    .stButton > button { 
+        background-color: #2563eb; 
+        color: #ffffff; 
+        border: none; 
+        border-radius: 8px; 
+        font-weight: 600;
+        padding: 10px 20px;
+        transition: all 0.2s ease;
+    }
+    .stButton > button:hover { 
+        background-color: #1d4ed8; 
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    }
+    
+    .step-indicator {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 15px;
+        margin-bottom: 15px;
+        background: #111827;
+        padding: 10px 18px;
+        border-radius: 12px;
+        border: 1px solid #1e293b;
+    }
+    .step-item {
+        font-size: 13px;
+        font-weight: 600;
+        color: #64748b;
+    }
+    .step-item.active {
+        color: #38bdf8;
+        border-bottom: 2px solid #38bdf8;
+        padding-bottom: 2px;
+    }
+
+    .custom-footer { 
+        position: fixed; 
+        left: 0; 
+        bottom: 0; 
+        width: 100%; 
+        background-color: #070a10; 
+        color: #64748b; 
+        text-align: center; 
+        padding: 8px; 
+        border-top: 1px solid #1e293b; 
+        font-size: 11px; 
+        z-index: 999; 
+    }
+    .custom-footer a { color: #38bdf8; text-decoration: none; }
+    </style>
 """, unsafe_allow_html=True)
 
-LISTA_TAGS = [
-    "ACADEMIA", "COMÉRCIO", "CONCESSIONÁRIA", "SALÃO DE BELEZA", 
-    "IMOBILIÁRIA", "ESCOLAS", "ESPAÇO DE EVENTOS", "CLÍNICAS", 
-    "VEICULOS", "AVIRRP", "SEBRAE", "HOTELARIA", "GASTRONOMIA", 
-    "PREFEITURA", "TURISMO", "MOTEL", "BARZINHO", "OUTROS"
-]
+API_KEY_GOOGLE = (
+    st.secrets.get("GOOGLE_API_KEY") 
+    or st.secrets.get("GOOGLE_PLACES_API_KEY") 
+    or os.environ.get("GOOGLE_API_KEY")
+    or ""
+)
+
+ARQUIVO_HISTORICO = "/tmp/historico_propostas_tour360.json"
 
 # -----------------------------------------------------------------------------
-# 2. GERENCIAMENTO DA LOGO
+# 2. FUNÇÕES UTILITÁRIAS & HISTÓRICO LOCAL
 # -----------------------------------------------------------------------------
-if 'logo_bytes' not in st.session_state:
-    st.session_state['logo_bytes'] = None
+def conv(texto):
+    if not texto: return ""
+    limpo = str(texto).replace("★", "*")\
+                      .replace("•", "- ")\
+                      .replace("✓", "[OK] ")\
+                      .replace("à", "a")\
+                      .replace("À", "A")
+    return limpo.encode('latin-1', 'replace').decode('latin-1')
 
-def obter_logo_imagem():
-    caminhos = [
-        'assets/logo_okamoto.png', 'logo_okamoto.png', 
-        'assets/Logo_TOUR_transparente.png', 'Logo_TOUR_transparente.png'
-    ]
+def calcular_score_real(dados):
+    if not dados.get("nome"): return 0
+    score = 100
+    if not dados.get("tem_tour360", False): score -= 20
+    if dados.get("website") == "Não possui" or not dados.get("website"): score -= 15
+    if not dados.get("tem_fotos_hd", False): score -= 15
+    if not dados.get("categorias_completas", False): score -= 15
+    if not dados.get("horarios_ok", False): score -= 10
+    if not dados.get("tem_descricao", False): score -= 10
+    if not dados.get("atributos_ok", False): score -= 10
+    if not dados.get("resposta_avaliacoes_ok", False): score -= 10
+    if dados.get("avaliacoes", 0) < 50: score -= 15
+    return max(score, 10)
+
+def calcular_score_concorrente(c):
+    score = 100
+    if c.get("tem_tour360") == "Não": score -= 20
+    if c.get("tem_website") == "Não": score -= 15
+    if c.get("tem_fotos_hd") == "Não": score -= 15
+    if c.get("categorias_ok") == "Não": score -= 15
+    if c.get("horarios_ok") == "Não": score -= 10
+    if c.get("tem_descricao") == "Não": score -= 10
+    if c.get("atributos_ok") == "Não": score -= 10
+    if c.get("respostas_ok") == "Não": score -= 10
+    if c.get("avaliacoes", 0) < 50: score -= 15
+    return max(score, 10)
+
+def obter_caminho_logo(tipo="tour360"):
+    caminhos = ['assets/logo_tour_transparente.png', 'logo_tour_transparente.png', 'assets/logo.png', 'logo.png']
     for c in caminhos:
-        if os.path.exists(c):
-            with open(c, "rb") as f:
-                return f.read()
+        if os.path.exists(c): return c
+    temp_logo = f'/tmp/logo_{tipo}_temp.png'
+    if os.path.exists(temp_logo): return temp_logo
+    try:
+        url_logo_oficial = "https://tour360vr.com.br/assets/img/logo.png"
+        resp = requests.get(url_logo_oficial, timeout=3)
+        if resp.status_code == 200:
+            with open(temp_logo, 'wb') as f: f.write(resp.content)
+            return temp_logo
+    except Exception: pass
     return None
 
-if st.session_state['logo_bytes'] is None:
-    st.session_state['logo_bytes'] = obter_logo_imagem()
-
-with st.sidebar:
-    st.markdown("### 🖼️ Logo do Sistema")
-    if st.session_state['logo_bytes']:
-        st.image(st.session_state['logo_bytes'], use_container_width=True)
-    else:
-        st.info("Logo não encontrada no servidor.")
+def salvar_no_historico(dados, score):
+    if not dados.get("nome"): return
+    historico = []
+    if os.path.exists(ARQUIVO_HISTORICO):
+        try:
+            with open(ARQUIVO_HISTORICO, 'r', encoding='utf-8') as f:
+                historico = json.load(f)
+        except Exception: historico = []
     
-    upload_logo = st.file_uploader("Enviar/Atualizar Logo (PNG/JPG):", type=["png", "jpg", "jpeg"], key="upl_logo_side")
-    if upload_logo:
-        st.session_state['logo_bytes'] = upload_logo.getvalue()
-        st.success("Logo carregada!")
-        st.rerun()
-
-    st.markdown("""
-    <div style="padding: 5px 0px;">
-        <h3 style="margin: 0; color: #f8fafc; font-size: 18px;">OKAMOTO MÍDIAS VISUAIS</h3>
-        <p style="margin: 2px 0 0 0; color: #94a3b8; font-size: 12px;">criado por Rubens Okamoto</p>
-    </div>
-    <hr style="margin: 10px 0; border-color: #334155;"/>
-    """, unsafe_allow_html=True)
-
-# -----------------------------------------------------------------------------
-# 3. AUTENTICAÇÃO
-# -----------------------------------------------------------------------------
-def verificar_senha():
-    if "autenticado" not in st.session_state:
-        st.session_state["autenticado"] = False
-
-    if not st.session_state["autenticado"]:
-        st.title("🔐 Acesso Restrito - Okamoto Mídias Visuais")
-        senha = st.text_input("Digite a senha de acesso:", type="password")
-        if st.button("Entrar", use_container_width=True):
-            if senha == "okamoto2026":
-                st.session_state["autenticado"] = True
-                st.rerun()
-            else:
-                st.error("Senha incorreta!")
-        return False
-    return True
-
-if not verificar_senha():
-    st.stop()
-
-# -----------------------------------------------------------------------------
-# 4. BANCO DE DADOS EM SESSÃO PERSISTENTE
-# -----------------------------------------------------------------------------
-if 'df_pedidos' not in st.session_state:
-    st.session_state['df_pedidos'] = pd.DataFrame([
-        {
-            "Numero_Pedido": "Pedido 0002",
-            "Empresa": "Clínica Personalitté",
-            "Contato": "Joseph",
-            "Telefone": "(16) 99767-8802",
-            "Local": "Ribeirão Preto - SP",
-            "Data_Emissao": "08 de Setembro de 2026",
-            "Nome_Evento": "2º Encontro Internacional Técnico GS Inima Brasil",
-            "Data_Evento_Detalhada": "Dias 04 e 05/11/2026, das 8h00 as 17h00",
-            "Objetivo": "Cobertura fotográfica do evento\n• Captação de vídeo em Full HD\n• Período das 08h00 as 18h00\nIntervalo de 1h30 de almoço",
-            "Captacao": "Registros fotográficos e captações pontuais em vídeo (participantes, autoridades, apresentações, intervalos, entre outros momentos do evento).",
-            "Entrega": "Todo material fotográfico será editado e enviado, em alta e baixa resolução.\n• Todo material em vídeo será enviado bruto (sem edição).\nOs materiais serão enviados via link e ficará disponível pelo prazo de 30 dias para download.",
-            "Prazo_Entrega": "Até 72h após o término do evento.",
-            "Valor_Subtotal": 3700.0,
-            "Desconto_Pct": 0.0,
-            "Valor_Total": 3700.0,
-            "Valor_Extenso": converter_valor_extenso(3700.0),
-            "Condicoes_Pag": "Até 20 dias após o evento.",
-            "Status": "Orçamento / Proposta",
-            "Servicos": "Cobertura Fotográfica e Captação de Vídeo"
-        }
-    ])
-
-if 'df_clientes' not in st.session_state:
-    st.session_state['df_clientes'] = pd.DataFrame([
-        {
-            "Empresa": "Clínica Personalitté", 
-            "Contato": "Joseph", 
-            "Cidade": "Ribeirão Preto - SP", 
-            "Telefone": "+55 (16) 99767-8802", 
-            "Email": "joseph@personalitte.com.br", 
-            "Categoria / TAG": "CLÍNICAS",
-            "Atividade": "Estética Avançada e Saúde",
-            "Website": "www.clinicapersonalitte.com.br",
-            "Instagram": "@clinicapersonalitte"
-        }
-    ])
-
-if 'df_servicos' not in st.session_state:
-    st.session_state['df_servicos'] = pd.DataFrame([
-        {"Nome_Servico": "Cobertura Fotográfica e Captação de Vídeo", "Tipo_Cobranca": "Diária", "Valor_Base": 3700.0, "Descricao": "Cobertura completa em foto e vídeo para eventos institucionais."},
-        {"Nome_Servico": "Google Street View / Tour 360°", "Tipo_Cobranca": "Pacote", "Valor_Base": 800.0, "Descricao": "Mapeamento panorâmico 360° e integração com Google Meu Negócio."}
-    ])
-
-if 'texto_institucional' not in st.session_state:
-    st.session_state['texto_institucional'] = (
-        "Com sólida experiência no mercado de imagem e fotografia profissional com mais de 30 anos de atuação, "
-        "a Okamoto Mídias Visuais é especializada na cobertura completa de eventos corporativos, institucionais "
-        "e científicos, além da produção de tours virtuais 360° de alta definição.\n\n"
-        "Nossa missão é registrar cada projeto com precisão técnica, agilidade e excelência visual, "
-        "garantindo um acervo de alta qualidade para ações de comunicação, mídias sociais e divulgação institucional."
-    )
-
-df_pedidos = st.session_state['df_pedidos']
-df_clientes = st.session_state['df_clientes']
-df_servicos = st.session_state['df_servicos']
-
-# -----------------------------------------------------------------------------
-# 5. GERADOR DE PDF EDITORIAL (ESTILO DESIGN PREMIUM MINIMALISTA)
-# -----------------------------------------------------------------------------
-class CanvasExecutivoAlinhado(canvas.Canvas):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._saved_page_states = []
-
-    def showPage(self):
-        self._saved_page_states.append(dict(self.__dict__))
-        self._startPage()
-
-    def save(self):
-        num_pages = len(self._saved_page_states)
-        for state in self._saved_page_states:
-            self.__dict__.update(state)
-            self.saveState()
-            
-            # CABEÇALHO EDITORIAL DISCRETO
-            self.setFont("Helvetica-Bold", 9)
-            self.setFillColor(colors.HexColor("#1c1c1c"))
-            self.drawRightString(560, 822, "OKAMOTO MÍDIAS VISUAIS  |  16 99133 2121")
-            
-            # Linha divisória minimalista
-            self.setStrokeColor(colors.HexColor('#d1d5db'))
-            self.setLineWidth(0.75)
-            self.line(35, 815, 560, 815)
-            
-            # Linha de rodapé
-            self.setStrokeColor(colors.HexColor('#e5e7eb'))
-            self.setLineWidth(0.5)
-            self.line(35, 35, 560, 35)
-            
-            # RODAPÉ CENTRALIZADO
-            self.setFont("Helvetica-Bold", 8)
-            self.setFillColor(colors.HexColor("#4b5563"))
-            self.drawCentredString(297.5, 20, "okamotomidiasvisuais.com.br  |  16 99133 2121")
-            
-            # NUMERAÇÃO DE PÁGINAS
-            self.setFont("Helvetica", 8)
-            self.setFillColor(colors.HexColor("#6b7280"))
-            self.drawRightString(560, 20, f"Página {self._pageNumber}/{num_pages}")
-            self.restoreState()
-            super().showPage()
-        super().save()
-
-def gerar_pdf_3_paginas_corrigido(dados, texto_institucional):
-    buffer = io.BytesIO()
-    
-    num_limpo = str(dados.get('num_pedido', '')).replace('Pedido ', '').replace('Nº ', '').replace('nº ', '').strip()
-    titulo_documento = f"Proposta {num_limpo} - {dados.get('empresa', '')}"
-    
-    doc = SimpleDocTemplate(
-        buffer, 
-        pagesize=A4, 
-        leftMargin=35, 
-        rightMargin=35, 
-        topMargin=40, 
-        bottomMargin=45,
-        title=titulo_documento
-    )
-    
-    # PADRONIZAÇÃO TIPOGRÁFICA EDITORIAL
-    style_tit_editorial = ParagraphStyle('TitEditorial', fontName='Times-Bold', fontSize=14, leading=17, textColor=colors.HexColor('#1c1c1c'))
-    style_sub_editorial = ParagraphStyle('SubEditorial', fontName='Helvetica', fontSize=9.5, leading=14, textColor=colors.HexColor('#4b5563'))
-    
-    style_label = ParagraphStyle('Lbl', fontName='Helvetica-Bold', fontSize=9.5, leading=13, textColor=colors.HexColor('#1c1c1c'))
-    style_val = ParagraphStyle('Val', fontName='Helvetica', fontSize=9.5, leading=13.5, textColor=colors.HexColor('#262626'))
-    style_txt_just = ParagraphStyle('TxtJust', fontName='Helvetica', fontSize=9.5, leading=14.5, textColor=colors.HexColor('#262626'), alignment=4)
-    style_center = ParagraphStyle('CenterText', fontName='Helvetica', fontSize=9.5, leading=14, textColor=colors.HexColor('#262626'), alignment=1)
-
-    style_escopo_num = ParagraphStyle('EscNum', fontName='Helvetica-Bold', fontSize=8.5, leading=11, textColor=colors.HexColor('#6b7280'))
-    style_escopo_tit = ParagraphStyle('EscTit', fontName='Times-Bold', fontSize=10.5, leading=13, textColor=colors.HexColor('#1c1c1c'))
-    style_escopo_txt = ParagraphStyle('EscTxt', fontName='Helvetica', fontSize=9, leading=13.5, textColor=colors.HexColor('#374151'))
-
-    story = []
-
-    def obter_bloco_logo(w=140, h=40):
-        if st.session_state.get('logo_bytes'):
-            try:
-                img_buf = io.BytesIO(st.session_state['logo_bytes'])
-                return Image(img_buf, width=w, height=h)
-            except Exception:
-                pass
-        return Paragraph("<b><font size='13' color='#1c1c1c'>OKAMOTO MÍDIAS VISUAIS</font></b>", style_label)
-
-    # =========================================================================
-    # PÁGINA 1: APRESENTAÇÃO INSTITUCIONAL
-    # =========================================================================
-    logo_p1 = obter_bloco_logo(145, 42)
-    t_top_p1 = Table([[logo_p1, Paragraph("", style_label)]], colWidths=[200, 325])
-    t_top_p1.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'MIDDLE')]))
-    story.append(t_top_p1)
-    story.append(Spacer(1, 22))
-
-    story.append(Paragraph("<font size='9' color='#6b7280'><b>01.</b></font>", style_escopo_num))
-    story.append(Spacer(1, 2))
-    story.append(Paragraph("APRESENTAÇÃO", style_tit_editorial))
-    story.append(Spacer(1, 4))
-    story.append(Paragraph("Excelência em registros visuais e Soluções tecnológicas de imagem", style_sub_editorial))
-    story.append(Spacer(1, 16))
-
-    story.append(Paragraph(texto_institucional.replace('\n', '<br/>'), style_txt_just))
-    story.append(Spacer(1, 26))
-
-    story.append(Paragraph("<font size='9' color='#6b7280'><b>02.</b></font>", style_escopo_num))
-    story.append(Spacer(1, 2))
-    story.append(Paragraph("Áreas de Atuação & Soluções Especializadas", style_tit_editorial))
-    story.append(Spacer(1, 14))
-
-    solucoes_simplificadas = [
-        "• Eventos Corporativos",
-        "• Institucional",
-        "• Mídias Sociais",
-        "• Tour Virtual 360°"
-    ]
-
-    for item_sol in solucoes_simplificadas:
-        story.append(Paragraph(f"<b><font color='#1c1c1c'>{item_sol}</font></b>", style_label))
-        story.append(Spacer(1, 6))
-
-    # =========================================================================
-    # PÁGINA 2: PROPOSTA COMERCIAL
-    # =========================================================================
-    story.append(PageBreak())
-
-    t_top_p2 = Table([[obter_bloco_logo(120, 36), Paragraph("", style_label)]], colWidths=[200, 325])
-    story.append(t_top_p2)
-    story.append(Spacer(1, 15))
-
-    txt_ped_esq = f"<b><font size='11' color='#1c1c1c'>Pedido {num_limpo}</font></b>"
-    txt_data_dir = f"<b><font size='9' color='#6b7280'>{dados.get('data_orcamento', '')}</font></b>"
-    
-    p_ped = Paragraph(txt_ped_esq, style_label)
-    p_dat = Paragraph(txt_data_dir, ParagraphStyle('RDat', fontName='Helvetica-Bold', alignment=2))
-    
-    t_header_ped = Table([[p_ped, p_dat]], colWidths=[260, 265])
-    t_header_ped.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'MIDDLE')]))
-    story.append(t_header_ped)
-    story.append(Spacer(1, 12))
-
-    story.append(Paragraph(f"<b>Empresa:</b> {dados.get('empresa', '')}", style_val))
-    story.append(Spacer(1, 2))
-    story.append(Paragraph(f"<b>Contato:</b> {dados.get('contato', '')}", style_val))
-    story.append(Spacer(1, 2))
-    story.append(Paragraph(f"<b>Local:</b> {dados.get('local', '')}", style_val))
-    story.append(Spacer(1, 18))
-
-    story.append(Paragraph("<font size='9' color='#6b7280'><b>03.</b></font>", style_escopo_num))
-    story.append(Spacer(1, 2))
-    story.append(Paragraph("ESCOPO DO SERVIÇO", style_tit_editorial))
-    story.append(Spacer(1, 10))
-
-    def criar_quadro_escopo_editorial(numero, titulo, conteudo):
-        p_num = Paragraph(f"<b>0{numero}.</b>", style_escopo_num)
-        p_tit = Paragraph(f"<b>{titulo}</b>", style_escopo_tit)
-        p_cnt = Paragraph(str(conteudo).replace('\n', '<br/>'), style_escopo_txt)
-        
-        box_data = [[p_num], [p_tit], [Spacer(1, 2)], [p_cnt]]
-        t_box = Table(box_data, colWidths=[525])
-        t_box.setStyle(TableStyle([
-            ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#f5f5f4')),
-            ('PADDING', (0,0), (-1,-1), 8),
-            ('TOPPADDING', (0,0), (-1,-1), 6),
-            ('BOTTOMPADDING', (0,0), (-1,-1), 6),
-        ]))
-        return t_box
-
-    story.append(criar_quadro_escopo_editorial("1", "Evento", f"{dados.get('nome_evento', '')}\n• {dados.get('data_evento_detalhada', '')}\n{dados.get('local', '')}"))
-    story.append(Spacer(1, 6))
-    story.append(criar_quadro_escopo_editorial("2", "Objetivo", dados.get('objetivo', '')))
-    story.append(Spacer(1, 6))
-    story.append(criar_quadro_escopo_editorial("3", "Captação", dados.get('captacao', '')))
-    story.append(Spacer(1, 6))
-    story.append(criar_quadro_escopo_editorial("4", "Entrega", dados.get('entrega', '')))
-    story.append(Spacer(1, 6))
-    story.append(criar_quadro_escopo_editorial("5", "Prazo de Entrega", dados.get('prazo_entrega', '')))
-    story.append(Spacer(1, 6))
-    story.append(criar_quadro_escopo_editorial("6", "Forma de Pagamento", dados.get('condicoes_pag', '')))
-    story.append(Spacer(1, 16))
-
-    story.append(Paragraph("<font size='9' color='#6b7280'><b>04.</b></font>", style_escopo_num))
-    story.append(Spacer(1, 2))
-    story.append(Paragraph("INVESTIMENTO", style_tit_editorial))
-    story.append(Spacer(1, 4))
-    story.append(Paragraph(f"<b>Valor:</b> R$ {dados.get('valor_total', 0.0):,.2f} {dados.get('valor_extenso', '')}", style_val))
-    story.append(Spacer(1, 18))
-
-    story.append(Paragraph("Estamos à disposição para qualquer esclarecimento adicional, ou alteração, caso seja necessário.", style_center))
-    story.append(Spacer(1, 22))
-
-    story.append(Paragraph("Atenciosamente,<br/><b>Rubens Okamoto</b>", style_center))
-
-    # =========================================================================
-    # PÁGINA 3: DADOS CADASTRAIS
-    # =========================================================================
-    story.append(PageBreak())
-
-    story.append(obter_bloco_logo(130, 38))
-    story.append(Spacer(1, 16))
-
-    story.append(Paragraph("<font size='9' color='#6b7280'><b>05.</b></font>", style_escopo_num))
-    story.append(Spacer(1, 2))
-    story.append(Paragraph("DADOS CADASTRAIS", style_tit_editorial))
-    story.append(Spacer(1, 16))
-
-    def criar_bloco_vertical_editorial(titulo, linhas):
-        c_tot = [Paragraph(f"<b><font color='#1c1c1c'>{titulo}</font></b>", style_escopo_tit), Spacer(1, 4)]
-        for lbl, val in linhas:
-            c_tot.append(Paragraph(f"<b>{lbl}:</b> {val}", style_val))
-            c_tot.append(Spacer(1, 2))
-        t = Table([[c_tot]], colWidths=[525])
-        t.setStyle(TableStyle([
-            ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#f5f5f4')),
-            ('PADDING', (0,0), (-1,-1), 8),
-        ]))
-        return t
-
-    story.append(criar_bloco_vertical_editorial("Dados da Empresa", [
-        ("Razão Social", "Okamoto Reportagens Fotográficas SS Ltda"),
-        ("CNPJ", "04.824.331/0001-05"),
-        ("Endereço", "Rua General Carneiro, 860 - Centro"),
-        ("Cidade/UF", "Brodowski - SP | CEP: 14.340-023")
-    ]))
-    story.append(Spacer(1, 10))
-
-    story.append(criar_bloco_vertical_editorial("Dados Pessoais", [
-        ("Responsável", "Rubens Heigasi Okamoto"),
-        ("CPF", "287.932.298-79"),
-        ("Telefone/WhatsApp", "16 99133 2121"),
-        ("E-mail", "contato@okamotomidiasvisuais.com.br")
-    ]))
-    story.append(Spacer(1, 10))
-
-    story.append(criar_bloco_vertical_editorial("Dados Bancários", [
-        ("Banco", "Banco do Brasil"),
-        ("Agência", "3235-2"),
-        ("Conta Corrente", "11.935-0"),
-        ("Chave PIX (CNPJ)", "04824331000105")
-    ]))
-
-    doc.build(story, canvasmaker=CanvasExecutivoAlinhado)
-    buffer.seek(0)
-    return buffer
-
-def gerar_pdf_ficha_cliente(cliente_data, pedidos_cli):
-    buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=35, rightMargin=35, topMargin=35, bottomMargin=45)
-    
-    style_tit = ParagraphStyle('Tit', fontName='Times-Bold', fontSize=15, leading=19, textColor=colors.HexColor('#1c1c1c'))
-    style_sub = ParagraphStyle('Sub', fontName='Helvetica-Bold', fontSize=10, leading=13, textColor=colors.HexColor('#4b5563'))
-    style_td = ParagraphStyle('TD', fontName='Helvetica', fontSize=9, leading=13, textColor=colors.HexColor('#262626'))
-
-    story = [
-        Paragraph("OKAMOTO MÍDIAS VISUAIS", style_sub),
-        Paragraph(f"Ficha Cadastral de Cliente: {cliente_data.get('Empresa', '')}", style_tit),
-        Spacer(1, 12)
-    ]
-
-    info_table = [
-        [Paragraph("<b>Empresa:</b>", style_td), Paragraph(str(cliente_data.get('Empresa', '')), style_td)],
-        [Paragraph("<b>Pessoa de Contato:</b>", style_td), Paragraph(str(cliente_data.get('Contato', '')), style_td)],
-        [Paragraph("<b>Cidade / Local:</b>", style_td), Paragraph(str(cliente_data.get('Cidade', '')), style_td)],
-        [Paragraph("<b>Telefone / WhatsApp:</b>", style_td), Paragraph(str(cliente_data.get('Telefone', '')), style_td)],
-        [Paragraph("<b>Email:</b>", style_td), Paragraph(str(cliente_data.get('Email', '')), style_td)],
-        [Paragraph("<b>Categoria / TAG:</b>", style_td), Paragraph(str(cliente_data.get('Categoria / TAG', '')), style_td)]
-    ]
-    t_info = Table(info_table, colWidths=[140, 380])
-    t_info.setStyle(TableStyle([
-        ('BACKGROUND', (0,0), (0,-1), colors.HexColor('#f5f5f4')),
-        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#e5e7eb')),
-        ('PADDING', (0,0), (-1,-1), 6),
-    ]))
-    story.append(t_info)
-    story.append(Spacer(1, 15))
-
-    story.append(Paragraph("Histórico de Pedidos e Propostas Emitidas", style_sub))
-    story.append(Spacer(1, 6))
-
-    if not pedidos_cli.empty:
-        p_table = [[Paragraph("<b>Nº Pedido</b>", style_td), Paragraph("<b>Data Emissao</b>", style_td), Paragraph("<b>Valor Total</b>", style_td), Paragraph("<b>Status</b>", style_td)]]
-        for _, p in pedidos_cli.iterrows():
-            p_table.append([
-                Paragraph(str(p.get('Numero_Pedido', '')), style_td),
-                Paragraph(str(p.get('Data_Emissao', '')), style_td),
-                Paragraph(f"R$ {float(p.get('Valor_Total', 0)):,.2f}", style_td),
-                Paragraph(str(p.get('Status', '')), style_td)
-            ])
-        t_ped = Table(p_table, colWidths=[120, 120, 130, 150])
-        t_ped.setStyle(TableStyle([
-            ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#1c1c1c')),
-            ('TEXTCOLOR', (0,0), (-1,0), colors.white),
-            ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#e5e7eb')),
-            ('PADDING', (0,0), (-1,-1), 5),
-        ]))
-        story.append(t_ped)
-    else:
-        story.append(Paragraph("Nenhum pedido registrado para este cliente até o momento.", style_td))
-
-    doc.build(story, canvasmaker=CanvasExecutivoAlinhado)
-    buffer.seek(0)
-    return buffer
-
-# -----------------------------------------------------------------------------
-# 6. DASHBOARD & ABAS PRINCIPAIS
-# -----------------------------------------------------------------------------
-st.title("💼 CRM Okamoto Mídias Visuais")
-
-k1, k2, k3, k4 = st.columns(4)
-k1.metric("🏢 Base de Clientes", f"{len(df_clientes)}")
-k2.metric("📄 Propostas Emitidas", f"{len(df_pedidos)}")
-k3.metric("💰 Volume em Negociação", f"R$ {df_pedidos['Valor_Total'].astype(float).sum():,.2f}" if not df_pedidos.empty else "R$ 0,00")
-k4.metric("🛠️ Serviços Ativos", f"{len(df_servicos)}")
-
-st.markdown("---")
-
-aba_orcamento, aba_kanban, aba_clientes, aba_catalogo = st.tabs([
-    "📄 Gerar Orçamento / Pedido",
-    "📊 Funil de Vendas",
-    "🏢 Gestão de Clientes",
-    "🛠️ Catálogo de Serviços"
-])
-
-# ABA 1: GERAR / CARREGAR ORÇAMENTO EXISTENTE
-with aba_orcamento:
-    st.subheader("📄 Visualização e Emissão de Propostas Comerciais")
-    
-    opcoes_pedidos = ["➕ Criar Novo Pedido do Zero"] + [f"{p['Numero_Pedido']} - {p['Empresa']} ({p['Contato']})" for _, p in df_pedidos.iterrows()]
-    pedido_selecionado = st.selectbox("📌 Selecione um Pedido / Orçamento Existente para Carregar:", opcoes_pedidos)
-    
-    val_num_ped = f"Pedido {len(df_pedidos)+1:04d}"
-    val_empresa = "Clínica Personalitté"
-    val_contato = "Joseph"
-    val_tel = "(16) 99767-8802"
-    val_local = "Ribeirão Preto - SP"
-    val_data_emissao = "08 de Setembro de 2026"
-    val_nome_evento = "2º Encontro Internacional Técnico GS Inima Brasil"
-    val_data_evento_det = "Dias 04 e 05/11/2026, das 8h00 as 17h00"
-    val_objetivo = "Cobertura fotográfica do evento\n• Captação de vídeo em Full HD\n• Período das 08h00 as 18h00\nIntervalo de 1h30 de almoço"
-    val_captacao = "Registros fotográficos e captações pontuais em vídeo (participantes, autoridades, apresentações, intervalos, entre outros momentos do evento)."
-    val_entrega = "Todo material fotográfico será editado e enviado, em alta e baixa resolução.\n• Todo material em vídeo será enviado bruto (sem edição).\nOs materiais serão enviados via link e ficará disponível pelo prazo de 30 dias para download."
-    val_prazo = "Até 72h após o término do evento."
-    val_servicos_sel = [df_servicos["Nome_Servico"].iloc[0]]
-    val_subtotal = 3700.0
-    val_desconto_pct = 0.0
-    val_total = 3700.0
-    val_extenso = converter_valor_extenso(3700.0)
-    val_cond_pag = "Até 20 dias após o evento."
-    val_status = "Orçamento / Proposta"
-
-    if pedido_selecionado != "➕ Criar Novo Pedido do Zero":
-        num_p_extraido = pedido_selecionado.split(" - ")[0]
-        p_match = df_pedidos[df_pedidos["Numero_Pedido"] == num_p_extraido]
-        if not p_match.empty:
-            p_data = p_match.iloc[0]
-            val_num_ped = str(p_data.get("Numero_Pedido", ""))
-            val_empresa = str(p_data.get("Empresa", ""))
-            val_contato = str(p_data.get("Contato", ""))
-            val_tel = str(p_data.get("Telefone", ""))
-            val_local = str(p_data.get("Local", ""))
-            val_data_emissao = str(p_data.get("Data_Emissao", ""))
-            val_nome_evento = str(p_data.get("Nome_Evento", ""))
-            val_data_evento_det = str(p_data.get("Data_Evento_Detalhada", ""))
-            val_objetivo = str(p_data.get("Objetivo", ""))
-            val_captacao = str(p_data.get("Captacao", ""))
-            val_entrega = str(p_data.get("Entrega", ""))
-            val_prazo = str(p_data.get("Prazo_Entrega", ""))
-            val_subtotal = float(p_data.get("Valor_Subtotal", 3700.0))
-            val_desconto_pct = float(p_data.get("Desconto_Pct", 0.0))
-            val_total = float(p_data.get("Valor_Total", 3700.0))
-            val_extenso = str(p_data.get("Valor_Extenso", converter_valor_extenso(val_total)))
-            val_cond_pag = str(p_data.get("Condicoes_Pag", ""))
-            val_status = str(p_data.get("Status", "Orçamento / Proposta"))
-            
-            srv_str = str(p_data.get("Servicos", ""))
-            val_servicos_sel = [s.strip() for s in srv_str.split(",") if s.strip() in df_servicos["Nome_Servico"].tolist()]
-            if not val_servicos_sel:
-                val_servicos_sel = [df_servicos["Nome_Servico"].iloc[0]]
-
-    c1, c2 = st.columns(2)
-    with c1:
-        num_pedido = st.text_input("Número do Pedido/Proposta:", value=val_num_ped)
-        lista_cli_dropdown = ["Digitado Manualmente"] + df_clientes["Empresa"].tolist()
-        cli_sel_box = st.selectbox("Buscar Dados do Cliente Cadastrado:", lista_cli_dropdown)
-        if cli_sel_box != "Digitado Manualmente":
-            match_c = df_clientes[df_clientes["Empresa"] == cli_sel_box].iloc[0]
-            val_empresa = match_c["Empresa"]
-            val_contato = match_c["Contato"]
-            val_tel = match_c["Telefone"]
-            val_local = match_c["Cidade"]
-
-        empresa_sel = st.text_input("Empresa:", value=val_empresa)
-        contato = st.text_input("Contato:", value=val_contato)
-        tel_cli = st.text_input("Telefone:", value=val_tel)
-        local_cli = st.text_input("Local do Evento:", value=val_local)
-
-    with c2:
-        data_orcamento = st.text_input("Data de Emissão:", value=val_data_emissao)
-        status_sel = st.selectbox("Status do Pedido (Funil de Vendas):", ["Orçamento / Proposta", "Em atendimento", "Negociação/Revisão", "Aprovado", "Produção", "Concluído", "Cancelado"], index=["Orçamento / Proposta", "Em atendimento", "Negociação/Revisão", "Aprovado", "Produção", "Concluído", "Cancelado"].index(val_status) if val_status in ["Orçamento / Proposta", "Em atendimento", "Negociação/Revisão", "Aprovado", "Produção", "Concluído", "Cancelado"] else 0)
-        condicoes_pag = st.text_input("6. Forma de Pagamento:", value=val_cond_pag)
-        prazo_entrega = st.text_input("5. Prazo de Entrega:", value=val_prazo)
-
-    st.markdown("---")
-    st.markdown("### 📝 ESCOPO DO SERVIÇO (DETALHAMENTO TÉCNICO)")
-    
-    col_e1, col_e2 = st.columns(2)
-    nome_evento = col_e1.text_input("1. Nome do Evento:", value=val_nome_evento)
-    data_evento_detalhada = col_e2.text_input("1. Datas e Horários do Evento:", value=val_data_evento_det)
-    
-    objetivo_txt = st.text_area("2. Objetivo:", value=val_objetivo, height=160)
-    captacao_txt = st.text_area("3. Captação:", value=val_captacao, height=160)
-    entrega_txt = st.text_area("4. Entrega:", value=val_entrega, height=180)
-
-    st.markdown("---")
-    st.markdown("### 💰 INVESTIMENTO & APRESENTAÇÃO INSTITUCIONAL")
-    
-    servicos_solicitados = st.multiselect("Selecione os Serviços do Catálogo para o Cálculo:", df_servicos["Nome_Servico"].tolist(), default=val_servicos_sel)
-    
-    subtotal_calculado_srv = 0.0
-    for s_nome in servicos_solicitados:
-        row_s = df_servicos[df_servicos["Nome_Servico"] == s_nome].iloc[0]
-        subtotal_calculado_srv += float(row_s["Valor_Base"])
-
-    if subtotal_calculado_srv == 0.0:
-        subtotal_calculado_srv = val_subtotal
-
-    ci1, ci2, ci3 = st.columns([1.5, 1, 1.5])
-    subtotal_input = ci1.number_input("Subtotal dos Serviços (R$):", value=float(subtotal_calculado_srv), step=100.0)
-    desconto_pct_input = ci2.number_input("Desconto (%):", value=float(val_desconto_pct), min_value=0.0, max_value=100.0, step=5.0)
-    
-    valor_final_com_desc = max(0.0, subtotal_input * (1.0 - (desconto_pct_input / 100.0)))
-    ci3.metric("Valor Total com Desconto", f"R$ {valor_final_com_desc:,.2f}")
-
-    valor_extenso_auto = converter_valor_extenso(valor_final_com_desc)
-    valor_extenso = st.text_input("Valor por Extenso (Gerado Automático):", value=valor_extenso_auto)
-
-    st.session_state['texto_institucional'] = st.text_area(
-        "Apresentação Institucional da Empresa (exibida na Página 1 do PDF):",
-        value=st.session_state['texto_institucional'],
-        height=220
-    )
-
-    dados_pdf = {
-        "num_pedido": num_pedido,
-        "empresa": empresa_sel,
-        "contato": contato,
-        "telefone_cli": tel_cli,
-        "local": local_cli,
-        "data_orcamento": data_orcamento,
-        "nome_evento": nome_evento,
-        "data_evento_detalhada": data_evento_detalhada,
-        "objetivo": objetivo_txt,
-        "captacao": captacao_txt,
-        "entrega": entrega_txt,
-        "prazo_entrega": prazo_entrega,
-        "valor_total": valor_final_com_desc,
-        "valor_extenso": valor_extenso,
-        "condicoes_pag": condicoes_pag
+    registro = {
+        "data": datetime.now().strftime("%d/%m/%Y %H:%M"),
+        "nome": dados.get("nome"),
+        "contato": dados.get("contato"),
+        "telefone": dados.get("telefone"),
+        "score": score,
+        "avaliacoes": dados.get("avaliacoes", 0)
     }
     
-    pdf_bytes = gerar_pdf_3_paginas_corrigido(dados_pdf, st.session_state['texto_institucional'])
+    if not historico or historico[0].get("nome") != registro["nome"]:
+        historico.insert(0, registro)
+        with open(ARQUIVO_HISTORICO, 'w', encoding='utf-8') as f:
+            json.dump(historico, f, ensure_ascii=False, indent=2)
 
-    # NOMENCLATURA DO ARQUIVO
-    num_limpo_file = num_pedido.replace("Pedido ", "").replace("Nº ", "").replace("nº ", "").strip()
-    nome_arquivo_pdf = f"Proposta {num_limpo_file} - {empresa_sel}.pdf"
+def carregar_historico():
+    if os.path.exists(ARQUIVO_HISTORICO):
+        try:
+            with open(ARQUIVO_HISTORICO, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception: return []
+    return []
+
+def buscar_detalhes_concorrente_especifico(nome_concorrente, cidade, api_key):
+    if not nome_concorrente or not api_key: return None
+    try:
+        termo = f"{nome_concorrente}, {cidade}" if cidade else nome_concorrente
+        url_search = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={requests.utils.quote(termo)}&key={api_key}"
+        res = requests.get(url_search).json()
+        if res.get("status") == "OK" and res.get("results"):
+            item = res["results"][0]
+            place_id = item.get("place_id")
+            url_det = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=website,editorial_summary,opening_hours,photos,types&key={api_key}"
+            res_det = requests.get(url_det).json().get("result", {})
+            photos = res_det.get("photos", item.get("photos", []))
+            types_lista = res_det.get("types", [])
+            return {
+                "nome": item.get("name", nome_concorrente),
+                "nota": float(item.get("rating", 0.0)),
+                "avaliacoes": int(item.get("user_ratings_total", 0)),
+                "tem_fotos_hd": "Sim" if len(photos) >= 10 else "Não",
+                "tem_tour360": "Não",
+                "categorias_ok": "Sim" if len(types_lista) >= 3 else "Não",
+                "horarios_ok": "Sim" if "opening_hours" in res_det else "Não",
+                "tem_website": "Sim" if res_det.get("website") else "Não",
+                "tem_descricao": "Sim" if "editorial_summary" in res_det else "Não",
+                "atributos_ok": "Não",
+                "respostas_ok": "Não"
+            }
+    except Exception: pass
+    return None
+
+# -----------------------------------------------------------------------------
+# 3. ESTADOS PERSISTENTES & ETAPAS DO WIZARD
+# -----------------------------------------------------------------------------
+if 'etapa_atual' not in st.session_state:
+    st.session_state['etapa_atual'] = 1
+
+if 'dados' not in st.session_state:
+    st.session_state['dados'] = {
+        "nome": "", "contato": "", "endereco": "", "telefone": "", "website": "",
+        "nota": 0.0, "avaliacoes": 0, "tem_tour360": False, "tem_fotos_hd": False,
+        "categorias_completas": False, "horarios_ok": False, "tem_descricao": False,
+        "atributos_ok": False, "resposta_avaliacoes_ok": False, "categorias_detectadas": [], "foto_reference": ""
+    }
+
+if 'concorrentes' not in st.session_state:
+    st.session_state['concorrentes'] = [
+        {"nome": "", "nota": 0.0, "avaliacoes": 0, "busca_termo": "", "cidade": "", "tem_fotos_hd": "Não", "tem_tour360": "Não", "categorias_ok": "Não", "horarios_ok": "Não", "tem_website": "Não", "tem_descricao": "Não", "atributos_ok": "Não", "respostas_ok": "Não"},
+        {"nome": "", "nota": 0.0, "avaliacoes": 0, "busca_termo": "", "cidade": "", "tem_fotos_hd": "Não", "tem_tour360": "Não", "categorias_ok": "Não", "horarios_ok": "Não", "tem_website": "Não", "tem_descricao": "Não", "atributos_ok": "Não", "respostas_ok": "Não"},
+        {"nome": "", "nota": 0.0, "avaliacoes": 0, "busca_termo": "", "cidade": "", "tem_fotos_hd": "Não", "tem_tour360": "Não", "categorias_ok": "Não", "horarios_ok": "Não", "tem_website": "Não", "tem_descricao": "Não", "atributos_ok": "Não", "respostas_ok": "Não"}
+    ]
+
+if 'planos' not in st.session_state:
+    st.session_state['planos'] = {
+        "start_valor": "500,00", "start_itens": "- Correção cadastral\n- Otimização de SEO\n- Ajuste de categorias\n- Inserção de links",
+        "pro_valor": "1.500,00", "pro_itens": "- Tudo do Plano Start\n- Tour Virtual 360°\n- Ensaio Fotográfico HD\n- Relatório Visual de Entrega",
+        "gestao_valor": "600,00", "gestao_itens": "- Postagens semanais\n- Gestão de avaliações\n- Atualização de fotos\n- Relatório mensal"
+    }
+
+if 'plano_acao_extra' not in st.session_state:
+    st.session_state['plano_acao_extra'] = "O perfil precisa de otimização urgente! Veja as falhas apontadas no relatório."
+
+if 'unidades_encontradas' not in st.session_state:
+    st.session_state['unidades_encontradas'] = []
+
+# -----------------------------------------------------------------------------
+# 4. GERADOR DE PDF (FPDF)
+# -----------------------------------------------------------------------------
+class PDFTour360Oficial(FPDF):
+    def header(self):
+        self.set_fill_color(30, 64, 175)
+        self.rect(0, 0, 105, 4, 'F')
+        self.set_fill_color(255, 61, 61)
+        self.rect(105, 0, 105, 4, 'F')
+        if self.page_no() == 1: return
+        
+        caminho_logo = obter_caminho_logo("tour360")
+        if caminho_logo:
+            try: self.image(caminho_logo, 12, 6.0, 11, 11)
+            except Exception: pass
+            
+        self.set_xy(26, 7.2)
+        self.set_font('Helvetica', 'B', 10.0)
+        self.set_text_color(30, 64, 175)
+        self.cell(170, 4.0, 'Tour360VR', align='L', ln=True)
+        
+        self.set_x(26)
+        self.set_font('Helvetica', 'B', 7.2)
+        self.set_text_color(100, 116, 139)
+        self.cell(170, 3.8, conv('Gestão de Perfil & Diagnóstico do Google Meu Negócio'), align='L', ln=True)
+        self.set_draw_color(226, 232, 240)
+        self.line(12, 19.0, 198, 19.0)
+
+    def footer(self):
+        self.set_y(-16)
+        self.set_font('Helvetica', '', 8.5)
+        self.set_text_color(100, 116, 139)
+        self.line(12, self.get_y(), 198, self.get_y())
+        self.set_y(-13)
+        if self.page_no() == 1:
+            self.set_x(12)
+            self.set_font('Helvetica', 'B', 10.5)
+            self.set_text_color(30, 64, 175)
+            self.cell(186, 5, conv("Tour360VR - (16) 99133-2121 - Ribeirão Preto - SP"), align='C')
+        else:
+            self.set_x(30)
+            self.cell(45, 5, 'contato@tour360vr.com.br', link='mailto:contato@tour360vr.com.br', align='C')
+            self.cell(40, 5, 'tour360vr.com.br', link='https://tour360vr.com.br', align='C')
+            self.cell(45, 5, 'WhatsApp: (16) 99133-2121', link='https://wa.me/5516991332121', align='C')
+            self.set_x(170)
+            self.cell(28, 5, f'Página {self.page_no()} de 4', align='R')
+
+    def rounded_rect(self, x, y, w, h, r, style=''):
+        k, hp = self.k, self.h
+        op = 'f' if style == 'F' else ('B' if style in ['FD', 'DF'] else 'S')
+        my_arc = 4/3 * (2**0.5 - 1)
+        self._out(f'{(x+r)*k:.2f} {(hp-y)*k:.2f} m')
+        xc, yc = x + w - r, y + r
+        self._out(f'{xc*k:.2f} {(hp-y)*k:.2f} l')
+        self._arc(xc + r*my_arc, yc - r, xc + r, yc - r*my_arc, xc + r, yc)
+        xc, yc = x + w - r, y + h - r
+        self._out(f'{(x+w)*k:.2f} {(hp-yc)*k:.2f} l')
+        self._arc(xc + r, yc + r*my_arc, xc + r*my_arc, yc + r, xc, yc + r)
+        xc, yc = x + r, y + h - r
+        self._out(f'{(x+r)*k:.2f} {(hp-(y+h))*k:.2f} l')
+        self._arc(xc - r*my_arc, yc + r, xc - r, yc + r*my_arc, xc - r, yc)
+        xc, yc = x + r, y + r
+        self._out(f'{x*k:.2f} {(hp-yc)*k:.2f} l')
+        self._arc(xc - r, yc - r*my_arc, xc - r*my_arc, yc - r, xc, yc - r)
+        self._out(f'{op}')
+
+    def _arc(self, x1, y1, x2, y2, x3, y3):
+        k, hp = self.k, self.h
+        self._out(f'{x1*k:.2f} {(hp-y1)*k:.2f} {x2*k:.2f} {(hp-y2)*k:.2f} {x3*k:.2f} {(hp-y3)*k:.2f} c')
+
+def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
+    score = calcular_score_real(dados)
+    pdf = PDFTour360Oficial()
+    pdf.set_margins(12, 12, 12)
+    pdf.set_auto_page_break(auto=False)
+
+    # PÁGINA 1: CAPA
+    pdf.add_page()
+    caminho_logo = obter_caminho_logo("tour360")
+    if caminho_logo:
+        try: pdf.image(caminho_logo, 86, 23.0, 38, 38)
+        except Exception: pass
+
+    pdf.set_y(82)
+    pdf.set_font('Helvetica', 'B', 21)
+    pdf.set_text_color(30, 64, 175)
+    pdf.cell(0, 8, conv('DIAGNÓSTICO DE PRESENÇA DIGITAL'), align='C', ln=True)
+    pdf.ln(2)
+
+    pdf.set_font('Helvetica', 'B', 15)
+    pdf.cell(0, 6, conv('GOOGLE MEU NEGÓCIO'), align='C', ln=True)
+
+    w_capa, h_capa, x_capa, y_capa = 186, 34, (210 - 186) / 2.0, 110.0
+    pdf.set_fill_color(248, 250, 252)
+    pdf.set_draw_color(203, 213, 225)
+    pdf.rounded_rect(x_capa, y_capa, w_capa, h_capa, 2.5, 'FD')
+
+    pdf.set_xy(x_capa, y_capa + 3.5)
+    pdf.set_font('Helvetica', 'B', 14.0)
+    pdf.set_text_color(30, 64, 175) 
+    pdf.cell(w_capa, 5.5, conv(f"{dados.get('nome') or 'Nome da Empresa'}"), align='C', ln=True)
+
+    pdf.set_font('Helvetica', 'B', 9.5)
+    pdf.set_text_color(15, 23, 42)
+    pdf.set_x(x_capa)
+    pdf.cell(w_capa, 4.8, conv(f"Cliente: {dados.get('contato') or 'Responsável'}"), align='C', ln=True)
+    
+    pdf.set_font('Helvetica', '', 8.8)
+    pdf.set_text_color(71, 85, 105)
+    pdf.set_x(x_capa)
+    pdf.cell(w_capa, 4.8, conv(f"{dados.get('endereco') or 'Endereço não informado'}"), align='C', ln=True)
+    
+    site_txt = dados.get('website') if dados.get('website') else 'N/I'
+    pdf.set_x(x_capa)
+    pdf.cell(w_capa, 4.8, conv(f"Telefone: {dados.get('telefone') or 'N/I'}   |   {site_txt}"), align='C', ln=True)
+
+    y_foto, h_foto = 150.0, 84.0
+    foto_renderizada = False
+    if dados.get("foto_reference") and API_KEY_GOOGLE:
+        try:
+            url_img = f"https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photo_reference={dados['foto_reference']}&key={API_KEY_GOOGLE}"
+            resp_img = requests.get(url_img, timeout=4)
+            if resp_img.status_code == 200:
+                img_stream = io.BytesIO(resp_img.content)
+                pdf.image(img_stream, x_capa, y_foto, w_capa, h_foto)
+                foto_renderizada = True
+        except Exception: pass
+
+    if not foto_renderizada:
+        pdf.set_fill_color(240, 243, 246)
+        pdf.rounded_rect(x_capa, y_foto, w_capa, h_foto, 3, 'F')
+        pdf.set_xy(x_capa, y_foto + 36)
+        pdf.set_font('Helvetica', 'B', 11)
+        pdf.set_text_color(100, 116, 139)
+        pdf.cell(w_capa, 6, conv("[ IMAGEM DA FICHA GOOGLE DO CLIENTE ]"), align='C', ln=True)
+
+    pdf.set_y(252.0)
+    pdf.set_font('Helvetica', 'B', 10.5)
+    
+    qtd_aval = dados.get('avaliacoes', 0)
+    tem_tour = dados.get('tem_tour360', False)
+    
+    if tem_tour:
+        pdf.set_text_color(22, 128, 61)
+        sub_txt_1 = f"SEU PERFIL POSSUI EXCELENTE PRESENÇA VISUAL E {qtd_aval} AVALIAÇÕES."
+        sub_txt_2 = "MANTER A FICHA ATUALIZADA É O SEGREDO PARA LIDERAR O MERCADO."
+    else:
+        pdf.set_text_color(239, 68, 68)
+        if qtd_aval == 0:
+            sub_txt_1 = "SEU PERFIL AINDA NÃO POSSUI AVALIAÇÕES CADASTRADAS NO GOOGLE,"
+            sub_txt_2 = "E A FALTA DE IMPACTO VISUAL FAZ VOCÊ PERDER CLIENTES DIARIAMENTE."
+        elif qtd_aval < 15:
+            sub_txt_1 = f"SEU PERFIL TEM APENAS {qtd_aval} AVALIAÇÕES NO GOOGLE,"
+            sub_txt_2 = "E A AUSÊNCIA DE CONTEÚDO IMERSIVO LIMITA O SEU CRESCIMENTO."
+        else:
+            sub_txt_1 = f"SEU PERFIL TEM NOTA SÓLIDA E {qtd_aval} AVALIAÇÕES NO GOOGLE,"
+            sub_txt_2 = "MAS A FALTA DE EXPERIÊNCIA IMERSIVA DEIXA DINHEIRO NA MESA."
+
+    pdf.cell(0, 5.0, conv(sub_txt_1), align='C', ln=True)
+    pdf.cell(0, 5.0, conv(sub_txt_2), align='C', ln=True)
+
+    # PÁGINA 2: AUDITORIA DETALHADA
+    pdf.add_page()
+    pdf.set_xy(12, 31)
+    pdf.set_font('Helvetica', 'B', 16)
+    pdf.set_text_color(15, 23, 42)
+    pdf.cell(186, 8, conv('AUDITORIA DETALHADA DE PONTOS DE BUSCA'), align='C', ln=True)
+
+    w_ficha, x_ficha, y_ficha, h_ficha = 170, (210 - 170) / 2.0, 47.0, 15.0
+    pdf.set_fill_color(248, 250, 252)
+    pdf.set_draw_color(226, 232, 240)
+    pdf.rounded_rect(x_ficha, y_ficha, w_ficha, h_ficha, 2.5, 'FD')
+    
+    pdf.set_xy(x_ficha, y_ficha + 2.0)
+    pdf.set_font('Helvetica', 'B', 12.0)
+    pdf.set_text_color(30, 64, 175)
+    pdf.cell(w_ficha, 5.0, conv(f"{dados.get('nome') or 'Empresa Analisada'}"), align='C', ln=True)
+
+    pdf.set_x(x_ficha)
+    pdf.set_font('Helvetica', 'B', 9.5)
+    pdf.set_text_color(245, 158, 11)
+    pdf.cell(w_ficha, 4.5, conv(f"Nota {dados.get('nota', 0.0):.1f} *   -   {dados.get('avaliacoes', 0)} avaliações no Google"), align='C', ln=True)
+
+    w_box_score, x_box_score, y_box_score = 90, (210 - 90) / 2.0, 68.0
+    if score < 50: cr, cg, cb, status_txt = 239, 68, 68, "STATUS CRÍTICO"
+    elif score < 80: cr, cg, cb, status_txt = 245, 158, 11, "STATUS MÉDIO"
+    else: cr, cg, cb, status_txt = 22, 128, 61, "ALTO DESEMPENHO"
+
+    pdf.set_fill_color(240, 249, 255)
+    pdf.set_draw_color(62, 161, 219)
+    pdf.set_line_width(0.4)
+    pdf.rounded_rect(x_box_score, y_box_score, w_box_score, 11.5, 2, 'FD')
+    pdf.set_line_width(0.2)
+
+    pdf.set_font('Helvetica', 'B', 15)
+    w_num = pdf.get_string_width(f"{score} ")
+    w_bar = pdf.get_string_width("/ 100")
+    x_start = x_box_score + (w_box_score - (w_num + w_bar)) / 2.0
+
+    pdf.set_xy(x_start, y_box_score + 1.0)
+    pdf.set_text_color(cr, cg, cb)
+    pdf.cell(w_num, 5.0, f"{score} ", align='L')
+    
+    pdf.set_text_color(15, 23, 42)
+    pdf.cell(w_bar, 5.0, "/ 100", align='L', ln=True)
+    
+    pdf.set_xy(x_box_score, y_box_score + 6.5)
+    pdf.set_font('Helvetica', 'B', 7.2)
+    pdf.set_text_color(cr, cg, cb)
+    pdf.cell(w_box_score, 3.0, conv(f"SCORE GERAL ({status_txt})"), align='C', ln=True)
+
+    pct_avaliacoes = min(int((dados.get('avaliacoes', 0) / 50.0) * 100), 100) if dados.get('avaliacoes', 0) > 0 else 10
+    pct_fotos = 100 if dados.get('tem_fotos_hd') else 30
+    pct_tour = 100 if dados.get('tem_tour360') else 30
+    pct_cat = 100 if dados.get('categorias_completas') else 50
+    pct_hor = 100 if dados.get('horarios_ok') else 40
+    pct_web = 100 if dados.get('website') != 'Não possui' and dados.get('website') != '' else 10
+    pct_desc = 100 if dados.get('tem_descricao', True) else 30
+    pct_atrib = 100 if dados.get('atributos_ok', True) else 40
+    pct_resp = 100 if dados.get('resposta_avaliacoes_ok', False) else 30
+
+    desc_fotos = "Atende ao volume recomendado de fotos em HD." if dados.get('tem_fotos_hd') else "Poucas fotos encontradas / antigas no perfil."
+    rotulo_tour = "Ativo" if dados.get('tem_tour360') else "Pendente de Validação"
+    desc_tour = "Tour Virtual 360° ativo e integrado." if dados.get('tem_tour360') else "Não detectado via API. Necessário checagem manual na ficha."
+    desc_cat = "Atende às categorias recomendadas." if dados.get('categorias_completas') else "Ajuste necessário em categorias secundárias."
+    desc_web = f"Website oficial: {dados.get('website')}" if dados.get('website') != 'Não possui' and dados.get('website') != '' else "Falta link de website cadastrado para conversão."
+    desc_desc = "Resumo editorial ativo no perfil." if dados.get('tem_descricao', True) else "Descrição da empresa incompleta ou ausente."
+    desc_atrib = "Atributos de serviços ativos." if dados.get('atributos_ok', True) else "Falta cadastrar atributos de acessibilidade/serviços."
+    desc_resp = "Frequência ativa de respostas do proprietário." if dados.get('resposta_avaliacoes_ok', False) else "Falta de respostas oficiais às avaliações."
+
+    itens = [
+        ("1. Fotos e Resolução Visual", pct_fotos, "Alto" if dados.get('tem_fotos_hd') else "Baixo", desc_fotos),
+        ("2. Tour Virtual 360° Interativo", pct_tour, rotulo_tour, desc_tour),
+        ("3. Categorias Principal e Secundárias", pct_cat, "Completo" if dados.get('categorias_completas') else "Incompleto", desc_cat),
+        ("4. Horários e Exceções (Feriados)", pct_hor, "Atualizado" if dados.get('horarios_ok') else "Desatualizado", "Falta de horários em feriados."),
+        ("5. Website e Links de Conversão", pct_web, "Ativo" if dados.get('website') != 'Não possui' and dados.get('website') != '' else "Falho", desc_web),
+        ("6. Avaliações no Google (Prova Social)", pct_avaliacoes, f"{dados.get('nota', 0.0)}/5.0", f"{dados.get('avaliacoes', 0)} avaliações."),
+        ("7. Resumo Editorial & Descrição", pct_desc, "Completo" if dados.get('tem_descricao', True) else "Ausente", desc_desc),
+        ("8. Atributos de Acessibilidade/Serviços", pct_atrib, "Ativo" if dados.get('atributos_ok', True) else "Pendente", desc_atrib),
+        ("9. Interação e Resposta a Avaliações", pct_resp, "Ativo" if dados.get('resposta_avaliacoes_ok', False) else "Pendente", desc_resp)
+    ]
+
+    y_start_itens, h_slot = 93.0, 10.5
+    for idx_item, (titulo, pct, rotulo, desc) in enumerate(itens):
+        y_curr = y_start_itens + (idx_item * h_slot)
+        pdf.set_xy(12, y_curr)
+        pdf.set_font('Helvetica', 'B', 9.5)
+        pdf.set_text_color(30, 41, 59)
+        pdf.cell(130, 3.2, conv(titulo), border=0)
+        
+        pdf.set_font('Helvetica', 'B', 9.5)
+        if pct < 40: pdf.set_text_color(239, 68, 68)
+        elif pct < 80: pdf.set_text_color(245, 158, 11)
+        else: pdf.set_text_color(22, 128, 61)
+            
+        pdf.cell(56, 3.2, conv(rotulo), border=0, align='R')
+
+        y_bar = y_curr + 3.6
+        pdf.set_fill_color(226, 232, 240)
+        pdf.rounded_rect(12, y_bar, 186, 1.5, 0.5, 'F')
+        
+        if pct < 40: pdf.set_fill_color(239, 68, 68)
+        elif pct < 80: pdf.set_fill_color(245, 158, 11)
+        else: pdf.set_fill_color(22, 128, 61)
+            
+        pdf.rounded_rect(12, y_bar, max(float(pct) * 1.86, 4.0), 1.5, 0.5, 'F')
+
+        pdf.set_xy(12, y_bar + 2.2)
+        pdf.set_font('Helvetica', '', 8.5)
+        pdf.set_text_color(71, 85, 105)
+        pdf.cell(186, 3.0, conv(f"   Diagnóstico: {desc[:95]}"), border=0)
+
+    concorrentes_filtrados = [c for c in concorrentes if c.get("nome", "").strip() != ""]
+    if concorrentes_filtrados:
+        pdf.set_xy(12, 196.0)
+        pdf.set_font('Helvetica', 'B', 9.5)
+        pdf.set_text_color(30, 64, 175)
+        pdf.cell(0, 4.0, conv("ANÁLISE AUTOMÁTICA DE CONCORRENTES DO SEGMENTO"), border=0)
+
+        w_emp, w_item, w_score, h_row = 56, 11.5, 26.5, 4.6
+        y_table = 201.0
+        pdf.set_xy(12, y_table)
+        pdf.set_fill_color(30, 64, 175)
+        pdf.set_text_color(255, 255, 255)
+        pdf.set_font('Helvetica', 'B', 9.0)
+        
+        pdf.cell(w_emp, h_row, conv(" Empresa / Concorrente"), border=0, fill=True)
+        pdf.cell(w_item, h_row, conv("1.Fotos"), border=0, fill=True, align='C')
+        pdf.cell(w_item, h_row, conv("2.360°"), border=0, fill=True, align='C')
+        pdf.cell(w_item, h_row, conv("3.Categ"), border=0, fill=True, align='C')
+        pdf.cell(w_item, h_row, conv("4.Horár"), border=0, fill=True, align='C')
+        pdf.cell(w_item, h_row, conv("5.Web"), border=0, fill=True, align='C')
+        pdf.cell(w_item, h_row, conv("6.Nota"), border=0, fill=True, align='C')
+        pdf.cell(w_item, h_row, conv("7.Desc"), border=0, fill=True, align='C')
+        pdf.cell(w_item, h_row, conv("8.Atrib"), border=0, fill=True, align='C')
+        pdf.cell(w_item, h_row, conv("9.Resp"), border=0, fill=True, align='C')
+        pdf.cell(w_score, h_row, conv("Score Geral"), border=0, fill=True, align='C')
+
+        def celula_sim_nao(pdf_obj, w, h, valor):
+            if valor == "Sim":
+                pdf_obj.set_fill_color(220, 252, 231)
+                pdf_obj.set_text_color(22, 101, 52)
+            else:
+                pdf_obj.set_fill_color(254, 226, 226)
+                pdf_obj.set_text_color(153, 27, 27)
+            pdf_obj.cell(w, h, conv(valor), border='B', fill=True, align='C')
+
+        y_r1 = y_table + h_row
+        pdf.set_xy(12, y_r1)
+        pdf.set_fill_color(240, 249, 255)
+        pdf.set_font('Helvetica', 'B', 8.5)
+        pdf.set_text_color(30, 64, 175)
+        pdf.cell(w_emp, h_row, conv(f" {str(dados.get('nome', ''))[:28]}"), border='B', fill=True)
+        
+        celula_sim_nao(pdf, w_item, h_row, "Sim" if dados.get('tem_fotos_hd') else "Não")
+        celula_sim_nao(pdf, w_item, h_row, "Sim" if dados.get('tem_tour360') else "Não")
+        celula_sim_nao(pdf, w_item, h_row, "Sim" if dados.get('categorias_completas') else "Não")
+        celula_sim_nao(pdf, w_item, h_row, "Sim" if dados.get('horarios_ok') else "Não")
+        celula_sim_nao(pdf, w_item, h_row, "Sim" if dados.get('website') and dados.get('website') != 'Não possui' else "Não")
+        
+        pdf.set_fill_color(240, 249, 255)
+        pdf.set_text_color(30, 64, 175)
+        pdf.cell(w_item, h_row, conv(f"{dados.get('nota', 0.0):.1f}"), border='B', fill=True, align='C')
+        
+        celula_sim_nao(pdf, w_item, h_row, "Sim" if dados.get('tem_descricao') else "Não")
+        celula_sim_nao(pdf, w_item, h_row, "Sim" if dados.get('atributos_ok') else "Não")
+        celula_sim_nao(pdf, w_item, h_row, "Sim" if dados.get('resposta_avaliacoes_ok') else "Não")
+        
+        pdf.set_fill_color(240, 249, 255)
+        pdf.set_font('Helvetica', 'B', 8.5)
+        pdf.set_text_color(30, 64, 175)
+        pdf.cell(w_score, h_row, conv(f"{score} / 100"), border='B', fill=True, align='C')
+
+        pdf.set_font('Helvetica', '', 8.5)
+        for idx_c, c in enumerate(concorrentes_filtrados):
+            y_rc = y_r1 + ((idx_c + 1) * h_row)
+            score_conc = calcular_score_concorrente(c)
+            pdf.set_xy(12, y_rc)
+            pdf.set_fill_color(255, 255, 255)
+            pdf.set_text_color(51, 65, 85)
+            
+            pdf.cell(w_emp, h_row, conv(f" {c.get('nome', '')[:28]}"), border='B', fill=True)
+            celula_sim_nao(pdf, w_item, h_row, c.get('tem_fotos_hd', 'Não'))
+            celula_sim_nao(pdf, w_item, h_row, c.get('tem_tour360', 'Não'))
+            celula_sim_nao(pdf, w_item, h_row, c.get('categorias_ok', 'Não'))
+            celula_sim_nao(pdf, w_item, h_row, c.get('horarios_ok', 'Não'))
+            celula_sim_nao(pdf, w_item, h_row, c.get('tem_website', 'Não'))
+            
+            pdf.set_fill_color(255, 255, 255)
+            pdf.set_text_color(51, 65, 85)
+            pdf.cell(w_item, h_row, conv(f"{float(c.get('nota', 0.0)):.1f}"), border='B', fill=True, align='C')
+            
+            celula_sim_nao(pdf, w_item, h_row, c.get('tem_descricao', 'Não'))
+            celula_sim_nao(pdf, w_item, h_row, c.get('atributos_ok', 'Não'))
+            celula_sim_nao(pdf, w_item, h_row, c.get('respostas_ok', 'Não'))
+            
+            pdf.set_fill_color(255, 255, 255)
+            pdf.set_font('Helvetica', 'B', 8.5)
+            pdf.set_text_color(51, 65, 85)
+            pdf.cell(w_score, h_row, conv(f"{score_conc} / 100"), border='B', fill=True, align='C')
+            pdf.set_font('Helvetica', '', 8.5)
+
+    if plano_acao_extra and plano_acao_extra.strip() != "":
+        w_extra, x_extra, y_extra, h_box_extra = 186, (210 - 186) / 2.0, 237.0, 27.0
+        pdf.set_fill_color(240, 249, 255)
+        pdf.set_draw_color(62, 161, 219)
+        pdf.set_line_width(0.4)
+        pdf.rounded_rect(x_extra, y_extra, w_extra, h_box_extra, 2.0, 'FD')
+        pdf.set_line_width(0.2)
+        
+        pdf.set_xy(x_extra, y_extra + 2.5)
+        pdf.set_font('Helvetica', 'B', 8.2)
+        pdf.set_text_color(30, 64, 175)
+        pdf.cell(w_extra, 3.5, conv("PLANO DE AÇÃO E APONTAMENTOS ESTRATÉGICOS PERSONALIZADOS:"), align='C', border=0)
+        
+        pdf.set_xy(x_extra + 4, y_extra + 8.5)
+        pdf.set_font('Helvetica', '', 7.8)
+        pdf.set_text_color(51, 65, 85)
+        pdf.multi_cell(w_extra - 8, 3.5, conv(plano_acao_extra), align='C')
+
+    # PÁGINA 3: PROPOSTA COMERCIAL
+    pdf.add_page()
+    pdf.set_xy(12, 31)
+    pdf.set_font('Helvetica', 'B', 16)
+    pdf.set_text_color(15, 23, 42)
+    pdf.cell(186, 8, conv('PROPOSTA COMERCIAL & ESTRUTURAÇÃO ESTRATÉGICA'), align='C', ln=True)
+
+    pdf.set_y(48.0)
+    pdf.set_font('Helvetica', 'B', 14)
+    pdf.cell(0, 6, conv('PLANOS E INVESTIMENTO'), align='C', ln=True)
+
+    y_p = 68.0
+    val_start_limpo = str(planos.get('start_valor', '')).replace("/mês", "").replace("/mes", "").strip()
+    pdf.set_fill_color(248, 250, 252)
+    pdf.set_draw_color(226, 232, 240)
+    pdf.rounded_rect(12, y_p, 54, 60, 2, 'FD')
+    
+    pdf.set_xy(12, y_p + 4)
+    pdf.set_font('Helvetica', 'B', 15)
+    pdf.set_text_color(15, 23, 42)
+    pdf.cell(54, 5, 'Plano Start', align='C', ln=True)
+    
+    pdf.set_xy(12, y_p + 10)
+    pdf.set_font('Helvetica', 'B', 14)
+    pdf.set_text_color(30, 64, 175)
+    pdf.cell(54, 5, conv(f"R$ {val_start_limpo}"), align='C', ln=True)
+    
+    pdf.set_xy(12, y_p + 16)
+    pdf.set_font('Helvetica', 'B', 9.5)
+    pdf.set_text_color(15, 23, 42)
+    pdf.cell(54, 4, conv('em até 2x'), align='C', ln=True)
+    
+    pdf.set_font('Helvetica', '', 8.5)
+    pdf.set_text_color(51, 65, 85)
+    pdf.set_xy(15, y_p + 25)
+    pdf.multi_cell(48, 4.5, conv(planos.get('start_itens', '')), align='L')
+
+    val_pro_limpo = str(planos.get('pro_valor', '')).replace("/mês", "").replace("/mes", "").strip()
+    pdf.set_fill_color(240, 249, 255)
+    pdf.set_draw_color(30, 64, 175)
+    pdf.set_line_width(1.0)
+    pdf.rounded_rect(70, y_p - 3, 70, 66, 2.5, 'FD')
+    pdf.set_line_width(0.2)
+    
+    pdf.set_xy(70, y_p + 1)
+    pdf.set_font('Helvetica', 'B', 17)
+    pdf.set_text_color(15, 23, 42)
+    pdf.cell(70, 5, conv('Plano Pro'), align='C', ln=True)
+    
+    pdf.set_xy(70, y_p + 7.0)
+    pdf.set_font('Helvetica', 'B', 10.0)
+    pdf.set_text_color(30, 64, 175)
+    pdf.cell(70, 4, conv('RECOMENDADO'), align='C', ln=True)
+    
+    pdf.set_xy(70, y_p + 12.5)
+    pdf.set_font('Helvetica', 'B', 17)
+    pdf.set_text_color(30, 64, 175)
+    pdf.cell(70, 6, conv(f"R$ {val_pro_limpo}"), align='C', ln=True)
+    
+    pdf.set_xy(70, y_p + 20.0)
+    pdf.set_font('Helvetica', 'B', 9.5)
+    pdf.set_text_color(15, 23, 42)
+    pdf.cell(70, 4, conv('em até 3x'), align='C', ln=True)
+    
+    pdf.set_font('Helvetica', 'B', 9.0)
+    pdf.set_text_color(15, 23, 42)
+    pdf.set_xy(75, y_p + 27.5)
+    pdf.multi_cell(60, 4.5, conv(planos.get('pro_itens', '')), align='L')
+
+    val_gestao_limpo = str(planos.get('gestao_valor', '')).replace("/mês", "").replace("/mes", "").strip()
+    pdf.set_fill_color(248, 250, 252)
+    pdf.set_draw_color(226, 232, 240)
+    pdf.rounded_rect(144, y_p, 54, 60, 2, 'FD')
+    
+    pdf.set_xy(144, y_p + 4)
+    pdf.set_font('Helvetica', 'B', 15)
+    pdf.set_text_color(15, 23, 42)
+    pdf.cell(54, 5, conv('Gestão Mensal'), align='C', ln=True)
+    
+    pdf.set_xy(144, y_p + 10)
+    pdf.set_font('Helvetica', 'B', 14)
+    pdf.set_text_color(30, 64, 175)
+    pdf.cell(54, 5, conv(f"R$ {val_gestao_limpo}"), align='C', ln=True)
+    
+    pdf.set_xy(144, y_p + 16)
+    pdf.set_font('Helvetica', 'B', 9.5)
+    pdf.set_text_color(15, 23, 42)
+    pdf.cell(54, 4, conv('valor mensal'), align='C', ln=True)
+    
+    pdf.set_font('Helvetica', '', 8.5)
+    pdf.set_text_color(51, 65, 85)
+    pdf.set_xy(147, y_p + 25)
+    pdf.multi_cell(48, 4.5, conv(planos.get('gestao_itens', '')), align='L')
+
+    w_info = 186
+    x_info = (210 - w_info) / 2.0
+    pdf.set_fill_color(240, 249, 255)
+    pdf.set_draw_color(62, 161, 219)
+    pdf.set_line_width(0.5)
+    pdf.rounded_rect(x_info, 142, w_info, 36, 2.5, 'FD')
+    pdf.set_line_width(0.2)
+
+    pdf.set_xy(x_info, 144.5)
+    pdf.set_font('Helvetica', 'B', 10.0)
+    pdf.set_text_color(30, 64, 175)
+    pdf.cell(w_info, 4, conv('POR QUE SEU NEGÓCIO PRECISA DE OTIMIZAÇÃO PROFISSIONAL?'), align='C', ln=True)
+
+    pdf.set_font('Helvetica', '', 8.5)
+    pdf.set_text_color(51, 65, 85)
+    txt_exp = (
+        "Mais de 80% das buscas locais no Google e Maps resultam em uma ação imediata (ligação, rota ou mensagem).\n"
+        "Perfis com fotos profissionais e Tour Virtual 360° geram até 2x mais interesse e permanecem no topo das buscas.\n"
+        "Fichas incompletas ou desatualizadas perdem clientes diariamente para concorrentes diretos com nota mais alta."
+    )
+    pdf.set_xy(x_info, 150.5)
+    pdf.multi_cell(w_info, 4.5, conv(txt_exp), align='C')
+
+    # PÁGINA 4: CONTRATO
+    pdf.add_page()
+    pdf.set_xy(12, 31)
+    pdf.set_font('Helvetica', 'B', 16)
+    pdf.set_text_color(15, 23, 42)
+    pdf.cell(186, 8, conv('CONTRATO DE PRESTAÇÃO DE SERVIÇOS'), align='C', ln=True)
+
+    pdf.set_y(50.0)
+    w_text, h_line = 186, 4.8
+
+    nome_cli = str(dados.get('nome') or 'Empresa Contratante')
+    resp_cli = str(dados.get('contato') or 'Responsável')
+    end_cli = str(dados.get('endereco') or 'Endereço não informado')
+    tel_cli = str(dados.get('telefone') or 'N/I')
+
+    def paragrafo_justificado(pdf_obj, texto_md, espaco_extra=2.5):
+        pdf_obj.set_x(12)
+        pdf_obj.set_font('Helvetica', '', 8.5)
+        pdf_obj.set_text_color(51, 65, 85)
+        pdf_obj.multi_cell(w_text, h_line, conv(texto_md), align='J', markdown=True)
+        pdf_obj.ln(espaco_extra)
+
+    paragrafo_justificado(
+        pdf, 
+        "**CONTRATADA:** Tour360VR, representada por Rubens H. Okamoto, CNPJ: 04.824.331/0001-05 e Telefone: (16) 99133-2121."
+    )
+
+    paragrafo_justificado(
+        pdf, 
+        f"**CONTRATANTE:** {nome_cli}, representada por {resp_cli}, localizada em {end_cli}, Telefone: {tel_cli}."
+    )
+
+    paragrafo_justificado(
+        pdf, 
+        "A **CONTRATADA** compromete-se a executar os serviços de otimização, reestruturação técnica e/ou produção de Tour Virtual 360° para o perfil do Google da **CONTRATANTE**.",
+        espaco_extra=3.0
+    )
+
+    paragrafo_justificado(
+        pdf, 
+        "**CLÁUSULA PRIMEIRA - DO OBJETO:** Os serviços serão iniciados em até 5 dias úteis após o fornecimento de todos os acessos e informações necessárias à gestão do perfil."
+    )
+
+    paragrafo_justificado(
+        pdf, 
+        "**CLÁUSULA SEGUNDA - DAS OBRIGAÇÕES:** O não pagamento no prazo pactuado sujeitará o presente contrato à incidência de juros moratórios legais e à suspensão temporária dos serviços até a devida regularização."
+    )
+
+    paragrafo_justificado(
+        pdf, 
+        "**CLÁUSULA TERCEIRA - DOS DIREITOS DE USO E PROPRIEDADE:** Os direitos de uso do Tour Virtual 360° e fotos HD serão cedidos em caráter ilimitado à **CONTRATANTE** para veiculação no Google. A **CONTRATADA** reserva-se o direito de utilizar o material em seu portfólio de divulgação."
+    )
+
+    pdf.set_x(12)
+    pdf.set_font('Helvetica', 'B', 8.5)
+    pdf.set_text_color(15, 23, 42)
+    pdf.cell(w_text, h_line, conv("CLÁUSULA QUARTA - SELEÇÃO DO PLANO CONTRATADO:"), ln=True)
+    
+    pdf.set_x(12)
+    pdf.set_font('Helvetica', '', 8.5)
+    pdf.set_text_color(51, 65, 85)
+    pdf.cell(w_text, 4.8, conv("(   ) Plano Start          (   ) Plano Pro          (   ) Gestão Mensal"), ln=True)
+    pdf.ln(2.5)
+
+    pdf.set_x(12)
+    pdf.set_font('Helvetica', 'B', 8.5)
+    pdf.set_text_color(15, 23, 42)
+    pdf.cell(w_text, h_line, conv("CLÁUSULA QUINTA - CONDIÇÕES DE PAGAMENTO:"), ln=True)
+    
+    pdf.set_x(12)
+    pdf.set_font('Helvetica', '', 8.5)
+    pdf.set_text_color(51, 65, 85)
+    pdf.cell(w_text, 4.8, conv("(   ) À Vista          (   ) 2x Plano Start          (   ) 3x Plano Pro          (   ) Vencimento Dia: _____ - Gestão Mensal"), ln=True)
+
+    pdf.ln(16)
+    y_ass = pdf.get_y()
+    pdf.set_xy(12, y_ass)
+    pdf.cell(88, 5, '_____________________________________', align='C')
+    pdf.set_xy(110, y_ass)
+    pdf.cell(88, 5, '_____________________________________', align='C', ln=True)
+    
+    pdf.set_font('Helvetica', 'B', 8.5)
+    pdf.set_x(12)
+    pdf.cell(88, 4.2, 'Rubens H. Okamoto', align='C')
+    pdf.set_x(110)
+    pdf.cell(88, 4.2, conv(resp_cli), align='C', ln=True)
+    
+    pdf.set_font('Helvetica', 'B', 8.5)
+    pdf.set_text_color(100, 116, 139)
+    pdf.set_x(12)
+    pdf.cell(88, 4.2, 'Tour360VR', align='C')
+    pdf.set_x(110)
+    pdf.cell(88, 4.2, conv(nome_cli), align='C', ln=True)
+
+    return bytes(pdf.output())
+
+# -----------------------------------------------------------------------------
+# 5. SIDEBAR & NAVEGAÇÃO MULTIPAGE NATIVA
+# -----------------------------------------------------------------------------
+with st.sidebar:
+    caminho_logo = obter_caminho_logo("tour360")
+    if caminho_logo:
+        st.image(caminho_logo, width=140)
+    else:
+        st.markdown("### TOUR**360VR**")
+        
+    st.caption("Sistema de Consultoria - Proposta - CRM")
+    
+    # Adicionando botão explícito de direcionamento ao CRM
+    st.page_link("pages/02_CRM_Okamoto_Midias_Visuais.py", label="📊 Acessar CRM Okamoto Mídias Visuais", icon="🚀")
 
     st.markdown("---")
-    cb1, cb2 = st.columns(2)
-    with cb1:
-        st.download_button(
-            "📥 Baixar PDF da Proposta Comercial (3 Páginas)", 
-            data=pdf_bytes, 
-            file_name=nome_arquivo_pdf, 
-            mime="application/pdf", 
-            use_container_width=True
-        )
-    with cb2:
-        if st.button("💾 Salvar / Atualizar Pedido no CRM", use_container_width=True):
-            idx_existente = df_pedidos[df_pedidos["Numero_Pedido"] == num_pedido].index
-            novo_d = {
-                "Numero_Pedido": num_pedido,
-                "Empresa": empresa_sel,
-                "Contato": contato,
-                "Telefone": tel_cli,
-                "Local": local_cli,
-                "Data_Emissao": data_orcamento,
-                "Data_Evento": data_orcamento,
-                "Nome_Evento": nome_evento,
-                "Data_Evento_Detalhada": data_evento_detalhada,
-                "Objetivo": objetivo_txt,
-                "Captacao": captacao_txt,
-                "Entrega": entrega_txt,
-                "Prazo_Entrega": prazo_entrega,
-                "Valor_Subtotal": subtotal_input,
-                "Desconto_Pct": desconto_pct_input,
-                "Valor_Total": valor_final_com_desc,
-                "Valor_Extenso": valor_extenso,
-                "Condicoes_Pag": condicoes_pag,
-                "Status": status_sel,
-                "Servicos": ", ".join(servicos_solicitados) if servicos_solicitados else "Serviço Personalizado"
-            }
-            if not idx_existente.empty:
-                for k, v in novo_d.items():
-                    st.session_state['df_pedidos'].loc[idx_existente[0], k] = v
-                st.success(f"Pedido {num_pedido} atualizado no CRM e Funil de Vendas!")
+
+    nome_empresa_atual = st.session_state['dados'].get('nome') or "Nenhum cliente"
+    st.markdown("**Cliente em Atendimento:**")
+    st.info(f"🏢 {nome_empresa_atual}")
+    
+    score_atual = calcular_score_real(st.session_state['dados'])
+    st.markdown(f"**Score Diagnóstico:** `{score_atual}/100`")
+    st.progress(score_atual / 100)
+
+    st.markdown("---")
+    if st.button("🧹 Iniciar Novo Atendimento", use_container_width=True):
+        st.session_state['etapa_atual'] = 1
+        st.session_state['dados'] = {
+            "nome": "", "contato": "", "endereco": "", "telefone": "", "website": "",
+            "nota": 0.0, "avaliacoes": 0, "tem_tour360": False, "tem_fotos_hd": False,
+            "categorias_completas": False, "horarios_ok": False, "tem_descricao": False,
+            "atributos_ok": False, "resposta_avaliacoes_ok": False, "categorias_detectadas": [], "foto_reference": ""
+        }
+        st.rerun()
+
+    st.markdown("---")
+    st.markdown("### 📜 Propostas Recentes")
+    lista_hist = carregar_historico()
+    if lista_hist:
+        for item in lista_hist[:5]:
+            st.caption(f"🗓️ {item['data']} | **{item['nome'][:18]}** ({item['score']}/100)")
+    else:
+        st.caption("Nenhuma proposta salva ainda.")
+
+# -----------------------------------------------------------------------------
+# 6. CABEÇALHO & BARRA DE ETAPAS
+# -----------------------------------------------------------------------------
+st.markdown("""
+    <div class='brand-header'>
+        <div>
+            <div class='brand-title'>PLATAFORMA DE CONSULTORIA TOUR360VR</div>
+            <div class='brand-subtitle'>Diagnóstico, Análise, Proposta Comercial e Contrato</div>
+        </div>
+    </div>
+""", unsafe_allow_html=True)
+
+kpi1, kpi2, kpi3, kpi4 = st.columns(4)
+with kpi1:
+    st.markdown(f"<div class='kpi-card'><div class='kpi-value'>{score_atual}/100</div><div class='kpi-label'>Score da Ficha</div></div>", unsafe_allow_html=True)
+with kpi2:
+    aval_qtd = st.session_state['dados'].get('avaliacoes', 0)
+    st.markdown(f"<div class='kpi-card'><div class='kpi-value'>{aval_qtd}</div><div class='kpi-label'>Avaliações Google</div></div>", unsafe_allow_html=True)
+with kpi3:
+    status_tour = "Ativo" if st.session_state['dados'].get('tem_tour360') else "Pendente"
+    st.markdown(f"<div class='kpi-card'><div class='kpi-value'>{status_tour}</div><div class='kpi-label'>Tour 360°</div></div>", unsafe_allow_html=True)
+with kpi4:
+    conc_qtd = len([c for c in st.session_state['concorrentes'] if c.get('nome', '').strip() != ''])
+    st.markdown(f"<div class='kpi-card'><div class='kpi-value'>{conc_qtd}</div><div class='kpi-label'>Concorrentes Mapeados</div></div>", unsafe_allow_html=True)
+
+etapa = st.session_state['etapa_atual']
+s1 = "active" if etapa == 1 else ""
+s2 = "active" if etapa == 2 else ""
+s3 = "active" if etapa == 3 else ""
+s4 = "active" if etapa == 4 else ""
+s5 = "active" if etapa == 5 else ""
+
+st.markdown(f"""
+    <div class='step-indicator'>
+        <div class='step-item {s1}'>1. Busca & Ficha</div>
+        <div class='step-item {s2}'>2. Concorrentes</div>
+        <div class='step-item {s3}'>3. Plano de Ação</div>
+        <div class='step-item {s4}'>4. Valores</div>
+        <div class='step-item {s5}'>5. PDF & WhatsApp</div>
+    </div>
+""", unsafe_allow_html=True)
+
+# -----------------------------------------------------------------------------
+# 7. FLUXO SEQUENCIAL DAS ETAPAS
+# -----------------------------------------------------------------------------
+
+# ETAPA 1: BUSCA & DIAGNÓSTICO DA FICHA
+if etapa == 1:
+    col_left, col_right = st.columns([1.5, 1])
+    
+    with col_left:
+        st.markdown("<div class='dashboard-card'>", unsafe_allow_html=True)
+        st.markdown("<div class='card-title'>🔍 1. BUSCA DA FICHA NO GOOGLE MAPS</div>", unsafe_allow_html=True)
+        
+        c1, c2 = st.columns([2, 1])
+        nome_input = c1.text_input("Nome da Empresa:", value="", placeholder="Ex: Taiwan Hotel Ltda", key="input_empresa_nome")
+        cidade_empresa = c2.text_input("Cidade/Região:", value="", placeholder="Ex: Ribeirão Preto, SP", key="input_empresa_cidade")
+            
+        if st.button("🚀 Pesquisar Ficha no Google", use_container_width=True, key="btn_busca_google"):
+            if API_KEY_GOOGLE:
+                try:
+                    termo = f"{nome_input}, {cidade_empresa}" if cidade_empresa else nome_input
+                    if termo.strip() != "":
+                        url_search = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={termo}&key={API_KEY_GOOGLE}"
+                        res = requests.get(url_search).json()
+                        if res.get("status") == "OK" and res.get("results"):
+                            st.session_state['unidades_encontradas'] = res["results"]
+                            st.success(f"Encontrada(s) {len(res['results'])} unidade(s)!")
+                        else:
+                            st.error("Nenhuma empresa encontrada com estes termos.")
+                except Exception as e:
+                    st.error(f"Erro na conexão: {e}")
+
+        if st.session_state['unidades_encontradas']:
+            opcoes = [f"{u.get('name')} - {u.get('formatted_address')}" for u in st.session_state['unidades_encontradas']]
+            escolha = st.selectbox("Selecione a unidade exata:", opcoes, key="select_unidade_exata")
+            
+            if st.button("📌 Carregar Dados da Unidade", use_container_width=True, key="btn_carregar_unidade"):
+                idx = opcoes.index(escolha)
+                u = st.session_state['unidades_encontradas'][idx]
+                place_id = u.get("place_id")
+                
+                if API_KEY_GOOGLE:
+                    try:
+                        url_details = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=name,formatted_address,formatted_phone_number,international_phone_number,website,rating,user_ratings_total,photos,opening_hours,types,editorial_summary,geometry&key={API_KEY_GOOGLE}"
+                        res_details = requests.get(url_details).json().get("result", {})
+                        
+                        photos = res_details.get("photos", u.get("photos", []))
+                        types_lista = res_details.get("types", [])
+                        
+                        st.session_state['dados']['nome'] = res_details.get("name") or u.get("name") or nome_input
+                        st.session_state['dados']['endereco'] = res_details.get("formatted_address") or u.get("formatted_address") or ""
+                        st.session_state['dados']['telefone'] = res_details.get("formatted_phone_number") or res_details.get("international_phone_number") or ""
+                        st.session_state['dados']['website'] = res_details.get("website") or ""
+                        st.session_state['dados']['nota'] = float(res_details.get("rating") or u.get("rating") or 0.0)
+                        st.session_state['dados']['avaliacoes'] = int(res_details.get("user_ratings_total") or u.get("user_ratings_total") or 0)
+                        st.session_state['dados']['contato'] = "Gerente Responsável"
+                        
+                        st.session_state['dados']['tem_fotos_hd'] = len(photos) >= 10
+                        st.session_state['dados']['horarios_ok'] = "opening_hours" in res_details
+                        st.session_state['dados']['categorias_completas'] = len(types_lista) >= 3
+                        st.session_state['dados']['tem_descricao'] = "editorial_summary" in res_details
+                        st.session_state['dados']['tem_tour360'] = False
+                        st.session_state['dados']['categorias_detectadas'] = types_lista
+                        st.session_state['dados']['foto_reference'] = photos[0].get("photo_reference") if photos else ""
+
+                        st.success("Dados da unidade carregados com sucesso!")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Erro ao obter detalhes: {e}")
+
+        st.markdown("---")
+        st.markdown("<div class='card-title'>CHECKLIST DE PONTOS CRÍTICOS</div>", unsafe_allow_html=True)
+        
+        c_a, c_b, c_c, c_d = st.columns(4)
+        st.session_state['dados']['tem_tour360'] = c_a.checkbox("Tour 360° Ativo", value=st.session_state['dados']['tem_tour360'])
+        st.session_state['dados']['tem_fotos_hd'] = c_b.checkbox("Fotos HD", value=st.session_state['dados']['tem_fotos_hd'])
+        st.session_state['dados']['categorias_completas'] = c_c.checkbox("Categorias OK", value=st.session_state['dados']['categorias_completas'])
+        st.session_state['dados']['horarios_ok'] = c_d.checkbox("Horários OK", value=st.session_state['dados']['horarios_ok'])
+        
+        c_e, c_f, c_g = st.columns(3)
+        st.session_state['dados']['tem_descricao'] = c_e.checkbox("Descrição", value=st.session_state['dados']['tem_descricao'])
+        st.session_state['dados']['atributos_ok'] = c_f.checkbox("Atributos Serviços", value=st.session_state['dados']['atributos_ok'])
+        st.session_state['dados']['resposta_avaliacoes_ok'] = c_g.checkbox("Respostas Ativas", value=st.session_state['dados']['resposta_avaliacoes_ok'])
+
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    with col_right:
+        st.markdown("<div class='dashboard-card'>", unsafe_allow_html=True)
+        st.markdown("<div class='card-title'>DADOS DO CLIENTE</div>", unsafe_allow_html=True)
+        st.session_state['dados']['nome'] = st.text_input("Empresa:", value=st.session_state['dados']['nome'])
+        st.session_state['dados']['contato'] = st.text_input("Responsável:", value=st.session_state['dados']['contato'])
+        st.session_state['dados']['telefone'] = st.text_input("Telefone:", value=st.session_state['dados']['telefone'])
+        st.session_state['dados']['website'] = st.text_input("Website:", value=st.session_state['dados']['website'])
+        st.session_state['dados']['endereco'] = st.text_area("Endereço:", value=st.session_state['dados']['endereco'], height=80)
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    st.markdown("---")
+    if st.button("Avançar para Concorrentes ➡️", use_container_width=True):
+        st.session_state['etapa_atual'] = 2
+        st.rerun()
+
+# ETAPA 2: AVALIAÇÃO DE CONCORRENTES
+elif etapa == 2:
+    st.markdown("<div class='dashboard-card'>", unsafe_allow_html=True)
+    st.markdown("<div class='card-title'>⚔️ 2. AVALIAÇÃO DE CONCORRENTES DO SEGMENTO</div>", unsafe_allow_html=True)
+    st.caption("Digite o nome da empresa e a cidade para consultar a nota e dados no Google Maps.")
+
+    with st.form(key="form_concorrentes_fix"):
+        inputs_conc = []
+        for i in range(3):
+            col_c1, col_c2 = st.columns([2.5, 1.5])
+            nome_c = col_c1.text_input(
+                f"Concorrente #{i+1}:", 
+                value=st.session_state['concorrentes'][i].get('busca_termo', ''), 
+                key=f"c_input_nome_{i}"
+            )
+            cid_c = col_c2.text_input(
+                f"Cidade/Região #{i+1}:", 
+                value=st.session_state['concorrentes'][i].get('cidade', ''), 
+                key=f"c_input_cid_{i}"
+            )
+            inputs_conc.append((nome_c, cid_c))
+
+        btn_consultar = st.form_submit_button("🔎 Mapear Concorrentes via API", use_container_width=True)
+
+        if btn_consultar:
+            if API_KEY_GOOGLE:
+                encontrados = 0
+                for idx, (nome_c, cid_c) in enumerate(inputs_conc):
+                    st.session_state['concorrentes'][idx]['busca_termo'] = nome_c
+                    st.session_state['concorrentes'][idx]['cidade'] = cid_c
+                    
+                    if nome_c.strip() != "":
+                        det = buscar_detalhes_concorrente_especifico(nome_c, cid_c, API_KEY_GOOGLE)
+                        if det:
+                            st.session_state['concorrentes'][idx].update(det)
+                            encontrados += 1
+                        else:
+                            st.session_state['concorrentes'][idx]['nome'] = nome_c
+                            
+                if encontrados > 0:
+                    st.success(f"{encontrados} concorrente(s) atualizado(s) com sucesso!")
+                else:
+                    st.warning("Nenhum dado retornado. Verifique a grafia do nome e cidade.")
+                st.rerun()
             else:
-                st.session_state['df_pedidos'] = pd.concat([st.session_state['df_pedidos'], pd.DataFrame([novo_d])], ignore_index=True)
-                st.success(f"Novo pedido {num_pedido} registrado no CRM!")
+                st.error("Chave GOOGLE_API_KEY não localizada.")
+
+    concorrentes_validos = [c for c in st.session_state['concorrentes'] if c.get('nome', '').strip() != '']
+    if concorrentes_validos:
+        st.markdown("---")
+        st.markdown("**Resultado da Consulta:**")
+        for c_item in concorrentes_validos:
+            score_c = calcular_score_concorrente(c_item)
+            st.markdown(f"• **{c_item['nome']}** — ⭐ Nota: `{float(c_item.get('nota', 0.0)):.1f}` ({c_item.get('avaliacoes', 0)} avaliada(s)) | Score: **{score_c}/100**")
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    col_btn1, col_btn2 = st.columns(2)
+    with col_btn1:
+        if st.button("⬅️ Voltar para Busca", use_container_width=True):
+            st.session_state['etapa_atual'] = 1
+            st.rerun()
+    with col_btn2:
+        if st.button("Avançar para Plano de Ação ➡️", use_container_width=True):
+            st.session_state['etapa_atual'] = 3
             st.rerun()
 
-# ABA 2: FUNIL KANBAN
-with aba_kanban:
-    st.subheader("📊 Estágios do Atendimento Comercial (Funil de Vendas)")
-    fases = ["Orçamento / Proposta", "Em atendimento", "Negociação/Revisão", "Aprovado", "Produção", "Concluído", "Cancelado"]
-    cols = st.columns(len(fases))
+# ETAPA 3: PLANO DE AÇÃO ESTRATÉGICO
+elif etapa == 3:
+    st.markdown("<div class='dashboard-card'>", unsafe_allow_html=True)
+    st.markdown("<div class='card-title'>💡 3. APONTAMENTOS ESTRATÉGICOS E PLANO DE AÇÃO</div>", unsafe_allow_html=True)
+    st.caption("Texto personalizado que aparecerá no quadro em destaque na Página 2 do PDF.")
     
-    for idx, fase in enumerate(fases):
-        with cols[idx]:
-            st.markdown(f"**{fase}**")
-            p_fase = df_pedidos[df_pedidos["Status"] == fase] if not df_pedidos.empty else pd.DataFrame()
-            st.caption(f"{len(p_fase)} Item(ns)")
-            
-            if not p_fase.empty:
-                for _, p in p_fase.iterrows():
-                    st.markdown(f"""
-                    <div class="card-kanban">
-                        <b>{p['Numero_Pedido']}</b><br/>
-                        <span>{p['Empresa'][:20]}</span><br/>
-                        <b style="color: #38bdf8;">R$ {float(p['Valor_Total']):,.2f}</b><br/>
-                        <span style="color:#94a3b8; font-size:10px;">📅 {p['Data_Emissao']}</span>
-                    </div>
-                    """, unsafe_allow_html=True)
+    st.session_state['plano_acao_extra'] = st.text_area(
+        "Edite o plano de ação personalizado:",
+        value=st.session_state['plano_acao_extra'],
+        height=180
+    )
+    st.markdown("</div>", unsafe_allow_html=True)
 
-# ABA 3: GESTÃO DE CLIENTES
-with aba_clientes:
-    st.subheader("🏢 Cadastrar / Consultar Cliente Individual")
+    col_btn1, col_btn2 = st.columns(2)
+    with col_btn1:
+        if st.button("⬅️ Voltar para Concorrentes", use_container_width=True):
+            st.session_state['etapa_atual'] = 2
+            st.rerun()
+    with col_btn2:
+        if st.button("Avançar para Planos & Valores ➡️", use_container_width=True):
+            st.session_state['etapa_atual'] = 4
+            st.rerun()
+
+# ETAPA 4: PLANOS & VALORES COMERCIAIS
+elif etapa == 4:
+    st.markdown("<div class='dashboard-card'>", unsafe_allow_html=True)
+    st.markdown("<div class='card-title'>📜 4. PLANOS COMERCIAIS & INVESTIMENTO</div>", unsafe_allow_html=True)
     
-    with st.expander("➕ Formulário para Cadastrar Novo Cliente"):
-        with st.form("form_novo_cliente", clear_on_submit=True):
-            c1, c2, c3 = st.columns(3)
-            n_empresa = c1.text_input("Empresa:")
-            n_contato = c2.text_input("Contato:")
-            n_cidade = c3.text_input("Cidade:")
-            
-            c4, c5, c6 = st.columns(3)
-            n_tel = c4.text_input("Telefone:")
-            n_email = c5.text_input("Email:")
-            n_cat = c6.selectbox("Categoria / TAG:", LISTA_TAGS)
-            
-            c7, c8, c9 = st.columns(3)
-            n_atividade = c7.text_input("Atividade / Ramo de Atuação:", placeholder="Ex: Estética, Hotelaria, Engenharia")
-            n_site = c8.text_input("Website Oficial:", placeholder="www.suaempresa.com.br")
-            n_insta = c9.text_input("Instagram:", placeholder="@seuinstagram")
-            
-            if st.form_submit_button("➕ Salvar Cliente"):
-                if n_empresa:
-                    novo_c = pd.DataFrame([{
-                        "Empresa": n_empresa, "Contato": n_contato, "Cidade": n_cidade, 
-                        "Telefone": n_tel, "Email": n_email, "Categoria / TAG": n_cat,
-                        "Atividade": n_atividade, "Website": n_site, "Instagram": n_insta
-                    }])
-                    st.session_state['df_clientes'] = pd.concat([st.session_state['df_clientes'], novo_c], ignore_index=True)
-                    st.success(f"Cliente {n_empresa} cadastrado!")
-                    st.rerun()
+    p1, p2, p3 = st.columns(3)
+    with p1:
+        st.markdown("#### 🔹 Plano Start")
+        st.session_state['planos']['start_valor'] = st.text_input("Valor (R$):", value=st.session_state['planos']['start_valor'], key="p_s_v")
+        st.session_state['planos']['start_itens'] = st.text_area("Itens:", value=st.session_state['planos']['start_itens'], height=140, key="p_s_i")
+    with p2:
+        st.markdown("#### 🔹 Plano Pro")
+        st.session_state['planos']['pro_valor'] = st.text_input("Valor (R$):", value=st.session_state['planos']['pro_valor'], key="p_p_v")
+        st.session_state['planos']['pro_itens'] = st.text_area("Itens:", value=st.session_state['planos']['pro_itens'], height=140, key="p_p_i")
+    with p3:
+        st.markdown("#### 🔹 Gestão Mensal")
+        st.session_state['planos']['gestao_valor'] = st.text_input("Valor (R$):", value=st.session_state['planos']['gestao_valor'], key="p_g_v")
+        st.session_state['planos']['gestao_itens'] = st.text_area("Itens:", value=st.session_state['planos']['gestao_itens'], height=140, key="p_g_i")
 
-    st.markdown("---")
-    st.subheader("🔍 Base de Clientes Cadastrados & Acesso Individual")
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    col_btn1, col_btn2 = st.columns(2)
+    with col_btn1:
+        if st.button("⬅️ Voltar para Plano de Ação", use_container_width=True):
+            st.session_state['etapa_atual'] = 3
+            st.rerun()
+    with col_btn2:
+        if st.button("Avançar para PDF & WhatsApp ➡️", use_container_width=True):
+            st.session_state['etapa_atual'] = 5
+            st.rerun()
+
+# ETAPA 5: GERAR PDF, WHATSAPP & HISTÓRICO
+elif etapa == 5:
+    st.markdown("<div class='dashboard-card'>", unsafe_allow_html=True)
+    st.markdown("<div class='card-title'>📄 5. EMISSÃO, ABORDAGEM & HISTÓRICO</div>", unsafe_allow_html=True)
     
-    col_f1, col_f2 = st.columns([2, 1])
-    termo = col_f1.text_input("Pesquisar Cliente por Nome, Atividade, Cidade ou Contato:")
-    tag_filtro = col_f2.selectbox("Filtrar por Categoria / TAG:", ["TODAS"] + LISTA_TAGS)
+    nome_empresa_formatado = str(st.session_state['dados'].get('nome') or 'Empresa').strip()
+    resp_cliente = str(st.session_state['dados'].get('contato') or 'Responsável').strip()
+    tel_cliente = str(st.session_state['dados'].get('telefone') or '').replace(" ", "").replace("-", "").replace("(", "").replace(")", "")
     
-    df_c_exibir = st.session_state['df_clientes'].copy()
-    if tag_filtro != "TODAS":
-        df_c_exibir = df_c_exibir[df_c_exibir["Categoria / TAG"] == tag_filtro]
-    if termo:
-        mask = df_c_exibir.astype(str).apply(lambda row: row.str.contains(termo, case=False).any(), axis=1)
-        df_c_exibir = df_c_exibir[mask]
-        
-    st.dataframe(df_c_exibir, use_container_width=True)
+    if tel_cliente and not tel_cliente.startswith("55"):
+        tel_cliente = f"55{tel_cliente}"
 
-    if not df_c_exibir.empty:
-        st.markdown("---")
-        st.markdown("### 📄 Visualizar Ficha Individual do Cliente")
-        cli_selecionado = st.selectbox("Selecione uma empresa para abrir a ficha:", df_c_exibir["Empresa"].tolist())
-        
-        c_dados = df_c_exibir[df_c_exibir["Empresa"] == cli_selecionado].iloc[0]
-        pedidos_cliente = df_pedidos[df_pedidos["Empresa"] == cli_selecionado] if not df_pedidos.empty else pd.DataFrame()
+    texto_padrao_whatsapp = (
+        f"Olá, {resp_cliente}! Tudo bem?\n\n"
+        f"Achei o perfil da {nome_empresa_formatado} no Google e preparei uma análise rápida do seu posicionamento local.\n\n"
+        f"Identifiquei alguns pontos importantes de melhoria de visibilidade. Posso te enviar o relatório que montei em PDF?"
+    )
 
-        box1, box2 = st.columns([2, 1])
-        with box1:
-            st.markdown(f"**Empresa:** {c_dados.get('Empresa')}")
-            st.markdown(f"**Atividade:** {c_dados.get('Atividade', 'N/I')}")
-            st.markdown(f"**Contato:** {c_dados.get('Contato')} | **Telefone:** {c_dados.get('Telefone')}")
-            st.markdown(f"**Cidade:** {c_dados.get('Cidade')} | **TAG:** `{c_dados.get('Categoria / TAG')}`")
-            st.markdown(f"**Email:** {c_dados.get('Email')}")
-            st.markdown(f"**Website:** {c_dados.get('Website', 'N/I')} | **Instagram:** {c_dados.get('Instagram', 'N/I')}")
+    st.markdown("#### 📝 Mensagem de Abordagem (Editável):")
+    mensagem_editada = st.text_area(
+        "Edite a mensagem antes de abrir o WhatsApp:",
+        value=texto_padrao_whatsapp,
+        height=130,
+        key="area_msg_whatsapp_wizard"
+    )
 
-        with box2:
-            st.metric("Pedidos do Cliente", f"{len(pedidos_cliente)}")
-            pdf_ficha_bytes = gerar_pdf_ficha_cliente(c_dados, pedidos_cliente)
+    msg_encoded = requests.utils.quote(mensagem_editada)
+    link_wa = f"https://wa.me/{tel_cliente}?text={msg_encoded}" if tel_cliente else f"https://wa.me/?text={msg_encoded}"
+
+    col_down1, col_down2 = st.columns(2)
+    
+    try:
+        pdf_bytes = gerar_pdf_oficial(
+            st.session_state['dados'], 
+            st.session_state['planos'], 
+            st.session_state.get('plano_acao_extra', ''), 
+            st.session_state.get('concorrentes', [])
+        )
+
+        salvar_no_historico(st.session_state['dados'], score_atual)
+
+        with col_down1:
             st.download_button(
-                "📥 Baixar Ficha do Cliente em PDF",
-                data=pdf_ficha_bytes,
-                file_name=f"Ficha_{cli_selecionado.replace(' ', '_')}.pdf",
+                label="📥 Baixar PDF Oficial Completo",
+                data=pdf_bytes,
+                file_name=f"Diagnóstico & Proposta - {nome_empresa_formatado}.pdf",
                 mime="application/pdf",
+                use_container_width=True,
+                key="btn_download_wizard"
+            )
+            
+        with col_down2:
+            st.link_button(
+                label="📲 Abrir WhatsApp com Mensagem Editada",
+                url=link_wa,
                 use_container_width=True
             )
 
-# ABA 4: CATÁLOGO DE SERVIÇOS
-with aba_catalogo:
-    st.subheader("🛠️ Gestão do Catálogo de Serviços")
-    modo_acao = st.radio("Selecione a ação:", ["➕ Adicionar Novo Serviço", "✏️ Editar Serviço Existente", "❌ Excluir Serviço"], horizontal=True)
-    
-    if modo_acao == "➕ Adicionar Novo Serviço":
-        with st.form("form_novo_servico", clear_on_submit=True):
-            cs1, cs2, cs3 = st.columns([2, 1, 1])
-            s_nome = cs1.text_input("Nome do Serviço:")
-            s_tipo = cs2.selectbox("Tipo de Cobrança:", ["Hora", "Pacote", "Diária", "Unidade", "Mensal"])
-            s_valor = cs3.number_input("Valor Base (R$):", min_value=0.0, step=50.0)
-            s_desc = st.text_area("Descrição do Serviço:")
-            if st.form_submit_button("➕ Salvar Serviço"):
-                if s_nome:
-                    novo_s = pd.DataFrame([{"Nome_Servico": s_nome, "Tipo_Cobranca": s_tipo, "Valor_Base": s_valor, "Descricao": s_desc}])
-                    st.session_state['df_servicos'] = pd.concat([st.session_state['df_servicos'], novo_s], ignore_index=True)
-                    st.success("Serviço adicionado!")
-                    st.rerun()
+        st.markdown("---")
+        st.markdown("#### 👁️ PRÉ-VISUALIZAÇÃO DO PDF:")
+        
+        # Renderização universal com iframe e fallback via Mozilla PDF.js
+        base64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
+        data_url = f"data:application/pdf;base64,{base64_pdf}"
+        
+        st.markdown(
+            f'''
+            <iframe 
+                src="{data_url}" 
+                width="100%" 
+                height="750px" 
+                style="border: 1px solid #1e293b; border-radius: 12px; background-color: #ffffff;"
+            >
+            </iframe>
+            ''', 
+            unsafe_allow_html=True
+        )
 
-    elif modo_acao == "✏️ Editar Serviço Existente":
-        lista_s = st.session_state['df_servicos']["Nome_Servico"].tolist()
-        if lista_s:
-            servico_edit_sel = st.selectbox("Selecione o serviço para editar:", lista_s)
-            idx_s = st.session_state['df_servicos'][st.session_state['df_servicos']["Nome_Servico"] == servico_edit_sel].index[0]
-            dados_s = st.session_state['df_servicos'].loc[idx_s]
-            
-            with st.form("form_edit_servico"):
-                ce1, ce2, ce3 = st.columns([2, 1, 1])
-                e_nome = ce1.text_input("Nome:", value=dados_s["Nome_Servico"])
-                e_tipo = ce2.selectbox("Tipo:", ["Hora", "Pacote", "Diária", "Unidade", "Mensal"], index=["Hora", "Pacote", "Diária", "Unidade", "Mensal"].index(dados_s["Tipo_Cobranca"]) if dados_s["Tipo_Cobranca"] in ["Hora", "Pacote", "Diária", "Unidade", "Mensal"] else 0)
-                e_valor = ce3.number_input("Valor (R$):", value=float(dados_s["Valor_Base"]))
-                e_desc = st.text_area("Descrição:", value=dados_s["Descricao"])
-                
-                if st.form_submit_button("💾 Salvar Alterações"):
-                    st.session_state['df_servicos'].loc[idx_s, "Nome_Servico"] = e_nome
-                    st.session_state['df_servicos'].loc[idx_s, "Tipo_Cobranca"] = e_tipo
-                    st.session_state['df_servicos'].loc[idx_s, "Valor_Base"] = e_valor
-                    st.session_state['df_servicos'].loc[idx_s, "Descricao"] = e_desc
-                    st.success("Serviço atualizado com sucesso!")
-                    st.rerun()
+    except Exception as e:
+        st.error(f"Erro ao processar PDF: {e}")
 
-    elif modo_acao == "❌ Excluir Serviço":
-        lista_s = st.session_state['df_servicos']["Nome_Servico"].tolist()
-        if lista_s:
-            servico_del = st.selectbox("Selecione o serviço para remover:", lista_s)
-            if st.button("🚨 Confirmar Exclusão do Serviço", use_container_width=True):
-                st.session_state['df_servicos'] = st.session_state['df_servicos'][st.session_state['df_servicos']["Nome_Servico"] != servico_del].reset_index(drop=True)
-                st.success("Serviço removido!")
-                st.rerun()
+    st.markdown("</div>", unsafe_allow_html=True)
 
-    st.markdown("---")
-    st.subheader("Catálogo Ativo de Serviços")
-    st.dataframe(st.session_state['df_servicos'], use_container_width=True)
+    if st.button("⬅️ Voltar para Ajuste de Valores", use_container_width=True):
+        st.session_state['etapa_atual'] = 4
+        st.rerun()
+
+# -----------------------------------------------------------------------------
+# 8. RODAPÉ FIXO
+# -----------------------------------------------------------------------------
+st.markdown("""
+    <div class='custom-footer'>
+        <a href='https://tour360vr.com.br' target='_blank'>tour360vr.com.br</a> | 
+        <a href='mailto:contato@tour360vr.com.br'>contato@tour360vr.com.br</a> | 
+        Whatsapp: (16) 99133-2121 | 
+        <b>Tour360VR - Gestão de Perfil do Google</b>
+    </div>
+""", unsafe_allow_html=True)
