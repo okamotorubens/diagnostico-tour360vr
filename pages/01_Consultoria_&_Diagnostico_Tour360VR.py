@@ -4,7 +4,6 @@ import json
 import requests
 import base64
 import streamlit as st
-import streamlit.components.v1 as components
 from datetime import datetime
 from fpdf import FPDF
 
@@ -12,7 +11,7 @@ from fpdf import FPDF
 # 1. CONFIGURAÇÃO DA PÁGINA E CSS
 # -----------------------------------------------------------------------------
 st.set_page_config(
-    page_title="Sistema de Consultoria - Proposta - Okamoto Mídias Visuais",
+    page_title="Consultoria - Proposta - CRM",
     page_icon="🌐",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -34,18 +33,13 @@ st.markdown("""
         border-right: 1px solid #1f2937; 
     }
     
-    .sidebar-title-main {
-        font-size: 15px;
+    .sidebar-title-single {
+        font-size: 14px;
         font-weight: 800;
         color: #f8fafc;
-        line-height: 1.3;
-        margin-bottom: 2px;
-    }
-    .sidebar-title-sub {
-        font-size: 15px;
-        font-weight: 800;
-        color: #38bdf8;
-        line-height: 1.3;
+        line-height: 1.2;
+        margin-bottom: 10px;
+        white-space: nowrap;
     }
 
     .dashboard-card { 
@@ -891,10 +885,9 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
 with st.sidebar:
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # Títulos institucionais no topo (mesmo tamanho e alinhados)
+    # Título institucional em linha única
     st.markdown("""
-        <div class='sidebar-title-main'>Sistema de Consultoria - Proposta</div>
-        <div class='sidebar-title-sub'>Okamoto Mídias Visuais</div>
+        <div class='sidebar-title-single'>Consultoria - Proposta - CRM</div>
     """, unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
@@ -908,10 +901,10 @@ with st.sidebar:
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # Logo Tour360 (reduzida em ~30% via colunas)
+    # Logo Tour360 (reduzida em ~30% adicionais via espaçamento de colunas 0.28 / 0.44 / 0.28)
     logo_tour = obter_caminho_logo("tour360")
     if logo_tour:
-        col_t1, col_t2, col_t3 = st.columns([0.15, 0.7, 0.15])
+        col_t1, col_t2, col_t3 = st.columns([0.28, 0.44, 0.28])
         with col_t2:
             st.image(logo_tour, use_container_width=True)
     else:
@@ -1273,24 +1266,6 @@ elif etapa == 5:
                 url=link_wa,
                 use_container_width=True
             )
-
-        st.markdown("---")
-        st.markdown("#### 👁️ PRÉ-VISUALIZAÇÃO DO PDF:")
-        
-        base64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
-        
-        # Renderização do PDF usando st.components.v1.html para isolar o iframe
-        pdf_display = f'''
-            <iframe 
-                src="data:application/pdf;base64,{base64_pdf}" 
-                width="100%" 
-                height="750px" 
-                type="application/pdf"
-                style="border: 1px solid #1e293b; border-radius: 12px;"
-            >
-            </iframe>
-        '''
-        components.html(pdf_display, height=760, scrolling=False)
 
     except Exception as e:
         st.error(f"Erro ao processar PDF: {e}")
