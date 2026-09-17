@@ -19,10 +19,9 @@ st.set_page_config(
 
 st.markdown("""
     <style>
-    /* Oculta o rótulo "app", título do menu nativo e navegação de páginas da barra lateral */
+    /* Oculta apenas o menu nativo e o rótulo "app" do Streamlit sem fechar a barra lateral */
     [data-testid="stSidebarNav"], 
-    [data-testid="stSidebarNavSeparator"],
-    section[data-testid="stSidebar"] div:first-child > div:first-child > header {
+    [data-testid="stSidebarNavSeparator"] {
         display: none !important;
     }
 
@@ -35,7 +34,7 @@ st.markdown("""
     [data-testid="stSidebar"] { 
         background-color: #111827; 
         border-right: 1px solid #1f2937; 
-        padding-top: 10px; 
+        padding-top: 15px; 
     }
     
     .brand-header {
@@ -91,7 +90,6 @@ st.markdown("""
         box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
     }
     
-    /* Indicador do Passo Ativo sem margens excessivas */
     .step-indicator {
         display: flex;
         justify-content: space-between;
@@ -881,16 +879,16 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     return bytes(pdf.output())
 
 # -----------------------------------------------------------------------------
-# 5. SIDEBAR & HISTÓRICO LOCAL
+# 5. SIDEBAR & HISTÓRICO LOCAL (SISTEMA DE CRM RESTAURADO)
 # -----------------------------------------------------------------------------
 with st.sidebar:
     caminho_logo = obter_caminho_logo("tour360")
     if caminho_logo:
-        st.image(caminho_logo, width=130)
+        st.image(caminho_logo, width=140)
     else:
         st.markdown("### TOUR**360VR**")
         
-    st.caption("Sistema de Consultoria & Propostas")
+    st.caption("Sistema de Consultoria - Proposta - CRM")
     st.markdown("---")
 
     nome_empresa_atual = st.session_state['dados'].get('nome') or "Nenhum cliente"
@@ -913,7 +911,7 @@ with st.sidebar:
         st.rerun()
 
     st.markdown("---")
-    st.markdown("### 📜 Propostas Recentes")
+    st.markdown("### 📜 Propostas Recentes (CRM)")
     lista_hist = carregar_historico()
     if lista_hist:
         for item in lista_hist[:5]:
