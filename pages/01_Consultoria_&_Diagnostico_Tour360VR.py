@@ -2,7 +2,6 @@ import os
 import io
 import json
 import requests
-import base64
 import streamlit as st
 from datetime import datetime
 from fpdf import FPDF
@@ -407,7 +406,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     pdf.set_x(x_capa)
     pdf.cell(w_capa, 4.8, conv(f"Telefone: {dados.get('telefone') or 'N/I'}   |   {site_txt}"), align='C', ln=True)
 
-    # RENDERIZAÇÃO DA FOTO SEM DISTORÇÃO
+    # CORREÇÃO ABSOLUTA DA IMAGEM (SEM DISTORÇÕES)
     y_foto, h_container, w_container = 150.0, 84.0, 186.0
     foto_renderizada = False
 
@@ -420,6 +419,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
                 img = Image.open(img_data)
                 orig_w, orig_h = img.size
 
+                # Mantém a proporção exata escalando apenas pelo limite que for atingido primeiro
                 ratio_w = w_container / orig_w
                 ratio_h = h_container / orig_h
                 scale = min(ratio_w, ratio_h)
@@ -1128,16 +1128,11 @@ elif etapa == 2:
         inputs_conc = []
         for i in range(3):
             col_c1, col_c2 = st.columns([2.5, 1.5])
-            nome_c = col_c1.text_input(
-                f"Concorrente #{i+1}:", 
-                value=st.session_state['concorrentes'][i].get('busca_termo', ''), 
-                key=f"c_input_nome_{i}"
-            )
-            cid_c = col_c2.text_input(
-                f"Cidade/Região #{i+1}:", 
-                value=st.session_state['concorrentes'][i].get('cidade', ''), 
-                key=f"c_input_cid_{i}"
-            )
+            val_nome = st.session_state['concorrentes'][i].get('busca_termo') or st.session_state['concorrentes'][i].get('nome', '')
+            val_cid = st.session_state['concorrentes'][i].get('cidade', '')
+            
+            nome_c = col_c1.text_input(f"Concorrente #{i+1}:", value=val_nome, key=f"c_input_nome_{i}")
+            cid_c = col_c2.text_input(f"Cidade/Região #{i+1}:", value=val_cid, key=f"c_input_cid_{i}")
             inputs_conc.append((nome_c, cid_c))
 
         btn_consultar = st.form_submit_button("🔎 Mapear Concorrentes via API", use_container_width=True)
