@@ -8,7 +8,7 @@ from datetime import datetime
 from fpdf import FPDF
 
 # -----------------------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA E CSS MODERNO
+# 1. CONFIGURAÇÃO DA PÁGINA E CSS MODERNO (DESIGN SAAS PRO)
 # -----------------------------------------------------------------------------
 st.set_page_config(
     page_title="Tour360VR - Diagnósticos & Consultoria",
@@ -84,7 +84,6 @@ st.markdown("""
         box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
     }
     
-    /* Indicador do Passo Ativo */
     .step-indicator {
         display: flex;
         justify-content: space-between;
@@ -203,7 +202,6 @@ def salvar_no_historico(dados, score):
         "avaliacoes": dados.get("avaliacoes", 0)
     }
     
-    # Evita duplicar o mesmo nome na sequência
     if not historico or historico[0].get("nome") != registro["nome"]:
         historico.insert(0, registro)
         with open(ARQUIVO_HISTORICO, 'w', encoding='utf-8') as f:
@@ -281,7 +279,7 @@ if 'unidades_encontradas' not in st.session_state:
     st.session_state['unidades_encontradas'] = []
 
 # -----------------------------------------------------------------------------
-# 4. GERADOR DE PDF (FPDF)
+# 4. GERADOR DE PDF (FPDF) - PRESERVADO 100%
 # -----------------------------------------------------------------------------
 class PDFTour360Oficial(FPDF):
     def header(self):
@@ -926,7 +924,6 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# Cards de Métricas Rápidas
 kpi1, kpi2, kpi3, kpi4 = st.columns(4)
 with kpi1:
     st.markdown(f"<div class='kpi-card'><div class='kpi-value'>{score_atual}/100</div><div class='kpi-label'>Score da Ficha</div></div>", unsafe_allow_html=True)
@@ -942,7 +939,6 @@ with kpi4:
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# Visualizador de Progresso das Etapas
 etapa = st.session_state['etapa_atual']
 s1 = "active" if etapa == 1 else ""
 s2 = "active" if etapa == 2 else ""
@@ -1064,25 +1060,56 @@ if etapa == 1:
 elif etapa == 2:
     st.markdown("<div class='dashboard-card'>", unsafe_allow_html=True)
     st.markdown("<div class='card-title'>⚔️ 2. AVALIAÇÃO DE CONCORRENTES DO SEGMENTO</div>", unsafe_allow_html=True)
-    st.caption("Digite o nome dos concorrentes para mapear e comparar o desempenho.")
+    st.caption("Digite o nome da empresa e a cidade para consultar a nota e dados no Google Maps.")
 
-    with st.form(key="form_concorrentes_wizard"):
+    with st.form(key="form_concorrentes_fix"):
+        inputs_conc = []
         for i in range(3):
             col_c1, col_c2 = st.columns([2.5, 1.5])
-            t_val = col_c1.text_input(f"Concorrente #{i+1}:", value=st.session_state['concorrentes'][i].get('busca_termo', ''), key=f"c_termo_{i}")
-            c_val = col_c2.text_input(f"Cidade/Região #{i+1}:", value=st.session_state['concorrentes'][i].get('cidade', ''), key=f"c_cid_{i}")
-            st.session_state['concorrentes'][i]['busca_termo'] = t_val
-            st.session_state['concorrentes'][i]['cidade'] = c_val
+            nome_c = col_c1.text_input(
+                f"Concorrente #{i+1}:", 
+                value=st.session_state['concorrentes'][i].get('busca_termo', ''), 
+                key=f"c_input_nome_{i}"
+            )
+            cid_c = col_c2.text_input(
+                f"Cidade/Região #{i+1}:", 
+                value=st.session_state['concorrentes'][i].get('cidade', ''), 
+                key=f"c_input_cid_{i}"
+            )
+            inputs_conc.append((nome_c, cid_c))
 
-        if st.form_submit_button("🔎 Buscar Dados dos Concorrentes via API", use_container_width=True):
+        btn_consultar = st.form_submit_button("🔎 Mapear Concorrentes via API", use_container_width=True)
+
+        if btn_consultar:
             if API_KEY_GOOGLE:
-                for i, c_item in enumerate(st.session_state['concorrentes']):
-                    if c_item['busca_termo'].strip() != "":
-                        det = buscar_detalhes_concorrente_especifico(c_item['busca_termo'], c_item['cidade'], API_KEY_GOOGLE)
+                encontrados = 0
+                for idx, (nome_c, cid_c) in enumerate(inputs_conc):
+                    st.session_state['concorrentes'][idx]['busca_termo'] = nome_c
+                    st.session_state['concorrentes'][idx]['cidade'] = cid_c
+                    
+                    if nome_c.strip() != "":
+                        det = buscar_detalhes_concorrente_especifico(nome_c, cid_c, API_KEY_GOOGLE)
                         if det:
-                            st.session_state['concorrentes'][i].update(det)
-                st.success("Concorrentes mapeados!")
+                            st.session_state['concorrentes'][idx].update(det)
+                            encontrados += 1
+                        else:
+                            st.session_state['concorrentes'][idx]['nome'] = nome_c
+                            
+                if encontrados > 0:
+                    st.success(f"{encontrados} concorrente(s) atualizado(s) com sucesso!")
+                else:
+                    st.warning("Nenhum dado retornado. Verifique a grafia do nome e cidade.")
                 st.rerun()
+            else:
+                st.error("Chave GOOGLE_API_KEY não localizada.")
+
+    concorrentes_validos = [c for c in st.session_state['concorrentes'] if c.get('nome', '').strip() != '']
+    if concorrentes_validos:
+        st.markdown("---")
+        st.markdown("**Resultado da Consulta:**")
+        for c_item in concorrentes_validos:
+            score_c = calcular_score_concorrente(c_item)
+            st.markdown(f"• **{c_item['nome']}** — ⭐ Nota: `{float(c_item.get('nota', 0.0)):.1f}` ({c_item.get('avaliacoes', 0)} avaliada(s)) | Score: **{score_c}/100**")
 
     st.markdown("</div>", unsafe_allow_html=True)
 
@@ -1189,7 +1216,6 @@ elif etapa == 5:
             st.session_state.get('concorrentes', [])
         )
 
-        # Salva a proposta no histórico local da aplicação
         salvar_no_historico(st.session_state['dados'], score_atual)
 
         with col_down1:
@@ -1210,10 +1236,14 @@ elif etapa == 5:
             )
 
         st.markdown("---")
-        st.markdown("#### 👁️ PRÉ-VISUALIZAÇÃO DO PDF EM TEMPO REAL:")
+        st.markdown("#### 👁️ PRÉ-VISUALIZAÇÃO DO PDF:")
         
         base64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
-        pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="800" type="application/pdf" style="border-radius: 10px; border: 1px solid #334155;"></iframe>'
+        pdf_display = f'''
+            <object data="data:application/pdf;base64,{base64_pdf}" type="application/pdf" width="100%" height="750px">
+                <p>Seu navegador não exibiu o PDF diretamente. Utilize o botão acima <b>"Baixar PDF Oficial Completo"</b> para visualizar o arquivo.</p>
+            </object>
+        '''
         st.markdown(pdf_display, unsafe_allow_html=True)
 
     except Exception as e:
