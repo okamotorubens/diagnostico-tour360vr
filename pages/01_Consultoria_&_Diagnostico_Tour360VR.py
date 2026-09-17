@@ -8,7 +8,7 @@ from datetime import datetime
 from fpdf import FPDF
 
 # -----------------------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA E CSS MODERNO (AJUSTES DE INTERFACE)
+# 1. CONFIGURAÇÃO DA PÁGINA E CSS MODERNO (AJUSTES FINOS DE SIDEBAR)
 # -----------------------------------------------------------------------------
 st.set_page_config(
     page_title="Sistema de Consultoria - Proposta - CRM da Okamoto Mídias Visuais",
@@ -19,9 +19,10 @@ st.set_page_config(
 
 st.markdown("""
     <style>
-    /* Oculta apenas o menu nativo e o rótulo "app" do Streamlit sem fechar a barra lateral */
+    /* Oculta completamente o seletor nativo de páginas da sidebar do Streamlit */
     [data-testid="stSidebarNav"], 
-    [data-testid="stSidebarNavSeparator"] {
+    [data-testid="stSidebarNavSeparator"],
+    ul[data-testid="stSidebarNavItems"] {
         display: none !important;
     }
 
