@@ -11,7 +11,7 @@ from fpdf import FPDF
 # 1. CONFIGURAÇÃO DA PÁGINA E CSS
 # -----------------------------------------------------------------------------
 st.set_page_config(
-    page_title="Sistema de Consultoria - Proposta - CRM da Okamoto Mídias Visuais",
+    page_title="Sistema de Consultoria - Proposta - Okamoto Mídias Visuais",
     page_icon="🌐",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -19,12 +19,13 @@ st.set_page_config(
 
 st.markdown("""
     <style>
-    /* Oculta navegação padrão automática e ajusta margens superiores */
+    /* Oculta navegação padrão do Streamlit */
     [data-testid="stSidebarNav"] { display: none !important; }
     
+    /* Remove todo o espaço em branco do topo da página principal */
     .block-container {
-        padding-top: 1.5rem !important;
-        padding-bottom: 4rem !important;
+        padding-top: 0.5rem !important;
+        padding-bottom: 1.5rem !important;
     }
 
     .stApp { 
@@ -36,28 +37,30 @@ st.markdown("""
     [data-testid="stSidebar"] { 
         background-color: #111827; 
         border-right: 1px solid #1f2937; 
+        padding-top: 0px !important;
     }
     
     .sidebar-title-main {
-        font-size: 16px;
+        font-size: 15px;
         font-weight: 800;
         color: #f8fafc;
-        line-height: 1.4;
-        margin-bottom: 4px;
+        line-height: 1.3;
+        margin-bottom: 2px;
         overflow: visible;
     }
     .sidebar-title-sub {
-        font-size: 13px;
-        font-weight: 600;
+        font-size: 15px;
+        font-weight: 800;
         color: #38bdf8;
-        line-height: 1.4;
+        line-height: 1.3;
+        overflow: visible;
     }
 
     .dashboard-card { 
         background-color: #131b2e; 
         border: 1px solid #1e293b; 
         border-radius: 14px; 
-        padding: 20px; 
+        padding: 18px; 
         margin-bottom: 15px; 
     }
     .card-title { 
@@ -68,7 +71,7 @@ st.markdown("""
         text-transform: uppercase; 
         letter-spacing: 0.8px; 
         overflow: visible;
-        line-height: 1.4;
+        line-height: 1.3;
     }
     
     .stButton > button { 
@@ -89,9 +92,9 @@ st.markdown("""
         display: flex;
         justify-content: space-between;
         margin-top: 0px;
-        margin-bottom: 20px;
+        margin-bottom: 15px;
         background: #111827;
-        padding: 12px 20px;
+        padding: 10px 18px;
         border-radius: 12px;
         border: 1px solid #1e293b;
     }
@@ -891,20 +894,18 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     return bytes(pdf.output())
 
 # -----------------------------------------------------------------------------
-# 5. SIDEBAR: TÍTULO NO TOPO (5 LINHAS ESPAÇO), 3 LINHAS ESPAÇO, LOGO OKAMOTO E LOGO TOUR (-30%)
+# 5. SIDEBAR: TÍTULOS NO TOPO E LOGOS ALINHADAS
 # -----------------------------------------------------------------------------
 with st.sidebar:
-    # 5 Linhas de espaço do topo
-    st.markdown("<br><br><br><br><br>", unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
 
-    # Títulos institucionais no topo absoluto
+    # Títulos institucionais no topo (Sem CRM e com fonte ajustada)
     st.markdown("""
-        <div class='sidebar-title-main'>Sistema de Consultoria - Proposta - CRM</div>
+        <div class='sidebar-title-main'>Consultoria - Proposta - CRM</div>
         <div class='sidebar-title-sub'>Okamoto Mídias Visuais</div>
     """, unsafe_allow_html=True)
 
-    # 3 Linhas de espaço antes das logos
-    st.markdown("<br><br><br>", unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
 
     # Logo Okamoto (tamanho padrão)
     logo_okamoto = obter_caminho_logo("okamoto")
@@ -1102,9 +1103,6 @@ if etapa == 1:
         st.session_state['etapa_atual'] = 2
         st.rerun()
 
-    # 4 linhas de espaço antes do fim da página
-    st.markdown("<br><br><br><br>", unsafe_allow_html=True)
-
 # ETAPA 2: AVALIAÇÃO DE CONCORRENTES
 elif etapa == 2:
     st.markdown("<div class='dashboard-card'>", unsafe_allow_html=True)
@@ -1172,9 +1170,6 @@ elif etapa == 2:
             st.session_state['etapa_atual'] = 3
             st.rerun()
 
-    # 4 linhas de espaço antes do fim da página
-    st.markdown("<br><br><br><br>", unsafe_allow_html=True)
-
 # ETAPA 3: PLANO DE AÇÃO ESTRATÉGICO
 elif etapa == 3:
     st.markdown("<div class='dashboard-card'>", unsafe_allow_html=True)
@@ -1197,9 +1192,6 @@ elif etapa == 3:
         if st.button("Avançar para Planos & Valores ➡️", use_container_width=True):
             st.session_state['etapa_atual'] = 4
             st.rerun()
-
-    # 4 linhas de espaço antes do fim da página
-    st.markdown("<br><br><br><br>", unsafe_allow_html=True)
 
 # ETAPA 4: PLANOS & VALORES COMERCIAIS
 elif etapa == 4:
@@ -1231,9 +1223,6 @@ elif etapa == 4:
         if st.button("Avançar para PDF & WhatsApp ➡️", use_container_width=True):
             st.session_state['etapa_atual'] = 5
             st.rerun()
-
-    # 4 linhas de espaço antes do fim da página
-    st.markdown("<br><br><br><br>", unsafe_allow_html=True)
 
 # ETAPA 5: GERAR PDF, WHATSAPP & HISTÓRICO
 elif etapa == 5:
@@ -1317,9 +1306,6 @@ elif etapa == 5:
     if st.button("⬅️ Voltar para Ajuste de Valores", use_container_width=True):
         st.session_state['etapa_atual'] = 4
         st.rerun()
-
-    # 4 linhas de espaço antes do fim da página
-    st.markdown("<br><br><br><br>", unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
 # 8. RODAPÉ FIXO
