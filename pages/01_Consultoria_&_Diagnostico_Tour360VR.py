@@ -889,11 +889,10 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
 with st.sidebar:
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # Títulos institucionais no topo
+    # Títulos institucionais no topo (mesmo tamanho e alinhados)
     st.markdown("""
-        <div class='sidebar-title-main'>Sistema de Consultoria - Proposta</div>
-        <div class='sidebar-title-sub'>Okamoto Mídias Visuais</div>
-    """, unsafe_allow_html=True)
+        <div class='sidebar-title-main'>Consultoria - Proposta - CRM</div>
+        """, unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
 
@@ -1277,14 +1276,20 @@ elif etapa == 5:
         
         base64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
         
+        # Uso do leitor nativo via <object> para contornar problemas de CORS/CSP do browser
         pdf_display = f'''
-            <iframe 
-                src="https://mozilla.github.io/pdf.js/web/viewer.html?file=data:application/pdf;base64,{base64_pdf}" 
+            <object 
+                data="data:application/pdf;base64,{base64_pdf}" 
+                type="application/pdf" 
                 width="100%" 
                 height="750px" 
                 style="border: 1px solid #1e293b; border-radius: 12px;"
             >
-            </iframe>
+                <p style="color: #cbd5e1; padding: 20px;">
+                    Seu navegador não suporta a pré-visualização direta. 
+                    Utilize o botão <b>📥 Baixar PDF Oficial Completo</b> acima para salvar e visualizar o documento.
+                </p>
+            </object>
         '''
         st.markdown(pdf_display, unsafe_allow_html=True)
 
