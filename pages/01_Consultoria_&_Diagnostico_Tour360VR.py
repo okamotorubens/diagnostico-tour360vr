@@ -406,7 +406,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     pdf.set_x(x_capa)
     pdf.cell(w_capa, 4.8, conv(f"Telefone: {dados.get('telefone') or 'N/I'}   |   {site_txt}"), align='C', ln=True)
 
-    # CORREÇÃO ABSOLUTA DA IMAGEM (SEM DISTORÇÕES)
+    # RENDERIZAÇÃO DA FOTO SEM DISTORÇÕES
     y_foto, h_container, w_container = 150.0, 84.0, 186.0
     foto_renderizada = False
 
@@ -419,7 +419,6 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
                 img = Image.open(img_data)
                 orig_w, orig_h = img.size
 
-                # Mantém a proporção exata escalando apenas pelo limite que for atingido primeiro
                 ratio_w = w_container / orig_w
                 ratio_h = h_container / orig_h
                 scale = min(ratio_w, ratio_h)
@@ -902,7 +901,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     return bytes(pdf.output())
 
 # -----------------------------------------------------------------------------
-# 5. SIDEBAR: TÍTULO AMPLIADO E LOGOS VERTICAIS COMPACTAS
+# 5. SIDEBAR: TÍTULO AMPLIADO, LOGOS E SCORE DINÂMICO
 # -----------------------------------------------------------------------------
 with st.sidebar:
     st.markdown("""
@@ -935,8 +934,29 @@ with st.sidebar:
     st.info(f"🏢 {nome_empresa_atual}")
     
     score_atual = calcular_score_real(st.session_state['dados'])
-    st.markdown(f"**Score Diagnóstico:** `{score_atual}/100`")
-    st.progress(score_atual / 100)
+
+    # DEFINIÇÃO DINÂMICA DE CORES DO SCORE
+    if score_atual < 50:
+        cor_score = "#ef4444"  # Vermelho
+        status_txt = "CRÍTICO"
+    elif score_atual < 80:
+        cor_score = "#f59e0b"  # Amarelo / Laranja
+        status_txt = "MÉDIO"
+    else:
+        cor_score = "#22c55e"  # Verde
+        status_txt = "EXCELENTE"
+
+    st.markdown(f"""
+        <div style="margin-top: 5px; margin-bottom: 10px;">
+            <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; color: #f8fafc; margin-bottom: 5px;">
+                <span>Score Diagnóstico:</span>
+                <span style="color: {cor_score};">{score_atual}/100 ({status_txt})</span>
+            </div>
+            <div style="background-color: #1e293b; border-radius: 8px; height: 10px; width: 100%; overflow: hidden; border: 1px solid #334155;">
+                <div style="background-color: {cor_score}; height: 100%; width: {score_atual}%; transition: width 0.4s ease;"></div>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
 
     st.markdown("---")
     if st.button("🧹 Iniciar Novo Atendimento", use_container_width=True):
