@@ -8,7 +8,7 @@ from datetime import datetime
 from fpdf import FPDF
 
 # -----------------------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA E CSS MODERNO
+# 1. CONFIGURAÇÃO DA PÁGINA E CSS
 # -----------------------------------------------------------------------------
 st.set_page_config(
     page_title="Sistema de Consultoria - Proposta - CRM da Okamoto Mídias Visuais",
@@ -19,9 +19,12 @@ st.set_page_config(
 
 st.markdown("""
     <style>
-    /* Oculta o menu de páginas padrão do Streamlit para controle total da sidebar */
-    [data-testid="stSidebarNav"] {
-        display: none !important;
+    /* Oculta navegação padrão automática e reduz margens superiores */
+    [data-testid="stSidebarNav"] { display: none !important; }
+    
+    .block-container {
+        padding-top: 1rem !important;
+        padding-bottom: 2rem !important;
     }
 
     .stApp { 
@@ -33,11 +36,11 @@ st.markdown("""
     [data-testid="stSidebar"] { 
         background-color: #111827; 
         border-right: 1px solid #1f2937; 
-        padding-top: 15px; 
+        padding-top: 10px; 
     }
     
     .sidebar-title-main {
-        font-size: 15px;
+        font-size: 14px;
         font-weight: 800;
         color: #f8fafc;
         line-height: 1.3;
@@ -49,42 +52,19 @@ st.markdown("""
         color: #38bdf8;
         line-height: 1.3;
     }
-    
-    .brand-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-        padding: 18px 24px;
-        border-radius: 16px;
-        border: 1px solid #334155;
-        margin-bottom: 15px;
-    }
-    .brand-title { font-size: 20px; font-weight: 800; color: #ffffff; margin: 0; }
-    .brand-subtitle { font-size: 13px; color: #94a3b8; margin-top: 2px; }
-    
-    .kpi-card {
-        background-color: #131b2e;
-        border: 1px solid #1e293b;
-        border-radius: 12px;
-        padding: 12px;
-        text-align: center;
-    }
-    .kpi-value { font-size: 20px; font-weight: 800; color: #3b82f6; }
-    .kpi-label { font-size: 11px; color: #94a3b8; text-transform: uppercase; font-weight: 600; margin-top: 2px; }
 
     .dashboard-card { 
         background-color: #131b2e; 
         border: 1px solid #1e293b; 
         border-radius: 14px; 
-        padding: 20px; 
-        margin-bottom: 15px; 
+        padding: 18px; 
+        margin-bottom: 12px; 
     }
     .card-title { 
         font-size: 14px; 
         font-weight: 700; 
         color: #38bdf8; 
-        margin-bottom: 14px; 
+        margin-bottom: 12px; 
         text-transform: uppercase; 
         letter-spacing: 0.8px; 
     }
@@ -106,7 +86,7 @@ st.markdown("""
     .step-indicator {
         display: flex;
         justify-content: space-between;
-        margin-top: 15px;
+        margin-top: 0px;
         margin-bottom: 15px;
         background: #111827;
         padding: 10px 18px;
@@ -151,7 +131,7 @@ API_KEY_GOOGLE = (
 ARQUIVO_HISTORICO = "/tmp/historico_propostas_tour360.json"
 
 # -----------------------------------------------------------------------------
-# 2. FUNÇÕES UTILITÁRIAS & HISTÓRICO LOCAL
+# 2. FUNÇÕES UTILITÁRIAS & LOGOS
 # -----------------------------------------------------------------------------
 def conv(texto):
     if not texto: return ""
@@ -189,22 +169,21 @@ def calcular_score_concorrente(c):
     if c.get("avaliacoes", 0) < 50: score -= 15
     return max(score, 10)
 
-def obter_caminho_logo(tipo="tour360"):
-    caminhos = [
-        f'assets/logo_{tipo}_transparente.png', 
-        f'assets/logo_{tipo}.png', 
-        f'logo_{tipo}_transparente.png', 
-        f'logo_{tipo}.png',
-        'assets/logo.png', 
-        'logo.png'
-    ]
+def obter_caminho_logo(tipo="okamoto"):
+    if tipo == "okamoto":
+        caminhos = ['assets/logo_okamoto.png', 'assets/logo_okamoto_midias_visuais.png', 'logo_okamoto.png', 'assets/logo.png']
+        url_oficial = "https://okamotomidiasvisuais.com.br/assets/img/logo.png"
+    else:
+        caminhos = ['assets/logo_tour_transparente.png', 'assets/logo_tour.png', 'logo_tour_transparente.png', 'logo_tour.png']
+        url_oficial = "https://tour360vr.com.br/assets/img/logo.png"
+
     for c in caminhos:
         if os.path.exists(c): return c
+    
     temp_logo = f'/tmp/logo_{tipo}_temp.png'
     if os.path.exists(temp_logo): return temp_logo
     try:
-        url_logo_oficial = "https://tour360vr.com.br/assets/img/logo.png" if tipo == "tour360" else "https://okamotomidiasvisuais.com.br/assets/img/logo.png"
-        resp = requests.get(url_logo_oficial, timeout=3)
+        resp = requests.get(url_oficial, timeout=3)
         if resp.status_code == 200:
             with open(temp_logo, 'wb') as f: f.write(resp.content)
             return temp_logo
@@ -283,7 +262,7 @@ def buscar_detalhes_concorrente_especifico(nome_concorrente, cidade, api_key):
     return None
 
 # -----------------------------------------------------------------------------
-# 3. ESTADOS PERSISTENTES & ETAPAS DO WIZARD
+# 3. ESTADOS PERSISTENTES & ETAPAS
 # -----------------------------------------------------------------------------
 if 'etapa_atual' not in st.session_state:
     st.session_state['etapa_atual'] = 1
@@ -880,7 +859,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     pdf.set_x(12)
     pdf.set_font('Helvetica', 'B', 8.5)
     pdf.set_text_color(15, 23, 42)
-    pdf.cell(w_text, h_line, conv("CLÁUSULA QUINTA - CONDIÇÕES DE PAGAMENTO:"), ln=True)
+    pdf.cell(w_text, h_line, conv("CLÁUSULA QUINТА - CONDIÇÕES DE PAGAMENTO:"), ln=True)
     
     pdf.set_x(12)
     pdf.set_font('Helvetica', '', 8.5)
@@ -910,23 +889,26 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     return bytes(pdf.output())
 
 # -----------------------------------------------------------------------------
-# 5. SIDEBAR COM NOVO VISUAL E NAVEGAÇÃO INTERATIVA DO HISTÓRICO
+# 5. SIDEBAR ORDENADA: LOGO OKAMOTO ACIMA -> LOGO TOUR360 ABAIXO
 # -----------------------------------------------------------------------------
 with st.sidebar:
-    # Logos organizadas no topo
-    col_logo1, col_logo2 = st.columns(2)
-    logo_tour = obter_caminho_logo("tour360")
+    # Okamoto Mídias Visuais em cima
     logo_okamoto = obter_caminho_logo("okamoto")
-    
-    with col_logo1:
-        if logo_tour: st.image(logo_tour, use_container_width=True)
-        else: st.markdown("**Tour360VR**")
-    with col_logo2:
-        if logo_okamoto: st.image(logo_okamoto, use_container_width=True)
-        else: st.markdown("**Okamoto MV**")
+    if logo_okamoto:
+        st.image(logo_okamoto, use_container_width=True)
+    else:
+        st.markdown("### **OKAMOTO MÍDIAS VISUAIS**")
 
-    # 3 Linhas de espaço
-    st.markdown("<br><br><br>", unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # Tour360VR abaixo
+    logo_tour = obter_caminho_logo("tour360")
+    if logo_tour:
+        st.image(logo_tour, use_container_width=True)
+    else:
+        st.markdown("### **TOUR360VR**")
+
+    st.markdown("<br>", unsafe_allow_html=True)
 
     # Títulos institucionais
     st.markdown("""
@@ -934,10 +916,9 @@ with st.sidebar:
         <div class='sidebar-title-sub'>Okamoto Mídias Visuais</div>
     """, unsafe_allow_html=True)
 
-    # 1 Linha de espaço
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # Navegação explícita entre páginas
+    # Navegação explícita
     st.page_link("app.py", label="📋 Consultoria & Diagnóstico", icon="🔍")
     st.page_link("pages/02_CRM_Okamoto_Midias_Visuais.py", label="📊 CRM Okamoto Mídias Visuais", icon="🚀")
 
@@ -969,7 +950,6 @@ with st.sidebar:
         for idx_h, item in enumerate(lista_hist[:5]):
             rotulo_btn = f"📂 {item['nome'][:18]} ({item['score']}/100)"
             if st.button(rotulo_btn, key=f"btn_carregar_hist_{idx_h}", use_container_width=True):
-                # Carrega o registro do histórico diretamente de volta para a sessão
                 st.session_state['dados'] = {
                     "nome": item.get("nome", ""),
                     "contato": item.get("contato", ""),
@@ -994,30 +974,9 @@ with st.sidebar:
         st.caption("Nenhuma proposta salva ainda.")
 
 # -----------------------------------------------------------------------------
-# 6. CABEÇALHO & BARRA DE ETAPAS
+# 6. BARRA DE ETAPAS (SEM CABEÇALHOS OU CARDS REDUNDANTES)
 # -----------------------------------------------------------------------------
-st.markdown("""
-    <div class='brand-header'>
-        <div>
-            <div class='brand-title'>PLATAFORMA DE CONSULTORIA TOUR360VR</div>
-            <div class='brand-subtitle'>Diagnóstico, Análise, Proposta Comercial e Contrato</div>
-        </div>
-    </div>
-""", unsafe_allow_html=True)
-
-kpi1, kpi2, kpi3, kpi4 = st.columns(4)
-with kpi1:
-    st.markdown(f"<div class='kpi-card'><div class='kpi-value'>{score_atual}/100</div><div class='kpi-label'>Score da Ficha</div></div>", unsafe_allow_html=True)
-with kpi2:
-    aval_qtd = st.session_state['dados'].get('avaliacoes', 0)
-    st.markdown(f"<div class='kpi-card'><div class='kpi-value'>{aval_qtd}</div><div class='kpi-label'>Avaliações Google</div></div>", unsafe_allow_html=True)
-with kpi3:
-    status_tour = "Ativo" if st.session_state['dados'].get('tem_tour360') else "Pendente"
-    st.markdown(f"<div class='kpi-card'><div class='kpi-value'>{status_tour}</div><div class='kpi-label'>Tour 360°</div></div>", unsafe_allow_html=True)
-with kpi4:
-    conc_qtd = len([c for c in st.session_state['concorrentes'] if c.get('nome', '').strip() != ''])
-    st.markdown(f"<div class='kpi-card'><div class='kpi-value'>{conc_qtd}</div><div class='kpi-label'>Concorrentes Mapeados</div></div>", unsafe_allow_html=True)
-
+score_atual = calcular_score_real(st.session_state['dados'])
 etapa = st.session_state['etapa_atual']
 s1 = "active" if etapa == 1 else ""
 s2 = "active" if etapa == 2 else ""
@@ -1317,7 +1276,6 @@ elif etapa == 5:
         st.markdown("---")
         st.markdown("#### 👁️ PRÉ-VISUALIZAÇÃO DO PDF:")
         
-        # Renderização via leitor Mozilla PDF.js
         base64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
         
         pdf_display = f'''
