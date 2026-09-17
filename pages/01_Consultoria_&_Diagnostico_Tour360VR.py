@@ -8,10 +8,10 @@ from datetime import datetime
 from fpdf import FPDF
 
 # -----------------------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA E CSS MODERNO (DESIGN SAAS PRO)
+# 1. CONFIGURAÇÃO DA PÁGINA E CSS MODERNO (AJUSTES DE INTERFACE)
 # -----------------------------------------------------------------------------
 st.set_page_config(
-    page_title="Tour360VR - Diagnósticos & Consultoria",
+    page_title="Sistema de Consultoria - Proposta - CRM da Okamoto Mídias Visuais",
     page_icon="🌐",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -19,6 +19,13 @@ st.set_page_config(
 
 st.markdown("""
     <style>
+    /* Oculta o rótulo "app", título do menu nativo e navegação de páginas da barra lateral */
+    [data-testid="stSidebarNav"], 
+    [data-testid="stSidebarNavSeparator"],
+    section[data-testid="stSidebar"] div:first-child > div:first-child > header {
+        display: none !important;
+    }
+
     .stApp { 
         background-color: #0b0f19; 
         color: #f1f5f9; 
@@ -28,7 +35,7 @@ st.markdown("""
     [data-testid="stSidebar"] { 
         background-color: #111827; 
         border-right: 1px solid #1f2937; 
-        padding-top: 15px; 
+        padding-top: 10px; 
     }
     
     .brand-header {
@@ -36,10 +43,10 @@ st.markdown("""
         justify-content: space-between;
         align-items: center;
         background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-        padding: 20px 24px;
+        padding: 18px 24px;
         border-radius: 16px;
         border: 1px solid #334155;
-        margin-bottom: 20px;
+        margin-bottom: 15px;
     }
     .brand-title { font-size: 20px; font-weight: 800; color: #ffffff; margin: 0; }
     .brand-subtitle { font-size: 13px; color: #94a3b8; margin-top: 2px; }
@@ -48,24 +55,24 @@ st.markdown("""
         background-color: #131b2e;
         border: 1px solid #1e293b;
         border-radius: 12px;
-        padding: 14px;
+        padding: 12px;
         text-align: center;
     }
-    .kpi-value { font-size: 22px; font-weight: 800; color: #3b82f6; }
+    .kpi-value { font-size: 20px; font-weight: 800; color: #3b82f6; }
     .kpi-label { font-size: 11px; color: #94a3b8; text-transform: uppercase; font-weight: 600; margin-top: 2px; }
 
     .dashboard-card { 
         background-color: #131b2e; 
         border: 1px solid #1e293b; 
         border-radius: 14px; 
-        padding: 22px; 
-        margin-bottom: 20px; 
+        padding: 20px; 
+        margin-bottom: 15px; 
     }
     .card-title { 
         font-size: 14px; 
         font-weight: 700; 
         color: #38bdf8; 
-        margin-bottom: 16px; 
+        margin-bottom: 14px; 
         text-transform: uppercase; 
         letter-spacing: 0.8px; 
     }
@@ -84,12 +91,14 @@ st.markdown("""
         box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
     }
     
+    /* Indicador do Passo Ativo sem margens excessivas */
     .step-indicator {
         display: flex;
         justify-content: space-between;
-        margin-bottom: 25px;
+        margin-top: 15px;
+        margin-bottom: 15px;
         background: #111827;
-        padding: 12px 20px;
+        padding: 10px 18px;
         border-radius: 12px;
         border: 1px solid #1e293b;
     }
@@ -279,7 +288,7 @@ if 'unidades_encontradas' not in st.session_state:
     st.session_state['unidades_encontradas'] = []
 
 # -----------------------------------------------------------------------------
-# 4. GERADOR DE PDF (FPDF) - PRESERVADO 100%
+# 4. GERADOR DE PDF (FPDF)
 # -----------------------------------------------------------------------------
 class PDFTour360Oficial(FPDF):
     def header(self):
@@ -936,8 +945,6 @@ with kpi3:
 with kpi4:
     conc_qtd = len([c for c in st.session_state['concorrentes'] if c.get('nome', '').strip() != ''])
     st.markdown(f"<div class='kpi-card'><div class='kpi-value'>{conc_qtd}</div><div class='kpi-label'>Concorrentes Mapeados</div></div>", unsafe_allow_html=True)
-
-st.markdown("<br>", unsafe_allow_html=True)
 
 etapa = st.session_state['etapa_atual']
 s1 = "active" if etapa == 1 else ""
