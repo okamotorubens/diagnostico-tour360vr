@@ -6,6 +6,7 @@ import base64
 import streamlit as st
 from datetime import datetime
 from fpdf import FPDF
+from PIL import Image
 
 # -----------------------------------------------------------------------------
 # 1. CONFIGURAÇÃO DA PÁGINA E CSS
@@ -19,7 +20,7 @@ st.set_page_config(
 
 st.markdown("""
     <style>
-    /* Oculta apenas o menu de navegação automático da sidebar para manter nosso controle personalizado */
+    /* Oculta apenas o menu de navegação automático da sidebar */
     [data-testid="stSidebarNav"] { display: none !important; }
 
     .stApp { 
@@ -34,12 +35,14 @@ st.markdown("""
     }
     
     .sidebar-title-single {
-        font-size: 14px;
+        font-size: 18px;
         font-weight: 800;
         color: #f8fafc;
         line-height: 1.2;
-        margin-bottom: 10px;
+        margin-top: 10px;
+        margin-bottom: 12px;
         white-space: nowrap;
+        text-align: center;
     }
 
     .dashboard-card { 
@@ -401,25 +404,43 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     pdf.set_x(x_capa)
     pdf.cell(w_capa, 4.8, conv(f"Telefone: {dados.get('telefone') or 'N/I'}   |   {site_txt}"), align='C', ln=True)
 
-    y_foto, h_foto = 150.0, 84.0
+    # RENDERIZAÇÃO DA FOTO SEM DISTORÇÃO (ASPECT RATIO PRESERVADO)
+    y_foto, h_container, w_container = 150.0, 84.0, 186.0
     foto_renderizada = False
+
     if dados.get("foto_reference") and API_KEY_GOOGLE:
         try:
             url_img = f"https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photo_reference={dados['foto_reference']}&key={API_KEY_GOOGLE}"
             resp_img = requests.get(url_img, timeout=4)
             if resp_img.status_code == 200:
-                img_stream = io.BytesIO(resp_img.content)
-                pdf.image(img_stream, x_capa, y_foto, w_capa, h_foto)
+                img_data = io.BytesIO(resp_img.content)
+                img = Image.open(img_data)
+                orig_w, orig_h = img.size
+
+                # Cálculo de escala proporcional para caber dentro da caixa sem esticar
+                ratio_w = w_container / orig_w
+                ratio_h = h_container / orig_h
+                scale = min(ratio_w, ratio_h)
+
+                final_w = orig_w * scale
+                final_h = orig_h * scale
+
+                # Centralização horizontal e vertical
+                offset_x = x_capa + (w_container - final_w) / 2.0
+                offset_y = y_foto + (h_container - final_h) / 2.0
+
+                img_data.seek(0)
+                pdf.image(img_data, x=offset_x, y=offset_y, w=final_w, h=final_h)
                 foto_renderizada = True
         except Exception: pass
 
     if not foto_renderizada:
         pdf.set_fill_color(240, 243, 246)
-        pdf.rounded_rect(x_capa, y_foto, w_capa, h_foto, 3, 'F')
+        pdf.rounded_rect(x_capa, y_foto, w_container, h_container, 3, 'F')
         pdf.set_xy(x_capa, y_foto + 36)
         pdf.set_font('Helvetica', 'B', 11)
         pdf.set_text_color(100, 116, 139)
-        pdf.cell(w_capa, 6, conv("[ IMAGEM DA FICHA GOOGLE DO CLIENTE ]"), align='C', ln=True)
+        pdf.cell(w_container, 6, conv("[ IMAGEM DA FICHA GOOGLE DO CLIENTE ]"), align='C', ln=True)
 
     pdf.set_y(252.0)
     pdf.set_font('Helvetica', 'B', 10.5)
@@ -880,31 +901,25 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     return bytes(pdf.output())
 
 # -----------------------------------------------------------------------------
-# 5. SIDEBAR: TÍTULOS NO TOPO E LOGOS ALINHADAS
+# 5. SIDEBAR: TÍTULO AMPLIPADO E LOGOS VERTICAIS COMPACTAS
 # -----------------------------------------------------------------------------
 with st.sidebar:
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    # Título institucional em linha única
+    # Título em linha única com fonte ampliada para 18px
     st.markdown("""
         <div class='sidebar-title-single'>Consultoria - Proposta - CRM</div>
     """, unsafe_allow_html=True)
 
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    # Logo Okamoto (tamanho padrão)
+    # Logo Okamoto Mídias Visuais
     logo_okamoto = obter_caminho_logo("okamoto")
     if logo_okamoto:
         st.image(logo_okamoto, use_container_width=True)
     else:
         st.markdown("**Okamoto Mídias Visuais**")
 
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    # Logo Tour360 (reduzida em ~30% adicionais via espaçamento de colunas 0.28 / 0.44 / 0.28)
+    # Logo Tour360VR centralizada e colada na vertical
     logo_tour = obter_caminho_logo("tour360")
     if logo_tour:
-        col_t1, col_t2, col_t3 = st.columns([0.28, 0.44, 0.28])
+        col_t1, col_t2, col_t3 = st.columns([0.25, 0.50, 0.25])
         with col_t2:
             st.image(logo_tour, use_container_width=True)
     else:
