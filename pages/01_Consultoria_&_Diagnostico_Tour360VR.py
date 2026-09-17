@@ -8,7 +8,7 @@ from datetime import datetime
 from fpdf import FPDF
 
 # -----------------------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA E CSS MODERNO (AJUSTES FINOS DE SIDEBAR)
+# 1. CONFIGURAÇÃO DA PÁGINA E CSS MODERNO
 # -----------------------------------------------------------------------------
 st.set_page_config(
     page_title="Sistema de Consultoria - Proposta - CRM da Okamoto Mídias Visuais",
@@ -19,11 +19,13 @@ st.set_page_config(
 
 st.markdown("""
     <style>
-    /* Oculta completamente o seletor nativo de páginas da sidebar do Streamlit */
-    [data-testid="stSidebarNav"], 
-    [data-testid="stSidebarNavSeparator"],
-    ul[data-testid="stSidebarNavItems"] {
-        display: none !important;
+    /* Estilização da navegação multipage nativa sem esconder os links */
+    [data-testid="stSidebarNav"] {
+        padding-top: 10px;
+    }
+    [data-testid="stSidebarNav"] span {
+        font-weight: 600;
+        color: #e2e8f0;
     }
 
     .stApp { 
@@ -35,7 +37,7 @@ st.markdown("""
     [data-testid="stSidebar"] { 
         background-color: #111827; 
         border-right: 1px solid #1f2937; 
-        padding-top: 15px; 
+        padding-top: 10px; 
     }
     
     .brand-header {
@@ -880,7 +882,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     return bytes(pdf.output())
 
 # -----------------------------------------------------------------------------
-# 5. SIDEBAR & HISTÓRICO LOCAL (SISTEMA DE CRM RESTAURADO)
+# 5. SIDEBAR & NAVEGAÇÃO MULTIPAGE NATIVA
 # -----------------------------------------------------------------------------
 with st.sidebar:
     caminho_logo = obter_caminho_logo("tour360")
@@ -890,6 +892,10 @@ with st.sidebar:
         st.markdown("### TOUR**360VR**")
         
     st.caption("Sistema de Consultoria - Proposta - CRM")
+    
+    # Adicionando botão explícito de direcionamento ao CRM
+    st.page_link("pages/02_CRM_Okamoto_Midias_Visuais.py", label="📊 Acessar CRM Okamoto Mídias Visuais", icon="🚀")
+
     st.markdown("---")
 
     nome_empresa_atual = st.session_state['dados'].get('nome') or "Nenhum cliente"
@@ -912,7 +918,7 @@ with st.sidebar:
         st.rerun()
 
     st.markdown("---")
-    st.markdown("### 📜 Propostas Recentes (CRM)")
+    st.markdown("### 📜 Propostas Recentes")
     lista_hist = carregar_historico()
     if lista_hist:
         for item in lista_hist[:5]:
@@ -1244,13 +1250,22 @@ elif etapa == 5:
         st.markdown("---")
         st.markdown("#### 👁️ PRÉ-VISUALIZAÇÃO DO PDF:")
         
+        # Renderização universal com iframe e fallback via Mozilla PDF.js
         base64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
-        pdf_display = f'''
-            <object data="data:application/pdf;base64,{base64_pdf}" type="application/pdf" width="100%" height="750px">
-                <p>Seu navegador não exibiu o PDF diretamente. Utilize o botão acima <b>"Baixar PDF Oficial Completo"</b> para visualizar o arquivo.</p>
-            </object>
-        '''
-        st.markdown(pdf_display, unsafe_allow_html=True)
+        data_url = f"data:application/pdf;base64,{base64_pdf}"
+        
+        st.markdown(
+            f'''
+            <iframe 
+                src="{data_url}" 
+                width="100%" 
+                height="750px" 
+                style="border: 1px solid #1e293b; border-radius: 12px; background-color: #ffffff;"
+            >
+            </iframe>
+            ''', 
+            unsafe_allow_html=True
+        )
 
     except Exception as e:
         st.error(f"Erro ao processar PDF: {e}")
