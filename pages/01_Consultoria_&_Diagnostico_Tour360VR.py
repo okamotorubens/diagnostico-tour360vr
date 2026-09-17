@@ -19,13 +19,9 @@ st.set_page_config(
 
 st.markdown("""
     <style>
-    /* Estilização da navegação multipage nativa */
+    /* Oculta o menu de páginas padrão do Streamlit para controle total da sidebar */
     [data-testid="stSidebarNav"] {
-        padding-top: 10px;
-    }
-    [data-testid="stSidebarNav"] span {
-        font-weight: 600;
-        color: #e2e8f0;
+        display: none !important;
     }
 
     .stApp { 
@@ -37,7 +33,21 @@ st.markdown("""
     [data-testid="stSidebar"] { 
         background-color: #111827; 
         border-right: 1px solid #1f2937; 
-        padding-top: 10px; 
+        padding-top: 15px; 
+    }
+    
+    .sidebar-title-main {
+        font-size: 15px;
+        font-weight: 800;
+        color: #f8fafc;
+        line-height: 1.3;
+        margin-bottom: 2px;
+    }
+    .sidebar-title-sub {
+        font-size: 13px;
+        font-weight: 600;
+        color: #38bdf8;
+        line-height: 1.3;
     }
     
     .brand-header {
@@ -180,13 +190,20 @@ def calcular_score_concorrente(c):
     return max(score, 10)
 
 def obter_caminho_logo(tipo="tour360"):
-    caminhos = ['assets/logo_tour_transparente.png', 'logo_tour_transparente.png', 'assets/logo.png', 'logo.png']
+    caminhos = [
+        f'assets/logo_{tipo}_transparente.png', 
+        f'assets/logo_{tipo}.png', 
+        f'logo_{tipo}_transparente.png', 
+        f'logo_{tipo}.png',
+        'assets/logo.png', 
+        'logo.png'
+    ]
     for c in caminhos:
         if os.path.exists(c): return c
     temp_logo = f'/tmp/logo_{tipo}_temp.png'
     if os.path.exists(temp_logo): return temp_logo
     try:
-        url_logo_oficial = "https://tour360vr.com.br/assets/img/logo.png"
+        url_logo_oficial = "https://tour360vr.com.br/assets/img/logo.png" if tipo == "tour360" else "https://okamotomidiasvisuais.com.br/assets/img/logo.png"
         resp = requests.get(url_logo_oficial, timeout=3)
         if resp.status_code == 200:
             with open(temp_logo, 'wb') as f: f.write(resp.content)
@@ -208,14 +225,25 @@ def salvar_no_historico(dados, score):
         "nome": dados.get("nome"),
         "contato": dados.get("contato"),
         "telefone": dados.get("telefone"),
+        "endereco": dados.get("endereco"),
+        "website": dados.get("website"),
+        "nota": dados.get("nota", 0.0),
         "score": score,
-        "avaliacoes": dados.get("avaliacoes", 0)
+        "avaliacoes": dados.get("avaliacoes", 0),
+        "tem_tour360": dados.get("tem_tour360", False),
+        "tem_fotos_hd": dados.get("tem_fotos_hd", False),
+        "categorias_completas": dados.get("categorias_completas", False),
+        "horarios_ok": dados.get("horarios_ok", False),
+        "tem_descricao": dados.get("tem_descricao", False),
+        "atributos_ok": dados.get("atributos_ok", False),
+        "resposta_avaliacoes_ok": dados.get("resposta_avaliacoes_ok", False),
+        "foto_reference": dados.get("foto_reference", "")
     }
     
-    if not historico or historico[0].get("nome") != registro["nome"]:
-        historico.insert(0, registro)
-        with open(ARQUIVO_HISTORICO, 'w', encoding='utf-8') as f:
-            json.dump(historico, f, ensure_ascii=False, indent=2)
+    historico = [h for h in historico if h.get("nome") != registro["nome"]]
+    historico.insert(0, registro)
+    with open(ARQUIVO_HISTORICO, 'w', encoding='utf-8') as f:
+        json.dump(historico, f, ensure_ascii=False, indent=2)
 
 def carregar_historico():
     if os.path.exists(ARQUIVO_HISTORICO):
@@ -882,18 +910,35 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     return bytes(pdf.output())
 
 # -----------------------------------------------------------------------------
-# 5. SIDEBAR & NAVEGAÇÃO MULTIPAGE NATIVA
+# 5. SIDEBAR COM NOVO VISUAL E NAVEGAÇÃO INTERATIVA DO HISTÓRICO
 # -----------------------------------------------------------------------------
 with st.sidebar:
-    caminho_logo = obter_caminho_logo("tour360")
-    if caminho_logo:
-        st.image(caminho_logo, width=140)
-    else:
-        st.markdown("### TOUR**360VR**")
-        
-    st.caption("Sistema de Consultoria - Proposta - CRM")
+    # Logos organizadas no topo
+    col_logo1, col_logo2 = st.columns(2)
+    logo_tour = obter_caminho_logo("tour360")
+    logo_okamoto = obter_caminho_logo("okamoto")
     
-    # Botão com direcionamento explícito para a página do CRM
+    with col_logo1:
+        if logo_tour: st.image(logo_tour, use_container_width=True)
+        else: st.markdown("**Tour360VR**")
+    with col_logo2:
+        if logo_okamoto: st.image(logo_okamoto, use_container_width=True)
+        else: st.markdown("**Okamoto MV**")
+
+    # 3 Linhas de espaço
+    st.markdown("<br><br><br>", unsafe_allow_html=True)
+
+    # Títulos institucionais
+    st.markdown("""
+        <div class='sidebar-title-main'>Sistema de Consultoria - Proposta - CRM</div>
+        <div class='sidebar-title-sub'>Okamoto Mídias Visuais</div>
+    """, unsafe_allow_html=True)
+
+    # 1 Linha de espaço
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # Navegação explícita entre páginas
+    st.page_link("app.py", label="📋 Consultoria & Diagnóstico", icon="🔍")
     st.page_link("pages/02_CRM_Okamoto_Midias_Visuais.py", label="📊 CRM Okamoto Mídias Visuais", icon="🚀")
 
     st.markdown("---")
@@ -918,11 +963,33 @@ with st.sidebar:
         st.rerun()
 
     st.markdown("---")
-    st.markdown("### 📜 Propostas Recentes")
+    st.markdown("### 📜 Histórico de Propostas")
     lista_hist = carregar_historico()
     if lista_hist:
-        for item in lista_hist[:5]:
-            st.caption(f"🗓️ {item['data']} | **{item['nome'][:18]}** ({item['score']}/100)")
+        for idx_h, item in enumerate(lista_hist[:5]):
+            rotulo_btn = f"📂 {item['nome'][:18]} ({item['score']}/100)"
+            if st.button(rotulo_btn, key=f"btn_carregar_hist_{idx_h}", use_container_width=True):
+                # Carrega o registro do histórico diretamente de volta para a sessão
+                st.session_state['dados'] = {
+                    "nome": item.get("nome", ""),
+                    "contato": item.get("contato", ""),
+                    "endereco": item.get("endereco", ""),
+                    "telefone": item.get("telefone", ""),
+                    "website": item.get("website", ""),
+                    "nota": item.get("nota", 0.0),
+                    "avaliacoes": item.get("avaliacoes", 0),
+                    "tem_tour360": item.get("tem_tour360", False),
+                    "tem_fotos_hd": item.get("tem_fotos_hd", False),
+                    "categorias_completas": item.get("categorias_completas", False),
+                    "horarios_ok": item.get("horarios_ok", False),
+                    "tem_descricao": item.get("tem_descricao", False),
+                    "atributos_ok": item.get("atributos_ok", False),
+                    "resposta_avaliacoes_ok": item.get("resposta_avaliacoes_ok", False),
+                    "foto_reference": item.get("foto_reference", ""),
+                    "categorias_detectadas": []
+                }
+                st.session_state['etapa_atual'] = 5
+                st.rerun()
     else:
         st.caption("Nenhuma proposta salva ainda.")
 
@@ -1250,7 +1317,7 @@ elif etapa == 5:
         st.markdown("---")
         st.markdown("#### 👁️ PRÉ-VISUALIZAÇÃO DO PDF:")
         
-        # Renderização via leitor Mozilla PDF.js para desbloquear visualização no Chrome
+        # Renderização via leitor Mozilla PDF.js
         base64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
         
         pdf_display = f'''
