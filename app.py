@@ -1482,4 +1482,4 @@ st.markdown("""
         Whatsapp: (16) 99133-2121 | 
         <b>Tour360VR - Gestão de Perfil do Google</b>
     </div>
-""", unsafe_allow_html=True
+""", unsafe_allow_html=True)
