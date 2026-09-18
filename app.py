@@ -138,10 +138,10 @@ st.markdown("""
         margin-bottom: 12px !important;
     }
 
-    /* QUADROS DE CONTEÚDO */
+    /* QUADROS DE CONTEÚDO (Borda Azul Normal) */
     .dashboard-card { 
         background-color: #1e293b !important; 
-        border: 1px solid #38bdf8 !important; 
+        border: 1.5px solid #3b82f6 !important; 
         border-radius: 14px; 
         padding: 18px; 
         margin-top: 10px !important;
@@ -149,17 +149,19 @@ st.markdown("""
         box-shadow: 0 4px 12px rgba(15, 23, 42, 0.4);
     }
 
+    /* TÍTULO DOS QUADROS CENTRALIZADO */
     .card-title { 
         font-size: 15px; 
         font-weight: 700; 
-        color: #38bdf8; 
+        color: #60a5fa; 
         margin-bottom: 14px; 
         text-transform: uppercase; 
         letter-spacing: 0.8px; 
         line-height: 1.3;
+        text-align: center !important;
     }
     
-    /* BOTÕES SECUNDÁRIOS (ETAPAS INATIVAS E NAVEGAÇÃO) */
+    /* BOTÕES SECUNDÁRIOS (ETAPAS INATIVAS E NAVEGAÇÃO - Borda Azul Normal) */
     .stApp [data-testid="stBaseButton-secondary"] {
         background-color: #1e293b !important;
         color: #cbd5e1 !important;
@@ -176,10 +178,10 @@ st.markdown("""
         background-color: #2563eb !important;
         color: #ffffff !important;
         border-color: #60a5fa !important;
-        box-shadow: 0 0 12px rgba(59, 130, 246, 0.5) !important;
+        box-shadow: 0 0 10px rgba(59, 130, 246, 0.4) !important;
     }
 
-    /* ETAPA ATIVA (PRIMARY) */
+    /* ETAPA ATIVA (PRIMARY - ÚNICO ELEMENTO COM EFEITO NEON ABRANGENTE) */
     .stApp [data-testid="stBaseButton-primary"] {
         background-color: #0f172a !important;
         color: #38bdf8 !important;
@@ -188,7 +190,7 @@ st.markdown("""
         font-weight: 800 !important;
         font-size: 13.5px !important;
         padding: 9px 12px !important;
-        box-shadow: 0 0 16px rgba(56, 189, 248, 0.5) !important;
+        box-shadow: 0 0 18px rgba(56, 189, 248, 0.7) !important;
     }
 
     .stApp [data-testid="stBaseButton-primary"]:hover {
@@ -1131,7 +1133,7 @@ with st.sidebar:
         st.caption("Nenhuma proposta salva ainda.")
 
 # -----------------------------------------------------------------------------
-# 7. BARRA DE ETAPAS CLICÁVEIS (NATIVO: PRIMARY = ETAPA ATIVA)
+# 7. BARRA DE ETAPAS CLICÁVEIS (NATIVO: PRIMARY = ETAPA ATIVA NEON)
 # -----------------------------------------------------------------------------
 etapa_atual = st.session_state['etapa_atual']
 
