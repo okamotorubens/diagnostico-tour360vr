@@ -40,7 +40,7 @@ st.markdown("""
 
     /* Puxa a logo da Okamoto ao topo e aproxima do texto */
     .sidebar-logo-okamoto {
-        margin-top: -65px !important;
+        margin-top: -35px !important;
         margin-bottom: -35px !important; /* Margem inferior reduzida para aproximação */
     }
     
