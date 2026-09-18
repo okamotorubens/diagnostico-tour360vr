@@ -40,7 +40,7 @@ st.markdown("""
 
     /* Puxa a logo da Okamoto suavemente ao topo */
     .sidebar-logo-okamoto {
-        margin-top: -55px !important;
+        margin-top: -50px !important;
         margin-bottom: -10px !important;
     }
     
@@ -50,7 +50,7 @@ st.markdown("""
         font-weight: 800;
         color: #f8fafc;
         line-height: 1.2;
-        margin-top: -15px !important;
+        margin-top: -5px !important;
         margin-bottom: 10px !important;
         white-space: nowrap;
         text-align: center;
@@ -81,7 +81,7 @@ st.markdown("""
         text-align: center; 
         color: #38bdf8; 
         font-weight: 700; 
-        margin-bottom: 18px !important; /* Respiro em relação ao score */
+        margin-bottom: 15px !important; /* Respiro em relação ao score */
     }
 
     /* Seção de Score Diagnóstico com respiro antes do divisor */
