@@ -48,8 +48,8 @@ st.markdown("""
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 5px; /* Espaçamento maior e mais imponente entre as logos e o título */
-        margin-bottom: 13px;
+        gap: 6px; /* Espaçamento maior e mais imponente entre as logos e o título */
+        margin-bottom: 14px;
         width: 100%;
     }
 
