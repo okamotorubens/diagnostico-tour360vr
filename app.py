@@ -9,7 +9,7 @@ from fpdf import FPDF
 from PIL import Image
 
 # -----------------------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA E CSS RECALIBRADO
+# 1. CONFIGURAÇÃO DA PÁGINA E CSS
 # -----------------------------------------------------------------------------
 st.set_page_config(
     page_title="Consultoria & Diagnóstico - Tour360VR",
@@ -34,86 +34,86 @@ st.markdown("""
         border-right: 1px solid #1f2937; 
     }
     
-    /* Preenchimento topo/base otimizado da Sidebar */
+    /* Padding interno ajustado na Sidebar para expandir o conteúdo */
     [data-testid="stSidebarUserContent"] {
-        padding-top: 0.8rem !important;
-        padding-bottom: 0.8rem !important;
-        padding-left: 0.9rem !important;
-        padding-right: 0.9rem !important;
+        padding-top: 1.2rem !important;
+        padding-bottom: 1.0rem !important;
+        padding-left: 1.0rem !important;
+        padding-right: 1.0rem !important;
     }
 
-    /* BLOCO DO CABEÇALHO RECALIBRADO (PROPORÇÃO PERFEITA DE LOGOS E ESPAÇOS) */
+    /* BLOCO DO CABEÇALHO EXPANDIDO E MAIS ESPAÇADO */
     .sidebar-header-box {
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 6px; /* Espaçamento harmonioso e bem visível */
-        margin-bottom: 8px;
+        gap: 14px; /* Espaçamento maior e mais imponente entre as logos e o título */
+        margin-bottom: 15px;
         width: 100%;
     }
 
-    /* Logo Okamoto com tamanho amplo e nítido */
+    /* Logo Okamoto ampliada */
     .sidebar-header-box img.logo-okamoto {
-        max-width: 200px;
-        width: 85%;
+        max-width: 230px;
+        width: 95%;
         height: auto;
         display: block;
     }
 
-    /* Título Consultoria & Diagnóstico proporcional */
+    /* Título Consultoria & Diagnóstico destacado */
     .sidebar-header-box .sidebar-title-single {
-        font-size: 15px;
+        font-size: 16px;
         font-weight: 800;
         color: #f8fafc;
         line-height: 1.2;
         text-align: center;
         margin: 2px 0;
         white-space: nowrap;
-        letter-spacing: 0.3px;
+        letter-spacing: 0.5px;
     }
 
-    /* Logo Tour360VR destacada */
+    /* Logo Tour360VR ampliada */
     .sidebar-header-box img.logo-tour {
-        max-width: 110px;
-        width: 50%;
+        max-width: 130px;
+        width: 58%;
         height: auto;
         display: block;
     }
 
-    /* Divisores discretos */
+    /* Divisores elegantes */
     .sidebar-divider {
         border-top: 1px solid #1e293b;
-        margin: 8px 0 !important;
+        margin: 12px 0 !important;
     }
 
     /* Rótulo 'Cliente em Atendimento' */
     .label-cliente-centralizado {
         text-align: center;
         font-weight: 700;
-        font-size: 11px;
-        margin-bottom: 4px !important;
+        font-size: 12px;
+        margin-bottom: 6px !important;
         color: #94a3b8;
         text-transform: uppercase;
         letter-spacing: 0.5px;
     }
 
-    /* Card do Cliente */
+    /* Card do Cliente com mais altura e destaque */
     .box-cliente-atendimento {
         background-color: #1e293b; 
         border: 1px solid #334155; 
         border-radius: 8px; 
-        padding: 8px 10px; 
+        padding: 10px 12px; 
         text-align: center; 
         color: #38bdf8; 
         font-weight: 700; 
-        font-size: 13px;
-        margin-bottom: 8px !important;
+        font-size: 14px;
+        margin-bottom: 12px !important;
     }
 
     /* Container do Score Diagnóstico */
     .container-score-diagnostico {
-        margin-bottom: 10px !important;
+        margin-bottom: 14px !important;
     }
 
     .dashboard-card { 
@@ -156,12 +156,12 @@ st.markdown("""
         border-radius: 8px; 
         font-weight: 700;
         font-size: 13px;
-        padding: 9px 14px;
+        padding: 10px 16px;
         transition: all 0.2s ease;
     }
     [data-testid="stSidebar"] .stButton > button:hover { 
         background-color: #1d4ed8; 
-        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+        box-shadow: 0 4px 10px rgba(37, 99, 235, 0.4);
     }
 
     /* Botões de Navegação entre Etapas */
@@ -1010,7 +1010,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     return bytes(pdf.output())
 
 # -----------------------------------------------------------------------------
-# 5. SIDEBAR COM CABEÇALHO DENSIDADE BALANCEADA
+# 5. SIDEBAR COM EXPANSÃO AMPLA
 # -----------------------------------------------------------------------------
 with st.sidebar:
     path_okamoto = obter_caminho_logo("okamoto")
@@ -1019,7 +1019,7 @@ with st.sidebar:
     b64_okamoto = carregar_imagem_base64(path_okamoto) if path_okamoto else "https://okamotomidiasvisuais.com.br/assets/img/logo.png"
     b64_tour = carregar_imagem_base64(path_tour) if path_tour else "https://tour360vr.com.br/assets/img/logo.png"
 
-    # Header Completo em HTML Único com dimensões recalibradas
+    # Header Completo em HTML Único com espaçamentos otimizados
     st.markdown(f"""
         <div class="sidebar-header-box">
             <img src="{b64_okamoto}" class="logo-okamoto" alt="Okamoto Mídias Visuais" />
@@ -1049,11 +1049,11 @@ with st.sidebar:
 
     st.markdown(f"""
         <div class="container-score-diagnostico">
-            <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; color: #f8fafc; margin-bottom: 3px;">
+            <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; color: #f8fafc; margin-bottom: 4px;">
                 <span>Score Diagnóstico:</span>
                 <span style="color: {cor_score};">{score_atual}/100 ({status_txt})</span>
             </div>
-            <div style="background-color: #1e293b; border-radius: 4px; height: 7px; width: 100%; overflow: hidden; border: 1px solid #334155;">
+            <div style="background-color: #1e293b; border-radius: 4px; height: 8px; width: 100%; overflow: hidden; border: 1px solid #334155;">
                 <div style="background-color: {cor_score}; height: 100%; width: {score_atual}%; transition: width 0.4s ease;"></div>
             </div>
         </div>
@@ -1083,7 +1083,7 @@ with st.sidebar:
         st.rerun()
 
     st.markdown('<div class="sidebar-divider"></div>', unsafe_allow_html=True)
-    st.markdown("<div style='font-size: 12px; font-weight: 700; color: #f8fafc; margin-bottom: 4px;'>📜 Histórico de Propostas</div>", unsafe_allow_html=True)
+    st.markdown("<div style='font-size: 12px; font-weight: 700; color: #f8fafc; margin-bottom: 6px;'>📜 Histórico de Propostas</div>", unsafe_allow_html=True)
     
     lista_hist = carregar_historico()
     if lista_hist:
