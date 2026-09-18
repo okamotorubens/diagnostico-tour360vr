@@ -11,7 +11,7 @@ from PIL import Image
 # 1. CONFIGURAÇÃO DA PÁGINA E CSS
 # -----------------------------------------------------------------------------
 st.set_page_config(
-    page_title="Consultoria - Proposta - CRM",
+    page_title="Consultoria & Diagnóstico - Tour360VR",
     page_icon="🌐",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -19,7 +19,7 @@ st.set_page_config(
 
 st.markdown("""
     <style>
-    /* Oculta apenas o menu de navegação automático da sidebar */
+    /* Oculta navegação automática nativa do Streamlit */
     [data-testid="stSidebarNav"] { display: none !important; }
 
     .stApp { 
@@ -900,11 +900,11 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     return bytes(pdf.output())
 
 # -----------------------------------------------------------------------------
-# 5. SIDEBAR: TÍTULO AMPLIADO, LOGOS E NAVEGAÇÃO CORRIGIDA
+# 5. SIDEBAR SIMPLIFICADA (EXCLUSIVAMENTE CONSULTORIA)
 # -----------------------------------------------------------------------------
 with st.sidebar:
     st.markdown("""
-        <div class='sidebar-title-single'>Consultoria - Proposta - CRM</div>
+        <div class='sidebar-title-single'>Consultoria & Diagnóstico</div>
     """, unsafe_allow_html=True)
 
     logo_okamoto = obter_caminho_logo("okamoto")
@@ -922,12 +922,6 @@ with st.sidebar:
         st.markdown("**Tour360VR**")
 
     st.markdown("<br>", unsafe_allow_html=True)
-
-    # NAVEGAÇÃO APONTANDO PARA A RAIZ DO APP E A PASTA PAGES
-    st.page_link("app.py", label="📋 Consultoria & Diagnóstico", icon="🔍")
-    st.page_link("pages/02_CRM_Okamoto_Midias_Visuais.py", label="📊 CRM Okamoto Mídias Visuais", icon="🚀")
-
-    st.markdown("---")
 
     nome_empresa_atual = st.session_state['dados'].get('nome') or "Nenhum cliente"
     st.markdown("**Cliente em Atendimento:**")
