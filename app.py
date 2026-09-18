@@ -33,68 +33,68 @@ st.markdown("""
         border-right: 1px solid #1f2937; 
     }
     
-    /* Elimina o padding superior interno do container da sidebar */
+    /* Elimina qualquer padding/espaçamento no topo da sidebar */
     [data-testid="stSidebarUserContent"] {
         padding-top: 0.0rem !important;
     }
 
-    /* Puxa a logo da Okamoto bem para o topo com margem inferior zerada/negativa */
+    /* Puxa a logo Okamoto bem ao topo e cola no elemento seguinte */
     .sidebar-logo-okamoto {
-        margin-top: -75px !important;
-        margin-bottom: -45px !important;
+        margin-top: -85px !important;
+        margin-bottom: -55px !important;
     }
     
-    /* Título 'Consultoria e Diagnóstico' colado na logo Okamoto */
+    /* Título 'Consultoria & Diagnóstico' totalmente colado e compacto */
     .sidebar-title-single {
-        font-size: 15px;
+        font-size: 14px;
         font-weight: 800;
         color: #f8fafc;
-        line-height: 1.1;
-        margin-top: -10px !important;
-        margin-bottom: -15px !important;
+        line-height: 1.0;
+        margin-top: -5px !important;
+        margin-bottom: -20px !important;
         white-space: nowrap;
         text-align: center;
     }
 
-    /* Logo da Tour360VR compactada e bem colada no texto acima */
+    /* Logo Tour360VR compactada e sem margens verticais sobrando */
     .sidebar-logo-tour {
-        margin-top: -10px !important;
-        margin-bottom: -10px !important;
+        margin-top: -15px !important;
+        margin-bottom: -25px !important;
     }
 
-    /* Rótulo centralizado compacto */
+    /* Rótulo 'Cliente em Atendimento' ajustado com margem mínima */
     .label-cliente-centralizado {
         text-align: center;
         font-weight: 700;
         font-size: 13px;
         margin-top: 0px;
-        margin-bottom: 4px !important;
+        margin-bottom: 3px !important;
         color: #f8fafc;
     }
 
-    /* Card do Cliente compacto */
+    /* Card do Cliente compacto e elegante */
     .box-cliente-atendimento {
         background-color: #1e293b; 
         border: 1px solid #334155; 
         border-radius: 8px; 
-        padding: 6px 8px; 
+        padding: 5px 8px; 
         text-align: center; 
         color: #38bdf8; 
         font-weight: 700; 
         font-size: 13px;
-        margin-bottom: 8px !important;
+        margin-bottom: 6px !important;
     }
 
     /* Seção de Score Diagnóstico enxuta */
     .container-score-diagnostico {
-        margin-top: 2px; 
-        margin-bottom: 8px !important;
+        margin-top: 0px; 
+        margin-bottom: 6px !important;
     }
 
-    /* Linhas divisórias ultrafinas e com espaçamento mínimo */
+    /* Divisores ultrafinos com margem mínima */
     [data-testid="stSidebar"] hr {
-        margin-top: 4px !important;
-        margin-bottom: 4px !important;
+        margin-top: 2px !important;
+        margin-bottom: 2px !important;
         border-color: #1e293b !important;
     }
 
@@ -122,7 +122,7 @@ st.markdown("""
         border: 1px solid #3b82f6; 
         border-radius: 8px; 
         font-weight: 700;
-        padding: 8px 16px;
+        padding: 7px 14px;
         transition: all 0.2s ease;
     }
     .stButton > button:hover { 
@@ -967,7 +967,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     return bytes(pdf.output())
 
 # -----------------------------------------------------------------------------
-# 5. SIDEBAR ULTRACOMPACTA
+# 5. SIDEBAR COM RECOMPOSIÇÃO ULTRACOMPACTA
 # -----------------------------------------------------------------------------
 with st.sidebar:
     logo_okamoto = obter_caminho_logo("okamoto")
@@ -1017,11 +1017,11 @@ with st.sidebar:
 
     st.markdown(f"""
         <div class="container-score-diagnostico">
-            <div style="display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; color: #f8fafc; margin-bottom: 3px;">
+            <div style="display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; color: #f8fafc; margin-bottom: 2px;">
                 <span>Score Diagnóstico:</span>
                 <span style="color: {cor_score};">{score_atual}/100 ({status_txt})</span>
             </div>
-            <div style="background-color: #1e293b; border-radius: 8px; height: 8px; width: 100%; overflow: hidden; border: 1px solid #334155;">
+            <div style="background-color: #1e293b; border-radius: 6px; height: 7px; width: 100%; overflow: hidden; border: 1px solid #334155;">
                 <div style="background-color: {cor_score}; height: 100%; width: {score_atual}%; transition: width 0.4s ease;"></div>
             </div>
         </div>
