@@ -108,12 +108,12 @@ st.markdown("""
         color: #38bdf8; 
         font-weight: 700; 
         font-size: 14px;
-        margin-bottom: 12px !important;
+        margin-bottom: 13px !important;
     }
 
     /* Container do Score Diagnóstico */
     .container-score-diagnostico {
-        margin-bottom: 14px !important;
+        margin-bottom: 16px !important;
     }
 
     .dashboard-card { 
