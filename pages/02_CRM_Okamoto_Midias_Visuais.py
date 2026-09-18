@@ -161,8 +161,8 @@ with st.sidebar:
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # REDIRECIONAMENTO PARA PÁGINA ESPECÍFICA DE CONSULTORIA
-    st.page_link("pages/01_Consultoria_e_Diagnostico.py", label="📋 Consultoria & Diagnóstico", icon="🔍")
+    # NAVEGAÇÃO APONTANDO PARA A RAIZ DO APP E A PASTA PAGES
+    st.page_link("app.py", label="📋 Consultoria & Diagnóstico", icon="🔍")
     st.page_link("pages/02_CRM_Okamoto_Midias_Visuais.py", label="📊 CRM Okamoto Mídias Visuais", icon="🚀")
 
     st.markdown("---")
