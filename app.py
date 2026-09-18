@@ -9,14 +9,11 @@ from fpdf import FPDF
 from PIL import Image
 
 # -----------------------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA E CSS
+# 1. CONFIGURAÇÃO DA PÁGINA E CSS (OBRIGATORIAMENTE O PRIMEIRO COMANDO ST)
 # -----------------------------------------------------------------------------
-# Obter caminho ou URL da logo para o favicon
-favicon_logo = obter_caminho_logo("tour360") or "https://tour360vr.com.br/assets/img/logo.png"
-
 st.set_page_config(
     page_title="Consultoria & Diagnóstico - Tour360VR",
-    page_icon=favicon_logo,  # <--- Passa a imagem da Tour360VR como Ícone da Aba
+    page_icon="https://tour360vr.com.br/assets/img/logo.png",  # Favicon oficial Tour360VR
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -37,7 +34,7 @@ st.markdown("""
         border-right: 1px solid #1f2937; 
     }
     
-    /* Padding interno ajustado na Sidebar */
+    /* Padding interno na Sidebar */
     [data-testid="stSidebarUserContent"] {
         padding-top: 1.2rem !important;
         padding-bottom: 1.0rem !important;
@@ -129,7 +126,7 @@ st.markdown("""
         line-height: 1.3;
     }
     
-    /* BOTÕES INATIVOS DA BARRA DE NAV SOBERANOS E DISCRETOS */
+    /* BOTÕES INATIVOS DA BARRA DE NAVEGAÇÃO SUPERIOR */
     div[key^="btn_etapa_"] button {
         background-color: #111827 !important;
         color: #64748b !important;
@@ -148,7 +145,7 @@ st.markdown("""
         border-color: #38bdf8 !important;
     }
 
-    /* SUPER DESTAQUE PARA A ETAPA ATIVA (AZUL VIBRANTE NEON COM BORDAS E BRILHO) */
+    /* DESTAQUE DA ETAPA ATIVA (AZUL VIBRANTE NEON COM BORDAS E BRILHO) */
     div[key^="btn_etapa_active_"] button {
         background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
         color: #ffffff !important;
@@ -381,7 +378,7 @@ if 'unidades_encontradas' not in st.session_state:
     st.session_state['unidades_encontradas'] = []
 
 # -----------------------------------------------------------------------------
-# 4. GERADOR DE PDF INTELIGENTE (CABEÇALHO DINÂMICO)
+# 4. GERADOR DE PDF INTELIGENTE
 # -----------------------------------------------------------------------------
 class PDFTour360Oficial(FPDF):
     def __init__(self, *args, **kwargs):
@@ -389,7 +386,6 @@ class PDFTour360Oficial(FPDF):
         super().__init__(*args, **kwargs)
 
     def header(self):
-        # Exibe o cabeçalho em todas as páginas, EXCETO na Capa quando ela estiver presente
         if self.page_no() == 1 and self.capa_incluida:
             return
         
