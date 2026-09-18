@@ -32,32 +32,33 @@ st.markdown("""
         background-color: #111827; 
         border-right: 1px solid #1f2937; 
     }
-    [data-testid="stSidebar"] > div:first-child {
-        padding-top: 10px !important;
+    
+    /* Remove todo o espaçamento superior nativo do container da sidebar */
+    [data-testid="stSidebarUserContent"] {
+        padding-top: 0.5rem !important;
     }
 
-    /* Subir a Logo da Okamoto na Sidebar */
+    /* Subir e compactar os elementos da sidebar */
     .sidebar-logo-okamoto {
-        margin-top: -25px !important;
-        margin-bottom: 5px !important;
+        margin-top: -35px !important;
+        margin-bottom: 0px !important;
     }
     
-    /* Subir o Título Consultoria & Diagnóstico */
     .sidebar-title-single {
-        font-size: 18px;
+        font-size: 17px;
         font-weight: 800;
         color: #f8fafc;
         line-height: 1.1;
-        margin-top: -15px !important;
-        margin-bottom: 8px !important;
+        margin-top: -25px !important;
+        margin-bottom: 5px !important;
         white-space: nowrap;
         text-align: center;
     }
 
-    /* Redução de Espaçamento das Linhas Divisorias da Sidebar */
+    /* Redução drástica das margens dos divisores (hr) na sidebar */
     [data-testid="stSidebar"] hr {
-        margin-top: 10px !important;
-        margin-bottom: 10px !important;
+        margin-top: 6px !important;
+        margin-bottom: 6px !important;
     }
 
     .dashboard-card { 
@@ -77,7 +78,7 @@ st.markdown("""
         line-height: 1.3;
     }
     
-    /* Botões Padrão de Ação Principal (Pesquisar, Carregar, Baixar) */
+    /* Botões Padrão de Ação Principal */
     .stButton > button { 
         background-color: #2563eb; 
         color: #ffffff; 
@@ -92,7 +93,7 @@ st.markdown("""
         box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
     }
 
-    /* Estilização Diferenciada para Botões de Navegação (Avançar/Voltar) */
+    /* Estilização Diferenciada para Botões de Navegação */
     div[data-testid="stColumn"] > div > div > div > button {
         background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
         color: #38bdf8 !important;
@@ -929,7 +930,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     return bytes(pdf.output())
 
 # -----------------------------------------------------------------------------
-# 5. SIDEBAR SIMPLIFICADA (COM ESPAÇAMENTOS REAJUSTADOS)
+# 5. SIDEBAR SIMPLIFICADA (AJSUTE DE SELETORES E COMPACTAÇÃO)
 # -----------------------------------------------------------------------------
 with st.sidebar:
     logo_okamoto = obter_caminho_logo("okamoto")
@@ -971,8 +972,8 @@ with st.sidebar:
         status_txt = "EXCELENTE"
 
     st.markdown(f"""
-        <div style="margin-top: 2px; margin-bottom: 5px;">
-            <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; color: #f8fafc; margin-bottom: 3px;">
+        <div style="margin-top: 0px; margin-bottom: 2px;">
+            <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; color: #f8fafc; margin-bottom: 2px;">
                 <span>Score Diagnóstico:</span>
                 <span style="color: {cor_score};">{score_atual}/100 ({status_txt})</span>
             </div>
