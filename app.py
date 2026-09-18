@@ -41,7 +41,7 @@ st.markdown("""
     /* Puxa a logo da Okamoto ao topo e aproxima do texto */
     .sidebar-logo-okamoto {
         margin-top: -5px !important;
-        margin-bottom: -25px !important; /* Margem inferior reduzida para aproximação */
+        margin-bottom: -15px !important; /* Margem inferior reduzida para aproximação */
     }
     
     /* Título 'Consultoria e Diagnóstico' colado na logo Okamoto */
@@ -50,7 +50,7 @@ st.markdown("""
         font-weight: 800;
         color: #f8fafc;
         line-height: 1.2;
-        margin-top: -10px !important; /* Puxado para cima aproximando da logo */
+        margin-top: -5px !important; /* Puxado para cima aproximando da logo */
         margin-bottom: 10px !important;
         white-space: nowrap;
         text-align: center;
