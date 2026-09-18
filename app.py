@@ -40,7 +40,7 @@ st.markdown("""
 
     /* Puxa a logo da Okamoto suavemente ao topo */
     .sidebar-logo-okamoto {
-        margin-top: -65px !important;
+        margin-top: -55px !important;
         margin-bottom: -10px !important;
     }
     
@@ -59,7 +59,7 @@ st.markdown("""
     /* Logo da Tour360VR com respiro proporcional */
     .sidebar-logo-tour {
         margin-top: -5px !important;
-        margin-bottom: 12px !important;
+        margin-bottom: 8px !important;
     }
 
     /* Rótulo centralizado com respiro ampliado antes da box */
@@ -67,7 +67,7 @@ st.markdown("""
         text-align: center;
         font-weight: 700;
         font-size: 14px;
-        margin-top: 4px;
+        margin-top: 3px;
         margin-bottom: 10px !important;
         color: #f8fafc;
     }
