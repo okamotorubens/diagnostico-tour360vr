@@ -33,27 +33,35 @@ st.markdown("""
         border-right: 1px solid #1f2937; 
     }
     
-    /* Remove padding do topo para colar os elementos mais acima */
+    /* Zerar completamente o padding do topo no container da sidebar */
     [data-testid="stSidebarUserContent"] {
-        padding-top: 0.2rem !important;
+        padding-top: 0.0rem !important;
     }
 
-    /* Puxa a logo da Okamoto para o topo absoluto */
+    /* Puxa a logo da Okamoto ao limite topo absoluto */
     .sidebar-logo-okamoto {
-        margin-top: -45px !important;
-        margin-bottom: -15px !important;
+        margin-top: -65px !important;
+        margin-bottom: -20px !important;
     }
     
-    /* Aproxima 'Consultoria & Diagnóstico' da Logo Okamoto (~3 espaços) */
+    /* Aproxima ainda mais (+2 espaços) o título 'Consultoria & Diagnóstico' */
     .sidebar-title-single {
-        font-size: 18px;
+        font-size: 17px;
         font-weight: 800;
         color: #f8fafc;
         line-height: 1.1;
-        margin-top: -30px !important;
+        margin-top: -45px !important;
         margin-bottom: 5px !important;
         white-space: nowrap;
         text-align: center;
+    }
+
+    /* Centraliza o rótulo do Cliente em Atendimento */
+    .label-cliente-centralizado {
+        text-align: center;
+        font-weight: 700;
+        margin-bottom: 4px;
+        color: #f8fafc;
     }
 
     /* Espaçamento das linhas da sidebar */
@@ -931,7 +939,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     return bytes(pdf.output())
 
 # -----------------------------------------------------------------------------
-# 5. SIDEBAR SIMPLIFICADA (COM ESPAÇAMENTOS REAJUSTADOS E COMPACTOS)
+# 5. SIDEBAR SIMPLIFICADA (COM LOGO OKAMOTO ELEVADA E CLIENTE CENTRALIZADO)
 # -----------------------------------------------------------------------------
 with st.sidebar:
     logo_okamoto = obter_caminho_logo("okamoto")
@@ -957,8 +965,14 @@ with st.sidebar:
     st.markdown("---")
 
     nome_empresa_atual = st.session_state['dados'].get('nome') or "Nenhum cliente"
-    st.markdown("**Cliente em Atendimento:**")
-    st.info(f"🏢 {nome_empresa_atual}")
+    st.markdown("<div class='label-cliente-centralizado'>Cliente em Atendimento:</div>", unsafe_allow_html=True)
+    
+    # Exibição centralizada do cliente em atendimento
+    st.markdown(f"""
+        <div style="background-color: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 10px; text-align: center; color: #38bdf8; font-weight: 700; margin-bottom: 10px;">
+            🏢 {nome_empresa_atual}
+        </div>
+    """, unsafe_allow_html=True)
     
     score_atual = calcular_score_real(st.session_state['dados'])
 
@@ -984,7 +998,7 @@ with st.sidebar:
         </div>
     """, unsafe_allow_html=True)
 
-    # Respiro de 1 a 2 espaços antes da linha divisória do Score
+    # Respiro entre a barra de score e a linha separadora
     st.markdown("<div style='margin-bottom: 12px;'></div>", unsafe_allow_html=True)
     st.markdown("---")
 
