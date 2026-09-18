@@ -48,15 +48,15 @@ st.markdown("""
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 4px; /* Espaçamento maior e mais imponente entre as logos e o título */
-        margin-bottom: 12px;
+        gap: 5px; /* Espaçamento maior e mais imponente entre as logos e o título */
+        margin-bottom: 13px;
         width: 100%;
     }
 
     /* Logo Okamoto ampliada */
     .sidebar-header-box img.logo-okamoto {
         max-width: 250px;
-        width: 95%;
+        width: 100%;
         height: auto;
         display: block;
     }
@@ -68,7 +68,7 @@ st.markdown("""
         color: #f8fafc;
         line-height: 1.2;
         text-align: center;
-        margin: -5px 0;
+        margin: -6px 0;
         white-space: nowrap;
         letter-spacing: 0.5px;
     }
@@ -76,7 +76,7 @@ st.markdown("""
     /* Logo Tour360VR ampliada */
     .sidebar-header-box img.logo-tour {
         max-width: 130px;
-        width: 58%;
+        width: 50%;
         height: auto;
         display: block;
     }
