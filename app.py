@@ -46,11 +46,11 @@ st.markdown("""
     
     /* Aproxima 'Consultoria & Diagnóstico' da Logo Okamoto (~3 espaços) */
     .sidebar-title-single {
-        font-size: 17px;
+        font-size: 18px;
         font-weight: 800;
         color: #f8fafc;
         line-height: 1.1;
-        margin-top: -35px !important;
+        margin-top: -30px !important;
         margin-bottom: 5px !important;
         white-space: nowrap;
         text-align: center;
