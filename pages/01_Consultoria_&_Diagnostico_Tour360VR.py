@@ -406,7 +406,6 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     pdf.set_x(x_capa)
     pdf.cell(w_capa, 4.8, conv(f"Telefone: {dados.get('telefone') or 'N/I'}   |   {site_txt}"), align='C', ln=True)
 
-    # RENDERIZAÇÃO DA FOTO SEM DISTORÇÕES
     y_foto, h_container, w_container = 150.0, 84.0, 186.0
     foto_renderizada = False
 
@@ -901,7 +900,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     return bytes(pdf.output())
 
 # -----------------------------------------------------------------------------
-# 5. SIDEBAR: TÍTULO AMPLIADO, LOGOS E SCORE DINÂMICO
+# 5. SIDEBAR: TÍTULO AMPLIADO, LOGOS E NAVEGAÇÃO CORRIGIDA COM NÚMEROS
 # -----------------------------------------------------------------------------
 with st.sidebar:
     st.markdown("""
@@ -924,7 +923,8 @@ with st.sidebar:
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    st.page_link("app.py", label="📋 Consultoria & Diagnóstico", icon="🔍")
+    # MAPEAMENTO EXATO DAS PÁGINAS NUMERADAS NA PASTA PAGES
+    st.page_link("pages/01_Consultoria_e_Diagnostico.py", label="📋 Consultoria & Diagnóstico", icon="🔍")
     st.page_link("pages/02_CRM_Okamoto_Midias_Visuais.py", label="📊 CRM Okamoto Mídias Visuais", icon="🚀")
 
     st.markdown("---")
@@ -935,15 +935,14 @@ with st.sidebar:
     
     score_atual = calcular_score_real(st.session_state['dados'])
 
-    # DEFINIÇÃO DINÂMICA DE CORES DO SCORE
     if score_atual < 50:
-        cor_score = "#ef4444"  # Vermelho
+        cor_score = "#ef4444"
         status_txt = "CRÍTICO"
     elif score_atual < 80:
-        cor_score = "#f59e0b"  # Amarelo / Laranja
+        cor_score = "#f59e0b"
         status_txt = "MÉDIO"
     else:
-        cor_score = "#22c55e"  # Verde
+        cor_score = "#22c55e"
         status_txt = "EXCELENTE"
 
     st.markdown(f"""
