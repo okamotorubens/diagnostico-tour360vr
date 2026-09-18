@@ -38,35 +38,36 @@ st.markdown("""
         padding-top: 0.0rem !important;
     }
 
-    /* Puxa a logo da Okamoto mais 2 espaços para cima */
+    /* Puxa a logo da Okamoto para o topo */
     .sidebar-logo-okamoto {
         margin-top: -85px !important;
         margin-bottom: -20px !important;
     }
     
-    /* Eleva 'Consultoria & Diagnóstico' mais 2 espaços */
+    /* Eleva 'Consultoria & Diagnóstico' */
     .sidebar-title-single {
         font-size: 17px;
         font-weight: 800;
         color: #f8fafc;
         line-height: 1.1;
         margin-top: -55px !important;
-        margin-bottom: 5px !important;
+        margin-bottom: 0px !important;
         white-space: nowrap;
         text-align: center;
     }
 
-    /* Eleva a logo da Tour360VR mais 2 espaços */
+    /* Eleva a logo da Tour360VR para colocar bem próxima de 'Consultoria & Diagnóstico' */
     .sidebar-logo-tour {
-        margin-top: -05px !important;
+        margin-top: -30px !important;
         margin-bottom: 0px !important;
     }
 
-    /* Centraliza o rótulo do Cliente em Atendimento */
+    /* Centraliza e aumenta o respiro inferior do rótulo do Cliente em Atendimento */
     .label-cliente-centralizado {
         text-align: center;
         font-weight: 700;
-        margin-bottom: 4px;
+        margin-top: 6px;
+        margin-bottom: 12px; /* Espaço ampliado para dar respiro do quadro */
         color: #f8fafc;
     }
 
@@ -945,7 +946,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     return bytes(pdf.output())
 
 # -----------------------------------------------------------------------------
-# 5. SIDEBAR SIMPLIFICADA (COM LOGO OKAMOTO ELEVADA, TOUR360 SUBIDO E RESPIRO NO CLIENTE)
+# 5. SIDEBAR SIMPLIFICADA (COM ESPAÇAMENTOS REAJUSTADOS)
 # -----------------------------------------------------------------------------
 with st.sidebar:
     logo_okamoto = obter_caminho_logo("okamoto")
@@ -975,7 +976,7 @@ with st.sidebar:
     nome_empresa_atual = st.session_state['dados'].get('nome') or "Nenhum cliente"
     st.markdown("<div class='label-cliente-centralizado'>Cliente em Atendimento:</div>", unsafe_allow_html=True)
     
-    # Exibição centralizada do cliente em atendimento + respiro inferior de 12px
+    # Exibição centralizada do cliente em atendimento
     st.markdown(f"""
         <div style="background-color: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 10px; text-align: center; color: #38bdf8; font-weight: 700; margin-bottom: 12px;">
             🏢 {nome_empresa_atual}
