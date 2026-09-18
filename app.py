@@ -48,7 +48,7 @@ st.markdown("""
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 14px; /* Espaçamento maior e mais imponente entre as logos e o título */
+        gap: 10px; /* Espaçamento maior e mais imponente entre as logos e o título */
         margin-bottom: 15px;
         width: 100%;
     }
@@ -63,7 +63,7 @@ st.markdown("""
 
     /* Título Consultoria & Diagnóstico destacado */
     .sidebar-header-box .sidebar-title-single {
-        font-size: 16px;
+        font-size: 15px;
         font-weight: 800;
         color: #f8fafc;
         line-height: 1.2;
