@@ -48,8 +48,8 @@ st.markdown("""
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 10px; /* Espaçamento maior e mais imponente entre as logos e o título */
-        margin-bottom: 15px;
+        gap: 7px; /* Espaçamento maior e mais imponente entre as logos e o título */
+        margin-bottom: 13px;
         width: 100%;
     }
 
@@ -92,7 +92,7 @@ st.markdown("""
         text-align: center;
         font-weight: 700;
         font-size: 12px;
-        margin-bottom: 6px !important;
+        margin-bottom: 7px !important;
         color: #94a3b8;
         text-transform: uppercase;
         letter-spacing: 0.5px;
