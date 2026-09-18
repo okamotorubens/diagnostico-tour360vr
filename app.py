@@ -33,32 +33,33 @@ st.markdown("""
         border-right: 1px solid #1f2937; 
     }
     
-    /* Remove todo o espaçamento superior nativo do container da sidebar */
+    /* Remove padding do topo para colar os elementos mais acima */
     [data-testid="stSidebarUserContent"] {
-        padding-top: 0.5rem !important;
+        padding-top: 0.2rem !important;
     }
 
-    /* Subir e compactar os elementos da sidebar */
+    /* Puxa a logo da Okamoto para o topo absoluto */
     .sidebar-logo-okamoto {
-        margin-top: -35px !important;
-        margin-bottom: 0px !important;
+        margin-top: -45px !important;
+        margin-bottom: -15px !important;
     }
     
+    /* Aproxima 'Consultoria & Diagnóstico' da Logo Okamoto (~3 espaços) */
     .sidebar-title-single {
         font-size: 17px;
         font-weight: 800;
         color: #f8fafc;
         line-height: 1.1;
-        margin-top: -25px !important;
+        margin-top: -35px !important;
         margin-bottom: 5px !important;
         white-space: nowrap;
         text-align: center;
     }
 
-    /* Redução drástica das margens dos divisores (hr) na sidebar */
+    /* Espaçamento das linhas da sidebar */
     [data-testid="stSidebar"] hr {
-        margin-top: 6px !important;
-        margin-bottom: 6px !important;
+        margin-top: 8px !important;
+        margin-bottom: 8px !important;
     }
 
     .dashboard-card { 
@@ -930,7 +931,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     return bytes(pdf.output())
 
 # -----------------------------------------------------------------------------
-# 5. SIDEBAR SIMPLIFICADA (AJSUTE DE SELETORES E COMPACTAÇÃO)
+# 5. SIDEBAR SIMPLIFICADA (COM ESPAÇAMENTOS REAJUSTADOS E COMPACTOS)
 # -----------------------------------------------------------------------------
 with st.sidebar:
     logo_okamoto = obter_caminho_logo("okamoto")
@@ -983,7 +984,10 @@ with st.sidebar:
         </div>
     """, unsafe_allow_html=True)
 
+    # Respiro de 1 a 2 espaços antes da linha divisória do Score
+    st.markdown("<div style='margin-bottom: 12px;'></div>", unsafe_allow_html=True)
     st.markdown("---")
+
     if st.button("🧹 Iniciar Novo Atendimento", use_container_width=True):
         st.session_state['etapa_atual'] = 1
         st.session_state['dados'] = {
