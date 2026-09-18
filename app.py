@@ -33,48 +33,68 @@ st.markdown("""
         border-right: 1px solid #1f2937; 
     }
     
-    /* Zerar completamente o padding do topo no container da sidebar */
+    /* Padding superior suave no topo da sidebar */
     [data-testid="stSidebarUserContent"] {
         padding-top: 0.0rem !important;
     }
 
-    /* Puxa a logo da Okamoto para o topo */
+    /* Puxa a logo da Okamoto suavemente ao topo */
     .sidebar-logo-okamoto {
-        margin-top: -85px !important;
-        margin-bottom: -20px !important;
+        margin-top: -65px !important;
+        margin-bottom: -10px !important;
     }
     
-    /* Eleva 'Consultoria & Diagnóstico' */
+    /* Título 'Consultoria e Diagnóstico' alinhado */
     .sidebar-title-single {
-        font-size: 17px;
+        font-size: 16px;
         font-weight: 800;
         color: #f8fafc;
-        line-height: 1.1;
-        margin-top: -55px !important;
-        margin-bottom: 0px !important;
+        line-height: 1.2;
+        margin-top: -35px !important;
+        margin-bottom: 10px !important;
         white-space: nowrap;
         text-align: center;
     }
 
-    /* Eleva a logo da Tour360VR para colocar bem próxima de 'Consultoria & Diagnóstico' */
+    /* Logo da Tour360VR com respiro proporcional */
     .sidebar-logo-tour {
-        margin-top: -30px !important;
-        margin-bottom: 0px !important;
+        margin-top: -5px !important;
+        margin-bottom: 12px !important;
     }
 
-    /* Centraliza e aumenta o respiro inferior do rótulo do Cliente em Atendimento */
+    /* Rótulo centralizado com respiro ampliado antes da box */
     .label-cliente-centralizado {
         text-align: center;
         font-weight: 700;
-        margin-top: 6px;
-        margin-bottom: 12px; /* Espaço ampliado para dar respiro do quadro */
+        font-size: 14px;
+        margin-top: 4px;
+        margin-bottom: 10px !important;
         color: #f8fafc;
     }
 
-    /* Espaçamento das linhas da sidebar */
+    /* Card do Cliente com respiro antes do Score */
+    .box-cliente-atendimento {
+        background-color: #1e293b; 
+        border: 1px solid #334155; 
+        border-radius: 8px; 
+        padding: 10px; 
+        text-align: center; 
+        color: #38bdf8; 
+        font-weight: 700; 
+        margin-bottom: 18px !important; /* Respiro em relação ao score */
+    }
+
+    /* Seção de Score Diagnóstico com respiro antes do divisor */
+    .container-score-diagnostico {
+        margin-top: 5px; 
+        margin-bottom: 16px !important;
+    }
+
+    /* Linhas divisórias padronizadas */
     [data-testid="stSidebar"] hr {
-        margin-top: 8px !important;
-        margin-bottom: 8px !important;
+        margin-top: 10px !important;
+        margin-bottom: 10px !important;
+        border-color: #1e293b !important;
     }
 
     .dashboard-card { 
@@ -946,7 +966,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     return bytes(pdf.output())
 
 # -----------------------------------------------------------------------------
-# 5. SIDEBAR SIMPLIFICADA (COM ESPAÇAMENTOS REAJUSTADOS)
+# 5. SIDEBAR COM COMPOSIÇÃO VISUAL REFINADA
 # -----------------------------------------------------------------------------
 with st.sidebar:
     logo_okamoto = obter_caminho_logo("okamoto")
@@ -958,13 +978,13 @@ with st.sidebar:
         st.markdown("**Okamoto Mídias Visuais**")
 
     st.markdown("""
-        <div class='sidebar-title-single'>Consultoria & Diagnóstico</div>
+        <div class='sidebar-title-single'>Consultoria e Diagnóstico</div>
     """, unsafe_allow_html=True)
 
     logo_tour = obter_caminho_logo("tour360")
     if logo_tour:
         st.markdown("<div class='sidebar-logo-tour'>", unsafe_allow_html=True)
-        col_t1, col_t2, col_t3 = st.columns([0.25, 0.50, 0.25])
+        col_t1, col_t2, col_t3 = st.columns([0.22, 0.56, 0.22])
         with col_t2:
             st.image(logo_tour, use_container_width=True)
         st.markdown("</div>", unsafe_allow_html=True)
@@ -976,9 +996,9 @@ with st.sidebar:
     nome_empresa_atual = st.session_state['dados'].get('nome') or "Nenhum cliente"
     st.markdown("<div class='label-cliente-centralizado'>Cliente em Atendimento:</div>", unsafe_allow_html=True)
     
-    # Exibição centralizada do cliente em atendimento
+    # Exibição centralizada do cliente em atendimento com classe CSS dedicada
     st.markdown(f"""
-        <div style="background-color: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 10px; text-align: center; color: #38bdf8; font-weight: 700; margin-bottom: 12px;">
+        <div class="box-cliente-atendimento">
             🏢 {nome_empresa_atual}
         </div>
     """, unsafe_allow_html=True)
@@ -996,8 +1016,8 @@ with st.sidebar:
         status_txt = "EXCELENTE"
 
     st.markdown(f"""
-        <div style="margin-top: 0px; margin-bottom: 2px;">
-            <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; color: #f8fafc; margin-bottom: 2px;">
+        <div class="container-score-diagnostico">
+            <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; color: #f8fafc; margin-bottom: 4px;">
                 <span>Score Diagnóstico:</span>
                 <span style="color: {cor_score};">{score_atual}/100 ({status_txt})</span>
             </div>
@@ -1007,8 +1027,6 @@ with st.sidebar:
         </div>
     """, unsafe_allow_html=True)
 
-    # Respiro entre a barra de score e a linha separadora
-    st.markdown("<div style='margin-bottom: 12px;'></div>", unsafe_allow_html=True)
     st.markdown("---")
 
     if st.button("🧹 Iniciar Novo Atendimento", use_container_width=True):
