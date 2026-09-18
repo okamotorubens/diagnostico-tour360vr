@@ -9,11 +9,32 @@ from fpdf import FPDF
 from PIL import Image
 
 # -----------------------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA E CSS (OBRIGATORIAMENTE O PRIMEIRO COMANDO ST)
+# 1. CARREGAMENTO DO FAVICON DE FORMA SEGURA (VIA PIL/IMAGE)
+# -----------------------------------------------------------------------------
+def obter_favicon_pil():
+    caminhos = ['assets/logo_tour_transparente.png', 'assets/logo_tour.png', 'logo_tour_transparente.png', 'logo_tour.png']
+    for c in caminhos:
+        if os.path.exists(c):
+            try: return Image.open(c)
+            except Exception: pass
+            
+    url_oficial = "https://tour360vr.com.br/assets/img/logo.png"
+    try:
+        resp = requests.get(url_oficial, timeout=3)
+        if resp.status_code == 200:
+            return Image.open(io.BytesIO(resp.content))
+    except Exception:
+        pass
+    return "🌐"
+
+favicon_img = obter_favicon_pil()
+
+# -----------------------------------------------------------------------------
+# 2. CONFIGURAÇÃO DA PÁGINA (OBRIGATORIAMENTE O PRIMEIRO COMANDO ST)
 # -----------------------------------------------------------------------------
 st.set_page_config(
     page_title="Consultoria & Diagnóstico - Tour360VR",
-    page_icon="https://tour360vr.com.br/assets/img/logo.png",  # Favicon oficial Tour360VR
+    page_icon=favicon_img,
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -201,7 +222,7 @@ API_KEY_GOOGLE = (
 ARQUIVO_HISTORICO = "/tmp/historico_propostas_tour360.json"
 
 # -----------------------------------------------------------------------------
-# 2. FUNÇÕES UTILITÁRIAS & LOGOS
+# 3. FUNÇÕES UTILITÁRIAS & LOGOS
 # -----------------------------------------------------------------------------
 def conv(texto):
     if not texto: return ""
@@ -344,7 +365,7 @@ def buscar_detalhes_concorrente_especifico(nome_concorrente, cidade, api_key):
     return None
 
 # -----------------------------------------------------------------------------
-# 3. ESTADOS PERSISTENTES & ETAPAS
+# 4. ESTADOS PERSISTENTES & ETAPAS
 # -----------------------------------------------------------------------------
 if 'etapa_atual' not in st.session_state:
     st.session_state['etapa_atual'] = 1
@@ -378,7 +399,7 @@ if 'unidades_encontradas' not in st.session_state:
     st.session_state['unidades_encontradas'] = []
 
 # -----------------------------------------------------------------------------
-# 4. GERADOR DE PDF INTELIGENTE
+# 5. GERADOR DE PDF INTELIGENTE
 # -----------------------------------------------------------------------------
 class PDFTour360Oficial(FPDF):
     def __init__(self, *args, **kwargs):
@@ -994,7 +1015,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
     return bytes(pdf.output())
 
 # -----------------------------------------------------------------------------
-# 5. SIDEBAR
+# 6. SIDEBAR
 # -----------------------------------------------------------------------------
 with st.sidebar:
     path_okamoto = obter_caminho_logo("okamoto")
@@ -1101,7 +1122,7 @@ with st.sidebar:
         st.caption("Nenhuma proposta salva ainda.")
 
 # -----------------------------------------------------------------------------
-# 6. BARRA DE ETAPAS CLICÁVEIS (COM SETA E BRILHO NA ETAPA ATIVA)
+# 7. BARRA DE ETAPAS CLICÁVEIS (COM SETA E BRILHO NA ETAPA ATIVA)
 # -----------------------------------------------------------------------------
 etapa_atual = st.session_state['etapa_atual']
 
@@ -1145,7 +1166,7 @@ with col_e5:
 st.markdown("<div style='margin-bottom: 12px;'></div>", unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# 7. FLUXO SEQUENCIAL DAS ETAPAS
+# 8. FLUXO SEQUENCIAL DAS ETAPAS
 # -----------------------------------------------------------------------------
 
 # ETAPA 1: BUSCA & DIAGNÓSTICO DA FICHA
@@ -1459,7 +1480,7 @@ elif etapa_atual == 5:
             st.rerun()
 
 # -----------------------------------------------------------------------------
-# 8. RODAPÉ FIXO
+# 9. RODAPÉ FIXO
 # -----------------------------------------------------------------------------
 st.markdown("""
     <div class='custom-footer'>
