@@ -50,7 +50,7 @@ st.markdown("""
         font-weight: 800;
         color: #f8fafc;
         line-height: 1.2;
-        margin-top: -5px !important; /* Puxado para cima aproximando da logo */
+        margin-top: -45px !important; /* Puxado para cima aproximando da logo */
         margin-bottom: 10px !important;
         white-space: nowrap;
         text-align: center;
@@ -58,7 +58,7 @@ st.markdown("""
 
     /* Logo da Tour360VR com respiro proporcional */
     .sidebar-logo-tour {
-        margin-top: -5px !important;
+        margin-top: -15px !important;
         margin-bottom: 12px !important;
     }
 
