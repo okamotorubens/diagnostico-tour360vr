@@ -32,17 +32,32 @@ st.markdown("""
         background-color: #111827; 
         border-right: 1px solid #1f2937; 
     }
+    [data-testid="stSidebar"] > div:first-child {
+        padding-top: 10px !important;
+    }
+
+    /* Subir a Logo da Okamoto na Sidebar */
+    .sidebar-logo-okamoto {
+        margin-top: -25px !important;
+        margin-bottom: 5px !important;
+    }
     
-    /* Reposicionamento do Título na Sidebar */
+    /* Subir o Título Consultoria & Diagnóstico */
     .sidebar-title-single {
         font-size: 18px;
         font-weight: 800;
         color: #f8fafc;
         line-height: 1.1;
-        margin-top: -10px;
-        margin-bottom: 20px;
+        margin-top: -15px !important;
+        margin-bottom: 8px !important;
         white-space: nowrap;
         text-align: center;
+    }
+
+    /* Redução de Espaçamento das Linhas Divisorias da Sidebar */
+    [data-testid="stSidebar"] hr {
+        margin-top: 10px !important;
+        margin-bottom: 10px !important;
     }
 
     .dashboard-card { 
@@ -308,7 +323,7 @@ if 'unidades_encontradas' not in st.session_state:
     st.session_state['unidades_encontradas'] = []
 
 # -----------------------------------------------------------------------------
-# 4. GERADOR DE PDF (MARGEM 21MM / SEM TARJA)
+# 4. GERADOR DE PDF
 # -----------------------------------------------------------------------------
 class PDFTour360Oficial(FPDF):
     def header(self):
@@ -377,7 +392,6 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     score = calcular_score_real(dados)
     pdf = PDFTour360Oficial()
     
-    # MARGEM ESQUERDA 21MM (LARGURA ÚTIL 177MM)
     pdf.set_margins(21, 12, 12)
     pdf.set_auto_page_break(auto=False)
 
@@ -915,12 +929,14 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     return bytes(pdf.output())
 
 # -----------------------------------------------------------------------------
-# 5. SIDEBAR SIMPLIFICADA (EXCLUSIVAMENTE CONSULTORIA)
+# 5. SIDEBAR SIMPLIFICADA (COM ESPAÇAMENTOS REAJUSTADOS)
 # -----------------------------------------------------------------------------
 with st.sidebar:
     logo_okamoto = obter_caminho_logo("okamoto")
     if logo_okamoto:
+        st.markdown("<div class='sidebar-logo-okamoto'>", unsafe_allow_html=True)
         st.image(logo_okamoto, use_container_width=True)
+        st.markdown("</div>", unsafe_allow_html=True)
     else:
         st.markdown("**Okamoto Mídias Visuais**")
 
@@ -936,7 +952,7 @@ with st.sidebar:
     else:
         st.markdown("**Tour360VR**")
 
-    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("---")
 
     nome_empresa_atual = st.session_state['dados'].get('nome') or "Nenhum cliente"
     st.markdown("**Cliente em Atendimento:**")
@@ -955,8 +971,8 @@ with st.sidebar:
         status_txt = "EXCELENTE"
 
     st.markdown(f"""
-        <div style="margin-top: 5px; margin-bottom: 10px;">
-            <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; color: #f8fafc; margin-bottom: 5px;">
+        <div style="margin-top: 2px; margin-bottom: 5px;">
+            <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; color: #f8fafc; margin-bottom: 3px;">
                 <span>Score Diagnóstico:</span>
                 <span style="color: {cor_score};">{score_atual}/100 ({status_txt})</span>
             </div>
