@@ -45,14 +45,14 @@ st.markdown("""
     [data-testid="stSidebarNav"] { display: none !important; }
 
     .stApp { 
-        background-color: #0b0f19; 
-        color: #f1f5f9; 
-        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        background-color: #0b0f19 !important; 
+        color: #f1f5f9 !important; 
+        font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
     }
     
     [data-testid="stSidebar"] { 
-        background-color: #111827; 
-        border-right: 1px solid #1f2937; 
+        background-color: #111827 !important; 
+        border-right: 1px solid #1f2937 !important; 
     }
     
     /* Padding interno na Sidebar */
@@ -130,13 +130,14 @@ st.markdown("""
         margin-bottom: 12px !important;
     }
 
-    /* QUADROS DE CONTEÚDO */
+    /* QUADROS DE CONTEÚDO DA PÁGINA */
     .dashboard-card { 
         background-color: #1e293b !important; 
         border: 1px solid #38bdf8 !important; 
         border-radius: 14px; 
         padding: 18px; 
-        margin-bottom: 15px; 
+        margin-top: 10px !important;
+        margin-bottom: 15px !important; 
         box-shadow: 0 4px 12px rgba(15, 23, 42, 0.4);
     }
     .card-title { 
@@ -149,8 +150,8 @@ st.markdown("""
         line-height: 1.3;
     }
     
-    /* ESTILIZAÇÃO PADRÃO DOS BOTÕES (ETAPAS INATIVAS & NAVEGAÇÃO) */
-    .stApp [data-testid="stButton"] > button {
+    /* 1. BOTÕES INATIVOS E DE NAVEGAÇÃO (SECONDARY) */
+    .stApp [data-testid="stBaseButton-secondary"] {
         background-color: #1e293b !important;
         color: #cbd5e1 !important;
         border: 1px solid #3b82f6 !important;
@@ -162,32 +163,38 @@ st.markdown("""
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) !important;
     }
 
-    .stApp [data-testid="stButton"] > button:hover {
+    .stApp [data-testid="stBaseButton-secondary"]:hover {
         background-color: #2563eb !important;
         color: #ffffff !important;
         border-color: #60a5fa !important;
         box-shadow: 0 0 12px rgba(59, 130, 246, 0.5) !important;
     }
 
-    /* 🎨 DESTAQUE EM TOM MAIS ESCURO E BORDA BRILHANTE PARA A ETAPA ATIVA */
-    div[key^="btn_etapa_active_"] button {
+    /* 2. ETAPA ATIVA (PRIMARY) — TOM AZUL ESCURO DESTAQUE E BORDA CIANO BRILHANTE */
+    .stApp [data-testid="stBaseButton-primary"] {
         background-color: #0f172a !important;
         color: #38bdf8 !important;
         border: 2px solid #38bdf8 !important;
         border-radius: 8px !important;
         font-weight: 800 !important;
         font-size: 13.5px !important;
-        padding: 9px 4px !important;
-        box-shadow: 0 0 14px rgba(56, 189, 248, 0.4) !important;
+        padding: 9px 12px !important;
+        box-shadow: 0 0 16px rgba(56, 189, 248, 0.5) !important;
+    }
+
+    .stApp [data-testid="stBaseButton-primary"]:hover {
+        background-color: #1e293b !important;
+        color: #38bdf8 !important;
+        border-color: #38bdf8 !important;
     }
 
     /* Botão 'Iniciar Novo Atendimento' na Sidebar */
-    [data-testid="stSidebar"] [data-testid="stButton"] > button { 
+    [data-testid="stSidebar"] [data-testid="stBaseButton-secondary"] { 
         background-color: #2563eb !important; 
         color: #ffffff !important; 
         border: 1px solid #3b82f6 !important; 
     }
-    [data-testid="stSidebar"] [data-testid="stButton"] > button:hover { 
+    [data-testid="stSidebar"] [data-testid="stBaseButton-secondary"]:hover { 
         background-color: #1d4ed8 !important; 
         box-shadow: 0 4px 10px rgba(37, 99, 235, 0.4) !important;
     }
@@ -1059,7 +1066,7 @@ with st.sidebar:
         <div class="sidebar-divider"></div>
     """, unsafe_allow_html=True)
 
-    if st.button("🧹 Iniciar Novo Atendimento", use_container_width=True):
+    if st.button("🧹 Iniciar Novo Atendimento", use_container_width=True, type="secondary"):
         st.session_state['etapa_atual'] = 1
         st.session_state['dados'] = {
             "nome": "", "contato": "", "endereco": "", "telefone": "", "website": "",
@@ -1087,7 +1094,7 @@ with st.sidebar:
     if lista_hist:
         for idx_h, item in enumerate(lista_hist[:5]):
             rotulo_btn = f"📂 {item['nome'][:16]} ({item['score']}/100)"
-            if st.button(rotulo_btn, key=f"btn_carregar_hist_{idx_h}", use_container_width=True):
+            if st.button(rotulo_btn, key=f"btn_carregar_hist_{idx_h}", use_container_width=True, type="secondary"):
                 st.session_state['dados'] = {
                     "nome": item.get("nome", ""),
                     "contato": item.get("contato", ""),
@@ -1119,39 +1126,39 @@ with st.sidebar:
         st.caption("Nenhuma proposta salva ainda.")
 
 # -----------------------------------------------------------------------------
-# 7. BARRA DE ETAPAS CLICÁVEIS (SEM BOLINHA DOURADA)
+# 7. BARRA DE ETAPAS CLICÁVEIS (NATIVO: PRIMARY = ETAPA ATIVA)
 # -----------------------------------------------------------------------------
 etapa_atual = st.session_state['etapa_atual']
 
 col_e1, col_e2, col_e3, col_e4, col_e5 = st.columns(5)
 
 with col_e1:
-    key_e1 = "btn_etapa_active_1" if etapa_atual == 1 else "btn_etapa_1"
-    if st.button("1. Busca & Ficha", use_container_width=True, key=key_e1):
+    type_e1 = "primary" if etapa_atual == 1 else "secondary"
+    if st.button("1. Busca & Ficha", use_container_width=True, type=type_e1, key="btn_e1"):
         st.session_state['etapa_atual'] = 1
         st.rerun()
 
 with col_e2:
-    key_e2 = "btn_etapa_active_2" if etapa_atual == 2 else "btn_etapa_2"
-    if st.button("2. Concorrentes", use_container_width=True, key=key_e2):
+    type_e2 = "primary" if etapa_atual == 2 else "secondary"
+    if st.button("2. Concorrentes", use_container_width=True, type=type_e2, key="btn_e2"):
         st.session_state['etapa_atual'] = 2
         st.rerun()
 
 with col_e3:
-    key_e3 = "btn_etapa_active_3" if etapa_atual == 3 else "btn_etapa_3"
-    if st.button("3. Plano de Ação", use_container_width=True, key=key_e3):
+    type_e3 = "primary" if etapa_atual == 3 else "secondary"
+    if st.button("3. Plano de Ação", use_container_width=True, type=type_e3, key="btn_e3"):
         st.session_state['etapa_atual'] = 3
         st.rerun()
 
 with col_e4:
-    key_e4 = "btn_etapa_active_4" if etapa_atual == 4 else "btn_etapa_4"
-    if st.button("4. Valores", use_container_width=True, key=key_e4):
+    type_e4 = "primary" if etapa_atual == 4 else "secondary"
+    if st.button("4. Valores", use_container_width=True, type=type_e4, key="btn_e4"):
         st.session_state['etapa_atual'] = 4
         st.rerun()
 
 with col_e5:
-    key_e5 = "btn_etapa_active_5" if etapa_atual == 5 else "btn_etapa_5"
-    if st.button("5. PDF & WhatsApp", use_container_width=True, key=key_e5):
+    type_e5 = "primary" if etapa_atual == 5 else "secondary"
+    if st.button("5. PDF & WhatsApp", use_container_width=True, type=type_e5, key="btn_e5"):
         st.session_state['etapa_atual'] = 5
         st.rerun()
 
@@ -1171,7 +1178,7 @@ if etapa_atual == 1:
         nome_input = c1.text_input("Nome da Empresa:", value="", placeholder="Ex: Taiwan Hotel Ltda", key="input_empresa_nome")
         cidade_empresa = c2.text_input("Cidade/Região:", value="", placeholder="Ex: Ribeirão Preto, SP", key="input_empresa_cidade")
             
-        if st.button("🚀 Pesquisar Ficha no Google", use_container_width=True, key="btn_busca_google"):
+        if st.button("🚀 Pesquisar Ficha no Google", use_container_width=True, key="btn_busca_google", type="secondary"):
             if API_KEY_GOOGLE:
                 try:
                     termo = f"{nome_input}, {cidade_empresa}" if cidade_empresa else nome_input
@@ -1190,7 +1197,7 @@ if etapa_atual == 1:
             opcoes = [f"{u.get('name')} - {u.get('formatted_address')}" for u in st.session_state['unidades_encontradas']]
             escolha = st.selectbox("Selecione a unidade exata:", opcoes, key="select_unidade_exata")
             
-            if st.button("📌 Carregar Dados da Unidade", use_container_width=True, key="btn_carregar_unidade"):
+            if st.button("📌 Carregar Dados da Unidade", use_container_width=True, key="btn_carregar_unidade", type="secondary"):
                 idx = opcoes.index(escolha)
                 u = st.session_state['unidades_encontradas'][idx]
                 place_id = u.get("place_id")
@@ -1224,8 +1231,7 @@ if etapa_atual == 1:
                     except Exception as e:
                         st.error(f"Erro ao obter detalhes: {e}")
 
-        st.markdown("---")
-        st.markdown("<div class='card-title'>CHECKLIST DE PONTOS CRÍTICOS</div>", unsafe_allow_html=True)
+        st.markdown("<div class='card-title' style='margin-top:15px;'>CHECKLIST DE PONTOS CRÍTICOS</div>", unsafe_allow_html=True)
         
         c_a, c_b, c_c, c_d = st.columns(4)
         st.session_state['dados']['tem_tour360'] = c_a.checkbox("Tour 360° Ativo", value=st.session_state['dados']['tem_tour360'])
@@ -1252,7 +1258,7 @@ if etapa_atual == 1:
 
     col_nav1, col_nav2 = st.columns([2, 1])
     with col_nav2:
-        if st.button("Avançar para Concorrentes ➡️", use_container_width=True, key="btn_nav_aba1"):
+        if st.button("Avançar para Concorrentes ➡️", use_container_width=True, key="btn_nav_aba1", type="secondary"):
             st.session_state['etapa_atual'] = 2
             st.rerun()
 
@@ -1300,8 +1306,7 @@ elif etapa_atual == 2:
 
     concorrentes_validos = [c for c in st.session_state['concorrentes'] if c.get('nome', '').strip() != '']
     if concorrentes_validos:
-        st.markdown("---")
-        st.markdown("**Resultado da Consulta:**")
+        st.markdown("<div style='margin-top:10px;'><b>Resultado da Consulta:</b></div>", unsafe_allow_html=True)
         for c_item in concorrentes_validos:
             score_c = calcular_score_concorrente(c_item)
             st.markdown(f"• **{c_item['nome']}** — ⭐ Nota: `{float(c_item.get('nota', 0.0)):.1f}` ({c_item.get('avaliacoes', 0)} avaliada(s)) | Score: **{score_c}/100**")
@@ -1310,11 +1315,11 @@ elif etapa_atual == 2:
 
     col_btn1, col_btn2 = st.columns(2)
     with col_btn1:
-        if st.button("⬅️ Voltar para Busca", use_container_width=True, key="btn_nav_aba2_back"):
+        if st.button("⬅️ Voltar para Busca", use_container_width=True, key="btn_nav_aba2_back", type="secondary"):
             st.session_state['etapa_atual'] = 1
             st.rerun()
     with col_btn2:
-        if st.button("Avançar para Plano de Ação ➡️", use_container_width=True, key="btn_nav_aba2_next"):
+        if st.button("Avançar para Plano de Ação ➡️", use_container_width=True, key="btn_nav_aba2_next", type="secondary"):
             st.session_state['etapa_atual'] = 3
             st.rerun()
 
@@ -1333,11 +1338,11 @@ elif etapa_atual == 3:
 
     col_btn1, col_btn2 = st.columns(2)
     with col_btn1:
-        if st.button("⬅️ Voltar para Concorrentes", use_container_width=True, key="btn_nav_aba3_back"):
+        if st.button("⬅️ Voltar para Concorrentes", use_container_width=True, key="btn_nav_aba3_back", type="secondary"):
             st.session_state['etapa_atual'] = 2
             st.rerun()
     with col_btn2:
-        if st.button("Avançar para Planos & Valores ➡️", use_container_width=True, key="btn_nav_aba3_next"):
+        if st.button("Avançar para Planos & Valores ➡️", use_container_width=True, key="btn_nav_aba3_next", type="secondary"):
             st.session_state['etapa_atual'] = 4
             st.rerun()
 
@@ -1364,11 +1369,11 @@ elif etapa_atual == 4:
 
     col_btn1, col_btn2 = st.columns(2)
     with col_btn1:
-        if st.button("⬅️ Voltar para Plano de Ação", use_container_width=True, key="btn_nav_aba4_back"):
+        if st.button("⬅️ Voltar para Plano de Ação", use_container_width=True, key="btn_nav_aba4_back", type="secondary"):
             st.session_state['etapa_atual'] = 3
             st.rerun()
     with col_btn2:
-        if st.button("Avançar para PDF & WhatsApp ➡️", use_container_width=True, key="btn_nav_aba4_next"):
+        if st.button("Avançar para PDF & WhatsApp ➡️", use_container_width=True, key="btn_nav_aba4_next", type="secondary"):
             st.session_state['etapa_atual'] = 5
             st.rerun()
 
@@ -1406,8 +1411,7 @@ elif etapa_atual == 5:
             f"Identifiquei alguns pontos importantes de melhoria de visibilidade. Posso te enviar o relatório preliminar que montei em PDF?"
         )
 
-        st.markdown("---")
-        st.markdown("#### 📝 Mensagem de Abordagem (Editável):")
+        st.markdown("<br><b>📝 Mensagem de Abordagem (Editável):</b>", unsafe_allow_html=True)
         mensagem_editada = st.text_area(
             "Edite a mensagem antes de abrir o WhatsApp:",
             value=texto_padrao_whatsapp,
@@ -1464,7 +1468,7 @@ elif etapa_atual == 5:
 
     col_nav1, col_nav2 = st.columns([1, 2])
     with col_nav1:
-        if st.button("⬅️ Voltar para Ajuste de Valores", use_container_width=True, key="btn_nav_aba5_back"):
+        if st.button("⬅️ Voltar para Ajuste de Valores", use_container_width=True, key="btn_nav_aba5_back", type="secondary"):
             st.session_state['etapa_atual'] = 4
             st.rerun()
 
@@ -1478,4 +1482,4 @@ st.markdown("""
         Whatsapp: (16) 99133-2121 | 
         <b>Tour360VR - Gestão de Perfil do Google</b>
     </div>
-""", unsafe_allow_html=True)
+""", unsafe_allow_html=True
