@@ -41,6 +41,16 @@ st.set_page_config(
 
 st.markdown("""
     <style>
+    /* Oculta elementos vazios gerados pelo Streamlit */
+    div.element-container:has(div.stMarkdown:empty),
+    div.stMarkdown:empty,
+    .element-container:empty {
+        display: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+    }
+
     /* Oculta navegação automática nativa do Streamlit */
     [data-testid="stSidebarNav"] { display: none !important; }
 
@@ -55,7 +65,6 @@ st.markdown("""
         border-right: 1px solid #1f2937 !important; 
     }
     
-    /* Padding interno na Sidebar */
     [data-testid="stSidebarUserContent"] {
         padding-top: 1.0rem !important;
         padding-bottom: 1.0rem !important;
@@ -63,7 +72,6 @@ st.markdown("""
         padding-right: 1.0rem !important;
     }
 
-    /* BLOCO DO CABEÇALHO DA SIDEBAR COMPACTADO */
     .sidebar-header-box {
         display: flex;
         flex-direction: column;
@@ -130,7 +138,7 @@ st.markdown("""
         margin-bottom: 12px !important;
     }
 
-    /* QUADROS DE CONTEÚDO DA PÁGINA */
+    /* QUADROS DE CONTEÚDO */
     .dashboard-card { 
         background-color: #1e293b !important; 
         border: 1px solid #38bdf8 !important; 
@@ -140,6 +148,7 @@ st.markdown("""
         margin-bottom: 15px !important; 
         box-shadow: 0 4px 12px rgba(15, 23, 42, 0.4);
     }
+
     .card-title { 
         font-size: 15px; 
         font-weight: 700; 
@@ -150,7 +159,7 @@ st.markdown("""
         line-height: 1.3;
     }
     
-    /* 1. BOTÕES INATIVOS E DE NAVEGAÇÃO (SECONDARY) */
+    /* BOTÕES SECUNDÁRIOS (ETAPAS INATIVAS E NAVEGAÇÃO) */
     .stApp [data-testid="stBaseButton-secondary"] {
         background-color: #1e293b !important;
         color: #cbd5e1 !important;
@@ -170,7 +179,7 @@ st.markdown("""
         box-shadow: 0 0 12px rgba(59, 130, 246, 0.5) !important;
     }
 
-    /* 2. ETAPA ATIVA (PRIMARY) — TOM AZUL ESCURO DESTAQUE E BORDA CIANO BRILHANTE */
+    /* ETAPA ATIVA (PRIMARY) */
     .stApp [data-testid="stBaseButton-primary"] {
         background-color: #0f172a !important;
         color: #38bdf8 !important;
@@ -188,12 +197,12 @@ st.markdown("""
         border-color: #38bdf8 !important;
     }
 
-    /* Botão 'Iniciar Novo Atendimento' na Sidebar */
     [data-testid="stSidebar"] [data-testid="stBaseButton-secondary"] { 
         background-color: #2563eb !important; 
         color: #ffffff !important; 
         border: 1px solid #3b82f6 !important; 
     }
+
     [data-testid="stSidebar"] [data-testid="stBaseButton-secondary"]:hover { 
         background-color: #1d4ed8 !important; 
         box-shadow: 0 4px 10px rgba(37, 99, 235, 0.4) !important;
@@ -1035,14 +1044,8 @@ with st.sidebar:
             <img src="{b64_okamoto}" class="logo-okamoto" alt="Okamoto Mídias Visuais" />
         </div>
         <div class="sidebar-divider"></div>
-    """, unsafe_allow_html=True)
-
-    nome_empresa_atual = st.session_state['dados'].get('nome') or "Nenhum cliente"
-    st.markdown("<div class='label-cliente-centralizado'>Cliente em Atendimento</div>", unsafe_allow_html=True)
-    st.markdown(f"""
-        <div class="box-cliente-atendimento">
-            🏢 {nome_empresa_atual}
-        </div>
+        <div class="label-cliente-centralizado">Cliente em Atendimento</div>
+        <div class="box-cliente-atendimento">🏢 {st.session_state['dados'].get('nome') or "Nenhum cliente"}</div>
     """, unsafe_allow_html=True)
     
     score_atual = calcular_score_real(st.session_state['dados'])
@@ -1087,8 +1090,10 @@ with st.sidebar:
         st.session_state['plano_acao_extra'] = "O perfil precisa de otimização urgente! Veja as falhas apontadas no relatório."
         st.rerun()
 
-    st.markdown('<div class="sidebar-divider"></div>', unsafe_allow_html=True)
-    st.markdown("<div style='font-size: 12px; font-weight: 700; color: #f8fafc; margin-bottom: 6px;'>📜 Histórico de Propostas</div>", unsafe_allow_html=True)
+    st.markdown("""
+        <div class="sidebar-divider"></div>
+        <div style="font-size: 12px; font-weight: 700; color: #f8fafc; margin-bottom: 6px;">📜 Histórico de Propostas</div>
+    """, unsafe_allow_html=True)
     
     lista_hist = carregar_historico()
     if lista_hist:
@@ -1171,8 +1176,7 @@ if etapa_atual == 1:
     col_left, col_right = st.columns([1.5, 1])
     
     with col_left:
-        st.markdown("<div class='dashboard-card'>", unsafe_allow_html=True)
-        st.markdown("<div class='card-title'>🔍 1. BUSCA DA FICHA NO GOOGLE MAPS</div>", unsafe_allow_html=True)
+        st.markdown("<div class='dashboard-card'><div class='card-title'>🔍 1. BUSCA DA FICHA NO GOOGLE MAPS</div>", unsafe_allow_html=True)
         
         c1, c2 = st.columns([2, 1])
         nome_input = c1.text_input("Nome da Empresa:", value="", placeholder="Ex: Taiwan Hotel Ltda", key="input_empresa_nome")
@@ -1247,8 +1251,7 @@ if etapa_atual == 1:
         st.markdown("</div>", unsafe_allow_html=True)
 
     with col_right:
-        st.markdown("<div class='dashboard-card'>", unsafe_allow_html=True)
-        st.markdown("<div class='card-title'>DADOS DO CLIENTE</div>", unsafe_allow_html=True)
+        st.markdown("<div class='dashboard-card'><div class='card-title'>DADOS DO CLIENTE</div>", unsafe_allow_html=True)
         st.session_state['dados']['nome'] = st.text_input("Empresa:", value=st.session_state['dados']['nome'])
         st.session_state['dados']['contato'] = st.text_input("Responsável:", value=st.session_state['dados']['contato'])
         st.session_state['dados']['telefone'] = st.text_input("Telefone:", value=st.session_state['dados']['telefone'])
@@ -1264,8 +1267,7 @@ if etapa_atual == 1:
 
 # ETAPA 2: AVALIAÇÃO DE CONCORRENTES
 elif etapa_atual == 2:
-    st.markdown("<div class='dashboard-card'>", unsafe_allow_html=True)
-    st.markdown("<div class='card-title'>⚔️ 2. AVALIAÇÃO DE CONCORRENTES DO SEGMENTO</div>", unsafe_allow_html=True)
+    st.markdown("<div class='dashboard-card'><div class='card-title'>⚔️ 2. AVALIAÇÃO DE CONCORRENTES DO SEGMENTO</div>", unsafe_allow_html=True)
     st.caption("Digite o nome da empresa e a cidade para consultar a nota e dados no Google Maps.")
 
     with st.form(key="form_concorrentes_fix"):
@@ -1325,8 +1327,7 @@ elif etapa_atual == 2:
 
 # ETAPA 3: PLANO DE AÇÃO ESTRATÉGICO
 elif etapa_atual == 3:
-    st.markdown("<div class='dashboard-card'>", unsafe_allow_html=True)
-    st.markdown("<div class='card-title'>💡 3. APONTAMENTOS ESTRATÉGICOS E PLANO DE AÇÃO</div>", unsafe_allow_html=True)
+    st.markdown("<div class='dashboard-card'><div class='card-title'>💡 3. APONTAMENTOS ESTRATÉGICOS E PLANO DE AÇÃO</div>", unsafe_allow_html=True)
     st.caption("Texto personalizado que aparecerá no quadro em destaque na Página 2 do PDF.")
     
     st.session_state['plano_acao_extra'] = st.text_area(
@@ -1348,8 +1349,7 @@ elif etapa_atual == 3:
 
 # ETAPA 4: PLANOS & VALORES COMERCIAIS
 elif etapa_atual == 4:
-    st.markdown("<div class='dashboard-card'>", unsafe_allow_html=True)
-    st.markdown("<div class='card-title'>📜 4. PLANOS COMERCIAIS & INVESTIMENTO</div>", unsafe_allow_html=True)
+    st.markdown("<div class='dashboard-card'><div class='card-title'>📜 4. PLANOS COMERCIAIS & INVESTIMENTO</div>", unsafe_allow_html=True)
     
     p1, p2, p3 = st.columns(3)
     with p1:
@@ -1379,8 +1379,7 @@ elif etapa_atual == 4:
 
 # ETAPA 5: GERAR PDF, WHATSAPP & HISTÓRICO
 elif etapa_atual == 5:
-    st.markdown("<div class='dashboard-card'>", unsafe_allow_html=True)
-    st.markdown("<div class='card-title'>📄 5. EMISSÃO, ABORDAGEM & HISTÓRICO</div>", unsafe_allow_html=True)
+    st.markdown("<div class='dashboard-card'><div class='card-title'>📄 5. EMISSÃO, ABORDAGEM & HISTÓRICO</div>", unsafe_allow_html=True)
     
     st.markdown("#### ⚙️ Selecione as Páginas a Incluir no PDF:")
     c_pag1, c_pag2, c_pag3, c_pag4 = st.columns(4)
