@@ -57,58 +57,58 @@ st.markdown("""
     
     /* Padding interno na Sidebar */
     [data-testid="stSidebarUserContent"] {
-        padding-top: 1.2rem !important;
+        padding-top: 1.0rem !important;
         padding-bottom: 1.0rem !important;
         padding-left: 1.0rem !important;
         padding-right: 1.0rem !important;
     }
 
-    /* BLOCO DO CABEÇALHO DA SIDEBAR REORDENADO */
+    /* BLOCO DO CABEÇALHO DA SIDEBAR COMPACTADO */
     .sidebar-header-box {
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
         width: 100%;
-        margin-bottom: 10px;
+        margin-bottom: 4px;
     }
 
     .sidebar-header-box .sidebar-title-top {
-        font-size: 16px;
+        font-size: 15px;
         font-weight: 800;
         color: #f8fafc;
         line-height: 1.2;
         text-align: center;
         letter-spacing: 0.5px;
-        margin-bottom: 12px; /* 1 linha de espaço */
+        margin-bottom: 8px;
     }
 
     .sidebar-header-box img.logo-tour {
-        max-width: 140px;
-        width: 65%;
+        max-width: 130px;
+        width: 60%;
         height: auto;
         display: block;
-        margin-bottom: 32px; /* 3 a 4 linhas de espaço */
+        margin-bottom: 10px; /* Reduzido o espaço para a próxima logo */
     }
 
     .sidebar-header-box img.logo-okamoto {
-        max-width: 220px;
-        width: 90%;
+        max-width: 200px;
+        width: 85%;
         height: auto;
         display: block;
-        margin-bottom: 10px;
+        margin-bottom: 6px; /* Reduzido o espaço para 'Cliente em Atendimento' */
     }
 
     .sidebar-divider {
         border-top: 1px solid #1e293b;
-        margin: 12px 0 !important;
+        margin: 10px 0 !important;
     }
 
     .label-cliente-centralizado {
         text-align: center;
         font-weight: 700;
-        font-size: 12px;
-        margin-bottom: 6px !important;
+        font-size: 11px;
+        margin-bottom: 4px !important;
         color: #94a3b8;
         text-transform: uppercase;
         letter-spacing: 0.5px;
@@ -118,24 +118,26 @@ st.markdown("""
         background-color: #1e293b; 
         border: 1px solid #334155; 
         border-radius: 8px; 
-        padding: 10px 12px; 
+        padding: 8px 10px; 
         text-align: center; 
         color: #38bdf8; 
         font-weight: 700; 
-        font-size: 14px;
-        margin-bottom: 16px !important; /* Espaço adicional de 1 linha */
+        font-size: 13.5px;
+        margin-bottom: 12px !important;
     }
 
     .container-score-diagnostico {
-        margin-bottom: 14px !important;
+        margin-bottom: 12px !important;
     }
 
+    /* QUADROS DE CONTEÚDO E AVANÇO EM AZUL CLARO DESTAQUE */
     .dashboard-card { 
-        background-color: #131b2e; 
-        border: 1px solid #1e293b; 
+        background-color: #1e293b !important; 
+        border: 1px solid #38bdf8 !important; 
         border-radius: 14px; 
         padding: 18px; 
         margin-bottom: 15px; 
+        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.4);
     }
     .card-title { 
         font-size: 15px; 
@@ -147,26 +149,26 @@ st.markdown("""
         line-height: 1.3;
     }
     
-    /* BOTÕES INATIVOS DA BARRA DE NAVEGAÇÃO SUPERIOR */
+    /* BOTÕES INATIVOS DA BARRA DE ETAPAS (EM AZUL CLARO DESTAQUE) */
     div[key^="btn_etapa_"] button {
-        background-color: #111827 !important;
-        color: #64748b !important;
-        border: 1px solid #1e293b !important;
+        background-color: #1e293b !important;
+        color: #94a3b8 !important;
+        border: 1px solid #334155 !important;
         border-radius: 8px !important;
         font-weight: 600 !important;
         font-size: 13px !important;
         padding: 9px 4px !important;
         transition: all 0.2s ease !important;
-        box-shadow: none !important;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2) !important;
     }
 
     div[key^="btn_etapa_"] button:hover {
-        background-color: #1e293b !important;
+        background-color: #334155 !important;
         color: #38bdf8 !important;
         border-color: #38bdf8 !important;
     }
 
-    /* DESTAQUE DA ETAPA ATIVA (AZUL VIBRANTE NEON COM BORDAS E BRILHO) */
+    /* DESTAQUE VIBRANTE PARA A ETAPA ATIVA */
     div[key^="btn_etapa_active_"] button {
         background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
         color: #ffffff !important;
@@ -177,13 +179,6 @@ st.markdown("""
         padding: 9px 4px !important;
         box-shadow: 0 0 16px rgba(56, 189, 248, 0.45) !important;
         transform: scale(1.02);
-    }
-
-    /* SETA COM DESTAQUE AMARELO OURO NA ETAPA ATIVA */
-    .seta-destaque {
-        color: #f59e0b !important;
-        font-weight: 900 !important;
-        margin-right: 4px;
     }
 
     /* Botão 'Iniciar Novo Atendimento' na Sidebar */
@@ -1022,7 +1017,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
     return bytes(pdf.output())
 
 # -----------------------------------------------------------------------------
-# 6. SIDEBAR REORDENADA
+# 6. SIDEBAR REORDENADA E COMPACTADA
 # -----------------------------------------------------------------------------
 with st.sidebar:
     path_okamoto = obter_caminho_logo("okamoto")
@@ -1031,7 +1026,6 @@ with st.sidebar:
     b64_okamoto = carregar_imagem_base64(path_okamoto) if path_okamoto else "https://okamotomidiasvisuais.com.br/assets/img/logo.png"
     b64_tour = carregar_imagem_base64(path_tour) if path_tour else "https://tour360vr.com.br/assets/img/logo.png"
 
-    # Nova Estrutura da Sidebar conforme solicitado
     st.markdown(f"""
         <div class="sidebar-header-box">
             <div class="sidebar-title-top">Consultoria & Diagnóstico</div>
@@ -1130,7 +1124,7 @@ with st.sidebar:
         st.caption("Nenhuma proposta salva ainda.")
 
 # -----------------------------------------------------------------------------
-# 7. BARRA DE ETAPAS CLICÁVEIS (COM SETA AMARELO OURO NA ETAPA ATIVA)
+# 7. BARRA DE ETAPAS CLICÁVEIS
 # -----------------------------------------------------------------------------
 etapa_atual = st.session_state['etapa_atual']
 
