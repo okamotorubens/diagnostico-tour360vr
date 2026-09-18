@@ -1,6 +1,7 @@
 import os
 import io
 import json
+import base64
 import requests
 import streamlit as st
 from datetime import datetime
@@ -8,7 +9,7 @@ from fpdf import FPDF
 from PIL import Image
 
 # -----------------------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA E CSS
+# 1. CONFIGURAÇÃO DA PÁGINA E CSS REESTRUTURADO
 # -----------------------------------------------------------------------------
 st.set_page_config(
     page_title="Consultoria & Diagnóstico - Tour360VR",
@@ -33,69 +34,85 @@ st.markdown("""
         border-right: 1px solid #1f2937; 
     }
     
-    /* Elimina qualquer padding/espaçamento no topo da sidebar */
+    /* Zera os paddings internos nativos da Sidebar para otimizar espaço */
     [data-testid="stSidebarUserContent"] {
-        padding-top: 0.0rem !important;
+        padding-top: 0.4rem !important;
+        padding-bottom: 0.4rem !important;
+        padding-left: 0.8rem !important;
+        padding-right: 0.8rem !important;
     }
 
-    /* Puxa a logo Okamoto bem ao topo e cola no elemento seguinte */
-    .sidebar-logo-okamoto {
-        margin-top: -85px !important;
-        margin-bottom: -55px !important;
+    /* Remove espaçamentos exagerados dos elementos de imagem nativos do Streamlit caso usados */
+    [data-testid="stSidebar"] [data-testid="stImage"] {
+        margin-bottom: 0px !important;
+        padding: 0px !important;
     }
-    
-    /* Título 'Consultoria & Diagnóstico' totalmente colado e compacto */
-    .sidebar-title-single {
-        font-size: 16px;
+
+    /* BLOCO ÚNICO DO CABEÇALHO DA SIDEBAR (SEM RESPIROS NATIVOS) */
+    .sidebar-header-box {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+        margin-bottom: 4px;
+        width: 100%;
+    }
+
+    .sidebar-header-box img.logo-okamoto {
+        max-width: 170px;
+        height: auto;
+        display: block;
+    }
+
+    .sidebar-header-box .sidebar-title-single {
+        font-size: 13px;
         font-weight: 800;
         color: #f8fafc;
-        line-height: 1.0;
-        margin-top: -5px !important;
-        margin-bottom: -10px !important;
-        white-space: nowrap;
+        line-height: 1.1;
         text-align: center;
+        margin: 2px 0;
+        white-space: nowrap;
     }
 
-    /* Logo Tour360VR compactada e sem margens verticais sobrando */
-    .sidebar-logo-tour {
-        margin-top: -15px !important;
-        margin-bottom: -25px !important;
+    .sidebar-header-box img.logo-tour {
+        max-width: 70px;
+        height: auto;
+        display: block;
     }
 
-    /* Rótulo 'Cliente em Atendimento' ajustado com margem mínima */
+    /* Linhas divisórias ultrafinas */
+    .sidebar-divider {
+        border-top: 1px solid #1e293b;
+        margin: 5px 0 !important;
+    }
+
+    /* Rótulo e Box do Cliente em Atendimento */
     .label-cliente-centralizado {
         text-align: center;
         font-weight: 700;
-        font-size: 13px;
-        margin-top: 0px;
+        font-size: 11px;
         margin-bottom: 3px !important;
-        color: #f8fafc;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
 
-    /* Card do Cliente compacto e elegante */
     .box-cliente-atendimento {
         background-color: #1e293b; 
         border: 1px solid #334155; 
-        border-radius: 8px; 
+        border-radius: 6px; 
         padding: 5px 8px; 
         text-align: center; 
         color: #38bdf8; 
         font-weight: 700; 
-        font-size: 13px;
-        margin-bottom: 0px !important;
+        font-size: 12px;
+        margin-bottom: 5px !important;
     }
 
-    /* Seção de Score Diagnóstico enxuta */
+    /* Seção de Score Diagnóstico */
     .container-score-diagnostico {
-        margin-top: 0px; 
         margin-bottom: 6px !important;
-    }
-
-    /* Divisores ultrafinos com margem mínima */
-    [data-testid="stSidebar"] hr {
-        margin-top: 2px !important;
-        margin-bottom: 2px !important;
-        border-color: #1e293b !important;
     }
 
     .dashboard-card { 
@@ -122,12 +139,28 @@ st.markdown("""
         border: 1px solid #3b82f6; 
         border-radius: 8px; 
         font-weight: 700;
-        padding: 7px 14px;
+        padding: 8px 16px;
         transition: all 0.2s ease;
     }
     .stButton > button:hover { 
         background-color: #1d4ed8; 
         box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+    }
+
+    /* Botões compactos específicos da Sidebar */
+    [data-testid="stSidebar"] .stButton > button { 
+        background-color: #2563eb; 
+        color: #ffffff; 
+        border: 1px solid #3b82f6; 
+        border-radius: 6px; 
+        font-weight: 700;
+        font-size: 12px;
+        padding: 6px 12px;
+        transition: all 0.2s ease;
+    }
+    [data-testid="stSidebar"] .stButton > button:hover { 
+        background-color: #1d4ed8; 
+        box-shadow: 0 4px 10px rgba(37, 99, 235, 0.4);
     }
 
     /* Estilização Diferenciada para Botões de Navegação */
@@ -203,6 +236,15 @@ def conv(texto):
                       .replace("à", "a")\
                       .replace("À", "A")
     return limpo.encode('latin-1', 'replace').decode('latin-1')
+
+def carregar_imagem_base64(caminho):
+    if os.path.exists(caminho):
+        try:
+            with open(caminho, "rb") as image_file:
+                return f"data:image/png;base64,{base64.b64encode(image_file.read()).decode()}"
+        except Exception:
+            pass
+    return ""
 
 def calcular_score_real(dados):
     if not dados.get("nome"): return 0
@@ -967,68 +1009,57 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[]):
     return bytes(pdf.output())
 
 # -----------------------------------------------------------------------------
-# 5. SIDEBAR COM RECOMPOSIÇÃO ULTRACOMPACTA
+# 5. SIDEBAR COM CABEÇALHO UNIFICADO E ZERO DESPERDÍCIO DE ESPAÇO
 # -----------------------------------------------------------------------------
 with st.sidebar:
-    logo_okamoto = obter_caminho_logo("okamoto")
-    if logo_okamoto:
-        st.markdown("<div class='sidebar-logo-okamoto'>", unsafe_allow_html=True)
-        st.image(logo_okamoto, use_container_width=True)
-        st.markdown("</div>", unsafe_allow_html=True)
-    else:
-        st.markdown("**Okamoto Mídias Visuais**")
+    path_okamoto = obter_caminho_logo("okamoto")
+    path_tour = obter_caminho_logo("tour360")
+    
+    b64_okamoto = carregar_imagem_base64(path_okamoto) if path_okamoto else "https://okamotomidiasvisuais.com.br/assets/img/logo.png"
+    b64_tour = carregar_imagem_base64(path_tour) if path_tour else "https://tour360vr.com.br/assets/img/logo.png"
 
-    st.markdown("""
-        <div class='sidebar-title-single'>Consultoria & Diagnóstico</div>
+    # Header Completo em HTML Único sem wrappers do Streamlit
+    st.markdown(f"""
+        <div class="sidebar-header-box">
+            <img src="{b64_okamoto}" class="logo-okamoto" alt="Okamoto Mídias Visuais" />
+            <div class="sidebar-title-single">Consultoria & Diagnóstico</div>
+            <img src="{b64_tour}" class="logo-tour" alt="Tour360VR" />
+        </div>
+        <div class="sidebar-divider"></div>
     """, unsafe_allow_html=True)
 
-    logo_tour = obter_caminho_logo("tour360")
-    if logo_tour:
-        st.markdown("<div class='sidebar-logo-tour'>", unsafe_allow_html=True)
-        col_t1, col_t2, col_t3 = st.columns([0.22, 0.56, 0.22])
-        with col_t2:
-            st.image(logo_tour, use_container_width=True)
-        st.markdown("</div>", unsafe_allow_html=True)
-    else:
-        st.markdown("**Tour360VR**")
-
-    st.markdown("---")
-
+    # Cliente em Atendimento
     nome_empresa_atual = st.session_state['dados'].get('nome') or "Nenhum cliente"
-    st.markdown("<div class='label-cliente-centralizado'>Cliente em Atendimento:</div>", unsafe_allow_html=True)
-    
+    st.markdown("<div class='label-cliente-centralizado'>Cliente em Atendimento</div>", unsafe_allow_html=True)
     st.markdown(f"""
         <div class="box-cliente-atendimento">
             🏢 {nome_empresa_atual}
         </div>
     """, unsafe_allow_html=True)
     
+    # Score Diagnóstico
     score_atual = calcular_score_real(st.session_state['dados'])
-
     if score_atual < 50:
-        cor_score = "#ef4444"
-        status_txt = "CRÍTICO"
+        cor_score, status_txt = "#ef4444", "CRÍTICO"
     elif score_atual < 80:
-        cor_score = "#f59e0b"
-        status_txt = "MÉDIO"
+        cor_score, status_txt = "#f59e0b", "MÉDIO"
     else:
-        cor_score = "#22c55e"
-        status_txt = "EXCELENTE"
+        cor_score, status_txt = "#22c55e", "EXCELENTE"
 
     st.markdown(f"""
         <div class="container-score-diagnostico">
-            <div style="display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; color: #f8fafc; margin-bottom: 2px;">
+            <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; color: #f8fafc; margin-bottom: 2px;">
                 <span>Score Diagnóstico:</span>
                 <span style="color: {cor_score};">{score_atual}/100 ({status_txt})</span>
             </div>
-            <div style="background-color: #1e293b; border-radius: 6px; height: 7px; width: 100%; overflow: hidden; border: 1px solid #334155;">
+            <div style="background-color: #1e293b; border-radius: 4px; height: 6px; width: 100%; overflow: hidden; border: 1px solid #334155;">
                 <div style="background-color: {cor_score}; height: 100%; width: {score_atual}%; transition: width 0.4s ease;"></div>
             </div>
         </div>
+        <div class="sidebar-divider"></div>
     """, unsafe_allow_html=True)
 
-    st.markdown("---")
-
+    # Botão Iniciar Novo Atendimento
     if st.button("🧹 Iniciar Novo Atendimento", use_container_width=True):
         st.session_state['etapa_atual'] = 1
         st.session_state['dados'] = {
@@ -1050,12 +1081,13 @@ with st.sidebar:
         st.session_state['plano_acao_extra'] = "O perfil precisa de otimização urgente! Veja as falhas apontadas no relatório."
         st.rerun()
 
-    st.markdown("---")
-    st.markdown("### 📜 Histórico de Propostas")
+    st.markdown('<div class="sidebar-divider"></div>', unsafe_allow_html=True)
+    st.markdown("<div style='font-size: 12px; font-weight: 700; color: #f8fafc; margin-bottom: 4px;'>📜 Histórico de Propostas</div>", unsafe_allow_html=True)
+    
     lista_hist = carregar_historico()
     if lista_hist:
         for idx_h, item in enumerate(lista_hist[:5]):
-            rotulo_btn = f"📂 {item['nome'][:18]} ({item['score']}/100)"
+            rotulo_btn = f"📂 {item['nome'][:16]} ({item['score']}/100)"
             if st.button(rotulo_btn, key=f"btn_carregar_hist_{idx_h}", use_container_width=True):
                 st.session_state['dados'] = {
                     "nome": item.get("nome", ""),
