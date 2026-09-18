@@ -149,7 +149,7 @@ st.markdown("""
         line-height: 1.3;
     }
     
-    /* 🎨 ESTILIZAÇÃO GERAL DE BOTÕES (ETAPAS 1 A 5 E AVANÇAR/VOLTAR EM AZUL CLARO DESTAQUE) */
+    /* ESTILIZAÇÃO PADRÃO DOS BOTÕES (ETAPAS INATIVAS & NAVEGAÇÃO) */
     .stApp [data-testid="stButton"] > button {
         background-color: #1e293b !important;
         color: #cbd5e1 !important;
@@ -169,17 +169,16 @@ st.markdown("""
         box-shadow: 0 0 12px rgba(59, 130, 246, 0.5) !important;
     }
 
-    /* 🌟 DESTAQUE VIBRANTE EXCLUSIVO PARA A ETAPA ATIVA */
+    /* 🎨 DESTAQUE EM TOM MAIS ESCURO E BORDA BRILHANTE PARA A ETAPA ATIVA */
     div[key^="btn_etapa_active_"] button {
-        background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
-        color: #ffffff !important;
+        background-color: #0f172a !important;
+        color: #38bdf8 !important;
         border: 2px solid #38bdf8 !important;
         border-radius: 8px !important;
         font-weight: 800 !important;
         font-size: 13.5px !important;
         padding: 9px 4px !important;
-        box-shadow: 0 0 16px rgba(56, 189, 248, 0.45) !important;
-        transform: scale(1.02);
+        box-shadow: 0 0 14px rgba(56, 189, 248, 0.4) !important;
     }
 
     /* Botão 'Iniciar Novo Atendimento' na Sidebar */
@@ -1120,48 +1119,41 @@ with st.sidebar:
         st.caption("Nenhuma proposta salva ainda.")
 
 # -----------------------------------------------------------------------------
-# 7. BARRA DE ETAPAS CLICÁVEIS
+# 7. BARRA DE ETAPAS CLICÁVEIS (SEM BOLINHA DOURADA)
 # -----------------------------------------------------------------------------
 etapa_atual = st.session_state['etapa_atual']
 
 col_e1, col_e2, col_e3, col_e4, col_e5 = st.columns(5)
 
 with col_e1:
-    txt_e1 = "🟡▶ 1. Busca & Ficha" if etapa_atual == 1 else "1. Busca & Ficha"
     key_e1 = "btn_etapa_active_1" if etapa_atual == 1 else "btn_etapa_1"
-    if st.button(txt_e1, use_container_width=True, key=key_e1):
+    if st.button("1. Busca & Ficha", use_container_width=True, key=key_e1):
         st.session_state['etapa_atual'] = 1
         st.rerun()
 
 with col_e2:
-    txt_e2 = "🟡▶ 2. Concorrentes" if etapa_atual == 2 else "2. Concorrentes"
     key_e2 = "btn_etapa_active_2" if etapa_atual == 2 else "btn_etapa_2"
-    if st.button(txt_e2, use_container_width=True, key=key_e2):
+    if st.button("2. Concorrentes", use_container_width=True, key=key_e2):
         st.session_state['etapa_atual'] = 2
         st.rerun()
 
 with col_e3:
-    txt_e3 = "🟡▶ 3. Plano de Ação" if etapa_atual == 3 else "3. Plano de Ação"
     key_e3 = "btn_etapa_active_3" if etapa_atual == 3 else "btn_etapa_3"
-    if st.button(txt_e3, use_container_width=True, key=key_e3):
+    if st.button("3. Plano de Ação", use_container_width=True, key=key_e3):
         st.session_state['etapa_atual'] = 3
         st.rerun()
 
 with col_e4:
-    txt_e4 = "🟡▶ 4. Valores" if etapa_atual == 4 else "4. Valores"
     key_e4 = "btn_etapa_active_4" if etapa_atual == 4 else "btn_etapa_4"
-    if st.button(txt_e4, use_container_width=True, key=key_e4):
+    if st.button("4. Valores", use_container_width=True, key=key_e4):
         st.session_state['etapa_atual'] = 4
         st.rerun()
 
 with col_e5:
-    txt_e5 = "🟡▶ 5. PDF & WhatsApp" if etapa_atual == 5 else "5. PDF & WhatsApp"
     key_e5 = "btn_etapa_active_5" if etapa_atual == 5 else "btn_etapa_5"
-    if st.button(txt_e5, use_container_width=True, key=key_e5):
+    if st.button("5. PDF & WhatsApp", use_container_width=True, key=key_e5):
         st.session_state['etapa_atual'] = 5
         st.rerun()
-
-st.markdown("<div style='margin-bottom: 12px;'></div>", unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
 # 8. FLUXO SEQUENCIAL DAS ETAPAS
@@ -1258,7 +1250,6 @@ if etapa_atual == 1:
         st.session_state['dados']['endereco'] = st.text_area("Endereço:", value=st.session_state['dados']['endereco'], height=80)
         st.markdown("</div>", unsafe_allow_html=True)
 
-    st.markdown("---")
     col_nav1, col_nav2 = st.columns([2, 1])
     with col_nav2:
         if st.button("Avançar para Concorrentes ➡️", use_container_width=True, key="btn_nav_aba1"):
