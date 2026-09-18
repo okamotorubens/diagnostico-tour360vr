@@ -84,7 +84,7 @@ st.markdown("""
     /* Divisores elegantes */
     .sidebar-divider {
         border-top: 1px solid #1e293b;
-        margin: 12px 0 !important;
+        margin: 13px 0 !important;
     }
 
     /* Rótulo 'Cliente em Atendimento' */
@@ -92,7 +92,7 @@ st.markdown("""
         text-align: center;
         font-weight: 700;
         font-size: 12px;
-        margin-bottom: 7px !important;
+        margin-bottom: 8px !important;
         color: #94a3b8;
         text-transform: uppercase;
         letter-spacing: 0.5px;
@@ -108,7 +108,7 @@ st.markdown("""
         color: #38bdf8; 
         font-weight: 700; 
         font-size: 14px;
-        margin-bottom: 13px !important;
+        margin-bottom: 14px !important;
     }
 
     /* Container do Score Diagnóstico */
@@ -121,13 +121,13 @@ st.markdown("""
         border: 1px solid #1e293b; 
         border-radius: 14px; 
         padding: 18px; 
-        margin-bottom: 15px; 
+        margin-bottom: 16px; 
     }
     .card-title { 
         font-size: 15px; 
         font-weight: 700; 
         color: #38bdf8; 
-        margin-bottom: 14px; 
+        margin-bottom: 15px; 
         text-transform: uppercase; 
         letter-spacing: 0.8px; 
         line-height: 1.3;
