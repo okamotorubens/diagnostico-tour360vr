@@ -38,19 +38,19 @@ st.markdown("""
         padding-top: 0.0rem !important;
     }
 
-    /* Puxa a logo da Okamoto suavemente ao topo */
+    /* Puxa a logo da Okamoto ao topo e aproxima do texto */
     .sidebar-logo-okamoto {
         margin-top: -65px !important;
-        margin-bottom: -10px !important;
+        margin-bottom: -35px !important; /* Margem inferior reduzida para aproximação */
     }
     
-    /* Título 'Consultoria e Diagnóstico' alinhado */
+    /* Título 'Consultoria e Diagnóstico' colado na logo Okamoto */
     .sidebar-title-single {
         font-size: 16px;
         font-weight: 800;
         color: #f8fafc;
         line-height: 1.2;
-        margin-top: -25px !important;
+        margin-top: -15px !important; /* Puxado para cima aproximando da logo */
         margin-bottom: 10px !important;
         white-space: nowrap;
         text-align: center;
@@ -81,7 +81,7 @@ st.markdown("""
         text-align: center; 
         color: #38bdf8; 
         font-weight: 700; 
-        margin-bottom: 18px !important; /* Respiro em relação ao score */
+        margin-bottom: 18px !important;
     }
 
     /* Seção de Score Diagnóstico com respiro antes do divisor */
