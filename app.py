@@ -124,11 +124,11 @@ st.markdown("""
 
     .box-cliente-atendimento {
         background-color: #1e293b; 
-        border: 1px solid #334155; 
+        border: 1px solid #e2e8f0; 
         border-radius: 8px; 
         padding: 8px 10px; 
         text-align: center; 
-        color: #38bdf8; 
+        color: #ffffff; 
         font-weight: 700; 
         font-size: 13.5px;
         margin-bottom: 12px !important;
@@ -138,10 +138,10 @@ st.markdown("""
         margin-bottom: 12px !important;
     }
 
-    /* QUADROS DE CONTEÚDO (Borda Azul Normal) */
+    /* QUADROS DE CONTEÚDO (Borda Branca Suave) */
     .dashboard-card { 
         background-color: #1e293b !important; 
-        border: 1.5px solid #3b82f6 !important; 
+        border: 1.5px solid #cbd5e1 !important; 
         border-radius: 14px; 
         padding: 18px; 
         margin-top: 10px !important;
@@ -149,11 +149,11 @@ st.markdown("""
         box-shadow: 0 4px 12px rgba(15, 23, 42, 0.4);
     }
 
-    /* TÍTULO DOS QUADROS CENTRALIZADO */
+    /* TÍTULO DOS QUADROS CENTRALIZADO (Branco) */
     .card-title { 
         font-size: 15px; 
         font-weight: 700; 
-        color: #60a5fa; 
+        color: #ffffff; 
         margin-bottom: 14px; 
         text-transform: uppercase; 
         letter-spacing: 0.8px; 
@@ -161,11 +161,11 @@ st.markdown("""
         text-align: center !important;
     }
     
-    /* BOTÕES SECUNDÁRIOS (ETAPAS INATIVAS E NAVEGAÇÃO - Borda Azul Normal) */
+    /* BOTÕES SECUNDÁRIOS (ETAPAS INATIVAS E NAVEGAÇÃO - Borda Branca) */
     .stApp [data-testid="stBaseButton-secondary"] {
         background-color: #1e293b !important;
-        color: #cbd5e1 !important;
-        border: 1px solid #3b82f6 !important;
+        color: #f8fafc !important;
+        border: 1px solid #cbd5e1 !important;
         border-radius: 8px !important;
         font-weight: 700 !important;
         font-size: 13px !important;
@@ -175,39 +175,39 @@ st.markdown("""
     }
 
     .stApp [data-testid="stBaseButton-secondary"]:hover {
-        background-color: #2563eb !important;
+        background-color: #334155 !important;
         color: #ffffff !important;
-        border-color: #60a5fa !important;
-        box-shadow: 0 0 10px rgba(59, 130, 246, 0.4) !important;
+        border-color: #ffffff !important;
+        box-shadow: 0 0 10px rgba(255, 255, 255, 0.3) !important;
     }
 
-    /* ETAPA ATIVA (PRIMARY - ÚNICO ELEMENTO COM EFEITO NEON ABRANGENTE) */
+    /* ETAPA ATIVA (PRIMARY - NEON BRANCO) */
     .stApp [data-testid="stBaseButton-primary"] {
         background-color: #0f172a !important;
-        color: #38bdf8 !important;
-        border: 2px solid #38bdf8 !important;
+        color: #ffffff !important;
+        border: 2px solid #ffffff !important;
         border-radius: 8px !important;
         font-weight: 800 !important;
         font-size: 13.5px !important;
         padding: 9px 12px !important;
-        box-shadow: 0 0 18px rgba(56, 189, 248, 0.7) !important;
+        box-shadow: 0 0 18px rgba(255, 255, 255, 0.85) !important;
     }
 
     .stApp [data-testid="stBaseButton-primary"]:hover {
         background-color: #1e293b !important;
-        color: #38bdf8 !important;
-        border-color: #38bdf8 !important;
+        color: #ffffff !important;
+        border-color: #ffffff !important;
     }
 
     [data-testid="stSidebar"] [data-testid="stBaseButton-secondary"] { 
-        background-color: #2563eb !important; 
+        background-color: #334155 !important; 
         color: #ffffff !important; 
-        border: 1px solid #3b82f6 !important; 
+        border: 1px solid #cbd5e1 !important; 
     }
 
     [data-testid="stSidebar"] [data-testid="stBaseButton-secondary"]:hover { 
-        background-color: #1d4ed8 !important; 
-        box-shadow: 0 4px 10px rgba(37, 99, 235, 0.4) !important;
+        background-color: #475569 !important; 
+        box-shadow: 0 4px 10px rgba(255, 255, 255, 0.2) !important;
     }
 
     .custom-footer { 
@@ -223,7 +223,7 @@ st.markdown("""
         font-size: 11px; 
         z-index: 999; 
     }
-    .custom-footer a { color: #38bdf8; text-decoration: none; }
+    .custom-footer a { color: #ffffff; text-decoration: none; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -419,6 +419,7 @@ if 'unidades_encontradas' not in st.session_state:
 class PDFTour360Oficial(FPDF):
     def __init__(self, *args, **kwargs):
         self.capa_incluida = kwargs.pop('capa_incluida', True)
+        self.exibir_numeracao = kwargs.pop('exibir_numeracao', False)
         super().__init__(*args, **kwargs)
 
     def header(self):
@@ -448,6 +449,7 @@ class PDFTour360Oficial(FPDF):
         self.set_text_color(100, 116, 139)
         self.line(21, self.get_y(), 198, self.get_y())
         self.set_y(-13)
+        
         if self.page_no() == 1 and self.capa_incluida:
             self.set_x(21)
             self.set_font('Helvetica', 'B', 10.5)
@@ -458,8 +460,9 @@ class PDFTour360Oficial(FPDF):
             self.cell(45, 5, 'contato@tour360vr.com.br', link='mailto:contato@tour360vr.com.br', align='C')
             self.cell(40, 5, 'tour360vr.com.br', link='https://tour360vr.com.br', align='C')
             self.cell(45, 5, 'WhatsApp: (16) 99133-2121', link='https://wa.me/5516991332121', align='C')
-            self.set_x(170)
-            self.cell(28, 5, f'Página {self.page_no()}', align='R')
+            if self.exibir_numeracao:
+                self.set_x(170)
+                self.cell(28, 5, f'Página {self.page_no()} de 4', align='R')
 
     def rounded_rect(self, x, y, w, h, r, style=''):
         k, hp = self.k, self.h
@@ -487,8 +490,10 @@ class PDFTour360Oficial(FPDF):
 def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], paginas_selecionadas=[1, 2, 3, 4]):
     score = calcular_score_real(dados)
     capa_presente = 1 in paginas_selecionadas
-    pdf = PDFTour360Oficial(capa_incluida=capa_presente)
+    # Numeração "1 de 4" só aparece quando o documento estiver completo com as 4 páginas
+    exibir_num = len(paginas_selecionadas) == 4
     
+    pdf = PDFTour360Oficial(capa_incluida=capa_presente, exibir_numeracao=exibir_num)
     pdf.set_margins(21, 12, 12)
     pdf.set_auto_page_break(auto=False)
 
@@ -1133,7 +1138,7 @@ with st.sidebar:
         st.caption("Nenhuma proposta salva ainda.")
 
 # -----------------------------------------------------------------------------
-# 7. BARRA DE ETAPAS CLICÁVEIS (NATIVO: PRIMARY = ETAPA ATIVA NEON)
+# 7. BARRA DE ETAPAS CLICÁVEIS (NATIVO: PRIMARY = ETAPA ATIVA NEON BRANCO)
 # -----------------------------------------------------------------------------
 etapa_atual = st.session_state['etapa_atual']
 
