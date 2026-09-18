@@ -88,7 +88,7 @@ st.markdown("""
         width: 60%;
         height: auto;
         display: block;
-        margin-bottom: 10px; /* Reduzido o espaço para a próxima logo */
+        margin-bottom: 10px;
     }
 
     .sidebar-header-box img.logo-okamoto {
@@ -96,7 +96,7 @@ st.markdown("""
         width: 85%;
         height: auto;
         display: block;
-        margin-bottom: 6px; /* Reduzido o espaço para 'Cliente em Atendimento' */
+        margin-bottom: 6px;
     }
 
     .sidebar-divider {
@@ -130,7 +130,7 @@ st.markdown("""
         margin-bottom: 12px !important;
     }
 
-    /* QUADROS DE CONTEÚDO E AVANÇO EM AZUL CLARO DESTAQUE */
+    /* QUADROS DE CONTEÚDO */
     .dashboard-card { 
         background-color: #1e293b !important; 
         border: 1px solid #38bdf8 !important; 
@@ -149,26 +149,27 @@ st.markdown("""
         line-height: 1.3;
     }
     
-    /* BOTÕES INATIVOS DA BARRA DE ETAPAS (EM AZUL CLARO DESTAQUE) */
-    div[key^="btn_etapa_"] button {
+    /* 🎨 ESTILIZAÇÃO GERAL DE BOTÕES (ETAPAS 1 A 5 E AVANÇAR/VOLTAR EM AZUL CLARO DESTAQUE) */
+    .stApp [data-testid="stButton"] > button {
         background-color: #1e293b !important;
-        color: #94a3b8 !important;
-        border: 1px solid #334155 !important;
+        color: #cbd5e1 !important;
+        border: 1px solid #3b82f6 !important;
         border-radius: 8px !important;
-        font-weight: 600 !important;
+        font-weight: 700 !important;
         font-size: 13px !important;
-        padding: 9px 4px !important;
+        padding: 9px 12px !important;
         transition: all 0.2s ease !important;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2) !important;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) !important;
     }
 
-    div[key^="btn_etapa_"] button:hover {
-        background-color: #334155 !important;
-        color: #38bdf8 !important;
-        border-color: #38bdf8 !important;
+    .stApp [data-testid="stButton"] > button:hover {
+        background-color: #2563eb !important;
+        color: #ffffff !important;
+        border-color: #60a5fa !important;
+        box-shadow: 0 0 12px rgba(59, 130, 246, 0.5) !important;
     }
 
-    /* DESTAQUE VIBRANTE PARA A ETAPA ATIVA */
+    /* 🌟 DESTAQUE VIBRANTE EXCLUSIVO PARA A ETAPA ATIVA */
     div[key^="btn_etapa_active_"] button {
         background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
         color: #ffffff !important;
@@ -182,19 +183,14 @@ st.markdown("""
     }
 
     /* Botão 'Iniciar Novo Atendimento' na Sidebar */
-    [data-testid="stSidebar"] .stButton > button { 
-        background-color: #2563eb; 
-        color: #ffffff; 
-        border: 1px solid #3b82f6; 
-        border-radius: 8px; 
-        font-weight: 700;
-        font-size: 13px;
-        padding: 10px 16px;
-        transition: all 0.2s ease;
+    [data-testid="stSidebar"] [data-testid="stButton"] > button { 
+        background-color: #2563eb !important; 
+        color: #ffffff !important; 
+        border: 1px solid #3b82f6 !important; 
     }
-    [data-testid="stSidebar"] .stButton > button:hover { 
-        background-color: #1d4ed8; 
-        box-shadow: 0 4px 10px rgba(37, 99, 235, 0.4);
+    [data-testid="stSidebar"] [data-testid="stButton"] > button:hover { 
+        background-color: #1d4ed8 !important; 
+        box-shadow: 0 4px 10px rgba(37, 99, 235, 0.4) !important;
     }
 
     .custom-footer { 
