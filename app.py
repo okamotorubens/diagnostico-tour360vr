@@ -9,7 +9,7 @@ from fpdf import FPDF
 from PIL import Image
 
 # -----------------------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA E CSS RECALIBRADO
+# 1. CONFIGURAÇÃO DA PÁGINA E CSS
 # -----------------------------------------------------------------------------
 st.set_page_config(
     page_title="Consultoria & Diagnóstico - Tour360VR",
@@ -126,15 +126,15 @@ st.markdown("""
         line-height: 1.3;
     }
     
-    /* ESTILIZAÇÃO DA BARRA DE ETAPAS CLICÁVEIS NO TOPO */
+    /* BOTÕES INATIVOS DA BARRA DE NAV SOBERANOS E DISCRETOS */
     div[key^="btn_etapa_"] button {
         background-color: #111827 !important;
-        color: #94a3b8 !important;
+        color: #64748b !important;
         border: 1px solid #1e293b !important;
         border-radius: 8px !important;
         font-weight: 600 !important;
         font-size: 13px !important;
-        padding: 8px 4px !important;
+        padding: 9px 4px !important;
         transition: all 0.2s ease !important;
         box-shadow: none !important;
     }
@@ -145,15 +145,17 @@ st.markdown("""
         border-color: #38bdf8 !important;
     }
 
-    /* ETAPA ATIVA DESTACADA EM AZUL */
+    /* SUPER DESTAQUE PARA A ETAPA ATIVA (AZUL VIBRANTE NEON COM BORDAS E BRILHO) */
     div[key^="btn_etapa_active_"] button {
-        background-color: #0284c7 !important;
+        background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
         color: #ffffff !important;
-        border: 1px solid #38bdf8 !important;
-        font-weight: 700 !important;
-        font-size: 13px !important;
-        padding: 8px 4px !important;
-        box-shadow: 0 4px 12px rgba(56, 189, 248, 0.3) !important;
+        border: 2px solid #38bdf8 !important;
+        border-radius: 8px !important;
+        font-weight: 800 !important;
+        font-size: 13.5px !important;
+        padding: 9px 4px !important;
+        box-shadow: 0 0 16px rgba(56, 189, 248, 0.45) !important;
+        transform: scale(1.02);
     }
 
     /* Botão 'Iniciar Novo Atendimento' na Sidebar */
@@ -376,11 +378,17 @@ if 'unidades_encontradas' not in st.session_state:
     st.session_state['unidades_encontradas'] = []
 
 # -----------------------------------------------------------------------------
-# 4. GERADOR DE PDF FLEXÍVEL
+# 4. GERADOR DE PDF INTELIGENTE (CABEÇALHO DINÂMICO)
 # -----------------------------------------------------------------------------
 class PDFTour360Oficial(FPDF):
+    def __init__(self, *args, **kwargs):
+        self.capa_incluida = kwargs.pop('capa_incluida', True)
+        super().__init__(*args, **kwargs)
+
     def header(self):
-        if self.page_no() == 1: return
+        # Exibe o cabeçalho em todas as páginas, EXCETO na Capa quando ela estiver presente
+        if self.page_no() == 1 and self.capa_incluida:
+            return
         
         caminho_logo = obter_caminho_logo("tour360")
         if caminho_logo:
@@ -405,7 +413,7 @@ class PDFTour360Oficial(FPDF):
         self.set_text_color(100, 116, 139)
         self.line(21, self.get_y(), 198, self.get_y())
         self.set_y(-13)
-        if self.page_no() == 1:
+        if self.page_no() == 1 and self.capa_incluida:
             self.set_x(21)
             self.set_font('Helvetica', 'B', 10.5)
             self.set_text_color(30, 64, 175)
@@ -443,7 +451,8 @@ class PDFTour360Oficial(FPDF):
 
 def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], paginas_selecionadas=[1, 2, 3, 4]):
     score = calcular_score_real(dados)
-    pdf = PDFTour360Oficial()
+    capa_presente = 1 in paginas_selecionadas
+    pdf = PDFTour360Oficial(capa_incluida=capa_presente)
     
     pdf.set_margins(21, 12, 12)
     pdf.set_auto_page_break(auto=False)
@@ -986,7 +995,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
     return bytes(pdf.output())
 
 # -----------------------------------------------------------------------------
-# 5. SIDEBAR COM EXPANSÃO AMPLA
+# 5. SIDEBAR
 # -----------------------------------------------------------------------------
 with st.sidebar:
     path_okamoto = obter_caminho_logo("okamoto")
@@ -1093,39 +1102,44 @@ with st.sidebar:
         st.caption("Nenhuma proposta salva ainda.")
 
 # -----------------------------------------------------------------------------
-# 6. BARRA DE ETAPAS CLICÁVEL NO TOPO (NAVEGAÇÃO DIRETA)
+# 6. BARRA DE ETAPAS CLICÁVEIS (COM SETA E BRILHO NA ETAPA ATIVA)
 # -----------------------------------------------------------------------------
 etapa_atual = st.session_state['etapa_atual']
 
 col_e1, col_e2, col_e3, col_e4, col_e5 = st.columns(5)
 
 with col_e1:
+    txt_e1 = "▶ 1. Busca & Ficha" if etapa_atual == 1 else "1. Busca & Ficha"
     key_e1 = "btn_etapa_active_1" if etapa_atual == 1 else "btn_etapa_1"
-    if st.button("1. Busca & Ficha", use_container_width=True, key=key_e1):
+    if st.button(txt_e1, use_container_width=True, key=key_e1):
         st.session_state['etapa_atual'] = 1
         st.rerun()
 
 with col_e2:
+    txt_e2 = "▶ 2. Concorrentes" if etapa_atual == 2 else "2. Concorrentes"
     key_e2 = "btn_etapa_active_2" if etapa_atual == 2 else "btn_etapa_2"
-    if st.button("2. Concorrentes", use_container_width=True, key=key_e2):
+    if st.button(txt_e2, use_container_width=True, key=key_e2):
         st.session_state['etapa_atual'] = 2
         st.rerun()
 
 with col_e3:
+    txt_e3 = "▶ 3. Plano de Ação" if etapa_atual == 3 else "3. Plano de Ação"
     key_e3 = "btn_etapa_active_3" if etapa_atual == 3 else "btn_etapa_3"
-    if st.button("3. Plano de Ação", use_container_width=True, key=key_e3):
+    if st.button(txt_e3, use_container_width=True, key=key_e3):
         st.session_state['etapa_atual'] = 3
         st.rerun()
 
 with col_e4:
+    txt_e4 = "▶ 4. Valores" if etapa_atual == 4 else "4. Valores"
     key_e4 = "btn_etapa_active_4" if etapa_atual == 4 else "btn_etapa_4"
-    if st.button("4. Valores", use_container_width=True, key=key_e4):
+    if st.button(txt_e4, use_container_width=True, key=key_e4):
         st.session_state['etapa_atual'] = 4
         st.rerun()
 
 with col_e5:
+    txt_e5 = "▶ 5. PDF & WhatsApp" if etapa_atual == 5 else "5. PDF & WhatsApp"
     key_e5 = "btn_etapa_active_5" if etapa_atual == 5 else "btn_etapa_5"
-    if st.button("5. PDF & WhatsApp", use_container_width=True, key=key_e5):
+    if st.button(txt_e5, use_container_width=True, key=key_e5):
         st.session_state['etapa_atual'] = 5
         st.rerun()
 
