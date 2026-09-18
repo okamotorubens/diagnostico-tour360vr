@@ -46,12 +46,12 @@ st.markdown("""
     
     /* Título 'Consultoria & Diagnóstico' totalmente colado e compacto */
     .sidebar-title-single {
-        font-size: 14px;
+        font-size: 16px;
         font-weight: 800;
         color: #f8fafc;
         line-height: 1.0;
         margin-top: -5px !important;
-        margin-bottom: -20px !important;
+        margin-bottom: -10px !important;
         white-space: nowrap;
         text-align: center;
     }
@@ -82,7 +82,7 @@ st.markdown("""
         color: #38bdf8; 
         font-weight: 700; 
         font-size: 13px;
-        margin-bottom: 6px !important;
+        margin-bottom: 0px !important;
     }
 
     /* Seção de Score Diagnóstico enxuta */
