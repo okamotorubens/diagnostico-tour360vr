@@ -48,15 +48,15 @@ st.markdown("""
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 5px; /* Espaçamento maior e mais imponente entre as logos e o título */
-        margin-bottom: 13px;
+        gap: 4px; /* Espaçamento maior e mais imponente entre as logos e o título */
+        margin-bottom: 12px;
         width: 100%;
     }
 
     /* Logo Okamoto ampliada */
     .sidebar-header-box img.logo-okamoto {
         max-width: 250px;
-        width: 100%;
+        width: 95%;
         height: auto;
         display: block;
     }
@@ -68,7 +68,7 @@ st.markdown("""
         color: #f8fafc;
         line-height: 1.2;
         text-align: center;
-        margin: -4px 0;
+        margin: -5px 0;
         white-space: nowrap;
         letter-spacing: 0.5px;
     }
