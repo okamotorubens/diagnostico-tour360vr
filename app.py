@@ -63,40 +63,40 @@ st.markdown("""
         padding-right: 1.0rem !important;
     }
 
-    /* BLOCO DO CABEÇALHO DA SIDEBAR */
+    /* BLOCO DO CABEÇALHO DA SIDEBAR REORDENADO */
     .sidebar-header-box {
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 14px;
-        margin-bottom: 15px;
         width: 100%;
+        margin-bottom: 10px;
     }
 
-    .sidebar-header-box img.logo-okamoto {
-        max-width: 230px;
-        width: 95%;
-        height: auto;
-        display: block;
-    }
-
-    .sidebar-header-box .sidebar-title-single {
+    .sidebar-header-box .sidebar-title-top {
         font-size: 16px;
         font-weight: 800;
         color: #f8fafc;
         line-height: 1.2;
         text-align: center;
-        margin: 2px 0;
-        white-space: nowrap;
         letter-spacing: 0.5px;
+        margin-bottom: 12px; /* 1 linha de espaço */
     }
 
     .sidebar-header-box img.logo-tour {
-        max-width: 130px;
-        width: 58%;
+        max-width: 140px;
+        width: 65%;
         height: auto;
         display: block;
+        margin-bottom: 32px; /* 3 a 4 linhas de espaço */
+    }
+
+    .sidebar-header-box img.logo-okamoto {
+        max-width: 220px;
+        width: 90%;
+        height: auto;
+        display: block;
+        margin-bottom: 10px;
     }
 
     .sidebar-divider {
@@ -123,7 +123,7 @@ st.markdown("""
         color: #38bdf8; 
         font-weight: 700; 
         font-size: 14px;
-        margin-bottom: 12px !important;
+        margin-bottom: 16px !important; /* Espaço adicional de 1 linha */
     }
 
     .container-score-diagnostico {
@@ -177,6 +177,13 @@ st.markdown("""
         padding: 9px 4px !important;
         box-shadow: 0 0 16px rgba(56, 189, 248, 0.45) !important;
         transform: scale(1.02);
+    }
+
+    /* SETA COM DESTAQUE AMARELO OURO NA ETAPA ATIVA */
+    .seta-destaque {
+        color: #f59e0b !important;
+        font-weight: 900 !important;
+        margin-right: 4px;
     }
 
     /* Botão 'Iniciar Novo Atendimento' na Sidebar */
@@ -1015,7 +1022,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
     return bytes(pdf.output())
 
 # -----------------------------------------------------------------------------
-# 6. SIDEBAR
+# 6. SIDEBAR REORDENADA
 # -----------------------------------------------------------------------------
 with st.sidebar:
     path_okamoto = obter_caminho_logo("okamoto")
@@ -1024,11 +1031,12 @@ with st.sidebar:
     b64_okamoto = carregar_imagem_base64(path_okamoto) if path_okamoto else "https://okamotomidiasvisuais.com.br/assets/img/logo.png"
     b64_tour = carregar_imagem_base64(path_tour) if path_tour else "https://tour360vr.com.br/assets/img/logo.png"
 
+    # Nova Estrutura da Sidebar conforme solicitado
     st.markdown(f"""
         <div class="sidebar-header-box">
-            <img src="{b64_okamoto}" class="logo-okamoto" alt="Okamoto Mídias Visuais" />
-            <div class="sidebar-title-single">Consultoria & Diagnóstico</div>
+            <div class="sidebar-title-top">Consultoria & Diagnóstico</div>
             <img src="{b64_tour}" class="logo-tour" alt="Tour360VR" />
+            <img src="{b64_okamoto}" class="logo-okamoto" alt="Okamoto Mídias Visuais" />
         </div>
         <div class="sidebar-divider"></div>
     """, unsafe_allow_html=True)
@@ -1122,42 +1130,42 @@ with st.sidebar:
         st.caption("Nenhuma proposta salva ainda.")
 
 # -----------------------------------------------------------------------------
-# 7. BARRA DE ETAPAS CLICÁVEIS (COM SETA E BRILHO NA ETAPA ATIVA)
+# 7. BARRA DE ETAPAS CLICÁVEIS (COM SETA AMARELO OURO NA ETAPA ATIVA)
 # -----------------------------------------------------------------------------
 etapa_atual = st.session_state['etapa_atual']
 
 col_e1, col_e2, col_e3, col_e4, col_e5 = st.columns(5)
 
 with col_e1:
-    txt_e1 = "▶ 1. Busca & Ficha" if etapa_atual == 1 else "1. Busca & Ficha"
+    txt_e1 = "🟡▶ 1. Busca & Ficha" if etapa_atual == 1 else "1. Busca & Ficha"
     key_e1 = "btn_etapa_active_1" if etapa_atual == 1 else "btn_etapa_1"
     if st.button(txt_e1, use_container_width=True, key=key_e1):
         st.session_state['etapa_atual'] = 1
         st.rerun()
 
 with col_e2:
-    txt_e2 = "▶ 2. Concorrentes" if etapa_atual == 2 else "2. Concorrentes"
+    txt_e2 = "🟡▶ 2. Concorrentes" if etapa_atual == 2 else "2. Concorrentes"
     key_e2 = "btn_etapa_active_2" if etapa_atual == 2 else "btn_etapa_2"
     if st.button(txt_e2, use_container_width=True, key=key_e2):
         st.session_state['etapa_atual'] = 2
         st.rerun()
 
 with col_e3:
-    txt_e3 = "▶ 3. Plano de Ação" if etapa_atual == 3 else "3. Plano de Ação"
+    txt_e3 = "🟡▶ 3. Plano de Ação" if etapa_atual == 3 else "3. Plano de Ação"
     key_e3 = "btn_etapa_active_3" if etapa_atual == 3 else "btn_etapa_3"
     if st.button(txt_e3, use_container_width=True, key=key_e3):
         st.session_state['etapa_atual'] = 3
         st.rerun()
 
 with col_e4:
-    txt_e4 = "▶ 4. Valores" if etapa_atual == 4 else "4. Valores"
+    txt_e4 = "🟡▶ 4. Valores" if etapa_atual == 4 else "4. Valores"
     key_e4 = "btn_etapa_active_4" if etapa_atual == 4 else "btn_etapa_4"
     if st.button(txt_e4, use_container_width=True, key=key_e4):
         st.session_state['etapa_atual'] = 4
         st.rerun()
 
 with col_e5:
-    txt_e5 = "▶ 5. PDF & WhatsApp" if etapa_atual == 5 else "5. PDF & WhatsApp"
+    txt_e5 = "🟡▶ 5. PDF & WhatsApp" if etapa_atual == 5 else "5. PDF & WhatsApp"
     key_e5 = "btn_etapa_active_5" if etapa_atual == 5 else "btn_etapa_5"
     if st.button(txt_e5, use_container_width=True, key=key_e5):
         st.session_state['etapa_atual'] = 5
