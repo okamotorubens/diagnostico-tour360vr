@@ -11,9 +11,12 @@ from PIL import Image
 # -----------------------------------------------------------------------------
 # 1. CONFIGURAÇÃO DA PÁGINA E CSS
 # -----------------------------------------------------------------------------
+# Obter caminho ou URL da logo para o favicon
+favicon_logo = obter_caminho_logo("tour360") or "https://tour360vr.com.br/assets/img/logo.png"
+
 st.set_page_config(
     page_title="Consultoria & Diagnóstico - Tour360VR",
-    page_icon="🌐",
+    page_icon=favicon_logo,  # <--- Passa a imagem da Tour360VR como Ícone da Aba
     layout="wide",
     initial_sidebar_state="expanded"
 )
