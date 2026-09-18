@@ -58,7 +58,7 @@ st.markdown("""
 
     /* Eleva a logo da Tour360VR mais 2 espaços */
     .sidebar-logo-tour {
-        margin-top: -25px !important;
+        margin-top: -05px !important;
         margin-bottom: 0px !important;
     }
 
