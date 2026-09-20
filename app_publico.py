@@ -173,7 +173,7 @@ GOOGLE_API_KEY = "AIzaSyA8ul_9QICNyqxrHgT-CURIZmd1sikHn5U"
 
 BIGIN_CLIENT_ID = "1000.COI8SBR9O0RCMGCL7WKEYUJMBZCR8X"
 BIGIN_CLIENT_SECRET = "c60642fb374cbad9753c456d8713b6349417187345"
-BIGIN_REFRESH_TOKEN = "1000.0a67d0f4ab22f774f771ba34c2143733.1b77919711452c74e4a481334ea86470"
+BIGIN_GRANT_CODE = "1000.1655799c7a52ec18b5f171433d287250.609eeed5e9aafd280095e1423b7d721d"
 
 SMTP_SERVER = "smtp.tour360vr.com.br"
 SMTP_PORT = 587
@@ -365,22 +365,42 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
         return None
 
 # ==========================================
-# INTEGRAÇÃO ZOHO BIGIN CRM (REFRESH TOKEN PERMANENTE)
+# INTEGRAÇÃO ZOHO BIGIN CRM
 # ==========================================
 def obter_access_token_bigin():
+    # 1. Se já obtivemos e salvamos um Refresh Token, renovamos usando ele
+    if "bigin_refresh_token" in st.session_state:
+        rf = st.session_state["bigin_refresh_token"]
+        try:
+            url = "https://accounts.zoho.com/oauth/v2/token"
+            data = {
+                "refresh_token": rf,
+                "client_id": BIGIN_CLIENT_ID,
+                "client_secret": BIGIN_CLIENT_SECRET,
+                "grant_type": "refresh_token"
+            }
+            res = requests.post(url, data=data, timeout=8).json()
+            if "access_token" in res:
+                return res["access_token"], "com", None
+        except Exception as e:
+            pass
+
+    # 2. Caso contrário, fazemos a primeira troca utilizando o Grant Code
     try:
         url = "https://accounts.zoho.com/oauth/v2/token"
         data = {
-            "refresh_token": BIGIN_REFRESH_TOKEN,
+            "grant_type": "authorization_code",
             "client_id": BIGIN_CLIENT_ID,
             "client_secret": BIGIN_CLIENT_SECRET,
-            "grant_type": "refresh_token"
+            "code": BIGIN_GRANT_CODE
         }
         res = requests.post(url, data=data, timeout=8).json()
+        if "refresh_token" in res:
+            st.session_state["bigin_refresh_token"] = res["refresh_token"]
         if "access_token" in res:
             return res["access_token"], "com", None
         else:
-            return None, None, res.get("error", "Erro desconhecido ao obter token.")
+            return None, None, res.get("error", str(res))
     except Exception as e:
         return None, None, str(e)
 
@@ -388,7 +408,7 @@ def enviar_lead_bigin(nome_lead, email_lead, whatsapp_lead, empresa_consultada, 
     try:
         access_token, domain, erro_auth = obter_access_token_bigin()
         if not access_token:
-            return False, f"Falha OAuth Bigin: {erro_auth}"
+            return False, f"OAuth Bigin: {erro_auth}"
 
         headers = {
             "Authorization": f"Zoho-oauthtoken {access_token}",
@@ -606,7 +626,7 @@ if "resultado_busca" in st.session_state:
             # 1. Registra no Bigin CRM
             bigin_sucesso, bigin_msg = enviar_lead_bigin(nome_lead, email_lead, whats_completo, dados['nome'], dados['score'])
 
-            # 2. Dispara os e-mails com PDF e Rodapé
+            # 2. Dispara os e-mails com PDF
             email_sucesso, email_msg = enviar_emails_diagnostico_completo(nome_lead, email_lead, whats_completo, dados)
 
             if email_sucesso:
