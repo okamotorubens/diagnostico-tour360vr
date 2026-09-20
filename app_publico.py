@@ -43,7 +43,7 @@ custom_css = """
         padding-bottom: 0rem !important;
         padding-left: 0.5rem !important;
         padding-right: 0.5rem !important;
-        margin-top: -1rem !important; /* Puxa o conteúdo para cima */
+        margin-top: -1.2rem !important;
         max-width: 900px !important;
         border: none !important;
         box-shadow: none !important;
@@ -72,6 +72,7 @@ custom_css = """
     [data-testid="stStatusWidget"],
     [data-testid="stFooter"],
     [data-testid="stBottom"],
+    [data-testid="stBottomBlockContainer"],
     #MainMenu, 
     .viewerBadge_container__1QSob, 
     .styles_viewerBadge__1yB5_,
@@ -222,7 +223,7 @@ custom_css = """
 """
 st.markdown(custom_css, unsafe_allow_html=True)
 
-# JS Rígido de Remoção do Pop-up Flutuante e Elementos Externos
+# JS Rígido de Remoção do Pop-up Flutuante e Barra Inferior
 components.html("""
 <script>
     function destroyStreamlitBadges() {
@@ -234,6 +235,7 @@ components.html("""
                     '[data-testid="stStatusWidget"]',
                     '[data-testid="stHeader"]',
                     '[data-testid="stBottom"]',
+                    '[data-testid="stBottomBlockContainer"]',
                     '.viewerBadge_container__1QSob',
                     '[class*="viewerBadge"]',
                     '[class*="styles_viewerBadge"]',
@@ -330,7 +332,7 @@ def enviar_lead_zoho_bigin(nome_lead, email_lead, whatsapp_lead, empresa_nome, e
         return False
 
 # ==========================================
-# CÁLCULO DE SCORE GOOGLE MAPS
+# CÁLCULO DE SCORE GOOGLE MAPS (CORRIGIDO)
 # ==========================================
 def consultar_score_google_rigoroso(nome_empresa):
     url = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={requests.utils.quote(nome_empresa)}&key={GOOGLE_API_KEY}"
@@ -411,7 +413,9 @@ def consultar_score_google_rigoroso(nome_empresa):
                 criterios_eval.append("8. Categoria Principal: Ausente")
 
             criterios_eval.append("9. Tour Virtual 360° Street View: Ausente (Oportunidade de Destaque)")
-            score = min(score, 10)
+            
+            # Limite real até 100
+            score = min(score, 100)
 
             return {
                 "sucesso": True,
@@ -427,7 +431,7 @@ def consultar_score_google_rigoroso(nome_empresa):
     return {"sucesso": False, "mensagem": "Empresa não encontrada no Google."}
 
 # ==========================================
-# GERADOR DE PDF COM GATILHO COMPLETO DE CONVERSÃO
+# GERADOR DE PDF (ELEGANTE E COMERCIAMENTE ATRAENTE)
 # ==========================================
 def desenhar_rodape_fixo(canvas, doc):
     canvas.saveState()
@@ -448,29 +452,28 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
             pagesize=A4,
             leftMargin=35,
             rightMargin=35,
-            topMargin=35,
-            bottomMargin=50
+            topMargin=32,
+            bottomMargin=45
         )
         
         styles = getSampleStyleSheet()
-        style_title = ParagraphStyle('HeaderTitle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=13.5, leading=16, textColor=colors.HexColor('#1565C0'))
-        style_sub = ParagraphStyle('HeaderSub', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10.5, leading=14, textColor=colors.HexColor('#222222'))
-        style_body = ParagraphStyle('HeaderBody', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=12, textColor=colors.HexColor('#444444'))
+        style_title = ParagraphStyle('HeaderTitle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=14, leading=17, textColor=colors.HexColor('#0F2537'))
+        style_sub = ParagraphStyle('HeaderSub', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10.5, leading=14, textColor=colors.HexColor('#111111'))
+        style_body = ParagraphStyle('HeaderBody', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=12.5, textColor=colors.HexColor('#333333'))
         style_cell = ParagraphStyle('CellText', parent=styles['Normal'], fontName='Helvetica', fontSize=8.5, leading=11, textColor=colors.HexColor('#333333'))
         style_cell_bold = ParagraphStyle('CellBold', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9, leading=11, textColor=colors.white)
 
         elements = []
         
         elements.append(Paragraph("AUDITORIA DE POSICIONAMENTO GOOGLE MAPS - TOUR360VR", style_title))
-        elements.append(HRFlowable(width="100%", thickness=2, color=colors.HexColor('#1565C0'), spaceBefore=6, spaceAfter=14))
+        elements.append(HRFlowable(width="100%", thickness=2.5, color=colors.HexColor('#1565C0'), spaceBefore=6, spaceAfter=14))
         
-        elements.append(Spacer(1, 10))
         elements.append(Paragraph(f"<b>Empresa Analisada:</b> {empresa_nome}", style_sub))
         elements.append(Paragraph(f"<b>Endereço Registrado:</b> {endereco}", style_body))
-        elements.append(Spacer(1, 12))
+        elements.append(Spacer(1, 10))
         
         cor_score_hex = obter_cor_score(score)
-        elements.append(Paragraph(f"PONTUAÇÃO DE OTIMIZAÇÃO: <font color='{cor_score_hex}'><b>{score} / 100 PONTOS</b></font>", ParagraphStyle('ScorePDF', parent=style_title, fontSize=13)))
+        elements.append(Paragraph(f"PONTUAÇÃO DE OTIMIZAÇÃO: <font color='{cor_score_hex}'><b>{score} / 100 PONTOS</b></font>", ParagraphStyle('ScorePDF', parent=style_title, fontSize=12.5)))
         elements.append(Spacer(1, 10))
         
         elements.append(Paragraph("<b>Análise Detalhada dos Critérios Avaliados:</b>", style_sub))
@@ -485,35 +488,46 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
             
         t = Table(tabela_dados, colWidths=[210, 315])
         t.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1565C0')),
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#0F2537')),
             ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#E0E0E0')),
-            ('PADDING', (0, 0), (-1, -1), 4.5),
+            ('PADDING', (0, 0), (-1, -1), 4),
             ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.HexColor('#FFFFFF'), colors.HexColor('#F8F9FA')])
         ]))
         elements.append(t)
         
-        elements.append(Spacer(1, 14))
+        elements.append(Spacer(1, 12))
         elements.append(Paragraph("<b>Plano de Ação Sugerido para Alta Visibilidade:</b>", style_sub))
         elements.append(Spacer(1, 4))
-        elements.append(Paragraph("1. Otimização completa da Ficha Google (categorias, atributos e palavras-chave).<br/>2. Implantação de Tour Virtual 360° Interativo integrado ao Google Street View.<br/>3. Produção de Fotos e Vídeos Profissionais para galeria e redes sociais.<br/>4. Gestão ativa de avaliações e sincronização com canais digitais.", style_body))
+        elements.append(Paragraph("1. Otimização técnica da Ficha Google (categorias estratégicas, atributos e SEO local).<br/>2. Implantação de Tour Virtual 360° Interativo integrado ao Google Street View.<br/>3. Produção de Fotografia e Vídeo Profissional para galeria e redes sociais.<br/>4. Gestão ativa de reputação, avaliações e integração multicanais.", style_body))
         
         # ==========================================
-        # GATILHO MENTAL E CTA ABRANGENTE PARA WHATSAPP
+        # QUADRO CTA NOVO: DESIGN MODERNO E ELEGANTE
         # ==========================================
-        elements.append(Spacer(1, 12))
+        elements.append(Spacer(1, 14))
         
-        style_box_cta = ParagraphStyle('BoxCTA', parent=styles['Normal'], fontName='Helvetica', fontSize=8.5, leading=12, textColor=colors.HexColor('#1A237E'), alignment=1)
+        style_cta_title = ParagraphStyle('CTATitle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10.5, leading=13, textColor=colors.HexColor('#FFC107'), alignment=1)
+        style_cta_desc = ParagraphStyle('CTADesc', parent=styles['Normal'], fontName='Helvetica', fontSize=8.5, leading=12, textColor=colors.white, alignment=1)
+        style_cta_btn = ParagraphStyle('CTABtn', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9.5, leading=12, textColor=colors.white, alignment=1)
 
-        texto_cta = """
-        <b>🚀 PRONTO PARA TRANSFORMAR A PRESENÇA DIGITAL DA SUA EMPRESA?</b><br/>
-        Não deixe seus clientes encontrarem o concorrente primeiro. Nós estruturamos sua <b>Ficha no Google</b>, criamos o <b>Tour Virtual 360°</b>, produzimos <b>Fotos & Vídeos Profissionais</b> e gerenciamos suas <b>Redes Sociais</b>.<br/><br/>
-        <font color="#1565C0">👉 <u><a href="https://wa.me/5516991332121?text=Olá%20Rubens!%20Recebi%20o%20diagnóstico%20no%20PDF%20e%20quero%20saber%20mais%20sobre%20a%20otimização%20completa." color="#1565C0"><b>CLIQUE AQUI PARA FALAR COM O ESPECIALISTA RUBENS OKAMOTO NO WHATSAPP</b></a></u></font>
-        """
+        txt_titulo_cta = "PRONTO PARA ELEVAR O NÍVEL DA SUA EMPRESA NO GOOGLE?"
+        txt_desc_cta = "Aumente a visibilidade e autoridade da sua marca. Estruturamos sua <b>Ficha Google</b>, criamos o <b>Tour Virtual 360°</b>, produzimos <b>Fotos & Vídeos Profissionais</b> e gerenciamos suas <b>Redes Sociais</b>."
         
-        tabela_cta = Table([[Paragraph(texto_cta, style_box_cta)]], colWidths=[525])
+        link_whats = "https://wa.me/5516991332121?text=Olá%20Rubens!%20Recebi%20o%20diagnóstico%20no%20PDF%20e%20quero%20saber%20mais%20sobre%20a%20otimização%20completa."
+        txt_btn_cta = f'<a href="{link_whats}" color="#FFFFFF">📲 <u><b>CLIQUE AQUI PARA FALAR DIRETO COM RUBENS OKAMOTO NO WHATSAPP</b></u></a>'
+
+        # Tabela composta para criar visual de card moderno
+        dados_card = [
+            [Paragraph(txt_titulo_cta, style_cta_title)],
+            [Spacer(1, 3)],
+            [Paragraph(txt_desc_cta, style_cta_desc)],
+            [Spacer(1, 6)],
+            [Paragraph(txt_btn_cta, style_cta_btn)]
+        ]
+        
+        tabela_cta = Table(dados_card, colWidths=[525])
         tabela_cta.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#E8F0FE')),
-            ('BORDER', (0, 0), (-1, -1), 1.2, colors.HexColor('#1565C0')),
+            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#0F2537')),
+            ('CORNERPAD', (0, 0), (-1, -1), 0),
             ('PADDING', (0, 0), (-1, -1), 8),
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE')
