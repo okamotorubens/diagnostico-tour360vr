@@ -25,10 +25,9 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# CSS Ajustado: Ocultação total de ícones do Streamlit, eliminação de scroll e aumento de fontes
+# CSS Ajustado: Ocultação total de elementos Streamlit e eliminação de scroll
 custom_css = """
 <style>
-    /* Remove completamente rolagem e ajusta espaçamentos internos */
     html, body, [data-testid="stAppViewContainer"], .main {
         overflow: hidden !important;
         background-color: #FFFFFF !important;
@@ -43,7 +42,6 @@ custom_css = """
         max-width: 900px !important;
     }
 
-    /* Oculta Menu, Rodapé, Logotipos, Ícones de apps e Barra do Streamlit */
     footer, .stApp footer, [data-testid="stFooter"], 
     header, #MainMenu, [data-testid="stHeader"], [data-testid="stToolbar"],
     [data-testid="stDecoration"], [data-testid="stStatusWidget"],
@@ -64,7 +62,6 @@ custom_css = """
         box-shadow: 0 2px 8px rgba(0,0,0,0.04) !important;
     }
 
-    /* Aumento da Fonte dos Títulos */
     .titulo-principal {
         text-align: center;
         color: #111111 !important;
@@ -134,7 +131,6 @@ custom_css = """
         margin-bottom: 0.2rem !important;
     }
 
-    /* Botões Azuis */
     div[data-testid="stButton"], div.stButton {
         display: flex !important;
         justify-content: center !important;
@@ -164,7 +160,6 @@ custom_css = """
         font-weight: bold !important;
     }
 
-    /* Card de Sucesso Substituto do Botão */
     .card-sucesso-destaque {
         background-color: #E8F5E9 !important;
         border: 2px solid #2E7D32 !important;
@@ -199,6 +194,34 @@ def obter_cor_score(score):
         return "#F57C00"
     else:
         return "#8DC63F"
+
+# ==========================================
+# INTEGRAÇÃO ZOHO BIGIN (POST COM CAMPOS ATUALIZADOS)
+# ==========================================
+def enviar_lead_zoho_bigin(nome_lead, email_lead, whatsapp_lead, empresa_nome, endereco, score):
+    url_bigin = "https://bigin.zoho.com/crm/WebToContactForm"
+    
+    payload = {
+        'xnQsjsdp': 'cee09da61c31c8856ae138c1eaf79d7632257982fcfbd4028e2e116789cf1d44',
+        'zc_gad': '',
+        'xmIwtLD': '015076c1b94fb3a879496e0e44e3ab89490e8860db48f2bc80d1a85be997247da997244d906125aca8bdbb9c320456ed',
+        'actionType': 'Q29udGFjdHM=',
+        'rmsg': 'true',
+        'returnURL': 'null',
+        'First Name': nome_lead,
+        'Last Name': nome_lead,
+        'Accounts.Account Name': empresa_nome,
+        'Email': email_lead,
+        'Phone': whatsapp_lead,
+        'Description': f"Empresa Analisada: {empresa_nome}\nEndereço: {endereco}\nPontuação Google: {score}/100"
+    }
+    
+    try:
+        res = requests.post(url_bigin, data=payload, timeout=8)
+        return res.status_code == 200
+    except Exception as e:
+        print(f"Erro ao enviar lead para Bigin: {e}")
+        return False
 
 # ==========================================
 # CÁLCULO DE SCORE RIGOROSO (10/100)
@@ -368,7 +391,7 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
         return None
 
 # ==========================================
-# ENVIO DE E-MAILS COM ESTRUTURA E ESPAÇAMENTOS SOLICITADOS
+# ENVIO DE E-MAILS
 # ==========================================
 def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dados_busca):
     try:
@@ -432,7 +455,7 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
 
         server.send_message(msg_admin)
 
-        # 2. E-mail Cliente com Formatação exata solicitada
+        # 2. E-mail Cliente
         msg_cliente = MIMEMultipart('mixed')
         msg_cliente['From'] = f"Rubens Okamoto | Tour360VR <{SMTP_USER}>"
         msg_cliente['To'] = email_lead
@@ -551,7 +574,11 @@ if "resultado_busca" in st.session_state:
                 whats_completo = "55" + apenas_numeros
 
                 with st.spinner("Gerando diagnóstico e enviando por e-mail..."):
+                    # 1. Envia E-mails (Cliente e Admin)
                     email_sucesso, email_msg = enviar_emails_diagnostico_completo(nome_lead, email_lead, whats_completo, dados)
+                    
+                    # 2. Envia Lead Direto para o Zoho Bigin em segundo plano
+                    enviar_lead_zoho_bigin(nome_lead, email_lead, whats_completo, dados['nome'], dados['endereco'], dados['score'])
 
                 if email_sucesso:
                     st.session_state["envio_sucesso"] = True
