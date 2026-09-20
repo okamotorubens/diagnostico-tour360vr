@@ -346,7 +346,8 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
         
         elements.append(Spacer(1, 12))
         elements.append(Paragraph("<b>Recomendações para Atingir Nota Máxima (100 PONTOS):</b>", style_sub))
-        elements.append(Paragraph("1. Implantação de Tour Virtual 360° Interativo homologado no Google Street View.<br>2. Atualização visual contínua da galeria de fotos e estímulo a avaliações positivas.<br>3. Vinculação de domínio próprio e alinhamento de horários.", style_body))
+        # CORREÇÃO AQUI: <br> alterado para <br/> (Sintaxe estrita do ReportLab)
+        elements.append(Paragraph("1. Implantação de Tour Virtual 360° Interativo homologado no Google Street View.<br/>2. Atualização visual contínua da galeria de fotos e estímulo a avaliações positivas.<br/>3. Vinculação de domínio próprio e alinhamento de horários.", style_body))
         
         elements.append(Spacer(1, 14))
         elements.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor('#CCCCCC'), spaceBefore=2, spaceAfter=4))
@@ -373,6 +374,9 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
 
         # Gera o arquivo PDF direto na memória RAM (BytesIO)
         pdf_bytes = gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios)
+
+        if not pdf_bytes:
+            return False, "Não foi possível gerar o arquivo PDF do relatório."
 
         server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=12)
         server.starttls()
@@ -528,7 +532,7 @@ if "resultado_busca" in st.session_state:
         else:
             whats_completo = "55" + apenas_numeros
 
-            # Dispara os e-mails com PDF anexo
+            # Dispara os e-mails com PDF e Rodapé
             email_sucesso, email_msg = enviar_emails_diagnostico_completo(nome_lead, email_lead, whats_completo, dados)
 
             if email_sucesso:
