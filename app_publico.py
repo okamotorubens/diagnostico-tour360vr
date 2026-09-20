@@ -8,7 +8,6 @@ from email.mime.base import MIMEBase
 from email import encoders
 import streamlit as st
 
-# Importação do ReportLab
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -64,14 +63,14 @@ custom_css = """
         font-family: 'Arial', sans-serif;
     }
 
-    /* CARD DE FUNDO DESTACADO PARA OS RESULTADOS */
-    .card-resultado-container {
-        background-color: #F8F9FA !important;
-        border: 1px solid #E0E0E0 !important;
+    /* CARD DE RESULTADO UNIFICADO (FUNDO CINZA/AZULADO) */
+    .card-resultado-unificado {
+        background-color: #F0F4F8 !important;
+        border: 1px solid #D0D7DE !important;
         border-radius: 12px !important;
-        padding: 20px !important;
+        padding: 24px 20px !important;
         margin: 1.2rem auto !important;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05) !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04) !important;
         max-width: 600px !important;
     }
 
@@ -130,14 +129,14 @@ custom_css = """
     /* Score Gigante */
     .nota-score-gigante {
         text-align: center !important;
-        font-size: 3.0rem !important;
+        font-size: 3.2rem !important;
         font-weight: 900 !important;
         font-family: 'Arial', sans-serif !important;
         line-height: 1 !important;
-        margin: 0.2rem 0 0.6rem 0 !important;
+        margin: 0.3rem 0 0.8rem 0 !important;
     }
 
-    /* Centralização de Botões */
+    /* Centralização dos Botões */
     div[data-testid="stButton"], div.stButton {
         display: flex !important;
         justify-content: center !important;
@@ -178,7 +177,7 @@ custom_css = """
         text-align: center !important;
     }
 
-    /* Alerta Amarelo com Borda */
+    /* Alerta Amarelo Interno */
     .alerta-destaque {
         background-color: #FFFDE7 !important;
         border: 2px solid #FBC02D !important;
@@ -188,7 +187,7 @@ custom_css = """
         color: #5D4037 !important;
         font-size: 0.95rem !important;
         font-weight: 600 !important;
-        margin: 0.8rem auto !important;
+        margin: 0.8rem auto 0 auto !important;
         max-width: 520px !important;
     }
 
@@ -235,18 +234,18 @@ SMTP_USER = "contato@tour360vr.com.br"
 SMTP_PASS = "Kakaroto@2026"
 
 # ==========================================
-# COR DINÂMICA DO SCORE
+# COR DINÂMICA DO SCORE (REGRA PADRÃO)
 # ==========================================
 def obter_cor_score(score):
     if score <= 40:
-        return "#D32F2F"  # Vermelho
+        return "#D32F2F"  # Vermelho Alerta
     elif score <= 70:
-        return "#F57C00"  # Laranja
+        return "#F57C00"  # Laranja / Amarelo Atenção
     else:
-        return "#8DC63F"  # Verde
+        return "#8DC63F"  # Verde Otimizado
 
 # ==========================================
-# CÁLCULO DE SCORE RIGOROSO
+# CÁLCULO DE SCORE RIGOROSO DA EMPRESA
 # ==========================================
 def consultar_score_google_rigoroso(nome_empresa):
     url = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={requests.utils.quote(nome_empresa)}&key={GOOGLE_API_KEY}"
@@ -321,15 +320,15 @@ def consultar_score_google_rigoroso(nome_empresa):
     return {"sucesso": False, "mensagem": "Empresa não encontrada no Google."}
 
 # ==========================================
-# GERADOR DE PDF SIMPLIFICADO E GARANTIDO
+# GERADOR DE PDF COMPATÍVEL
 # ==========================================
 def gerar_pdf_diagnostico(empresa_nome, endereco, score, criterios):
     try:
         buffer = io.BytesIO()
         doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=35, rightMargin=35, topMargin=35, bottomMargin=35)
-        
         styles = getSampleStyleSheet()
-        style_titulo = ParagraphStyle('TituloPDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=18, leading=22, textColor=colors.HexColor('#8DC63F'))
+        
+        style_titulo = ParagraphStyle('TituloPDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=18, leading=22, textColor=colors.HexColor('#1565C0'))
         style_sub = ParagraphStyle('SubPDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=12, leading=16, textColor=colors.HexColor('#222222'))
         style_texto = ParagraphStyle('TextoPDF', parent=styles['Normal'], fontName='Helvetica', fontSize=10, leading=14, textColor=colors.HexColor('#444444'))
         
@@ -340,7 +339,7 @@ def gerar_pdf_diagnostico(empresa_nome, endereco, score, criterios):
         elements.append(Paragraph(f"Endereço: {endereco}", style_texto))
         elements.append(Spacer(1, 15))
         
-        elements.append(Paragraph(f"PONTUAÇÃO GERAL DE OTIMIZAÇÃO: {score} / 100", ParagraphStyle('ScorePDF', parent=style_titulo, fontSize=16, textColor=colors.HexColor('#8DC63F'))))
+        elements.append(Paragraph(f"PONTUAÇÃO GERAL DE OTIMIZAÇÃO: {score} / 100", ParagraphStyle('ScorePDF', parent=style_titulo, fontSize=16, textColor=colors.HexColor('#1565C0'))))
         elements.append(Spacer(1, 15))
         
         elements.append(Paragraph("Critérios Analisados no Perfil do Google Maps:", style_sub))
@@ -355,7 +354,7 @@ def gerar_pdf_diagnostico(empresa_nome, endereco, score, criterios):
             
         t = Table(tabela_dados, colWidths=[240, 240])
         t.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#8DC63F')),
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1565C0')),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
             ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#DDDDDD')),
@@ -373,7 +372,7 @@ def gerar_pdf_diagnostico(empresa_nome, endereco, score, criterios):
         buffer.seek(0)
         return buffer.getvalue()
     except Exception as e:
-        print(f"Erro PDF: {e}")
+        print(f"Erro ao gerar PDF: {e}")
         return None
 
 # ==========================================
@@ -413,7 +412,7 @@ def enviar_lead_bigin(nome_lead, email_lead, whatsapp_lead, empresa_consultada, 
         return False
 
 # ==========================================
-# DISPARO DE E-MAILS COM DESIGN PROFISSIONAL E PDF ANEXO
+# DISPARO DE E-MAILS COM AZUL MÉDIO E ANEXO PDF
 # ==========================================
 def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dados_busca):
     try:
@@ -421,15 +420,15 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
         score = dados_busca['score']
         endereco = dados_busca['endereco']
         criterios = dados_busca.get('criterios', [])
+        cor_score_hex = obter_cor_score(score)
 
-        # Gerar o PDF em memória
         pdf_bytes = gerar_pdf_diagnostico(empresa_nome, endereco, score, criterios)
 
         server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
         server.starttls()
         server.login(SMTP_USER, SMTP_PASS)
 
-        # 1. E-mail de Notificação Interna (Tour360VR) com Card HTML Profissional
+        # 1. E-mail de Notificação Interna (Tour360VR) com Azul Médio
         msg_admin = MIMEMultipart('mixed')
         msg_admin['From'] = SMTP_USER
         msg_admin['To'] = SMTP_USER
@@ -438,20 +437,20 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
         corpo_admin_html = f"""
         <html>
         <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;">
-            <div style="max-width: 600px; background-color: #ffffff; padding: 25px; border-radius: 10px; border-top: 5px solid #8DC63F; margin: 0 auto;">
+            <div style="max-width: 600px; background-color: #ffffff; padding: 25px; border-radius: 10px; border-top: 5px solid #1E88E5; margin: 0 auto;">
                 <h2 style="color: #333333; margin-top: 0;">Novo Lead Capturado no Site!</h2>
                 <hr style="border: 0; border-top: 1px solid #eeeeee;">
                 
-                <h3 style="color: #8DC63F; margin-bottom: 5px;">Empresa Consultada:</h3>
-                <p style="font-size: 1.1rem; font-weight: bold; margin-top: 0;">{empresa_nome}</p>
+                <h3 style="color: #1565C0; margin-bottom: 5px;">Empresa Consultada:</h3>
+                <p style="font-size: 1.1rem; font-weight: bold; margin-top: 0; color: #1E88E5;">{empresa_nome}</p>
                 
-                <p><b>Pontuação Obtida:</b> <span style="font-size: 1.2rem; color: #8DC63F; font-weight: bold;">{score} / 100</span></p>
+                <p><b>Pontuação Obtida:</b> <span style="font-size: 1.25rem; color: {cor_score_hex}; font-weight: bold;">{score} / 100</span></p>
                 
-                <div style="background-color: #F8F9FA; padding: 15px; border-radius: 8px; border-left: 4px solid #8DC63F; margin: 15px 0;">
+                <div style="background-color: #F8F9FA; padding: 15px; border-radius: 8px; border-left: 4px solid #1E88E5; margin: 15px 0;">
                     <h4 style="margin-top: 0; color: #555555;">Dados do Cliente:</h4>
                     <p style="margin: 5px 0;"><b>Nome:</b> {nome_lead}</p>
                     <p style="margin: 5px 0;"><b>E-mail:</b> <a href="mailto:{email_lead}">{email_lead}</a></p>
-                    <p style="margin: 5px 0;"><b>WhatsApp:</b> <a href="https://wa.me/{whatsapp_lead}" target="_blank" style="color: #25D366; font-weight: bold;">+{whatsapp_lead}</a></p>
+                    <p style="margin: 5px 0;"><b>WhatsApp:</b> <a href="https://wa.me/{whatsapp_lead}" target="_blank" style="color: #1E88E5; font-weight: bold;">+{whatsapp_lead}</a></p>
                 </div>
                 
                 <p style="font-size: 0.85rem; color: #888888; text-align: center;">Tour360VR • Sistema Automático de Captura</p>
@@ -461,7 +460,6 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
         """
         msg_admin.attach(MIMEText(corpo_admin_html, 'html'))
         
-        # Anexa PDF também no seu e-mail administrativo
         if pdf_bytes:
             p_admin = MIMEBase('application', 'pdf')
             p_admin.set_payload(pdf_bytes)
@@ -483,7 +481,7 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
             <p>Olá, {nome_lead}!</p>
             <p>Ficamos muito felizes pelo seu interesse em saber como está a ficha Google da sua empresa.</p>
             <p>Recebemos a solicitação de diagnóstico para <b>{empresa_nome}</b>.</p>
-            <p>Pontuação de otimização no Google: <b style="font-size: 1.25rem; color: #8DC63F;">{score}/100</b>.</p>
+            <p>Pontuação de otimização no Google: <b style="font-size: 1.25rem; color: {cor_score_hex};">{score}/100</b>.</p>
             <p>O nosso especialista em posicionamento digital analisará os detalhes do seu perfil e entrará em contato através do WhatsApp (5516991332121) para apresentar o relatório completo.</p>
             <p>Anexamos a este e-mail o seu relatório preliminar em PDF.</p>
             <br>
@@ -493,7 +491,6 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
         """
         msg_cliente.attach(MIMEText(corpo_html_cliente, 'html'))
 
-        # Anexa PDF no e-mail do cliente
         if pdf_bytes:
             p_cliente = MIMEBase('application', 'pdf')
             p_cliente.set_payload(pdf_bytes)
@@ -525,12 +522,11 @@ if st.button("🔍 Analisar perfil"):
             else:
                 st.error("❌ Empresa não encontrada. Tente incluir a cidade ou verificar a grafia exata cadastrada no Google.")
 
-# Exibição dos Resultados Dentro de um Card Destacado
+# Exibição do Resultado no Card Unificado com Fundo Cinza/Azulado
 if "resultado_busca" in st.session_state:
     dados = st.session_state["resultado_busca"]
     
-    # CARD COM BACKGROUND DESTACADO
-    st.markdown('<div class="card-resultado-container">', unsafe_allow_html=True)
+    st.markdown('<div class="card-resultado-unificado">', unsafe_allow_html=True)
     
     st.markdown(f'<div class="empresa-localizada-titulo">Empresa Localizada: {dados["nome"]}</div>', unsafe_allow_html=True)
     st.markdown(f'<p style="text-align: center; color: #666666; font-size: 0.95rem; margin-bottom: 0.4rem;">📍 {dados["endereco"]}</p>', unsafe_allow_html=True)
@@ -548,7 +544,7 @@ if "resultado_busca" in st.session_state:
     
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # Título do Formulário
+    # Formulário de Captura
     st.markdown('<div class="destaque-formulario-linha">📋 Preencha os dados abaixo e receba a análise completa</div>', unsafe_allow_html=True)
     
     st.markdown('<div class="rotulo-campo-centralizado">Nome:</div>', unsafe_allow_html=True)
