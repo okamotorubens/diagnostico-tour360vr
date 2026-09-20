@@ -365,31 +365,35 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
         return None
 
 # ==========================================
-# INTEGRAÇÃO ZOHO BIGIN CRM (REFRESH TOKEN PERMANENTE)
+# INTEGRAÇÃO ZOHO BIGIN CRM (POST COM BODY FORM-DATA)
 # ==========================================
 def obter_access_token_bigin():
-    domains = ["com", "com.br"]
+    erros = []
+    domains = ["com", "com.br", "eu"]
     for domain in domains:
         try:
             url = f"https://accounts.zoho.{domain}/oauth/v2/token"
-            params = {
+            data = {
                 "refresh_token": BIGIN_REFRESH_TOKEN,
                 "client_id": BIGIN_CLIENT_ID,
                 "client_secret": BIGIN_CLIENT_SECRET,
                 "grant_type": "refresh_token"
             }
-            res = requests.post(url, params=params, timeout=8).json()
+            res = requests.post(url, data=data, timeout=8).json()
             if "access_token" in res:
-                return res["access_token"], domain
+                return res["access_token"], domain, None
+            elif "error" in res:
+                erros.append(f"{domain}: {res.get('error')}")
         except Exception as e:
-            print(f"Erro token no domínio {domain}: {e}")
-    return None, None
+            erros.append(f"{domain}: {str(e)}")
+            
+    return None, None, " | ".join(erros)
 
 def enviar_lead_bigin(nome_lead, email_lead, whatsapp_lead, empresa_consultada, score):
     try:
-        access_token, domain = obter_access_token_bigin()
+        access_token, domain, erro_auth = obter_access_token_bigin()
         if not access_token:
-            return False, "Falha na renovação do Access Token do Bigin."
+            return False, f"Falha OAuth Bigin: {erro_auth}"
 
         headers = {
             "Authorization": f"Zoho-oauthtoken {access_token}",
