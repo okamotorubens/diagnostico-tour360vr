@@ -23,7 +23,7 @@ st.set_page_config(
     layout="centered"
 )
 
-# Estilo CSS de Alta Prioridade
+# Estilo CSS com Prioridade Absoluta
 custom_css = """
 <style>
     /* Fundo limpo e container otimizado */
@@ -37,18 +37,18 @@ custom_css = """
         max-width: 750px !important;
     }
 
-    /* Ocultar cabeçalhos/rodapés nativos */
-    header, footer, #MainMenu, [data-testid="stHeader"], [data-testid="stToolbar"] {
+    /* OCULTAR DEFINITIVAMENTE O RODAPÉ 'BUILT WITH STREAMLIT' E BARRAS NATIVAS */
+    footer, .stApp footer, [data-testid="stFooter"], header, #MainMenu, [data-testid="stHeader"], [data-testid="stToolbar"] {
         visibility: hidden !important;
-        height: 0px !important;
         display: none !important;
+        height: 0px !important;
     }
 
-    /* Títulos Principais */
+    /* Títulos Principais em Linha Única */
     .titulo-uma-linha {
         text-align: center;
         color: #000000 !important;
-        font-size: 1.45rem;
+        font-size: 1.35rem;
         font-weight: 800;
         margin-bottom: 0.2rem;
         font-family: 'Arial', sans-serif;
@@ -57,7 +57,7 @@ custom_css = """
     .instrucao-subtitulo {
         text-align: center;
         color: #333333 !important;
-        font-size: 0.98rem;
+        font-size: 0.95rem;
         font-weight: 600;
         margin-bottom: 0.8rem;
         font-family: 'Arial', sans-serif;
@@ -66,20 +66,20 @@ custom_css = """
     .empresa-localizada-titulo {
         text-align: center;
         color: #000000 !important;
-        font-size: 1.35rem !important;
+        font-size: 1.3rem !important;
         font-weight: 800;
         margin-top: 0.2rem;
         margin-bottom: 0.1rem;
     }
 
-    /* Rótulos de Campos */
+    /* Rótulos dos Campos Centralizados */
     .rotulo-campo-centralizado {
         text-align: center !important;
         color: #000000 !important;
         font-size: 0.95rem !important;
         font-weight: 700 !important;
         font-family: 'Arial', sans-serif !important;
-        margin-top: 0.6rem !important;
+        margin-top: 0.5rem !important;
         margin-bottom: 0.1rem !important;
     }
 
@@ -114,36 +114,17 @@ custom_css = """
         text-align: center !important;
     }
 
-    /* Quadro do WhatsApp com 55 Fixo */
-    .container-whatsapp-fixo {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        max-width: 480px;
-        margin: 0 auto;
-        gap: 8px;
-    }
-    .prefixo-pais-55 {
-        background-color: #EEEEEE;
-        border: 2px solid #CCCCCC;
-        border-radius: 8px;
-        padding: 0.55rem 0.9rem;
-        font-weight: bold;
-        font-size: 1rem;
-        color: #333333;
-    }
-
-    /* Score Gigante */
+    /* NOTA DO SCORE IMPACTANTE E COM TAMANHO EQUILIBRADO */
     .nota-score-gigante {
         text-align: center !important;
-        font-size: 3.8rem !important;
+        font-size: 3.0rem !important;
         font-weight: 900 !important;
         font-family: 'Arial', sans-serif !important;
         line-height: 1 !important;
-        margin: 0.2rem 0 0.8rem 0 !important;
+        margin: 0.2rem 0 0.6rem 0 !important;
     }
 
-    /* Centralização de Botões */
+    /* CENTRALIZAÇÃO PERFEITA DOS BOTÕES */
     div.stButton {
         display: flex !important;
         justify-content: center !important;
@@ -155,11 +136,11 @@ custom_css = """
     .stButton > button {
         background-color: #8DC63F !important;
         color: #FFFFFF !important;
-        font-size: 1.15rem !important;
+        font-size: 1.1rem !important;
         font-weight: bold !important;
         border-radius: 8px !important;
         border: none !important;
-        padding: 0.75rem 2rem !important;
+        padding: 0.65rem 2rem !important;
         cursor: pointer !important;
         box-shadow: 0 4px 12px rgba(141, 198, 63, 0.3) !important;
         margin: 0 auto !important;
@@ -167,7 +148,7 @@ custom_css = """
         justify-content: center !important;
         align-items: center !important;
         width: 100% !important;
-        max-width: 380px !important;
+        max-width: 480px !important;
     }
 
     .stButton > button:hover {
@@ -177,7 +158,7 @@ custom_css = """
 
     .stButton > button p {
         color: #FFFFFF !important;
-        font-size: 1.15rem !important;
+        font-size: 1.1rem !important;
         font-weight: bold !important;
         margin: 0 !important;
         text-align: center !important;
@@ -197,29 +178,31 @@ custom_css = """
         max-width: 520px !important;
     }
 
+    /* Título do Formulário em Linha Única */
     .destaque-formulario-linha {
         text-align: center;
         color: #000000 !important;
-        font-size: 1.45rem;
+        font-size: 1.25rem;
         font-weight: 800;
         margin-top: 1.2rem;
         margin-bottom: 0.8rem;
         font-family: 'Arial', sans-serif;
+        white-space: nowrap;
     }
 
-    /* Card de Sucesso */
+    /* Card de Sucesso Reduzido no Tamanho do Input */
     .card-sucesso-destaque {
         background-color: #E8F5E9 !important;
         border: 2px solid #2E7D32 !important;
-        border-radius: 10px !important;
-        padding: 14px 20px !important;
+        border-radius: 8px !important;
+        padding: 10px 16px !important;
         text-align: center !important;
         color: #1B5E20 !important;
-        font-size: 1.2rem !important;
+        font-size: 1.05rem !important;
         font-weight: 800 !important;
-        margin: 1.2rem auto !important;
+        margin: 0.8rem auto !important;
         max-width: 480px !important;
-        box-shadow: 0 4px 12px rgba(46, 125, 50, 0.15) !important;
+        box-shadow: 0 2px 8px rgba(46, 125, 50, 0.15) !important;
     }
 </style>
 """
@@ -267,7 +250,7 @@ def consultar_score_google_rigoroso(nome_empresa):
             res_details = requests.get(url_details, headers=headers, timeout=10).json()
             details = res_details.get("result", place)
 
-            # Algoritmo de 9 Critérios Rígidos (Exigência do Sistema Privado)
+            # Algoritmo de 9 Critérios Rígidos (Fiel ao Sistema Privado)
             score = 0
             crit_det = []
 
@@ -276,20 +259,20 @@ def consultar_score_google_rigoroso(nome_empresa):
                 score += 10
                 crit_det.append("Status Operacional: Ativo")
 
-            # 2. Avaliações (Rigoroso: exije nota >= 4.5 E no mínimo 50 avaliações para 20 pts)
+            # 2. Avaliações (Rigoroso: nota >= 4.5 E no mínimo 50 avaliações)
             rating = details.get("rating", 0)
             reviews = details.get("user_ratings_total", 0)
             if rating >= 4.5 and reviews >= 50:
                 score += 20
                 crit_det.append(f"Avaliações: Excelente ({rating}★ - {reviews} avaliações)")
 
-            # 3. Fotos em Volume (20 pts para >= 20 fotos)
+            # 3. Galeria de Fotos (20 pts para >= 20 fotos)
             photos = details.get("photos", [])
             if len(photos) >= 20:
                 score += 20
                 crit_det.append("Galeria de Fotos: Completa")
 
-            # 4. Telefone Válido (10 pts)
+            # 4. Telefone Comercial Válido (10 pts)
             if details.get("formatted_phone_number"):
                 score += 10
                 crit_det.append("Telefone: Cadastrado")
@@ -418,7 +401,7 @@ def enviar_lead_bigin(nome_lead, email_lead, whatsapp_lead, empresa_consultada, 
         return False
 
 # ==========================================
-# DISPARO DE E-MAILS COM REDAÇÃO AJUSTADA E PDF ANEXO
+# DISPARO DE E-MAILS COM TEXTO EXATO E PDF ANEXO
 # ==========================================
 def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dados_busca):
     try:
@@ -451,8 +434,8 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
         msg_admin.attach(MIMEText(corpo_admin, 'plain'))
         server.send_message(msg_admin)
 
-        # 2. E-mail HTML para o Cliente (com a redação exata solicitada)
-        msg_cliente = MIMEMultipart()
+        # 2. E-mail HTML para o Cliente com a Redação Exata Solicitada
+        msg_cliente = MIMEMultipart('mixed')
         msg_cliente['From'] = SMTP_USER
         msg_cliente['To'] = email_lead
         msg_cliente['Subject'] = f"Diagnóstico de Perfil no Google - {empresa_nome}"
@@ -460,26 +443,24 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
         corpo_html = f"""
         <html>
         <body style="font-family: Arial, sans-serif; color: #333333; line-height: 1.6;">
-            <p>Olá, <b>{nome_lead}</b>!</p>
-            <p>Ficamos muito felizes pelo seu interesse em saber como está a ficha da sua empresa no Google.</p>
-            <p>Recebemos a sua solicitação de diagnóstico para a empresa "<b>{empresa_nome}</b>".</p>
-            <p>Pontuação de Otimização no Google Maps: <b style="font-size: 1.25rem;">{score}/100</b>.</p>
-            <p>O nosso especialista em posicionamento digital da Tour360VR analisará os detalhes do seu perfil e entrará em contacto através do WhatsApp (<b>{whatsapp_lead}</b>) para apresentar o relatório completo.</p>
-            <p><i>Anexamos a este e-mail o seu relatório preliminar em PDF.</i></p>
-            <br>
-            <p>Atenciosamente,<br><b>Rubens Okamoto | Tour360VR</b></p>
+            <p>Olá, {nome_lead}!</p>
+            <p>Ficamos muito felizes pelo seu interesse em saber como está a ficha Google da sua empresa.</p>
+            <p>Recebemos a solicitação de diagnóstico para <b>{empresa_nome}</b>.</p>
+            <p>Pontuação de otimização no Google: <b style="font-size: 1.25rem;">{score}/100</b>.</p>
+            <p>O nosso especialista em posicionamento digital analisará os detalhes do seu perfil e entrará em contato através do WhatsApp (5516991332121) para apresentar o relatório completo.</p>
+            <p>Anexamos a este e-mail o seu relatório preliminar em PDF.</p>
         </body>
         </html>
         """
         msg_cliente.attach(MIMEText(corpo_html, 'html'))
 
-        # Anexa o arquivo PDF
+        # Gera e anexa o arquivo PDF
         pdf_bytes = gerar_pdf_diagnostico(empresa_nome, endereco, score, criterios)
         if pdf_bytes:
-            part_pdf = MIMEBase('application', 'oct-stream')
+            part_pdf = MIMEBase('application', 'pdf')
             part_pdf.set_payload(pdf_bytes)
             encoders.encode_base64(part_pdf)
-            part_pdf.add_header('Content-Disposition', f'attachment; filename="Diagnostico_GMB_{empresa_nome.replace(" ", "_")}.pdf"')
+            part_pdf.add_header('Content-Disposition', 'attachment', filename=f"Diagnostico_GMB_{empresa_nome.replace(' ', '_')}.pdf")
             msg_cliente.attach(part_pdf)
 
         server.send_message(msg_cliente)
@@ -539,17 +520,12 @@ if "resultado_busca" in st.session_state:
     st.markdown('<div class="rotulo-campo-centralizado">WhatsApp</div>', unsafe_allow_html=True)
     st.markdown('<div class="subtexto-label" style="text-align: center;">(com DDD)</div>', unsafe_allow_html=True)
     
-    # Layout do WhatsApp com Prefixo 55 Fixo ao lado
-    col_pref, col_num = st.columns([1, 4])
-    with col_pref:
-        st.markdown('<div class="prefixo-pais-55" style="text-align: center; margin-top: 2px;">55</div>', unsafe_allow_html=True)
-    with col_num:
-        num_whats = st.text_input("WhatsInput", max_chars=11, placeholder="16991332121", label_visibility="collapsed")
+    num_whats = st.text_input("WhatsInput", max_chars=11, placeholder="16991332121", label_visibility="collapsed")
 
     if st.button("📩 Receber diagnóstico"):
         if nome_lead and email_lead and num_whats and len(num_whats.strip()) >= 10:
-            whats_somente_num = ''.join(filter(str.isdigit, num_whats))
-            whats_completo = "55" + whats_somente_num
+            whats_limpo = ''.join(filter(str.isdigit, num_whats))
+            whats_completo = "55" + whats_limpo
 
             enviar_lead_bigin(nome_lead, email_lead, whats_completo, dados['nome'], dados['score'])
             enviar_emails_diagnostico_completo(nome_lead, email_lead, whats_completo, dados)
