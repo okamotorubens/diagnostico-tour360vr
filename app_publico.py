@@ -171,10 +171,6 @@ st.markdown(custom_css, unsafe_allow_html=True)
 # ==========================================
 GOOGLE_API_KEY = "AIzaSyA8ul_9QICNyqxrHgT-CURIZmd1sikHn5U"
 
-BIGIN_CLIENT_ID = "1000.COI8SBR9O0RCMGCL7WKEYUJMBZCR8X"
-BIGIN_CLIENT_SECRET = "c60642fb374cbad9753c456d8713b6349417187345"
-BIGIN_GRANT_CODE = "1000.c63ef3d18a2bed7662ee3c48cf0e50e2.a3594064016626ff0bf436231f0681da"
-
 SMTP_SERVER = "smtp.tour360vr.com.br"
 SMTP_PORT = 587
 SMTP_USER = "contato@tour360vr.com.br"
@@ -295,7 +291,7 @@ def consultar_score_google_rigoroso(nome_empresa):
     return {"sucesso": False, "mensagem": "Empresa não encontrada no Google."}
 
 # ==========================================
-# GERADOR DE PDF DIRETO EM MEMÓRIA (BYTES)
+# GERADOR DE PDF SIMPLIFICADO E ROBUSTO (BYTES)
 # ==========================================
 def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
     try:
@@ -310,9 +306,9 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
         )
         
         styles = getSampleStyleSheet()
-        style_title = ParagraphStyle('HeaderTitle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=15, leading=18, textColor=colors.HexColor('#1565C0'))
-        style_sub = ParagraphStyle('HeaderSub', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10.5, leading=14, textColor=colors.HexColor('#222222'))
-        style_body = ParagraphStyle('HeaderBody', parent=styles['Normal'], fontName='Helvetica', fontSize=8.5, leading=11.5, textColor=colors.HexColor('#444444'))
+        style_title = ParagraphStyle('HeaderTitle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=14, leading=17, textColor=colors.HexColor('#1565C0'))
+        style_sub = ParagraphStyle('HeaderSub', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=13, textColor=colors.HexColor('#222222'))
+        style_body = ParagraphStyle('HeaderBody', parent=styles['Normal'], fontName='Helvetica', fontSize=8.5, leading=11, textColor=colors.HexColor('#444444'))
         style_cell = ParagraphStyle('CellText', parent=styles['Normal'], fontName='Helvetica', fontSize=8, leading=10, textColor=colors.HexColor('#333333'))
         style_cell_bold = ParagraphStyle('CellBold', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=8.5, leading=10, textColor=colors.white)
 
@@ -326,7 +322,7 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
         elements.append(Spacer(1, 10))
         
         cor_score_hex = obter_cor_score(score)
-        elements.append(Paragraph(f"DIAGNÓSTICO DE OTIMIZAÇÃO: <font color='{cor_score_hex}'><b>{score} / 100 PONTOS</b></font>", ParagraphStyle('ScorePDF', parent=style_title, fontSize=13.5)))
+        elements.append(Paragraph(f"DIAGNÓSTICO DE OTIMIZAÇÃO: <font color='{cor_score_hex}'><b>{score} / 100 PONTOS</b></font>", ParagraphStyle('ScorePDF', parent=style_title, fontSize=13)))
         elements.append(Spacer(1, 8))
         
         elements.append(Paragraph("<b>Detalhamento dos 9 Critérios Avaliados:</b>", style_sub))
@@ -361,99 +357,8 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
         buffer.close()
         return val
     except Exception as e:
-        print(f"Erro na construção do PDF em memória: {e}")
+        st.error(f"Erro na geração do PDF: {e}")
         return None
-
-# ==========================================
-# INTEGRAÇÃO ZOHO BIGIN CRM
-# ==========================================
-def obter_access_token_bigin():
-    # 1. Se já obtivemos e salvamos um Refresh Token em sessão, renovamos diretamente
-    if "bigin_refresh_token" in st.session_state:
-        rf = st.session_state["bigin_refresh_token"]
-        try:
-            url = "https://accounts.zoho.com/oauth/v2/token"
-            data = {
-                "refresh_token": rf,
-                "client_id": BIGIN_CLIENT_ID,
-                "client_secret": BIGIN_CLIENT_SECRET,
-                "grant_type": "refresh_token"
-            }
-            res = requests.post(url, data=data, timeout=8).json()
-            if "access_token" in res:
-                return res["access_token"], "com", None
-        except Exception:
-            pass
-
-    # 2. Primeira troca utilizando o Grant Code recém-gerado
-    try:
-        url = "https://accounts.zoho.com/oauth/v2/token"
-        data = {
-            "grant_type": "authorization_code",
-            "client_id": BIGIN_CLIENT_ID,
-            "client_secret": BIGIN_CLIENT_SECRET,
-            "code": BIGIN_GRANT_CODE
-        }
-        res = requests.post(url, data=data, timeout=8).json()
-        if "refresh_token" in res:
-            st.session_state["bigin_refresh_token"] = res["refresh_token"]
-        if "access_token" in res:
-            return res["access_token"], "com", None
-        else:
-            return None, None, res.get("error", str(res))
-    except Exception as e:
-        return None, None, str(e)
-
-def enviar_lead_bigin(nome_lead, email_lead, whatsapp_lead, empresa_consultada, score):
-    try:
-        access_token, domain, erro_auth = obter_access_token_bigin()
-        if not access_token:
-            return False, f"OAuth Bigin: {erro_auth}"
-
-        headers = {
-            "Authorization": f"Zoho-oauthtoken {access_token}",
-            "Content-Type": "application/json"
-        }
-
-        # 1. Cria ou atualiza o Contato no Bigin
-        payload_contact = {
-            "data": [
-                {
-                    "Last_Name": nome_lead,
-                    "Email": email_lead,
-                    "Phone": whatsapp_lead,
-                    "Description": f"Lead Diagnóstico Google:\nEmpresa: {empresa_consultada}\nScore: {score}/100"
-                }
-            ]
-        }
-        url_contact = f"https://www.zohoapis.{domain}/bigin/v1/Contacts"
-        res_contact = requests.post(url_contact, json=payload_contact, headers=headers, timeout=8).json()
-
-        contact_id = None
-        if "data" in res_contact and len(res_contact["data"]) > 0:
-            contact_id = res_contact["data"][0].get("details", {}).get("id")
-
-        # 2. Cria o Negócio (Deal) no Pipeline
-        stages_teste = ["1º Contato", "First Contact", "Qualificação"]
-        for stage_name in stages_teste:
-            payload_deal = {
-                "data": [
-                    {
-                        "Deal_Name": f"Diagnóstico: {empresa_consultada} ({score}/100)",
-                        "Stage": stage_name,
-                        "Description": f"Lead capturado no site:\nNome: {nome_lead}\nE-mail: {email_lead}\nWhatsApp: {whatsapp_lead}\nScore Google: {score}/100",
-                        "Contact_Name": contact_id if contact_id else None
-                    }
-                ]
-            }
-            url_deal = f"https://www.zohoapis.{domain}/bigin/v1/Deals"
-            res_deal = requests.post(url_deal, json=payload_deal, headers=headers, timeout=8)
-            if res_deal.status_code in [200, 201]:
-                return True, "Lead registrado no Bigin com sucesso!"
-
-        return True, "Contato criado no Bigin."
-    except Exception as e:
-        return False, str(e)
 
 # ==========================================
 # ENVIO DE E-MAILS COM ANEXO EM MEMÓRIA E RODAPÉ
@@ -560,7 +465,7 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
 
         return True, "E-mails e PDF enviados com sucesso!"
     except Exception as e:
-        return False, f"Falha na SMTP Locaweb: {str(e)}"
+        return False, f"Falha no envio do e-mail/PDF: {str(e)}"
 
 # ==========================================
 # INTERFACE DO USUÁRIO STREAMLIT
@@ -623,10 +528,7 @@ if "resultado_busca" in st.session_state:
         else:
             whats_completo = "55" + apenas_numeros
 
-            # 1. Registra no Bigin CRM
-            bigin_sucesso, bigin_msg = enviar_lead_bigin(nome_lead, email_lead, whats_completo, dados['nome'], dados['score'])
-
-            # 2. Dispara os e-mails com PDF e Rodapé
+            # Dispara os e-mails com PDF anexo
             email_sucesso, email_msg = enviar_emails_diagnostico_completo(nome_lead, email_lead, whats_completo, dados)
 
             if email_sucesso:
@@ -637,6 +539,3 @@ if "resultado_busca" in st.session_state:
                 """, unsafe_allow_html=True)
             else:
                 st.error(f"❌ Erro ao enviar e-mail: {email_msg}")
-
-            if not bigin_sucesso:
-                st.warning(f"⚠️ Nota de Integração CRM: {bigin_msg}")
