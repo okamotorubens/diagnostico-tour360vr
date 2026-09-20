@@ -25,10 +25,9 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# CSS Definitivo: Esconde Menu, Botões de Apps, Header, Footer e elimina Scrollbar
+# CSS Definitivo: Oculta Ícones Flutuantes, Menus, Header, Footer e reduz espaçamentos inferiores
 custom_css = """
 <style>
-    /* Oculta completamente a barra de rolagem e fixa altura do container */
     html, body, [data-testid="stAppViewContainer"], .main, .stApp {
         overflow: hidden !important;
         background-color: #FFFFFF !important;
@@ -43,7 +42,7 @@ custom_css = """
         max-width: 900px !important;
     }
 
-    /* Esconde todos os ícones e menus de navegação/sistemas do Streamlit */
+    /* Oculta rigorosamente menus, barras e ícones flutuantes inferiores do Streamlit */
     [data-testid="stHeader"], 
     [data-testid="stAppHeader"],
     [data-testid="stToolbar"], 
@@ -56,7 +55,9 @@ custom_css = """
     .viewerBadge_container__1QSob, 
     .styles_viewerBadge__1yB5_,
     button[title="View source"],
-    .stAppHeader {
+    [data-testid="stStatusWidget"],
+    div[class*="viewerBadge"],
+    div[class*="styles_viewerBadge"] {
         display: none !important;
         visibility: hidden !important;
         opacity: 0 !important;
@@ -69,17 +70,17 @@ custom_css = """
         background-color: #F0F4F8 !important;
         border: 1px solid #D0D7DE !important;
         border-radius: 10px !important;
-        padding: 12px 18px !important;
-        margin: 0.4rem auto !important;
+        padding: 10px 16px !important;
+        margin: 0.2rem auto !important;
         box-shadow: 0 2px 8px rgba(0,0,0,0.04) !important;
     }
 
     .titulo-principal {
         text-align: center;
         color: #111111 !important;
-        font-size: 2.2rem;
+        font-size: 2.1rem;
         font-weight: 800;
-        margin-bottom: 0.2rem;
+        margin-bottom: 0.1rem;
         line-height: 1.2;
         font-family: 'Arial', sans-serif;
     }
@@ -87,19 +88,19 @@ custom_css = """
     .instrucao-subtitulo {
         text-align: center;
         color: #444444 !important;
-        font-size: 1.1rem;
+        font-size: 1.05rem;
         font-weight: 600;
-        margin-bottom: 0.6rem;
+        margin-bottom: 0.4rem;
         font-family: 'Arial', sans-serif;
     }
 
     .titulo-secundario {
         text-align: center;
         color: #111111 !important;
-        font-size: 1.15rem;
+        font-size: 1.1rem;
         font-weight: 700;
-        margin-top: 0.6rem;
-        margin-bottom: 0.3rem;
+        margin-top: 0.4rem;
+        margin-bottom: 0.2rem;
         font-family: 'Arial', sans-serif;
     }
 
@@ -117,8 +118,8 @@ custom_css = """
     .stTextInput input {
         border: 1px solid #CCCCCC !important;
         border-radius: 6px !important;
-        font-size: 0.98rem !important;
-        padding: 0.45rem 0.8rem !important;
+        font-size: 0.95rem !important;
+        padding: 0.4rem 0.8rem !important;
         text-align: center !important;
         color: #000000 !important;
     }
@@ -131,16 +132,16 @@ custom_css = """
     .rotulo-campo {
         text-align: center !important;
         color: #111111 !important;
-        font-size: 0.92rem !important;
+        font-size: 0.9rem !important;
         font-weight: 700 !important;
-        margin-top: 0.2rem !important;
-        margin-bottom: 0.1rem !important;
+        margin-top: 0.15rem !important;
+        margin-bottom: 0.05rem !important;
     }
     .subtexto-label {
-        font-size: 0.78rem !important;
+        font-size: 0.75rem !important;
         color: #666666 !important;
         text-align: center !important;
-        margin-bottom: 0.2rem !important;
+        margin-bottom: 0.15rem !important;
     }
 
     div[data-testid="stButton"], div.stButton {
@@ -148,16 +149,16 @@ custom_css = """
         justify-content: center !important;
         align-items: center !important;
         width: 100% !important;
-        margin: 0.4rem auto !important;
+        margin: 0.3rem auto !important;
     }
     .stButton > button {
         background-color: #1565C0 !important;
         color: #FFFFFF !important;
-        font-size: 1.05rem !important;
+        font-size: 1rem !important;
         font-weight: bold !important;
         border-radius: 6px !important;
         border: none !important;
-        padding: 0.55rem 2rem !important;
+        padding: 0.5rem 2rem !important;
         cursor: pointer !important;
         width: 100% !important;
         max-width: 520px !important;
@@ -179,9 +180,9 @@ custom_css = """
         padding: 10px 14px !important;
         text-align: center !important;
         color: #1B5E20 !important;
-        font-size: 1.02rem !important;
+        font-size: 1rem !important;
         font-weight: 700 !important;
-        margin: 0.6rem auto !important;
+        margin: 0.4rem auto !important;
         max-width: 520px !important;
         box-shadow: 0 4px 12px rgba(46, 125, 50, 0.15) !important;
     }
@@ -195,7 +196,7 @@ st.markdown(custom_css, unsafe_allow_html=True)
 GOOGLE_API_KEY = "AIzaSyA8ul_9QICNyqxrHgT-CURIZmd1sikHn5U"
 
 SMTP_SERVER = "smtp.tour360vr.com.br"
-SMTP_PORT = 587
+SMTP_PORT_SSL = 465  # Usando porta SSL 465 para evitar Timeout no Streamlit Cloud
 SMTP_USER = "contato@tour360vr.com.br"
 SMTP_PASS = "Kakaroto@2026"
 
@@ -228,13 +229,8 @@ def enviar_lead_zoho_bigin(nome_lead, email_lead, whatsapp_lead, empresa_nome, e
         'Description': f"Empresa Analisada: {empresa_nome}\nEndereço: {endereco}\nPontuação Google: {score}/100"
     }
     
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Content-Type": "application/x-www-form-encoding; charset=UTF-8"
-    }
-    
     try:
-        res = requests.post(url_bigin, data=payload, headers=headers, timeout=10)
+        res = requests.post(url_bigin, data=payload, timeout=8)
         return res.status_code == 200
     except Exception as e:
         print(f"Erro no Bigin: {e}")
@@ -408,7 +404,7 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
         return None
 
 # ==========================================
-# ENVIO DE E-MAILS COM ESPAÇAMENTO EXATO EM BR
+# ENVIO DE E-MAILS COM SMTP_SSL
 # ==========================================
 def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dados_busca):
     try:
@@ -423,8 +419,8 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
         if not pdf_bytes:
             return False, "Não foi possível gerar o arquivo PDF do relatório."
 
-        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=12)
-        server.starttls()
+        # Conexão rápida e direta via SSL na porta 465 (evita o erro de timeout na porta 587)
+        server = smtplib.SMTP_SSL(SMTP_SERVER, SMTP_PORT_SSL, timeout=15)
         server.login(SMTP_USER, SMTP_PASS)
 
         filename_clean = f"Diagnostico_{re.sub(r'[^a-zA-Z0-9]', '_', empresa_nome)}.pdf"
@@ -472,7 +468,7 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
 
         server.send_message(msg_admin)
 
-        # 2. E-mail Cliente (Quebras de Linha <br/> explícitas)
+        # 2. E-mail Cliente
         msg_cliente = MIMEMultipart('mixed')
         msg_cliente['From'] = f"Rubens Okamoto | Tour360VR <{SMTP_USER}>"
         msg_cliente['To'] = email_lead
