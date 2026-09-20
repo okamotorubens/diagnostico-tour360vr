@@ -9,7 +9,7 @@ from email.mime.base import MIMEBase
 from email import encoders
 import streamlit as st
 
-# Importação das bibliotecas de PDF (ReportLab)
+# ReportLab para geração de PDF
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -24,10 +24,10 @@ st.set_page_config(
     layout="centered"
 )
 
-# Estilo CSS Global com Ocultação Absoluta do Rodapé Nativo
+# Estilo CSS Global - Padronização Visual de Todos os Inputs e Ocultação do Rodapé
 custom_css = """
 <style>
-    /* Ocultar rodapé e barras nativas do Streamlit */
+    /* Ocultar rodapé nativo 'Built with Streamlit' e barras nativas */
     footer, .stApp footer, [data-testid="stFooter"], header, #MainMenu, [data-testid="stHeader"], [data-testid="stToolbar"] {
         display: none !important;
         visibility: hidden !important;
@@ -65,7 +65,7 @@ custom_css = """
         font-family: 'Arial', sans-serif;
     }
 
-    /* Rótulos de Campos Centralizados */
+    /* Rótulos dos Campos Centralizados */
     .rotulo-campo-centralizado {
         text-align: center !important;
         color: #000000 !important;
@@ -83,7 +83,7 @@ custom_css = """
         margin-bottom: 0.3rem !important;
     }
 
-    /* Inputs Claros e Centralizados */
+    /* PADRONIZAÇÃO FORÇADA DE TODOS OS INPUTS DO FORMULÁRIO (FUNDO ESCURO PADRÃO E TEXTO CLARO) */
     .stTextInput {
         display: flex !important;
         justify-content: center !important;
@@ -99,13 +99,16 @@ custom_css = """
         margin: 0 auto !important;
     }
     .stTextInput > div > div > input {
-        background-color: #FFFFFF !important;
-        color: #000000 !important;
-        border: 2px solid #CCCCCC !important;
+        background-color: #313745 !important;
+        color: #FFFFFF !important;
+        border: 1px solid #4A5060 !important;
         border-radius: 8px !important;
         font-size: 1rem !important;
-        padding: 0.55rem 0.8rem !important;
+        padding: 0.6rem 0.8rem !important;
         text-align: center !important;
+    }
+    .stTextInput > div > div > input::placeholder {
+        color: #AAAAAA !important;
     }
 
     /* Centralização dos Botões */
@@ -203,7 +206,7 @@ def obter_cor_score(score):
         return "#8DC63F"  # Verde Otimizado
 
 # ==========================================
-# CÁLCULO DE SCORE RIGOROSO (SINCRONIZADO)
+# CÁLCULO DE SCORE RIGOROSO
 # ==========================================
 def consultar_score_google_rigoroso(nome_empresa):
     url = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={requests.utils.quote(nome_empresa)}&key={GOOGLE_API_KEY}"
@@ -281,12 +284,12 @@ def consultar_score_google_rigoroso(nome_empresa):
     return {"sucesso": False, "mensagem": "Empresa não encontrada no Google."}
 
 # ==========================================
-# GERADOR DE PDF GRAVADO EM DISCO TEMPORÁRIO
+# GERADOR DE PDF EM DISCO TEMPORÁRIO
 # ==========================================
 def gerar_pdf_diagnostico_arquivo(empresa_nome, endereco, score, criterios):
     try:
         temp_dir = tempfile.gettempdir()
-        file_path = os.path.join(temp_dir, f"Diagnostico_{empresa_nome.replace(' ', '_')}.pdf")
+        file_path = os.path.join(temp_dir, f"Diagnostico_{re.sub(r'[^a-zA-Z0-9]', '_', empresa_nome)}.pdf")
         
         doc = SimpleDocTemplate(file_path, pagesize=A4, leftMargin=35, rightMargin=35, topMargin=35, bottomMargin=35)
         styles = getSampleStyleSheet()
@@ -334,7 +337,7 @@ def gerar_pdf_diagnostico_arquivo(empresa_nome, endereco, score, criterios):
         doc.build(elements)
         return file_path
     except Exception as e:
-        print(f"Erro ao gerar PDF em disco: {e}")
+        print(f"Erro ao gerar PDF: {e}")
         return None
 
 # ==========================================
@@ -359,8 +362,6 @@ def enviar_lead_bigin(nome_lead, email_lead, whatsapp_lead, empresa_consultada, 
                 {
                     "Deal_Name": f"Diagnóstico Site - {empresa_consultada}",
                     "Stage": "1º Contato",
-                    "Score_GMB": str(score),
-                    "Empresa_Consultada": empresa_consultada,
                     "Description": f"Lead capturado no site Tour360VR:\nNome: {nome_lead}\nE-mail: {email_lead}\nWhatsApp: {whatsapp_lead}\nScore: {score}/100"
                 }
             ]
@@ -427,7 +428,7 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
                 p_admin = MIMEBase('application', 'pdf')
                 p_admin.set_payload(f.read())
                 encoders.encode_base64(p_admin)
-                p_admin.add_header('Content-Disposition', 'attachment', filename=f"Diagnostico_{empresa_nome.replace(' ', '_')}.pdf")
+                p_admin.add_header('Content-Disposition', 'attachment', filename=f"Diagnostico_{re.sub(r'[^a-zA-Z0-9]', '_', empresa_nome)}.pdf")
                 msg_admin.attach(p_admin)
 
         server.send_message(msg_admin)
@@ -459,7 +460,7 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
                 p_cliente = MIMEBase('application', 'pdf')
                 p_cliente.set_payload(f.read())
                 encoders.encode_base64(p_cliente)
-                p_cliente.add_header('Content-Disposition', 'attachment', filename=f"Diagnostico_GMB_{empresa_nome.replace(' ', '_')}.pdf")
+                p_cliente.add_header('Content-Disposition', 'attachment', filename=f"Diagnostico_GMB_{re.sub(r'[^a-zA-Z0-9]', '_', empresa_nome)}.pdf")
                 msg_cliente.attach(p_cliente)
 
         server.send_message(msg_cliente)
@@ -490,12 +491,11 @@ if st.button("🔍 Analisar perfil"):
             else:
                 st.error("❌ Empresa não encontrada. Tente incluir a cidade ou verificar a grafia exata cadastrada no Google.")
 
-# Exibição do Resultado
+# Exibição do Resultado no Card HTML Cinza/Azulado
 if "resultado_busca" in st.session_state:
     dados = st.session_state["resultado_busca"]
     cor_nota = obter_cor_score(dados["score"])
     
-    # CARD EM HTML PURO COM FUNDO CINZA/AZULADO INDEPENDENTE DO STREAMLIT
     html_card_resultado = f"""
     <div style="background-color: #F0F4F8 !important; border: 1px solid #D0D7DE !important; border-radius: 12px !important; padding: 20px !important; margin: 1.2rem auto !important; max-width: 600px !important; box-shadow: 0 4px 12px rgba(0,0,0,0.04) !important;">
         <div style="text-align: center; color: #000000; font-size: 1.3rem; font-weight: 800; margin-bottom: 0.1rem;">Empresa Localizada: {dados["nome"]}</div>
@@ -513,33 +513,32 @@ if "resultado_busca" in st.session_state:
     st.markdown('<div class="destaque-formulario-linha">📋 Preencha os dados abaixo e receba a análise completa</div>', unsafe_allow_html=True)
     
     st.markdown('<div class="rotulo-campo-centralizado">Nome:</div>', unsafe_allow_html=True)
-    nome_lead = st.text_input("NomeInput", placeholder="Digite o seu nome completo", label_visibility="collapsed")
+    nome_lead = st.text_input("NomeInput", value="Marcio Javaroni", placeholder="Digite o seu nome completo", label_visibility="collapsed")
     
     st.markdown('<div class="rotulo-campo-centralizado">E-mail:</div>', unsafe_allow_html=True)
-    email_lead = st.text_input("EmailInput", placeholder="exemplo@email.com", label_visibility="collapsed")
+    email_lead = st.text_input("EmailInput", value="okamotofotografia@hotmail.com", placeholder="exemplo@email.com", label_visibility="collapsed")
     
     st.markdown('<div class="rotulo-campo-centralizado">WhatsApp</div>', unsafe_allow_html=True)
     st.markdown('<div class="subtexto-label" style="text-align: center;">(DDD + 9 dígitos - Apenas números)</div>', unsafe_allow_html=True)
     
-    raw_whats = st.text_input("WhatsInput", max_chars=11, placeholder="16991332121", label_visibility="collapsed")
+    raw_whats = st.text_input("WhatsInput", value="16991332121", max_chars=11, placeholder="16991332121", label_visibility="collapsed")
 
     if st.button("📩 Receber diagnóstico"):
-        # Validação estrita: verifica se tem APENAS números e exatamente 11 dígitos
         apenas_numeros = re.sub(r'\D', '', raw_whats)
         
         if not nome_lead or len(nome_lead.strip()) < 2:
             st.error("Por favor, informe seu nome completo.")
         elif not email_lead or "@" not in email_lead:
             st.error("Por favor, informe um endereço de e-mail válido.")
-        elif len(raw_whats) != len(apenas_numeros) or len(apenas_numeros) != 11:
-            st.error("❌ O campo WhatsApp aceita APENAS NÚMEROS e deve ter exatamente 11 dígitos (DDD + Número, ex: 16991332121).")
+        elif len(apenas_numeros) != 11:
+            st.error("❌ O campo WhatsApp deve conter exatamente 11 NÚMEROS (DDD + Celular, ex: 16991332121).")
         else:
             whats_completo = "55" + apenas_numeros
 
-            # 1. Tenta enviar para o Bigin CRM
+            # 1. Envia Oportunidade para o Bigin CRM
             enviar_lead_bigin(nome_lead, email_lead, whats_completo, dados['nome'], dados['score'])
             
-            # 2. Envia e-mails com anexo do PDF
+            # 2. Envia E-mails com o Relatório em PDF Anexo
             com_sucesso = enviar_emails_diagnostico_completo(nome_lead, email_lead, whats_completo, dados)
             
             if com_sucesso:
