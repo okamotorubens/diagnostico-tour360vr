@@ -25,7 +25,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# CSS Definitivo: Oculta Ícones Flutuantes do Canto Inferior
+# CSS/JS de Bloqueio Rígido: Oculta a barra do Streamlit, os botões com link do app e badges flutuantes
 custom_css = """
 <style>
     html, body, [data-testid="stAppViewContainer"], .main, .stApp {
@@ -42,7 +42,8 @@ custom_css = """
         max-width: 900px !important;
     }
 
-    /* Oculta rigorosamente menus, headers, footers e ícones flutuantes */
+    /* Oculta completamente o header, os links para o app do Streamlit, botões de atalho e o menu lateral */
+    header, 
     [data-testid="stHeader"], 
     [data-testid="stAppHeader"],
     [data-testid="stToolbar"], 
@@ -55,14 +56,15 @@ custom_css = """
     .viewerBadge_container__1QSob, 
     .styles_viewerBadge__1yB5_,
     button[title="View source"],
+    a[href*="streamlit.app"],
+    a[href*="github.com"],
     div[class*="viewerBadge"],
     div[class*="styles_viewerBadge"],
     div[class*="stStatusWidget"],
     div[class*="viewerBadge_container"],
     div[data-testid*="stStatusWidget"],
     div[data-testid*="viewerBadge"],
-    .stStatusWidget,
-    div[class*="StatusWidget"] {
+    .stStatusWidget {
         display: none !important;
         visibility: hidden !important;
         opacity: 0 !important;
@@ -214,7 +216,7 @@ def obter_cor_score(score):
     else:
         return "#8DC63F"
 
-def extrair_cidade(endereco):
+def extrair_cidade_endereco(endereco):
     try:
         if "-" in endereco:
             partes = endereco.split("-")
@@ -227,10 +229,10 @@ def extrair_cidade(endereco):
             return partes_v[-3]
     except Exception:
         pass
-    return "Não Informada"
+    return ""
 
 # ==========================================
-# INTEGRAÇÃO ZOHO BIGIN
+# INTEGRAÇÃO ZOHO BIGIN (MAPEAMENTO CORRETO DOS CAMPOS)
 # ==========================================
 def enviar_lead_zoho_bigin(nome_lead, email_lead, whatsapp_lead, empresa_nome, endereco, score):
     url_bigin = "https://bigin.zoho.com/crm/WebToContactForm"
@@ -239,22 +241,27 @@ def enviar_lead_zoho_bigin(nome_lead, email_lead, whatsapp_lead, empresa_nome, e
     primeiro_nome = partes_nome[0]
     sobrenome = partes_nome[1] if len(partes_nome) > 1 else "."
 
-    cidade = extrair_cidade(endereco)
+    cidade_extraida = extrair_cidade_endereco(endereco)
 
     payload = {
+        # IDs oficiais do formulário
         'xnQsjsdp': '15d54e8d1dfa724381be9ad892936abd18de3deadc2763d67c0dd5f939138a91',
         'zc_gad': '',
         'xmIwtLD': '7bf1ddf18cd4b2e66bc992eae51f7e88125018eba8806dd498fb7e87e015ca5085bf99ead8aa16f7a6ff561d393a37ef',
         'actionType': 'Q29udGFjdHM=',
         'rmsg': 'true',
         'returnURL': 'null',
+        
+        # Mapeamento para as colunas do Bigin
         'First Name': primeiro_nome,
         'Last Name': sobrenome,
         'Email': email_lead,
         'Accounts.Account Name': empresa_nome,
         'Phone': whatsapp_lead,
-        'CONTACTCF6': f"{score}/100",
-        'Description': f"Cidade: {cidade}\nEndereço Completo: {endereco}\nPontuação Otimização: {score}/100"
+        'Mailing City': cidade_extraida,      # Coluna "Cidade de Correspondência" do Bigin
+        'Mailing Street': endereco,           # Preenche a rua/endereço no cadastro
+        'CONTACTCF6': f"{score}/100",        # Campo "Pontuação Google"
+        'Description': f"Cidade: {cidade_extraida}\nEndereço: {endereco}\nPontuação Otimização: {score}/100"
     }
     
     try:
@@ -495,7 +502,7 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
 
         server.send_message(msg_admin)
 
-        # 2. E-mail Cliente com formatação de fonte padronizada e espaçamento de 2 linhas
+        # 2. E-mail Cliente
         msg_cliente = MIMEMultipart('mixed')
         msg_cliente['From'] = f"Rubens Okamoto | Tour360VR <{SMTP_USER}>"
         msg_cliente['To'] = email_lead
