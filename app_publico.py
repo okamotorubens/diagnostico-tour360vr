@@ -9,7 +9,7 @@ from email.mime.base import MIMEBase
 from email import encoders
 import streamlit as st
 
-# Importação do ReportLab
+# Importação das bibliotecas de PDF (ReportLab)
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -65,27 +65,7 @@ custom_css = """
         font-family: 'Arial', sans-serif;
     }
 
-    /* CARD DE RESULTADO COM FUNDO CINZA/AZULADO E BORDA */
-    .card-resultado-unificado {
-        background-color: #F0F4F8 !important;
-        border: 1px solid #D0D7DE !important;
-        border-radius: 12px !important;
-        padding: 24px 20px !important;
-        margin: 1.2rem auto !important;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
-        max-width: 600px !important;
-    }
-
-    .empresa-localizada-titulo {
-        text-align: center;
-        color: #000000 !important;
-        font-size: 1.3rem !important;
-        font-weight: 800;
-        margin-top: 0.2rem;
-        margin-bottom: 0.1rem;
-    }
-
-    /* Rótulos dos Campos Centralizados */
+    /* Rótulos de Campos Centralizados */
     .rotulo-campo-centralizado {
         text-align: center !important;
         color: #000000 !important;
@@ -128,16 +108,6 @@ custom_css = """
         text-align: center !important;
     }
 
-    /* Score Gigante */
-    .nota-score-gigante {
-        text-align: center !important;
-        font-size: 3.2rem !important;
-        font-weight: 900 !important;
-        font-family: 'Arial', sans-serif !important;
-        line-height: 1 !important;
-        margin: 0.3rem 0 0.8rem 0 !important;
-    }
-
     /* Centralização dos Botões */
     div[data-testid="stButton"], div.stButton {
         display: flex !important;
@@ -177,20 +147,6 @@ custom_css = """
         font-weight: bold !important;
         margin: 0 !important;
         text-align: center !important;
-    }
-
-    /* Alerta Amarelo Interno */
-    .alerta-destaque {
-        background-color: #FFFDE7 !important;
-        border: 2px solid #FBC02D !important;
-        border-radius: 8px !important;
-        padding: 10px 14px !important;
-        text-align: center !important;
-        color: #5D4037 !important;
-        font-size: 0.95rem !important;
-        font-weight: 600 !important;
-        margin: 0.8rem auto 0 auto !important;
-        max-width: 520px !important;
     }
 
     /* Título do Formulário */
@@ -247,7 +203,7 @@ def obter_cor_score(score):
         return "#8DC63F"  # Verde Otimizado
 
 # ==========================================
-# CÁLCULO DE SCORE RIGOROSO
+# CÁLCULO DE SCORE RIGOROSO (SINCRONIZADO)
 # ==========================================
 def consultar_score_google_rigoroso(nome_empresa):
     url = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={requests.utils.quote(nome_empresa)}&key={GOOGLE_API_KEY}"
@@ -277,7 +233,7 @@ def consultar_score_google_rigoroso(nome_empresa):
             if rating >= 4.7 and reviews >= 100:
                 score += 20
                 crit_det.append(f"Avaliações: Excelente ({rating} / {reviews} avaliações)")
-            elif rating >= 4.2 and reviews >= 30:
+            elif rating >= 4.0 and reviews >= 15:
                 score += 10
                 crit_det.append(f"Avaliações: Moderadas ({rating} / {reviews} avaliações)")
 
@@ -285,6 +241,9 @@ def consultar_score_google_rigoroso(nome_empresa):
             if len(photos) >= 30:
                 score += 20
                 crit_det.append("Galeria de Fotos: Completa")
+            elif len(photos) >= 5:
+                score += 10
+                crit_det.append("Galeria de Fotos: Parcial")
 
             if details.get("formatted_phone_number"):
                 score += 10
@@ -322,7 +281,7 @@ def consultar_score_google_rigoroso(nome_empresa):
     return {"sucesso": False, "mensagem": "Empresa não encontrada no Google."}
 
 # ==========================================
-# GERADOR DE PDF SEGURO E ROBUSTO
+# GERADOR DE PDF GRAVADO EM DISCO TEMPORÁRIO
 # ==========================================
 def gerar_pdf_diagnostico_arquivo(empresa_nome, endereco, score, criterios):
     try:
@@ -531,21 +490,24 @@ if st.button("🔍 Analisar perfil"):
             else:
                 st.error("❌ Empresa não encontrada. Tente incluir a cidade ou verificar a grafia exata cadastrada no Google.")
 
-# Exibição do Resultado no Card Unificado com Fundo Cinza/Azulado
+# Exibição do Resultado
 if "resultado_busca" in st.session_state:
     dados = st.session_state["resultado_busca"]
+    cor_nota = obter_cor_score(dados["score"])
     
-    st.markdown(f"""
-    <div class="card-resultado-unificado">
-        <div class="empresa-localizada-titulo">Empresa Localizada: {dados["nome"]}</div>
+    # CARD EM HTML PURO COM FUNDO CINZA/AZULADO INDEPENDENTE DO STREAMLIT
+    html_card_resultado = f"""
+    <div style="background-color: #F0F4F8 !important; border: 1px solid #D0D7DE !important; border-radius: 12px !important; padding: 20px !important; margin: 1.2rem auto !important; max-width: 600px !important; box-shadow: 0 4px 12px rgba(0,0,0,0.04) !important;">
+        <div style="text-align: center; color: #000000; font-size: 1.3rem; font-weight: 800; margin-bottom: 0.1rem;">Empresa Localizada: {dados["nome"]}</div>
         <p style="text-align: center; color: #666666; font-size: 0.95rem; margin-bottom: 0.4rem;">📍 {dados["endereco"]}</p>
         <p style="text-align: center; font-weight: 700; font-size: 1.1rem; margin-top: 0.6rem; margin-bottom: 0;">Pontuação Geral de Otimização</p>
-        <div class="nota-score-gigante" style="color: {obter_cor_score(dados["score"])} !important;">{dados["score"]} / 100</div>
-        <div class="alerta-destaque">
+        <div style="text-align: center; font-size: 3.2rem; font-weight: 900; line-height: 1; margin: 0.3rem 0 0.8rem 0; color: {cor_nota} !important;">{dados["score"]} / 100</div>
+        <div style="background-color: #FFFDE7; border: 2px solid #FBC02D; border-radius: 8px; padding: 10px 14px; text-align: center; color: #5D4037; font-size: 0.95rem; font-weight: 600; margin: 0.8rem auto 0 auto;">
             ⚠️ Identificamos oportunidades de melhoria que podem estar reduzindo a visibilidade do seu negócio para novos clientes.
         </div>
     </div>
-    """, unsafe_allow_html=True)
+    """
+    st.markdown(html_card_resultado, unsafe_allow_html=True)
 
     # Formulário de Captura
     st.markdown('<div class="destaque-formulario-linha">📋 Preencha os dados abaixo e receba a análise completa</div>', unsafe_allow_html=True)
@@ -557,24 +519,34 @@ if "resultado_busca" in st.session_state:
     email_lead = st.text_input("EmailInput", placeholder="exemplo@email.com", label_visibility="collapsed")
     
     st.markdown('<div class="rotulo-campo-centralizado">WhatsApp</div>', unsafe_allow_html=True)
-    st.markdown('<div class="subtexto-label" style="text-align: center;">(com DDD - Apenas Números)</div>', unsafe_allow_html=True)
+    st.markdown('<div class="subtexto-label" style="text-align: center;">(DDD + 9 dígitos - Apenas números)</div>', unsafe_allow_html=True)
     
-    raw_whats = st.text_input("WhatsInput", max_chars=10, placeholder="16991332121", label_visibility="collapsed")
-    
-    # FILTRO DE SEGURANÇA: MANTÉM APENAS OS NÚMEROS DIGITADOS
-    num_whats = re.sub(r'\D', '', raw_whats)[:10]
+    raw_whats = st.text_input("WhatsInput", max_chars=11, placeholder="16991332121", label_visibility="collapsed")
 
     if st.button("📩 Receber diagnóstico"):
-        if nome_lead and email_lead and num_whats and len(num_whats.strip()) == 10:
-            whats_completo = "55" + num_whats
-
-            enviar_lead_bigin(nome_lead, email_lead, whats_completo, dados['nome'], dados['score'])
-            enviar_emails_diagnostico_completo(nome_lead, email_lead, whats_completo, dados)
-            
-            st.markdown("""
-            <div class="card-sucesso-destaque">
-                ✅ Diagnóstico enviado com sucesso!
-            </div>
-            """, unsafe_allow_html=True)
+        # Validação estrita: verifica se tem APENAS números e exatamente 11 dígitos
+        apenas_numeros = re.sub(r'\D', '', raw_whats)
+        
+        if not nome_lead or len(nome_lead.strip()) < 2:
+            st.error("Por favor, informe seu nome completo.")
+        elif not email_lead or "@" not in email_lead:
+            st.error("Por favor, informe um endereço de e-mail válido.")
+        elif len(raw_whats) != len(apenas_numeros) or len(apenas_numeros) != 11:
+            st.error("❌ O campo WhatsApp aceita APENAS NÚMEROS e deve ter exatamente 11 dígitos (DDD + Número, ex: 16991332121).")
         else:
-            st.error("Por favor, preencha o WhatsApp com exatamente 10 dígitos numéricos (DDD + Telefone).")
+            whats_completo = "55" + apenas_numeros
+
+            # 1. Tenta enviar para o Bigin CRM
+            enviar_lead_bigin(nome_lead, email_lead, whats_completo, dados['nome'], dados['score'])
+            
+            # 2. Envia e-mails com anexo do PDF
+            com_sucesso = enviar_emails_diagnostico_completo(nome_lead, email_lead, whats_completo, dados)
+            
+            if com_sucesso:
+                st.markdown("""
+                <div class="card-sucesso-destaque">
+                    ✅ Diagnóstico enviado com sucesso! Verifique sua caixa de entrada e spam.
+                </div>
+                """, unsafe_allow_html=True)
+            else:
+                st.error("Ocorreu uma falha ao disparar o e-mail. Tente novamente em instantes.")
