@@ -13,68 +13,105 @@ import streamlit as st
 st.set_page_config(
     page_title="Diagnóstico Gratuito GMB - Tour360VR", 
     page_icon="🔍",
-    layout="wide"
+    layout="centered"
 )
 
-# Estilo CSS para integrar perfeitamente com o layout escuro do site Mobirise
+# Estilo CSS Personalizado (Fundo Branco, Verde da Logo, Textos Maiores)
 custom_css = """
 <style>
-    /* Fundo geral escuro combinando com o site */
+    /* Fundo totalmente branco e texto escuro */
     .stApp {
-        background-color: #111111 !important;
-        color: #FFFFFF !important;
+        background-color: #FFFFFF !important;
+        color: #222222 !important;
     }
     
-    /* Remover margens superiores e padding excessivo */
+    /* Eliminar margens e rolagem desnecessária */
     .block-container {
-        padding-top: 1rem !important;
-        padding-bottom: 1rem !important;
+        padding-top: 0.5rem !important;
+        padding-bottom: 0.5rem !important;
         max-width: 100% !important;
     }
 
-    /* Ocultar cabeçalhos/rodapés nativos do Streamlit */
+    /* Esconder elementos padrão do Streamlit */
     header, footer, #MainMenu {
         visibility: hidden !important;
         height: 0px !important;
     }
 
-    /* Estilização dos Títulos */
-    h1, h2, h3, h4, span, label {
-        color: #FFFFFF !important;
-        font-family: 'Helvetica Neue', Arial, sans-serif !important;
+    /* Centralização e Destaque dos Títulos */
+    .titulo-principal {
+        text-align: center;
+        color: #222222;
+        font-size: 2.2rem;
+        font-weight: 800;
+        margin-bottom: 0.2rem;
+        font-family: 'Arial', sans-serif;
+    }
+    .subtitulo {
+        text-align: center;
+        color: #555555;
+        font-size: 1.25rem;
+        margin-bottom: 1.5rem;
+        font-family: 'Arial', sans-serif;
     }
 
-    /* Estilização dos Campos de Texto (Inputs) */
+    /* Estilização das Legendas e Rótulos */
+    label, p, span {
+        color: #222222 !important;
+        font-size: 1.1rem !important;
+        font-weight: 600 !important;
+    }
+
+    /* Caixa explicativa de instrução */
+    .caixa-instrucao {
+        background-color: #F4F6F8;
+        border-left: 5px solid #8CC63F;
+        padding: 12px 16px;
+        border-radius: 6px;
+        margin-bottom: 15px;
+        font-size: 1.05rem;
+        color: #333333;
+    }
+
+    /* Campos de Entrada (Inputs) */
     .stTextInput > div > div > input {
-        background-color: #222222 !important;
-        color: #FFFFFF !important;
-        border: 1px solid #444444 !important;
+        background-color: #FFFFFF !important;
+        color: #222222 !important;
+        border: 2px solid #CCCCCC !important;
         border-radius: 8px !important;
+        font-size: 1.1rem !important;
+        padding: 0.6rem !important;
     }
     .stTextInput > div > div > input:focus {
-        border-color: #00E676 !important;
+        border-color: #8CC63F !important;
+        box-shadow: 0 0 5px rgba(140, 198, 63, 0.5) !important;
     }
 
-    /* Estilização dos Botões */
+    /* Botão Verde Oficial Tour360VR (#8cc63f) */
     .stButton > button {
-        background-color: #00E676 !important;
-        color: #000000 !important;
+        background-color: #8CC63F !important;
+        color: #FFFFFF !important;
+        font-size: 1.2rem !important;
         font-weight: bold !important;
         border-radius: 8px !important;
         border: none !important;
-        padding: 0.6rem 2rem !important;
-        transition: all 0.3s ease !important;
+        padding: 0.75rem 2rem !important;
         width: 100% !important;
+        cursor: pointer !important;
+        transition: all 0.3s ease !important;
+        box-shadow: 0 4px 10px rgba(140, 198, 63, 0.3) !important;
     }
     .stButton > button:hover {
-        background-color: #00C853 !important;
+        background-color: #7BB433 !important;
         color: #FFFFFF !important;
+        transform: translateY(-1px);
     }
 
-    /* Card de Metricas / Score */
+    /* Destaque da Métrica/Score */
     [data-testid="stMetricValue"] {
-        color: #00E676 !important;
-        font-size: 2.5rem !important;
+        color: #8CC63F !important;
+        font-size: 3rem !important;
+        font-weight: bold !important;
     }
 </style>
 """
@@ -93,7 +130,7 @@ SMTP_USER = "contato@tour360vr.com.br"
 SMTP_PASS = "Kakaroto@2026"
 
 # ==========================================
-# FUNÇÃO 1: CONSULTA DE SCORE NO GOOGLE
+# FUNÇÕES DE BUSCA E INTEGRAÇÃO
 # ==========================================
 def consultar_score_google(nome_empresa):
     url = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={nome_empresa}&key={GOOGLE_API_KEY}"
@@ -119,9 +156,6 @@ def consultar_score_google(nome_empresa):
         pass
     return {"sucesso": False, "mensagem": "Empresa não encontrada no Google."}
 
-# ==========================================
-# FUNÇÃO 2: ENVIAR LEAD PARA O BIGIN CRM
-# ==========================================
 def enviar_lead_bigin(nome_lead, email_lead, whatsapp_lead, empresa_consultada, score):
     try:
         url_token = f"https://accounts.zoho.com/oauth/v2/token?client_id={BIGIN_CLIENT_ID}&client_secret={BIGIN_CLIENT_SECRET}&grant_type=client_credentials&scope=ZohoBigin.modules.ALL"
@@ -155,44 +189,54 @@ def enviar_lead_bigin(nome_lead, email_lead, whatsapp_lead, empresa_consultada, 
         return False
 
 # ==========================================
-# INTERFACE STREAMLIT
+# INTERFACE DO USUÁRIO
 # ==========================================
-st.title("🔍 Diagnóstico de Perfil no Google")
-st.write("Digite o nome da sua empresa e cidade para verificar a nota de otimização instantaneamente.")
+st.markdown('<div class="titulo-principal">🔍 Diagnóstico de Perfil no Google</div>', unsafe_allow_html=True)
+st.markdown('<div class="subtitulo">Avalie o desempenho e otimização da sua empresa no Google Maps instantaneamente</div>', unsafe_allow_html=True)
 
-nome_empresa = st.text_input("Nome da Empresa + Cidade:", placeholder="Ex: Clínica Vinicius Ribeirão Preto")
+# Instrução Clara de Preenchimento
+st.markdown("""
+<div class="caixa-instrucao">
+    📌 <strong>Como pesquisar corretamente:</strong> Digite o <strong>Nome Comercial exato</strong> da sua empresa seguido da <strong>Cidade e Estado</strong>.<br>
+    <em>Exemplo: <strong>Toque de Letra Ribeirão Preto SP</strong></em>
+</div>
+""", unsafe_allow_html=True)
 
-if st.button("Analisar Perfil Gratuito"):
+nome_empresa = st.text_input("🏢 Nome da Empresa + Cidade:", placeholder="Ex: Toque de Letra Ribeirão Preto SP")
+
+if st.button("🔍 Analisar Perfil Gratuito"):
     if nome_empresa:
         with st.spinner("Analisando dados no Google Maps..."):
             res = consultar_score_google(nome_empresa)
             if res["sucesso"]:
                 st.session_state["resultado_busca"] = res
             else:
-                st.error("Empresa não encontrada. Verifique o nome/cidade e tente novamente.")
+                st.error("❌ Empresa não encontrada. Tente incluir a cidade ou verificar a grafia exata cadastrada no Google.")
 
 if "resultado_busca" in st.session_state:
     dados = st.session_state["resultado_busca"]
     
     st.markdown("---")
-    st.subheader(f"Resultado para: {dados['nome']}")
-    st.metric(label="Otimização da Ficha (Score)", value=f"{dados['score']} / 100")
+    st.subheader(f"Empresa Localizada: {dados['nome']}")
+    st.caption(f"📍 Endereço: {dados['endereco']}")
     
-    st.info("⚠️ Sua empresa possui pontos cruciais que podem estar reduzindo a sua visibilidade nas buscas do Google Maps.")
+    st.metric(label="Pontuação Geral de Otimização (Score)", value=f"{dados['score']} / 100")
+    
+    st.warning("⚠️ Identificamos oportunidades de melhoria que podem estar reduzindo a visibilidade do seu negócio para novos clientes.")
 
-    st.markdown("### 📄 Desbloquear Análise Executiva")
-    st.write("Preencha os campos abaixo para receber o relatório completo:")
+    st.markdown("### 📄 Desbloquear Relatório Detalhado em PDF")
+    st.write("Preencha os seus dados abaixo para receber a análise completa:")
     
     with st.form("form_lead"):
-        nome_lead = st.text_input("Seu Nome:")
-        email_lead = st.text_input("Seu E-mail:")
-        whats_lead = st.text_input("WhatsApp com DDD:")
+        nome_lead = st.text_input("Seu Nome Completo:")
+        email_lead = st.text_input("Seu E-mail Principal:")
+        whats_lead = st.text_input("WhatsApp (com DDD):")
         
-        submit = st.form_submit_button("Gerar Relatório em PDF")
+        submit = st.form_submit_button("📩 Receber Diagnóstico Gratuito")
         
         if submit:
             if nome_lead and email_lead and whats_lead:
                 enviar_lead_bigin(nome_lead, email_lead, whats_lead, dados['nome'], dados['score'])
-                st.success("✅ Diagnóstico gerado com sucesso! Entraremos em contacto em breve.")
+                st.success("✅ Diagnóstico enviado com sucesso! Entraremos em contacto pelo WhatsApp.")
             else:
                 st.error("Por favor, preencha todos os campos do formulário.")
