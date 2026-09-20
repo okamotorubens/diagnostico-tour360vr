@@ -57,8 +57,7 @@ custom_css = """
     button[title="View source"],
     div[class*="viewerBadge"],
     div[class*="styles_viewerBadge"],
-    div[class*="stStatusWidget"],
-    #root > div:nth-child(1) > div > div > div > div > section > div > div > div > div:nth-child(2) {
+    div[class*="stStatusWidget"] {
         display: none !important;
         visibility: hidden !important;
         opacity: 0 !important;
@@ -210,11 +209,16 @@ def obter_cor_score(score):
         return "#8DC63F"
 
 # ==========================================
-# INTEGRAÇÃO ZOHO BIGIN
+# INTEGRAÇÃO ZOHO BIGIN (SEM NOME DUPLICADO)
 # ==========================================
 def enviar_lead_zoho_bigin(nome_lead, email_lead, whatsapp_lead, empresa_nome, endereco, score):
     url_bigin = "https://bigin.zoho.com/crm/WebToContactForm"
     
+    # Separa Primeiro e Último Nome para não duplicar no Bigin
+    partes_nome = nome_lead.strip().split(" ", 1)
+    primeiro_nome = partes_nome[0]
+    sobrenome = partes_nome[1] if len(partes_nome) > 1 else "."
+
     payload = {
         'xnQsjsdp': 'cee09da61c31c8856ae138c1eaf79d7632257982fcfbd4028e2e116789cf1d44',
         'zc_gad': '',
@@ -222,8 +226,8 @@ def enviar_lead_zoho_bigin(nome_lead, email_lead, whatsapp_lead, empresa_nome, e
         'actionType': 'Q29udGFjdHM=',
         'rmsg': 'true',
         'returnURL': 'null',
-        'First Name': nome_lead,
-        'Last Name': nome_lead,
+        'First Name': primeiro_nome,
+        'Last Name': sobrenome,
         'Accounts.Account Name': empresa_nome,
         'Email': email_lead,
         'Phone': whatsapp_lead,
@@ -405,7 +409,7 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
         return None
 
 # ==========================================
-# ENVIO DE E-MAILS COM ESPAÇAMENTO AJUSTADO
+# ENVIO DE E-MAILS COM ESPAÇAMENTO COMPACTO
 # ==========================================
 def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dados_busca):
     try:
@@ -468,7 +472,7 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
 
         server.send_message(msg_admin)
 
-        # 2. E-mail Cliente (Espaçamento compacto)
+        # 2. E-mail Cliente
         msg_cliente = MIMEMultipart('mixed')
         msg_cliente['From'] = f"Rubens Okamoto | Tour360VR <{SMTP_USER}>"
         msg_cliente['To'] = email_lead
