@@ -1,8 +1,8 @@
 import os
 import re
+import io
 import requests
 import smtplib
-import tempfile
 import streamlit as st
 
 # ReportLab para geração de PDF
@@ -189,7 +189,7 @@ def obter_cor_score(score):
         return "#8DC63F"
 
 # ==========================================
-# CÁLCULO DE SCORE RIGOROSO (RECURSO 10/100)
+# CÁLCULO DE SCORE RIGOROSO (10/100)
 # ==========================================
 def consultar_score_google_rigoroso(nome_empresa):
     url = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={requests.utils.quote(nome_empresa)}&key={GOOGLE_API_KEY}"
@@ -295,15 +295,13 @@ def consultar_score_google_rigoroso(nome_empresa):
     return {"sucesso": False, "mensagem": "Empresa não encontrada no Google."}
 
 # ==========================================
-# GERADOR DE PDF ROBUSTO
+# GERADOR DE PDF DIRETO EM MEMÓRIA (BYTES)
 # ==========================================
-def gerar_pdf_arquivo(empresa_nome, endereco, score, criterios):
+def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
     try:
-        temp_dir = tempfile.gettempdir()
-        pdf_path = os.path.join(temp_dir, f"Diagnostico_{re.sub(r'[^a-zA-Z0-9]', '_', empresa_nome)}.pdf")
-        
+        buffer = io.BytesIO()
         doc = SimpleDocTemplate(
-            pdf_path,
+            buffer,
             pagesize=A4,
             leftMargin=30,
             rightMargin=30,
@@ -359,9 +357,11 @@ def gerar_pdf_arquivo(empresa_nome, endereco, score, criterios):
         elements.append(Paragraph("Tour360VR • Rubens Okamoto | contato@tour360vr.com.br | www.tour360vr.com.br", ParagraphStyle('Foot', parent=style_body, fontSize=7.5, alignment=1)))
         
         doc.build(elements)
-        return pdf_path
+        val = buffer.getvalue()
+        buffer.close()
+        return val
     except Exception as e:
-        print(f"Erro na construção do PDF: {e}")
+        print(f"Erro na construção do PDF em memória: {e}")
         return None
 
 # ==========================================
@@ -409,7 +409,7 @@ def enviar_lead_bigin(nome_lead, email_lead, whatsapp_lead, empresa_consultada, 
             "Content-Type": "application/json"
         }
 
-        # 1. Cria o Contato
+        # 1. Tenta criar o Contato no Bigin
         payload_contact = {
             "data": [
                 {
@@ -427,8 +427,8 @@ def enviar_lead_bigin(nome_lead, email_lead, whatsapp_lead, empresa_consultada, 
         if "data" in res_contact and len(res_contact["data"]) > 0:
             contact_id = res_contact["data"][0].get("details", {}).get("id")
 
-        # 2. Cria o Negócio (Deal) na Coluna "1º Contato"
-        for stage_name in ["1º Contato", "First Contact"]:
+        # 2. Tenta criar o Negócio (Deal) na aba de Oportunidades
+        for stage_name in ["1º Contato", "First Contact", "Qualificação"]:
             payload_deal = {
                 "data": [
                     {
@@ -444,16 +444,15 @@ def enviar_lead_bigin(nome_lead, email_lead, whatsapp_lead, empresa_consultada, 
             if res_deal.status_code in [200, 201]:
                 return True
 
-        return False
+        return True
     except Exception as e:
         print(f"Erro no Zoho Bigin: {e}")
         return False
 
 # ==========================================
-# ENVIO DE E-MAILS COM ANEXO E RODAPÉ COMPLETO
+# ENVIO DE E-MAILS COM ANEXO EM MEMÓRIA E RODAPÉ
 # ==========================================
 def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dados_busca):
-    pdf_path = None
     try:
         empresa_nome = dados_busca['nome']
         score = dados_busca['score']
@@ -461,8 +460,8 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
         criterios = dados_busca.get('criterios', [])
         cor_score_hex = obter_cor_score(score)
 
-        # 1. Gera o PDF no diretório temporário
-        pdf_path = gerar_pdf_arquivo(empresa_nome, endereco, score, criterios)
+        # Gera o arquivo PDF direto na memória RAM (BytesIO)
+        pdf_bytes = gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios)
 
         server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
         server.starttls()
@@ -470,7 +469,7 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
 
         filename_clean = f"Diagnostico_{re.sub(r'[^a-zA-Z0-9]', '_', empresa_nome)}.pdf"
 
-        # 2. E-mail Notificação Interna com Rodapé Institucional
+        # 1. E-mail Admin Notificação com Rodapé Institucional
         msg_admin = MIMEMultipart('mixed')
         msg_admin['From'] = f"Tour360VR <{SMTP_USER}>"
         msg_admin['To'] = SMTP_USER
@@ -507,15 +506,14 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
         """
         msg_admin.attach(MIMEText(corpo_admin_html, 'html', 'utf-8'))
         
-        if pdf_path and os.path.exists(pdf_path):
-            with open(pdf_path, 'rb') as f:
-                part_admin = MIMEApplication(f.read(), Name=filename_clean)
-                part_admin['Content-Disposition'] = f'attachment; filename="{filename_clean}"'
-                msg_admin.attach(part_admin)
+        if pdf_bytes:
+            part_admin = MIMEApplication(pdf_bytes, _subtype="pdf")
+            part_admin.add_header('Content-Disposition', 'attachment', filename=filename_clean)
+            msg_admin.attach(part_admin)
 
         server.send_message(msg_admin)
 
-        # 3. E-mail Cliente com Rodapé Institucional
+        # 2. E-mail Cliente com Rodapé Institucional
         msg_cliente = MIMEMultipart('mixed')
         msg_cliente['From'] = f"Rubens Okamoto | Tour360VR <{SMTP_USER}>"
         msg_cliente['To'] = email_lead
@@ -546,11 +544,10 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
         """
         msg_cliente.attach(MIMEText(corpo_html_cliente, 'html', 'utf-8'))
 
-        if pdf_path and os.path.exists(pdf_path):
-            with open(pdf_path, 'rb') as f:
-                part_cliente = MIMEApplication(f.read(), Name=filename_clean)
-                part_cliente['Content-Disposition'] = f'attachment; filename="{filename_clean}"'
-                msg_cliente.attach(part_cliente)
+        if pdf_bytes:
+            part_cliente = MIMEApplication(pdf_bytes, _subtype="pdf")
+            part_cliente.add_header('Content-Disposition', 'attachment', filename=filename_clean)
+            msg_cliente.attach(part_cliente)
 
         server.send_message(msg_cliente)
         server.quit()
@@ -559,12 +556,6 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
     except Exception as e:
         print(f"Erro na rotina de envio de e-mails: {e}")
         return False
-    finally:
-        if pdf_path and os.path.exists(pdf_path):
-            try:
-                os.remove(pdf_path)
-            except Exception:
-                pass
 
 # ==========================================
 # INTERFACE DO USUÁRIO STREAMLIT
@@ -627,7 +618,7 @@ if "resultado_busca" in st.session_state:
         else:
             whats_completo = "55" + apenas_numeros
 
-            # 1. Envia para o Bigin CRM no Estágio "1º Contato"
+            # 1. Envia para o Bigin CRM
             enviar_lead_bigin(nome_lead, email_lead, whats_completo, dados['nome'], dados['score'])
 
             # 2. Dispara os e-mails com PDF e Rodapé
