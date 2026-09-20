@@ -25,11 +25,13 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# CSS para Container Compacto e Inputs 100% Brancos
+# CSS com botões no tom azul (#1565C0 / #0D47A1) e prevenção de scroll
 custom_css = """
 <style>
+    /* Remove barras de rolagem lateral e vertical desnecessárias */
     html, body, [data-testid="stAppViewContainer"], .main {
         overflow-x: hidden !important;
+        overflow-y: auto !important;
         background-color: #FFFFFF !important;
         color: #000000 !important;
     }
@@ -58,20 +60,33 @@ custom_css = """
         box-shadow: 0 2px 8px rgba(0,0,0,0.04) !important;
     }
 
+    /* Título com Maior Destaque */
     .titulo-principal {
         text-align: center;
         color: #111111 !important;
-        font-size: 1.35rem;
+        font-size: 1.65rem;
         font-weight: 800;
-        margin-bottom: 0.2rem;
+        margin-bottom: 0.3rem;
+        line-height: 1.25;
         font-family: 'Arial', sans-serif;
     }
+    
+    .titulo-secundario {
+        text-align: center;
+        color: #111111 !important;
+        font-size: 1.2rem;
+        font-weight: 700;
+        margin-top: 1.2rem;
+        margin-bottom: 0.4rem;
+        font-family: 'Arial', sans-serif;
+    }
+
     .instrucao-subtitulo {
         text-align: center;
-        color: #444444 !important;
-        font-size: 0.92rem;
+        color: #555555 !important;
+        font-size: 0.95rem;
         font-weight: 600;
-        margin-bottom: 0.8rem;
+        margin-bottom: 1rem;
         font-family: 'Arial', sans-serif;
     }
 
@@ -96,8 +111,8 @@ custom_css = """
     }
 
     .stTextInput input:focus {
-        border-color: #8DC63F !important;
-        box-shadow: 0 0 4px rgba(141, 198, 63, 0.4) !important;
+        border-color: #1565C0 !important;
+        box-shadow: 0 0 4px rgba(21, 101, 192, 0.4) !important;
     }
 
     input:-webkit-autofill,
@@ -123,6 +138,7 @@ custom_css = """
         margin-bottom: 0.2rem !important;
     }
 
+    /* Botões Alterados para Azul (#1565C0 / Hover #0D47A1) */
     div[data-testid="stButton"], div.stButton {
         display: flex !important;
         justify-content: center !important;
@@ -131,19 +147,20 @@ custom_css = """
         margin: 0.6rem auto !important;
     }
     .stButton > button {
-        background-color: #8DC63F !important;
+        background-color: #1565C0 !important;
         color: #FFFFFF !important;
         font-size: 1.05rem !important;
         font-weight: bold !important;
         border-radius: 6px !important;
         border: none !important;
-        padding: 0.6rem 2rem !important;
+        padding: 0.65rem 2rem !important;
         cursor: pointer !important;
         width: 100% !important;
         max-width: 480px !important;
+        transition: background-color 0.2s ease-in-out !important;
     }
     .stButton > button:hover {
-        background-color: #7BB533 !important;
+        background-color: #0D47A1 !important;
     }
     .stButton > button p {
         color: #FFFFFF !important;
@@ -346,7 +363,6 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
         
         elements.append(Spacer(1, 12))
         elements.append(Paragraph("<b>Recomendações para Atingir Nota Máxima (100 PONTOS):</b>", style_sub))
-        # CORREÇÃO AQUI: <br> alterado para <br/> (Sintaxe estrita do ReportLab)
         elements.append(Paragraph("1. Implantação de Tour Virtual 360° Interativo homologado no Google Street View.<br/>2. Atualização visual contínua da galeria de fotos e estímulo a avaliações positivas.<br/>3. Vinculação de domínio próprio e alinhamento de horários.", style_body))
         
         elements.append(Spacer(1, 14))
@@ -384,7 +400,7 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
 
         filename_clean = f"Diagnostico_{re.sub(r'[^a-zA-Z0-9]', '_', empresa_nome)}.pdf"
 
-        # 1. E-mail Admin Notificação com Rodapé Institucional
+        # 1. E-mail Admin Notificação
         msg_admin = MIMEMultipart('mixed')
         msg_admin['From'] = f"Tour360VR <{SMTP_USER}>"
         msg_admin['To'] = SMTP_USER
@@ -396,24 +412,24 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
         <html>
         <head><meta charset="utf-8"></head>
         <body style="font-family: Arial, sans-serif; background-color: #F4F6F9; padding: 20px; margin: 0;">
-            <div style="max-width: 580px; background-color: #FFFFFF; padding: 25px; border-radius: 10px; border-top: 5px solid #1E88E5; margin: 0 auto; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+            <div style="max-width: 580px; background-color: #FFFFFF; padding: 25px; border-radius: 10px; border-top: 5px solid #1565C0; margin: 0 auto; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
                 <h2 style="color: #111111; margin-top: 0; font-size: 18px;">Novo Lead Capturado no Site!</h2>
                 <hr style="border: 0; border-top: 1px solid #EEEEEE; margin: 15px 0;">
                 <p style="font-size: 14px; margin: 5px 0;"><b>Empresa:</b> {empresa_nome}</p>
                 <p style="font-size: 14px; margin: 5px 0;"><b>Pontuação:</b> <span style="font-size: 16px; color: {cor_score_hex}; font-weight: bold;">{score} / 100</span></p>
                 
-                <div style="background-color: #F8F9FA; padding: 15px; border-radius: 8px; border-left: 4px solid #1E88E5; margin: 18px 0;">
+                <div style="background-color: #F8F9FA; padding: 15px; border-radius: 8px; border-left: 4px solid #1565C0; margin: 18px 0;">
                     <p style="margin: 4px 0; font-size: 14px;"><b>Nome:</b> {nome_lead}</p>
-                    <p style="margin: 4px 0; font-size: 14px;"><b>E-mail:</b> <a href="mailto:{email_lead}" style="color: #1E88E5;">{email_lead}</a></p>
-                    <p style="margin: 4px 0; font-size: 14px;"><b>WhatsApp:</b> <a href="https://wa.me/{whatsapp_lead}" target="_blank" style="color: #1E88E5; font-weight: bold;">+{whatsapp_lead}</a></p>
+                    <p style="margin: 4px 0; font-size: 14px;"><b>E-mail:</b> <a href="mailto:{email_lead}" style="color: #1565C0;">{email_lead}</a></p>
+                    <p style="margin: 4px 0; font-size: 14px;"><b>WhatsApp:</b> <a href="https://wa.me/{whatsapp_lead}" target="_blank" style="color: #1565C0; font-weight: bold;">+{whatsapp_lead}</a></p>
                 </div>
 
                 <!-- RODAPÉ INSTITUCIONAL -->
                 <hr style="border: 0; border-top: 1px solid #EEEEEE; margin: 25px 0 15px 0;">
                 <div style="text-align: center; color: #777777; font-size: 12px; line-height: 1.5;">
                     <p style="margin: 2px 0;"><b>Tour360VR • Soluções em Imagem e Presença Digital</b></p>
-                    <p style="margin: 2px 0;">Rubens Okamoto | <a href="mailto:contato@tour360vr.com.br" style="color: #1E88E5; text-decoration: none;">contato@tour360vr.com.br</a></p>
-                    <p style="margin: 2px 0;"><a href="https://www.tour360vr.com.br" target="_blank" style="color: #1E88E5; text-decoration: none;">www.tour360vr.com.br</a></p>
+                    <p style="margin: 2px 0;">Rubens Okamoto | <a href="mailto:contato@tour360vr.com.br" style="color: #1565C0; text-decoration: none;">contato@tour360vr.com.br</a></p>
+                    <p style="margin: 2px 0;"><a href="https://www.tour360vr.com.br" target="_blank" style="color: #1565C0; text-decoration: none;">www.tour360vr.com.br</a></p>
                 </div>
             </div>
         </body>
@@ -428,7 +444,7 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
 
         server.send_message(msg_admin)
 
-        # 2. E-mail Cliente com Rodapé Institucional
+        # 2. E-mail Cliente
         msg_cliente = MIMEMultipart('mixed')
         msg_cliente['From'] = f"Rubens Okamoto | Tour360VR <{SMTP_USER}>"
         msg_cliente['To'] = email_lead
@@ -451,7 +467,7 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
                 <div style="color: #555555; font-size: 13px; line-height: 1.5;">
                     <p style="margin: 2px 0;">Atenciosamente,</p>
                     <p style="margin: 2px 0;"><b>Rubens Okamoto | Tour360VR</b></p>
-                    <p style="margin: 2px 0;"><a href="https://www.tour360vr.com.br" target="_blank" style="color: #1E88E5; text-decoration: none;">www.tour360vr.com.br</a></p>
+                    <p style="margin: 2px 0;"><a href="https://www.tour360vr.com.br" target="_blank" style="color: #1565C0; text-decoration: none;">www.tour360vr.com.br</a></p>
                 </div>
             </div>
         </body>
@@ -474,7 +490,8 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
 # ==========================================
 # INTERFACE DO USUÁRIO STREAMLIT
 # ==========================================
-st.markdown('<div class="titulo-principal">🔍 Faça uma análise da sua empresa no Google</div>', unsafe_allow_html=True)
+# NOVO TÍTULO COM DESTAQUE
+st.markdown('<div class="titulo-principal">Pronto para destacar sua empresa no Google?</div>', unsafe_allow_html=True)
 st.markdown('<div class="instrucao-subtitulo">Digite o Nome Comercial exato da sua empresa seguido da Cidade e Estado.</div>', unsafe_allow_html=True)
 
 nome_empresa = st.text_input("BuscaInput", value="", placeholder="Ex: Tour360VR Ribeirão Preto SP", label_visibility="collapsed")
@@ -488,7 +505,7 @@ if st.button("🔍 Analisar perfil"):
             else:
                 st.error("❌ Empresa não encontrada. Tente incluir a cidade ou verificar a grafia exata cadastrada no Google.")
 
-# Exibição do Resultado no Container Compacto Cinza/Azulado
+# Exibição do Resultado no Container Compacto
 if "resultado_busca" in st.session_state:
     dados = st.session_state["resultado_busca"]
     cor_nota = obter_cor_score(dados["score"])
@@ -506,8 +523,8 @@ if "resultado_busca" in st.session_state:
     """
     st.markdown(html_card_resultado, unsafe_allow_html=True)
 
-    # Formulário de Captura
-    st.markdown('<div class="titulo-principal" style="font-size: 1.15rem; margin-top: 1rem;">📋 Preencha os dados abaixo e receba a análise completa</div>', unsafe_allow_html=True)
+    # NOVO SUBTÍTULO DO FORMULÁRIO SOLICITADO
+    st.markdown('<div class="titulo-secundario">Preencha os dados abaixo e receba o diagnóstico completo do seu posicionamento digital.</div>', unsafe_allow_html=True)
     
     st.markdown('<div class="rotulo-campo">Nome:</div>', unsafe_allow_html=True)
     nome_lead = st.text_input("NomeInput", value="", placeholder="Digite o seu nome completo", label_visibility="collapsed")
