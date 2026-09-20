@@ -5,7 +5,7 @@ import requests
 import smtplib
 import streamlit as st
 
-# ReportLab para geração de PDF
+# ReportLab para geração do PDF
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -25,7 +25,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Estilo CSS para Container Compacto e Inputs 100% Brancos
+# CSS para Container Compacto e Inputs 100% Brancos
 custom_css = """
 <style>
     html, body, [data-testid="stAppViewContainer"], .main {
@@ -173,7 +173,7 @@ GOOGLE_API_KEY = "AIzaSyA8ul_9QICNyqxrHgT-CURIZmd1sikHn5U"
 
 BIGIN_CLIENT_ID = "1000.COI8SBR9O0RCMGCL7WKEYUJMBZCR8X"
 BIGIN_CLIENT_SECRET = "c60642fb374cbad9753c456d8713b6349417187345"
-BIGIN_GRANT_CODE = "1000.47cdd98138f4eb37c90bb5263b1d1eb3.5f61d2c5e994dde65d80795970d81b0d"
+BIGIN_REFRESH_TOKEN = "1000.b52513ff5bf38ca9a857f1e299c9879c.bcb73e5d38c2e01cac8a7b7aefc180a9"
 
 SMTP_SERVER = "smtp.tour360vr.com.br"
 SMTP_PORT = 587
@@ -365,53 +365,38 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
         return None
 
 # ==========================================
-# INTEGRACAO ZOHO BIGIN CRM
+# INTEGRAÇÃO ZOHO BIGIN CRM (REFRESH TOKEN PERMANENTE)
 # ==========================================
 def obter_access_token_bigin():
-    # Se já tivermos um Refresh Token salvo em sessão, renovamos o Access Token
-    if "bigin_refresh_token" in st.session_state:
-        rf = st.session_state["bigin_refresh_token"]
-        for domain in ["com", "com.br"]:
-            try:
-                url = f"https://accounts.zoho.{domain}/oauth/v2/token?refresh_token={rf}&client_id={BIGIN_CLIENT_ID}&client_secret={BIGIN_CLIENT_SECRET}&grant_type=refresh_token"
-                res = requests.post(url, timeout=8).json()
-                if "access_token" in res:
-                    return res["access_token"], domain
-            except Exception:
-                pass
-
-    # Troca o Grant Code inicial pelo Refresh Token permanente
-    for domain in ["com", "com.br"]:
+    domains = ["com", "com.br"]
+    for domain in domains:
         try:
             url = f"https://accounts.zoho.{domain}/oauth/v2/token"
-            data = {
-                "grant_type": "authorization_code",
+            params = {
+                "refresh_token": BIGIN_REFRESH_TOKEN,
                 "client_id": BIGIN_CLIENT_ID,
                 "client_secret": BIGIN_CLIENT_SECRET,
-                "code": BIGIN_GRANT_CODE
+                "grant_type": "refresh_token"
             }
-            res = requests.post(url, data=data, timeout=8).json()
-            if "refresh_token" in res:
-                st.session_state["bigin_refresh_token"] = res["refresh_token"]
+            res = requests.post(url, params=params, timeout=8).json()
             if "access_token" in res:
                 return res["access_token"], domain
         except Exception as e:
-            print(f"Erro OAuth Bigin domain {domain}: {e}")
-
+            print(f"Erro token no domínio {domain}: {e}")
     return None, None
 
 def enviar_lead_bigin(nome_lead, email_lead, whatsapp_lead, empresa_consultada, score):
     try:
         access_token, domain = obter_access_token_bigin()
         if not access_token:
-            return False, "Falha na autenticação do Bigin. Verifique se o Grant Code foi trocado em tempo."
+            return False, "Falha na renovação do Access Token do Bigin."
 
         headers = {
             "Authorization": f"Zoho-oauthtoken {access_token}",
             "Content-Type": "application/json"
         }
 
-        # 1. Cria o Contato no Bigin
+        # 1. Cria ou atualiza o Contato no Bigin
         payload_contact = {
             "data": [
                 {
@@ -429,8 +414,9 @@ def enviar_lead_bigin(nome_lead, email_lead, whatsapp_lead, empresa_consultada, 
         if "data" in res_contact and len(res_contact["data"]) > 0:
             contact_id = res_contact["data"][0].get("details", {}).get("id")
 
-        # 2. Cria o Negócio (Deal) no Pipeline
-        for stage_name in ["1º Contato", "First Contact", "Qualificação"]:
+        # 2. Cria o Negócio (Deal) na coluna "1º Contato"
+        stages_teste = ["1º Contato", "First Contact", "Qualificação"]
+        for stage_name in stages_teste:
             payload_deal = {
                 "data": [
                     {
@@ -618,10 +604,10 @@ if "resultado_busca" in st.session_state:
         else:
             whats_completo = "55" + apenas_numeros
 
-            # 1. Envia para o Bigin CRM
+            # 1. Registra no Bigin CRM
             bigin_sucesso, bigin_msg = enviar_lead_bigin(nome_lead, email_lead, whats_completo, dados['nome'], dados['score'])
 
-            # 2. Dispara os e-mails com PDF
+            # 2. Dispara os e-mails com PDF e Rodapé
             email_sucesso, email_msg = enviar_emails_diagnostico_completo(nome_lead, email_lead, whats_completo, dados)
 
             if email_sucesso:
