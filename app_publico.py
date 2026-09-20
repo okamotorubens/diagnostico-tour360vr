@@ -365,19 +365,11 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
         return None
 
 # ==========================================
-# INTEGRACAO ZOHO BIGIN CRM (PIPELINE "1º CONTATO")
+# INTEGRACAO ZOHO BIGIN CRM
 # ==========================================
 def obter_access_token_bigin():
-    if "bigin_refresh_token" in st.session_state:
-        rf = st.session_state["bigin_refresh_token"]
-        for domain in ["com", "com.br"]:
-            try:
-                url = f"https://accounts.zoho.{domain}/oauth/v2/token?refresh_token={rf}&client_id={BIGIN_CLIENT_ID}&client_secret={BIGIN_CLIENT_SECRET}&grant_type=refresh_token"
-                res = requests.post(url, timeout=8).json()
-                if "access_token" in res:
-                    return res["access_token"], domain
-            except Exception:
-                pass
+    if "bigin_access_token" in st.session_state:
+        return st.session_state["bigin_access_token"], st.session_state.get("bigin_domain", "com")
 
     for domain in ["com", "com.br"]:
         try:
@@ -389,10 +381,12 @@ def obter_access_token_bigin():
                 "code": BIGIN_GRANT_CODE
             }
             res = requests.post(url, data=data, timeout=8).json()
-            if "refresh_token" in res:
-                st.session_state["bigin_refresh_token"] = res["refresh_token"]
             if "access_token" in res:
+                st.session_state["bigin_access_token"] = res["access_token"]
+                st.session_state["bigin_domain"] = domain
                 return res["access_token"], domain
+            elif "error" in res:
+                st.sidebar.warning(f"Bigin OAuth Warning ({domain}): {res.get('error')}")
         except Exception as e:
             print(f"Erro OAuth Bigin domain {domain}: {e}")
 
@@ -402,14 +396,14 @@ def enviar_lead_bigin(nome_lead, email_lead, whatsapp_lead, empresa_consultada, 
     try:
         access_token, domain = obter_access_token_bigin()
         if not access_token:
-            return False
+            return False, "Não foi possível autenticar no Bigin (Grant Code expirado)."
 
         headers = {
             "Authorization": f"Zoho-oauthtoken {access_token}",
             "Content-Type": "application/json"
         }
 
-        # 1. Tenta criar o Contato no Bigin
+        # 1. Cria o Contato no Bigin
         payload_contact = {
             "data": [
                 {
@@ -427,7 +421,7 @@ def enviar_lead_bigin(nome_lead, email_lead, whatsapp_lead, empresa_consultada, 
         if "data" in res_contact and len(res_contact["data"]) > 0:
             contact_id = res_contact["data"][0].get("details", {}).get("id")
 
-        # 2. Tenta criar o Negócio (Deal) na aba de Oportunidades
+        # 2. Cria o Negócio (Deal) na aba de Oportunidades
         for stage_name in ["1º Contato", "First Contact", "Qualificação"]:
             payload_deal = {
                 "data": [
@@ -442,12 +436,11 @@ def enviar_lead_bigin(nome_lead, email_lead, whatsapp_lead, empresa_consultada, 
             url_deal = f"https://www.zohoapis.{domain}/bigin/v1/Deals"
             res_deal = requests.post(url_deal, json=payload_deal, headers=headers, timeout=8)
             if res_deal.status_code in [200, 201]:
-                return True
+                return True, "Lead cadastrado com sucesso no Bigin!"
 
-        return True
+        return True, "Contato cadastrado no Bigin."
     except Exception as e:
-        print(f"Erro no Zoho Bigin: {e}")
-        return False
+        return False, str(e)
 
 # ==========================================
 # ENVIO DE E-MAILS COM ANEXO EM MEMÓRIA E RODAPÉ
@@ -463,7 +456,7 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
         # Gera o arquivo PDF direto na memória RAM (BytesIO)
         pdf_bytes = gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios)
 
-        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=12)
         server.starttls()
         server.login(SMTP_USER, SMTP_PASS)
 
@@ -552,10 +545,9 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
         server.send_message(msg_cliente)
         server.quit()
 
-        return True
+        return True, "E-mails e PDF enviados com sucesso!"
     except Exception as e:
-        print(f"Erro na rotina de envio de e-mails: {e}")
-        return False
+        return False, f"Falha na SMTP Locaweb: {str(e)}"
 
 # ==========================================
 # INTERFACE DO USUÁRIO STREAMLIT
@@ -618,17 +610,20 @@ if "resultado_busca" in st.session_state:
         else:
             whats_completo = "55" + apenas_numeros
 
-            # 1. Envia para o Bigin CRM
-            enviar_lead_bigin(nome_lead, email_lead, whats_completo, dados['nome'], dados['score'])
+            # Execução 1: Dispara o E-mail com PDF
+            email_sucesso, email_msg = enviar_emails_diagnostico_completo(nome_lead, email_lead, whats_completo, dados)
 
-            # 2. Dispara os e-mails com PDF e Rodapé
-            com_sucesso = enviar_emails_diagnostico_completo(nome_lead, email_lead, whats_completo, dados)
-            
-            if com_sucesso:
+            # Execução 2: Dispara o Bigin CRM
+            bigin_sucesso, bigin_msg = enviar_lead_bigin(nome_lead, email_lead, whats_completo, dados['nome'], dados['score'])
+
+            if email_sucesso:
                 st.markdown("""
                 <div class="card-sucesso-destaque">
                     ✅ Diagnóstico enviado com sucesso! Verifique sua caixa de entrada e spam.
                 </div>
                 """, unsafe_allow_html=True)
             else:
-                st.error("Ocorreu uma falha ao disparar o e-mail. Tente novamente em instantes.")
+                st.error(f"❌ Erro ao enviar e-mail: {email_msg}")
+
+            if not bigin_sucesso:
+                st.warning(f"⚠️ Nota de Integração CRM: {bigin_msg}")
