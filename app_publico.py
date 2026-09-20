@@ -37,9 +37,11 @@ custom_css = """
         max-width: 750px !important;
     }
 
-    header, footer, #MainMenu {
+    /* OCULTAR TOTALMENTE O RODAPÉ 'BUILT WITH STREAMLIT' E ELEMENTOS NATIVOS */
+    header, footer, #MainMenu, [data-testid="stHeader"], [data-testid="stToolbar"] {
         visibility: hidden !important;
         height: 0px !important;
+        display: none !important;
     }
 
     /* Título sem quebras */
@@ -76,6 +78,14 @@ custom_css = """
         font-size: 0.95rem !important;
         font-weight: 700 !important;
         font-family: 'Arial', sans-serif !important;
+        margin-bottom: 0.1rem !important;
+    }
+
+    .subtexto-label {
+        font-size: 0.8rem !important;
+        color: #666666 !important;
+        font-weight: normal !important;
+        margin-bottom: 0.3rem !important;
     }
 
     /* Inputs Claros e Alinhados */
@@ -99,11 +109,10 @@ custom_css = """
         text-align: center !important;
     }
 
-    /* NOTA DO SCORE GIGANTE E EM DESTAQUE */
+    /* NOTA DO SCORE EM DESTAQUE COM TAMANHO AJUSTADO */
     .nota-score-gigante {
         text-align: center !important;
-        color: #8DC63F !important;
-        font-size: 4.8rem !important;
+        font-size: 3.8rem !important;
         font-weight: 900 !important;
         font-family: 'Arial', sans-serif !important;
         line-height: 1 !important;
@@ -204,6 +213,17 @@ SMTP_SERVER = "smtp.tour360vr.com.br"
 SMTP_PORT = 587
 SMTP_USER = "contato@tour360vr.com.br"
 SMTP_PASS = "Kakaroto@2026"
+
+# ==========================================
+# COR DINÂMICA DO SCORE
+# ==========================================
+def obter_cor_score(score):
+    if score <= 40:
+        return "#D32F2F"  # Vermelho Alerta
+    elif score <= 70:
+        return "#F57C00"  # Laranja / Amarelo Atenção
+    else:
+        return "#8DC63F"  # Verde Tour360VR Otimizado
 
 # ==========================================
 # CÁLCULO DE SCORE RIGOROSO
@@ -466,8 +486,9 @@ if "resultado_busca" in st.session_state:
     
     st.markdown('<p style="text-align: center; font-weight: 700; font-size: 1.1rem; margin-top: 0.6rem; margin-bottom: 0;">Pontuação Geral de Otimização</p>', unsafe_allow_html=True)
     
-    # Exibição do Score Gigante
-    st.markdown(f'<div class="nota-score-gigante">{dados["score"]} / 100</div>', unsafe_allow_html=True)
+    # Exibição do Score com Cor Dinâmica
+    cor_nota = obter_cor_score(dados["score"])
+    st.markdown(f'<div class="nota-score-gigante" style="color: {cor_nota} !important;">{dados["score"]} / 100</div>', unsafe_allow_html=True)
     
     st.markdown("""
     <div class="alerta-destaque">
@@ -479,17 +500,20 @@ if "resultado_busca" in st.session_state:
     
     nome_lead = st.text_input("Nome:", placeholder="Digite o seu nome completo")
     email_lead = st.text_input("E-mail:", placeholder="exemplo@email.com")
-    whats_num = st.text_input("WhatsApp (com DDD):", value="55 ", placeholder="5516991332121")
+    
+    st.markdown("<p style='text-align: center; font-weight: 700; font-size: 0.95rem; margin-bottom: 0;'>WhatsApp</p>", unsafe_allow_html=True)
+    st.markdown("<p class='subtexto-label' style='text-align: center;'>(com DDD)</p>", unsafe_allow_html=True)
+    
+    # Campo com prefixo 55 fixo + limite para DDD e celular
+    num_whats = st.text_input("WhatsInput", value="", max_chars=11, placeholder="16991332121", label_visibility="collapsed")
 
     if st.button("📩 Receber diagnóstico"):
-        if nome_lead and email_lead and whats_num and len(whats_num.strip()) > 5:
-            whats_limpo = ''.join(filter(str.isdigit, whats_num))
-            if not whats_limpo.startswith("55"):
-                whats_limpo = "55" + whats_limpo
+        if nome_lead and email_lead and num_whats and len(num_whats.strip()) >= 10:
+            whats_somente_num = ''.join(filter(str.isdigit, num_whats))
+            whats_completo = "55" + whats_somente_num
 
-            # Disparos das integrações
-            enviar_lead_bigin(nome_lead, email_lead, whats_limpo, dados['nome'], dados['score'])
-            enviar_emails_diagnostico_completo(nome_lead, email_lead, whats_limpo, dados)
+            enviar_lead_bigin(nome_lead, email_lead, whats_completo, dados['nome'], dados['score'])
+            enviar_emails_diagnostico_completo(nome_lead, email_lead, whats_completo, dados)
             
             st.markdown("""
             <div class="card-sucesso-destaque">
@@ -497,4 +521,4 @@ if "resultado_busca" in st.session_state:
             </div>
             """, unsafe_allow_html=True)
         else:
-            st.error("Por favor, preencha todos os campos do formulário corretamente.")
+            st.error("Por favor, preencha todos os campos do formulário corretamente (WhatsApp com DDD).")
