@@ -25,40 +25,52 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# CSS Ajustado: Ocultação total de elementos Streamlit e eliminação de scroll
+# CSS Definitivo: Esconde Menu, Botões de Apps, Header, Footer e elimina Scrollbar
 custom_css = """
 <style>
-    html, body, [data-testid="stAppViewContainer"], .main {
+    /* Oculta completamente a barra de rolagem e fixa altura do container */
+    html, body, [data-testid="stAppViewContainer"], .main, .stApp {
         overflow: hidden !important;
         background-color: #FFFFFF !important;
         color: #000000 !important;
     }
     
     .block-container {
-        padding-top: 0.2rem !important;
-        padding-bottom: 0.2rem !important;
-        padding-left: 0.8rem !important;
-        padding-right: 0.8rem !important;
+        padding-top: 0rem !important;
+        padding-bottom: 0rem !important;
+        padding-left: 0.5rem !important;
+        padding-right: 0.5rem !important;
         max-width: 900px !important;
     }
 
-    footer, .stApp footer, [data-testid="stFooter"], 
-    header, #MainMenu, [data-testid="stHeader"], [data-testid="stToolbar"],
-    [data-testid="stDecoration"], [data-testid="stStatusWidget"],
-    .viewerBadge_container__1QSob, .styles_viewerBadge__1yB5_ {
+    /* Esconde todos os ícones e menus de navegação/sistemas do Streamlit */
+    [data-testid="stHeader"], 
+    [data-testid="stAppHeader"],
+    [data-testid="stToolbar"], 
+    [data-testid="stDecoration"], 
+    [data-testid="stStatusWidget"],
+    #MainMenu, 
+    footer, 
+    .stApp footer, 
+    [data-testid="stFooter"],
+    .viewerBadge_container__1QSob, 
+    .styles_viewerBadge__1yB5_,
+    button[title="View source"],
+    .stAppHeader {
         display: none !important;
         visibility: hidden !important;
         opacity: 0 !important;
         height: 0px !important;
         width: 0px !important;
+        pointer-events: none !important;
     }
 
     .card-resultado-compacto {
         background-color: #F0F4F8 !important;
         border: 1px solid #D0D7DE !important;
         border-radius: 10px !important;
-        padding: 14px 20px !important;
-        margin: 0.5rem auto !important;
+        padding: 12px 18px !important;
+        margin: 0.4rem auto !important;
         box-shadow: 0 2px 8px rgba(0,0,0,0.04) !important;
     }
 
@@ -77,17 +89,17 @@ custom_css = """
         color: #444444 !important;
         font-size: 1.1rem;
         font-weight: 600;
-        margin-bottom: 0.8rem;
+        margin-bottom: 0.6rem;
         font-family: 'Arial', sans-serif;
     }
 
     .titulo-secundario {
         text-align: center;
         color: #111111 !important;
-        font-size: 1.2rem;
+        font-size: 1.15rem;
         font-weight: 700;
-        margin-top: 0.8rem;
-        margin-bottom: 0.4rem;
+        margin-top: 0.6rem;
+        margin-bottom: 0.3rem;
         font-family: 'Arial', sans-serif;
     }
 
@@ -106,7 +118,7 @@ custom_css = """
         border: 1px solid #CCCCCC !important;
         border-radius: 6px !important;
         font-size: 0.98rem !important;
-        padding: 0.5rem 0.8rem !important;
+        padding: 0.45rem 0.8rem !important;
         text-align: center !important;
         color: #000000 !important;
     }
@@ -121,7 +133,7 @@ custom_css = """
         color: #111111 !important;
         font-size: 0.92rem !important;
         font-weight: 700 !important;
-        margin-top: 0.3rem !important;
+        margin-top: 0.2rem !important;
         margin-bottom: 0.1rem !important;
     }
     .subtexto-label {
@@ -136,7 +148,7 @@ custom_css = """
         justify-content: center !important;
         align-items: center !important;
         width: 100% !important;
-        margin: 0.5rem auto !important;
+        margin: 0.4rem auto !important;
     }
     .stButton > button {
         background-color: #1565C0 !important;
@@ -145,7 +157,7 @@ custom_css = """
         font-weight: bold !important;
         border-radius: 6px !important;
         border: none !important;
-        padding: 0.6rem 2rem !important;
+        padding: 0.55rem 2rem !important;
         cursor: pointer !important;
         width: 100% !important;
         max-width: 520px !important;
@@ -164,12 +176,12 @@ custom_css = """
         background-color: #E8F5E9 !important;
         border: 2px solid #2E7D32 !important;
         border-radius: 8px !important;
-        padding: 12px 16px !important;
+        padding: 10px 14px !important;
         text-align: center !important;
         color: #1B5E20 !important;
-        font-size: 1.05rem !important;
+        font-size: 1.02rem !important;
         font-weight: 700 !important;
-        margin: 0.8rem auto !important;
+        margin: 0.6rem auto !important;
         max-width: 520px !important;
         box-shadow: 0 4px 12px rgba(46, 125, 50, 0.15) !important;
     }
@@ -196,7 +208,7 @@ def obter_cor_score(score):
         return "#8DC63F"
 
 # ==========================================
-# INTEGRAÇÃO ZOHO BIGIN (POST COM CAMPOS ATUALIZADOS)
+# INTEGRAÇÃO ZOHO BIGIN
 # ==========================================
 def enviar_lead_zoho_bigin(nome_lead, email_lead, whatsapp_lead, empresa_nome, endereco, score):
     url_bigin = "https://bigin.zoho.com/crm/WebToContactForm"
@@ -216,15 +228,20 @@ def enviar_lead_zoho_bigin(nome_lead, email_lead, whatsapp_lead, empresa_nome, e
         'Description': f"Empresa Analisada: {empresa_nome}\nEndereço: {endereco}\nPontuação Google: {score}/100"
     }
     
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Content-Type": "application/x-www-form-encoding; charset=UTF-8"
+    }
+    
     try:
-        res = requests.post(url_bigin, data=payload, timeout=8)
+        res = requests.post(url_bigin, data=payload, headers=headers, timeout=10)
         return res.status_code == 200
     except Exception as e:
-        print(f"Erro ao enviar lead para Bigin: {e}")
+        print(f"Erro no Bigin: {e}")
         return False
 
 # ==========================================
-# CÁLCULO DE SCORE RIGOROSO (10/100)
+# CÁLCULO DE SCORE GOOGLE MAPS
 # ==========================================
 def consultar_score_google_rigoroso(nome_empresa):
     url = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={requests.utils.quote(nome_empresa)}&key={GOOGLE_API_KEY}"
@@ -321,7 +338,7 @@ def consultar_score_google_rigoroso(nome_empresa):
     return {"sucesso": False, "mensagem": "Empresa não encontrada no Google."}
 
 # ==========================================
-# GERADOR DE PDF SIMPLIFICADO E ROBUSTO (BYTES)
+# GERADOR DE PDF
 # ==========================================
 def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
     try:
@@ -391,7 +408,7 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
         return None
 
 # ==========================================
-# ENVIO DE E-MAILS
+# ENVIO DE E-MAILS COM ESPAÇAMENTO EXATO EM BR
 # ==========================================
 def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dados_busca):
     try:
@@ -455,41 +472,34 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
 
         server.send_message(msg_admin)
 
-        # 2. E-mail Cliente
+        # 2. E-mail Cliente (Quebras de Linha <br/> explícitas)
         msg_cliente = MIMEMultipart('mixed')
         msg_cliente['From'] = f"Rubens Okamoto | Tour360VR <{SMTP_USER}>"
         msg_cliente['To'] = email_lead
         msg_cliente['Reply-To'] = SMTP_USER
         msg_cliente['Subject'] = f"Diagnóstico de Perfil no Google - {empresa_nome}"
         
-        corpo_html_cliente = f"""
-        <!DOCTYPE html>
-        <html>
-        <head><meta charset="utf-8"></head>
-        <body style="font-family: Arial, sans-serif; color: #333333; line-height: 1.6; background-color: #FFFFFF; padding: 15px;">
-            <div style="max-width: 600px; margin: 0 auto;">
-                <p style="margin: 0 0 24px 0;">Olá, {nome_lead}!</p>
-                
-                <p style="margin: 0 0 16px 0;">Ficamos felizes pelo seu interesse em melhorar a presença online da sua empresa!</p>
-                
-                <p style="margin: 0 0 16px 0;">Recebemos a solicitação de diagnóstico para <b>{empresa_nome}</b>.</p>
-                
-                <p style="margin: 0 0 16px 0;">Sua pontuação de otimização atual no Google é: <b style="font-size: 18px; color: {cor_score_hex}; font-weight: bold;">{score}/100</b>.</p>
-                
-                <p style="margin: 0 0 24px 0;">Anexamos a este e-mail o seu relatório detalhado em PDF.</p>
-                
-                <p style="margin: 0 0 24px 0;">Em breve, um especialista entrará em contato para apresentar como alavancar a visibilidade da sua empresa.</p>
-                
-                <hr style="border: 0; border-top: 1px solid #EEEEEE; margin: 24px 0 15px 0;">
-                <div style="color: #555555; font-size: 13px; line-height: 1.5;">
-                    <p style="margin: 2px 0;">Atenciosamente,</p>
-                    <p style="margin: 2px 0;"><b>Rubens Okamoto | Tour360VR</b></p>
-                    <p style="margin: 2px 0;"><a href="https://www.tour360vr.com.br" target="_blank" style="color: #1565C0; text-decoration: none;">www.tour360vr.com.br</a></p>
-                </div>
-            </div>
-        </body>
-        </html>
-        """
+        corpo_html_cliente = f"""<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="font-family: Arial, sans-serif; color: #333333; font-size: 15px; line-height: 1.4; background-color: #FFFFFF; padding: 20px;">
+<div style="max-width: 600px; margin: 0 auto;">
+Olá, {nome_lead}!<br/><br/><br/>
+Ficamos felizes pelo seu interesse em melhorar a presença online da sua empresa!<br/><br/>
+Recebemos a solicitação de diagnóstico para <b>{empresa_nome}</b>.<br/><br/>
+Sua pontuação de otimização atual no Google é: <b style="font-size: 18px; color: {cor_score_hex}; font-weight: bold;">{score}/100</b>.<br/><br/>
+Anexamos a este e-mail o seu relatório detalhado em PDF.<br/><br/><br/>
+Em breve, um especialista entrará em contato para apresentar como alavancar a visibilidade da sua empresa.<br/><br/><br/>
+<hr style="border: 0; border-top: 1px solid #EEEEEE; margin: 20px 0 15px 0;"/>
+<div style="color: #555555; font-size: 13px; line-height: 1.4;">
+Atenciosamente,<br/>
+<b>Rubens Okamoto | Tour360VR</b><br/>
+<a href="https://www.tour360vr.com.br" target="_blank" style="color: #1565C0; text-decoration: none;">www.tour360vr.com.br</a>
+</div>
+</div>
+</body>
+</html>
+"""
         msg_cliente.attach(MIMEText(corpo_html_cliente, 'html', 'utf-8'))
 
         if pdf_bytes:
@@ -505,7 +515,7 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
         return False, f"Falha no envio do e-mail/PDF: {str(e)}"
 
 # ==========================================
-# INTERFACE DO USUÁRIO STREAMLIT
+# INTERFACE STREAMLIT
 # ==========================================
 st.markdown('<div class="titulo-principal">Pronto para destacar sua empresa no Google?</div>', unsafe_allow_html=True)
 st.markdown('<div class="instrucao-subtitulo">Digite o Nome Comercial exato da sua empresa seguido da Cidade e Estado.</div>', unsafe_allow_html=True)
@@ -521,25 +531,23 @@ if st.button("🔍 Analisar perfil"):
             else:
                 st.error("❌ Empresa não encontrada. Tente incluir a cidade ou verificar a grafia exata cadastrada no Google.")
 
-# Exibição do Resultado no Container Compacto
 if "resultado_busca" in st.session_state:
     dados = st.session_state["resultado_busca"]
     cor_nota = obter_cor_score(dados["score"])
     
     html_card_resultado = f"""
     <div class="card-resultado-compacto">
-        <div style="text-align: center; color: #111111; font-size: 1.25rem; font-weight: 800; margin-bottom: 2px;">Empresa Localizada: {dados["nome"]}</div>
-        <p style="text-align: center; color: #555555; font-size: 0.9rem; margin-top: 0; margin-bottom: 6px;">📍 {dados["endereco"]}</p>
-        <p style="text-align: center; font-weight: 700; font-size: 1.05rem; margin-top: 4px; margin-bottom: 2px;">Pontuação Geral de Otimização</p>
-        <div style="text-align: center; font-size: 3.2rem; font-weight: 900; line-height: 1; margin: 2px 0 8px 0; color: {cor_nota} !important;">{dados["score"]} / 100</div>
-        <div style="background-color: #FFFDE7; border: 1px solid #FBC02D; border-radius: 6px; padding: 6px 10px; text-align: center; color: #5D4037; font-size: 0.9rem; font-weight: 600;">
+        <div style="text-align: center; color: #111111; font-size: 1.2rem; font-weight: 800; margin-bottom: 2px;">Empresa Localizada: {dados["nome"]}</div>
+        <p style="text-align: center; color: #555555; font-size: 0.88rem; margin-top: 0; margin-bottom: 4px;">📍 {dados["endereco"]}</p>
+        <p style="text-align: center; font-weight: 700; font-size: 1rem; margin-top: 2px; margin-bottom: 2px;">Pontuação Geral de Otimização</p>
+        <div style="text-align: center; font-size: 3rem; font-weight: 900; line-height: 1; margin: 2px 0 6px 0; color: {cor_nota} !important;">{dados["score"]} / 100</div>
+        <div style="background-color: #FFFDE7; border: 1px solid #FBC02D; border-radius: 6px; padding: 5px 8px; text-align: center; color: #5D4037; font-size: 0.88rem; font-weight: 600;">
             ⚠️ Identificamos oportunidades de melhoria que podem estar reduzindo a visibilidade do seu negócio para novos clientes.
         </div>
     </div>
     """
     st.markdown(html_card_resultado, unsafe_allow_html=True)
 
-    # Subtítulo do Formulário
     st.markdown('<div class="titulo-secundario">Preencha os dados abaixo e receba o diagnóstico completo do seu posicionamento digital.</div>', unsafe_allow_html=True)
     
     st.markdown('<div class="rotulo-campo">Nome:</div>', unsafe_allow_html=True)
@@ -553,7 +561,6 @@ if "resultado_busca" in st.session_state:
     
     raw_whats = st.text_input("WhatsInput", value="", placeholder="16991332121", label_visibility="collapsed")
 
-    # Substituição do Botão de Envio pelo Card de Sucesso após Enviar
     if st.session_state.get("envio_sucesso"):
         st.markdown("""
         <div class="card-sucesso-destaque">
@@ -574,10 +581,7 @@ if "resultado_busca" in st.session_state:
                 whats_completo = "55" + apenas_numeros
 
                 with st.spinner("Gerando diagnóstico e enviando por e-mail..."):
-                    # 1. Envia E-mails (Cliente e Admin)
                     email_sucesso, email_msg = enviar_emails_diagnostico_completo(nome_lead, email_lead, whats_completo, dados)
-                    
-                    # 2. Envia Lead Direto para o Zoho Bigin em segundo plano
                     enviar_lead_zoho_bigin(nome_lead, email_lead, whats_completo, dados['nome'], dados['endereco'], dados['score'])
 
                 if email_sucesso:
