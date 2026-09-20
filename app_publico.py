@@ -25,10 +25,9 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# CSS Definitivo: Elimina Ícones Flutuantes do Canto Inferior Direito, Menus e Ajusta Margens
+# CSS Definitivo: Elimina Ícones Flutuantes, Menus e Ajusta Espaçamentos
 custom_css = """
 <style>
-    /* Trava scrollbars e ajusta fundo */
     html, body, [data-testid="stAppViewContainer"], .main, .stApp {
         overflow: hidden !important;
         background-color: #FFFFFF !important;
@@ -43,7 +42,7 @@ custom_css = """
         max-width: 900px !important;
     }
 
-    /* Oculta rigorosamente menus, headers, footers e TODOS os ícones/badges flutuantes no canto inferior */
+    /* Oculta de forma absoluta todos os elementos, badges e ícones flutuantes do Streamlit */
     [data-testid="stHeader"], 
     [data-testid="stAppHeader"],
     [data-testid="stToolbar"], 
@@ -60,8 +59,9 @@ custom_css = """
     div[class*="styles_viewerBadge"],
     div[class*="stStatusWidget"],
     div[class*="viewerBadge_container"],
-    iframe[title="streamlitApp"],
-    div[data-testid="stStatusWidget"] {
+    div[data-testid*="stStatusWidget"],
+    div[data-testid*="viewerBadge"],
+    #root > div:nth-child(1) > div > div > div > div > section > div > div > div > div:nth-child(2) {
         display: none !important;
         visibility: hidden !important;
         opacity: 0 !important;
@@ -213,12 +213,11 @@ def obter_cor_score(score):
         return "#8DC63F"
 
 # ==========================================
-# INTEGRAÇÃO ZOHO BIGIN (COM CAMPOS MAPEADOS)
+# INTEGRAÇÃO ZOHO BIGIN
 # ==========================================
 def enviar_lead_zoho_bigin(nome_lead, email_lead, whatsapp_lead, empresa_nome, endereco, score):
     url_bigin = "https://bigin.zoho.com/crm/WebToContactForm"
     
-    # Divisão do Nome e Sobrenome para não duplicar no CRM
     partes_nome = nome_lead.strip().split(" ", 1)
     primeiro_nome = partes_nome[0]
     sobrenome = partes_nome[1] if len(partes_nome) > 1 else "."
@@ -235,7 +234,7 @@ def enviar_lead_zoho_bigin(nome_lead, email_lead, whatsapp_lead, empresa_nome, e
         'Email': email_lead,
         'Accounts.Account Name': empresa_nome,
         'Phone': whatsapp_lead,
-        'CONTACTCF6': f"{score}/100",  # Campo específico de "Pontuação Google"
+        'CONTACTCF6': f"{score}/100",
         'Description': f"Endereço Registrado no Google: {endereco}\nPontuação Otimização: {score}/100"
     }
     
@@ -414,7 +413,7 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
         return None
 
 # ==========================================
-# ENVIO DE E-MAILS COM ESPAÇAMENTO AJUSTADO
+# ENVIO DE E-MAILS COM REGRA DE ESPAÇAMENTO RIGOROSA
 # ==========================================
 def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dados_busca):
     try:
@@ -477,7 +476,7 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
 
         server.send_message(msg_admin)
 
-        # 2. E-mail Cliente
+        # 2. E-mail Cliente com espaçamento forçado via parágrafos explícitos
         msg_cliente = MIMEMultipart('mixed')
         msg_cliente['From'] = f"Rubens Okamoto | Tour360VR <{SMTP_USER}>"
         msg_cliente['To'] = email_lead
@@ -487,16 +486,23 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
         corpo_html_cliente = f"""<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"></head>
-<body style="font-family: Arial, sans-serif; color: #333333; font-size: 15px; line-height: 1.35; background-color: #FFFFFF; padding: 5px; margin: 0;">
+<body style="font-family: Arial, sans-serif; color: #333333; font-size: 15px; line-height: 1.4; background-color: #FFFFFF; padding: 10px; margin: 0;">
 <div style="max-width: 600px; margin: 0 auto;">
-Olá, {nome_lead}!<br/><br/>
-Ficamos felizes pelo seu interesse em melhorar a presença online da sua empresa!<br/><br/>
-Recebemos a solicitação de diagnóstico para <b>{empresa_nome}</b>.<br/><br/>
-Sua pontuação de otimização atual no Google é: <b style="font-size: 17px; color: {cor_score_hex}; font-weight: bold;">{score}/100</b>.<br/><br/>
-Anexamos a este e-mail o seu relatório detalhado em PDF.<br/><br/>
-Em breve, um especialista entrará em contato para apresentar como alavancar a visibilidade da sua empresa.<br/>
-<hr style="border: 0; border-top: 1px solid #EEEEEE; margin: 12px 0 8px 0;"/>
-<div style="color: #555555; font-size: 13px; line-height: 1.3;">
+<p style="margin: 0 0 28px 0; font-size: 15px; color: #333333;">Olá, {nome_lead}!</p>
+
+<p style="margin: 0 0 16px 0; font-size: 15px; color: #333333;">Ficamos felizes pelo seu interesse em melhorar a presença online da sua empresa!</p>
+
+<p style="margin: 0 0 16px 0; font-size: 15px; color: #333333;">Recebemos a solicitação de diagnóstico para <b>{empresa_nome}</b>.</p>
+
+<p style="margin: 0 0 16px 0; font-size: 15px; color: #333333;">Sua pontuação de otimização atual no Google é: <b style="font-size: 17px; color: {cor_score_hex}; font-weight: bold;">{score}/100</b>.</p>
+
+<p style="margin: 0 0 16px 0; font-size: 15px; color: #333333;">Anexamos a este e-mail o seu relatório detalhado em PDF.</p>
+
+<p style="margin: 0 0 8px 0; font-size: 15px; color: #333333;">Em breve, um especialista entrará em contato para apresentar como alavancar a visibilidade da sua empresa.</p>
+
+<hr style="border: 0; border-top: 1px solid #CCCCCC; margin: 8px 0 6px 0;"/>
+
+<div style="color: #555555; font-size: 13px; line-height: 1.35; margin-top: 4px;">
 Atenciosamente,<br/>
 <b>Rubens Okamoto | Tour360VR</b><br/>
 <a href="https://www.tour360vr.com.br" target="_blank" style="color: #1565C0; text-decoration: none;">www.tour360vr.com.br</a>
