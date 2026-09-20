@@ -25,7 +25,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# CSS + JavaScript Injection para ocultar ícones do Streamlit em tempo real
+# CSS Definitivo: Oculta Ícones Flutuantes do Canto Inferior
 custom_css = """
 <style>
     html, body, [data-testid="stAppViewContainer"], .main, .stApp {
@@ -42,7 +42,7 @@ custom_css = """
         max-width: 900px !important;
     }
 
-    /* Regras agressivas para ocultar menus, footers e ícones flutuantes */
+    /* Oculta rigorosamente menus, headers, footers e ícones flutuantes */
     [data-testid="stHeader"], 
     [data-testid="stAppHeader"],
     [data-testid="stToolbar"], 
@@ -61,8 +61,8 @@ custom_css = """
     div[class*="viewerBadge_container"],
     div[data-testid*="stStatusWidget"],
     div[data-testid*="viewerBadge"],
-    iframe[src*="status"],
-    .stStatusWidget {
+    .stStatusWidget,
+    div[class*="StatusWidget"] {
         display: none !important;
         visibility: hidden !important;
         opacity: 0 !important;
@@ -190,29 +190,9 @@ custom_css = """
         margin: 0.4rem auto !important;
         max-width: 520px !important;
         box-shadow: 0 4px 12px rgba(46, 125, 50, 0.15) !important;
+        line-height: 1.4 !important;
     }
 </style>
-
-<script>
-    // JS Observer para remover instantaneamente os elementos flutuantes
-    const removeStreamlitBadges = () => {
-        const selectors = [
-            '[data-testid="stStatusWidget"]',
-            '[data-testid="stAppHeader"]',
-            '[data-testid="stHeader"]',
-            '.viewerBadge_container__1QSob',
-            '[class*="viewerBadge"]',
-            '[class*="stStatusWidget"]'
-        ];
-        selectors.forEach(selector => {
-            document.querySelectorAll(selector).forEach(el => el.remove());
-        });
-    };
-    
-    const observer = new MutationObserver(removeStreamlitBadges);
-    observer.observe(document.body, { childList: true, subtree: true });
-    window.addEventListener('DOMContentLoaded', removeStreamlitBadges);
-</script>
 """
 st.markdown(custom_css, unsafe_allow_html=True)
 
@@ -234,29 +214,23 @@ def obter_cor_score(score):
     else:
         return "#8DC63F"
 
-def extrair_cidade_endereco(endereco):
-    """
-    Extrai o nome da cidade de endereços no padrão Google Maps do Brasil.
-    Exemplo: 'R. Lafaiete, 1370 - Centro, Ribeirão Preto - SP, 14015-080, Brazil' -> 'Ribeirão Preto'
-    """
+def extrair_cidade(endereco):
     try:
         if "-" in endereco:
             partes = endereco.split("-")
             for i, p in enumerate(partes):
-                if "SP" in p or "RJ" in p or "MG" in p or "PR" in p or "RS" in p or "SC" in p or "BA" in p or "GO" in p or "DF" in p or "PE" in p or "CE" in p:
+                if any(uf in p for uf in ["SP", "RJ", "MG", "PR", "RS", "SC", "BA", "GO", "DF", "PE", "CE"]):
                     cidade_part = partes[i-1].strip()
-                    cidade_clean = cidade_part.split(",")[-1].strip()
-                    return cidade_clean
-        
-        partes_virgula = [x.strip() for x in endereco.split(",")]
-        if len(partes_virgula) >= 3:
-            return partes_virgula[-3]
+                    return cidade_part.split(",")[-1].strip()
+        partes_v = [x.strip() for x in endereco.split(",")]
+        if len(partes_v) >= 3:
+            return partes_v[-3]
     except Exception:
         pass
-    return ""
+    return "Não Informada"
 
 # ==========================================
-# INTEGRAÇÃO ZOHO BIGIN (COM CIDADE PREENCHIDA)
+# INTEGRAÇÃO ZOHO BIGIN
 # ==========================================
 def enviar_lead_zoho_bigin(nome_lead, email_lead, whatsapp_lead, empresa_nome, endereco, score):
     url_bigin = "https://bigin.zoho.com/crm/WebToContactForm"
@@ -265,7 +239,7 @@ def enviar_lead_zoho_bigin(nome_lead, email_lead, whatsapp_lead, empresa_nome, e
     primeiro_nome = partes_nome[0]
     sobrenome = partes_nome[1] if len(partes_nome) > 1 else "."
 
-    cidade_extraida = extrair_cidade_endereco(endereco)
+    cidade = extrair_cidade(endereco)
 
     payload = {
         'xnQsjsdp': '15d54e8d1dfa724381be9ad892936abd18de3deadc2763d67c0dd5f939138a91',
@@ -279,10 +253,8 @@ def enviar_lead_zoho_bigin(nome_lead, email_lead, whatsapp_lead, empresa_nome, e
         'Email': email_lead,
         'Accounts.Account Name': empresa_nome,
         'Phone': whatsapp_lead,
-        'Mailing City': cidade_extraida,  # Preenche o campo Cidade nativo
-        'City': cidade_extraida,          # Preenche o campo de Cidade alternativo
         'CONTACTCF6': f"{score}/100",
-        'Description': f"Endereço Registrado no Google: {endereco}\nPontuação Otimização: {score}/100"
+        'Description': f"Cidade: {cidade}\nEndereço Completo: {endereco}\nPontuação Otimização: {score}/100"
     }
     
     try:
@@ -460,7 +432,7 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
         return None
 
 # ==========================================
-# ENVIO DE E-MAILS COM 1 LINHA DE ESPAÇO E SEM LINHA DIVISÓRIA
+# ENVIO DE E-MAILS COM FORMATO RIGOROSO DE FONTE E ESPAÇAMENTOS
 # ==========================================
 def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dados_busca):
     try:
@@ -480,7 +452,7 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
 
         filename_clean = f"Diagnostico_{re.sub(r'[^a-zA-Z0-9]', '_', empresa_nome)}.pdf"
 
-        # 1. E-mail Notificação Interna Admin
+        # 1. E-mail Admin
         msg_admin = MIMEMultipart('mixed')
         msg_admin['From'] = f"Tour360VR <{SMTP_USER}>"
         msg_admin['To'] = SMTP_USER
@@ -523,7 +495,7 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
 
         server.send_message(msg_admin)
 
-        # 2. E-mail Cliente (1 linha de espaço antes da assinatura, sem linha divisória <hr>)
+        # 2. E-mail Cliente com formatação de fonte padronizada e espaçamento de 2 linhas
         msg_cliente = MIMEMultipart('mixed')
         msg_cliente['From'] = f"Rubens Okamoto | Tour360VR <{SMTP_USER}>"
         msg_cliente['To'] = email_lead
@@ -534,24 +506,24 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
 <html>
 <head><meta charset="utf-8"></head>
 <body style="font-family: Arial, sans-serif; color: #333333; font-size: 15px; line-height: 1.4; background-color: #FFFFFF; padding: 10px; margin: 0;">
-<div style="max-width: 600px; margin: 0 auto;">
-<p style="margin: 0 0 24px 0; font-size: 15px; color: #333333;">Olá, {nome_lead}!</p>
+<div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; font-size: 15px; color: #333333;">
+<p style="margin: 0 0 32px 0; font-size: 15px; font-family: Arial, sans-serif; color: #333333;">Olá, {nome_lead}!</p>
 
-<p style="margin: 0 0 16px 0; font-size: 15px; color: #333333;">Ficamos felizes pelo seu interesse em melhorar a presença online da sua empresa!</p>
+<p style="margin: 0 0 16px 0; font-size: 15px; font-family: Arial, sans-serif; color: #333333;">Ficamos felizes pelo seu interesse em melhorar a presença online da sua empresa!</p>
 
-<p style="margin: 0 0 16px 0; font-size: 15px; color: #333333;">Recebemos a solicitação de diagnóstico para <b>{empresa_nome}</b>.</p>
+<p style="margin: 0 0 16px 0; font-size: 15px; font-family: Arial, sans-serif; color: #333333;">Recebemos a solicitação de diagnóstico para <b>{empresa_nome}</b>.</p>
 
-<p style="margin: 0 0 16px 0; font-size: 15px; color: #333333;">Sua pontuação de otimização atual no Google é: <b style="font-size: 17px; color: {cor_score_hex}; font-weight: bold;">{score}/100</b>.</p>
+<p style="margin: 0 0 16px 0; font-size: 15px; font-family: Arial, sans-serif; color: #333333;">Sua pontuação de otimização atual no Google é: <b style="font-size: 17px; color: {cor_score_hex}; font-weight: bold;">{score}/100</b>.</p>
 
-<p style="margin: 0 0 16px 0; font-size: 15px; color: #333333;">Anexamos a este e-mail o seu relatório detalhado em PDF.</p>
+<p style="margin: 0 0 16px 0; font-size: 15px; font-family: Arial, sans-serif; color: #333333;">Anexamos a este e-mail o seu relatório detalhado em PDF.</p>
 
-<p style="margin: 0 0 24px 0; font-size: 15px; color: #333333;">Em breve, um especialista entrará em contato para apresentar como alavancar a visibilidade da sua empresa.</p>
+<p style="margin: 32px 0 24px 0; font-size: 15px; font-family: Arial, sans-serif; color: #333333;">Em breve, um especialista entrará em contato para apresentar como alavancar a visibilidade da sua empresa.</p>
 
-<div style="color: #555555; font-size: 13px; line-height: 1.35;">
+<p style="margin: 0; font-size: 15px; font-family: Arial, sans-serif; color: #333333; line-height: 1.4;">
 Atenciosamente,<br/>
 <b>Rubens Okamoto | Tour360VR</b><br/>
 <a href="https://www.tour360vr.com.br" target="_blank" style="color: #1565C0; text-decoration: none;">www.tour360vr.com.br</a>
-</div>
+</p>
 </div>
 </body>
 </html>
@@ -620,7 +592,7 @@ if "resultado_busca" in st.session_state:
     if st.session_state.get("envio_sucesso"):
         st.markdown("""
         <div class="card-sucesso-destaque">
-            ✅ Diagnóstico enviado com sucesso! Verifique sua caixa de entrada e spam.
+            ✅ Diagnóstico enviado com sucesso!<br/>Verifique sua caixa de entrada e spam.
         </div>
         """, unsafe_allow_html=True)
     else:
