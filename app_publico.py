@@ -8,7 +8,7 @@ from email.mime.base import MIMEBase
 from email import encoders
 import streamlit as st
 
-# Importação das ferramentas de geração de PDF via ReportLab
+# Importação do ReportLab para geração do PDF
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -37,14 +37,14 @@ custom_css = """
         max-width: 750px !important;
     }
 
-    /* OCULTAR TOTALMENTE O RODAPÉ 'BUILT WITH STREAMLIT' E ELEMENTOS NATIVOS */
+    /* Ocultar cabeçalhos/rodapés nativos */
     header, footer, #MainMenu, [data-testid="stHeader"], [data-testid="stToolbar"] {
         visibility: hidden !important;
         height: 0px !important;
         display: none !important;
     }
 
-    /* Título sem quebras */
+    /* Títulos Principais */
     .titulo-uma-linha {
         text-align: center;
         color: #000000 !important;
@@ -72,7 +72,7 @@ custom_css = """
         margin-bottom: 0.1rem;
     }
 
-    /* Rótulos dos Campos Totalmente Centralizados */
+    /* Rótulos de Campos */
     .rotulo-campo-centralizado {
         text-align: center !important;
         color: #000000 !important;
@@ -114,7 +114,26 @@ custom_css = """
         text-align: center !important;
     }
 
-    /* NOTA DO SCORE EM DESTAQUE COM TAMANHO AJUSTADO */
+    /* Quadro do WhatsApp com 55 Fixo */
+    .container-whatsapp-fixo {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        max-width: 480px;
+        margin: 0 auto;
+        gap: 8px;
+    }
+    .prefixo-pais-55 {
+        background-color: #EEEEEE;
+        border: 2px solid #CCCCCC;
+        border-radius: 8px;
+        padding: 0.55rem 0.9rem;
+        font-weight: bold;
+        font-size: 1rem;
+        color: #333333;
+    }
+
+    /* Score Gigante */
     .nota-score-gigante {
         text-align: center !important;
         font-size: 3.8rem !important;
@@ -124,7 +143,7 @@ custom_css = """
         margin: 0.2rem 0 0.8rem 0 !important;
     }
 
-    /* CENTRALIZAÇÃO DOS BOTÕES */
+    /* Centralização de Botões */
     div.stButton {
         display: flex !important;
         justify-content: center !important;
@@ -181,15 +200,14 @@ custom_css = """
     .destaque-formulario-linha {
         text-align: center;
         color: #000000 !important;
-        font-size: 1.15rem;
+        font-size: 1.45rem;
         font-weight: 800;
-        margin-top: 1rem;
-        margin-bottom: 0.6rem;
+        margin-top: 1.2rem;
+        margin-bottom: 0.8rem;
         font-family: 'Arial', sans-serif;
-        white-space: nowrap;
     }
 
-    /* Card de Sucesso Profissional Destacado */
+    /* Card de Sucesso */
     .card-sucesso-destaque {
         background-color: #E8F5E9 !important;
         border: 2px solid #2E7D32 !important;
@@ -231,7 +249,7 @@ def obter_cor_score(score):
         return "#8DC63F"  # Verde Tour360VR Otimizado
 
 # ==========================================
-# CÁLCULO DE SCORE RIGOROSO
+# CÁLCULO DE SCORE RIGOROSO COMPLETO
 # ==========================================
 def consultar_score_google_rigoroso(nome_empresa):
     url = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={requests.utils.quote(nome_empresa)}&key={GOOGLE_API_KEY}"
@@ -249,41 +267,50 @@ def consultar_score_google_rigoroso(nome_empresa):
             res_details = requests.get(url_details, headers=headers, timeout=10).json()
             details = res_details.get("result", place)
 
+            # Algoritmo de 9 Critérios Rígidos (Exigência do Sistema Privado)
             score = 0
             crit_det = []
 
+            # 1. Status Operacional (10 pts)
             if details.get("business_status") == "OPERATIONAL": 
                 score += 10
                 crit_det.append("Status Operacional: Ativo")
 
+            # 2. Avaliações (Rigoroso: exije nota >= 4.5 E no mínimo 50 avaliações para 20 pts)
             rating = details.get("rating", 0)
             reviews = details.get("user_ratings_total", 0)
             if rating >= 4.5 and reviews >= 50:
                 score += 20
                 crit_det.append(f"Avaliações: Excelente ({rating}★ - {reviews} avaliações)")
 
+            # 3. Fotos em Volume (20 pts para >= 20 fotos)
             photos = details.get("photos", [])
-            if len(photos) >= 15:
+            if len(photos) >= 20:
                 score += 20
                 crit_det.append("Galeria de Fotos: Completa")
 
+            # 4. Telefone Válido (10 pts)
             if details.get("formatted_phone_number"):
                 score += 10
                 crit_det.append("Telefone: Cadastrado")
 
+            # 5. Website Vinculado (15 pts)
             if details.get("website"):
                 score += 15
                 crit_det.append("Website: Vinculado")
 
+            # 6. Horários de Funcionamento (10 pts)
             if details.get("opening_hours"):
                 score += 10
                 crit_det.append("Horários: Configurados")
 
+            # 7. Endereço Completo com Número (10 pts)
             addr = details.get("formatted_address", "")
             if addr and any(char.isdigit() for char in addr):
                 score += 10
                 crit_det.append("Endereço: Completo com número")
 
+            # 8. Categoria Específica (5 pts)
             if details.get("types"):
                 score += 5
                 crit_det.append("Categoria: Definida")
@@ -391,7 +418,7 @@ def enviar_lead_bigin(nome_lead, email_lead, whatsapp_lead, empresa_consultada, 
         return False
 
 # ==========================================
-# DISPARO DE E-MAILS COM ANEXO PDF (SEM SAFELINKS)
+# DISPARO DE E-MAILS COM REDAÇÃO AJUSTADA E PDF ANEXO
 # ==========================================
 def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dados_busca):
     try:
@@ -424,7 +451,7 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
         msg_admin.attach(MIMEText(corpo_admin, 'plain'))
         server.send_message(msg_admin)
 
-        # 2. E-mail HTML Limpo para o Cliente (Formatado sem URLs soltas)
+        # 2. E-mail HTML para o Cliente (com a redação exata solicitada)
         msg_cliente = MIMEMultipart()
         msg_cliente['From'] = SMTP_USER
         msg_cliente['To'] = email_lead
@@ -434,8 +461,9 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
         <html>
         <body style="font-family: Arial, sans-serif; color: #333333; line-height: 1.6;">
             <p>Olá, <b>{nome_lead}</b>!</p>
+            <p>Ficamos muito felizes pelo seu interesse em saber como está a ficha da sua empresa no Google.</p>
             <p>Recebemos a sua solicitação de diagnóstico para a empresa "<b>{empresa_nome}</b>".</p>
-            <p style="font-size: 1.1rem;">Pontuação de Otimização no Google Maps: <b>{score}/100</b>.</p>
+            <p>Pontuação de Otimização no Google Maps: <b style="font-size: 1.25rem;">{score}/100</b>.</p>
             <p>O nosso especialista em posicionamento digital da Tour360VR analisará os detalhes do seu perfil e entrará em contacto através do WhatsApp (<b>{whatsapp_lead}</b>) para apresentar o relatório completo.</p>
             <p><i>Anexamos a este e-mail o seu relatório preliminar em PDF.</i></p>
             <br>
@@ -445,7 +473,7 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
         """
         msg_cliente.attach(MIMEText(corpo_html, 'html'))
 
-        # Anexa PDF
+        # Anexa o arquivo PDF
         pdf_bytes = gerar_pdf_diagnostico(empresa_nome, endereco, score, criterios)
         if pdf_bytes:
             part_pdf = MIMEBase('application', 'oct-stream')
@@ -499,7 +527,8 @@ if "resultado_busca" in st.session_state:
     </div>
     """, unsafe_allow_html=True)
 
-    st.markdown('<div class="destaque-formulario-linha">Preencha os dados abaixo e receba a análise completa</div>', unsafe_allow_html=True)
+    # Título do Formulário
+    st.markdown('<div class="destaque-formulario-linha">📋 Preencha os dados abaixo e receba a análise completa</div>', unsafe_allow_html=True)
     
     st.markdown('<div class="rotulo-campo-centralizado">Nome:</div>', unsafe_allow_html=True)
     nome_lead = st.text_input("NomeInput", placeholder="Digite o seu nome completo", label_visibility="collapsed")
@@ -510,17 +539,20 @@ if "resultado_busca" in st.session_state:
     st.markdown('<div class="rotulo-campo-centralizado">WhatsApp</div>', unsafe_allow_html=True)
     st.markdown('<div class="subtexto-label" style="text-align: center;">(com DDD)</div>', unsafe_allow_html=True)
     
-    # Campo com prefixo 55 fixo no valor inicial do input
-    num_whats = st.text_input("WhatsInput", value="55 ", max_chars=14, placeholder="5516991332121", label_visibility="collapsed")
+    # Layout do WhatsApp com Prefixo 55 Fixo ao lado
+    col_pref, col_num = st.columns([1, 4])
+    with col_pref:
+        st.markdown('<div class="prefixo-pais-55" style="text-align: center; margin-top: 2px;">55</div>', unsafe_allow_html=True)
+    with col_num:
+        num_whats = st.text_input("WhatsInput", max_chars=11, placeholder="16991332121", label_visibility="collapsed")
 
     if st.button("📩 Receber diagnóstico"):
         if nome_lead and email_lead and num_whats and len(num_whats.strip()) >= 10:
-            whats_limpo = ''.join(filter(str.isdigit, num_whats))
-            if not whats_limpo.startswith("55"):
-                whats_limpo = "55" + whats_limpo
+            whats_somente_num = ''.join(filter(str.isdigit, num_whats))
+            whats_completo = "55" + whats_somente_num
 
-            enviar_lead_bigin(nome_lead, email_lead, whats_limpo, dados['nome'], dados['score'])
-            enviar_emails_diagnostico_completo(nome_lead, email_lead, whats_limpo, dados)
+            enviar_lead_bigin(nome_lead, email_lead, whats_completo, dados['nome'], dados['score'])
+            enviar_emails_diagnostico_completo(nome_lead, email_lead, whats_completo, dados)
             
             st.markdown("""
             <div class="card-sucesso-destaque">
