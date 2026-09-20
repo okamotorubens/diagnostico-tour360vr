@@ -26,7 +26,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# CSS Rígido para Ocultação Total de Menus, Badges e Rodapés do Streamlit
+# CSS Definitivo de Trava e Ocultação Total dos Ícones do Streamlit
 custom_css = """
 <style>
     html, body, [data-testid="stAppViewContainer"], .main, .stApp {
@@ -200,33 +200,38 @@ custom_css = """
 """
 st.markdown(custom_css, unsafe_allow_html=True)
 
-# JS de Remoção Contínua dos Badges Flutuantes
+# JS Rígido de Remoção do Pop-up Flutuante do Streamlit no DOM Pai
 components.html("""
 <script>
     function destroyStreamlitBadges() {
-        var docs = [document, window.parent.document, window.top.document];
-        docs.forEach(function(d) {
+        var targets = [document, window.parent.document, window.top.document];
+        targets.forEach(function(doc) {
             try {
-                if(!d) return;
+                if(!doc) return;
                 var selectors = [
                     '[data-testid="stStatusWidget"]',
                     '[data-testid="stHeader"]',
                     '.viewerBadge_container__1QSob',
                     '[class*="viewerBadge"]',
                     '[class*="styles_viewerBadge"]',
-                    'a[href*="streamlit.io"]',
-                    'a[href*="github.com"]'
+                    'a[href*="streamlit"]',
+                    'a[href*="github"]',
+                    'div[data-testid*="Status"]',
+                    'iframe[src*="streamlit"]'
                 ];
                 selectors.forEach(function(s) {
-                    var els = d.querySelectorAll(s);
-                    els.forEach(function(el) {
+                    var elements = doc.querySelectorAll(s);
+                    elements.forEach(function(el) {
+                        el.style.display = 'none';
+                        el.style.visibility = 'hidden';
+                        el.style.opacity = '0';
                         el.remove();
                     });
                 });
             } catch(e){}
         });
     }
-    setInterval(destroyStreamlitBadges, 200);
+    setInterval(destroyStreamlitBadges, 150);
 </script>
 """, height=0, width=0)
 
@@ -264,15 +269,15 @@ def extrair_cidade(endereco):
     return "Não Informada"
 
 # ==========================================
-# INTEGRAÇÃO ZOHO BIGIN (SINALIZADOR [1] NO NOME)
+# INTEGRAÇÃO ZOHO BIGIN (SINALIZADOR 1 - NO NOME)
 # ==========================================
 def enviar_lead_zoho_bigin(nome_lead, email_lead, whatsapp_lead, empresa_nome, endereco, score):
     url_bigin = "https://bigin.zoho.com/crm/WebToContactForm"
     
     cidade = extrair_cidade(endereco)
 
-    # Adiciona o prefixo [1] no nome para fixar o cliente no topo da lista
-    nome_identificado = f"[1] {nome_lead.strip()}"
+    # Prefixado com "1 - " para ir diretamente para o topo da lista de Clientes
+    nome_identificado = f"1 - {nome_lead.strip()}"
     partes_nome = nome_identificado.split(" ", 1)
     primeiro_nome = partes_nome[0]
     sobrenome = partes_nome[1] if len(partes_nome) > 1 else "."
@@ -440,7 +445,7 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
         elements.append(Paragraph(f"<b>Endereço Registrado:</b> {endereco}", style_body))
         elements.append(Spacer(1, 16))
         
-        cor_score_hex = obtaining_cor_score = obter_cor_score(score)
+        cor_score_hex = obter_cor_score(score)
         elements.append(Paragraph(f"PONTUAÇÃO DE OTIMIZAÇÃO: <font color='{cor_score_hex}'><b>{score} / 100 PONTOS</b></font>", ParagraphStyle('ScorePDF', parent=style_title, fontSize=13)))
         elements.append(Spacer(1, 14))
         
@@ -632,7 +637,6 @@ if "resultado_busca" in st.session_state:
     st.markdown('<div class="rotulo-campo">WhatsApp</div>', unsafe_allow_html=True)
     st.markdown('<div class="subtexto-label">(DDD + 9 dígitos - Apenas números)</div>', unsafe_allow_html=True)
     
-    # Validação e Bloqueio de Letras no WhatsApp
     raw_whats_input = st.text_input("WhatsInput", value="", placeholder="16991332121", label_visibility="collapsed")
     apenas_numeros = re.sub(r'\D', '', raw_whats_input)[:11]
 
