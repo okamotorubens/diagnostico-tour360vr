@@ -72,12 +72,14 @@ custom_css = """
         margin-bottom: 0.1rem;
     }
 
-    /* Rótulos de Campos Claros e Visíveis */
-    label, div[data-testid="stMarkdownContainer"] p {
+    /* Rótulos dos Campos Totalmente Centralizados */
+    .rotulo-campo-centralizado {
+        text-align: center !important;
         color: #000000 !important;
         font-size: 0.95rem !important;
         font-weight: 700 !important;
         font-family: 'Arial', sans-serif !important;
+        margin-top: 0.6rem !important;
         margin-bottom: 0.1rem !important;
     }
 
@@ -93,6 +95,9 @@ custom_css = """
         display: flex !important;
         justify-content: center !important;
         width: 100% !important;
+    }
+    .stTextInput label {
+        display: none !important;
     }
     .stTextInput > div {
         max-width: 480px !important;
@@ -244,7 +249,6 @@ def consultar_score_google_rigoroso(nome_empresa):
             res_details = requests.get(url_details, headers=headers, timeout=10).json()
             details = res_details.get("result", place)
 
-            # Algoritmo de Critérios
             score = 0
             crit_det = []
 
@@ -387,7 +391,7 @@ def enviar_lead_bigin(nome_lead, email_lead, whatsapp_lead, empresa_consultada, 
         return False
 
 # ==========================================
-# DISPARO DE E-MAILS COM ANEXO PDF
+# DISPARO DE E-MAILS COM ANEXO PDF (SEM SAFELINKS)
 # ==========================================
 def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dados_busca):
     try:
@@ -420,29 +424,28 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
         msg_admin.attach(MIMEText(corpo_admin, 'plain'))
         server.send_message(msg_admin)
 
-        # 2. E-mail Limpo para o Cliente (Texto Puro sem Links Longos)
+        # 2. E-mail HTML Limpo para o Cliente (Formatado sem URLs soltas)
         msg_cliente = MIMEMultipart()
         msg_cliente['From'] = SMTP_USER
         msg_cliente['To'] = email_lead
         msg_cliente['Subject'] = f"Diagnóstico de Perfil no Google - {empresa_nome}"
         
-        corpo_texto_cliente = f"""Olá, {nome_lead}!
+        corpo_html = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; color: #333333; line-height: 1.6;">
+            <p>Olá, <b>{nome_lead}</b>!</p>
+            <p>Recebemos a sua solicitação de diagnóstico para a empresa "<b>{empresa_nome}</b>".</p>
+            <p style="font-size: 1.1rem;">Pontuação de Otimização no Google Maps: <b>{score}/100</b>.</p>
+            <p>O nosso especialista em posicionamento digital da Tour360VR analisará os detalhes do seu perfil e entrará em contacto através do WhatsApp (<b>{whatsapp_lead}</b>) para apresentar o relatório completo.</p>
+            <p><i>Anexamos a este e-mail o seu relatório preliminar em PDF.</i></p>
+            <br>
+            <p>Atenciosamente,<br><b>Rubens Okamoto | Tour360VR</b></p>
+        </body>
+        </html>
+        """
+        msg_cliente.attach(MIMEText(corpo_html, 'html'))
 
-Recebemos a sua solicitação de diagnóstico para a empresa "{empresa_nome}".
-
-Pontuação de Otimização no Google Maps: {score}/100.
-
-O nosso especialista em posicionamento digital da Tour360VR analisará os detalhes do seu perfil e entrará em contacto através do WhatsApp ({whatsapp_lead}) para apresentar o relatório completo.
-
-Anexamos a este e-mail o seu relatório preliminar em PDF.
-
-Atenciosamente,
-Rubens Okamoto | Tour360VR
-www.tour360vr.com.br
-"""
-        msg_cliente.attach(MIMEText(corpo_texto_cliente, 'plain'))
-
-        # Anexa PDF se gerado com sucesso
+        # Anexa PDF
         pdf_bytes = gerar_pdf_diagnostico(empresa_nome, endereco, score, criterios)
         if pdf_bytes:
             part_pdf = MIMEBase('application', 'oct-stream')
@@ -498,22 +501,26 @@ if "resultado_busca" in st.session_state:
 
     st.markdown('<div class="destaque-formulario-linha">Preencha os dados abaixo e receba a análise completa</div>', unsafe_allow_html=True)
     
-    nome_lead = st.text_input("Nome:", placeholder="Digite o seu nome completo")
-    email_lead = st.text_input("E-mail:", placeholder="exemplo@email.com")
+    st.markdown('<div class="rotulo-campo-centralizado">Nome:</div>', unsafe_allow_html=True)
+    nome_lead = st.text_input("NomeInput", placeholder="Digite o seu nome completo", label_visibility="collapsed")
     
-    st.markdown("<p style='text-align: center; font-weight: 700; font-size: 0.95rem; margin-bottom: 0;'>WhatsApp</p>", unsafe_allow_html=True)
-    st.markdown("<p class='subtexto-label' style='text-align: center;'>(com DDD)</p>", unsafe_allow_html=True)
+    st.markdown('<div class="rotulo-campo-centralizado">E-mail:</div>', unsafe_allow_html=True)
+    email_lead = st.text_input("EmailInput", placeholder="exemplo@email.com", label_visibility="collapsed")
     
-    # Campo com prefixo 55 fixo + limite para DDD e celular
-    num_whats = st.text_input("WhatsInput", value="", max_chars=11, placeholder="16991332121", label_visibility="collapsed")
+    st.markdown('<div class="rotulo-campo-centralizado">WhatsApp</div>', unsafe_allow_html=True)
+    st.markdown('<div class="subtexto-label" style="text-align: center;">(com DDD)</div>', unsafe_allow_html=True)
+    
+    # Campo com prefixo 55 fixo no valor inicial do input
+    num_whats = st.text_input("WhatsInput", value="55 ", max_chars=14, placeholder="5516991332121", label_visibility="collapsed")
 
     if st.button("📩 Receber diagnóstico"):
         if nome_lead and email_lead and num_whats and len(num_whats.strip()) >= 10:
-            whats_somente_num = ''.join(filter(str.isdigit, num_whats))
-            whats_completo = "55" + whats_somente_num
+            whats_limpo = ''.join(filter(str.isdigit, num_whats))
+            if not whats_limpo.startswith("55"):
+                whats_limpo = "55" + whats_limpo
 
-            enviar_lead_bigin(nome_lead, email_lead, whats_completo, dados['nome'], dados['score'])
-            enviar_emails_diagnostico_completo(nome_lead, email_lead, whats_completo, dados)
+            enviar_lead_bigin(nome_lead, email_lead, whats_limpo, dados['nome'], dados['score'])
+            enviar_emails_diagnostico_completo(nome_lead, email_lead, whats_limpo, dados)
             
             st.markdown("""
             <div class="card-sucesso-destaque">
