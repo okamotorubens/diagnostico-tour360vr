@@ -173,7 +173,7 @@ GOOGLE_API_KEY = "AIzaSyA8ul_9QICNyqxrHgT-CURIZmd1sikHn5U"
 
 BIGIN_CLIENT_ID = "1000.COI8SBR9O0RCMGCL7WKEYUJMBZCR8X"
 BIGIN_CLIENT_SECRET = "c60642fb374cbad9753c456d8713b6349417187345"
-BIGIN_GRANT_CODE = "1000.1655799c7a52ec18b5f171433d287250.609eeed5e9aafd280095e1423b7d721d"
+BIGIN_GRANT_CODE = "1000.c63ef3d18a2bed7662ee3c48cf0e50e2.a3594064016626ff0bf436231f0681da"
 
 SMTP_SERVER = "smtp.tour360vr.com.br"
 SMTP_PORT = 587
@@ -368,7 +368,7 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
 # INTEGRAÇÃO ZOHO BIGIN CRM
 # ==========================================
 def obter_access_token_bigin():
-    # 1. Se já obtivemos e salvamos um Refresh Token, renovamos usando ele
+    # 1. Se já obtivemos e salvamos um Refresh Token em sessão, renovamos diretamente
     if "bigin_refresh_token" in st.session_state:
         rf = st.session_state["bigin_refresh_token"]
         try:
@@ -382,10 +382,10 @@ def obter_access_token_bigin():
             res = requests.post(url, data=data, timeout=8).json()
             if "access_token" in res:
                 return res["access_token"], "com", None
-        except Exception as e:
+        except Exception:
             pass
 
-    # 2. Caso contrário, fazemos a primeira troca utilizando o Grant Code
+    # 2. Primeira troca utilizando o Grant Code recém-gerado
     try:
         url = "https://accounts.zoho.com/oauth/v2/token"
         data = {
@@ -626,7 +626,7 @@ if "resultado_busca" in st.session_state:
             # 1. Registra no Bigin CRM
             bigin_sucesso, bigin_msg = enviar_lead_bigin(nome_lead, email_lead, whats_completo, dados['nome'], dados['score'])
 
-            # 2. Dispara os e-mails com PDF
+            # 2. Dispara os e-mails com PDF e Rodapé
             email_sucesso, email_msg = enviar_emails_diagnostico_completo(nome_lead, email_lead, whats_completo, dados)
 
             if email_sucesso:
