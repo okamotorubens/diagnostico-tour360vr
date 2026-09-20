@@ -26,7 +26,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# CSS Definitivo de Trava e Ocultação Total dos Ícones do Streamlit
+# CSS Rígido para Ocultação de Componentes
 custom_css = """
 <style>
     html, body, [data-testid="stAppViewContainer"], .main, .stApp {
@@ -43,7 +43,7 @@ custom_css = """
         max-width: 900px !important;
     }
 
-    /* Oculta rigorosamente menus, headers, footers e ícones/badges flutuantes */
+    /* Esconde cabeçalhos, barras de ferramentas, botões de atalho e rodapés */
     header, 
     [data-testid="stHeader"], 
     [data-testid="stAppHeader"],
@@ -64,9 +64,7 @@ custom_css = """
     div[class*="stStatusWidget"],
     div[class*="viewerBadge_container"],
     div[data-testid*="stStatusWidget"],
-    div[data-testid*="viewerBadge"],
-    .stStatusWidget,
-    div[class*="StatusWidget"] {
+    div[data-testid*="viewerBadge"] {
         display: none !important;
         visibility: hidden !important;
         opacity: 0 !important;
@@ -200,31 +198,33 @@ custom_css = """
 """
 st.markdown(custom_css, unsafe_allow_html=True)
 
-# JavaScript para forçar remoção dos elementos flutuantes no DOM pai
+# JS de Destruição em Loop do Viewer Badge no Iframe do Streamlit Cloud
 components.html("""
 <script>
-    function hideElements() {
-        try {
-            var parentDoc = window.parent.document;
-            var selectors = [
-                '[data-testid="stStatusWidget"]',
-                '[data-testid="stHeader"]',
-                '.viewerBadge_container__1QSob',
-                '[class*="viewerBadge"]',
-                '[class*="styles_viewerBadge"]',
-                'a[href*="streamlit"]',
-                'a[href*="github"]'
-            ];
-            selectors.forEach(function(s) {
-                var els = parentDoc.querySelectorAll(s);
-                els.forEach(function(el) {
-                    el.style.display = 'none';
-                    el.style.visibility = 'hidden';
+    function destroyStreamlitBadges() {
+        var docs = [document, window.parent.document, window.top.document];
+        docs.forEach(function(d) {
+            try {
+                if(!d) return;
+                var selectors = [
+                    '[data-testid="stStatusWidget"]',
+                    '[data-testid="stHeader"]',
+                    '.viewerBadge_container__1QSob',
+                    '[class*="viewerBadge"]',
+                    '[class*="styles_viewerBadge"]',
+                    'a[href*="streamlit.io"]',
+                    'a[href*="github.com"]'
+                ];
+                selectors.forEach(function(s) {
+                    var els = d.querySelectorAll(s);
+                    els.forEach(function(el) {
+                        el.remove();
+                    });
                 });
-            });
-        } catch(e) {}
+            } catch(e){}
+        });
     }
-    setInterval(hideElements, 300);
+    setInterval(destroyStreamlitBadges, 200);
 </script>
 """, height=0, width=0)
 
@@ -262,16 +262,18 @@ def extrair_cidade(endereco):
     return "Não Informada"
 
 # ==========================================
-# INTEGRAÇÃO ZOHO BIGIN (TAG E ORIGEM)
+# INTEGRAÇÃO ZOHO BIGIN (SINALIZADOR NO NOME)
 # ==========================================
 def enviar_lead_zoho_bigin(nome_lead, email_lead, whatsapp_lead, empresa_nome, endereco, score):
     url_bigin = "https://bigin.zoho.com/crm/WebToContactForm"
     
-    partes_nome = nome_lead.strip().split(" ", 1)
+    cidade = extrair_cidade(endereco)
+
+    # Adiciona o identificador [SITE - DIAGNÓSTICO] no nome para aparecer visível na lista
+    nome_identificado = f"[SITE] {nome_lead.strip()}"
+    partes_nome = nome_identificado.split(" ", 1)
     primeiro_nome = partes_nome[0]
     sobrenome = partes_nome[1] if len(partes_nome) > 1 else "."
-
-    cidade = extrair_cidade(endereco)
 
     payload = {
         'xnQsjsdp': '15d54e8d1dfa724381be9ad892936abd18de3deadc2763d67c0dd5f939138a91',
@@ -285,11 +287,8 @@ def enviar_lead_zoho_bigin(nome_lead, email_lead, whatsapp_lead, empresa_nome, e
         'Email': email_lead,
         'Accounts.Account Name': empresa_nome,
         'Phone': whatsapp_lead,
-        'Tag': 'Diagnóstico Site',
-        'tags': 'Diagnóstico Site',
-        'Lead Source': 'Website',
         'CONTACTCF6': f"{score}/100",
-        'Description': f"Cidade: {cidade}\nEndereço: {endereco}\nPontuação Otimização: {score}/100\nTAG: Diagnóstico Site"
+        'Description': f"📌 ORIGEM: Formulário Diagnóstico Site\nCidade: {cidade}\nEndereço: {endereco}\nPontuação Google: {score}/100"
     }
     
     try:
@@ -397,8 +396,19 @@ def consultar_score_google_rigoroso(nome_empresa):
     return {"sucesso": False, "mensagem": "Empresa não encontrada no Google."}
 
 # ==========================================
-# GERADOR DE PDF AJUSTADO (TÍTULO E RODAPÉ)
+# GERADOR DE PDF (RODAPÉ FIXO NO RODA-PÉ DA PÁGINA)
 # ==========================================
+def desenhar_rodape_fixo(canvas, doc):
+    canvas.saveState()
+    canvas.setStrokeColor(colors.HexColor('#CCCCCC'))
+    canvas.setLineWidth(0.5)
+    canvas.line(35, 40, 560, 40)
+    
+    canvas.setFont('Helvetica', 8)
+    canvas.setFillColor(colors.HexColor('#555555'))
+    canvas.drawCentredString(297, 26, "Tour360VR • Rubens Okamoto | contato@tour360vr.com.br | www.tour360vr.com.br")
+    canvas.restoreState()
+
 def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
     try:
         buffer = io.BytesIO()
@@ -408,11 +418,11 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
             leftMargin=35,
             rightMargin=35,
             topMargin=35,
-            bottomMargin=20
+            bottomMargin=50
         )
         
         styles = getSampleStyleSheet()
-        style_title = ParagraphStyle('HeaderTitle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=14, leading=17, textColor=colors.HexColor('#1565C0'))
+        style_title = ParagraphStyle('HeaderTitle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=13.5, leading=16, textColor=colors.HexColor('#1565C0'))
         style_sub = ParagraphStyle('HeaderSub', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10.5, leading=14, textColor=colors.HexColor('#222222'))
         style_body = ParagraphStyle('HeaderBody', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=12, textColor=colors.HexColor('#444444'))
         style_cell = ParagraphStyle('CellText', parent=styles['Normal'], fontName='Helvetica', fontSize=8.5, leading=11, textColor=colors.HexColor('#333333'))
@@ -420,22 +430,22 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
 
         elements = []
         
-        # Título Invertido Conforme Solicitado
+        # Título Invertido
         elements.append(Paragraph("AUDITORIA DE POSICIONAMENTO GOOGLE MAPS - TOUR360VR", style_title))
-        elements.append(HRFlowable(width="100%", thickness=2, color=colors.HexColor('#1565C0'), spaceBefore=6, spaceAfter=14))
+        elements.append(HRFlowable(width="100%", thickness=2, color=colors.HexColor('#1565C0'), spaceBefore=6, spaceAfter=16))
         
-        # Mais Espaço de Linha Antes de "Empresa Analisada"
-        elements.append(Spacer(1, 10))
+        # Maior Espaçamento de Linha Antes de "Empresa Analisada"
+        elements.append(Spacer(1, 14))
         elements.append(Paragraph(f"<b>Empresa Analisada:</b> {empresa_nome}", style_sub))
         elements.append(Paragraph(f"<b>Endereço Registrado:</b> {endereco}", style_body))
-        elements.append(Spacer(1, 14))
+        elements.append(Spacer(1, 16))
         
         cor_score_hex = obter_cor_score(score)
         elements.append(Paragraph(f"PONTUAÇÃO DE OTIMIZAÇÃO: <font color='{cor_score_hex}'><b>{score} / 100 PONTOS</b></font>", ParagraphStyle('ScorePDF', parent=style_title, fontSize=13)))
-        elements.append(Spacer(1, 12))
+        elements.append(Spacer(1, 14))
         
         elements.append(Paragraph("<b>Análise Detalhada dos Critérios Avaliados:</b>", style_sub))
-        elements.append(Spacer(1, 6))
+        elements.append(Spacer(1, 8))
         
         tabela_dados = [[Paragraph("Critério de Otimização", style_cell_bold), Paragraph("Diagnóstico do Perfil", style_cell_bold)]]
         for crit in criterios:
@@ -453,18 +463,13 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
         ]))
         elements.append(t)
         
-        # Mais Espaço de Linha Antes de "Plano de Ação Sugerido"
-        elements.append(Spacer(1, 24))
+        # Maior Espaçamento de Linha Antes de "Plano de Ação Sugerido"
+        elements.append(Spacer(1, 30))
         elements.append(Paragraph("<b>Plano de Ação Sugerido para Alta Visibilidade:</b>", style_sub))
-        elements.append(Spacer(1, 4))
+        elements.append(Spacer(1, 6))
         elements.append(Paragraph("1. Implantação de Tour Virtual 360° Interativo integrado ao Google Street View.<br/>2. Atualização visual contínua da galeria de fotos e gestão ativa de avaliações.<br/>3. Alinhamento de horários de funcionamento e inclusão do site oficial.", style_body))
         
-        # Rodapé Empurrado Quase no Final da Página
-        elements.append(Spacer(1, 40))
-        elements.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor('#CCCCCC'), spaceBefore=2, spaceAfter=6))
-        elements.append(Paragraph("Tour360VR • Rubens Okamoto | contato@tour360vr.com.br | www.tour360vr.com.br", ParagraphStyle('Foot', parent=style_body, fontSize=8, alignment=1)))
-        
-        doc.build(elements)
+        doc.build(elements, onFirstPage=desenhar_rodape_fixo, onLaterPages=desenhar_rodape_fixo)
         val = buffer.getvalue()
         buffer.close()
         return val
