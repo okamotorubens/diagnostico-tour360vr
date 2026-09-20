@@ -1,11 +1,11 @@
 import os
 import re
+import io
 import requests
 import smtplib
-import tempfile
 import streamlit as st
 
-# ReportLab para geração do PDF
+# ReportLab para geração e diagramação do PDF
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -26,7 +26,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Estilo CSS para Container Compacto Cinza/Azulado e Inputs Brancos
+# CSS para Container Compacto Cinza/Azulado e Inputs 100% Brancos
 custom_css = """
 <style>
     html, body, [data-testid="stAppViewContainer"], .main {
@@ -174,7 +174,6 @@ GOOGLE_API_KEY = "AIzaSyA8ul_9QICNyqxrHgT-CURIZmd1sikHn5U"
 
 BIGIN_CLIENT_ID = "1000.COI8SBR9O0RCMGCL7WKEYUJMBZCR8X"
 BIGIN_CLIENT_SECRET = "c60642fb374cbad9753c456d8713b6349417187345"
-BIGIN_GRANT_CODE = "1000.1d8cf92fc3316b79cd5e0895ea53bcfb.8d044e6649d153dd3db7e5b9d5d3f3e2"
 
 SMTP_SERVER = "smtp.tour360vr.com.br"
 SMTP_PORT = 587
@@ -190,7 +189,7 @@ def obter_cor_score(score):
         return "#8DC63F"
 
 # ==========================================
-# CÁLCULO DE SCORE DE 9 CRITÉRIOS
+# CÁLCULO DE SCORE RIGOROSO E REALISTA
 # ==========================================
 def consultar_score_google_rigoroso(nome_empresa):
     url = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={requests.utils.quote(nome_empresa)}&key={GOOGLE_API_KEY}"
@@ -208,6 +207,7 @@ def consultar_score_google_rigoroso(nome_empresa):
             res_details = requests.get(url_details, headers=headers, timeout=10).json()
             details = res_details.get("result", place)
 
+            # Algoritmo de auditoria rigorosa
             score = 0
             criterios_eval = []
 
@@ -218,71 +218,71 @@ def consultar_score_google_rigoroso(nome_empresa):
             else:
                 criterios_eval.append("1. Status Operacional: Pendente / Inativo (0 pts)")
 
-            # 2. Avaliações e Volume (+20)
+            # 2. Avaliações e Volume (+15)
             rating = details.get("rating", 0)
             reviews = details.get("user_ratings_total", 0)
-            if rating >= 4.7 and reviews >= 100:
-                score += 20
-                criterios_eval.append(f"2. Avaliações dos Clientes: Excelente - {rating}★ em {reviews} avaliações (+20 pts)")
-            elif rating >= 4.0 and reviews >= 15:
-                score += 10
-                criterios_eval.append(f"2. Avaliações dos Clientes: Moderado - {rating}★ em {reviews} avaliações (+10 pts)")
+            if rating >= 4.8 and reviews >= 80:
+                score += 15
+                criterios_eval.append(f"2. Avaliações dos Clientes: Excelente ({rating}★ em {reviews} avaliações) (+15 pts)")
+            elif rating >= 4.0 and reviews >= 10:
+                score += 8
+                criterios_eval.append(f"2. Avaliações dos Clientes: Moderado ({rating}★ em {reviews} avaliações) (+8 pts)")
             else:
-                criterios_eval.append(f"2. Avaliações dos Clientes: Baixo volume ({rating}★ em {reviews} avaliações) (0 pts)")
+                criterios_eval.append(f"2. Avaliações dos Clientes: Insuficiente ({rating}★ em {reviews} avaliações) (0 pts)")
 
-            # 3. Galeria Visual e Fotos (+15)
+            # 3. Galeria Visual e Fotos (+10)
             photos = details.get("photos", [])
             if len(photos) >= 30:
-                score += 15
-                criterios_eval.append(f"3. Galeria Visual: Completa com {len(photos)} fotos (+15 pts)")
+                score += 10
+                criterios_eval.append(f"3. Galeria Visual: Completa ({len(photos)} fotos) (+10 pts)")
             elif len(photos) >= 5:
-                score += 8
-                criterios_eval.append(f"3. Galeria Visual: Parcial com {len(photos)} fotos (+8 pts)")
+                score += 5
+                criterios_eval.append(f"3. Galeria Visual: Parcial ({len(photos)} fotos) (+5 pts)")
             else:
                 criterios_eval.append("3. Galeria Visual: Insuficiente (0 pts)")
 
             # 4. Telefone Cadastrado (+10)
             if details.get("formatted_phone_number"):
                 score += 10
-                criterios_eval.append("4. Telefone Principal: Configurado (+10 pts)")
+                criterios_eval.append("4. Telefone Principal: Cadastrado (+10 pts)")
             else:
-                criterios_eval.append("4. Telefone Principal: Não cadastrado (0 pts)")
+                criterios_eval.append("4. Telefone Principal: Ausente (0 pts)")
 
-            # 5. Website Próprio (+15)
+            # 5. Website Próprio (+10)
             website = details.get("website", "")
             if website and not any(x in website for x in ["facebook", "instagram", "site.google"]):
-                score += 15
-                criterios_eval.append("5. Website Institucional: Domínio próprio vinculado (+15 pts)")
+                score += 10
+                criterios_eval.append("5. Website Institucional: Domínio próprio vinculado (+10 pts)")
             elif website:
-                score += 5
-                criterios_eval.append("5. Website Institucional: Link genérico / Rede Social (+5 pts)")
+                score += 3
+                criterios_eval.append("5. Website Institucional: Link secundário / Rede Social (+3 pts)")
             else:
                 criterios_eval.append("5. Website Institucional: Ausente (0 pts)")
 
-            # 6. Horários de Funcionamento (+10)
+            # 6. Horários de Funcionamento (+5)
             if details.get("opening_hours"):
-                score += 10
-                criterios_eval.append("6. Horários de Atendimento: Atualizados (+10 pts)")
+                score += 5
+                criterios_eval.append("6. Horários de Atendimento: Atualizados (+5 pts)")
             else:
                 criterios_eval.append("6. Horários de Atendimento: Não informados (0 pts)")
 
-            # 7. Endereço Completo (+10)
+            # 7. Endereço Completo (+5)
             addr = details.get("formatted_address", "")
             if addr and any(char.isdigit() for char in addr):
-                score += 10
-                criterios_eval.append("7. Endereço Físico: Verificado com número (+10 pts)")
+                score += 5
+                criterios_eval.append("7. Endereço Físico: Completo com número (+5 pts)")
             else:
                 criterios_eval.append("7. Endereço Físico: Incompleto (0 pts)")
 
-            # 8. Categorias de Atuação (+10)
+            # 8. Categoria Principal (+5)
             if details.get("types"):
-                score += 10
-                criterios_eval.append("8. Categoria Principal: Configurada (+10 pts)")
+                score += 5
+                criterios_eval.append("8. Categoria Principal: Configurada (+5 pts)")
             else:
                 criterios_eval.append("8. Categoria Principal: Ausente (0 pts)")
 
-            # 9. Tour Virtual 360° Interativo
-            criterios_eval.append("9. Tour Virtual 360° Interativo: Ausente no perfil Google (Oportunidade de Otimização)")
+            # 9. Tour Virtual 360° Interativo (Item Decisivo do Diagnóstico)
+            criterios_eval.append("9. Tour Virtual 360° Street View: Não detectado no perfil (Pendente de Otimização)")
 
             return {
                 "sucesso": True,
@@ -298,15 +298,13 @@ def consultar_score_google_rigoroso(nome_empresa):
     return {"sucesso": False, "mensagem": "Empresa não encontrada no Google."}
 
 # ==========================================
-# GERADOR DE PDF ROBUSTO (SEM ERROS DE TABELA)
+# GERADOR DE PDF DIRETO EM MEMÓRIA / BYTES
 # ==========================================
-def gerar_pdf_diagnostico_arquivo(empresa_nome, endereco, score, criterios):
+def gerar_pdf_diagnostico_bytes(empresa_nome, endereco, score, criterios):
     try:
-        temp_dir = tempfile.gettempdir()
-        file_path = os.path.join(temp_dir, f"Diagnostico_{re.sub(r'[^a-zA-Z0-9]', '_', empresa_nome)}.pdf")
-        
+        buffer = io.BytesIO()
         doc = SimpleDocTemplate(
-            file_path,
+            buffer,
             pagesize=A4,
             leftMargin=30,
             rightMargin=30,
@@ -362,80 +360,17 @@ def gerar_pdf_diagnostico_arquivo(empresa_nome, endereco, score, criterios):
         elements.append(Paragraph("Tour360VR • Rubens Okamoto | contato@tour360vr.com.br | www.tour360vr.com.br", ParagraphStyle('Foot', parent=style_body, fontSize=7.5, alignment=1)))
         
         doc.build(elements)
-        return file_path
+        pdf_bytes = buffer.getvalue()
+        buffer.close()
+        return pdf_bytes
     except Exception as e:
-        print(f"Erro na geração do PDF: {e}")
+        print(f"Erro na construção do PDF: {e}")
         return None
 
 # ==========================================
-# INTEGRAÇÃO ZOHO BIGIN CRM
-# ==========================================
-def obter_access_token_bigin():
-    if "bigin_refresh_token" in st.session_state:
-        # Usar refresh token se já capturado
-        rf = st.session_state["bigin_refresh_token"]
-        for domain in ["com", "com.br"]:
-            try:
-                url_token = f"https://accounts.zoho.{domain}/oauth/v2/token?refresh_token={rf}&client_id={BIGIN_CLIENT_ID}&client_secret={BIGIN_CLIENT_SECRET}&grant_type=refresh_token"
-                res = requests.post(url_token, timeout=8).json()
-                if "access_token" in res:
-                    return res["access_token"], domain
-            except Exception:
-                pass
-
-    # Troca do código inicial
-    for domain in ["com", "com.br"]:
-        try:
-            url_token = f"https://accounts.zoho.{domain}/oauth/v2/token"
-            data = {
-                "grant_type": "authorization_code",
-                "client_id": BIGIN_CLIENT_ID,
-                "client_secret": BIGIN_CLIENT_SECRET,
-                "code": BIGIN_GRANT_CODE
-            }
-            res = requests.post(url_token, data=data, timeout=8).json()
-            if "refresh_token" in res:
-                st.session_state["bigin_refresh_token"] = res["refresh_token"]
-            if "access_token" in res:
-                return res["access_token"], domain
-        except Exception as e:
-            print(f"Erro OAuth domain {domain}: {e}")
-    return None, None
-
-def enviar_lead_bigin(nome_lead, email_lead, whatsapp_lead, empresa_consultada, score):
-    try:
-        access_token, domain = obter_access_token_bigin()
-        if not access_token:
-            return False
-
-        headers = {
-            "Authorization": f"Zoho-oauthtoken {access_token}",
-            "Content-Type": "application/json"
-        }
-
-        payload = {
-            "data": [
-                {
-                    "Last_Name": nome_lead,
-                    "Email": email_lead,
-                    "Phone": whatsapp_lead,
-                    "Description": f"Lead Diagnóstico Google:\nEmpresa: {empresa_consultada}\nScore: {score}/100"
-                }
-            ]
-        }
-
-        url_contact = f"https://www.zohoapis.{domain}/bigin/v1/Contacts"
-        res_contact = requests.post(url_contact, json=payload, headers=headers, timeout=8)
-        return res_contact.status_code in [200, 201]
-    except Exception as e:
-        print(f"Erro no Zoho Bigin: {e}")
-        return False
-
-# ==========================================
-# ENVIO DE E-MAILS COM ANTI-SPAM COMPLETO
+# ENVIO DE E-MAILS COM ATTACHMENT EM MEMÓRIA
 # ==========================================
 def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dados_busca):
-    pdf_file_path = None
     try:
         empresa_nome = dados_busca['nome']
         score = dados_busca['score']
@@ -443,13 +378,14 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
         criterios = dados_busca.get('criterios', [])
         cor_score_hex = obter_cor_score(score)
 
-        pdf_file_path = gerar_pdf_diagnostico_arquivo(empresa_nome, endereco, score, criterios)
+        # Gera o PDF em memória (Bytes)
+        pdf_data = gerar_pdf_diagnostico_bytes(empresa_nome, endereco, score, criterios)
 
         server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
         server.starttls()
         server.login(SMTP_USER, SMTP_PASS)
 
-        # 1. E-mail Notificação Interna (Design Moderno Restaurado)
+        # 1. E-mail Notificação Interna
         msg_admin = MIMEMultipart('mixed')
         msg_admin['From'] = f"Tour360VR <{SMTP_USER}>"
         msg_admin['To'] = SMTP_USER
@@ -478,17 +414,16 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
         """
         msg_admin.attach(MIMEText(corpo_admin_html, 'html', 'utf-8'))
         
-        if pdf_file_path and os.path.exists(pdf_file_path):
-            with open(pdf_file_path, 'rb') as f:
-                p_admin = MIMEBase('application', 'pdf')
-                p_admin.set_payload(f.read())
-                encoders.encode_base64(p_admin)
-                p_admin.add_header('Content-Disposition', 'attachment', filename=f"Diagnostico_{re.sub(r'[^a-zA-Z0-9]', '_', empresa_nome)}.pdf")
-                msg_admin.attach(p_admin)
+        if pdf_data:
+            p_admin = MIMEBase('application', 'pdf')
+            p_admin.set_payload(pdf_data)
+            encoders.encode_base64(p_admin)
+            p_admin.add_header('Content-Disposition', 'attachment', filename=f"Diagnostico_{re.sub(r'[^a-zA-Z0-9]', '_', empresa_nome)}.pdf")
+            msg_admin.attach(p_admin)
 
         server.send_message(msg_admin)
 
-        # 2. E-mail Cliente (Anti-Spam Estruturado)
+        # 2. E-mail Cliente
         msg_cliente = MIMEMultipart('mixed')
         msg_cliente['From'] = f"Rubens Okamoto | Tour360VR <{SMTP_USER}>"
         msg_cliente['To'] = email_lead
@@ -514,13 +449,12 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
         """
         msg_cliente.attach(MIMEText(corpo_html_cliente, 'html', 'utf-8'))
 
-        if pdf_file_path and os.path.exists(pdf_file_path):
-            with open(pdf_file_path, 'rb') as f:
-                p_cliente = MIMEBase('application', 'pdf')
-                p_cliente.set_payload(f.read())
-                encoders.encode_base64(p_cliente)
-                p_cliente.add_header('Content-Disposition', 'attachment', filename=f"Diagnostico_Google_{re.sub(r'[^a-zA-Z0-9]', '_', empresa_nome)}.pdf")
-                msg_cliente.attach(p_cliente)
+        if pdf_data:
+            p_cliente = MIMEBase('application', 'pdf')
+            p_cliente.set_payload(pdf_data)
+            encoders.encode_base64(p_cliente)
+            p_cliente.add_header('Content-Disposition', 'attachment', filename=f"Diagnostico_Google_{re.sub(r'[^a-zA-Z0-9]', '_', empresa_nome)}.pdf")
+            msg_cliente.attach(p_cliente)
 
         server.send_message(msg_cliente)
         server.quit()
@@ -529,12 +463,6 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
     except Exception as e:
         print(f"Erro na rotina de envio de e-mails: {e}")
         return False
-    finally:
-        if pdf_file_path and os.path.exists(pdf_file_path):
-            try:
-                os.remove(pdf_file_path)
-            except Exception:
-                pass
 
 # ==========================================
 # INTERFACE DO USUÁRIO
@@ -597,10 +525,7 @@ if "resultado_busca" in st.session_state:
         else:
             whats_completo = "55" + apenas_numeros
 
-            # 1. Envia para o Bigin CRM
-            enviar_lead_bigin(nome_lead, email_lead, whats_completo, dados['nome'], dados['score'])
-            
-            # 2. Envia e-mails com o PDF
+            # Envia e-mails com o PDF
             com_sucesso = enviar_emails_diagnostico_completo(nome_lead, email_lead, whats_completo, dados)
             
             if com_sucesso:
