@@ -25,7 +25,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# CSS Definitivo: Oculta Ícones Flutuantes, Menus, Header, Footer e reduz espaçamentos inferiores
+# CSS Definitivo para remoção de ícones flutuantes e ajuste de margens
 custom_css = """
 <style>
     html, body, [data-testid="stAppViewContainer"], .main, .stApp {
@@ -42,7 +42,7 @@ custom_css = """
         max-width: 900px !important;
     }
 
-    /* Oculta rigorosamente menus, barras e ícones flutuantes inferiores do Streamlit */
+    /* Oculta todos os widgets flutuantes, rodapés e badges no canto inferior */
     [data-testid="stHeader"], 
     [data-testid="stAppHeader"],
     [data-testid="stToolbar"], 
@@ -55,9 +55,10 @@ custom_css = """
     .viewerBadge_container__1QSob, 
     .styles_viewerBadge__1yB5_,
     button[title="View source"],
-    [data-testid="stStatusWidget"],
     div[class*="viewerBadge"],
-    div[class*="styles_viewerBadge"] {
+    div[class*="styles_viewerBadge"],
+    div[class*="stStatusWidget"],
+    #root > div:nth-child(1) > div > div > div > div > section > div > div > div > div:nth-child(2) {
         display: none !important;
         visibility: hidden !important;
         opacity: 0 !important;
@@ -196,7 +197,7 @@ st.markdown(custom_css, unsafe_allow_html=True)
 GOOGLE_API_KEY = "AIzaSyA8ul_9QICNyqxrHgT-CURIZmd1sikHn5U"
 
 SMTP_SERVER = "smtp.tour360vr.com.br"
-SMTP_PORT_SSL = 465  # Usando porta SSL 465 para evitar Timeout no Streamlit Cloud
+SMTP_PORT_SSL = 465
 SMTP_USER = "contato@tour360vr.com.br"
 SMTP_PASS = "Kakaroto@2026"
 
@@ -404,7 +405,7 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
         return None
 
 # ==========================================
-# ENVIO DE E-MAILS COM SMTP_SSL
+# ENVIO DE E-MAILS COM ESPAÇAMENTO AJUSTADO
 # ==========================================
 def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dados_busca):
     try:
@@ -419,13 +420,12 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
         if not pdf_bytes:
             return False, "Não foi possível gerar o arquivo PDF do relatório."
 
-        # Conexão rápida e direta via SSL na porta 465 (evita o erro de timeout na porta 587)
         server = smtplib.SMTP_SSL(SMTP_SERVER, SMTP_PORT_SSL, timeout=15)
         server.login(SMTP_USER, SMTP_PASS)
 
         filename_clean = f"Diagnostico_{re.sub(r'[^a-zA-Z0-9]', '_', empresa_nome)}.pdf"
 
-        # 1. E-mail Admin Notificação
+        # 1. E-mail Admin
         msg_admin = MIMEMultipart('mixed')
         msg_admin['From'] = f"Tour360VR <{SMTP_USER}>"
         msg_admin['To'] = SMTP_USER
@@ -436,21 +436,21 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
         <!DOCTYPE html>
         <html>
         <head><meta charset="utf-8"></head>
-        <body style="font-family: Arial, sans-serif; background-color: #F4F6F9; padding: 20px; margin: 0;">
-            <div style="max-width: 580px; background-color: #FFFFFF; padding: 25px; border-radius: 10px; border-top: 5px solid #1565C0; margin: 0 auto; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+        <body style="font-family: Arial, sans-serif; background-color: #F4F6F9; padding: 15px; margin: 0;">
+            <div style="max-width: 580px; background-color: #FFFFFF; padding: 20px; border-radius: 10px; border-top: 5px solid #1565C0; margin: 0 auto; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
                 <h2 style="color: #111111; margin-top: 0; font-size: 18px;">Novo Lead Capturado no Site!</h2>
-                <hr style="border: 0; border-top: 1px solid #EEEEEE; margin: 15px 0;">
-                <p style="font-size: 14px; margin: 5px 0;"><b>Empresa:</b> {empresa_nome}</p>
-                <p style="font-size: 14px; margin: 5px 0;"><b>Pontuação:</b> <span style="font-size: 16px; color: {cor_score_hex}; font-weight: bold;">{score} / 100</span></p>
+                <hr style="border: 0; border-top: 1px solid #EEEEEE; margin: 12px 0;">
+                <p style="font-size: 14px; margin: 4px 0;"><b>Empresa:</b> {empresa_nome}</p>
+                <p style="font-size: 14px; margin: 4px 0;"><b>Pontuação:</b> <span style="font-size: 16px; color: {cor_score_hex}; font-weight: bold;">{score} / 100</span></p>
                 
-                <div style="background-color: #F8F9FA; padding: 15px; border-radius: 8px; border-left: 4px solid #1565C0; margin: 18px 0;">
-                    <p style="margin: 4px 0; font-size: 14px;"><b>Nome:</b> {nome_lead}</p>
-                    <p style="margin: 4px 0; font-size: 14px;"><b>E-mail:</b> <a href="mailto:{email_lead}" style="color: #1565C0;">{email_lead}</a></p>
-                    <p style="margin: 4px 0; font-size: 14px;"><b>WhatsApp:</b> <a href="https://wa.me/{whatsapp_lead}" target="_blank" style="color: #1565C0; font-weight: bold;">+{whatsapp_lead}</a></p>
+                <div style="background-color: #F8F9FA; padding: 12px; border-radius: 8px; border-left: 4px solid #1565C0; margin: 14px 0;">
+                    <p style="margin: 3px 0; font-size: 14px;"><b>Nome:</b> {nome_lead}</p>
+                    <p style="margin: 3px 0; font-size: 14px;"><b>E-mail:</b> <a href="mailto:{email_lead}" style="color: #1565C0;">{email_lead}</a></p>
+                    <p style="margin: 3px 0; font-size: 14px;"><b>WhatsApp:</b> <a href="https://wa.me/{whatsapp_lead}" target="_blank" style="color: #1565C0; font-weight: bold;">+{whatsapp_lead}</a></p>
                 </div>
 
-                <hr style="border: 0; border-top: 1px solid #EEEEEE; margin: 25px 0 15px 0;">
-                <div style="text-align: center; color: #777777; font-size: 12px; line-height: 1.5;">
+                <hr style="border: 0; border-top: 1px solid #EEEEEE; margin: 18px 0 12px 0;">
+                <div style="text-align: center; color: #777777; font-size: 12px; line-height: 1.4;">
                     <p style="margin: 2px 0;"><b>Tour360VR • Soluções em Imagem e Presença Digital</b></p>
                     <p style="margin: 2px 0;">Rubens Okamoto | <a href="mailto:contato@tour360vr.com.br" style="color: #1565C0; text-decoration: none;">contato@tour360vr.com.br</a></p>
                     <p style="margin: 2px 0;"><a href="https://www.tour360vr.com.br" target="_blank" style="color: #1565C0; text-decoration: none;">www.tour360vr.com.br</a></p>
@@ -468,7 +468,7 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
 
         server.send_message(msg_admin)
 
-        # 2. E-mail Cliente
+        # 2. E-mail Cliente (Espaçamento compacto)
         msg_cliente = MIMEMultipart('mixed')
         msg_cliente['From'] = f"Rubens Okamoto | Tour360VR <{SMTP_USER}>"
         msg_cliente['To'] = email_lead
@@ -478,16 +478,16 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
         corpo_html_cliente = f"""<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"></head>
-<body style="font-family: Arial, sans-serif; color: #333333; font-size: 15px; line-height: 1.4; background-color: #FFFFFF; padding: 20px;">
+<body style="font-family: Arial, sans-serif; color: #333333; font-size: 15px; line-height: 1.35; background-color: #FFFFFF; padding: 5px; margin: 0;">
 <div style="max-width: 600px; margin: 0 auto;">
-Olá, {nome_lead}!<br/><br/><br/>
+Olá, {nome_lead}!<br/><br/>
 Ficamos felizes pelo seu interesse em melhorar a presença online da sua empresa!<br/><br/>
 Recebemos a solicitação de diagnóstico para <b>{empresa_nome}</b>.<br/><br/>
-Sua pontuação de otimização atual no Google é: <b style="font-size: 18px; color: {cor_score_hex}; font-weight: bold;">{score}/100</b>.<br/><br/>
-Anexamos a este e-mail o seu relatório detalhado em PDF.<br/><br/><br/>
-Em breve, um especialista entrará em contato para apresentar como alavancar a visibilidade da sua empresa.<br/><br/><br/>
-<hr style="border: 0; border-top: 1px solid #EEEEEE; margin: 20px 0 15px 0;"/>
-<div style="color: #555555; font-size: 13px; line-height: 1.4;">
+Sua pontuação de otimização atual no Google é: <b style="font-size: 17px; color: {cor_score_hex}; font-weight: bold;">{score}/100</b>.<br/><br/>
+Anexamos a este e-mail o seu relatório detalhado em PDF.<br/><br/>
+Em breve, um especialista entrará em contato para apresentar como alavancar a visibilidade da sua empresa.<br/>
+<hr style="border: 0; border-top: 1px solid #EEEEEE; margin: 12px 0 8px 0;"/>
+<div style="color: #555555; font-size: 13px; line-height: 1.3;">
 Atenciosamente,<br/>
 <b>Rubens Okamoto | Tour360VR</b><br/>
 <a href="https://www.tour360vr.com.br" target="_blank" style="color: #1565C0; text-decoration: none;">www.tour360vr.com.br</a>
