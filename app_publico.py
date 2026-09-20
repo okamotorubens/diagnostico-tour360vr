@@ -35,7 +35,6 @@ custom_css = """
         color: #000000 !important;
     }
     
-    /* Expansão da largura para 900px */
     .block-container {
         padding-top: 0.5rem !important;
         padding-bottom: 0.5rem !important;
@@ -60,7 +59,6 @@ custom_css = """
         box-shadow: 0 2px 8px rgba(0,0,0,0.04) !important;
     }
 
-    /* Título 2 (H2 / Title 2) em Linha Única */
     .titulo-principal {
         text-align: center;
         color: #111111 !important;
@@ -68,7 +66,6 @@ custom_css = """
         font-weight: 800;
         margin-bottom: 0.3rem;
         line-height: 1.2;
-        white-space: nowrap;
         font-family: 'Arial', sans-serif;
     }
     
@@ -139,7 +136,6 @@ custom_css = """
         margin-bottom: 0.2rem !important;
     }
 
-    /* Botões em Tom Azul Real */
     div[data-testid="stButton"], div.stButton {
         display: flex !important;
         justify-content: center !important;
@@ -169,7 +165,6 @@ custom_css = """
         font-weight: bold !important;
     }
 
-    /* Card de Sucesso em Destaque no Topo da Visão */
     .card-sucesso-destaque {
         background-color: #E8F5E9 !important;
         border: 2px solid #2E7D32 !important;
@@ -447,7 +442,7 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
 
         server.send_message(msg_admin)
 
-        # 2. E-mail Cliente
+        # 2. E-mail Cliente (Com a frase restaurada)
         msg_cliente = MIMEMultipart('mixed')
         msg_cliente['From'] = f"Rubens Okamoto | Tour360VR <{SMTP_USER}>"
         msg_cliente['To'] = email_lead
@@ -461,6 +456,7 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
         <body style="font-family: Arial, sans-serif; color: #333333; line-height: 1.6; background-color: #FFFFFF; padding: 15px;">
             <div style="max-width: 600px; margin: 0 auto;">
                 <p>Olá, <b>{nome_lead}</b>!</p>
+                <p>Ficamos felizes pelo seu interesse em melhorar a presença online da sua empresa!</p>
                 <p>Recebemos a solicitação de diagnóstico para a empresa <b>{empresa_nome}</b>.</p>
                 <p>Sua pontuação de otimização atual no Google é: <b style="font-size: 18px; color: {cor_score_hex};">{score}/100</b>.</p>
                 <p>Anexamos a este e-mail o seu relatório detalhado em PDF.</p>
@@ -493,7 +489,6 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
 # ==========================================
 # INTERFACE DO USUÁRIO STREAMLIT
 # ==========================================
-# TÍTULO 2 EM UMA LINHA SÓ
 st.markdown('<div class="titulo-principal">Pronto para destacar sua empresa no Google?</div>', unsafe_allow_html=True)
 st.markdown('<div class="instrucao-subtitulo">Digite o Nome Comercial exato da sua empresa seguido da Cidade e Estado.</div>', unsafe_allow_html=True)
 
@@ -526,16 +521,12 @@ if "resultado_busca" in st.session_state:
     """
     st.markdown(html_card_resultado, unsafe_allow_html=True)
 
-    # Exibe o aviso de sucesso no topo dos resultados, logo acima do formulário, se já enviado
+    # Exibe o aviso de sucesso no topo dos resultados
     if st.session_state.get("envio_sucesso"):
         st.markdown("""
         <div id="aviso-sucesso" class="card-sucesso-destaque">
             ✅ Diagnóstico enviado com sucesso! Verifique sua caixa de entrada e spam.
         </div>
-        <script>
-            var elem = document.getElementById('aviso-sucesso');
-            if (elem) { elem.scrollIntoView({behavior: 'smooth', block: 'center'}); }
-        </script>
         """, unsafe_allow_html=True)
 
     # Subtítulo do Formulário
