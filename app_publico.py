@@ -1,12 +1,11 @@
 import os
 import re
-import io
 import requests
 import smtplib
 import tempfile
 import streamlit as st
 
-# Importações do ReportLab para Geração do PDF com Visual Profissional
+# ReportLab para geração de PDF
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -27,7 +26,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Estilo CSS de Alta Precisão (Elimina Scrollbar, Oculta Rodapé e Padroniza Inputs)
+# Estilo CSS de Alta Precisão (Fixa fundo BRANCO absoluto para todos os inputs e BaseWeb)
 custom_css = """
 <style>
     /* 1. Eliminar Scrollbars Laterais e Margens Excessivas */
@@ -71,31 +70,40 @@ custom_css = """
         font-family: 'Arial', sans-serif;
     }
 
-    /* 4. Inputs com Fundo Branco Limpo e Texto Escuro */
-    .stTextInput > div > div > input {
+    /* 4. FIXAÇÃO ABSOLUTA DO FUNDO BRANCO EM TODOS OS INPUTS E CONTÊINERES BASEWEB */
+    div[data-baseweb="input"], 
+    div[data-baseweb="input"] > div, 
+    div[data-baseweb="base-input"],
+    .stTextInput > div,
+    .stTextInput > div > div,
+    .stTextInput input {
         background-color: #FFFFFF !important;
-        color: #111111 !important;
+        color: #000000 !important;
+        border-color: #CCCCCC !important;
+    }
+
+    .stTextInput input {
         border: 1px solid #CCCCCC !important;
         border-radius: 6px !important;
         font-size: 0.98rem !important;
         padding: 0.55rem 0.8rem !important;
         text-align: center !important;
+        color: #000000 !important;
+        background-color: #FFFFFF !important;
     }
-    .stTextInput > div > div > input:focus {
+
+    .stTextInput input:focus {
         border-color: #8DC63F !important;
         box-shadow: 0 0 4px rgba(141, 198, 63, 0.4) !important;
     }
-    .stTextInput label {
-        display: none !important;
-    }
 
-    /* Remoção do fundo escuro no autopreenchimento dos navegadores */
+    /* Remoção do fundo escuro no autopreenchimento dos navegadores (Chrome/Edge/Safari) */
     input:-webkit-autofill,
     input:-webkit-autofill:hover, 
     input:-webkit-autofill:focus, 
     input:-webkit-autofill:active {
         -webkit-box-shadow: 0 0 0 30px #FFFFFF inset !important;
-        -webkit-text-fill-color: #111111 !important;
+        -webkit-text-fill-color: #000000 !important;
     }
 
     /* Rótulos Centralizados */
@@ -145,7 +153,7 @@ custom_css = """
         font-weight: bold !important;
     }
 
-    /* Card de Alerta e Mensagens */
+    /* Card de Sucesso e Mensagens */
     .card-sucesso-destaque {
         background-color: #E8F5E9 !important;
         border: 1px solid #2E7D32 !important;
@@ -289,7 +297,7 @@ def gerar_pdf_diagnostico_arquivo(empresa_nome, endereco, score, criterios):
         elements.append(HRFlowable(width="100%", thickness=1.5, color=colors.HexColor('#1565C0'), spaceBefore=8, spaceAfter=12))
         
         # Dados da Consulta
-        elements.append(Paragraph(f"<b>Relatório de Diagnóstico do Perfil Google</b>", style_sub))
+        elements.append(Paragraph("<b>Relatório de Diagnóstico do Perfil Google</b>", style_sub))
         elements.append(Paragraph(f"<b>Empresa Analisada:</b> {empresa_nome}", style_text))
         elements.append(Paragraph(f"<b>Endereço:</b> {endereco}", style_text))
         elements.append(Spacer(1, 14))
@@ -510,33 +518,18 @@ if "resultado_busca" in st.session_state:
     st.markdown('<div class="rotulo-campo">WhatsApp</div>', unsafe_allow_html=True)
     st.markdown('<div class="subtexto-label">(DDD + 9 dígitos - Apenas números)</div>', unsafe_allow_html=True)
     
-    # Campo com Bloqueio Numérico
-    raw_whats = st.text_input("WhatsInput", value="", max_chars=11, placeholder="16991332121", label_visibility="collapsed")
-
-    # Injeção JavaScript de Segurança no DOM para Filtrar Letras Instantaneamente
-    js_filtro_numerico = """
-    <script>
-        const inputs = window.parent.document.querySelectorAll('input');
-        inputs.forEach(input => {
-            if (input.placeholder === "16991332121") {
-                input.addEventListener('input', function(e) {
-                    this.value = this.value.replace(/[^0-9]/g, '');
-                });
-            }
-        });
-    </script>
-    """
-    st.components.v1.html(js_filtro_numerico, height=0, width=0)
+    raw_whats = st.text_input("WhatsInput", value="", placeholder="16991332121", label_visibility="collapsed")
 
     if st.button("📩 Receber diagnóstico"):
+        # Extração de TODOS os dígitos numéricos (remove parenteses, traços e espaços)
         apenas_numeros = re.sub(r'\D', '', raw_whats)
         
         if not nome_lead or len(nome_lead.strip()) < 2:
             st.error("Por favor, informe seu nome completo.")
         elif not email_lead or "@" not in email_lead:
             st.error("Por favor, informe um endereço de e-mail válido.")
-        elif len(apenas_numeros) != 11:
-            st.error("❌ O campo WhatsApp deve conter exatamente 11 NÚMEROS (DDD + Celular, ex: 16991332121).")
+        elif len(apenas_numeros) < 10 or len(apenas_numeros) > 11:
+            st.error(f"❌ WhatsApp inválido. Digite apenas o DDD + Número (10 ou 11 dígitos). Você digitou {len(apenas_numeros)} números.")
         else:
             whats_completo = "55" + apenas_numeros
 
