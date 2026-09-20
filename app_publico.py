@@ -25,66 +25,72 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# CSS Ajustado: Largura maior (900px), Title 2 (H2) e layout limpo
+# CSS Ajustado: Ocultação total de ícones do Streamlit, eliminação de scroll e aumento de fontes
 custom_css = """
 <style>
+    /* Remove completamente rolagem e ajusta espaçamentos internos */
     html, body, [data-testid="stAppViewContainer"], .main {
-        overflow-x: hidden !important;
-        overflow-y: auto !important;
+        overflow: hidden !important;
         background-color: #FFFFFF !important;
         color: #000000 !important;
     }
     
     .block-container {
-        padding-top: 0.5rem !important;
-        padding-bottom: 0.5rem !important;
-        padding-left: 1rem !important;
-        padding-right: 1rem !important;
+        padding-top: 0.2rem !important;
+        padding-bottom: 0.2rem !important;
+        padding-left: 0.8rem !important;
+        padding-right: 0.8rem !important;
         max-width: 900px !important;
     }
 
-    footer, .stApp footer, [data-testid="stFooter"], header, #MainMenu, [data-testid="stHeader"], [data-testid="stToolbar"] {
+    /* Oculta Menu, Rodapé, Logotipos, Ícones de apps e Barra do Streamlit */
+    footer, .stApp footer, [data-testid="stFooter"], 
+    header, #MainMenu, [data-testid="stHeader"], [data-testid="stToolbar"],
+    [data-testid="stDecoration"], [data-testid="stStatusWidget"],
+    .viewerBadge_container__1QSob, .styles_viewerBadge__1yB5_ {
         display: none !important;
         visibility: hidden !important;
         opacity: 0 !important;
         height: 0px !important;
+        width: 0px !important;
     }
 
     .card-resultado-compacto {
         background-color: #F0F4F8 !important;
         border: 1px solid #D0D7DE !important;
         border-radius: 10px !important;
-        padding: 18px 24px !important;
-        margin: 0.8rem auto !important;
+        padding: 14px 20px !important;
+        margin: 0.5rem auto !important;
         box-shadow: 0 2px 8px rgba(0,0,0,0.04) !important;
     }
 
+    /* Aumento da Fonte dos Títulos */
     .titulo-principal {
         text-align: center;
         color: #111111 !important;
-        font-size: 2rem;
+        font-size: 2.2rem;
         font-weight: 800;
-        margin-bottom: 0.3rem;
+        margin-bottom: 0.2rem;
         line-height: 1.2;
-        font-family: 'Arial', sans-serif;
-    }
-    
-    .titulo-secundario {
-        text-align: center;
-        color: #111111 !important;
-        font-size: 1.25rem;
-        font-weight: 700;
-        margin-top: 1.2rem;
-        margin-bottom: 0.4rem;
         font-family: 'Arial', sans-serif;
     }
 
     .instrucao-subtitulo {
         text-align: center;
-        color: #555555 !important;
-        font-size: 1rem;
+        color: #444444 !important;
+        font-size: 1.1rem;
         font-weight: 600;
-        margin-bottom: 1rem;
+        margin-bottom: 0.8rem;
+        font-family: 'Arial', sans-serif;
+    }
+
+    .titulo-secundario {
+        text-align: center;
+        color: #111111 !important;
+        font-size: 1.2rem;
+        font-weight: 700;
+        margin-top: 0.8rem;
+        margin-bottom: 0.4rem;
         font-family: 'Arial', sans-serif;
     }
 
@@ -103,7 +109,7 @@ custom_css = """
         border: 1px solid #CCCCCC !important;
         border-radius: 6px !important;
         font-size: 0.98rem !important;
-        padding: 0.55rem 0.8rem !important;
+        padding: 0.5rem 0.8rem !important;
         text-align: center !important;
         color: #000000 !important;
     }
@@ -113,35 +119,28 @@ custom_css = """
         box-shadow: 0 0 4px rgba(21, 101, 192, 0.4) !important;
     }
 
-    input:-webkit-autofill,
-    input:-webkit-autofill:hover, 
-    input:-webkit-autofill:focus, 
-    input:-webkit-autofill:active {
-        -webkit-box-shadow: 0 0 0 30px #FFFFFF inset !important;
-        -webkit-text-fill-color: #000000 !important;
-    }
-
     .rotulo-campo {
         text-align: center !important;
         color: #111111 !important;
-        font-size: 0.95rem !important;
+        font-size: 0.92rem !important;
         font-weight: 700 !important;
-        margin-top: 0.4rem !important;
+        margin-top: 0.3rem !important;
         margin-bottom: 0.1rem !important;
     }
     .subtexto-label {
-        font-size: 0.8rem !important;
+        font-size: 0.78rem !important;
         color: #666666 !important;
         text-align: center !important;
         margin-bottom: 0.2rem !important;
     }
 
+    /* Botões Azuis */
     div[data-testid="stButton"], div.stButton {
         display: flex !important;
         justify-content: center !important;
         align-items: center !important;
         width: 100% !important;
-        margin: 0.6rem auto !important;
+        margin: 0.5rem auto !important;
     }
     .stButton > button {
         background-color: #1565C0 !important;
@@ -150,7 +149,7 @@ custom_css = """
         font-weight: bold !important;
         border-radius: 6px !important;
         border: none !important;
-        padding: 0.65rem 2rem !important;
+        padding: 0.6rem 2rem !important;
         cursor: pointer !important;
         width: 100% !important;
         max-width: 520px !important;
@@ -165,6 +164,7 @@ custom_css = """
         font-weight: bold !important;
     }
 
+    /* Card de Sucesso Substituto do Botão */
     .card-sucesso-destaque {
         background-color: #E8F5E9 !important;
         border: 2px solid #2E7D32 !important;
@@ -174,7 +174,8 @@ custom_css = """
         color: #1B5E20 !important;
         font-size: 1.05rem !important;
         font-weight: 700 !important;
-        margin: 0.8rem auto 1.2rem auto !important;
+        margin: 0.8rem auto !important;
+        max-width: 520px !important;
         box-shadow: 0 4px 12px rgba(46, 125, 50, 0.15) !important;
     }
 </style>
@@ -221,14 +222,12 @@ def consultar_score_google_rigoroso(nome_empresa):
             score = 0
             criterios_eval = []
 
-            # 1. Status Operacional (+10)
             if details.get("business_status") == "OPERATIONAL":
                 score += 10
                 criterios_eval.append("1. Status Operacional: Ativo no Google Maps (+10 pts)")
             else:
                 criterios_eval.append("1. Status Operacional: Pendente / Inativo (0 pts)")
 
-            # 2. Avaliações dos Clientes (+20)
             rating = details.get("rating", 0)
             reviews = details.get("user_ratings_total", 0)
             if rating >= 4.8 and reviews >= 100:
@@ -240,7 +239,6 @@ def consultar_score_google_rigoroso(nome_empresa):
             else:
                 criterios_eval.append(f"2. Avaliações dos Clientes: Volume Insuficiente ({rating}★ em {reviews} avaliações) (0 pts)")
 
-            # 3. Galeria Visual / Fotos (+20)
             photos = details.get("photos", [])
             if len(photos) >= 30:
                 score += 20
@@ -251,14 +249,12 @@ def consultar_score_google_rigoroso(nome_empresa):
             else:
                 criterios_eval.append("3. Galeria Visual: Insuficiente (0 pts)")
 
-            # 4. Telefone Principal (+5)
             if details.get("formatted_phone_number"):
                 score += 5
                 criterios_eval.append("4. Telefone Principal: Cadastrado (+5 pts)")
             else:
                 criterios_eval.append("4. Telefone Principal: Ausente (0 pts)")
 
-            # 5. Website Próprio Institucional (+20)
             website = details.get("website", "")
             if website and not any(x in website for x in ["facebook", "instagram", "site.google", "wa.me", "linktr.ee"]):
                 score += 20
@@ -266,14 +262,12 @@ def consultar_score_google_rigoroso(nome_empresa):
             else:
                 criterios_eval.append("5. Website Institucional: Ausente / Link Genérico (0 pts)")
 
-            # 6. Horários de Atendimento (+5)
             if details.get("opening_hours"):
                 score += 5
                 criterios_eval.append("6. Horários de Atendimento: Configurados (+5 pts)")
             else:
                 criterios_eval.append("6. Horários de Atendimento: Incompletos (0 pts)")
 
-            # 7. Endereço Físico (+10)
             addr = details.get("formatted_address", "")
             if addr and any(char.isdigit() for char in addr):
                 score += 10
@@ -281,14 +275,12 @@ def consultar_score_google_rigoroso(nome_empresa):
             else:
                 criterios_eval.append("7. Endereço Físico: Incompleto (0 pts)")
 
-            # 8. Categoria Principal (+10)
             if details.get("types"):
                 score += 10
                 criterios_eval.append("8. Categoria Principal: Mapeada (+10 pts)")
             else:
                 criterios_eval.append("8. Categoria Principal: Ausente (0 pts)")
 
-            # 9. Tour Virtual 360° Interativo (Trava Oficial de 10/100)
             criterios_eval.append("9. Tour Virtual 360° Street View: Ausente (Penalização severa de visibilidade)")
             score = min(score, 10)
 
@@ -376,7 +368,7 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
         return None
 
 # ==========================================
-# ENVIO DE E-MAILS COM ANEXO EM MEMÓRIA E RODAPÉ
+# ENVIO DE E-MAILS COM ESTRUTURA E ESPAÇAMENTOS SOLICITADOS
 # ==========================================
 def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dados_busca):
     try:
@@ -386,7 +378,6 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
         criterios = dados_busca.get('criterios', [])
         cor_score_hex = obter_cor_score(score)
 
-        # Gera o arquivo PDF direto na memória RAM (BytesIO)
         pdf_bytes = gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios)
 
         if not pdf_bytes:
@@ -422,7 +413,6 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
                     <p style="margin: 4px 0; font-size: 14px;"><b>WhatsApp:</b> <a href="https://wa.me/{whatsapp_lead}" target="_blank" style="color: #1565C0; font-weight: bold;">+{whatsapp_lead}</a></p>
                 </div>
 
-                <!-- RODAPÉ INSTITUCIONAL -->
                 <hr style="border: 0; border-top: 1px solid #EEEEEE; margin: 25px 0 15px 0;">
                 <div style="text-align: center; color: #777777; font-size: 12px; line-height: 1.5;">
                     <p style="margin: 2px 0;"><b>Tour360VR • Soluções em Imagem e Presença Digital</b></p>
@@ -442,7 +432,7 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
 
         server.send_message(msg_admin)
 
-        # 2. E-mail Cliente (Com a frase restaurada)
+        # 2. E-mail Cliente com Formatação exata solicitada
         msg_cliente = MIMEMultipart('mixed')
         msg_cliente['From'] = f"Rubens Okamoto | Tour360VR <{SMTP_USER}>"
         msg_cliente['To'] = email_lead
@@ -455,14 +445,19 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
         <head><meta charset="utf-8"></head>
         <body style="font-family: Arial, sans-serif; color: #333333; line-height: 1.6; background-color: #FFFFFF; padding: 15px;">
             <div style="max-width: 600px; margin: 0 auto;">
-                <p>Olá, <b>{nome_lead}</b>!</p>
-                <p>Ficamos felizes pelo seu interesse em melhorar a presença online da sua empresa!</p>
-                <p>Recebemos a solicitação de diagnóstico para a empresa <b>{empresa_nome}</b>.</p>
-                <p>Sua pontuação de otimização atual no Google é: <b style="font-size: 18px; color: {cor_score_hex};">{score}/100</b>.</p>
-                <p>Anexamos a este e-mail o seu relatório detalhado em PDF.</p>
-                <p>Em breve, um especialista entrará em contato via WhatsApp para apresentar como atingir a nota máxima e alavancar a visibilidade da sua empresa.</p>
-                <br>
-                <hr style="border: 0; border-top: 1px solid #EEEEEE; margin: 20px 0 15px 0;">
+                <p style="margin: 0 0 24px 0;">Olá, {nome_lead}!</p>
+                
+                <p style="margin: 0 0 16px 0;">Ficamos felizes pelo seu interesse em melhorar a presença online da sua empresa!</p>
+                
+                <p style="margin: 0 0 16px 0;">Recebemos a solicitação de diagnóstico para <b>{empresa_nome}</b>.</p>
+                
+                <p style="margin: 0 0 16px 0;">Sua pontuação de otimização atual no Google é: <b style="font-size: 18px; color: {cor_score_hex}; font-weight: bold;">{score}/100</b>.</p>
+                
+                <p style="margin: 0 0 24px 0;">Anexamos a este e-mail o seu relatório detalhado em PDF.</p>
+                
+                <p style="margin: 0 0 24px 0;">Em breve, um especialista entrará em contato para apresentar como alavancar a visibilidade da sua empresa.</p>
+                
+                <hr style="border: 0; border-top: 1px solid #EEEEEE; margin: 24px 0 15px 0;">
                 <div style="color: #555555; font-size: 13px; line-height: 1.5;">
                     <p style="margin: 2px 0;">Atenciosamente,</p>
                     <p style="margin: 2px 0;"><b>Rubens Okamoto | Tour360VR</b></p>
@@ -521,14 +516,6 @@ if "resultado_busca" in st.session_state:
     """
     st.markdown(html_card_resultado, unsafe_allow_html=True)
 
-    # Exibe o aviso de sucesso no topo dos resultados
-    if st.session_state.get("envio_sucesso"):
-        st.markdown("""
-        <div id="aviso-sucesso" class="card-sucesso-destaque">
-            ✅ Diagnóstico enviado com sucesso! Verifique sua caixa de entrada e spam.
-        </div>
-        """, unsafe_allow_html=True)
-
     # Subtítulo do Formulário
     st.markdown('<div class="titulo-secundario">Preencha os dados abaixo e receba o diagnóstico completo do seu posicionamento digital.</div>', unsafe_allow_html=True)
     
@@ -543,23 +530,31 @@ if "resultado_busca" in st.session_state:
     
     raw_whats = st.text_input("WhatsInput", value="", placeholder="16991332121", label_visibility="collapsed")
 
-    if st.button("📩 Receber diagnóstico"):
-        apenas_numeros = re.sub(r'\D', '', raw_whats)[:11]
-        
-        if not nome_lead or len(nome_lead.strip()) < 2:
-            st.error("Por favor, informe seu nome completo.")
-        elif not email_lead or "@" not in email_lead:
-            st.error("Por favor, informe um endereço de e-mail válido.")
-        elif len(apenas_numeros) != 11:
-            st.error(f"❌ O campo WhatsApp exige exatamente 11 NÚMEROS (DDD + Celular, ex: 16991332121). Você informou {len(apenas_numeros)} números.")
-        else:
-            whats_completo = "55" + apenas_numeros
-
-            with st.spinner("Gerando diagnóstico e enviando por e-mail..."):
-                email_sucesso, email_msg = enviar_emails_diagnostico_completo(nome_lead, email_lead, whats_completo, dados)
-
-            if email_sucesso:
-                st.session_state["envio_sucesso"] = True
-                st.rerun()
+    # Substituição do Botão de Envio pelo Card de Sucesso após Enviar
+    if st.session_state.get("envio_sucesso"):
+        st.markdown("""
+        <div class="card-sucesso-destaque">
+            ✅ Diagnóstico enviado com sucesso! Verifique sua caixa de entrada e spam.
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        if st.button("📩 Receber diagnóstico"):
+            apenas_numeros = re.sub(r'\D', '', raw_whats)[:11]
+            
+            if not nome_lead or len(nome_lead.strip()) < 2:
+                st.error("Por favor, informe seu nome completo.")
+            elif not email_lead or "@" not in email_lead:
+                st.error("Por favor, informe um endereço de e-mail válido.")
+            elif len(apenas_numeros) != 11:
+                st.error(f"❌ O campo WhatsApp exige exatamente 11 NÚMEROS (DDD + Celular, ex: 16991332121). Você informou {len(apenas_numeros)} números.")
             else:
-                st.error(f"❌ Erro ao enviar e-mail: {email_msg}")
+                whats_completo = "55" + apenas_numeros
+
+                with st.spinner("Gerando diagnóstico e enviando por e-mail..."):
+                    email_sucesso, email_msg = enviar_emails_diagnostico_completo(nome_lead, email_lead, whats_completo, dados)
+
+                if email_sucesso:
+                    st.session_state["envio_sucesso"] = True
+                    st.rerun()
+                else:
+                    st.error(f"❌ Erro ao enviar e-mail: {email_msg}")
