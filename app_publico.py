@@ -173,7 +173,7 @@ GOOGLE_API_KEY = "AIzaSyA8ul_9QICNyqxrHgT-CURIZmd1sikHn5U"
 
 BIGIN_CLIENT_ID = "1000.COI8SBR9O0RCMGCL7WKEYUJMBZCR8X"
 BIGIN_CLIENT_SECRET = "c60642fb374cbad9753c456d8713b6349417187345"
-BIGIN_REFRESH_TOKEN = "1000.b52513ff5bf38ca9a857f1e299c9879c.bcb73e5d38c2e01cac8a7b7aefc180a9"
+BIGIN_REFRESH_TOKEN = "1000.0a67d0f4ab22f774f771ba34c2143733.1b77919711452c74e4a481334ea86470"
 
 SMTP_SERVER = "smtp.tour360vr.com.br"
 SMTP_PORT = 587
@@ -365,29 +365,24 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
         return None
 
 # ==========================================
-# INTEGRAÇÃO ZOHO BIGIN CRM (POST COM BODY FORM-DATA)
+# INTEGRAÇÃO ZOHO BIGIN CRM (REFRESH TOKEN PERMANENTE)
 # ==========================================
 def obter_access_token_bigin():
-    erros = []
-    domains = ["com", "com.br", "eu"]
-    for domain in domains:
-        try:
-            url = f"https://accounts.zoho.{domain}/oauth/v2/token"
-            data = {
-                "refresh_token": BIGIN_REFRESH_TOKEN,
-                "client_id": BIGIN_CLIENT_ID,
-                "client_secret": BIGIN_CLIENT_SECRET,
-                "grant_type": "refresh_token"
-            }
-            res = requests.post(url, data=data, timeout=8).json()
-            if "access_token" in res:
-                return res["access_token"], domain, None
-            elif "error" in res:
-                erros.append(f"{domain}: {res.get('error')}")
-        except Exception as e:
-            erros.append(f"{domain}: {str(e)}")
-            
-    return None, None, " | ".join(erros)
+    try:
+        url = "https://accounts.zoho.com/oauth/v2/token"
+        data = {
+            "refresh_token": BIGIN_REFRESH_TOKEN,
+            "client_id": BIGIN_CLIENT_ID,
+            "client_secret": BIGIN_CLIENT_SECRET,
+            "grant_type": "refresh_token"
+        }
+        res = requests.post(url, data=data, timeout=8).json()
+        if "access_token" in res:
+            return res["access_token"], "com", None
+        else:
+            return None, None, res.get("error", "Erro desconhecido ao obter token.")
+    except Exception as e:
+        return None, None, str(e)
 
 def enviar_lead_bigin(nome_lead, email_lead, whatsapp_lead, empresa_consultada, score):
     try:
@@ -418,7 +413,7 @@ def enviar_lead_bigin(nome_lead, email_lead, whatsapp_lead, empresa_consultada, 
         if "data" in res_contact and len(res_contact["data"]) > 0:
             contact_id = res_contact["data"][0].get("details", {}).get("id")
 
-        # 2. Cria o Negócio (Deal) na coluna "1º Contato"
+        # 2. Cria o Negócio (Deal) no Pipeline
         stages_teste = ["1º Contato", "First Contact", "Qualificação"]
         for stage_name in stages_teste:
             payload_deal = {
