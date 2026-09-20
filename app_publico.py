@@ -26,7 +26,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# CSS Rígido para Ocultação de Componentes
+# CSS Rígido para Ocultação Total de Menus, Badges e Rodapés do Streamlit
 custom_css = """
 <style>
     html, body, [data-testid="stAppViewContainer"], .main, .stApp {
@@ -43,7 +43,7 @@ custom_css = """
         max-width: 900px !important;
     }
 
-    /* Esconde cabeçalhos, barras de ferramentas, botões de atalho e rodapés */
+    /* Oculta rigorosamente menus, headers, footers e ícones/badges flutuantes */
     header, 
     [data-testid="stHeader"], 
     [data-testid="stAppHeader"],
@@ -64,7 +64,9 @@ custom_css = """
     div[class*="stStatusWidget"],
     div[class*="viewerBadge_container"],
     div[data-testid*="stStatusWidget"],
-    div[data-testid*="viewerBadge"] {
+    div[data-testid*="viewerBadge"],
+    .stStatusWidget,
+    div[class*="StatusWidget"] {
         display: none !important;
         visibility: hidden !important;
         opacity: 0 !important;
@@ -198,7 +200,7 @@ custom_css = """
 """
 st.markdown(custom_css, unsafe_allow_html=True)
 
-# JS de Destruição em Loop do Viewer Badge no Iframe do Streamlit Cloud
+# JS de Remoção Contínua dos Badges Flutuantes
 components.html("""
 <script>
     function destroyStreamlitBadges() {
@@ -262,15 +264,15 @@ def extrair_cidade(endereco):
     return "Não Informada"
 
 # ==========================================
-# INTEGRAÇÃO ZOHO BIGIN (SINALIZADOR NO NOME)
+# INTEGRAÇÃO ZOHO BIGIN (SINALIZADOR [1] NO NOME)
 # ==========================================
 def enviar_lead_zoho_bigin(nome_lead, email_lead, whatsapp_lead, empresa_nome, endereco, score):
     url_bigin = "https://bigin.zoho.com/crm/WebToContactForm"
     
     cidade = extrair_cidade(endereco)
 
-    # Adiciona o identificador [SITE - DIAGNÓSTICO] no nome para aparecer visível na lista
-    nome_identificado = f"[SITE] {nome_lead.strip()}"
+    # Adiciona o prefixo [1] no nome para fixar o cliente no topo da lista
+    nome_identificado = f"[1] {nome_lead.strip()}"
     partes_nome = nome_identificado.split(" ", 1)
     primeiro_nome = partes_nome[0]
     sobrenome = partes_nome[1] if len(partes_nome) > 1 else "."
@@ -396,7 +398,7 @@ def consultar_score_google_rigoroso(nome_empresa):
     return {"sucesso": False, "mensagem": "Empresa não encontrada no Google."}
 
 # ==========================================
-# GERADOR DE PDF (RODAPÉ FIXO NO RODA-PÉ DA PÁGINA)
+# GERADOR DE PDF (RODAPÉ FIXO NO FINAL DA PÁGINA)
 # ==========================================
 def desenhar_rodape_fixo(canvas, doc):
     canvas.saveState()
@@ -430,17 +432,15 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
 
         elements = []
         
-        # Título Invertido
         elements.append(Paragraph("AUDITORIA DE POSICIONAMENTO GOOGLE MAPS - TOUR360VR", style_title))
         elements.append(HRFlowable(width="100%", thickness=2, color=colors.HexColor('#1565C0'), spaceBefore=6, spaceAfter=16))
         
-        # Maior Espaçamento de Linha Antes de "Empresa Analisada"
         elements.append(Spacer(1, 14))
         elements.append(Paragraph(f"<b>Empresa Analisada:</b> {empresa_nome}", style_sub))
         elements.append(Paragraph(f"<b>Endereço Registrado:</b> {endereco}", style_body))
         elements.append(Spacer(1, 16))
         
-        cor_score_hex = obter_cor_score(score)
+        cor_score_hex = obtaining_cor_score = obter_cor_score(score)
         elements.append(Paragraph(f"PONTUAÇÃO DE OTIMIZAÇÃO: <font color='{cor_score_hex}'><b>{score} / 100 PONTOS</b></font>", ParagraphStyle('ScorePDF', parent=style_title, fontSize=13)))
         elements.append(Spacer(1, 14))
         
@@ -463,7 +463,6 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
         ]))
         elements.append(t)
         
-        # Maior Espaçamento de Linha Antes de "Plano de Ação Sugerido"
         elements.append(Spacer(1, 30))
         elements.append(Paragraph("<b>Plano de Ação Sugerido para Alta Visibilidade:</b>", style_sub))
         elements.append(Spacer(1, 6))
@@ -633,7 +632,9 @@ if "resultado_busca" in st.session_state:
     st.markdown('<div class="rotulo-campo">WhatsApp</div>', unsafe_allow_html=True)
     st.markdown('<div class="subtexto-label">(DDD + 9 dígitos - Apenas números)</div>', unsafe_allow_html=True)
     
-    raw_whats = st.text_input("WhatsInput", value="", placeholder="16991332121", label_visibility="collapsed")
+    # Validação e Bloqueio de Letras no WhatsApp
+    raw_whats_input = st.text_input("WhatsInput", value="", placeholder="16991332121", label_visibility="collapsed")
+    apenas_numeros = re.sub(r'\D', '', raw_whats_input)[:11]
 
     if st.session_state.get("envio_sucesso"):
         st.markdown("""
@@ -643,14 +644,12 @@ if "resultado_busca" in st.session_state:
         """, unsafe_allow_html=True)
     else:
         if st.button("📩 Receber diagnóstico"):
-            apenas_numeros = re.sub(r'\D', '', raw_whats)[:11]
-            
             if not nome_lead or len(nome_lead.strip()) < 2:
                 st.error("Por favor, informe seu nome completo.")
             elif not email_lead or "@" not in email_lead:
                 st.error("Por favor, informe um endereço de e-mail válido.")
             elif len(apenas_numeros) != 11:
-                st.error(f"❌ O campo WhatsApp exige exatamente 11 NÚMEROS (DDD + Celular, ex: 16991332121). Você informou {len(apenas_numeros)} números.")
+                st.error(f"❌ O campo WhatsApp exige exatamente 11 NÚMEROS (DDD + Celular, ex: 16991332121). Apenas números são aceitos.")
             else:
                 whats_completo = "55" + apenas_numeros
 
