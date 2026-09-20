@@ -11,7 +11,7 @@ import streamlit as st
 # CONFIGURAÇÃO DE TEMA E VISUAL PERSONALIZADO
 # ==========================================
 st.set_page_config(
-    page_title="Diagnóstico Gratuito GMB - Tour360VR", 
+    page_title="Diagnóstico de Perfil no Google - Tour360VR", 
     page_icon="🔍",
     layout="centered"
 )
@@ -19,7 +19,7 @@ st.set_page_config(
 # Estilo CSS Personalizado
 custom_css = """
 <style>
-    /* Fundo totalmente branco e texto escuro */
+    /* Fundo totalmente branco */
     .stApp {
         background-color: #FFFFFF !important;
         color: #222222 !important;
@@ -27,8 +27,8 @@ custom_css = """
     
     /* Eliminar margens e rolagem desnecessária */
     .block-container {
-        padding-top: 0.5rem !important;
-        padding-bottom: 0.5rem !important;
+        padding-top: 1rem !important;
+        padding-bottom: 1rem !important;
         max-width: 100% !important;
     }
 
@@ -38,77 +38,73 @@ custom_css = """
         height: 0px !important;
     }
 
-    /* Centralização e Destaque dos Títulos */
-    .titulo-principal {
+    /* Título Unificado e Centralizado */
+    .titulo-unificado {
         text-align: center;
-        color: #222222;
-        font-size: 2rem;
+        color: #111111;
+        font-size: 1.8rem;
         font-weight: 800;
-        margin-bottom: 0.2rem;
+        margin-bottom: 0.8rem;
         font-family: 'Arial', sans-serif;
-    }
-    .subtitulo {
-        text-align: center;
-        color: #555555;
-        font-size: 1.15rem;
-        margin-bottom: 1.2rem;
-        font-family: 'Arial', sans-serif;
+        line-height: 1.3;
     }
 
-    /* Texto de Instrução Centralizado Sem Caixa/Pin */
+    /* Texto de Instrução Centralizado */
     .texto-instrucao {
         text-align: center;
-        color: #333333;
-        font-size: 1.05rem;
-        margin-bottom: 1.5rem;
+        color: #555555;
+        font-size: 1rem;
+        margin-bottom: 1.2rem;
         font-family: 'Arial', sans-serif;
-        line-height: 1.5;
+        line-height: 1.4;
     }
 
-    /* Estilização das Legendas e Rótulos */
-    label, p, span {
-        color: #222222 !important;
-        font-size: 1.05rem !important;
-        font-weight: 600 !important;
+    /* Ocultar Rótulo do Campo de Texto */
+    .stTextInput label {
+        display: none !important;
     }
 
-    /* Campos de Entrada (Inputs) */
+    /* Reduzir e Centralizar o Campo de Entrada (Input) */
+    .stTextInput > div {
+        max-width: 550px !important;
+        margin: 0 auto !important;
+    }
     .stTextInput > div > div > input {
         background-color: #FFFFFF !important;
         color: #222222 !important;
-        border: 2px solid #CCCCCC !important;
+        border: 2px solid #DDDDDD !important;
         border-radius: 8px !important;
-        font-size: 1.1rem !important;
-        padding: 0.6rem !important;
+        font-size: 1.05rem !important;
+        padding: 0.6rem 1rem !important;
+        text-align: center !important;
     }
     .stTextInput > div > div > input:focus {
-        border-color: #5E942B !important;
-        box-shadow: 0 0 5px rgba(94, 148, 43, 0.5) !important;
+        border-color: #8DC63F !important;
+        box-shadow: 0 0 6px rgba(141, 198, 63, 0.4) !important;
     }
 
-    /* Centralização de Conteúdos e Botões */
+    /* Centralização de Botões */
     .stButton {
         display: flex !important;
         justify-content: center !important;
+        margin-top: 0.8rem !important;
     }
 
-    /* Botão Verde Mais Escuro (#5E942B) Centralizado com TEXTO BRANCO */
+    /* Botão Verde Tour360VR (#8DC63F) Centralizado */
     .stButton > button {
-        background-color: #5E942B !important;
+        background-color: #8DC63F !important;
         color: #FFFFFF !important;
-        font-size: 1.15rem !important;
+        font-size: 1.1rem !important;
         font-weight: bold !important;
         border-radius: 8px !important;
         border: none !important;
-        padding: 0.75rem 2.5rem !important;
+        padding: 0.65rem 2.2rem !important;
         cursor: pointer !important;
         transition: all 0.3s ease !important;
-        box-shadow: 0 4px 10px rgba(94, 148, 43, 0.3) !important;
-        margin: 0 auto !important;
-        display: block !important;
+        box-shadow: 0 4px 10px rgba(141, 198, 63, 0.3) !important;
     }
     .stButton > button:hover {
-        background-color: #4B7722 !important;
+        background-color: #7BB533 !important;
         color: #FFFFFF !important;
         transform: translateY(-1px);
     }
@@ -118,7 +114,7 @@ custom_css = """
 
     /* Destaque da Métrica/Score */
     [data-testid="stMetricValue"] {
-        color: #5E942B !important;
+        color: #8DC63F !important;
         font-size: 3rem !important;
         font-weight: bold !important;
     }
@@ -139,14 +135,20 @@ SMTP_USER = "contato@tour360vr.com.br"
 SMTP_PASS = "Kakaroto@2026"
 
 # ==========================================
-# FUNÇÕES DE BUSCA E INTEGRAÇÃO
+# FUNÇÃO DE BUSCA GOOGLE (COM REFERER)
 # ==========================================
 def consultar_score_google(nome_empresa):
-    """Realiza busca robusta na API de Lugares do Google."""
+    """Consulta a empresa enviando os cabeçalhos do site autorizados pelo Google Cloud."""
     url = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={requests.utils.quote(nome_empresa)}&key={GOOGLE_API_KEY}"
     
+    # Cabeçalhos enviando o Referer exato para passar pela restrição do Google Cloud
+    headers = {
+        "Referer": "https://www.tour360vr.com.br/",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+    }
+    
     try:
-        response = requests.get(url, timeout=10).json()
+        response = requests.get(url, headers=headers, timeout=10).json()
         results = response.get("results", [])
         
         if results:
@@ -165,6 +167,8 @@ def consultar_score_google(nome_empresa):
                 "endereco": place.get("formatted_address", "Endereço registrado no Google Maps"),
                 "score": score
             }
+        else:
+            print(f"Status retornado pelo Google: {response.get('status')} - {response.get('error_message', '')}")
     except Exception as e:
         print(f"Erro na consulta Google: {e}")
         
@@ -205,10 +209,8 @@ def enviar_lead_bigin(nome_lead, email_lead, whatsapp_lead, empresa_consultada, 
 # ==========================================
 # INTERFACE DO USUÁRIO
 # ==========================================
-st.markdown('<div class="titulo-principal">🔍 Diagnóstico de Perfil no Google</div>', unsafe_allow_html=True)
-st.markdown('<div class="subtitulo">Faça um diagnóstico de desempenho e otimização da sua empresa no Google.</div>', unsafe_allow_html=True)
+st.markdown('<div class="titulo-unificado">🔍 Faça um diagnóstico de desempenho e otimização do perfil da sua empresa no Google.</div>', unsafe_allow_html=True)
 
-# Instrução Centralizada e Simplificada
 st.markdown("""
 <div class="texto-instrucao">
     Digite o Nome Comercial exato da sua empresa seguido da Cidade e Estado.<br>
@@ -216,9 +218,9 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-nome_empresa = st.text_input("🏢 Nome da Empresa + Cidade:", placeholder="Ex: Mont Blanc Hotel Ribeirão Preto SP")
+nome_empresa = st.text_input("Busca", placeholder="Ex: Taiwan Hotel Ribeirão Preto São Paulo")
 
-if st.button("🔍 Analisar Perfil Gratuito"):
+if st.button("🔍 Analisar Perfil"):
     if nome_empresa:
         with st.spinner("Analisando dados no Google Maps..."):
             res = consultar_score_google(nome_empresa)
@@ -246,7 +248,7 @@ if "resultado_busca" in st.session_state:
         email_lead = st.text_input("Seu E-mail Principal:")
         whats_lead = st.text_input("WhatsApp (com DDD):")
         
-        submit = st.form_submit_button("📩 Receber Diagnóstico Gratuito")
+        submit = st.form_submit_button("📩 Receber Diagnóstico")
         
         if submit:
             if nome_lead and email_lead and whats_lead:
