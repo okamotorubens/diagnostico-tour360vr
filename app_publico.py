@@ -11,7 +11,7 @@ import streamlit as st
 # CONFIGURAÇÕES E CREDENCIAIS
 # ==========================================
 # Substitua pela sua Chave de API do Google Cloud que configuramos
-GOOGLE_API_KEY = "SUA_CHAVE_GOOGLE_CLOUD_AQUI"
+GOOGLE_API_KEY = "AIzaSyA8ul_9QICNyqxrHgT-CURIZmd1sikHn5U"
 
 # Credenciais do Bigin CRM (Zoho) geradas na Etapa 1
 BIGIN_CLIENT_ID = "1000.COI8SBR9O0RCMGCL7WKEYUJMBZCR8X"
@@ -21,7 +21,7 @@ BIGIN_CLIENT_SECRET = "c60642fb374cbad9753c456d8713b6349417187345"
 SMTP_SERVER = "smtp.tour360vr.com.br"
 SMTP_PORT = 587
 SMTP_USER = "contato@tour360vr.com.br"
-SMTP_PASS = "SUA_SENHA_EMAIL_AQUI"
+SMTP_PASS = "Kakaroto@2026"
 
 # ==========================================
 # FUNÇÃO 1: CONSULTA DE SCORE NO GOOGLE
