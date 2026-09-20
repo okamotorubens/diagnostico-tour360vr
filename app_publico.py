@@ -1,11 +1,11 @@
 import os
 import re
-import io
 import requests
 import smtplib
+import tempfile
 import streamlit as st
 
-# ReportLab para geração do PDF
+# ReportLab para geração de PDF
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -25,7 +25,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Estilo CSS para Container Compacto e Inputs Brancos
+# Estilo CSS para Container Compacto e Inputs 100% Brancos
 custom_css = """
 <style>
     html, body, [data-testid="stAppViewContainer"], .main {
@@ -167,7 +167,7 @@ custom_css = """
 st.markdown(custom_css, unsafe_allow_html=True)
 
 # ==========================================
-# CREDENCIAIS
+# CREDENCIAIS DO SISTEMA
 # ==========================================
 GOOGLE_API_KEY = "AIzaSyA8ul_9QICNyqxrHgT-CURIZmd1sikHn5U"
 
@@ -189,7 +189,7 @@ def obter_cor_score(score):
         return "#8DC63F"
 
 # ==========================================
-# CÁLCULO DE SCORE RIGOROSO
+# CÁLCULO DE SCORE RIGOROSO (RECURSO 10/100)
 # ==========================================
 def consultar_score_google_rigoroso(nome_empresa):
     url = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={requests.utils.quote(nome_empresa)}&key={GOOGLE_API_KEY}"
@@ -210,76 +210,83 @@ def consultar_score_google_rigoroso(nome_empresa):
             score = 0
             criterios_eval = []
 
+            # 1. Status Operacional (+10)
             if details.get("business_status") == "OPERATIONAL":
                 score += 10
                 criterios_eval.append("1. Status Operacional: Ativo no Google Maps (+10 pts)")
             else:
                 criterios_eval.append("1. Status Operacional: Pendente / Inativo (0 pts)")
 
+            # 2. Avaliações dos Clientes (+20)
             rating = details.get("rating", 0)
             reviews = details.get("user_ratings_total", 0)
-            if rating >= 4.8 and reviews >= 80:
-                score += 15
-                criterios_eval.append(f"2. Avaliações dos Clientes: Excelente ({rating}★ em {reviews} avaliações) (+15 pts)")
-            elif rating >= 4.0 and reviews >= 10:
-                score += 8
-                criterios_eval.append(f"2. Avaliações dos Clientes: Moderado ({rating}★ em {reviews} avaliações) (+8 pts)")
+            if rating >= 4.8 and reviews >= 100:
+                score += 20
+                criterios_eval.append(f"2. Avaliações dos Clientes: Excelente ({rating}★ em {reviews} avaliações) (+20 pts)")
+            elif rating >= 4.5 and reviews >= 30:
+                score += 10
+                criterios_eval.append(f"2. Avaliações dos Clientes: Moderado ({rating}★ em {reviews} avaliações) (+10 pts)")
             else:
-                criterios_eval.append(f"2. Avaliações dos Clientes: Insuficiente ({rating}★ em {reviews} avaliações) (0 pts)")
+                criterios_eval.append(f"2. Avaliações dos Clientes: Volume Insuficiente ({rating}★ em {reviews} avaliações) (0 pts)")
 
+            # 3. Galeria Visual / Fotos (+20)
             photos = details.get("photos", [])
             if len(photos) >= 30:
+                score += 20
+                criterios_eval.append(f"3. Galeria Visual: Completa ({len(photos)} fotos) (+20 pts)")
+            elif len(photos) >= 15:
                 score += 10
-                criterios_eval.append(f"3. Galeria Visual: Completa ({len(photos)} fotos) (+10 pts)")
-            elif len(photos) >= 5:
-                score += 5
-                criterios_eval.append(f"3. Galeria Visual: Parcial ({len(photos)} fotos) (+5 pts)")
+                criterios_eval.append(f"3. Galeria Visual: Parcial ({len(photos)} fotos) (+10 pts)")
             else:
                 criterios_eval.append("3. Galeria Visual: Insuficiente (0 pts)")
 
+            # 4. Telefone Principal (+5)
             if details.get("formatted_phone_number"):
-                score += 10
-                criterios_eval.append("4. Telefone Principal: Cadastrado (+10 pts)")
+                score += 5
+                criterios_eval.append("4. Telefone Principal: Cadastrado (+5 pts)")
             else:
                 criterios_eval.append("4. Telefone Principal: Ausente (0 pts)")
 
+            # 5. Website Próprio Institucional (+20)
             website = details.get("website", "")
-            if website and not any(x in website for x in ["facebook", "instagram", "site.google"]):
-                score += 10
-                criterios_eval.append("5. Website Institucional: Domínio próprio vinculado (+10 pts)")
-            elif website:
-                score += 3
-                criterios_eval.append("5. Website Institucional: Link secundário / Rede Social (+3 pts)")
+            if website and not any(x in website for x in ["facebook", "instagram", "site.google", "wa.me", "linktr.ee"]):
+                score += 20
+                criterios_eval.append("5. Website Institucional: Domínio próprio vinculado (+20 pts)")
             else:
-                criterios_eval.append("5. Website Institucional: Ausente (0 pts)")
+                criterios_eval.append("5. Website Institucional: Ausente / Link Genérico (0 pts)")
 
+            # 6. Horários de Atendimento (+5)
             if details.get("opening_hours"):
                 score += 5
-                criterios_eval.append("6. Horários de Atendimento: Atualizados (+5 pts)")
+                criterios_eval.append("6. Horários de Atendimento: Configurados (+5 pts)")
             else:
-                criterios_eval.append("6. Horários de Atendimento: Não informados (0 pts)")
+                criterios_eval.append("6. Horários de Atendimento: Incompletos (0 pts)")
 
+            # 7. Endereço Físico (+10)
             addr = details.get("formatted_address", "")
             if addr and any(char.isdigit() for char in addr):
-                score += 5
-                criterios_eval.append("7. Endereço Físico: Completo com número (+5 pts)")
+                score += 10
+                criterios_eval.append("7. Endereço Físico: Completo com número (+10 pts)")
             else:
                 criterios_eval.append("7. Endereço Físico: Incompleto (0 pts)")
 
+            # 8. Categoria Principal (+10)
             if details.get("types"):
-                score += 5
-                criterios_eval.append("8. Categoria Principal: Configurada (+5 pts)")
+                score += 10
+                criterios_eval.append("8. Categoria Principal: Mapeada (+10 pts)")
             else:
                 criterios_eval.append("8. Categoria Principal: Ausente (0 pts)")
 
-            criterios_eval.append("9. Tour Virtual 360° Street View: Não detectado no perfil (Pendente de Otimização)")
+            # 9. Tour Virtual 360° Interativo (Trava Oficial de 10/100)
+            criterios_eval.append("9. Tour Virtual 360° Street View: Ausente (Penalização severa de visibilidade)")
+            score = min(score, 10)
 
             return {
                 "sucesso": True,
                 "place_id": place_id,
                 "nome": details.get("name"),
                 "endereco": details.get("formatted_address", "Endereço registrado no Google Maps"),
-                "score": min(score, 100),
+                "score": score,
                 "criterios": criterios_eval
             }
     except Exception as e:
@@ -288,13 +295,15 @@ def consultar_score_google_rigoroso(nome_empresa):
     return {"sucesso": False, "mensagem": "Empresa não encontrada no Google."}
 
 # ==========================================
-# GERADOR DE PDF COMPATÍVEL COM ANEXO SMTP
+# GERADOR DE PDF ROBUSTO
 # ==========================================
-def gerar_pdf_diagnostico_bytes(empresa_nome, endereco, score, criterios):
+def gerar_pdf_arquivo(empresa_nome, endereco, score, criterios):
     try:
-        buffer = io.BytesIO()
+        temp_dir = tempfile.gettempdir()
+        pdf_path = os.path.join(temp_dir, f"Diagnostico_{re.sub(r'[^a-zA-Z0-9]', '_', empresa_nome)}.pdf")
+        
         doc = SimpleDocTemplate(
-            buffer,
+            pdf_path,
             pagesize=A4,
             leftMargin=30,
             rightMargin=30,
@@ -350,15 +359,13 @@ def gerar_pdf_diagnostico_bytes(empresa_nome, endereco, score, criterios):
         elements.append(Paragraph("Tour360VR • Rubens Okamoto | contato@tour360vr.com.br | www.tour360vr.com.br", ParagraphStyle('Foot', parent=style_body, fontSize=7.5, alignment=1)))
         
         doc.build(elements)
-        pdf_bytes = buffer.getvalue()
-        buffer.close()
-        return pdf_bytes
+        return pdf_path
     except Exception as e:
         print(f"Erro na construção do PDF: {e}")
         return None
 
 # ==========================================
-# ZOHO BIGIN CRM INTEGRADO NO PIPELINE "1º CONTATO"
+# INTEGRACAO ZOHO BIGIN CRM (PIPELINE "1º CONTATO")
 # ==========================================
 def obter_access_token_bigin():
     if "bigin_refresh_token" in st.session_state:
@@ -402,7 +409,7 @@ def enviar_lead_bigin(nome_lead, email_lead, whatsapp_lead, empresa_consultada, 
             "Content-Type": "application/json"
         }
 
-        # 1. Cadastrar Contato
+        # 1. Cria o Contato
         payload_contact = {
             "data": [
                 {
@@ -420,29 +427,33 @@ def enviar_lead_bigin(nome_lead, email_lead, whatsapp_lead, empresa_consultada, 
         if "data" in res_contact and len(res_contact["data"]) > 0:
             contact_id = res_contact["data"][0].get("details", {}).get("id")
 
-        # 2. Cadastrar Negócio (Deal) na Etapa "1º Contato"
-        payload_deal = {
-            "data": [
-                {
-                    "Deal_Name": f"Diagnóstico: {empresa_consultada} ({score}/100)",
-                    "Stage": "1º Contato",
-                    "Description": f"Lead capturado no site:\nNome: {nome_lead}\nE-mail: {email_lead}\nWhatsApp: {whatsapp_lead}\nScore Google: {score}/100",
-                    "Contact_Name": contact_id if contact_id else None
-                }
-            ]
-        }
-        url_deal = f"https://www.zohoapis.{domain}/bigin/v1/Deals"
-        res_deal = requests.post(url_deal, json=payload_deal, headers=headers, timeout=8)
-        
-        return res_deal.status_code in [200, 201]
+        # 2. Cria o Negócio (Deal) na Coluna "1º Contato"
+        for stage_name in ["1º Contato", "First Contact"]:
+            payload_deal = {
+                "data": [
+                    {
+                        "Deal_Name": f"Diagnóstico: {empresa_consultada} ({score}/100)",
+                        "Stage": stage_name,
+                        "Description": f"Lead capturado no site:\nNome: {nome_lead}\nE-mail: {email_lead}\nWhatsApp: {whatsapp_lead}\nScore Google: {score}/100",
+                        "Contact_Name": contact_id if contact_id else None
+                    }
+                ]
+            }
+            url_deal = f"https://www.zohoapis.{domain}/bigin/v1/Deals"
+            res_deal = requests.post(url_deal, json=payload_deal, headers=headers, timeout=8)
+            if res_deal.status_code in [200, 201]:
+                return True
+
+        return False
     except Exception as e:
         print(f"Erro no Zoho Bigin: {e}")
         return False
 
 # ==========================================
-# ENVIO DE E-MAILS COM ANEXO BASE64 COMPATÍVEL
+# ENVIO DE E-MAILS COM ANEXO E RODAPÉ COMPLETO
 # ==========================================
 def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dados_busca):
+    pdf_path = None
     try:
         empresa_nome = dados_busca['nome']
         score = dados_busca['score']
@@ -450,7 +461,8 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
         criterios = dados_busca.get('criterios', [])
         cor_score_hex = obter_cor_score(score)
 
-        pdf_bytes = gerar_pdf_diagnostico_bytes(empresa_nome, endereco, score, criterios)
+        # 1. Gera o PDF no diretório temporário
+        pdf_path = gerar_pdf_arquivo(empresa_nome, endereco, score, criterios)
 
         server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
         server.starttls()
@@ -458,7 +470,7 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
 
         filename_clean = f"Diagnostico_{re.sub(r'[^a-zA-Z0-9]', '_', empresa_nome)}.pdf"
 
-        # 1. E-mail Admin
+        # 2. E-mail Notificação Interna com Rodapé Institucional
         msg_admin = MIMEMultipart('mixed')
         msg_admin['From'] = f"Tour360VR <{SMTP_USER}>"
         msg_admin['To'] = SMTP_USER
@@ -470,7 +482,7 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
         <html>
         <head><meta charset="utf-8"></head>
         <body style="font-family: Arial, sans-serif; background-color: #F4F6F9; padding: 20px; margin: 0;">
-            <div style="max-width: 580px; background-color: #FFFFFF; padding: 25px; border-radius: 10px; border-top: 5px solid #1E88E5; margin: 0 auto;">
+            <div style="max-width: 580px; background-color: #FFFFFF; padding: 25px; border-radius: 10px; border-top: 5px solid #1E88E5; margin: 0 auto; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
                 <h2 style="color: #111111; margin-top: 0; font-size: 18px;">Novo Lead Capturado no Site!</h2>
                 <hr style="border: 0; border-top: 1px solid #EEEEEE; margin: 15px 0;">
                 <p style="font-size: 14px; margin: 5px 0;"><b>Empresa:</b> {empresa_nome}</p>
@@ -481,20 +493,29 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
                     <p style="margin: 4px 0; font-size: 14px;"><b>E-mail:</b> <a href="mailto:{email_lead}" style="color: #1E88E5;">{email_lead}</a></p>
                     <p style="margin: 4px 0; font-size: 14px;"><b>WhatsApp:</b> <a href="https://wa.me/{whatsapp_lead}" target="_blank" style="color: #1E88E5; font-weight: bold;">+{whatsapp_lead}</a></p>
                 </div>
+
+                <!-- RODAPÉ INSTITUCIONAL -->
+                <hr style="border: 0; border-top: 1px solid #EEEEEE; margin: 25px 0 15px 0;">
+                <div style="text-align: center; color: #777777; font-size: 12px; line-height: 1.5;">
+                    <p style="margin: 2px 0;"><b>Tour360VR • Soluções em Imagem e Presença Digital</b></p>
+                    <p style="margin: 2px 0;">Rubens Okamoto | <a href="mailto:contato@tour360vr.com.br" style="color: #1E88E5; text-decoration: none;">contato@tour360vr.com.br</a></p>
+                    <p style="margin: 2px 0;"><a href="https://www.tour360vr.com.br" target="_blank" style="color: #1E88E5; text-decoration: none;">www.tour360vr.com.br</a></p>
+                </div>
             </div>
         </body>
         </html>
         """
         msg_admin.attach(MIMEText(corpo_admin_html, 'html', 'utf-8'))
         
-        if pdf_bytes:
-            part_admin = MIMEApplication(pdf_bytes, Name=filename_clean)
-            part_admin['Content-Disposition'] = f'attachment; filename="{filename_clean}"'
-            msg_admin.attach(part_admin)
+        if pdf_path and os.path.exists(pdf_path):
+            with open(pdf_path, 'rb') as f:
+                part_admin = MIMEApplication(f.read(), Name=filename_clean)
+                part_admin['Content-Disposition'] = f'attachment; filename="{filename_clean}"'
+                msg_admin.attach(part_admin)
 
         server.send_message(msg_admin)
 
-        # 2. E-mail Cliente
+        # 3. E-mail Cliente com Rodapé Institucional
         msg_cliente = MIMEMultipart('mixed')
         msg_cliente['From'] = f"Rubens Okamoto | Tour360VR <{SMTP_USER}>"
         msg_cliente['To'] = email_lead
@@ -513,17 +534,23 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
                 <p>Anexamos a este e-mail o seu relatório detalhado em PDF.</p>
                 <p>Em breve, um especialista entrará em contato via WhatsApp para apresentar como atingir a nota máxima e alavancar a visibilidade da sua empresa.</p>
                 <br>
-                <p>Atenciosamente,<br><b>Rubens Okamoto | Tour360VR</b><br><a href="https://www.tour360vr.com.br" style="color: #1E88E5;">www.tour360vr.com.br</a></p>
+                <hr style="border: 0; border-top: 1px solid #EEEEEE; margin: 20px 0 15px 0;">
+                <div style="color: #555555; font-size: 13px; line-height: 1.5;">
+                    <p style="margin: 2px 0;">Atenciosamente,</p>
+                    <p style="margin: 2px 0;"><b>Rubens Okamoto | Tour360VR</b></p>
+                    <p style="margin: 2px 0;"><a href="https://www.tour360vr.com.br" target="_blank" style="color: #1E88E5; text-decoration: none;">www.tour360vr.com.br</a></p>
+                </div>
             </div>
         </body>
         </html>
         """
         msg_cliente.attach(MIMEText(corpo_html_cliente, 'html', 'utf-8'))
 
-        if pdf_bytes:
-            part_cliente = MIMEApplication(pdf_bytes, Name=filename_clean)
-            part_cliente['Content-Disposition'] = f'attachment; filename="{filename_clean}"'
-            msg_cliente.attach(part_cliente)
+        if pdf_path and os.path.exists(pdf_path):
+            with open(pdf_path, 'rb') as f:
+                part_cliente = MIMEApplication(f.read(), Name=filename_clean)
+                part_cliente['Content-Disposition'] = f'attachment; filename="{filename_clean}"'
+                msg_cliente.attach(part_cliente)
 
         server.send_message(msg_cliente)
         server.quit()
@@ -532,9 +559,15 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
     except Exception as e:
         print(f"Erro na rotina de envio de e-mails: {e}")
         return False
+    finally:
+        if pdf_path and os.path.exists(pdf_path):
+            try:
+                os.remove(pdf_path)
+            except Exception:
+                pass
 
 # ==========================================
-# INTERFACE DO USUÁRIO
+# INTERFACE DO USUÁRIO STREAMLIT
 # ==========================================
 st.markdown('<div class="titulo-principal">🔍 Faça uma análise da sua empresa no Google</div>', unsafe_allow_html=True)
 st.markdown('<div class="instrucao-subtitulo">Digite o Nome Comercial exato da sua empresa seguido da Cidade e Estado.</div>', unsafe_allow_html=True)
@@ -594,10 +627,10 @@ if "resultado_busca" in st.session_state:
         else:
             whats_completo = "55" + apenas_numeros
 
-            # 1. Registra no Zoho Bigin CRM no Estágio "1º Contato"
+            # 1. Envia para o Bigin CRM no Estágio "1º Contato"
             enviar_lead_bigin(nome_lead, email_lead, whats_completo, dados['nome'], dados['score'])
 
-            # 2. Envia e-mails com o PDF anexado via MIMEApplication
+            # 2. Dispara os e-mails com PDF e Rodapé
             com_sucesso = enviar_emails_diagnostico_completo(nome_lead, email_lead, whats_completo, dados)
             
             if com_sucesso:
