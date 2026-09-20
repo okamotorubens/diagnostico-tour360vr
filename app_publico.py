@@ -16,7 +16,7 @@ st.set_page_config(
     layout="centered"
 )
 
-# Estilo CSS Personalizado (Fundo Branco, Botão Verde com Texto Branco)
+# Estilo CSS Personalizado
 custom_css = """
 <style>
     /* Fundo totalmente branco e texto escuro */
@@ -55,22 +55,21 @@ custom_css = """
         font-family: 'Arial', sans-serif;
     }
 
+    /* Texto de Instrução Centralizado Sem Caixa/Pin */
+    .texto-instrucao {
+        text-align: center;
+        color: #333333;
+        font-size: 1.05rem;
+        margin-bottom: 1.5rem;
+        font-family: 'Arial', sans-serif;
+        line-height: 1.5;
+    }
+
     /* Estilização das Legendas e Rótulos */
     label, p, span {
         color: #222222 !important;
         font-size: 1.05rem !important;
         font-weight: 600 !important;
-    }
-
-    /* Caixa explicativa de instrução (Sem o 'Como pesquisar corretamente') */
-    .caixa-instrucao {
-        background-color: #F4F6F8;
-        border-left: 5px solid #8CC63F;
-        padding: 10px 14px;
-        border-radius: 6px;
-        margin-bottom: 15px;
-        font-size: 1rem;
-        color: #333333;
     }
 
     /* Campos de Entrada (Inputs) */
@@ -83,26 +82,33 @@ custom_css = """
         padding: 0.6rem !important;
     }
     .stTextInput > div > div > input:focus {
-        border-color: #8CC63F !important;
-        box-shadow: 0 0 5px rgba(140, 198, 63, 0.5) !important;
+        border-color: #5E942B !important;
+        box-shadow: 0 0 5px rgba(94, 148, 43, 0.5) !important;
     }
 
-    /* Botão Verde Oficial Tour360VR (#8cc63f) com TEXTO BRANCO */
+    /* Centralização de Conteúdos e Botões */
+    .stButton {
+        display: flex !important;
+        justify-content: center !important;
+    }
+
+    /* Botão Verde Mais Escuro (#5E942B) Centralizado com TEXTO BRANCO */
     .stButton > button {
-        background-color: #8CC63F !important;
+        background-color: #5E942B !important;
         color: #FFFFFF !important;
         font-size: 1.15rem !important;
         font-weight: bold !important;
         border-radius: 8px !important;
         border: none !important;
-        padding: 0.75rem 2rem !important;
-        width: 100% !important;
+        padding: 0.75rem 2.5rem !important;
         cursor: pointer !important;
         transition: all 0.3s ease !important;
-        box-shadow: 0 4px 10px rgba(140, 198, 63, 0.3) !important;
+        box-shadow: 0 4px 10px rgba(94, 148, 43, 0.3) !important;
+        margin: 0 auto !important;
+        display: block !important;
     }
     .stButton > button:hover {
-        background-color: #7BB433 !important;
+        background-color: #4B7722 !important;
         color: #FFFFFF !important;
         transform: translateY(-1px);
     }
@@ -112,7 +118,7 @@ custom_css = """
 
     /* Destaque da Métrica/Score */
     [data-testid="stMetricValue"] {
-        color: #8CC63F !important;
+        color: #5E942B !important;
         font-size: 3rem !important;
         font-weight: bold !important;
     }
@@ -133,35 +139,18 @@ SMTP_USER = "contato@tour360vr.com.br"
 SMTP_PASS = "Kakaroto@2026"
 
 # ==========================================
-# FUNÇÕES DE BUSCA E INTEGRAÇÃO ROBUSTAS
+# FUNÇÕES DE BUSCA E INTEGRAÇÃO
 # ==========================================
 def consultar_score_google(nome_empresa):
-    """Realiza busca robusta usando o Places API FindPlaceFromText com fallback para TextSearch."""
-    headers = {"User-Agent": "Mozilla/5.0"}
-    
-    # 1. Tentativa via FindPlaceFromText (Mais preciso e rápido)
-    url_find = (
-        f"https://maps.googleapis.com/maps/api/place/findplacefromtext/json"
-        f"?input={requests.utils.quote(nome_empresa)}&inputtype=textquery"
-        f"&fields=place_id,name,formatted_address,rating,user_ratings_total,business_status,photos"
-        f"&key={GOOGLE_API_KEY}"
-    )
+    """Realiza busca robusta na API de Lugares do Google."""
+    url = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={requests.utils.quote(nome_empresa)}&key={GOOGLE_API_KEY}"
     
     try:
-        res = requests.get(url_find, headers=headers, timeout=8).json()
+        response = requests.get(url, timeout=10).json()
+        results = response.get("results", [])
         
-        candidates = res.get("candidates", [])
-        if not candidates:
-            # 2. Fallback via TextSearch caso o FindPlace não retorne
-            url_text = (
-                f"https://maps.googleapis.com/maps/api/place/textsearch/json"
-                f"?query={requests.utils.quote(nome_empresa)}&key={GOOGLE_API_KEY}"
-            )
-            res_text = requests.get(url_text, headers=headers, timeout=8).json()
-            candidates = res_text.get("results", [])
-
-        if candidates:
-            place = candidates[0]
+        if results:
+            place = results[0]
             
             score = 0
             if place.get("rating", 0) >= 4.0: score += 25
@@ -219,15 +208,15 @@ def enviar_lead_bigin(nome_lead, email_lead, whatsapp_lead, empresa_consultada, 
 st.markdown('<div class="titulo-principal">🔍 Diagnóstico de Perfil no Google</div>', unsafe_allow_html=True)
 st.markdown('<div class="subtitulo">Faça um diagnóstico de desempenho e otimização da sua empresa no Google.</div>', unsafe_allow_html=True)
 
-# Instrução Direta e Objetiva
+# Instrução Centralizada e Simplificada
 st.markdown("""
-<div class="caixa-instrucao">
-    📌 Digite o <strong>Nome Comercial exato</strong> da sua empresa seguido da <strong>Cidade e Estado</strong>.<br>
-    <em>Exemplo: <strong>Toque de Letra Ribeirão Preto SP</strong></em>
+<div class="texto-instrucao">
+    Digite o Nome Comercial exato da sua empresa seguido da Cidade e Estado.<br>
+    <em>Exemplo: Sua empresa Sua cidade Seu Estado</em>
 </div>
 """, unsafe_allow_html=True)
 
-nome_empresa = st.text_input("🏢 Nome da Empresa + Cidade:", placeholder="Ex: Toque de Letra Ribeirão Preto SP")
+nome_empresa = st.text_input("🏢 Nome da Empresa + Cidade:", placeholder="Ex: Mont Blanc Hotel Ribeirão Preto SP")
 
 if st.button("🔍 Analisar Perfil Gratuito"):
     if nome_empresa:
