@@ -2,14 +2,13 @@ import os
 import re
 import requests
 import smtplib
-import tempfile
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email import encoders
 import streamlit as st
 
-# ReportLab para geração do PDF
+# ReportLab para geração de PDF
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -24,7 +23,7 @@ st.set_page_config(
     layout="centered"
 )
 
-# Estilo CSS Global: Todos os campos brancos com texto escuro e sem rodapé do Streamlit
+# Estilo CSS Global: Campos em branco, sem fundo escuro ao preencher e sem rodapé do Streamlit
 custom_css = """
 <style>
     /* Ocultar rodapé nativo 'Built with Streamlit' e barras do sistema */
@@ -82,7 +81,7 @@ custom_css = """
         margin-bottom: 0.3rem !important;
     }
 
-    /* PADRONIZAÇÃO COMPLETA: TODOS OS CAMPOS DE INPUT EM BRANCO COM BORDA CLARA */
+    /* PADRONIZAÇÃO DOS CAMPOS: BRANCOS, SEM COR DE FUNDO AO PREENCHER / AUTOFILL */
     .stTextInput {
         display: flex !important;
         justify-content: center !important;
@@ -106,9 +105,14 @@ custom_css = """
         padding: 0.6rem 0.8rem !important;
         text-align: center !important;
     }
-    .stTextInput > div > div > input:focus {
-        border-color: #8DC63F !important;
-        box-shadow: 0 0 5px rgba(141, 198, 63, 0.5) !important;
+    
+    /* Prevenir fundo escuro quando o navegador autopreencher */
+    .stTextInput > div > div > input:-webkit-autofill,
+    .stTextInput > div > div > input:-webkit-autofill:hover, 
+    .stTextInput > div > div > input:-webkit-autofill:focus, 
+    .stTextInput > div > div > input:-webkit-autofill:active {
+        -webkit-box-shadow: 0 0 0 30px #FFFFFF inset !important;
+        -webkit-text-fill-color: #000000 !important;
     }
 
     /* Centralização dos Botões */
@@ -197,7 +201,7 @@ def obter_cor_score(score):
         return "#8DC63F"
 
 # ==========================================
-# CÁLCULO DE SCORE PRECISO E REAL
+# CÁLCULO DE SCORE PRECISO E RIGOROSO
 # ==========================================
 def consultar_score_google_rigoroso(nome_empresa):
     url = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={requests.utils.quote(nome_empresa)}&key={GOOGLE_API_KEY}"
@@ -275,12 +279,12 @@ def consultar_score_google_rigoroso(nome_empresa):
     return {"sucesso": False, "mensagem": "Empresa não encontrada no Google."}
 
 # ==========================================
-# GERADOR DE PDF GRAVADO EM DISCO TEMPORÁRIO
+# GERADOR DE PDF DIRETO NO DIRETÓRIO LOCAL
 # ==========================================
 def gerar_pdf_diagnostico_arquivo(empresa_nome, endereco, score, criterios):
     try:
-        temp_dir = tempfile.gettempdir()
-        file_path = os.path.join(temp_dir, f"Diagnostico_{re.sub(r'[^a-zA-Z0-9]', '_', empresa_nome)}.pdf")
+        nome_limpo = re.sub(r'[^a-zA-Z0-9]', '_', empresa_nome)
+        file_path = f"Diagnostico_{nome_limpo}.pdf"
         
         doc = SimpleDocTemplate(file_path, pagesize=A4, leftMargin=35, rightMargin=35, topMargin=35, bottomMargin=35)
         styles = getSampleStyleSheet()
@@ -348,20 +352,21 @@ def enviar_lead_bigin(nome_lead, email_lead, whatsapp_lead, empresa_consultada, 
             "Content-Type": "application/json"
         }
 
-        # Criação do Negócio no Zoho Bigin
+        # Cadastro de Contato no Bigin
         payload = {
             "data": [
                 {
-                    "Deal_Name": f"Diagnóstico Site - {empresa_consultada}",
-                    "Stage": "1º Contato",
-                    "Description": f"Lead capturado no site Tour360VR:\nNome: {nome_lead}\nE-mail: {email_lead}\nWhatsApp: {whatsapp_lead}\nScore: {score}/100"
+                    "Last_Name": nome_lead,
+                    "Email": email_lead,
+                    "Phone": whatsapp_lead,
+                    "Description": f"Empresa Consultada: {empresa_consultada} | Score: {score}/100"
                 }
             ]
         }
 
-        url_deal = "https://www.zohoapis.com/bigin/v1/Deals"
-        res_deal = requests.post(url_deal, json=payload, headers=headers, timeout=8)
-        return res_deal.status_code in [200, 201]
+        url_contact = "https://www.zohoapis.com/bigin/v1/Contacts"
+        res_contact = requests.post(url_contact, json=payload, headers=headers, timeout=8)
+        return res_contact.status_code in [200, 201]
     except Exception as e:
         print(f"Erro Bigin: {e}")
         return False
@@ -383,7 +388,7 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
         server.starttls()
         server.login(SMTP_USER, SMTP_PASS)
 
-        # 1. E-mail Administrativo da Tour360VR
+        # 1. E-mail Administrativo
         msg_admin = MIMEMultipart('mixed')
         msg_admin['From'] = SMTP_USER
         msg_admin['To'] = SMTP_USER
@@ -497,19 +502,19 @@ if "resultado_busca" in st.session_state:
     """
     st.markdown(html_card_resultado, unsafe_allow_html=True)
 
-    # Formulário de Captura
+    # Formulário de Captura - CAMPOS EM BRANCO
     st.markdown('<div class="destaque-formulario-linha">📋 Preencha os dados abaixo e receba a análise completa</div>', unsafe_allow_html=True)
     
     st.markdown('<div class="rotulo-campo-centralizado">Nome:</div>', unsafe_allow_html=True)
-    nome_lead = st.text_input("NomeInput", value="Marcio Javaroni", placeholder="Digite o seu nome completo", label_visibility="collapsed")
+    nome_lead = st.text_input("NomeInput", value="", placeholder="Digite o seu nome completo", label_visibility="collapsed")
     
     st.markdown('<div class="rotulo-campo-centralizado">E-mail:</div>', unsafe_allow_html=True)
-    email_lead = st.text_input("EmailInput", value="okamotofotografia@hotmail.com", placeholder="exemplo@email.com", label_visibility="collapsed")
+    email_lead = st.text_input("EmailInput", value="", placeholder="exemplo@email.com", label_visibility="collapsed")
     
     st.markdown('<div class="rotulo-campo-centralizado">WhatsApp</div>', unsafe_allow_html=True)
     st.markdown('<div class="subtexto-label" style="text-align: center;">(DDD + 9 dígitos - Apenas números)</div>', unsafe_allow_html=True)
     
-    raw_whats = st.text_input("WhatsInput", value="16991332121", max_chars=11, placeholder="16991332121", label_visibility="collapsed")
+    raw_whats = st.text_input("WhatsInput", value="", max_chars=11, placeholder="16991332121", label_visibility="collapsed")
 
     if st.button("📩 Receber diagnóstico"):
         apenas_numeros = re.sub(r'\D', '', raw_whats)
@@ -523,7 +528,7 @@ if "resultado_busca" in st.session_state:
         else:
             whats_completo = "55" + apenas_numeros
 
-            # 1. Envia Oportunidade para o Bigin CRM
+            # 1. Envia Contato para o Bigin CRM
             enviar_lead_bigin(nome_lead, email_lead, whats_completo, dados['nome'], dados['score'])
             
             # 2. Envia E-mails com o Relatório em PDF Anexo
