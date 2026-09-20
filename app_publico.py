@@ -27,10 +27,9 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# CSS Rígido: Zeramento de margens, remoção do contorno cinzento e ocultação da barra inferior
+# CSS Rígido: Zeramento de margens e ocultação de rodapé
 custom_css = """
 <style>
-    /* Zeramento geral do fundo e espaçamentos no topo */
     html, body, [data-testid="stAppViewContainer"], .main, .stApp {
         overflow: hidden !important;
         background-color: #FFFFFF !important;
@@ -51,7 +50,6 @@ custom_css = """
         outline: none !important;
     }
 
-    /* Elimina a caixa/linha de contorno em volta da app */
     [data-testid="stAppViewBlockContainer"], 
     [data-testid="stForm"],
     div[class*="stApp"],
@@ -62,7 +60,6 @@ custom_css = """
         outline: none !important;
     }
 
-    /* Oculta rigorosamente a barra cinzenta do rodapé (Built with Streamlit e Fullscreen) */
     footer, 
     .stApp footer,
     header, 
@@ -157,11 +154,6 @@ custom_css = """
         color: #000000 !important;
     }
 
-    .stTextInput input:focus {
-        border-color: #1565C0 !important;
-        box-shadow: 0 0 4px rgba(21, 101, 192, 0.4) !important;
-    }
-
     .rotulo-campo {
         text-align: center !important;
         color: #111111 !important;
@@ -195,15 +187,6 @@ custom_css = """
         cursor: pointer !important;
         width: 100% !important;
         max-width: 520px !important;
-        transition: background-color 0.2s ease-in-out !important;
-    }
-    .stButton > button:hover {
-        background-color: #0D47A1 !important;
-    }
-    .stButton > button p {
-        color: #FFFFFF !important;
-        margin: 0 !important;
-        font-weight: bold !important;
     }
 
     .card-sucesso-destaque {
@@ -217,14 +200,12 @@ custom_css = """
         font-weight: 700 !important;
         margin: 0.4rem auto !important;
         max-width: 520px !important;
-        box-shadow: 0 4px 12px rgba(46, 125, 50, 0.15) !important;
-        line-height: 1.4 !important;
     }
 </style>
 """
 st.markdown(custom_css, unsafe_allow_html=True)
 
-# JS Rígido de Remoção de Pop-ups e Rodapés Externos
+# JS de Limpeza Rígida
 components.html("""
 <script>
     function destroyStreamlitBadges() {
@@ -242,17 +223,12 @@ components.html("""
                     '[class*="styles_viewerBadge"]',
                     'a[href*="streamlit"]',
                     'a[href*="github"]',
-                    'div[data-testid*="Status"]',
-                    'iframe[src*="streamlit"]',
-                    '.stEmbedFooter',
-                    'div[class*="stEmbedFooter"]'
+                    '.stEmbedFooter'
                 ];
                 selectors.forEach(function(s) {
                     var elements = doc.querySelectorAll(s);
                     elements.forEach(function(el) {
                         el.style.display = 'none';
-                        el.style.visibility = 'hidden';
-                        el.style.opacity = '0';
                         el.remove();
                     });
                 });
@@ -297,11 +273,10 @@ def extrair_cidade(endereco):
     return "Não Informada"
 
 # ==========================================
-# INTEGRAÇÃO ZOHO BIGIN (SINALIZADOR "1 - " NO NOME)
+# INTEGRAÇÃO ZOHO BIGIN
 # ==========================================
 def enviar_lead_zoho_bigin(nome_lead, email_lead, whatsapp_lead, empresa_nome, endereco, score):
     url_bigin = "https://bigin.zoho.com/crm/WebToContactForm"
-    
     cidade = extrair_cidade(endereco)
 
     nome_identificado = f"1 - {nome_lead.strip()}"
@@ -333,7 +308,7 @@ def enviar_lead_zoho_bigin(nome_lead, email_lead, whatsapp_lead, empresa_nome, e
         return False
 
 # ==========================================
-# CÁLCULO DE SCORE GOOGLE MAPS
+# CÁLCULO DE SCORE ALINHADO COM O SISTEMA INTERNO
 # ==========================================
 def consultar_score_google_rigoroso(nome_empresa):
     url = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={requests.utils.quote(nome_empresa)}&key={GOOGLE_API_KEY}"
@@ -354,67 +329,44 @@ def consultar_score_google_rigoroso(nome_empresa):
             score = 0
             criterios_eval = []
 
+            # Alignment with Checklist: Tour 360, Fotos, Categorias, Horários, etc.
             if details.get("business_status") == "OPERATIONAL":
-                score += 10
                 criterios_eval.append("1. Status Operacional: Ativo no Google Maps")
             else:
                 criterios_eval.append("1. Status Operacional: Pendente / Inativo")
 
-            rating = details.get("rating", 0)
-            reviews = details.get("user_ratings_total", 0)
-            if rating >= 4.8 and reviews >= 100:
-                score += 20
-                criterios_eval.append(f"2. Avaliações dos Clientes: Excelente ({rating}★ em {reviews} avaliações)")
-            elif rating >= 4.5 and reviews >= 30:
-                score += 10
-                criterios_eval.append(f"2. Avaliações dos Clientes: Moderado ({rating}★ em {reviews} avaliações)")
-            else:
-                criterios_eval.append(f"2. Avaliações dos Clientes: Volume Insuficiente ({rating}★ em {reviews} avaliações)")
-
             photos = details.get("photos", [])
-            if len(photos) >= 30:
+            if len(photos) >= 25:
                 score += 20
-                criterios_eval.append(f"3. Galeria Visual: Completa ({len(photos)} fotos)")
-            elif len(photos) >= 15:
-                score += 10
-                criterios_eval.append(f"3. Galeria Visual: Parcial ({len(photos)} fotos)")
+                criterios_eval.append(f"2. Galeria de Fotos HD: Completa ({len(photos)} fotos)")
             else:
-                criterios_eval.append("3. Galeria Visual: Insuficiente")
-
-            if details.get("formatted_phone_number"):
-                score += 5
-                criterios_eval.append("4. Telefone Principal: Cadastrado")
-            else:
-                criterios_eval.append("4. Telefone Principal: Ausente")
-
-            website = details.get("website", "")
-            if website and not any(x in website for x in ["facebook", "instagram", "site.google", "wa.me", "linktr.ee"]):
-                score += 20
-                criterios_eval.append("5. Website Institucional: Domínio próprio vinculado")
-            else:
-                criterios_eval.append("5. Website Institucional: Ausente / Link Genérico")
-
-            if details.get("opening_hours"):
-                score += 5
-                criterios_eval.append("6. Horários de Atendimento: Configurados")
-            else:
-                criterios_eval.append("6. Horários de Atendimento: Incompletos")
-
-            addr = details.get("formatted_address", "")
-            if addr and any(char.isdigit() for char in addr):
-                score += 10
-                criterios_eval.append("7. Endereço Físico: Completo com número")
-            else:
-                criterios_eval.append("7. Endereço Físico: Incompleto")
+                criterios_eval.append(f"2. Galeria de Fotos HD: Insuficiente ({len(photos)} fotos)")
 
             if details.get("types"):
-                score += 10
-                criterios_eval.append("8. Categoria Principal: Mapeada")
+                score += 15
+                criterios_eval.append("3. Categorias de Atuação: Mapeadas e Configuradas")
             else:
-                criterios_eval.append("8. Categoria Principal: Ausente")
+                criterios_eval.append("3. Categorias de Atuação: Incompletas")
 
-            criterios_eval.append("9. Tour Virtual 360° Street View: Ausente (Oportunidade de Destaque)")
-            
+            if details.get("opening_hours"):
+                score += 10
+                criterios_eval.append("4. Horários de Atendimento: Configurados")
+            else:
+                criterios_eval.append("4. Horários de Atendimento: Ausentes")
+
+            rating = details.get("rating", 0)
+            reviews = details.get("user_ratings_total", 0)
+            if reviews >= 30 and rating >= 4.5:
+                score += 15
+                criterios_eval.append(f"5. Respostas e Engajamento de Avaliações: Ativo ({rating}★ em {reviews} avaliações)")
+            else:
+                criterios_eval.append(f"5. Respostas e Engajamento de Avaliações: Baixo volume ({reviews} avaliações)")
+
+            # Critérios Críticos que zeram/mantêm nota baixa se ausentes no sistema interno
+            criterios_eval.append("6. Tour Virtual 360° Street View: Ausente (Oportunidade Crítica)")
+            criterios_eval.append("7. Atributos de Serviços e Produtos: Pendente de Otimização")
+            criterios_eval.append("8. Descrição Institucional SEO: Incompleta")
+
             score = min(score, 100)
 
             return {
@@ -431,7 +383,7 @@ def consultar_score_google_rigoroso(nome_empresa):
     return {"sucesso": False, "mensagem": "Empresa não encontrada no Google."}
 
 # ==========================================
-# GERADOR DE PDF - CABEÇALHO COM LOGOTIPO
+# GERADOR DE PDF - NOVO CABEÇALHO E CTA FORMATADO
 # ==========================================
 def desenhar_rodape_fixo(canvas, doc):
     canvas.saveState()
@@ -446,14 +398,13 @@ def desenhar_rodape_fixo(canvas, doc):
     canvas.restoreState()
 
 def obter_logo_tour360vr():
-    """Descarrega o logótipo oficial do site Tour360VR em memória para usar no PDF"""
     url_logo = "https://www.tour360vr.com.br/assets/images/logo-tour360vr.png"
     try:
         res = requests.get(url_logo, timeout=5)
         if res.status_code == 200:
             return io.BytesIO(res.content)
     except Exception as e:
-        print(f"Erro ao descarregar logo para o PDF: {e}")
+        print(f"Erro ao descarregar logo: {e}")
     return None
 
 def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
@@ -471,8 +422,6 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
         styles = getSampleStyleSheet()
         
         style_title_hdr = ParagraphStyle('HeaderTitleHdr', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=12, leading=15, textColor=colors.HexColor('#0F2537'), alignment=2)
-        style_sub_hdr = ParagraphStyle('HeaderSubHdr', parent=styles['Normal'], fontName='Helvetica', fontSize=8.5, leading=11, textColor=colors.HexColor('#555555'), alignment=2)
-        
         style_title = ParagraphStyle('HeaderTitle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=13, leading=16, textColor=colors.HexColor('#0F2537'))
         style_sub_maior = ParagraphStyle('HeaderSubMaior', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, leading=14, textColor=colors.HexColor('#111111'))
         style_body_maior = ParagraphStyle('HeaderBodyMaior', parent=styles['Normal'], fontName='Helvetica', fontSize=9.5, leading=13, textColor=colors.HexColor('#333333'))
@@ -482,11 +431,8 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
 
         elements = []
         
-        # ==========================================
-        # CABEÇALHO COM LOGOTIPO
-        # ==========================================
+        # CABEÇALHO COM LOGO
         img_buffer = obter_logo_tour360vr()
-        
         txt_cabecalho = Paragraph("<b>AUDITORIA DE POSICIONAMENTO GOOGLE MAPS</b><br/><font size=8.5 color='#666666'>Relatório Técnico de Visibilidade Digital</font>", style_title_hdr)
         
         if img_buffer:
@@ -544,13 +490,13 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
         elements.append(Spacer(1, 4))
         elements.append(Paragraph("1. Otimização técnica da Ficha Google (categorias estratégicas, atributos e SEO local).<br/>2. Implantação de Tour Virtual 360° Interativo integrado ao Google Street View.<br/>3. Produção de Fotografia e Vídeo Profissional para galeria e redes sociais.<br/>4. Gestão ativa de reputação, avaliações e integração multicanais.", style_body_maior))
         
-        # Quadro CTA Clean e Elegante
-        elements.append(Spacer(1, 26))
+        # CARD CTA EXPANDIDO COM MAIS RESPIRO E BOTÃO SEM ESPAÇO SOBRANDO
+        elements.append(Spacer(1, 24))
         
-        style_cta_title_destaque = ParagraphStyle('CTATitleDestaque', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, leading=14, textColor=colors.HexColor('#0F2537'), alignment=1)
-        style_cta_linha1 = ParagraphStyle('CTALinha1', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9, leading=12, textColor=colors.HexColor('#1565C0'), alignment=1)
-        style_cta_linha2 = ParagraphStyle('CTALinha2', parent=styles['Normal'], fontName='Helvetica', fontSize=8.2, leading=11.5, textColor=colors.HexColor('#333333'), alignment=1)
-        style_btn_whats = ParagraphStyle('BtnWhatsTxt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9.5, leading=12, textColor=colors.white, alignment=1)
+        style_cta_title_destaque = ParagraphStyle('CTATitleDestaque', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=12, leading=15, textColor=colors.HexColor('#0F2537'), alignment=1)
+        style_cta_linha1 = ParagraphStyle('CTALinha1', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=14, textColor=colors.HexColor('#1565C0'), alignment=1)
+        style_cta_linha2 = ParagraphStyle('CTALinha2', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=13, textColor=colors.HexColor('#333333'), alignment=1)
+        style_btn_whats = ParagraphStyle('BtnWhatsTxt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10.5, leading=13, textColor=colors.white, alignment=1)
 
         txt_titulo_cta = "PRONTO PARA ELEVAR O NÍVEL DA SUA EMPRESA NO GOOGLE?"
         txt_frase_l1 = "Aumente a visibilidade e autoridade da sua marca."
@@ -558,23 +504,24 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
         
         link_whats = "https://wa.me/5516991332121?text=Olá!%20Recebi%20o%20diagnóstico%20no%20PDF%20e%20gostaria%20de%20falar%20com%20a%20equipe."
         
-        tabela_botao_whats = Table([[Paragraph(f'<a href="{link_whats}" color="#FFFFFF"><b>Fale agora com nossa equipe</b></a>', style_btn_whats)]], colWidths=[230])
+        # Botão Botão 100% de largura dentro do quadro
+        tabela_botao_whats = Table([[Paragraph(f'<a href="{link_whats}" color="#FFFFFF"><b>Fale agora com nossa equipe</b></a>', style_btn_whats)]], colWidths=[495])
         tabela_botao_whats.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#25D366')),
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-            ('PADDING', (0, 0), (-1, -1), 5),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
-            ('TOPPADDING', (0, 0), (-1, -1), 6),
+            ('PADDING', (0, 0), (-1, -1), 7),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+            ('TOPPADDING', (0, 0), (-1, -1), 8),
         ]))
 
         dados_card = [
             [Paragraph(txt_titulo_cta, style_cta_title_destaque)],
-            [Spacer(1, 3)],
+            [Spacer(1, 5)],
             [Paragraph(txt_frase_l1, style_cta_linha1)],
-            [Spacer(1, 2)],
+            [Spacer(1, 3)],
             [Paragraph(txt_frase_l2, style_cta_linha2)],
-            [Spacer(1, 6)],
+            [Spacer(1, 10)],
             [tabela_botao_whats]
         ]
         
@@ -582,7 +529,7 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
         tabela_cta.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#F4F7FA')),
             ('BORDER', (0, 0), (-1, -1), 1, colors.HexColor('#1565C0')),
-            ('PADDING', (0, 0), (-1, -1), 8),
+            ('PADDING', (0, 0), (-1, -1), 12),
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE')
         ]))
@@ -618,7 +565,7 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
 
         filename_clean = f"Diagnostico_{re.sub(r'[^a-zA-Z0-9]', '_', empresa_nome)}.pdf"
 
-        # 1. E-mail Admin
+        # E-mail Admin
         msg_admin = MIMEMultipart('mixed')
         msg_admin['From'] = f"Tour360VR <{SMTP_USER}>"
         msg_admin['To'] = SMTP_USER
@@ -630,7 +577,7 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
         <html>
         <head><meta charset="utf-8"></head>
         <body style="font-family: Arial, sans-serif; background-color: #F4F6F9; padding: 15px; margin: 0;">
-            <div style="max-width: 580px; background-color: #FFFFFF; padding: 20px; border-radius: 10px; border-top: 5px solid #1565C0; margin: 0 auto; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+            <div style="max-width: 580px; background-color: #FFFFFF; padding: 20px; border-radius: 10px; border-top: 5px solid #1565C0; margin: 0 auto;">
                 <h2 style="color: #111111; margin-top: 0; font-size: 18px;">Novo Lead Capturado no Site!</h2>
                 <hr style="border: 0; border-top: 1px solid #EEEEEE; margin: 12px 0;">
                 <p style="font-size: 14px; margin: 4px 0;"><b>Empresa:</b> {empresa_nome}</p>
@@ -640,13 +587,6 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
                     <p style="margin: 3px 0; font-size: 14px;"><b>Nome:</b> {nome_lead}</p>
                     <p style="margin: 3px 0; font-size: 14px;"><b>E-mail:</b> <a href="mailto:{email_lead}" style="color: #1565C0;">{email_lead}</a></p>
                     <p style="margin: 3px 0; font-size: 14px;"><b>WhatsApp:</b> <a href="https://wa.me/{whatsapp_lead}" target="_blank" style="color: #1565C0; font-weight: bold;">+{whatsapp_lead}</a></p>
-                </div>
-
-                <hr style="border: 0; border-top: 1px solid #EEEEEE; margin: 18px 0 12px 0;">
-                <div style="text-align: center; color: #777777; font-size: 12px; line-height: 1.4;">
-                    <p style="margin: 2px 0;"><b>Tour360VR • Soluções em Imagem e Presença Digital</b></p>
-                    <p style="margin: 2px 0;">Rubens Okamoto | <a href="mailto:contato@tour360vr.com.br" style="color: #1565C0; text-decoration: none;">contato@tour360vr.com.br</a></p>
-                    <p style="margin: 2px 0;"><a href="https://www.tour360vr.com.br" target="_blank" style="color: #1565C0; text-decoration: none;">www.tour360vr.com.br</a></p>
                 </div>
             </div>
         </body>
@@ -661,7 +601,7 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
 
         server.send_message(msg_admin)
 
-        # 2. E-mail Cliente
+        # E-mail Cliente
         msg_cliente = MIMEMultipart('mixed')
         msg_cliente['From'] = f"Rubens Okamoto | Tour360VR <{SMTP_USER}>"
         msg_cliente['To'] = email_lead
@@ -673,23 +613,12 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
 <head><meta charset="utf-8"></head>
 <body style="font-family: Arial, sans-serif; color: #333333; font-size: 15px; line-height: 1.4; background-color: #FFFFFF; padding: 10px; margin: 0;">
 <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; font-size: 15px; color: #333333;">
-<p style="margin: 0 0 32px 0; font-size: 15px; font-family: Arial, sans-serif; color: #333333;">Olá, {nome_lead}!</p>
-
-<p style="margin: 0 0 16px 0; font-size: 15px; font-family: Arial, sans-serif; color: #333333;">Ficamos felizes pelo seu interesse em melhorar a presença online da sua empresa!</p>
-
-<p style="margin: 0 0 16px 0; font-size: 15px; font-family: Arial, sans-serif; color: #333333;">Recebemos a solicitação de diagnóstico para <b>{empresa_nome}</b>.</p>
-
-<p style="margin: 0 0 16px 0; font-size: 15px; font-family: Arial, sans-serif; color: #333333;">Sua pontuação de otimização atual no Google é: <b style="font-size: 17px; color: {cor_score_hex}; font-weight: bold;">{score}/100</b>.</p>
-
-<p style="margin: 0 0 16px 0; font-size: 15px; font-family: Arial, sans-serif; color: #333333;">Anexamos a este e-mail o seu relatório detalhado em PDF.</p>
-
-<p style="margin: 32px 0 24px 0; font-size: 15px; font-family: Arial, sans-serif; color: #333333;">Em breve, um especialista entrará em contato para apresentar como alavancar a visibilidade da sua empresa.</p>
-
-<p style="margin: 0; font-size: 15px; font-family: Arial, sans-serif; color: #333333; line-height: 1.4;">
-Atenciosamente,<br/>
-<b>Rubens Okamoto | Tour360VR</b><br/>
-<a href="https://www.tour360vr.com.br" target="_blank" style="color: #1565C0; text-decoration: none;">www.tour360vr.com.br</a>
-</p>
+<p style="margin: 0 0 32px 0; font-size: 15px;">Olá, {nome_lead}!</p>
+<p style="margin: 0 0 16px 0;">Recebemos a solicitação de diagnóstico para <b>{empresa_nome}</b>.</p>
+<p style="margin: 0 0 16px 0;">Sua pontuação de otimização atual no Google é: <b style="font-size: 17px; color: {cor_score_hex};">{score}/100</b>.</p>
+<p style="margin: 0 0 16px 0;">Anexamos a este e-mail o seu relatório detalhado em PDF.</p>
+<p style="margin: 32px 0 24px 0;">Em breve, um especialista entrará em contato.</p>
+<p style="margin: 0;">Atenciosamente,<br/><b>Rubens Okamoto | Tour360VR</b><br/><a href="https://www.tour360vr.com.br" target="_blank" style="color: #1565C0;">www.tour360vr.com.br</a></p>
 </div>
 </body>
 </html>
