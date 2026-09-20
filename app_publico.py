@@ -26,7 +26,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Injeção de CSS para ocultar todos os badges/elementos do Streamlit Cloud
+# CSS Definitivo de Trava e Ocultação Total dos Ícones do Streamlit
 custom_css = """
 <style>
     html, body, [data-testid="stAppViewContainer"], .main, .stApp {
@@ -43,7 +43,7 @@ custom_css = """
         max-width: 900px !important;
     }
 
-    /* Remove barras, menus e badges do Streamlit Cloud */
+    /* Oculta rigorosamente menus, headers, footers e ícones/badges flutuantes */
     header, 
     [data-testid="stHeader"], 
     [data-testid="stAppHeader"],
@@ -58,12 +58,15 @@ custom_css = """
     .styles_viewerBadge__1yB5_,
     button[title="View source"],
     a[href*="streamlit"],
+    a[href*="github"],
     div[class*="viewerBadge"],
     div[class*="styles_viewerBadge"],
     div[class*="stStatusWidget"],
     div[class*="viewerBadge_container"],
     div[data-testid*="stStatusWidget"],
-    div[data-testid*="viewerBadge"] {
+    div[data-testid*="viewerBadge"],
+    .stStatusWidget,
+    div[class*="StatusWidget"] {
         display: none !important;
         visibility: hidden !important;
         opacity: 0 !important;
@@ -209,7 +212,8 @@ components.html("""
                 '.viewerBadge_container__1QSob',
                 '[class*="viewerBadge"]',
                 '[class*="styles_viewerBadge"]',
-                'a[href*="streamlit"]'
+                'a[href*="streamlit"]',
+                'a[href*="github"]'
             ];
             selectors.forEach(function(s) {
                 var els = parentDoc.querySelectorAll(s);
@@ -220,7 +224,7 @@ components.html("""
             });
         } catch(e) {}
     }
-    setInterval(hideElements, 500);
+    setInterval(hideElements, 300);
 </script>
 """, height=0, width=0)
 
@@ -258,7 +262,7 @@ def extrair_cidade(endereco):
     return "Não Informada"
 
 # ==========================================
-# INTEGRAÇÃO ZOHO BIGIN (COM TAG AUTOMÁTICA)
+# INTEGRAÇÃO ZOHO BIGIN (TAG E ORIGEM)
 # ==========================================
 def enviar_lead_zoho_bigin(nome_lead, email_lead, whatsapp_lead, empresa_nome, endereco, score):
     url_bigin = "https://bigin.zoho.com/crm/WebToContactForm"
@@ -281,10 +285,11 @@ def enviar_lead_zoho_bigin(nome_lead, email_lead, whatsapp_lead, empresa_nome, e
         'Email': email_lead,
         'Accounts.Account Name': empresa_nome,
         'Phone': whatsapp_lead,
-        'Tag': 'Diagnóstico Site',            # Aplica a Tag no Bigin
-        'Lead Source': 'Website',             # Identifica a Origem do Lead
+        'Tag': 'Diagnóstico Site',
+        'tags': 'Diagnóstico Site',
+        'Lead Source': 'Website',
         'CONTACTCF6': f"{score}/100",
-        'Description': f"Cidade: {cidade}\nEndereço: {endereco}\nPontuação Otimização: {score}/100"
+        'Description': f"Cidade: {cidade}\nEndereço: {endereco}\nPontuação Otimização: {score}/100\nTAG: Diagnóstico Site"
     }
     
     try:
@@ -392,7 +397,7 @@ def consultar_score_google_rigoroso(nome_empresa):
     return {"sucesso": False, "mensagem": "Empresa não encontrada no Google."}
 
 # ==========================================
-# GERADOR DE PDF COM LAYOUT REFINADO
+# GERADOR DE PDF AJUSTADO (TÍTULO E RODAPÉ)
 # ==========================================
 def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
     try:
@@ -403,11 +408,11 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
             leftMargin=35,
             rightMargin=35,
             topMargin=35,
-            bottomMargin=35
+            bottomMargin=20
         )
         
         styles = getSampleStyleSheet()
-        style_title = ParagraphStyle('HeaderTitle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=15, leading=18, textColor=colors.HexColor('#1565C0'))
+        style_title = ParagraphStyle('HeaderTitle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=14, leading=17, textColor=colors.HexColor('#1565C0'))
         style_sub = ParagraphStyle('HeaderSub', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10.5, leading=14, textColor=colors.HexColor('#222222'))
         style_body = ParagraphStyle('HeaderBody', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=12, textColor=colors.HexColor('#444444'))
         style_cell = ParagraphStyle('CellText', parent=styles['Normal'], fontName='Helvetica', fontSize=8.5, leading=11, textColor=colors.HexColor('#333333'))
@@ -415,16 +420,19 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
 
         elements = []
         
-        elements.append(Paragraph("TOUR360VR • AUDITORIA DE POSICIONAMENTO GOOGLE MAPS", style_title))
-        elements.append(HRFlowable(width="100%", thickness=2, color=colors.HexColor('#1565C0'), spaceBefore=4, spaceAfter=10))
+        # Título Invertido Conforme Solicitado
+        elements.append(Paragraph("AUDITORIA DE POSICIONAMENTO GOOGLE MAPS - TOUR360VR", style_title))
+        elements.append(HRFlowable(width="100%", thickness=2, color=colors.HexColor('#1565C0'), spaceBefore=6, spaceAfter=14))
         
+        # Mais Espaço de Linha Antes de "Empresa Analisada"
+        elements.append(Spacer(1, 10))
         elements.append(Paragraph(f"<b>Empresa Analisada:</b> {empresa_nome}", style_sub))
         elements.append(Paragraph(f"<b>Endereço Registrado:</b> {endereco}", style_body))
-        elements.append(Spacer(1, 12))
+        elements.append(Spacer(1, 14))
         
         cor_score_hex = obter_cor_score(score)
         elements.append(Paragraph(f"PONTUAÇÃO DE OTIMIZAÇÃO: <font color='{cor_score_hex}'><b>{score} / 100 PONTOS</b></font>", ParagraphStyle('ScorePDF', parent=style_title, fontSize=13)))
-        elements.append(Spacer(1, 10))
+        elements.append(Spacer(1, 12))
         
         elements.append(Paragraph("<b>Análise Detalhada dos Critérios Avaliados:</b>", style_sub))
         elements.append(Spacer(1, 6))
@@ -445,11 +453,14 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
         ]))
         elements.append(t)
         
-        elements.append(Spacer(1, 14))
+        # Mais Espaço de Linha Antes de "Plano de Ação Sugerido"
+        elements.append(Spacer(1, 24))
         elements.append(Paragraph("<b>Plano de Ação Sugerido para Alta Visibilidade:</b>", style_sub))
+        elements.append(Spacer(1, 4))
         elements.append(Paragraph("1. Implantação de Tour Virtual 360° Interativo integrado ao Google Street View.<br/>2. Atualização visual contínua da galeria de fotos e gestão ativa de avaliações.<br/>3. Alinhamento de horários de funcionamento e inclusão do site oficial.", style_body))
         
-        elements.append(Spacer(1, 18))
+        # Rodapé Empurrado Quase no Final da Página
+        elements.append(Spacer(1, 40))
         elements.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor('#CCCCCC'), spaceBefore=2, spaceAfter=6))
         elements.append(Paragraph("Tour360VR • Rubens Okamoto | contato@tour360vr.com.br | www.tour360vr.com.br", ParagraphStyle('Foot', parent=style_body, fontSize=8, alignment=1)))
         
