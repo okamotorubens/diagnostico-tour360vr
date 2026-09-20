@@ -9,7 +9,7 @@ from email.mime.base import MIMEBase
 from email import encoders
 import streamlit as st
 
-# ReportLab para geração de PDF
+# ReportLab para geração do PDF
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -24,10 +24,10 @@ st.set_page_config(
     layout="centered"
 )
 
-# Estilo CSS Global - Padronização Visual de Todos os Inputs e Ocultação do Rodapé
+# Estilo CSS Global: Todos os campos brancos com texto escuro e sem rodapé do Streamlit
 custom_css = """
 <style>
-    /* Ocultar rodapé nativo 'Built with Streamlit' e barras nativas */
+    /* Ocultar rodapé nativo 'Built with Streamlit' e barras do sistema */
     footer, .stApp footer, [data-testid="stFooter"], header, #MainMenu, [data-testid="stHeader"], [data-testid="stToolbar"] {
         display: none !important;
         visibility: hidden !important;
@@ -54,7 +54,6 @@ custom_css = """
         font-weight: 800;
         margin-bottom: 0.2rem;
         font-family: 'Arial', sans-serif;
-        white-space: nowrap;
     }
     .instrucao-subtitulo {
         text-align: center;
@@ -83,7 +82,7 @@ custom_css = """
         margin-bottom: 0.3rem !important;
     }
 
-    /* PADRONIZAÇÃO FORÇADA DE TODOS OS INPUTS DO FORMULÁRIO (FUNDO ESCURO PADRÃO E TEXTO CLARO) */
+    /* PADRONIZAÇÃO COMPLETA: TODOS OS CAMPOS DE INPUT EM BRANCO COM BORDA CLARA */
     .stTextInput {
         display: flex !important;
         justify-content: center !important;
@@ -99,16 +98,17 @@ custom_css = """
         margin: 0 auto !important;
     }
     .stTextInput > div > div > input {
-        background-color: #313745 !important;
-        color: #FFFFFF !important;
-        border: 1px solid #4A5060 !important;
+        background-color: #FFFFFF !important;
+        color: #000000 !important;
+        border: 2px solid #CCCCCC !important;
         border-radius: 8px !important;
         font-size: 1rem !important;
         padding: 0.6rem 0.8rem !important;
         text-align: center !important;
     }
-    .stTextInput > div > div > input::placeholder {
-        color: #AAAAAA !important;
+    .stTextInput > div > div > input:focus {
+        border-color: #8DC63F !important;
+        box-shadow: 0 0 5px rgba(141, 198, 63, 0.5) !important;
     }
 
     /* Centralização dos Botões */
@@ -132,9 +132,6 @@ custom_css = """
         cursor: pointer !important;
         box-shadow: 0 4px 12px rgba(141, 198, 63, 0.3) !important;
         margin: 0 auto !important;
-        display: flex !important;
-        justify-content: center !important;
-        align-items: center !important;
         width: 100% !important;
         max-width: 480px !important;
     }
@@ -149,7 +146,6 @@ custom_css = """
         font-size: 1.1rem !important;
         font-weight: bold !important;
         margin: 0 !important;
-        text-align: center !important;
     }
 
     /* Título do Formulário */
@@ -161,7 +157,6 @@ custom_css = """
         margin-top: 1.2rem;
         margin-bottom: 0.8rem;
         font-family: 'Arial', sans-serif;
-        white-space: nowrap;
     }
 
     /* Card de Sucesso */
@@ -176,14 +171,13 @@ custom_css = """
         font-weight: 800 !important;
         margin: 0.8rem auto !important;
         max-width: 480px !important;
-        box-shadow: 0 2px 8px rgba(46, 125, 50, 0.15) !important;
     }
 </style>
 """
 st.markdown(custom_css, unsafe_allow_html=True)
 
 # ==========================================
-# CONFIGURAÇÕES E CREDENCIAIS
+# CREDENCIAIS E SERVIÇOS
 # ==========================================
 GOOGLE_API_KEY = "AIzaSyA8ul_9QICNyqxrHgT-CURIZmd1sikHn5U"
 BIGIN_CLIENT_ID = "1000.COI8SBR9O0RCMGCL7WKEYUJMBZCR8X"
@@ -194,19 +188,16 @@ SMTP_PORT = 587
 SMTP_USER = "contato@tour360vr.com.br"
 SMTP_PASS = "Kakaroto@2026"
 
-# ==========================================
-# COR DINÂMICA DO SCORE
-# ==========================================
 def obter_cor_score(score):
     if score <= 40:
-        return "#D32F2F"  # Vermelho Alerta
+        return "#D32F2F"
     elif score <= 70:
-        return "#F57C00"  # Laranja / Amarelo Atenção
+        return "#F57C00"
     else:
-        return "#8DC63F"  # Verde Otimizado
+        return "#8DC63F"
 
 # ==========================================
-# CÁLCULO DE SCORE RIGOROSO
+# CÁLCULO DE SCORE PRECISO E REAL
 # ==========================================
 def consultar_score_google_rigoroso(nome_empresa):
     url = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={requests.utils.quote(nome_empresa)}&key={GOOGLE_API_KEY}"
@@ -284,7 +275,7 @@ def consultar_score_google_rigoroso(nome_empresa):
     return {"sucesso": False, "mensagem": "Empresa não encontrada no Google."}
 
 # ==========================================
-# GERADOR DE PDF EM DISCO TEMPORÁRIO
+# GERADOR DE PDF GRAVADO EM DISCO TEMPORÁRIO
 # ==========================================
 def gerar_pdf_diagnostico_arquivo(empresa_nome, endereco, score, criterios):
     try:
@@ -341,7 +332,7 @@ def gerar_pdf_diagnostico_arquivo(empresa_nome, endereco, score, criterios):
         return None
 
 # ==========================================
-# ENVIO DE LEAD PARA O BIGIN CRM
+# ENVIO DE LEAD PARA O ZOHO BIGIN CRM
 # ==========================================
 def enviar_lead_bigin(nome_lead, email_lead, whatsapp_lead, empresa_consultada, score):
     try:
@@ -357,6 +348,7 @@ def enviar_lead_bigin(nome_lead, email_lead, whatsapp_lead, empresa_consultada, 
             "Content-Type": "application/json"
         }
 
+        # Criação do Negócio no Zoho Bigin
         payload = {
             "data": [
                 {
@@ -375,7 +367,7 @@ def enviar_lead_bigin(nome_lead, email_lead, whatsapp_lead, empresa_consultada, 
         return False
 
 # ==========================================
-# DISPARO DE E-MAILS COM ANEXO FÍSICO DO PDF
+# DISPARO DE E-MAILS COM ANEXO DO PDF
 # ==========================================
 def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dados_busca):
     try:
@@ -391,7 +383,7 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
         server.starttls()
         server.login(SMTP_USER, SMTP_PASS)
 
-        # 1. E-mail Administrativo
+        # 1. E-mail Administrativo da Tour360VR
         msg_admin = MIMEMultipart('mixed')
         msg_admin['From'] = SMTP_USER
         msg_admin['To'] = SMTP_USER
@@ -403,19 +395,15 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
             <div style="max-width: 600px; background-color: #ffffff; padding: 25px; border-radius: 10px; border-top: 5px solid #1E88E5; margin: 0 auto;">
                 <h2 style="color: #333333; margin-top: 0;">Novo Lead Capturado no Site!</h2>
                 <hr style="border: 0; border-top: 1px solid #eeeeee;">
-                
                 <h3 style="color: #1565C0; margin-bottom: 5px;">Empresa Consultada:</h3>
                 <p style="font-size: 1.1rem; font-weight: bold; margin-top: 0; color: #1E88E5;">{empresa_nome}</p>
-                
                 <p><b>Pontuação Obtida:</b> <span style="font-size: 1.25rem; color: {cor_score_hex}; font-weight: bold;">{score} / 100</span></p>
-                
                 <div style="background-color: #F8F9FA; padding: 15px; border-radius: 8px; border-left: 4px solid #1E88E5; margin: 15px 0;">
                     <h4 style="margin-top: 0; color: #555555;">Dados do Cliente:</h4>
                     <p style="margin: 5px 0;"><b>Nome:</b> {nome_lead}</p>
                     <p style="margin: 5px 0;"><b>E-mail:</b> <a href="mailto:{email_lead}">{email_lead}</a></p>
                     <p style="margin: 5px 0;"><b>WhatsApp:</b> <a href="https://wa.me/{whatsapp_lead}" target="_blank" style="color: #1E88E5; font-weight: bold;">+{whatsapp_lead}</a></p>
                 </div>
-                
                 <p style="font-size: 0.85rem; color: #888888; text-align: center;">Tour360VR • Sistema Automático de Captura</p>
             </div>
         </body>
@@ -475,7 +463,7 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
         return False
 
 # ==========================================
-# INTERFACE DO USUÁRIO
+# INTERFACE DO USUÁRIO (STREAMLIT)
 # ==========================================
 st.markdown('<div class="titulo-uma-linha">🔍 Faça uma análise da sua empresa no Google</div>', unsafe_allow_html=True)
 st.markdown('<div class="instrucao-subtitulo">Digite o Nome Comercial exato da sua empresa seguido da Cidade e Estado.</div>', unsafe_allow_html=True)
