@@ -10,7 +10,8 @@ import streamlit.components.v1 as components
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable, Image
+from reportlab.lib.units import cm
 
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -26,7 +27,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# CSS Rígido: Elimina espaço no topo, contorno cinza e rodapé (Built with Streamlit / Fullscreen)
+# CSS Rígido: Zeramento de margens, remoção do contorno cinzento e ocultação da barra inferior
 custom_css = """
 <style>
     /* Zeramento geral do fundo e espaçamentos no topo */
@@ -50,7 +51,7 @@ custom_css = """
         outline: none !important;
     }
 
-    /* Elimina a caixa/linha de contorno em volta do app */
+    /* Elimina a caixa/linha de contorno em volta da app */
     [data-testid="stAppViewBlockContainer"], 
     [data-testid="stForm"],
     div[class*="stApp"],
@@ -61,7 +62,7 @@ custom_css = """
         outline: none !important;
     }
 
-    /* Oculta rigorosamente a barra cinza do rodapé (Built with Streamlit e Fullscreen) */
+    /* Oculta rigorosamente a barra cinzenta do rodapé (Built with Streamlit e Fullscreen) */
     footer, 
     .stApp footer,
     header, 
@@ -223,7 +224,7 @@ custom_css = """
 """
 st.markdown(custom_css, unsafe_allow_html=True)
 
-# JS Rígido de Remoção do Pop-up Flutuante e Barra Inferior
+# JS Rígido de Remoção de Pop-ups e Rodapés Externos
 components.html("""
 <script>
     function destroyStreamlitBadges() {
@@ -332,7 +333,7 @@ def enviar_lead_zoho_bigin(nome_lead, email_lead, whatsapp_lead, empresa_nome, e
         return False
 
 # ==========================================
-# CÁLCULO DE SCORE GOOGLE MAPS (CORRIGIDO)
+# CÁLCULO DE SCORE GOOGLE MAPS
 # ==========================================
 def consultar_score_google_rigoroso(nome_empresa):
     url = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={requests.utils.quote(nome_empresa)}&key={GOOGLE_API_KEY}"
@@ -414,7 +415,6 @@ def consultar_score_google_rigoroso(nome_empresa):
 
             criterios_eval.append("9. Tour Virtual 360° Street View: Ausente (Oportunidade de Destaque)")
             
-            # Limite real até 100
             score = min(score, 100)
 
             return {
@@ -431,18 +431,30 @@ def consultar_score_google_rigoroso(nome_empresa):
     return {"sucesso": False, "mensagem": "Empresa não encontrada no Google."}
 
 # ==========================================
-# GERADOR DE PDF (ELEGANTE E COMERCIAMENTE ATRAENTE)
+# GERADOR DE PDF - CABEÇALHO COM LOGOTIPO
 # ==========================================
 def desenhar_rodape_fixo(canvas, doc):
     canvas.saveState()
     canvas.setStrokeColor(colors.HexColor('#CCCCCC'))
     canvas.setLineWidth(0.5)
-    canvas.line(35, 40, 560, 40)
+    canvas.line(35, 38, 560, 38)
     
-    canvas.setFont('Helvetica', 8)
-    canvas.setFillColor(colors.HexColor('#555555'))
-    canvas.drawCentredString(297, 26, "Tour360VR • Rubens Okamoto | contato@tour360vr.com.br | www.tour360vr.com.br")
+    canvas.setFont('Helvetica', 8.5)
+    canvas.setFillColor(colors.HexColor('#444444'))
+    texto_rodape = "Tour360VR   •   Rubens Okamoto   •   contato@tour360vr.com.br   •   www.tour360vr.com.br"
+    canvas.drawCentredString(297, 24, texto_rodape)
     canvas.restoreState()
+
+def obter_logo_tour360vr():
+    """Descarrega o logótipo oficial do site Tour360VR em memória para usar no PDF"""
+    url_logo = "https://www.tour360vr.com.br/assets/images/logo-tour360vr.png"
+    try:
+        res = requests.get(url_logo, timeout=5)
+        if res.status_code == 200:
+            return io.BytesIO(res.content)
+    except Exception as e:
+        print(f"Erro ao descarregar logo para o PDF: {e}")
+    return None
 
 def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
     try:
@@ -452,31 +464,62 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
             pagesize=A4,
             leftMargin=35,
             rightMargin=35,
-            topMargin=32,
-            bottomMargin=45
+            topMargin=30,
+            bottomMargin=48
         )
         
         styles = getSampleStyleSheet()
-        style_title = ParagraphStyle('HeaderTitle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=14, leading=17, textColor=colors.HexColor('#0F2537'))
-        style_sub = ParagraphStyle('HeaderSub', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10.5, leading=14, textColor=colors.HexColor('#111111'))
-        style_body = ParagraphStyle('HeaderBody', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=12.5, textColor=colors.HexColor('#333333'))
+        
+        style_title_hdr = ParagraphStyle('HeaderTitleHdr', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=12, leading=15, textColor=colors.HexColor('#0F2537'), alignment=2)
+        style_sub_hdr = ParagraphStyle('HeaderSubHdr', parent=styles['Normal'], fontName='Helvetica', fontSize=8.5, leading=11, textColor=colors.HexColor('#555555'), alignment=2)
+        
+        style_title = ParagraphStyle('HeaderTitle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=13, leading=16, textColor=colors.HexColor('#0F2537'))
+        style_sub_maior = ParagraphStyle('HeaderSubMaior', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, leading=14, textColor=colors.HexColor('#111111'))
+        style_body_maior = ParagraphStyle('HeaderBodyMaior', parent=styles['Normal'], fontName='Helvetica', fontSize=9.5, leading=13, textColor=colors.HexColor('#333333'))
+        
         style_cell = ParagraphStyle('CellText', parent=styles['Normal'], fontName='Helvetica', fontSize=8.5, leading=11, textColor=colors.HexColor('#333333'))
         style_cell_bold = ParagraphStyle('CellBold', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9, leading=11, textColor=colors.white)
 
         elements = []
         
-        elements.append(Paragraph("AUDITORIA DE POSICIONAMENTO GOOGLE MAPS - TOUR360VR", style_title))
-        elements.append(HRFlowable(width="100%", thickness=2.5, color=colors.HexColor('#1565C0'), spaceBefore=6, spaceAfter=14))
+        # ==========================================
+        # CABEÇALHO COM LOGOTIPO
+        # ==========================================
+        img_buffer = obter_logo_tour360vr()
         
-        elements.append(Paragraph(f"<b>Empresa Analisada:</b> {empresa_nome}", style_sub))
-        elements.append(Paragraph(f"<b>Endereço Registrado:</b> {endereco}", style_body))
-        elements.append(Spacer(1, 10))
+        txt_cabecalho = Paragraph("<b>AUDITORIA DE POSICIONAMENTO GOOGLE MAPS</b><br/><font size=8.5 color='#666666'>Relatório Técnico de Visibilidade Digital</font>", style_title_hdr)
         
+        if img_buffer:
+            img_logo = Image(img_buffer, width=4.5*cm, height=1.35*cm)
+            tabela_cabecalho = Table([[img_logo, txt_cabecalho]], colWidths=[150, 375])
+        else:
+            tabela_cabecalho = Table([[Paragraph("<b>TOUR360VR</b>", style_title), txt_cabecalho]], colWidths=[150, 375])
+            
+        tabela_cabecalho.setStyle(TableStyle([
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('ALIGN', (0, 0), (0, 0), 'LEFT'),
+            ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
+            ('PADDING', (0, 0), (-1, -1), 0),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 4)
+        ]))
+        
+        elements.append(tabela_cabecalho)
+        elements.append(Spacer(1, 4))
+        elements.append(HRFlowable(width="100%", thickness=2, color=colors.HexColor('#1565C0'), spaceBefore=2, spaceAfter=12))
+        
+        # Dados da Empresa Analisada
+        elements.append(Paragraph(f"<b>Empresa Analisada:</b> {empresa_nome}", style_sub_maior))
+        elements.append(Spacer(1, 2))
+        elements.append(Paragraph(f"<b>Endereço Registrado:</b> {endereco}", style_body_maior))
+        
+        # Pontuação de Otimização
+        elements.append(Spacer(1, 18))
         cor_score_hex = obter_cor_score(score)
-        elements.append(Paragraph(f"PONTUAÇÃO DE OTIMIZAÇÃO: <font color='{cor_score_hex}'><b>{score} / 100 PONTOS</b></font>", ParagraphStyle('ScorePDF', parent=style_title, fontSize=12.5)))
-        elements.append(Spacer(1, 10))
-        
-        elements.append(Paragraph("<b>Análise Detalhada dos Critérios Avaliados:</b>", style_sub))
+        elements.append(Paragraph(f"PONTUAÇÃO DE OTIMIZAÇÃO: <font color='{cor_score_hex}'><b>{score} / 100 PONTOS</b></font>", ParagraphStyle('ScorePDFDestaque', parent=style_title, fontSize=13, leading=16)))
+        elements.append(Spacer(1, 18))
+
+        # Tabela de Critérios
+        elements.append(Paragraph("<b>Análise Detalhada dos Critérios Avaliados:</b>", style_sub_maior))
         elements.append(Spacer(1, 6))
         
         tabela_dados = [[Paragraph("Critério de Otimização", style_cell_bold), Paragraph("Diagnóstico do Perfil", style_cell_bold)]]
@@ -490,44 +533,55 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
         t.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#0F2537')),
             ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#E0E0E0')),
-            ('PADDING', (0, 0), (-1, -1), 4),
+            ('PADDING', (0, 0), (-1, -1), 3.8),
             ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.HexColor('#FFFFFF'), colors.HexColor('#F8F9FA')])
         ]))
         elements.append(t)
         
-        elements.append(Spacer(1, 12))
-        elements.append(Paragraph("<b>Plano de Ação Sugerido para Alta Visibilidade:</b>", style_sub))
+        # Plano de Ação
+        elements.append(Spacer(1, 18))
+        elements.append(Paragraph("<b>Plano de Ação Sugerido para Alta Visibilidade:</b>", style_sub_maior))
         elements.append(Spacer(1, 4))
-        elements.append(Paragraph("1. Otimização técnica da Ficha Google (categorias estratégicas, atributos e SEO local).<br/>2. Implantação de Tour Virtual 360° Interativo integrado ao Google Street View.<br/>3. Produção de Fotografia e Vídeo Profissional para galeria e redes sociais.<br/>4. Gestão ativa de reputação, avaliações e integração multicanais.", style_body))
+        elements.append(Paragraph("1. Otimização técnica da Ficha Google (categorias estratégicas, atributos e SEO local).<br/>2. Implantação de Tour Virtual 360° Interativo integrado ao Google Street View.<br/>3. Produção de Fotografia e Vídeo Profissional para galeria e redes sociais.<br/>4. Gestão ativa de reputação, avaliações e integração multicanais.", style_body_maior))
         
-        # ==========================================
-        # QUADRO CTA NOVO: DESIGN MODERNO E ELEGANTE
-        # ==========================================
-        elements.append(Spacer(1, 14))
+        # Quadro CTA Clean e Elegante
+        elements.append(Spacer(1, 26))
         
-        style_cta_title = ParagraphStyle('CTATitle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10.5, leading=13, textColor=colors.HexColor('#FFC107'), alignment=1)
-        style_cta_desc = ParagraphStyle('CTADesc', parent=styles['Normal'], fontName='Helvetica', fontSize=8.5, leading=12, textColor=colors.white, alignment=1)
-        style_cta_btn = ParagraphStyle('CTABtn', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9.5, leading=12, textColor=colors.white, alignment=1)
+        style_cta_title_destaque = ParagraphStyle('CTATitleDestaque', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, leading=14, textColor=colors.HexColor('#0F2537'), alignment=1)
+        style_cta_linha1 = ParagraphStyle('CTALinha1', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9, leading=12, textColor=colors.HexColor('#1565C0'), alignment=1)
+        style_cta_linha2 = ParagraphStyle('CTALinha2', parent=styles['Normal'], fontName='Helvetica', fontSize=8.2, leading=11.5, textColor=colors.HexColor('#333333'), alignment=1)
+        style_btn_whats = ParagraphStyle('BtnWhatsTxt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9.5, leading=12, textColor=colors.white, alignment=1)
 
         txt_titulo_cta = "PRONTO PARA ELEVAR O NÍVEL DA SUA EMPRESA NO GOOGLE?"
-        txt_desc_cta = "Aumente a visibilidade e autoridade da sua marca. Estruturamos sua <b>Ficha Google</b>, criamos o <b>Tour Virtual 360°</b>, produzimos <b>Fotos & Vídeos Profissionais</b> e gerenciamos suas <b>Redes Sociais</b>."
+        txt_frase_l1 = "Aumente a visibilidade e autoridade da sua marca."
+        txt_frase_l2 = "Estruturamos sua Ficha Google, criamos o Tour Virtual 360°, produzimos Fotos & Vídeos Profissionais e gerenciamos suas Redes Sociais."
         
-        link_whats = "https://wa.me/5516991332121?text=Olá%20Rubens!%20Recebi%20o%20diagnóstico%20no%20PDF%20e%20quero%20saber%20mais%20sobre%20a%20otimização%20completa."
-        txt_btn_cta = f'<a href="{link_whats}" color="#FFFFFF">📲 <u><b>CLIQUE AQUI PARA FALAR DIRETO COM RUBENS OKAMOTO NO WHATSAPP</b></u></a>'
+        link_whats = "https://wa.me/5516991332121?text=Olá!%20Recebi%20o%20diagnóstico%20no%20PDF%20e%20gostaria%20de%20falar%20com%20a%20equipe."
+        
+        tabela_botao_whats = Table([[Paragraph(f'<a href="{link_whats}" color="#FFFFFF"><b>Fale agora com nossa equipe</b></a>', style_btn_whats)]], colWidths=[230])
+        tabela_botao_whats.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#25D366')),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('PADDING', (0, 0), (-1, -1), 5),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+            ('TOPPADDING', (0, 0), (-1, -1), 6),
+        ]))
 
-        # Tabela composta para criar visual de card moderno
         dados_card = [
-            [Paragraph(txt_titulo_cta, style_cta_title)],
+            [Paragraph(txt_titulo_cta, style_cta_title_destaque)],
             [Spacer(1, 3)],
-            [Paragraph(txt_desc_cta, style_cta_desc)],
+            [Paragraph(txt_frase_l1, style_cta_linha1)],
+            [Spacer(1, 2)],
+            [Paragraph(txt_frase_l2, style_cta_linha2)],
             [Spacer(1, 6)],
-            [Paragraph(txt_btn_cta, style_cta_btn)]
+            [tabela_botao_whats]
         ]
         
         tabela_cta = Table(dados_card, colWidths=[525])
         tabela_cta.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#0F2537')),
-            ('CORNERPAD', (0, 0), (-1, -1), 0),
+            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#F4F7FA')),
+            ('BORDER', (0, 0), (-1, -1), 1, colors.HexColor('#1565C0')),
             ('PADDING', (0, 0), (-1, -1), 8),
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE')
