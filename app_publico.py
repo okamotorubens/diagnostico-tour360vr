@@ -25,10 +25,9 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# CSS com botões no tom azul (#1565C0 / #0D47A1) e prevenção de scroll
+# CSS Ajustado: Largura maior (900px), Title 2 (H2) e layout limpo
 custom_css = """
 <style>
-    /* Remove barras de rolagem lateral e vertical desnecessárias */
     html, body, [data-testid="stAppViewContainer"], .main {
         overflow-x: hidden !important;
         overflow-y: auto !important;
@@ -36,12 +35,13 @@ custom_css = """
         color: #000000 !important;
     }
     
+    /* Expansão da largura para 900px */
     .block-container {
         padding-top: 0.5rem !important;
         padding-bottom: 0.5rem !important;
         padding-left: 1rem !important;
         padding-right: 1rem !important;
-        max-width: 680px !important;
+        max-width: 900px !important;
     }
 
     footer, .stApp footer, [data-testid="stFooter"], header, #MainMenu, [data-testid="stHeader"], [data-testid="stToolbar"] {
@@ -55,26 +55,27 @@ custom_css = """
         background-color: #F0F4F8 !important;
         border: 1px solid #D0D7DE !important;
         border-radius: 10px !important;
-        padding: 16px 20px !important;
+        padding: 18px 24px !important;
         margin: 0.8rem auto !important;
         box-shadow: 0 2px 8px rgba(0,0,0,0.04) !important;
     }
 
-    /* Título com Maior Destaque */
+    /* Título 2 (H2 / Title 2) em Linha Única */
     .titulo-principal {
         text-align: center;
         color: #111111 !important;
-        font-size: 1.65rem;
+        font-size: 2rem;
         font-weight: 800;
         margin-bottom: 0.3rem;
-        line-height: 1.25;
+        line-height: 1.2;
+        white-space: nowrap;
         font-family: 'Arial', sans-serif;
     }
     
     .titulo-secundario {
         text-align: center;
         color: #111111 !important;
-        font-size: 1.2rem;
+        font-size: 1.25rem;
         font-weight: 700;
         margin-top: 1.2rem;
         margin-bottom: 0.4rem;
@@ -84,7 +85,7 @@ custom_css = """
     .instrucao-subtitulo {
         text-align: center;
         color: #555555 !important;
-        font-size: 0.95rem;
+        font-size: 1rem;
         font-weight: 600;
         margin-bottom: 1rem;
         font-family: 'Arial', sans-serif;
@@ -126,19 +127,19 @@ custom_css = """
     .rotulo-campo {
         text-align: center !important;
         color: #111111 !important;
-        font-size: 0.92rem !important;
+        font-size: 0.95rem !important;
         font-weight: 700 !important;
         margin-top: 0.4rem !important;
         margin-bottom: 0.1rem !important;
     }
     .subtexto-label {
-        font-size: 0.78rem !important;
+        font-size: 0.8rem !important;
         color: #666666 !important;
         text-align: center !important;
         margin-bottom: 0.2rem !important;
     }
 
-    /* Botões Alterados para Azul (#1565C0 / Hover #0D47A1) */
+    /* Botões em Tom Azul Real */
     div[data-testid="stButton"], div.stButton {
         display: flex !important;
         justify-content: center !important;
@@ -156,7 +157,7 @@ custom_css = """
         padding: 0.65rem 2rem !important;
         cursor: pointer !important;
         width: 100% !important;
-        max-width: 480px !important;
+        max-width: 520px !important;
         transition: background-color 0.2s ease-in-out !important;
     }
     .stButton > button:hover {
@@ -168,16 +169,18 @@ custom_css = """
         font-weight: bold !important;
     }
 
+    /* Card de Sucesso em Destaque no Topo da Visão */
     .card-sucesso-destaque {
         background-color: #E8F5E9 !important;
-        border: 1px solid #2E7D32 !important;
-        border-radius: 6px !important;
-        padding: 10px 14px !important;
+        border: 2px solid #2E7D32 !important;
+        border-radius: 8px !important;
+        padding: 12px 16px !important;
         text-align: center !important;
         color: #1B5E20 !important;
-        font-size: 0.98rem !important;
+        font-size: 1.05rem !important;
         font-weight: 700 !important;
-        margin: 0.8rem auto !important;
+        margin: 0.8rem auto 1.2rem auto !important;
+        box-shadow: 0 4px 12px rgba(46, 125, 50, 0.15) !important;
     }
 </style>
 """
@@ -490,7 +493,7 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
 # ==========================================
 # INTERFACE DO USUÁRIO STREAMLIT
 # ==========================================
-# NOVO TÍTULO COM DESTAQUE
+# TÍTULO 2 EM UMA LINHA SÓ
 st.markdown('<div class="titulo-principal">Pronto para destacar sua empresa no Google?</div>', unsafe_allow_html=True)
 st.markdown('<div class="instrucao-subtitulo">Digite o Nome Comercial exato da sua empresa seguido da Cidade e Estado.</div>', unsafe_allow_html=True)
 
@@ -512,18 +515,30 @@ if "resultado_busca" in st.session_state:
     
     html_card_resultado = f"""
     <div class="card-resultado-compacto">
-        <div style="text-align: center; color: #111111; font-size: 1.2rem; font-weight: 800; margin-bottom: 2px;">Empresa Localizada: {dados["nome"]}</div>
-        <p style="text-align: center; color: #555555; font-size: 0.88rem; margin-top: 0; margin-bottom: 6px;">📍 {dados["endereco"]}</p>
-        <p style="text-align: center; font-weight: 700; font-size: 1rem; margin-top: 4px; margin-bottom: 2px;">Pontuação Geral de Otimização</p>
-        <div style="text-align: center; font-size: 3rem; font-weight: 900; line-height: 1; margin: 2px 0 8px 0; color: {cor_nota} !important;">{dados["score"]} / 100</div>
-        <div style="background-color: #FFFDE7; border: 1px solid #FBC02D; border-radius: 6px; padding: 6px 10px; text-align: center; color: #5D4037; font-size: 0.88rem; font-weight: 600;">
+        <div style="text-align: center; color: #111111; font-size: 1.25rem; font-weight: 800; margin-bottom: 2px;">Empresa Localizada: {dados["nome"]}</div>
+        <p style="text-align: center; color: #555555; font-size: 0.9rem; margin-top: 0; margin-bottom: 6px;">📍 {dados["endereco"]}</p>
+        <p style="text-align: center; font-weight: 700; font-size: 1.05rem; margin-top: 4px; margin-bottom: 2px;">Pontuação Geral de Otimização</p>
+        <div style="text-align: center; font-size: 3.2rem; font-weight: 900; line-height: 1; margin: 2px 0 8px 0; color: {cor_nota} !important;">{dados["score"]} / 100</div>
+        <div style="background-color: #FFFDE7; border: 1px solid #FBC02D; border-radius: 6px; padding: 6px 10px; text-align: center; color: #5D4037; font-size: 0.9rem; font-weight: 600;">
             ⚠️ Identificamos oportunidades de melhoria que podem estar reduzindo a visibilidade do seu negócio para novos clientes.
         </div>
     </div>
     """
     st.markdown(html_card_resultado, unsafe_allow_html=True)
 
-    # NOVO SUBTÍTULO DO FORMULÁRIO SOLICITADO
+    # Exibe o aviso de sucesso no topo dos resultados, logo acima do formulário, se já enviado
+    if st.session_state.get("envio_sucesso"):
+        st.markdown("""
+        <div id="aviso-sucesso" class="card-sucesso-destaque">
+            ✅ Diagnóstico enviado com sucesso! Verifique sua caixa de entrada e spam.
+        </div>
+        <script>
+            var elem = document.getElementById('aviso-sucesso');
+            if (elem) { elem.scrollIntoView({behavior: 'smooth', block: 'center'}); }
+        </script>
+        """, unsafe_allow_html=True)
+
+    # Subtítulo do Formulário
     st.markdown('<div class="titulo-secundario">Preencha os dados abaixo e receba o diagnóstico completo do seu posicionamento digital.</div>', unsafe_allow_html=True)
     
     st.markdown('<div class="rotulo-campo">Nome:</div>', unsafe_allow_html=True)
@@ -549,14 +564,11 @@ if "resultado_busca" in st.session_state:
         else:
             whats_completo = "55" + apenas_numeros
 
-            # Dispara os e-mails com PDF e Rodapé
-            email_sucesso, email_msg = enviar_emails_diagnostico_completo(nome_lead, email_lead, whats_completo, dados)
+            with st.spinner("Gerando diagnóstico e enviando por e-mail..."):
+                email_sucesso, email_msg = enviar_emails_diagnostico_completo(nome_lead, email_lead, whats_completo, dados)
 
             if email_sucesso:
-                st.markdown("""
-                <div class="card-sucesso-destaque">
-                    ✅ Diagnóstico enviado com sucesso! Verifique sua caixa de entrada e spam.
-                </div>
-                """, unsafe_allow_html=True)
+                st.session_state["envio_sucesso"] = True
+                st.rerun()
             else:
                 st.error(f"❌ Erro ao enviar e-mail: {email_msg}")
