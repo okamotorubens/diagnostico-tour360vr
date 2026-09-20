@@ -26,13 +26,16 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# CSS Definitivo: Remove a borda/contorno cinza e esconde Built with Streamlit, Fullscreen, Header e Badges
+# CSS Rígido: Elimina espaço no topo, contorno cinza e rodapé (Built with Streamlit / Fullscreen)
 custom_css = """
 <style>
+    /* Zeramento geral do fundo e espaçamentos no topo */
     html, body, [data-testid="stAppViewContainer"], .main, .stApp {
         overflow: hidden !important;
         background-color: #FFFFFF !important;
         color: #000000 !important;
+        padding-top: 0rem !important;
+        margin-top: 0rem !important;
     }
     
     .block-container {
@@ -40,31 +43,35 @@ custom_css = """
         padding-bottom: 0rem !important;
         padding-left: 0.5rem !important;
         padding-right: 0.5rem !important;
+        margin-top: -1rem !important; /* Puxa o conteúdo para cima */
         max-width: 900px !important;
-        border: none !important;
-        box-shadow: none !important;
-    }
-
-    /* Remove bordas, contornos e caixas de enquadramento do container principal */
-    [data-testid="stAppViewBlockContainer"], 
-    [data-testid="stForm"],
-    div[class*="stApp"],
-    div[class*="block-container"] {
         border: none !important;
         box-shadow: none !important;
         outline: none !important;
     }
 
-    /* Oculta rigorosamente menus, headers, footers, "Built with Streamlit", Fullscreen e badges */
-    header, 
+    /* Elimina a caixa/linha de contorno em volta do app */
+    [data-testid="stAppViewBlockContainer"], 
+    [data-testid="stForm"],
+    div[class*="stApp"],
+    div[class*="block-container"],
+    div[data-testid="stVerticalBlock"] {
+        border: none !important;
+        box-shadow: none !important;
+        outline: none !important;
+    }
+
+    /* Oculta rigorosamente a barra cinza do rodapé (Built with Streamlit e Fullscreen) */
     footer, 
     .stApp footer,
+    header, 
     [data-testid="stHeader"], 
     [data-testid="stAppHeader"],
     [data-testid="stToolbar"], 
     [data-testid="stDecoration"], 
     [data-testid="stStatusWidget"],
     [data-testid="stFooter"],
+    [data-testid="stBottom"],
     #MainMenu, 
     .viewerBadge_container__1QSob, 
     .styles_viewerBadge__1yB5_,
@@ -80,7 +87,8 @@ custom_css = """
     div[data-testid*="viewerBadge"],
     div[class*="stEmbedFooter"],
     .stEmbedFooter,
-    .stStatusWidget {
+    .stStatusWidget,
+    div[class*="stBottom"] {
         display: none !important;
         visibility: hidden !important;
         opacity: 0 !important;
@@ -214,7 +222,7 @@ custom_css = """
 """
 st.markdown(custom_css, unsafe_allow_html=True)
 
-# JS Rígido de Remoção do Pop-up Flutuante e Elementos Externos do Streamlit
+# JS Rígido de Remoção do Pop-up Flutuante e Elementos Externos
 components.html("""
 <script>
     function destroyStreamlitBadges() {
@@ -225,6 +233,7 @@ components.html("""
                 var selectors = [
                     '[data-testid="stStatusWidget"]',
                     '[data-testid="stHeader"]',
+                    '[data-testid="stBottom"]',
                     '.viewerBadge_container__1QSob',
                     '[class*="viewerBadge"]',
                     '[class*="styles_viewerBadge"]',
@@ -292,7 +301,6 @@ def enviar_lead_zoho_bigin(nome_lead, email_lead, whatsapp_lead, empresa_nome, e
     
     cidade = extrair_cidade(endereco)
 
-    # Prefixado com "1 - " para ir diretamente para o topo da lista de Clientes
     nome_identificado = f"1 - {nome_lead.strip()}"
     partes_nome = nome_identificado.split(" ", 1)
     primeiro_nome = partes_nome[0]
@@ -419,7 +427,7 @@ def consultar_score_google_rigoroso(nome_empresa):
     return {"sucesso": False, "mensagem": "Empresa não encontrada no Google."}
 
 # ==========================================
-# GERADOR DE PDF (RODAPÉ FIXO NO FINAL DA PÁGINA)
+# GERADOR DE PDF COM GATILHO COMPLETO DE CONVERSÃO
 # ==========================================
 def desenhar_rodape_fixo(canvas, doc):
     canvas.saveState()
@@ -454,19 +462,19 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
         elements = []
         
         elements.append(Paragraph("AUDITORIA DE POSICIONAMENTO GOOGLE MAPS - TOUR360VR", style_title))
-        elements.append(HRFlowable(width="100%", thickness=2, color=colors.HexColor('#1565C0'), spaceBefore=6, spaceAfter=16))
+        elements.append(HRFlowable(width="100%", thickness=2, color=colors.HexColor('#1565C0'), spaceBefore=6, spaceAfter=14))
         
-        elements.append(Spacer(1, 14))
+        elements.append(Spacer(1, 10))
         elements.append(Paragraph(f"<b>Empresa Analisada:</b> {empresa_nome}", style_sub))
         elements.append(Paragraph(f"<b>Endereço Registrado:</b> {endereco}", style_body))
-        elements.append(Spacer(1, 16))
+        elements.append(Spacer(1, 12))
         
         cor_score_hex = obter_cor_score(score)
         elements.append(Paragraph(f"PONTUAÇÃO DE OTIMIZAÇÃO: <font color='{cor_score_hex}'><b>{score} / 100 PONTOS</b></font>", ParagraphStyle('ScorePDF', parent=style_title, fontSize=13)))
-        elements.append(Spacer(1, 14))
+        elements.append(Spacer(1, 10))
         
         elements.append(Paragraph("<b>Análise Detalhada dos Critérios Avaliados:</b>", style_sub))
-        elements.append(Spacer(1, 8))
+        elements.append(Spacer(1, 6))
         
         tabela_dados = [[Paragraph("Critério de Otimização", style_cell_bold), Paragraph("Diagnóstico do Perfil", style_cell_bold)]]
         for crit in criterios:
@@ -479,16 +487,40 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
         t.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1565C0')),
             ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#E0E0E0')),
-            ('PADDING', (0, 0), (-1, -1), 5),
+            ('PADDING', (0, 0), (-1, -1), 4.5),
             ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.HexColor('#FFFFFF'), colors.HexColor('#F8F9FA')])
         ]))
         elements.append(t)
         
-        elements.append(Spacer(1, 30))
+        elements.append(Spacer(1, 14))
         elements.append(Paragraph("<b>Plano de Ação Sugerido para Alta Visibilidade:</b>", style_sub))
-        elements.append(Spacer(1, 6))
-        elements.append(Paragraph("1. Implantação de Tour Virtual 360° Interativo integrado ao Google Street View.<br/>2. Atualização visual contínua da galeria de fotos e gestão ativa de avaliações.<br/>3. Alinhamento de horários de funcionamento e inclusão do site oficial.", style_body))
+        elements.append(Spacer(1, 4))
+        elements.append(Paragraph("1. Otimização completa da Ficha Google (categorias, atributos e palavras-chave).<br/>2. Implantação de Tour Virtual 360° Interativo integrado ao Google Street View.<br/>3. Produção de Fotos e Vídeos Profissionais para galeria e redes sociais.<br/>4. Gestão ativa de avaliações e sincronização com canais digitais.", style_body))
         
+        # ==========================================
+        # GATILHO MENTAL E CTA ABRANGENTE PARA WHATSAPP
+        # ==========================================
+        elements.append(Spacer(1, 12))
+        
+        style_box_cta = ParagraphStyle('BoxCTA', parent=styles['Normal'], fontName='Helvetica', fontSize=8.5, leading=12, textColor=colors.HexColor('#1A237E'), alignment=1)
+
+        texto_cta = """
+        <b>🚀 PRONTO PARA TRANSFORMAR A PRESENÇA DIGITAL DA SUA EMPRESA?</b><br/>
+        Não deixe seus clientes encontrarem o concorrente primeiro. Nós estruturamos sua <b>Ficha no Google</b>, criamos o <b>Tour Virtual 360°</b>, produzimos <b>Fotos & Vídeos Profissionais</b> e gerenciamos suas <b>Redes Sociais</b>.<br/><br/>
+        <font color="#1565C0">👉 <u><a href="https://wa.me/5516991332121?text=Olá%20Rubens!%20Recebi%20o%20diagnóstico%20no%20PDF%20e%20quero%20saber%20mais%20sobre%20a%20otimização%20completa." color="#1565C0"><b>CLIQUE AQUI PARA FALAR COM O ESPECIALISTA RUBENS OKAMOTO NO WHATSAPP</b></a></u></font>
+        """
+        
+        tabela_cta = Table([[Paragraph(texto_cta, style_box_cta)]], colWidths=[525])
+        tabela_cta.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#E8F0FE')),
+            ('BORDER', (0, 0), (-1, -1), 1.2, colors.HexColor('#1565C0')),
+            ('PADDING', (0, 0), (-1, -1), 8),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE')
+        ]))
+        
+        elements.append(tabela_cta)
+
         doc.build(elements, onFirstPage=desenhar_rodape_fixo, onLaterPages=desenhar_rodape_fixo)
         val = buffer.getvalue()
         buffer.close()
