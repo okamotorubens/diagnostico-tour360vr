@@ -26,10 +26,10 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Estilo CSS para Container Compacto Cinza/Azulado, Inputs Brancos e Sem Scrollbar
+# Estilo CSS de Alta Precisão (Inputs Brancos, Container Cinza/Azulado Compacto e Sem Scrollbar)
 custom_css = """
 <style>
-    /* 1. Eliminar Scrollbars e Definir Fundo */
+    /* 1. Eliminar Scrollbars e Definir Fundo Base */
     html, body, [data-testid="stAppViewContainer"], .main {
         overflow-x: hidden !important;
         background-color: #FFFFFF !important;
@@ -44,7 +44,7 @@ custom_css = """
         max-width: 680px !important;
     }
 
-    /* 2. Ocultar Barras Nativas e Rodapé */
+    /* 2. Ocultar Cabeçalho e Rodapé Nativos */
     footer, .stApp footer, [data-testid="stFooter"], header, #MainMenu, [data-testid="stHeader"], [data-testid="stToolbar"] {
         display: none !important;
         visibility: hidden !important;
@@ -194,7 +194,7 @@ def obter_cor_score(score):
         return "#8DC63F"
 
 # ==========================================
-# CÁLCULO DE SCORE PRECISO E RIGOROSO
+# CÁLCULO DE SCORE DE 9 CRITÉRIOS PADRÃO
 # ==========================================
 def consultar_score_google_rigoroso(nome_empresa):
     url = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={requests.utils.quote(nome_empresa)}&key={GOOGLE_API_KEY}"
@@ -278,15 +278,15 @@ def consultar_score_google_rigoroso(nome_empresa):
             else:
                 criterios_eval.append("7. Endereço Físico: Incompleto (0 pts)")
 
-            # 8. Categorias de Atuação (+5)
+            # 8. Categorias de Atuação (+10)
             if details.get("types"):
-                score += 5
-                criterios_eval.append("8. Categoria Principal: Configurada (+5 pts)")
+                score += 10
+                criterios_eval.append("8. Categoria Principal: Configurada (+10 pts)")
             else:
                 criterios_eval.append("8. Categoria Principal: Ausente (0 pts)")
 
-            # 9. Tour Virtual 360° (-20 de penalização se não houver confirmação prévia)
-            criterios_eval.append("9. Tour Virtual 360° Interativo: Ausente no perfil (Pendência Otimização)")
+            # 9. Tour Virtual 360° Interativo (Pendente de Otimização no Perfil)
+            criterios_eval.append("9. Tour Virtual 360° Interativo: Ausente no perfil Google (Oportunidade de Otimização)")
 
             return {
                 "sucesso": True,
@@ -302,7 +302,7 @@ def consultar_score_google_rigoroso(nome_empresa):
     return {"sucesso": False, "mensagem": "Empresa não encontrada no Google."}
 
 # ==========================================
-# DIAGRAMAÇÃO DO PDF COM FIXAÇÃO DE ARQUIVO
+# DIAGRAMAÇÃO DO PDF COM GARANTIA DO ARQUIVO
 # ==========================================
 def gerar_pdf_diagnostico_arquivo(empresa_nome, endereco, score, criterios):
     try:
@@ -336,7 +336,7 @@ def gerar_pdf_diagnostico_arquivo(empresa_nome, endereco, score, criterios):
         elements.append(Paragraph(f"DIAGNÓSTICO DE OTIMIZAÇÃO: <font color='{cor_score_hex}'><b>{score} / 100 PONTOS</b></font>", ParagraphStyle('ScorePDF', parent=style_title, fontSize=13.5)))
         elements.append(Spacer(1, 8))
         
-        elements.append(Paragraph("<b>Detalhamento dos Critérios Avaliados:</b>", style_sub))
+        elements.append(Paragraph("<b>Detalhamento dos 9 Critérios Avaliados:</b>", style_sub))
         elements.append(Spacer(1, 4))
         
         tabela_dados = [["Critério Avaliado", "Status no Perfil Google"]]
@@ -408,7 +408,7 @@ def enviar_lead_bigin(nome_lead, email_lead, whatsapp_lead, empresa_consultada, 
         return False
 
 # ==========================================
-# ENVIO DE E-MAILS COM GARANTIA DO ANEXO
+# ENVIO DE E-MAILS COM AMBOS OS DISPAROS
 # ==========================================
 def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dados_busca):
     pdf_file_path = None
@@ -503,7 +503,7 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
                 pass
 
 # ==========================================
-# INTERFACE COM CONTAINER COMPACTO
+# INTERFACE DO USUÁRIO
 # ==========================================
 st.markdown('<div class="titulo-principal">🔍 Faça uma análise da sua empresa no Google</div>', unsafe_allow_html=True)
 st.markdown('<div class="instrucao-subtitulo">Digite o Nome Comercial exato da sua empresa seguido da Cidade e Estado.</div>', unsafe_allow_html=True)
@@ -549,24 +549,10 @@ if "resultado_busca" in st.session_state:
     st.markdown('<div class="rotulo-campo">WhatsApp</div>', unsafe_allow_html=True)
     st.markdown('<div class="subtexto-label">(DDD + 9 dígitos - Apenas números)</div>', unsafe_allow_html=True)
     
-    raw_whats = st.text_input("WhatsInput", value="", max_chars=11, placeholder="16991332121", label_visibility="collapsed")
-
-    # Injeção JavaScript de Bloqueio Instantâneo de Letras no WhatsApp
-    js_bloqueio_whats = """
-    <script>
-        const inputs = window.parent.document.querySelectorAll('input');
-        inputs.forEach(input => {
-            if (input.placeholder === "16991332121") {
-                input.addEventListener('input', function(e) {
-                    this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11);
-                });
-            }
-        });
-    </script>
-    """
-    st.components.v1.html(js_bloqueio_whats, height=0, width=0)
+    raw_whats = st.text_input("WhatsInput", value="", placeholder="16991332121", label_visibility="collapsed")
 
     if st.button("📩 Receber diagnóstico"):
+        # Extração estrita de dígitos numéricos sem interferir no render do React
         apenas_numeros = re.sub(r'\D', '', raw_whats)[:11]
         
         if not nome_lead or len(nome_lead.strip()) < 2:
@@ -574,7 +560,7 @@ if "resultado_busca" in st.session_state:
         elif not email_lead or "@" not in email_lead:
             st.error("Por favor, informe um endereço de e-mail válido.")
         elif len(apenas_numeros) != 11:
-            st.error(f"❌ O campo WhatsApp exige exatamente 11 NÚMEROS (DDD + Celular). Você digitou {len(apenas_numeros)} números.")
+            st.error(f"❌ O campo WhatsApp exige exatamente 11 NÚMEROS (DDD + Celular, ex: 16991332121). Você informou {len(apenas_numeros)} números.")
         else:
             whats_completo = "55" + apenas_numeros
 
