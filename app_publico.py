@@ -16,7 +16,7 @@ st.set_page_config(
     layout="centered"
 )
 
-# Estilo CSS Personalizado (Fundo Branco, Verde da Logo, Textos Maiores)
+# Estilo CSS Personalizado (Fundo Branco, Botão Verde com Texto Branco)
 custom_css = """
 <style>
     /* Fundo totalmente branco e texto escuro */
@@ -42,7 +42,7 @@ custom_css = """
     .titulo-principal {
         text-align: center;
         color: #222222;
-        font-size: 2.2rem;
+        font-size: 2rem;
         font-weight: 800;
         margin-bottom: 0.2rem;
         font-family: 'Arial', sans-serif;
@@ -50,26 +50,26 @@ custom_css = """
     .subtitulo {
         text-align: center;
         color: #555555;
-        font-size: 1.25rem;
-        margin-bottom: 1.5rem;
+        font-size: 1.15rem;
+        margin-bottom: 1.2rem;
         font-family: 'Arial', sans-serif;
     }
 
     /* Estilização das Legendas e Rótulos */
     label, p, span {
         color: #222222 !important;
-        font-size: 1.1rem !important;
+        font-size: 1.05rem !important;
         font-weight: 600 !important;
     }
 
-    /* Caixa explicativa de instrução */
+    /* Caixa explicativa de instrução (Sem o 'Como pesquisar corretamente') */
     .caixa-instrucao {
         background-color: #F4F6F8;
         border-left: 5px solid #8CC63F;
-        padding: 12px 16px;
+        padding: 10px 14px;
         border-radius: 6px;
         margin-bottom: 15px;
-        font-size: 1.05rem;
+        font-size: 1rem;
         color: #333333;
     }
 
@@ -87,11 +87,11 @@ custom_css = """
         box-shadow: 0 0 5px rgba(140, 198, 63, 0.5) !important;
     }
 
-    /* Botão Verde Oficial Tour360VR (#8cc63f) */
+    /* Botão Verde Oficial Tour360VR (#8cc63f) com TEXTO BRANCO */
     .stButton > button {
         background-color: #8CC63F !important;
         color: #FFFFFF !important;
-        font-size: 1.2rem !important;
+        font-size: 1.15rem !important;
         font-weight: bold !important;
         border-radius: 8px !important;
         border: none !important;
@@ -105,6 +105,9 @@ custom_css = """
         background-color: #7BB433 !important;
         color: #FFFFFF !important;
         transform: translateY(-1px);
+    }
+    .stButton > button p {
+        color: #FFFFFF !important;
     }
 
     /* Destaque da Métrica/Score */
@@ -130,18 +133,39 @@ SMTP_USER = "contato@tour360vr.com.br"
 SMTP_PASS = "Kakaroto@2026"
 
 # ==========================================
-# FUNÇÕES DE BUSCA E INTEGRAÇÃO
+# FUNÇÕES DE BUSCA E INTEGRAÇÃO ROBUSTAS
 # ==========================================
 def consultar_score_google(nome_empresa):
-    url = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={nome_empresa}&key={GOOGLE_API_KEY}"
+    """Realiza busca robusta usando o Places API FindPlaceFromText com fallback para TextSearch."""
+    headers = {"User-Agent": "Mozilla/5.0"}
+    
+    # 1. Tentativa via FindPlaceFromText (Mais preciso e rápido)
+    url_find = (
+        f"https://maps.googleapis.com/maps/api/place/findplacefromtext/json"
+        f"?input={requests.utils.quote(nome_empresa)}&inputtype=textquery"
+        f"&fields=place_id,name,formatted_address,rating,user_ratings_total,business_status,photos"
+        f"&key={GOOGLE_API_KEY}"
+    )
+    
     try:
-        response = requests.get(url).json()
-        if response.get("status") == "OK" and response.get("results"):
-            place = response["results"][0]
+        res = requests.get(url_find, headers=headers, timeout=8).json()
+        
+        candidates = res.get("candidates", [])
+        if not candidates:
+            # 2. Fallback via TextSearch caso o FindPlace não retorne
+            url_text = (
+                f"https://maps.googleapis.com/maps/api/place/textsearch/json"
+                f"?query={requests.utils.quote(nome_empresa)}&key={GOOGLE_API_KEY}"
+            )
+            res_text = requests.get(url_text, headers=headers, timeout=8).json()
+            candidates = res_text.get("results", [])
+
+        if candidates:
+            place = candidates[0]
             
             score = 0
             if place.get("rating", 0) >= 4.0: score += 25
-            if place.get("user_ratings_total", 0) > 20: score += 25
+            if place.get("user_ratings_total", 0) > 15: score += 25
             if place.get("business_status") == "OPERATIONAL": score += 20
             if place.get("photos"): score += 30
             
@@ -149,11 +173,12 @@ def consultar_score_google(nome_empresa):
                 "sucesso": True,
                 "place_id": place.get("place_id"),
                 "nome": place.get("name"),
-                "endereco": place.get("formatted_address"),
+                "endereco": place.get("formatted_address", "Endereço registrado no Google Maps"),
                 "score": score
             }
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"Erro na consulta Google: {e}")
+        
     return {"sucesso": False, "mensagem": "Empresa não encontrada no Google."}
 
 def enviar_lead_bigin(nome_lead, email_lead, whatsapp_lead, empresa_consultada, score):
@@ -192,12 +217,12 @@ def enviar_lead_bigin(nome_lead, email_lead, whatsapp_lead, empresa_consultada, 
 # INTERFACE DO USUÁRIO
 # ==========================================
 st.markdown('<div class="titulo-principal">🔍 Diagnóstico de Perfil no Google</div>', unsafe_allow_html=True)
-st.markdown('<div class="subtitulo">Avalie o desempenho e otimização da sua empresa no Google Maps instantaneamente</div>', unsafe_allow_html=True)
+st.markdown('<div class="subtitulo">Faça um diagnóstico de desempenho e otimização da sua empresa no Google.</div>', unsafe_allow_html=True)
 
-# Instrução Clara de Preenchimento
+# Instrução Direta e Objetiva
 st.markdown("""
 <div class="caixa-instrucao">
-    📌 <strong>Como pesquisar corretamente:</strong> Digite o <strong>Nome Comercial exato</strong> da sua empresa seguido da <strong>Cidade e Estado</strong>.<br>
+    📌 Digite o <strong>Nome Comercial exato</strong> da sua empresa seguido da <strong>Cidade e Estado</strong>.<br>
     <em>Exemplo: <strong>Toque de Letra Ribeirão Preto SP</strong></em>
 </div>
 """, unsafe_allow_html=True)
