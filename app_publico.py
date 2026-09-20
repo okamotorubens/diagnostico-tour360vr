@@ -173,7 +173,7 @@ GOOGLE_API_KEY = "AIzaSyA8ul_9QICNyqxrHgT-CURIZmd1sikHn5U"
 
 BIGIN_CLIENT_ID = "1000.COI8SBR9O0RCMGCL7WKEYUJMBZCR8X"
 BIGIN_CLIENT_SECRET = "c60642fb374cbad9753c456d8713b6349417187345"
-BIGIN_GRANT_CODE = "1000.da536069b0673fa63d78cd999b16e206.36882eafe4bb3cbfeffec047bf18bc20"
+BIGIN_GRANT_CODE = "1000.47cdd98138f4eb37c90bb5263b1d1eb3.5f61d2c5e994dde65d80795970d81b0d"
 
 SMTP_SERVER = "smtp.tour360vr.com.br"
 SMTP_PORT = 587
@@ -368,9 +368,19 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
 # INTEGRACAO ZOHO BIGIN CRM
 # ==========================================
 def obter_access_token_bigin():
-    if "bigin_access_token" in st.session_state:
-        return st.session_state["bigin_access_token"], st.session_state.get("bigin_domain", "com")
+    # Se já tivermos um Refresh Token salvo em sessão, renovamos o Access Token
+    if "bigin_refresh_token" in st.session_state:
+        rf = st.session_state["bigin_refresh_token"]
+        for domain in ["com", "com.br"]:
+            try:
+                url = f"https://accounts.zoho.{domain}/oauth/v2/token?refresh_token={rf}&client_id={BIGIN_CLIENT_ID}&client_secret={BIGIN_CLIENT_SECRET}&grant_type=refresh_token"
+                res = requests.post(url, timeout=8).json()
+                if "access_token" in res:
+                    return res["access_token"], domain
+            except Exception:
+                pass
 
+    # Troca o Grant Code inicial pelo Refresh Token permanente
     for domain in ["com", "com.br"]:
         try:
             url = f"https://accounts.zoho.{domain}/oauth/v2/token"
@@ -381,12 +391,10 @@ def obter_access_token_bigin():
                 "code": BIGIN_GRANT_CODE
             }
             res = requests.post(url, data=data, timeout=8).json()
+            if "refresh_token" in res:
+                st.session_state["bigin_refresh_token"] = res["refresh_token"]
             if "access_token" in res:
-                st.session_state["bigin_access_token"] = res["access_token"]
-                st.session_state["bigin_domain"] = domain
                 return res["access_token"], domain
-            elif "error" in res:
-                st.sidebar.warning(f"Bigin OAuth Warning ({domain}): {res.get('error')}")
         except Exception as e:
             print(f"Erro OAuth Bigin domain {domain}: {e}")
 
@@ -396,7 +404,7 @@ def enviar_lead_bigin(nome_lead, email_lead, whatsapp_lead, empresa_consultada, 
     try:
         access_token, domain = obter_access_token_bigin()
         if not access_token:
-            return False, "Não foi possível autenticar no Bigin (Grant Code expirado)."
+            return False, "Falha na autenticação do Bigin. Verifique se o Grant Code foi trocado em tempo."
 
         headers = {
             "Authorization": f"Zoho-oauthtoken {access_token}",
@@ -421,7 +429,7 @@ def enviar_lead_bigin(nome_lead, email_lead, whatsapp_lead, empresa_consultada, 
         if "data" in res_contact and len(res_contact["data"]) > 0:
             contact_id = res_contact["data"][0].get("details", {}).get("id")
 
-        # 2. Cria o Negócio (Deal) na aba de Oportunidades
+        # 2. Cria o Negócio (Deal) no Pipeline
         for stage_name in ["1º Contato", "First Contact", "Qualificação"]:
             payload_deal = {
                 "data": [
@@ -436,9 +444,9 @@ def enviar_lead_bigin(nome_lead, email_lead, whatsapp_lead, empresa_consultada, 
             url_deal = f"https://www.zohoapis.{domain}/bigin/v1/Deals"
             res_deal = requests.post(url_deal, json=payload_deal, headers=headers, timeout=8)
             if res_deal.status_code in [200, 201]:
-                return True, "Lead cadastrado com sucesso no Bigin!"
+                return True, "Lead registrado no Bigin com sucesso!"
 
-        return True, "Contato cadastrado no Bigin."
+        return True, "Contato criado no Bigin."
     except Exception as e:
         return False, str(e)
 
@@ -610,11 +618,11 @@ if "resultado_busca" in st.session_state:
         else:
             whats_completo = "55" + apenas_numeros
 
-            # Execução 1: Dispara o E-mail com PDF
-            email_sucesso, email_msg = enviar_emails_diagnostico_completo(nome_lead, email_lead, whats_completo, dados)
-
-            # Execução 2: Dispara o Bigin CRM
+            # 1. Envia para o Bigin CRM
             bigin_sucesso, bigin_msg = enviar_lead_bigin(nome_lead, email_lead, whats_completo, dados['nome'], dados['score'])
+
+            # 2. Dispara os e-mails com PDF
+            email_sucesso, email_msg = enviar_emails_diagnostico_completo(nome_lead, email_lead, whats_completo, dados)
 
             if email_sucesso:
                 st.markdown("""
