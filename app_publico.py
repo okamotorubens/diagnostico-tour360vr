@@ -14,7 +14,7 @@ st.set_page_config(
     layout="centered"
 )
 
-# Estilo CSS Personalizado
+# Estilo CSS Ajustado (Textos sem cortes e botões centralizados)
 custom_css = """
 <style>
     /* Fundo totalmente branco */
@@ -23,11 +23,11 @@ custom_css = """
         color: #000000 !important;
     }
     
-    /* Eliminar rolagens e ajustar margens */
+    /* Largura adequada para não cortar textos */
     .block-container {
         padding-top: 0.5rem !important;
         padding-bottom: 0.5rem !important;
-        max-width: 650px !important;
+        max-width: 750px !important;
     }
 
     /* Esconder elementos nativos do Streamlit */
@@ -36,29 +36,25 @@ custom_css = """
         height: 0px !important;
     }
 
-    /* Título e Subtítulo em Linha Única */
-    .titulo-uma-linha {
+    /* Título Ajustado (Permite quebra fluida se a tela for menor) */
+    .titulo-principal {
         text-align: center;
         color: #000000 !important;
-        font-size: 1.45rem;
+        font-size: 1.55rem;
         font-weight: 800;
-        margin-bottom: 0.5rem;
+        margin-bottom: 0.4rem;
         font-family: 'Arial', sans-serif;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        line-height: 1.3;
     }
 
-    .instrucao-uma-linha {
+    .instrucao-subtitulo {
         text-align: center;
         color: #333333 !important;
         font-size: 1.05rem;
         font-weight: bold;
         margin-bottom: 1.2rem;
         font-family: 'Arial', sans-serif;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        line-height: 1.3;
     }
 
     /* Reduzir Tamanho do Texto 'Empresa Localizada' */
@@ -71,7 +67,7 @@ custom_css = """
         margin-bottom: 0.2rem;
     }
 
-    /* Alerta Amarelo em Destaque (Não parecer Erro) */
+    /* Alerta Amarelo em Destaque */
     .alerta-destaque {
         background-color: #FFFDE7 !important;
         border: 2px solid #FBC02D !important;
@@ -82,7 +78,7 @@ custom_css = """
         font-size: 1rem !important;
         font-weight: 600 !important;
         margin: 1.2rem auto !important;
-        max-width: 500px !important;
+        max-width: 550px !important;
     }
 
     /* Estilização dos Rótulos e Textos */
@@ -98,7 +94,7 @@ custom_css = """
         width: 100% !important;
     }
     .stTextInput > div {
-        max-width: 480px !important;
+        max-width: 500px !important;
         width: 100% !important;
         margin: 0 auto !important;
     }
@@ -116,16 +112,16 @@ custom_css = """
         box-shadow: 0 0 6px rgba(141, 198, 63, 0.4) !important;
     }
 
-    /* Centralização Absoluta de Botões */
+    /* Centralização de Botões */
     div.stButton {
         display: flex !important;
         justify-content: center !important;
         align-items: center !important;
         width: 100% !important;
-        margin: 0.8rem auto !important;
+        margin: 1rem auto !important;
     }
 
-    /* Padronização Única dos Botões (#8DC63F) */
+    /* Botão Verde (#8DC63F) com Texto Perfeitamente Centralizado */
     .stButton > button {
         background-color: #8DC63F !important;
         color: #FFFFFF !important;
@@ -133,14 +129,16 @@ custom_css = """
         font-weight: bold !important;
         border-radius: 8px !important;
         border: none !important;
-        padding: 0.7rem 2.5rem !important;
+        padding: 0.75rem 2rem !important;
         cursor: pointer !important;
         transition: all 0.3s ease !important;
         box-shadow: 0 4px 12px rgba(141, 198, 63, 0.3) !important;
         margin: 0 auto !important;
-        display: block !important;
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
         width: 100% !important;
-        max-width: 480px !important;
+        max-width: 320px !important;
     }
     .stButton > button:hover {
         background-color: #7BB533 !important;
@@ -151,6 +149,8 @@ custom_css = """
         color: #FFFFFF !important;
         font-size: 1.15rem !important;
         font-weight: bold !important;
+        margin: 0 !important;
+        text-align: center !important;
     }
 
     /* Métrica do Score Centralizada */
@@ -175,13 +175,6 @@ custom_css = """
         margin-top: 1.5rem;
         margin-bottom: 0.8rem;
         font-family: 'Arial', sans-serif;
-    }
-
-    /* Mensagem de Sucesso Centralizada */
-    .stSuccess {
-        text-align: center !important;
-        max-width: 480px !important;
-        margin: 1rem auto !important;
     }
 </style>
 """
@@ -312,9 +305,8 @@ def enviar_email_notificacao(nome_lead, email_lead, whatsapp_lead, empresa_consu
 # ==========================================
 # INTERFACE DO USUÁRIO
 # ==========================================
-# Título e Instrução Garantidos em Uma Linha Só
-st.markdown('<div class="titulo-uma-linha">🔍 Faça um diagnóstico do perfil da sua empresa no Google.</div>', unsafe_allow_html=True)
-st.markdown('<div class="instrucao-uma-linha">Digite o Nome Comercial exato da sua empresa seguido da Cidade e Estado.</div>', unsafe_allow_html=True)
+st.markdown('<div class="titulo-principal">🔍 Faça um diagnóstico do perfil da sua empresa no Google.</div>', unsafe_allow_html=True)
+st.markdown('<div class="instrucao-subtitulo">Digite o Nome Comercial exato da sua empresa seguido da Cidade e Estado.</div>', unsafe_allow_html=True)
 
 nome_empresa = st.text_input("BuscaEmpresa", placeholder="Nome da empresa + cidade + estado", label_visibility="collapsed")
 
@@ -333,27 +325,23 @@ if "resultado_busca" in st.session_state:
     
     st.markdown("<hr style='margin: 1.2rem 0;'>", unsafe_allow_html=True)
     
-    # Nome da Empresa Reduzido
     st.markdown(f'<div class="empresa-localizada-titulo">Empresa Localizada: {dados["nome"]}</div>', unsafe_allow_html=True)
     st.markdown(f'<p style="text-align: center; color: #666666; font-size: 0.95rem; margin-bottom: 0.8rem;">📍 {dados["endereco"]}</p>', unsafe_allow_html=True)
     
     st.metric(label="Pontuação Geral de Otimização (Score)", value=f"{dados['score']} / 100")
     
-    # Quadro Amarelo de Alerta Formatado com Borda Destacada
     st.markdown("""
     <div class="alerta-destaque">
         ⚠️ Identificamos oportunidades de melhoria que podem estar reduzindo a visibilidade do seu negócio para novos clientes.
     </div>
     """, unsafe_allow_html=True)
 
-    # Novo Texto do Formulário
     st.markdown('<div class="destaque-formulario">Preencha os dados abaixo e receba a análise completa</div>', unsafe_allow_html=True)
     
     with st.form("form_lead_publico"):
         nome_lead = st.text_input("NomeLead", placeholder="Seu nome completo", label_visibility="collapsed")
         email_lead = st.text_input("EmailLead", placeholder="Seu e-mail principal", label_visibility="collapsed")
         
-        # Campo de WhatsApp com Código 55 Fixo e Máscara (55 + 2 DDD + 8 Número)
         whats_num = st.text_input(
             "WhatsLead", 
             value="55 ", 
