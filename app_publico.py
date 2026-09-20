@@ -25,9 +25,10 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# CSS Definitivo para remoção de ícones flutuantes e ajuste de margens
+# CSS Definitivo: Elimina Ícones Flutuantes do Canto Inferior Direito, Menus e Ajusta Margens
 custom_css = """
 <style>
+    /* Trava scrollbars e ajusta fundo */
     html, body, [data-testid="stAppViewContainer"], .main, .stApp {
         overflow: hidden !important;
         background-color: #FFFFFF !important;
@@ -42,7 +43,7 @@ custom_css = """
         max-width: 900px !important;
     }
 
-    /* Oculta todos os widgets flutuantes, rodapés e badges no canto inferior */
+    /* Oculta rigorosamente menus, headers, footers e TODOS os ícones/badges flutuantes no canto inferior */
     [data-testid="stHeader"], 
     [data-testid="stAppHeader"],
     [data-testid="stToolbar"], 
@@ -57,7 +58,10 @@ custom_css = """
     button[title="View source"],
     div[class*="viewerBadge"],
     div[class*="styles_viewerBadge"],
-    div[class*="stStatusWidget"] {
+    div[class*="stStatusWidget"],
+    div[class*="viewerBadge_container"],
+    iframe[title="streamlitApp"],
+    div[data-testid="stStatusWidget"] {
         display: none !important;
         visibility: hidden !important;
         opacity: 0 !important;
@@ -209,29 +213,30 @@ def obter_cor_score(score):
         return "#8DC63F"
 
 # ==========================================
-# INTEGRAÇÃO ZOHO BIGIN (SEM NOME DUPLICADO)
+# INTEGRAÇÃO ZOHO BIGIN (COM CAMPOS MAPEADOS)
 # ==========================================
 def enviar_lead_zoho_bigin(nome_lead, email_lead, whatsapp_lead, empresa_nome, endereco, score):
     url_bigin = "https://bigin.zoho.com/crm/WebToContactForm"
     
-    # Separa Primeiro e Último Nome para não duplicar no Bigin
+    # Divisão do Nome e Sobrenome para não duplicar no CRM
     partes_nome = nome_lead.strip().split(" ", 1)
     primeiro_nome = partes_nome[0]
     sobrenome = partes_nome[1] if len(partes_nome) > 1 else "."
 
     payload = {
-        'xnQsjsdp': 'cee09da61c31c8856ae138c1eaf79d7632257982fcfbd4028e2e116789cf1d44',
+        'xnQsjsdp': '15d54e8d1dfa724381be9ad892936abd18de3deadc2763d67c0dd5f939138a91',
         'zc_gad': '',
-        'xmIwtLD': '015076c1b94fb3a879496e0e44e3ab89490e8860db48f2bc80d1a85be997247da997244d906125aca8bdbb9c320456ed',
+        'xmIwtLD': '7bf1ddf18cd4b2e66bc992eae51f7e88125018eba8806dd498fb7e87e015ca5085bf99ead8aa16f7a6ff561d393a37ef',
         'actionType': 'Q29udGFjdHM=',
         'rmsg': 'true',
         'returnURL': 'null',
         'First Name': primeiro_nome,
         'Last Name': sobrenome,
-        'Accounts.Account Name': empresa_nome,
         'Email': email_lead,
+        'Accounts.Account Name': empresa_nome,
         'Phone': whatsapp_lead,
-        'Description': f"Empresa Analisada: {empresa_nome}\nEndereço: {endereco}\nPontuação Google: {score}/100"
+        'CONTACTCF6': f"{score}/100",  # Campo específico de "Pontuação Google"
+        'Description': f"Endereço Registrado no Google: {endereco}\nPontuação Otimização: {score}/100"
     }
     
     try:
@@ -409,7 +414,7 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
         return None
 
 # ==========================================
-# ENVIO DE E-MAILS COM ESPAÇAMENTO COMPACTO
+# ENVIO DE E-MAILS COM ESPAÇAMENTO AJUSTADO
 # ==========================================
 def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dados_busca):
     try:
@@ -429,7 +434,7 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
 
         filename_clean = f"Diagnostico_{re.sub(r'[^a-zA-Z0-9]', '_', empresa_nome)}.pdf"
 
-        # 1. E-mail Admin
+        # 1. E-mail Notificação Interna Admin
         msg_admin = MIMEMultipart('mixed')
         msg_admin['From'] = f"Tour360VR <{SMTP_USER}>"
         msg_admin['To'] = SMTP_USER
