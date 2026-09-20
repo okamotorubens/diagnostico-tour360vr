@@ -26,7 +26,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Estilo CSS de Alta Precisão (Inputs Brancos, Container Cinza/Azulado Compacto e Sem Scrollbar)
+# Estilo CSS para Container Compacto Cinza/Azulado, Inputs Brancos e Sem Scrollbar
 custom_css = """
 <style>
     /* 1. Eliminar Scrollbars e Definir Fundo Base */
@@ -177,9 +177,13 @@ st.markdown(custom_css, unsafe_allow_html=True)
 # CONFIGURAÇÕES E CREDENCIAIS
 # ==========================================
 GOOGLE_API_KEY = "AIzaSyA8ul_9QICNyqxrHgT-CURIZmd1sikHn5U"
+
+# Credenciais Zoho Bigin
 BIGIN_CLIENT_ID = "1000.COI8SBR9O0RCMGCL7WKEYUJMBZCR8X"
 BIGIN_CLIENT_SECRET = "c60642fb374cbad9753c456d8713b6349417187345"
+BIGIN_GRANT_CODE = "1000.1d8cf92fc3316b79cd5e0895ea53bcfb.8d044e6649d153dd3db7e5b9d5d3f3e2"
 
+# Configuração de E-mail SMTP
 SMTP_SERVER = "smtp.tour360vr.com.br"
 SMTP_PORT = 587
 SMTP_USER = "contato@tour360vr.com.br"
@@ -375,13 +379,28 @@ def gerar_pdf_diagnostico_arquivo(empresa_nome, endereco, score, criterios):
 # ==========================================
 # INTEGRAÇÃO ZOHO BIGIN CRM
 # ==========================================
+def obter_access_token_bigin():
+    for domain in ["com", "com.br"]:
+        try:
+            url_token = f"https://accounts.zoho.{domain}/oauth/v2/token"
+            data = {
+                "grant_type": "authorization_code",
+                "client_id": BIGIN_CLIENT_ID,
+                "client_secret": BIGIN_CLIENT_SECRET,
+                "code": BIGIN_GRANT_CODE
+            }
+            res = requests.post(url_token, data=data, timeout=8).json()
+            if "access_token" in res:
+                return res["access_token"], domain
+        except Exception as e:
+            print(f"Erro token domain {domain}: {e}")
+    return None, None
+
 def enviar_lead_bigin(nome_lead, email_lead, whatsapp_lead, empresa_consultada, score):
     try:
-        url_token = f"https://accounts.zoho.com/oauth/v2/token?client_id={BIGIN_CLIENT_ID}&client_secret={BIGIN_CLIENT_SECRET}&grant_type=client_credentials&scope=ZohoBigin.modules.ALL"
-        res_token = requests.post(url_token, timeout=8).json()
-        access_token = res_token.get("access_token")
-
+        access_token, domain = obter_access_token_bigin()
         if not access_token:
+            print("Não foi possível autenticar no Zoho Bigin.")
             return False
 
         headers = {
@@ -400,7 +419,7 @@ def enviar_lead_bigin(nome_lead, email_lead, whatsapp_lead, empresa_consultada, 
             ]
         }
 
-        url_contact = "https://www.zohoapis.com/bigin/v1/Contacts"
+        url_contact = f"https://www.zohoapis.{domain}/bigin/v1/Contacts"
         res_contact = requests.post(url_contact, json=payload, headers=headers, timeout=8)
         return res_contact.status_code in [200, 201]
     except Exception as e:
@@ -552,7 +571,6 @@ if "resultado_busca" in st.session_state:
     raw_whats = st.text_input("WhatsInput", value="", placeholder="16991332121", label_visibility="collapsed")
 
     if st.button("📩 Receber diagnóstico"):
-        # Extração estrita de dígitos numéricos sem interferir no render do React
         apenas_numeros = re.sub(r'\D', '', raw_whats)[:11]
         
         if not nome_lead or len(nome_lead.strip()) < 2:
