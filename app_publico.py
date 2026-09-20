@@ -1,25 +1,31 @@
 import os
 import requests
 import smtplib
+import io
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email import encoders
 import streamlit as st
 
+# Dependência do ReportLab para gerar o PDF em memória
+from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+
 # ==========================================
 # CONFIGURAÇÃO DE TEMA E VISUAL PERSONALIZADO
 # ==========================================
 st.set_page_config(
-    page_title="Diagnóstico de Perfil no Google - Tour360VR", 
+    page_title="Análise de Empresa no Google - Tour360VR", 
     page_icon="🔍",
     layout="centered"
 )
 
-# Estilo CSS Forçado para Corrigir Botões, Rótulos, Centralização e Cores
 custom_css = """
 <style>
-    /* 1. Fundo limpo e remoção de margens */
+    /* 1. Fundo limpo e container otimizado */
     .stApp {
         background-color: #FFFFFF !important;
         color: #000000 !important;
@@ -27,20 +33,19 @@ custom_css = """
     .block-container {
         padding-top: 0.2rem !important;
         padding-bottom: 0.2rem !important;
-        max-width: 600px !important;
+        max-width: 650px !important;
     }
 
-    /* Ocultar elementos nativos do Streamlit */
     header, footer, #MainMenu {
         visibility: hidden !important;
         height: 0px !important;
     }
 
-    /* 2. Títulos e Subtítulos */
+    /* 2. Título Principal Atualizado */
     .titulo-principal {
         text-align: center;
         color: #000000 !important;
-        font-size: 1.45rem;
+        font-size: 1.5rem;
         font-weight: 800;
         margin-bottom: 0.3rem;
         font-family: 'Arial', sans-serif;
@@ -54,22 +59,42 @@ custom_css = """
         font-family: 'Arial', sans-serif;
     }
 
-    /* 3. Rótulos dos Campos Visíveis e em Preto */
-    label, div[data-testid="stMarkdownContainer"] p {
+    /* 3. Empresa Localizada e Destaques */
+    .empresa-localizada-titulo {
+        text-align: center;
+        color: #000000 !important;
+        font-size: 1.4rem !important;
+        font-weight: 800;
+        margin-top: 0.8rem;
+        margin-bottom: 0.2rem;
+    }
+
+    /* 4. Rótulos Visíveis e em Preto */
+    label, p, span {
         color: #000000 !important;
         font-size: 0.95rem !important;
         font-weight: 700 !important;
         font-family: 'Arial', sans-serif !important;
     }
 
-    /* 4. Estilização dos Inputs */
+    /* 5. Inputs Centralizados */
+    .stTextInput {
+        display: flex !important;
+        justify-content: center !important;
+        width: 100% !important;
+    }
+    .stTextInput > div {
+        max-width: 480px !important;
+        width: 100% !important;
+        margin: 0 auto !important;
+    }
     .stTextInput > div > div > input {
         background-color: #FFFFFF !important;
         color: #000000 !important;
         border: 2px solid #CCCCCC !important;
         border-radius: 8px !important;
         font-size: 1rem !important;
-        padding: 0.55rem 0.8rem !important;
+        padding: 0.6rem 0.8rem !important;
         text-align: center !important;
     }
     .stTextInput > div > div > input:focus {
@@ -77,26 +102,25 @@ custom_css = """
         box-shadow: 0 0 5px rgba(141, 198, 63, 0.4) !important;
     }
 
-    /* 5. FIX DEFINITIVO DOS BOTÕES (Formulários + Busca) */
-    div.stButton, div[data-testid="stFormSubmitButton"] {
+    /* 6. FIX DEFINITIVO DE CENTRALIZAÇÃO DOS BOTÕES */
+    div.stButton {
         display: flex !important;
         justify-content: center !important;
         align-items: center !important;
         width: 100% !important;
-        margin: 0.8rem auto !important;
+        margin: 1rem auto !important;
     }
 
-    /* Botões em Verde Tour360VR com Texto Branco Centralizado */
-    .stButton > button, div[data-testid="stFormSubmitButton"] > button {
+    .stButton > button {
         background-color: #8DC63F !important;
         color: #FFFFFF !important;
-        font-size: 1.1rem !important;
+        font-size: 1.15rem !important;
         font-weight: bold !important;
         border-radius: 8px !important;
         border: none !important;
-        padding: 0.7rem 2rem !important;
+        padding: 0.75rem 2rem !important;
         cursor: pointer !important;
-        box-shadow: 0 4px 10px rgba(141, 198, 63, 0.3) !important;
+        box-shadow: 0 4px 12px rgba(141, 198, 63, 0.3) !important;
         margin: 0 auto !important;
         display: flex !important;
         justify-content: center !important;
@@ -105,24 +129,23 @@ custom_css = """
         max-width: 380px !important;
     }
 
-    .stButton > button:hover, div[data-testid="stFormSubmitButton"] > button:hover {
+    .stButton > button:hover {
         background-color: #7BB533 !important;
         color: #FFFFFF !important;
     }
 
-    /* Forçar texto branco no parágrafo interno do botão */
-    .stButton > button p, div[data-testid="stFormSubmitButton"] > button p {
+    .stButton > button p {
         color: #FFFFFF !important;
-        font-size: 1.1rem !important;
+        font-size: 1.15rem !important;
         font-weight: bold !important;
         margin: 0 !important;
         text-align: center !important;
     }
 
-    /* 6. Métrica de Score Centralizada */
+    /* 7. Score e Métrica Aumentada */
     [data-testid="stMetricValue"] {
         color: #8DC63F !important;
-        font-size: 3.2rem !important;
+        font-size: 3.8rem !important;
         font-weight: bold !important;
         text-align: center !important;
     }
@@ -132,7 +155,7 @@ custom_css = """
         text-align: center !important;
     }
 
-    /* 7. Alerta Amarelo com Borda */
+    /* 8. Alerta Amarelo com Borda */
     .alerta-destaque {
         background-color: #FFFDE7 !important;
         border: 2px solid #FBC02D !important;
@@ -143,17 +166,21 @@ custom_css = """
         font-size: 0.95rem !important;
         font-weight: 600 !important;
         margin: 1rem auto !important;
-        max-width: 500px !important;
+        max-width: 520px !important;
     }
 
-    .destaque-formulario {
+    /* Textos do Formulário em Uma Linha Só */
+    .destaque-formulario-linha {
         text-align: center;
         color: #000000 !important;
-        font-size: 1.2rem;
+        font-size: 1.15rem;
         font-weight: 800;
         margin-top: 1.2rem;
         margin-bottom: 0.8rem;
         font-family: 'Arial', sans-serif;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 </style>
 """
@@ -172,10 +199,9 @@ SMTP_USER = "contato@tour360vr.com.br"
 SMTP_PASS = "Kakaroto@2026"
 
 # ==========================================
-# CÁLCULO DE SCORE PRECISO
+# CÁLCULO DE SCORE DE 9 CRITÉRIOS RIGOROSOS
 # ==========================================
 def consultar_score_google_rigoroso(nome_empresa):
-    """Consulta os dados reais no Google Maps e calcula o Score."""
     url = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={requests.utils.quote(nome_empresa)}&key={GOOGLE_API_KEY}"
     headers = {"Referer": "https://www.tour360vr.com.br/"}
     
@@ -191,41 +217,129 @@ def consultar_score_google_rigoroso(nome_empresa):
             res_details = requests.get(url_details, headers=headers, timeout=10).json()
             details = res_details.get("result", place)
 
-            # Algoritmo de Pontuação
+            # Algoritmo de 9 Critérios
             score = 0
-            if details.get("business_status") == "OPERATIONAL": score += 10
-            if details.get("rating", 0) >= 4.5 and details.get("user_ratings_total", 0) >= 30: score += 20
-            elif details.get("rating", 0) >= 4.0: score += 10
-            
+            crit_det = []
+
+            # 1. Status Operacional (10 pts)
+            if details.get("business_status") == "OPERATIONAL": 
+                score += 10
+                crit_det.append("Status Operacional: Ativo")
+
+            # 2. Avaliações (Rigoroso: nota >= 4.5 e >= 30 avaliações para pontuação máxima de 20 pts)
+            rating = details.get("rating", 0)
+            reviews = details.get("user_ratings_total", 0)
+            if rating >= 4.5 and reviews >= 30:
+                score += 20
+                crit_det.append(f"Avaliações: Excelente ({rating}★ - {reviews} avaliações)")
+            elif rating >= 4.0 and reviews >= 10:
+                score += 10
+                crit_det.append(f"Avaliações: Moderado ({rating}★ - {reviews} avaliações)")
+
+            # 3. Fotos em Volume (20 pts se >= 10 fotos)
             photos = details.get("photos", [])
-            if len(photos) >= 10: score += 20
-            elif len(photos) > 0: score += 5
-                
-            if details.get("formatted_phone_number"): score += 10
-            if details.get("website"): score += 15
-            if details.get("opening_hours"): score += 10
-            
+            if len(photos) >= 10:
+                score += 20
+                crit_det.append("Galeria de Fotos: Completa")
+            elif len(photos) > 0:
+                score += 5
+                crit_det.append("Galeria de Fotos: Incompleta")
+
+            # 4. Telefone Válido (10 pts)
+            if details.get("formatted_phone_number"):
+                score += 10
+                crit_det.append("Telefone: Cadastrado")
+
+            # 5. Website Vinculado (15 pts)
+            if details.get("website"):
+                score += 15
+                crit_det.append("Website: Vinculado")
+
+            # 6. Horários de Funcionamento (10 pts)
+            if details.get("opening_hours"):
+                score += 10
+                crit_det.append("Horários: Configurados")
+
+            # 7. Endereço Completo com Número (10 pts)
             addr = details.get("formatted_address", "")
-            if addr and any(char.isdigit() for char in addr): score += 10
-            if details.get("types"): score += 5
+            if addr and any(char.isdigit() for char in addr):
+                score += 10
+                crit_det.append("Endereço: Completo com número")
+
+            # 8. Categoria Específica (5 pts)
+            if details.get("types"):
+                score += 5
+                crit_det.append("Categoria: Definida")
 
             return {
                 "sucesso": True,
                 "place_id": place_id,
                 "nome": details.get("name"),
                 "endereco": details.get("formatted_address", "Endereço registrado no Google Maps"),
-                "score": min(score, 100)
+                "score": min(score, 100),
+                "criterios": crit_det
             }
     except Exception as e:
         print(f"Erro na consulta Google: {e}")
         
     return {"sucesso": False, "mensagem": "Empresa não encontrada no Google."}
 
+# ==========================================
+# GERADOR DE PDF DA ANÁLISE COMPLETA
+# ==========================================
+def gerar_pdf_diagnostico(empresa_nome, endereco, score, criterios):
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=35, rightMargin=35, topMargin=35, bottomMargin=35)
+    
+    styles = getSampleStyleSheet()
+    style_titulo = ParagraphStyle('TituloPDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=18, leading=22, textColor=colors.HexColor('#8DC63F'))
+    style_sub = ParagraphStyle('SubPDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=12, leading=16, textColor=colors.HexColor('#222222'))
+    style_texto = ParagraphStyle('TextoPDF', parent=styles['Normal'], fontName='Helvetica', fontSize=10, leading=14, textColor=colors.HexColor('#444444'))
+    
+    elements = []
+    elements.append(Paragraph("TOUR360VR • RELATÓRIO DE DIAGNÓSTICO DIGITAL", style_titulo))
+    elements.append(Spacer(1, 10))
+    elements.append(Paragraph(f"<b>Empresa Analisada:</b> {empresa_nome}", style_sub))
+    elements.append(Paragraph(f"<b>Endereço:</b> {endereco}", style_texto))
+    elements.append(Spacer(1, 15))
+    
+    elements.append(Paragraph(f"<b>PONTUAÇÃO GERAL DE OTIMIZAÇÃO: {score} / 100</b>", ParagraphStyle('ScorePDF', parent=style_titulo, fontSize=16, textColor=colors.HexColor('#8DC63F'))))
+    elements.append(Spacer(1, 15))
+    
+    elements.append(Paragraph("<b>Critérios Analisados no Perfil do Google Maps:</b>", style_sub))
+    elements.append(Spacer(1, 8))
+    
+    tabela_dados = [["Critério / Requisito", "Status de Otimização"]]
+    for item in criterios:
+        tabela_dados.append([item.split(":")[0], item.split(":")[1] if ":" in item else "Analisado"])
+        
+    t = Table(tabela_dados, colWidths=[250, 250])
+    t.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#8DC63F')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#DDDDDD')),
+        ('PADDING', (0, 0), (-1, -1), 6),
+    ]))
+    elements.append(t)
+    
+    elements.append(Spacer(1, 20))
+    elements.append(Paragraph("<b>Próximos Passos Recomendados:</b>", style_sub))
+    elements.append(Paragraph("Para atingir os 100 pontos e garantir prioridade nas buscas locais do Google Maps, recomenda-se a inclusão de um Tour Virtual 360° homologado e atualização completa da galeria visual e categorias do perfil.", style_texto))
+    elements.append(Spacer(1, 20))
+    elements.append(Paragraph("<b>Tour360VR • Imagem e Presença Digital</b><br>www.tour360vr.com.br | contato@tour360vr.com.br", style_texto))
+    
+    doc.build(elements)
+    buffer.seek(0)
+    return buffer.getvalue()
+
+# ==========================================
+# ENVIO DE LEAD PARA O BIGIN CRM
+# ==========================================
 def enviar_lead_bigin(nome_lead, email_lead, whatsapp_lead, empresa_consultada, score):
-    """Envia a Oportunidade para a coluna 1º Contato do Bigin CRM."""
     try:
         url_token = f"https://accounts.zoho.com/oauth/v2/token?client_id={BIGIN_CLIENT_ID}&client_secret={BIGIN_CLIENT_SECRET}&grant_type=client_credentials&scope=ZohoBigin.modules.ALL"
-        res_token = requests.post(url_token).json()
+        res_token = requests.post(url_token, timeout=10).json()
         access_token = res_token.get("access_token")
 
         if not access_token:
@@ -249,29 +363,39 @@ def enviar_lead_bigin(nome_lead, email_lead, whatsapp_lead, empresa_consultada, 
         }
 
         url_deal = "https://www.zohoapis.com/bigin/v1/Deals"
-        res_deal = requests.post(url_deal, json=payload, headers=headers)
+        res_deal = requests.post(url_deal, json=payload, headers=headers, timeout=10)
         return res_deal.status_code in [200, 201]
     except Exception as e:
         print(f"Erro Bigin: {e}")
         return False
 
-def enviar_emails_diagnostico(nome_lead, email_lead, whatsapp_lead, empresa_consultada, score):
-    """Envia e-mail de notificação para a Tour360VR e de confirmação para o Cliente."""
+# ==========================================
+# DISPARO DE E-MAILS COM ANEXO PDF
+# ==========================================
+def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dados_busca):
     try:
+        empresa_nome = dados_busca['nome']
+        score = dados_busca['score']
+        endereco = dados_busca['endereco']
+        criterios = dados_busca.get('criterios', [])
+
+        # Gerar o PDF da análise
+        pdf_bytes = gerar_pdf_diagnostico(empresa_nome, endereco, score, criterios)
+
         server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
         server.starttls()
         server.login(SMTP_USER, SMTP_PASS)
 
-        # 1. E-mail de Notificação Interna (Tour360VR)
+        # 1. E-mail Administrativo para Tour360VR
         msg_admin = MIMEMultipart()
         msg_admin['From'] = SMTP_USER
         msg_admin['To'] = SMTP_USER
-        msg_admin['Subject'] = f"Novo Lead Diagnóstico GMB - {empresa_consultada}"
+        msg_admin['Subject'] = f"Novo Lead Diagnóstico GMB - {empresa_nome}"
         
         corpo_admin = f"""
         Novo Lead Capturado no Site:
 
-        Empresa: {empresa_consultada}
+        Empresa: {empresa_nome}
         Score Obtido: {score}/100
 
         Dados do Cliente:
@@ -282,38 +406,45 @@ def enviar_emails_diagnostico(nome_lead, email_lead, whatsapp_lead, empresa_cons
         msg_admin.attach(MIMEText(corpo_admin, 'plain'))
         server.send_message(msg_admin)
 
-        # 2. E-mail de Resposta ao Cliente
+        # 2. E-mail HTML Personalizado para o Cliente (com PDF em anexo e texto em negrito)
         msg_cliente = MIMEMultipart()
         msg_cliente['From'] = SMTP_USER
         msg_cliente['To'] = email_lead
-        msg_cliente['Subject'] = f"Diagnóstico de Perfil no Google - {empresa_consultada}"
+        msg_cliente['Subject'] = f"Diagnóstico de Perfil no Google - {empresa_nome}"
         
-        corpo_cliente = f"""
-        Olá, {nome_lead}!
-
-        Recebemos a sua solicitação de diagnóstico para a empresa "{empresa_consultada}".
-
-        Pontuação de Otimização no Google Maps: {score}/100.
-
-        O nosso especialista em posicionamento digital da Tour360VR analisará os detalhes do seu perfil e entrará em contacto através do WhatsApp ({whatsapp_lead}) para apresentar o relatório completo.
-
-        Atenciosamente,
-        Rubens Okamoto | Tour360VR
-        www.tour360vr.com.br
+        corpo_html_cliente = f"""
+        <html>
+            <body style="font-family: Arial, sans-serif; color: #333333; line-height: 1.6;">
+                <p>Olá, <b>{nome_lead}</b>!</p>
+                <p>Recebemos a sua solicitação de diagnóstico para a empresa "<b>{empresa_nome}</b>".</p>
+                <p style="font-size: 1.1rem;">Pontuação de Otimização no Google Maps: <b>{score}/100</b>.</p>
+                <p>O nosso especialista em posicionamento digital da Tour360VR analisará os detalhes do seu perfil e entrará em contacto através do WhatsApp (<b>{whatsapp_lead}</b>) para apresentar o relatório completo.</p>
+                <p><i>Anexamos a este e-mail o seu relatório preliminar em PDF.</i></p>
+                <br>
+                <p>Atenciosamente,<br><b>Rubens Okamoto | Tour360VR</b><br><a href="https://www.tour360vr.com.br">www.tour360vr.com.br</a></p>
+            </body>
+        </html>
         """
-        msg_cliente.attach(MIMEText(corpo_cliente, 'plain'))
-        server.send_message(msg_cliente)
+        msg_cliente.attach(MIMEText(corpo_html_cliente, 'html'))
 
+        # Anexar PDF no e-mail do cliente
+        part_pdf = MIMEBase('application', 'oct-stream')
+        part_pdf.set_payload(pdf_bytes)
+        encoders.encode_base64(part_pdf)
+        part_pdf.add_header('Content-Disposition', f'attachment; filename="Diagnostico_GMB_{empresa_nome.replace(" ", "_")}.pdf"')
+        msg_cliente.attach(part_pdf)
+
+        server.send_message(msg_cliente)
         server.quit()
         return True
     except Exception as e:
-        print(f"Erro no Envio SMTP: {e}")
+        print(f"Erro Envio Email: {e}")
         return False
 
 # ==========================================
 # INTERFACE DO USUÁRIO
 # ==========================================
-st.markdown('<div class="titulo-principal">🔍 Faça um diagnóstico do perfil da sua empresa no Google.</div>', unsafe_allow_html=True)
+st.markdown('<div class="titulo-principal">🔍 Faça uma análise da sua empresa no Google</div>', unsafe_allow_html=True)
 st.markdown('<div class="instrucao-subtitulo">Digite o Nome Comercial exato da sua empresa seguido da Cidade e Estado.</div>', unsafe_allow_html=True)
 
 nome_empresa = st.text_input("BuscaInput", placeholder="Ex: Tour360VR Ribeirão Preto SP", label_visibility="collapsed")
@@ -333,10 +464,10 @@ if "resultado_busca" in st.session_state:
     
     st.markdown("<hr style='margin: 1rem 0;'>", unsafe_allow_html=True)
     
-    st.markdown(f'<p style="text-align: center; color: #000000; font-size: 1.15rem; font-weight: bold; margin-bottom: 0.2rem;">Empresa Localizada: {dados["nome"]}</p>', unsafe_allow_html=True)
-    st.markdown(f'<p style="text-align: center; color: #666666; font-size: 0.9rem; margin-bottom: 0.6rem;">📍 {dados["endereco"]}</p>', unsafe_allow_html=True)
+    st.markdown(f'<div class="empresa-localizada-titulo">Empresa Localizada: {dados["nome"]}</div>', unsafe_allow_html=True)
+    st.markdown(f'<p style="text-align: center; color: #666666; font-size: 0.95rem; margin-bottom: 0.6rem;">📍 {dados["endereco"]}</p>', unsafe_allow_html=True)
     
-    st.metric(label="Pontuação Geral de Otimização (Score)", value=f"{dados['score']} / 100")
+    st.metric(label="Pontuação Geral de Otimização", value=f"{dados['score']} / 100")
     
     st.markdown("""
     <div class="alerta-destaque">
@@ -344,11 +475,10 @@ if "resultado_busca" in st.session_state:
     </div>
     """, unsafe_allow_html=True)
 
-    st.markdown('<div class="destaque-formulario">Preencha os dados abaixo e receba a análise completa</div>', unsafe_allow_html=True)
+    st.markdown('<div class="destaque-formulario-linha">Preencha os dados abaixo e receba a análise completa</div>', unsafe_allow_html=True)
     
-    # Formulário sem st.form para evitar sobreposição de estilos nativos do Streamlit
     nome_lead = st.text_input("Seu Nome Completo:", placeholder="Digite o seu nome completo")
-    email_lead = st.text_input("Seu E-mail Principal:", placeholder="exemplo@email.com")
+    email_lead = st.text_input("Seu E-mail:", placeholder="exemplo@email.com")
     whats_num = st.text_input("Seu WhatsApp (com DDD):", value="55 ", placeholder="5516991332121")
 
     if st.button("📩 Receber diagnóstico"):
@@ -357,9 +487,8 @@ if "resultado_busca" in st.session_state:
             if not whats_limpo.startswith("55"):
                 whats_limpo = "55" + whats_limpo
 
-            # Disparos de integração
             enviar_lead_bigin(nome_lead, email_lead, whats_limpo, dados['nome'], dados['score'])
-            enviar_emails_diagnostico(nome_lead, email_lead, whats_limpo, dados['nome'], dados['score'])
+            enviar_emails_diagnostico_completo(nome_lead, email_lead, whats_limpo, dados)
             
             st.markdown("<p style='text-align: center; color: #2E7D32; font-weight: bold; font-size: 1.15rem; margin-top: 1rem;'>Diagnóstico enviado com sucesso!</p>", unsafe_allow_html=True)
         else:
