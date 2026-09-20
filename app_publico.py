@@ -26,7 +26,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# CSS Definitivo de Trava e Ocultação Total dos Ícones do Streamlit
+# CSS Definitivo: Remove a borda/contorno cinza e esconde Built with Streamlit, Fullscreen, Header e Badges
 custom_css = """
 <style>
     html, body, [data-testid="stAppViewContainer"], .main, .stApp {
@@ -41,22 +41,35 @@ custom_css = """
         padding-left: 0.5rem !important;
         padding-right: 0.5rem !important;
         max-width: 900px !important;
+        border: none !important;
+        box-shadow: none !important;
     }
 
-    /* Oculta rigorosamente menus, headers, footers e ícones/badges flutuantes */
+    /* Remove bordas, contornos e caixas de enquadramento do container principal */
+    [data-testid="stAppViewBlockContainer"], 
+    [data-testid="stForm"],
+    div[class*="stApp"],
+    div[class*="block-container"] {
+        border: none !important;
+        box-shadow: none !important;
+        outline: none !important;
+    }
+
+    /* Oculta rigorosamente menus, headers, footers, "Built with Streamlit", Fullscreen e badges */
     header, 
+    footer, 
+    .stApp footer,
     [data-testid="stHeader"], 
     [data-testid="stAppHeader"],
     [data-testid="stToolbar"], 
     [data-testid="stDecoration"], 
     [data-testid="stStatusWidget"],
-    #MainMenu, 
-    footer, 
-    .stApp footer, 
     [data-testid="stFooter"],
+    #MainMenu, 
     .viewerBadge_container__1QSob, 
     .styles_viewerBadge__1yB5_,
     button[title="View source"],
+    button[title="Toggle fullscreen"],
     a[href*="streamlit"],
     a[href*="github"],
     div[class*="viewerBadge"],
@@ -65,8 +78,9 @@ custom_css = """
     div[class*="viewerBadge_container"],
     div[data-testid*="stStatusWidget"],
     div[data-testid*="viewerBadge"],
-    .stStatusWidget,
-    div[class*="StatusWidget"] {
+    div[class*="stEmbedFooter"],
+    .stEmbedFooter,
+    .stStatusWidget {
         display: none !important;
         visibility: hidden !important;
         opacity: 0 !important;
@@ -200,7 +214,7 @@ custom_css = """
 """
 st.markdown(custom_css, unsafe_allow_html=True)
 
-# JS Rígido de Remoção do Pop-up Flutuante do Streamlit no DOM Pai
+# JS Rígido de Remoção do Pop-up Flutuante e Elementos Externos do Streamlit
 components.html("""
 <script>
     function destroyStreamlitBadges() {
@@ -217,7 +231,9 @@ components.html("""
                     'a[href*="streamlit"]',
                     'a[href*="github"]',
                     'div[data-testid*="Status"]',
-                    'iframe[src*="streamlit"]'
+                    'iframe[src*="streamlit"]',
+                    '.stEmbedFooter',
+                    'div[class*="stEmbedFooter"]'
                 ];
                 selectors.forEach(function(s) {
                     var elements = doc.querySelectorAll(s);
@@ -269,7 +285,7 @@ def extrair_cidade(endereco):
     return "Não Informada"
 
 # ==========================================
-# INTEGRAÇÃO ZOHO BIGIN (SINALIZADOR 1 - NO NOME)
+# INTEGRAÇÃO ZOHO BIGIN (SINALIZADOR "1 - " NO NOME)
 # ==========================================
 def enviar_lead_zoho_bigin(nome_lead, email_lead, whatsapp_lead, empresa_nome, endereco, score):
     url_bigin = "https://bigin.zoho.com/crm/WebToContactForm"
