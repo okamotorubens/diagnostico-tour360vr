@@ -1,4 +1,5 @@
 import os
+import re
 import requests
 import smtplib
 import tempfile
@@ -8,7 +9,7 @@ from email.mime.base import MIMEBase
 from email import encoders
 import streamlit as st
 
-# ReportLab para geração de PDF
+# Importação do ReportLab
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -23,13 +24,14 @@ st.set_page_config(
     layout="centered"
 )
 
-# Estilo CSS Global Injetado
+# Estilo CSS Global com Ocultação Absoluta do Rodapé Nativo
 custom_css = """
 <style>
-    /* Remover completamente cabeçalhos, rodapés nativos e barra de ferramentas */
-    header, footer, #MainMenu, [data-testid="stHeader"], [data-testid="stToolbar"], [data-testid="stFooter"], .stApp > footer {
+    /* Ocultar rodapé e barras nativas do Streamlit */
+    footer, .stApp footer, [data-testid="stFooter"], header, #MainMenu, [data-testid="stHeader"], [data-testid="stToolbar"] {
         display: none !important;
         visibility: hidden !important;
+        opacity: 0 !important;
         height: 0px !important;
     }
 
@@ -63,14 +65,14 @@ custom_css = """
         font-family: 'Arial', sans-serif;
     }
 
-    /* CARD DE RESULTADO COM FUNDO CINZA/AZULADO */
+    /* CARD DE RESULTADO COM FUNDO CINZA/AZULADO E BORDA */
     .card-resultado-unificado {
         background-color: #F0F4F8 !important;
         border: 1px solid #D0D7DE !important;
         border-radius: 12px !important;
         padding: 24px 20px !important;
         margin: 1.2rem auto !important;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04) !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
         max-width: 600px !important;
     }
 
@@ -83,7 +85,7 @@ custom_css = """
         margin-bottom: 0.1rem;
     }
 
-    /* Rótulos de Campos Centralizados */
+    /* Rótulos dos Campos Centralizados */
     .rotulo-campo-centralizado {
         text-align: center !important;
         color: #000000 !important;
@@ -101,7 +103,7 @@ custom_css = """
         margin-bottom: 0.3rem !important;
     }
 
-    /* Inputs Claros */
+    /* Inputs Claros e Centralizados */
     .stTextInput {
         display: flex !important;
         justify-content: center !important;
@@ -245,7 +247,7 @@ def obter_cor_score(score):
         return "#8DC63F"  # Verde Otimizado
 
 # ==========================================
-# CÁLCULO RIGOROSO DO SCORE GOOGLE MAPS
+# CÁLCULO DE SCORE RIGOROSO
 # ==========================================
 def consultar_score_google_rigoroso(nome_empresa):
     url = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={requests.utils.quote(nome_empresa)}&key={GOOGLE_API_KEY}"
@@ -274,10 +276,10 @@ def consultar_score_google_rigoroso(nome_empresa):
             reviews = details.get("user_ratings_total", 0)
             if rating >= 4.7 and reviews >= 100:
                 score += 20
-                crit_det.append(f"Avaliações: Excelente ({rating}★ - {reviews} avaliações)")
+                crit_det.append(f"Avaliações: Excelente ({rating} / {reviews} avaliações)")
             elif rating >= 4.2 and reviews >= 30:
                 score += 10
-                crit_det.append(f"Avaliações: Moderadas ({rating}★ - {reviews} avaliações)")
+                crit_det.append(f"Avaliações: Moderadas ({rating} / {reviews} avaliações)")
 
             photos = details.get("photos", [])
             if len(photos) >= 30:
@@ -320,7 +322,7 @@ def consultar_score_google_rigoroso(nome_empresa):
     return {"sucesso": False, "mensagem": "Empresa não encontrada no Google."}
 
 # ==========================================
-# GERADOR DE PDF GRAVADO EM DISCO TEMPORÁRIO
+# GERADOR DE PDF SEGURO E ROBUSTO
 # ==========================================
 def gerar_pdf_diagnostico_arquivo(empresa_nome, endereco, score, criterios):
     try:
@@ -423,14 +425,13 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
         criterios = dados_busca.get('criterios', [])
         cor_score_hex = obter_cor_score(score)
 
-        # Geração física do PDF no diretório temporário do sistema
         pdf_file_path = gerar_pdf_diagnostico_arquivo(empresa_nome, endereco, score, criterios)
 
         server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
         server.starttls()
         server.login(SMTP_USER, SMTP_PASS)
 
-        # 1. E-mail Administrativo da Tour360VR
+        # 1. E-mail Administrativo
         msg_admin = MIMEMultipart('mixed')
         msg_admin['From'] = SMTP_USER
         msg_admin['To'] = SMTP_USER
@@ -472,7 +473,7 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
 
         server.send_message(msg_admin)
 
-        # 2. E-mail HTML para o Cliente
+        # 2. E-mail Cliente
         msg_cliente = MIMEMultipart('mixed')
         msg_cliente['From'] = SMTP_USER
         msg_cliente['To'] = email_lead
@@ -505,7 +506,6 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
         server.send_message(msg_cliente)
         server.quit()
         
-        # Limpa arquivo temporário do servidor
         if pdf_file_path and os.path.exists(pdf_file_path):
             os.remove(pdf_file_path)
 
@@ -531,28 +531,21 @@ if st.button("🔍 Analisar perfil"):
             else:
                 st.error("❌ Empresa não encontrada. Tente incluir a cidade ou verificar a grafia exata cadastrada no Google.")
 
-# Exibição do Resultado
+# Exibição do Resultado no Card Unificado com Fundo Cinza/Azulado
 if "resultado_busca" in st.session_state:
     dados = st.session_state["resultado_busca"]
     
-    # CARD COM FUNDO CINZA/AZULADO
-    st.markdown('<div class="card-resultado-unificado">', unsafe_allow_html=True)
-    
-    st.markdown(f'<div class="empresa-localizada-titulo">Empresa Localizada: {dados["nome"]}</div>', unsafe_allow_html=True)
-    st.markdown(f'<p style="text-align: center; color: #666666; font-size: 0.95rem; margin-bottom: 0.4rem;">📍 {dados["endereco"]}</p>', unsafe_allow_html=True)
-    
-    st.markdown('<p style="text-align: center; font-weight: 700; font-size: 1.1rem; margin-top: 0.6rem; margin-bottom: 0;">Pontuação Geral de Otimização</p>', unsafe_allow_html=True)
-    
-    cor_nota = obter_cor_score(dados["score"])
-    st.markdown(f'<div class="nota-score-gigante" style="color: {cor_nota} !important;">{dados["score"]} / 100</div>', unsafe_allow_html=True)
-    
-    st.markdown("""
-    <div class="alerta-destaque">
-        ⚠️ Identificamos oportunidades de melhoria que podem estar reduzindo a visibilidade do seu negócio para novos clientes.
+    st.markdown(f"""
+    <div class="card-resultado-unificado">
+        <div class="empresa-localizada-titulo">Empresa Localizada: {dados["nome"]}</div>
+        <p style="text-align: center; color: #666666; font-size: 0.95rem; margin-bottom: 0.4rem;">📍 {dados["endereco"]}</p>
+        <p style="text-align: center; font-weight: 700; font-size: 1.1rem; margin-top: 0.6rem; margin-bottom: 0;">Pontuação Geral de Otimização</p>
+        <div class="nota-score-gigante" style="color: {obter_cor_score(dados["score"])} !important;">{dados["score"]} / 100</div>
+        <div class="alerta-destaque">
+            ⚠️ Identificamos oportunidades de melhoria que podem estar reduzindo a visibilidade do seu negócio para novos clientes.
+        </div>
     </div>
     """, unsafe_allow_html=True)
-    
-    st.markdown('</div>', unsafe_allow_html=True)
 
     # Formulário de Captura
     st.markdown('<div class="destaque-formulario-linha">📋 Preencha os dados abaixo e receba a análise completa</div>', unsafe_allow_html=True)
@@ -564,14 +557,16 @@ if "resultado_busca" in st.session_state:
     email_lead = st.text_input("EmailInput", placeholder="exemplo@email.com", label_visibility="collapsed")
     
     st.markdown('<div class="rotulo-campo-centralizado">WhatsApp</div>', unsafe_allow_html=True)
-    st.markdown('<div class="subtexto-label" style="text-align: center;">(com DDD)</div>', unsafe_allow_html=True)
+    st.markdown('<div class="subtexto-label" style="text-align: center;">(com DDD - Apenas Números)</div>', unsafe_allow_html=True)
     
-    num_whats = st.text_input("WhatsInput", max_chars=11, placeholder="16991332121", label_visibility="collapsed")
+    raw_whats = st.text_input("WhatsInput", max_chars=10, placeholder="16991332121", label_visibility="collapsed")
+    
+    # FILTRO DE SEGURANÇA: MANTÉM APENAS OS NÚMEROS DIGITADOS
+    num_whats = re.sub(r'\D', '', raw_whats)[:10]
 
     if st.button("📩 Receber diagnóstico"):
-        if nome_lead and email_lead and num_whats and len(num_whats.strip()) >= 10:
-            whats_limpo = ''.join(filter(str.isdigit, num_whats))
-            whats_completo = "55" + whats_limpo
+        if nome_lead and email_lead and num_whats and len(num_whats.strip()) == 10:
+            whats_completo = "55" + num_whats
 
             enviar_lead_bigin(nome_lead, email_lead, whats_completo, dados['nome'], dados['score'])
             enviar_emails_diagnostico_completo(nome_lead, email_lead, whats_completo, dados)
@@ -582,4 +577,4 @@ if "resultado_busca" in st.session_state:
             </div>
             """, unsafe_allow_html=True)
         else:
-            st.error("Por favor, preencha todos os campos do formulário corretamente (WhatsApp com DDD).")
+            st.error("Por favor, preencha o WhatsApp com exatamente 10 dígitos numéricos (DDD + Telefone).")
