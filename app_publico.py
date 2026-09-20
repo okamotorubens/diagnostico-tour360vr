@@ -26,10 +26,9 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Estilo CSS para Container Compacto Cinza/Azulado, Inputs Brancos e Sem Scrollbar
+# Estilo CSS para Container Compacto Cinza/Azulado e Inputs Brancos
 custom_css = """
 <style>
-    /* 1. Eliminar Scrollbars e Definir Fundo Base */
     html, body, [data-testid="stAppViewContainer"], .main {
         overflow-x: hidden !important;
         background-color: #FFFFFF !important;
@@ -44,7 +43,6 @@ custom_css = """
         max-width: 680px !important;
     }
 
-    /* 2. Ocultar Cabeçalho e Rodapé Nativos */
     footer, .stApp footer, [data-testid="stFooter"], header, #MainMenu, [data-testid="stHeader"], [data-testid="stToolbar"] {
         display: none !important;
         visibility: hidden !important;
@@ -52,7 +50,6 @@ custom_css = """
         height: 0px !important;
     }
 
-    /* 3. Container Compacto Cinza/Azulado */
     .card-resultado-compacto {
         background-color: #F0F4F8 !important;
         border: 1px solid #D0D7DE !important;
@@ -62,7 +59,6 @@ custom_css = """
         box-shadow: 0 2px 8px rgba(0,0,0,0.04) !important;
     }
 
-    /* 4. Títulos e Subtítulos */
     .titulo-principal {
         text-align: center;
         color: #111111 !important;
@@ -80,7 +76,6 @@ custom_css = """
         font-family: 'Arial', sans-serif;
     }
 
-    /* 5. Inputs 100% Brancos sem Fundo Preto */
     div[data-baseweb="input"], 
     div[data-baseweb="input"] > div, 
     div[data-baseweb="base-input"],
@@ -114,7 +109,6 @@ custom_css = """
         -webkit-text-fill-color: #000000 !important;
     }
 
-    /* Rótulos e Botões */
     .rotulo-campo {
         text-align: center !important;
         color: #111111 !important;
@@ -174,16 +168,14 @@ custom_css = """
 st.markdown(custom_css, unsafe_allow_html=True)
 
 # ==========================================
-# CONFIGURAÇÕES E CREDENCIAIS
+# CREDENCIAIS
 # ==========================================
 GOOGLE_API_KEY = "AIzaSyA8ul_9QICNyqxrHgT-CURIZmd1sikHn5U"
 
-# Credenciais Zoho Bigin
 BIGIN_CLIENT_ID = "1000.COI8SBR9O0RCMGCL7WKEYUJMBZCR8X"
 BIGIN_CLIENT_SECRET = "c60642fb374cbad9753c456d8713b6349417187345"
 BIGIN_GRANT_CODE = "1000.1d8cf92fc3316b79cd5e0895ea53bcfb.8d044e6649d153dd3db7e5b9d5d3f3e2"
 
-# Configuração de E-mail SMTP
 SMTP_SERVER = "smtp.tour360vr.com.br"
 SMTP_PORT = 587
 SMTP_USER = "contato@tour360vr.com.br"
@@ -198,7 +190,7 @@ def obter_cor_score(score):
         return "#8DC63F"
 
 # ==========================================
-# CÁLCULO DE SCORE DE 9 CRITÉRIOS PADRÃO
+# CÁLCULO DE SCORE DE 9 CRITÉRIOS
 # ==========================================
 def consultar_score_google_rigoroso(nome_empresa):
     url = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={requests.utils.quote(nome_empresa)}&key={GOOGLE_API_KEY}"
@@ -289,7 +281,7 @@ def consultar_score_google_rigoroso(nome_empresa):
             else:
                 criterios_eval.append("8. Categoria Principal: Ausente (0 pts)")
 
-            # 9. Tour Virtual 360° Interativo (Pendente de Otimização no Perfil)
+            # 9. Tour Virtual 360° Interativo
             criterios_eval.append("9. Tour Virtual 360° Interativo: Ausente no perfil Google (Oportunidade de Otimização)")
 
             return {
@@ -306,7 +298,7 @@ def consultar_score_google_rigoroso(nome_empresa):
     return {"sucesso": False, "mensagem": "Empresa não encontrada no Google."}
 
 # ==========================================
-# DIAGRAMAÇÃO DO PDF COM GARANTIA DO ARQUIVO
+# GERADOR DE PDF ROBUSTO (SEM ERROS DE TABELA)
 # ==========================================
 def gerar_pdf_diagnostico_arquivo(empresa_nome, endereco, score, criterios):
     try:
@@ -326,7 +318,9 @@ def gerar_pdf_diagnostico_arquivo(empresa_nome, endereco, score, criterios):
         style_title = ParagraphStyle('HeaderTitle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=15, leading=18, textColor=colors.HexColor('#1565C0'))
         style_sub = ParagraphStyle('HeaderSub', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10.5, leading=14, textColor=colors.HexColor('#222222'))
         style_body = ParagraphStyle('HeaderBody', parent=styles['Normal'], fontName='Helvetica', fontSize=8.5, leading=11.5, textColor=colors.HexColor('#444444'))
-        
+        style_cell = ParagraphStyle('CellText', parent=styles['Normal'], fontName='Helvetica', fontSize=8, leading=10, textColor=colors.HexColor('#333333'))
+        style_cell_bold = ParagraphStyle('CellBold', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=8.5, leading=10, textColor=colors.white)
+
         elements = []
         
         elements.append(Paragraph("TOUR360VR • RELATÓRIO DE AUDITORIA DE PERFIL GOOGLE", style_title))
@@ -343,19 +337,16 @@ def gerar_pdf_diagnostico_arquivo(empresa_nome, endereco, score, criterios):
         elements.append(Paragraph("<b>Detalhamento dos 9 Critérios Avaliados:</b>", style_sub))
         elements.append(Spacer(1, 4))
         
-        tabela_dados = [["Critério Avaliado", "Status no Perfil Google"]]
+        tabela_dados = [[Paragraph("Critério Avaliado", style_cell_bold), Paragraph("Status no Perfil Google", style_cell_bold)]]
         for crit in criterios:
             partes = crit.split(":")
             c_item = partes[0] if len(partes) > 0 else crit
             c_res = partes[1] if len(partes) > 1 else "Verificado"
-            tabela_dados.append([c_item, c_res])
+            tabela_dados.append([Paragraph(c_item, style_cell), Paragraph(c_res, style_cell)])
             
-        t = Table(tabela_dados, colWidths=[190, 345])
+        t = Table(tabela_dados, colWidths=[200, 335])
         t.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1565C0')),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, -1), 8),
             ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#DDDDDD')),
             ('PADDING', (0, 0), (-1, -1), 4),
             ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.HexColor('#FFFFFF'), colors.HexColor('#F8F9FA')])
@@ -380,6 +371,19 @@ def gerar_pdf_diagnostico_arquivo(empresa_nome, endereco, score, criterios):
 # INTEGRAÇÃO ZOHO BIGIN CRM
 # ==========================================
 def obter_access_token_bigin():
+    if "bigin_refresh_token" in st.session_state:
+        # Usar refresh token se já capturado
+        rf = st.session_state["bigin_refresh_token"]
+        for domain in ["com", "com.br"]:
+            try:
+                url_token = f"https://accounts.zoho.{domain}/oauth/v2/token?refresh_token={rf}&client_id={BIGIN_CLIENT_ID}&client_secret={BIGIN_CLIENT_SECRET}&grant_type=refresh_token"
+                res = requests.post(url_token, timeout=8).json()
+                if "access_token" in res:
+                    return res["access_token"], domain
+            except Exception:
+                pass
+
+    # Troca do código inicial
     for domain in ["com", "com.br"]:
         try:
             url_token = f"https://accounts.zoho.{domain}/oauth/v2/token"
@@ -390,17 +394,18 @@ def obter_access_token_bigin():
                 "code": BIGIN_GRANT_CODE
             }
             res = requests.post(url_token, data=data, timeout=8).json()
+            if "refresh_token" in res:
+                st.session_state["bigin_refresh_token"] = res["refresh_token"]
             if "access_token" in res:
                 return res["access_token"], domain
         except Exception as e:
-            print(f"Erro token domain {domain}: {e}")
+            print(f"Erro OAuth domain {domain}: {e}")
     return None, None
 
 def enviar_lead_bigin(nome_lead, email_lead, whatsapp_lead, empresa_consultada, score):
     try:
         access_token, domain = obter_access_token_bigin()
         if not access_token:
-            print("Não foi possível autenticar no Zoho Bigin.")
             return False
 
         headers = {
@@ -427,7 +432,7 @@ def enviar_lead_bigin(nome_lead, email_lead, whatsapp_lead, empresa_consultada, 
         return False
 
 # ==========================================
-# ENVIO DE E-MAILS COM AMBOS OS DISPAROS
+# ENVIO DE E-MAILS COM ANTI-SPAM COMPLETO
 # ==========================================
 def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dados_busca):
     pdf_file_path = None
@@ -444,29 +449,34 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
         server.starttls()
         server.login(SMTP_USER, SMTP_PASS)
 
-        # 1. E-mail Notificação Interna
+        # 1. E-mail Notificação Interna (Design Moderno Restaurado)
         msg_admin = MIMEMultipart('mixed')
-        msg_admin['From'] = SMTP_USER
+        msg_admin['From'] = f"Tour360VR <{SMTP_USER}>"
         msg_admin['To'] = SMTP_USER
+        msg_admin['Reply-To'] = SMTP_USER
         msg_admin['Subject'] = f"🚀 NOVO LEAD: {empresa_nome} (Score: {score}/100)"
         
         corpo_admin_html = f"""
+        <!DOCTYPE html>
         <html>
-        <body style="font-family: Arial, sans-serif; background-color: #F4F4F4; padding: 15px;">
-            <div style="max-width: 580px; background-color: #FFFFFF; padding: 20px; border-radius: 8px; border-top: 5px solid #1E88E5; margin: 0 auto;">
-                <h3 style="color: #333333; margin-top: 0;">Novo Lead Capturado no Site!</h3>
-                <p><b>Empresa:</b> {empresa_nome}</p>
-                <p><b>Pontuação:</b> <span style="font-size: 1.15rem; color: {cor_score_hex}; font-weight: bold;">{score} / 100</span></p>
-                <div style="background-color: #F8F9FA; padding: 12px; border-radius: 6px; border-left: 4px solid #1E88E5; margin: 12px 0;">
-                    <p style="margin: 4px 0;"><b>Nome:</b> {nome_lead}</p>
-                    <p style="margin: 4px 0;"><b>E-mail:</b> <a href="mailto:{email_lead}">{email_lead}</a></p>
-                    <p style="margin: 4px 0;"><b>WhatsApp:</b> <a href="https://wa.me/{whatsapp_lead}" target="_blank">+{whatsapp_lead}</a></p>
+        <head><meta charset="utf-8"></head>
+        <body style="font-family: Arial, sans-serif; background-color: #F4F6F9; padding: 20px; margin: 0;">
+            <div style="max-width: 580px; background-color: #FFFFFF; padding: 25px; border-radius: 10px; border-top: 5px solid #1E88E5; margin: 0 auto; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                <h2 style="color: #111111; margin-top: 0; font-size: 18px;">Novo Lead Capturado no Site!</h2>
+                <hr style="border: 0; border-top: 1px solid #EEEEEE; margin: 15px 0;">
+                <p style="font-size: 14px; margin: 5px 0;"><b>Empresa:</b> {empresa_nome}</p>
+                <p style="font-size: 14px; margin: 5px 0;"><b>Pontuação:</b> <span style="font-size: 16px; color: {cor_score_hex}; font-weight: bold;">{score} / 100</span></p>
+                
+                <div style="background-color: #F8F9FA; padding: 15px; border-radius: 8px; border-left: 4px solid #1E88E5; margin: 18px 0;">
+                    <p style="margin: 4px 0; font-size: 14px;"><b>Nome:</b> {nome_lead}</p>
+                    <p style="margin: 4px 0; font-size: 14px;"><b>E-mail:</b> <a href="mailto:{email_lead}" style="color: #1E88E5;">{email_lead}</a></p>
+                    <p style="margin: 4px 0; font-size: 14px;"><b>WhatsApp:</b> <a href="https://wa.me/{whatsapp_lead}" target="_blank" style="color: #1E88E5; font-weight: bold;">+{whatsapp_lead}</a></p>
                 </div>
             </div>
         </body>
         </html>
         """
-        msg_admin.attach(MIMEText(corpo_admin_html, 'html'))
+        msg_admin.attach(MIMEText(corpo_admin_html, 'html', 'utf-8'))
         
         if pdf_file_path and os.path.exists(pdf_file_path):
             with open(pdf_file_path, 'rb') as f:
@@ -478,26 +488,31 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
 
         server.send_message(msg_admin)
 
-        # 2. E-mail Cliente com PDF
+        # 2. E-mail Cliente (Anti-Spam Estruturado)
         msg_cliente = MIMEMultipart('mixed')
-        msg_cliente['From'] = SMTP_USER
+        msg_cliente['From'] = f"Rubens Okamoto | Tour360VR <{SMTP_USER}>"
         msg_cliente['To'] = email_lead
+        msg_cliente['Reply-To'] = SMTP_USER
         msg_cliente['Subject'] = f"Diagnóstico de Perfil no Google - {empresa_nome}"
         
         corpo_html_cliente = f"""
+        <!DOCTYPE html>
         <html>
-        <body style="font-family: Arial, sans-serif; color: #333333; line-height: 1.5;">
-            <p>Olá, <b>{nome_lead}</b>!</p>
-            <p>Recebemos a solicitação de diagnóstico para a empresa <b>{empresa_nome}</b>.</p>
-            <p>Sua pontuação de otimização atual no Google é: <b style="font-size: 1.15rem; color: {cor_score_hex};">{score}/100</b>.</p>
-            <p>Anexamos a este e-mail o seu relatório detalhado em PDF.</p>
-            <p>Em breve, um especialista entrará em contato via WhatsApp para apresentar como atingir a nota máxima e alavancar a visibilidade da sua empresa.</p>
-            <br>
-            <p>Atenciosamente,<br><b>Rubens Okamoto | Tour360VR</b><br>www.tour360vr.com.br</p>
+        <head><meta charset="utf-8"></head>
+        <body style="font-family: Arial, sans-serif; color: #333333; line-height: 1.6; background-color: #FFFFFF; padding: 15px;">
+            <div style="max-width: 600px; margin: 0 auto;">
+                <p>Olá, <b>{nome_lead}</b>!</p>
+                <p>Recebemos a solicitação de diagnóstico para a empresa <b>{empresa_nome}</b>.</p>
+                <p>Sua pontuação de otimização atual no Google é: <b style="font-size: 18px; color: {cor_score_hex};">{score}/100</b>.</p>
+                <p>Anexamos a este e-mail o seu relatório detalhado em PDF.</p>
+                <p>Em breve, um especialista entrará em contato via WhatsApp para apresentar como atingir a nota máxima e alavancar a visibilidade da sua empresa.</p>
+                <br>
+                <p>Atenciosamente,<br><b>Rubens Okamoto | Tour360VR</b><br><a href="https://www.tour360vr.com.br" style="color: #1E88E5;">www.tour360vr.com.br</a></p>
+            </div>
         </body>
         </html>
         """
-        msg_cliente.attach(MIMEText(corpo_html_cliente, 'html'))
+        msg_cliente.attach(MIMEText(corpo_html_cliente, 'html', 'utf-8'))
 
         if pdf_file_path and os.path.exists(pdf_file_path):
             with open(pdf_file_path, 'rb') as f:
