@@ -8,7 +8,6 @@ from email.mime.base import MIMEBase
 from email import encoders
 import streamlit as st
 
-# Importação do ReportLab para geração do PDF
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -23,28 +22,29 @@ st.set_page_config(
     layout="centered"
 )
 
-# Estilo CSS com Prioridade Absoluta
+# Estilo CSS Global com Forçagem de Injeção
 custom_css = """
 <style>
-    /* Fundo limpo e container otimizado */
+    /* Ocultar definitivamente qualquer rodapé nativo do Streamlit */
+    footer, .stApp footer, [data-testid="stFooter"], header, #MainMenu, [data-testid="stHeader"], [data-testid="stToolbar"] {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        height: 0px !important;
+    }
+
     .stApp {
         background-color: #FFFFFF !important;
         color: #000000 !important;
     }
+
     .block-container {
         padding-top: 0.2rem !important;
         padding-bottom: 0.2rem !important;
-        max-width: 750px !important;
+        max-width: 700px !important;
     }
 
-    /* OCULTAR DEFINITIVAMENTE O RODAPÉ 'BUILT WITH STREAMLIT' E BARRAS NATIVAS */
-    footer, .stApp footer, [data-testid="stFooter"], header, #MainMenu, [data-testid="stHeader"], [data-testid="stToolbar"] {
-        visibility: hidden !important;
-        display: none !important;
-        height: 0px !important;
-    }
-
-    /* Títulos Principais em Linha Única */
+    /* Títulos Principais */
     .titulo-uma-linha {
         text-align: center;
         color: #000000 !important;
@@ -90,10 +90,11 @@ custom_css = """
         margin-bottom: 0.3rem !important;
     }
 
-    /* Inputs Claros e Alinhados */
+    /* Inputs Claros e Centralizados */
     .stTextInput {
         display: flex !important;
         justify-content: center !important;
+        align-items: center !important;
         width: 100% !important;
     }
     .stTextInput label {
@@ -124,13 +125,14 @@ custom_css = """
         margin: 0.2rem 0 0.6rem 0 !important;
     }
 
-    /* CENTRALIZAÇÃO PERFEITA DOS BOTÕES */
-    div.stButton {
+    /* FIX DEFINITIVO DE CENTRALIZAÇÃO DOS BOTÕES (CONTAINER PAI + BOTÃO) */
+    div[data-testid="stButton"], div.stButton {
         display: flex !important;
         justify-content: center !important;
         align-items: center !important;
         width: 100% !important;
         margin: 0.8rem auto !important;
+        text-align: center !important;
     }
 
     .stButton > button {
@@ -190,7 +192,7 @@ custom_css = """
         white-space: nowrap;
     }
 
-    /* Card de Sucesso Reduzido no Tamanho do Input */
+    /* Card de Sucesso */
     .card-sucesso-destaque {
         background-color: #E8F5E9 !important;
         border: 2px solid #2E7D32 !important;
@@ -232,7 +234,7 @@ def obter_cor_score(score):
         return "#8DC63F"  # Verde Tour360VR Otimizado
 
 # ==========================================
-# CÁLCULO DE SCORE RIGOROSO COMPLETO
+# CÁLCULO DE SCORE RIGOROSO (MÁXIMA EXIGÊNCIA - IGUAL AO SISTEMA PRIVADO)
 # ==========================================
 def consultar_score_google_rigoroso(nome_empresa):
     url = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={requests.utils.quote(nome_empresa)}&key={GOOGLE_API_KEY}"
@@ -250,7 +252,7 @@ def consultar_score_google_rigoroso(nome_empresa):
             res_details = requests.get(url_details, headers=headers, timeout=10).json()
             details = res_details.get("result", place)
 
-            # Algoritmo de 9 Critérios Rígidos (Fiel ao Sistema Privado)
+            # Algoritmo Extremamente Cauteloso
             score = 0
             crit_det = []
 
@@ -259,35 +261,39 @@ def consultar_score_google_rigoroso(nome_empresa):
                 score += 10
                 crit_det.append("Status Operacional: Ativo")
 
-            # 2. Avaliações (Rigoroso: nota >= 4.5 E no mínimo 50 avaliações)
+            # 2. Avaliações Extremamente Exigentes (Somente >= 4.7 com mais de 100 avaliações para pontuação cheia)
             rating = details.get("rating", 0)
             reviews = details.get("user_ratings_total", 0)
-            if rating >= 4.5 and reviews >= 50:
+            if rating >= 4.7 and reviews >= 100:
                 score += 20
                 crit_det.append(f"Avaliações: Excelente ({rating}★ - {reviews} avaliações)")
+            elif rating >= 4.2 and reviews >= 30:
+                score += 10
+                crit_det.append(f"Avaliações: Moderadas ({rating}★ - {reviews} avaliações)")
 
-            # 3. Galeria de Fotos (20 pts para >= 20 fotos)
+            # 3. Galeria de Fotos (30 fotos proprietárias para pontuação máxima de 20 pts)
             photos = details.get("photos", [])
-            if len(photos) >= 20:
+            if len(photos) >= 30:
                 score += 20
                 crit_det.append("Galeria de Fotos: Completa")
 
-            # 4. Telefone Comercial Válido (10 pts)
+            # 4. Telefone Válido (10 pts)
             if details.get("formatted_phone_number"):
                 score += 10
                 crit_det.append("Telefone: Cadastrado")
 
-            # 5. Website Vinculado (15 pts)
-            if details.get("website"):
+            # 5. Website Próprio Vinculado (15 pts)
+            website = details.get("website", "")
+            if website and not any(x in website for x in ["facebook", "instagram", "site.google"]):
                 score += 15
-                crit_det.append("Website: Vinculado")
+                crit_det.append("Website: Próprio Vinculado")
 
             # 6. Horários de Funcionamento (10 pts)
             if details.get("opening_hours"):
                 score += 10
                 crit_det.append("Horários: Configurados")
 
-            # 7. Endereço Completo com Número (10 pts)
+            # 7. Endereço com Número (10 pts)
             addr = details.get("formatted_address", "")
             if addr and any(char.isdigit() for char in addr):
                 score += 10
@@ -365,15 +371,24 @@ def gerar_pdf_diagnostico(empresa_nome, endereco, score, criterios):
         return None
 
 # ==========================================
-# ENVIO DE LEAD PARA O BIGIN CRM
+# ENVIO DE LEAD PARA O BIGIN CRM (COM FALLBACK DE DOMÍNIO)
 # ==========================================
 def enviar_lead_bigin(nome_lead, email_lead, whatsapp_lead, empresa_consultada, score):
     try:
-        url_token = f"https://accounts.zoho.com/oauth/v2/token?client_id={BIGIN_CLIENT_ID}&client_secret={BIGIN_CLIENT_SECRET}&grant_type=client_credentials&scope=ZohoBigin.modules.ALL"
-        res_token = requests.post(url_token, timeout=10).json()
-        access_token = res_token.get("access_token")
+        # 1. Tenta obter token via endpoint Zoho Com e Com.br
+        access_token = None
+        for domain in ["zoho.com", "zoho.com.br"]:
+            try:
+                url_token = f"https://accounts.{domain}/oauth/v2/token?client_id={BIGIN_CLIENT_ID}&client_secret={BIGIN_CLIENT_SECRET}&grant_type=client_credentials&scope=ZohoBigin.modules.ALL"
+                res_token = requests.post(url_token, timeout=8).json()
+                access_token = res_token.get("access_token")
+                if access_token:
+                    break
+            except Exception:
+                continue
 
         if not access_token:
+            print("Não foi possível gerar Token do Bigin")
             return False
 
         headers = {
@@ -394,14 +409,14 @@ def enviar_lead_bigin(nome_lead, email_lead, whatsapp_lead, empresa_consultada, 
         }
 
         url_deal = "https://www.zohoapis.com/bigin/v1/Deals"
-        res_deal = requests.post(url_deal, json=payload, headers=headers, timeout=10)
+        res_deal = requests.post(url_deal, json=payload, headers=headers, timeout=8)
         return res_deal.status_code in [200, 201]
     except Exception as e:
         print(f"Erro Bigin: {e}")
         return False
 
 # ==========================================
-# DISPARO DE E-MAILS COM TEXTO EXATO E PDF ANEXO
+# DISPARO DE E-MAILS COM TEXTO SOLICITADO E ANEXO PDF
 # ==========================================
 def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dados_busca):
     try:
@@ -434,7 +449,7 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
         msg_admin.attach(MIMEText(corpo_admin, 'plain'))
         server.send_message(msg_admin)
 
-        # 2. E-mail HTML para o Cliente com a Redação Exata Solicitada
+        # 2. E-mail HTML para o Cliente (Redação Solicitada)
         msg_cliente = MIMEMultipart('mixed')
         msg_cliente['From'] = SMTP_USER
         msg_cliente['To'] = email_lead
@@ -527,6 +542,7 @@ if "resultado_busca" in st.session_state:
             whats_limpo = ''.join(filter(str.isdigit, num_whats))
             whats_completo = "55" + whats_limpo
 
+            # Executa disparos
             enviar_lead_bigin(nome_lead, email_lead, whats_completo, dados['nome'], dados['score'])
             enviar_emails_diagnostico_completo(nome_lead, email_lead, whats_completo, dados)
             
