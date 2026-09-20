@@ -25,7 +25,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# CSS Definitivo: Elimina Ícones Flutuantes, Menus e Ajusta Espaçamentos
+# CSS + JavaScript Injection para ocultar ícones do Streamlit em tempo real
 custom_css = """
 <style>
     html, body, [data-testid="stAppViewContainer"], .main, .stApp {
@@ -42,7 +42,7 @@ custom_css = """
         max-width: 900px !important;
     }
 
-    /* Oculta de forma absoluta todos os elementos, badges e ícones flutuantes do Streamlit */
+    /* Regras agressivas para ocultar menus, footers e ícones flutuantes */
     [data-testid="stHeader"], 
     [data-testid="stAppHeader"],
     [data-testid="stToolbar"], 
@@ -61,7 +61,8 @@ custom_css = """
     div[class*="viewerBadge_container"],
     div[data-testid*="stStatusWidget"],
     div[data-testid*="viewerBadge"],
-    #root > div:nth-child(1) > div > div > div > div > section > div > div > div > div:nth-child(2) {
+    iframe[src*="status"],
+    .stStatusWidget {
         display: none !important;
         visibility: hidden !important;
         opacity: 0 !important;
@@ -191,6 +192,27 @@ custom_css = """
         box-shadow: 0 4px 12px rgba(46, 125, 50, 0.15) !important;
     }
 </style>
+
+<script>
+    // JS Observer para remover instantaneamente os elementos flutuantes
+    const removeStreamlitBadges = () => {
+        const selectors = [
+            '[data-testid="stStatusWidget"]',
+            '[data-testid="stAppHeader"]',
+            '[data-testid="stHeader"]',
+            '.viewerBadge_container__1QSob',
+            '[class*="viewerBadge"]',
+            '[class*="stStatusWidget"]'
+        ];
+        selectors.forEach(selector => {
+            document.querySelectorAll(selector).forEach(el => el.remove());
+        });
+    };
+    
+    const observer = new MutationObserver(removeStreamlitBadges);
+    observer.observe(document.body, { childList: true, subtree: true });
+    window.addEventListener('DOMContentLoaded', removeStreamlitBadges);
+</script>
 """
 st.markdown(custom_css, unsafe_allow_html=True)
 
@@ -212,8 +234,29 @@ def obter_cor_score(score):
     else:
         return "#8DC63F"
 
+def extrair_cidade_endereco(endereco):
+    """
+    Extrai o nome da cidade de endereços no padrão Google Maps do Brasil.
+    Exemplo: 'R. Lafaiete, 1370 - Centro, Ribeirão Preto - SP, 14015-080, Brazil' -> 'Ribeirão Preto'
+    """
+    try:
+        if "-" in endereco:
+            partes = endereco.split("-")
+            for i, p in enumerate(partes):
+                if "SP" in p or "RJ" in p or "MG" in p or "PR" in p or "RS" in p or "SC" in p or "BA" in p or "GO" in p or "DF" in p or "PE" in p or "CE" in p:
+                    cidade_part = partes[i-1].strip()
+                    cidade_clean = cidade_part.split(",")[-1].strip()
+                    return cidade_clean
+        
+        partes_virgula = [x.strip() for x in endereco.split(",")]
+        if len(partes_virgula) >= 3:
+            return partes_virgula[-3]
+    except Exception:
+        pass
+    return ""
+
 # ==========================================
-# INTEGRAÇÃO ZOHO BIGIN
+# INTEGRAÇÃO ZOHO BIGIN (COM CIDADE PREENCHIDA)
 # ==========================================
 def enviar_lead_zoho_bigin(nome_lead, email_lead, whatsapp_lead, empresa_nome, endereco, score):
     url_bigin = "https://bigin.zoho.com/crm/WebToContactForm"
@@ -221,6 +264,8 @@ def enviar_lead_zoho_bigin(nome_lead, email_lead, whatsapp_lead, empresa_nome, e
     partes_nome = nome_lead.strip().split(" ", 1)
     primeiro_nome = partes_nome[0]
     sobrenome = partes_nome[1] if len(partes_nome) > 1 else "."
+
+    cidade_extraida = extrair_cidade_endereco(endereco)
 
     payload = {
         'xnQsjsdp': '15d54e8d1dfa724381be9ad892936abd18de3deadc2763d67c0dd5f939138a91',
@@ -234,6 +279,8 @@ def enviar_lead_zoho_bigin(nome_lead, email_lead, whatsapp_lead, empresa_nome, e
         'Email': email_lead,
         'Accounts.Account Name': empresa_nome,
         'Phone': whatsapp_lead,
+        'Mailing City': cidade_extraida,  # Preenche o campo Cidade nativo
+        'City': cidade_extraida,          # Preenche o campo de Cidade alternativo
         'CONTACTCF6': f"{score}/100",
         'Description': f"Endereço Registrado no Google: {endereco}\nPontuação Otimização: {score}/100"
     }
@@ -413,7 +460,7 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
         return None
 
 # ==========================================
-# ENVIO DE E-MAILS COM REGRA DE ESPAÇAMENTO RIGOROSA
+# ENVIO DE E-MAILS COM 1 LINHA DE ESPAÇO E SEM LINHA DIVISÓRIA
 # ==========================================
 def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dados_busca):
     try:
@@ -476,7 +523,7 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
 
         server.send_message(msg_admin)
 
-        # 2. E-mail Cliente com espaçamento forçado via parágrafos explícitos
+        # 2. E-mail Cliente (1 linha de espaço antes da assinatura, sem linha divisória <hr>)
         msg_cliente = MIMEMultipart('mixed')
         msg_cliente['From'] = f"Rubens Okamoto | Tour360VR <{SMTP_USER}>"
         msg_cliente['To'] = email_lead
@@ -488,7 +535,7 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
 <head><meta charset="utf-8"></head>
 <body style="font-family: Arial, sans-serif; color: #333333; font-size: 15px; line-height: 1.4; background-color: #FFFFFF; padding: 10px; margin: 0;">
 <div style="max-width: 600px; margin: 0 auto;">
-<p style="margin: 0 0 28px 0; font-size: 15px; color: #333333;">Olá, {nome_lead}!</p>
+<p style="margin: 0 0 24px 0; font-size: 15px; color: #333333;">Olá, {nome_lead}!</p>
 
 <p style="margin: 0 0 16px 0; font-size: 15px; color: #333333;">Ficamos felizes pelo seu interesse em melhorar a presença online da sua empresa!</p>
 
@@ -498,11 +545,9 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
 
 <p style="margin: 0 0 16px 0; font-size: 15px; color: #333333;">Anexamos a este e-mail o seu relatório detalhado em PDF.</p>
 
-<p style="margin: 0 0 8px 0; font-size: 15px; color: #333333;">Em breve, um especialista entrará em contato para apresentar como alavancar a visibilidade da sua empresa.</p>
+<p style="margin: 0 0 24px 0; font-size: 15px; color: #333333;">Em breve, um especialista entrará em contato para apresentar como alavancar a visibilidade da sua empresa.</p>
 
-<hr style="border: 0; border-top: 1px solid #CCCCCC; margin: 8px 0 6px 0;"/>
-
-<div style="color: #555555; font-size: 13px; line-height: 1.35; margin-top: 4px;">
+<div style="color: #555555; font-size: 13px; line-height: 1.35;">
 Atenciosamente,<br/>
 <b>Rubens Okamoto | Tour360VR</b><br/>
 <a href="https://www.tour360vr.com.br" target="_blank" style="color: #1565C0; text-decoration: none;">www.tour360vr.com.br</a>
