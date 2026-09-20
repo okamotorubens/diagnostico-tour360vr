@@ -8,15 +8,11 @@ from email.mime.base import MIMEBase
 from email import encoders
 import streamlit as st
 
-# Tenta importar o ReportLab; se ainda estiver instalando, o código não quebra
-try:
-    from reportlab.lib.pagesizes import A4
-    from reportlab.lib import colors
-    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
-    PDF_DISPONIVEL = True
-except ImportError:
-    PDF_DISPONIVEL = False
+# Importação das ferramentas de geração de PDF via ReportLab
+from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 
 # ==========================================
 # CONFIGURAÇÃO DE TEMA E VISUAL PERSONALIZADO
@@ -27,10 +23,10 @@ st.set_page_config(
     layout="centered"
 )
 
-# Estilo CSS com Prioridade Máxima
+# Estilo CSS de Alta Prioridade
 custom_css = """
 <style>
-    /* 1. Fundo limpo e container otimizado */
+    /* Fundo limpo e container otimizado */
     .stApp {
         background-color: #FFFFFF !important;
         color: #000000 !important;
@@ -46,7 +42,7 @@ custom_css = """
         height: 0px !important;
     }
 
-    /* 2. Título sem quebras e Rótulos */
+    /* Título sem quebras */
     .titulo-uma-linha {
         text-align: center;
         color: #000000 !important;
@@ -74,7 +70,7 @@ custom_css = """
         margin-bottom: 0.1rem;
     }
 
-    /* Rótulos Visíveis e Claros */
+    /* Rótulos de Campos Claros e Visíveis */
     label, div[data-testid="stMarkdownContainer"] p {
         color: #000000 !important;
         font-size: 0.95rem !important;
@@ -82,7 +78,7 @@ custom_css = """
         font-family: 'Arial', sans-serif !important;
     }
 
-    /* 3. Inputs Claros e Alinhados */
+    /* Inputs Claros e Alinhados */
     .stTextInput {
         display: flex !important;
         justify-content: center !important;
@@ -103,7 +99,7 @@ custom_css = """
         text-align: center !important;
     }
 
-    /* 4. NOTA DO SCORE GIGANTE E EM DESTAQUE */
+    /* NOTA DO SCORE GIGANTE E EM DESTAQUE */
     .nota-score-gigante {
         text-align: center !important;
         color: #8DC63F !important;
@@ -114,7 +110,7 @@ custom_css = """
         margin: 0.2rem 0 0.8rem 0 !important;
     }
 
-    /* 5. FIX DEFINITIVO DE CENTRALIZAÇÃO DOS BOTÕES */
+    /* CENTRALIZAÇÃO DOS BOTÕES */
     div.stButton {
         display: flex !important;
         justify-content: center !important;
@@ -154,7 +150,7 @@ custom_css = """
         text-align: center !important;
     }
 
-    /* 6. Alerta Amarelo com Borda */
+    /* Alerta Amarelo com Borda */
     .alerta-destaque {
         background-color: #FFFDE7 !important;
         border: 2px solid #FBC02D !important;
@@ -228,7 +224,7 @@ def consultar_score_google_rigoroso(nome_empresa):
             res_details = requests.get(url_details, headers=headers, timeout=10).json()
             details = res_details.get("result", place)
 
-            # Algoritmo de 9 Critérios Rígidos
+            # Algoritmo de Critérios
             score = 0
             crit_det = []
 
@@ -282,11 +278,9 @@ def consultar_score_google_rigoroso(nome_empresa):
     return {"sucesso": False, "mensagem": "Empresa não encontrada no Google."}
 
 # ==========================================
-# GERADOR DE PDF
+# GERADOR DE PDF DA ANÁLISE COMPLETA
 # ==========================================
 def gerar_pdf_diagnostico(empresa_nome, endereco, score, criterios):
-    if not PDF_DISPONIVEL:
-        return None
     try:
         buffer = io.BytesIO()
         doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=35, rightMargin=35, topMargin=35, bottomMargin=35)
@@ -332,7 +326,8 @@ def gerar_pdf_diagnostico(empresa_nome, endereco, score, criterios):
         doc.build(elements)
         buffer.seek(0)
         return buffer.getvalue()
-    except Exception:
+    except Exception as e:
+        print(f"Erro ao gerar PDF: {e}")
         return None
 
 # ==========================================
@@ -372,7 +367,7 @@ def enviar_lead_bigin(nome_lead, email_lead, whatsapp_lead, empresa_consultada, 
         return False
 
 # ==========================================
-# DISPARO DE E-MAILS
+# DISPARO DE E-MAILS COM ANEXO PDF
 # ==========================================
 def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dados_busca):
     try:
@@ -405,14 +400,13 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
         msg_admin.attach(MIMEText(corpo_admin, 'plain'))
         server.send_message(msg_admin)
 
-        # 2. E-mail Limpo para o Cliente
+        # 2. E-mail Limpo para o Cliente (Texto Puro sem Links Longos)
         msg_cliente = MIMEMultipart()
         msg_cliente['From'] = SMTP_USER
         msg_cliente['To'] = email_lead
         msg_cliente['Subject'] = f"Diagnóstico de Perfil no Google - {empresa_nome}"
         
-        corpo_texto_cliente = f"""
-Olá, {nome_lead}!
+        corpo_texto_cliente = f"""Olá, {nome_lead}!
 
 Recebemos a sua solicitação de diagnóstico para a empresa "{empresa_nome}".
 
@@ -420,13 +414,15 @@ Pontuação de Otimização no Google Maps: {score}/100.
 
 O nosso especialista em posicionamento digital da Tour360VR analisará os detalhes do seu perfil e entrará em contacto através do WhatsApp ({whatsapp_lead}) para apresentar o relatório completo.
 
+Anexamos a este e-mail o seu relatório preliminar em PDF.
+
 Atenciosamente,
 Rubens Okamoto | Tour360VR
 www.tour360vr.com.br
-        """
+"""
         msg_cliente.attach(MIMEText(corpo_texto_cliente, 'plain'))
 
-        # Anexa PDF se o gerador estiver ativo
+        # Anexa PDF se gerado com sucesso
         pdf_bytes = gerar_pdf_diagnostico(empresa_nome, endereco, score, criterios)
         if pdf_bytes:
             part_pdf = MIMEBase('application', 'oct-stream')
@@ -491,7 +487,7 @@ if "resultado_busca" in st.session_state:
             if not whats_limpo.startswith("55"):
                 whats_limpo = "55" + whats_limpo
 
-            # Disparos de integração
+            # Disparos das integrações
             enviar_lead_bigin(nome_lead, email_lead, whats_limpo, dados['nome'], dados['score'])
             enviar_emails_diagnostico_completo(nome_lead, email_lead, whats_limpo, dados)
             
