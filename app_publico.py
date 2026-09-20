@@ -174,6 +174,7 @@ GOOGLE_API_KEY = "AIzaSyA8ul_9QICNyqxrHgT-CURIZmd1sikHn5U"
 
 BIGIN_CLIENT_ID = "1000.COI8SBR9O0RCMGCL7WKEYUJMBZCR8X"
 BIGIN_CLIENT_SECRET = "c60642fb374cbad9753c456d8713b6349417187345"
+BIGIN_GRANT_CODE = "1000.bf5f09eb26f8d811705e962efb6e9215.257dd1edd65cd8af593cfb568a087b35"
 
 SMTP_SERVER = "smtp.tour360vr.com.br"
 SMTP_PORT = 587
@@ -189,7 +190,7 @@ def obter_cor_score(score):
         return "#8DC63F"
 
 # ==========================================
-# CÁLCULO DE SCORE RIGOROSO E REALISTA
+# CÁLCULO DE SCORE RIGOROSO
 # ==========================================
 def consultar_score_google_rigoroso(nome_empresa):
     url = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={requests.utils.quote(nome_empresa)}&key={GOOGLE_API_KEY}"
@@ -207,7 +208,6 @@ def consultar_score_google_rigoroso(nome_empresa):
             res_details = requests.get(url_details, headers=headers, timeout=10).json()
             details = res_details.get("result", place)
 
-            # Algoritmo de auditoria rigorosa
             score = 0
             criterios_eval = []
 
@@ -281,7 +281,7 @@ def consultar_score_google_rigoroso(nome_empresa):
             else:
                 criterios_eval.append("8. Categoria Principal: Ausente (0 pts)")
 
-            # 9. Tour Virtual 360° Interativo (Item Decisivo do Diagnóstico)
+            # 9. Tour Virtual 360° Interativo
             criterios_eval.append("9. Tour Virtual 360° Street View: Não detectado no perfil (Pendente de Otimização)")
 
             return {
@@ -298,7 +298,7 @@ def consultar_score_google_rigoroso(nome_empresa):
     return {"sucesso": False, "mensagem": "Empresa não encontrada no Google."}
 
 # ==========================================
-# GERADOR DE PDF DIRETO EM MEMÓRIA / BYTES
+# GERADOR DE PDF DIRETO EM MEMÓRIA
 # ==========================================
 def gerar_pdf_diagnostico_bytes(empresa_nome, endereco, score, criterios):
     try:
@@ -368,6 +368,71 @@ def gerar_pdf_diagnostico_bytes(empresa_nome, endereco, score, criterios):
         return None
 
 # ==========================================
+# INTEGRAÇÃO ZOHO BIGIN CRM
+# ==========================================
+def obter_access_token_bigin():
+    # 1. Se já temos o Refresh Token em memória
+    if "bigin_refresh_token" in st.session_state:
+        rf = st.session_state["bigin_refresh_token"]
+        for domain in ["com", "com.br"]:
+            try:
+                url = f"https://accounts.zoho.{domain}/oauth/v2/token?refresh_token={rf}&client_id={BIGIN_CLIENT_ID}&client_secret={BIGIN_CLIENT_SECRET}&grant_type=refresh_token"
+                res = requests.post(url, timeout=8).json()
+                if "access_token" in res:
+                    return res["access_token"], domain
+            except Exception:
+                pass
+
+    # 2. Troca inicial do Grant Code
+    for domain in ["com", "com.br"]:
+        try:
+            url = f"https://accounts.zoho.{domain}/oauth/v2/token"
+            data = {
+                "grant_type": "authorization_code",
+                "client_id": BIGIN_CLIENT_ID,
+                "client_secret": BIGIN_CLIENT_SECRET,
+                "code": BIGIN_GRANT_CODE
+            }
+            res = requests.post(url, data=data, timeout=8).json()
+            if "refresh_token" in res:
+                st.session_state["bigin_refresh_token"] = res["refresh_token"]
+            if "access_token" in res:
+                return res["access_token"], domain
+        except Exception as e:
+            print(f"Erro OAuth Bigin domain {domain}: {e}")
+
+    return None, None
+
+def enviar_lead_bigin(nome_lead, email_lead, whatsapp_lead, empresa_consultada, score):
+    try:
+        access_token, domain = obter_access_token_bigin()
+        if not access_token:
+            return False
+
+        headers = {
+            "Authorization": f"Zoho-oauthtoken {access_token}",
+            "Content-Type": "application/json"
+        }
+
+        payload = {
+            "data": [
+                {
+                    "Last_Name": nome_lead,
+                    "Email": email_lead,
+                    "Phone": whatsapp_lead,
+                    "Description": f"Lead Diagnóstico Google:\nEmpresa: {empresa_consultada}\nScore: {score}/100"
+                }
+            ]
+        }
+
+        url_contact = f"https://www.zohoapis.{domain}/bigin/v1/Contacts"
+        res_contact = requests.post(url_contact, json=payload, headers=headers, timeout=8)
+        return res_contact.status_code in [200, 201]
+    except Exception as e:
+        print(f"Erro no Zoho Bigin: {e}")
+        return False
+
+# ==========================================
 # ENVIO DE E-MAILS COM ATTACHMENT EM MEMÓRIA
 # ==========================================
 def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dados_busca):
@@ -378,7 +443,7 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
         criterios = dados_busca.get('criterios', [])
         cor_score_hex = obter_cor_score(score)
 
-        # Gera o PDF em memória (Bytes)
+        # Gera o PDF diretamente em bytes
         pdf_data = gerar_pdf_diagnostico_bytes(empresa_nome, endereco, score, criterios)
 
         server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
@@ -525,7 +590,10 @@ if "resultado_busca" in st.session_state:
         else:
             whats_completo = "55" + apenas_numeros
 
-            # Envia e-mails com o PDF
+            # 1. Registra no Zoho Bigin CRM
+            enviar_lead_bigin(nome_lead, email_lead, whats_completo, dados['nome'], dados['score'])
+
+            # 2. Envia e-mails com o PDF em anexo
             com_sucesso = enviar_emails_diagnostico_completo(nome_lead, email_lead, whats_completo, dados)
             
             if com_sucesso:
