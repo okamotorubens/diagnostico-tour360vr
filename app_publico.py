@@ -1,13 +1,14 @@
 import os
 import requests
 import smtplib
-import io
+import tempfile
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email import encoders
 import streamlit as st
 
+# ReportLab para geração de PDF
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -22,14 +23,13 @@ st.set_page_config(
     layout="centered"
 )
 
-# Estilo CSS Global
+# Estilo CSS Global Injetado
 custom_css = """
 <style>
-    /* Ocultar rodapé e barras nativas do Streamlit */
-    footer, .stApp footer, [data-testid="stFooter"], header, #MainMenu, [data-testid="stHeader"], [data-testid="stToolbar"] {
+    /* Remover completamente cabeçalhos, rodapés nativos e barra de ferramentas */
+    header, footer, #MainMenu, [data-testid="stHeader"], [data-testid="stToolbar"], [data-testid="stFooter"], .stApp > footer {
         display: none !important;
         visibility: hidden !important;
-        opacity: 0 !important;
         height: 0px !important;
     }
 
@@ -63,7 +63,7 @@ custom_css = """
         font-family: 'Arial', sans-serif;
     }
 
-    /* CARD DE RESULTADO UNIFICADO (FUNDO CINZA/AZULADO) */
+    /* CARD DE RESULTADO COM FUNDO CINZA/AZULADO */
     .card-resultado-unificado {
         background-color: #F0F4F8 !important;
         border: 1px solid #D0D7DE !important;
@@ -83,7 +83,7 @@ custom_css = """
         margin-bottom: 0.1rem;
     }
 
-    /* Rótulos dos Campos Centralizados */
+    /* Rótulos de Campos Centralizados */
     .rotulo-campo-centralizado {
         text-align: center !important;
         color: #000000 !important;
@@ -101,7 +101,7 @@ custom_css = """
         margin-bottom: 0.3rem !important;
     }
 
-    /* Inputs Claros e Centralizados */
+    /* Inputs Claros */
     .stTextInput {
         display: flex !important;
         justify-content: center !important;
@@ -234,7 +234,7 @@ SMTP_USER = "contato@tour360vr.com.br"
 SMTP_PASS = "Kakaroto@2026"
 
 # ==========================================
-# COR DINÂMICA DO SCORE (REGRA PADRÃO)
+# COR DINÂMICA DO SCORE
 # ==========================================
 def obter_cor_score(score):
     if score <= 40:
@@ -245,7 +245,7 @@ def obter_cor_score(score):
         return "#8DC63F"  # Verde Otimizado
 
 # ==========================================
-# CÁLCULO DE SCORE RIGOROSO DA EMPRESA
+# CÁLCULO RIGOROSO DO SCORE GOOGLE MAPS
 # ==========================================
 def consultar_score_google_rigoroso(nome_empresa):
     url = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={requests.utils.quote(nome_empresa)}&key={GOOGLE_API_KEY}"
@@ -320,12 +320,14 @@ def consultar_score_google_rigoroso(nome_empresa):
     return {"sucesso": False, "mensagem": "Empresa não encontrada no Google."}
 
 # ==========================================
-# GERADOR DE PDF COMPATÍVEL
+# GERADOR DE PDF GRAVADO EM DISCO TEMPORÁRIO
 # ==========================================
-def gerar_pdf_diagnostico(empresa_nome, endereco, score, criterios):
+def gerar_pdf_diagnostico_arquivo(empresa_nome, endereco, score, criterios):
     try:
-        buffer = io.BytesIO()
-        doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=35, rightMargin=35, topMargin=35, bottomMargin=35)
+        temp_dir = tempfile.gettempdir()
+        file_path = os.path.join(temp_dir, f"Diagnostico_{empresa_nome.replace(' ', '_')}.pdf")
+        
+        doc = SimpleDocTemplate(file_path, pagesize=A4, leftMargin=35, rightMargin=35, topMargin=35, bottomMargin=35)
         styles = getSampleStyleSheet()
         
         style_titulo = ParagraphStyle('TituloPDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=18, leading=22, textColor=colors.HexColor('#1565C0'))
@@ -369,10 +371,9 @@ def gerar_pdf_diagnostico(empresa_nome, endereco, score, criterios):
         elements.append(Paragraph("Tour360VR • Imagem e Presença Digital<br>www.tour360vr.com.br | contato@tour360vr.com.br", style_texto))
         
         doc.build(elements)
-        buffer.seek(0)
-        return buffer.getvalue()
+        return file_path
     except Exception as e:
-        print(f"Erro ao gerar PDF: {e}")
+        print(f"Erro ao gerar PDF em disco: {e}")
         return None
 
 # ==========================================
@@ -412,7 +413,7 @@ def enviar_lead_bigin(nome_lead, email_lead, whatsapp_lead, empresa_consultada, 
         return False
 
 # ==========================================
-# DISPARO DE E-MAILS COM AZUL MÉDIO E ANEXO PDF
+# DISPARO DE E-MAILS COM ANEXO FÍSICO DO PDF
 # ==========================================
 def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dados_busca):
     try:
@@ -422,13 +423,14 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
         criterios = dados_busca.get('criterios', [])
         cor_score_hex = obter_cor_score(score)
 
-        pdf_bytes = gerar_pdf_diagnostico(empresa_nome, endereco, score, criterios)
+        # Geração física do PDF no diretório temporário do sistema
+        pdf_file_path = gerar_pdf_diagnostico_arquivo(empresa_nome, endereco, score, criterios)
 
         server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
         server.starttls()
         server.login(SMTP_USER, SMTP_PASS)
 
-        # 1. E-mail de Notificação Interna (Tour360VR) com Azul Médio
+        # 1. E-mail Administrativo da Tour360VR
         msg_admin = MIMEMultipart('mixed')
         msg_admin['From'] = SMTP_USER
         msg_admin['To'] = SMTP_USER
@@ -460,12 +462,13 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
         """
         msg_admin.attach(MIMEText(corpo_admin_html, 'html'))
         
-        if pdf_bytes:
-            p_admin = MIMEBase('application', 'pdf')
-            p_admin.set_payload(pdf_bytes)
-            encoders.encode_base64(p_admin)
-            p_admin.add_header('Content-Disposition', 'attachment', filename=f"Diagnostico_{empresa_nome.replace(' ', '_')}.pdf")
-            msg_admin.attach(p_admin)
+        if pdf_file_path and os.path.exists(pdf_file_path):
+            with open(pdf_file_path, 'rb') as f:
+                p_admin = MIMEBase('application', 'pdf')
+                p_admin.set_payload(f.read())
+                encoders.encode_base64(p_admin)
+                p_admin.add_header('Content-Disposition', 'attachment', filename=f"Diagnostico_{empresa_nome.replace(' ', '_')}.pdf")
+                msg_admin.attach(p_admin)
 
         server.send_message(msg_admin)
 
@@ -491,15 +494,21 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
         """
         msg_cliente.attach(MIMEText(corpo_html_cliente, 'html'))
 
-        if pdf_bytes:
-            p_cliente = MIMEBase('application', 'pdf')
-            p_cliente.set_payload(pdf_bytes)
-            encoders.encode_base64(p_cliente)
-            p_cliente.add_header('Content-Disposition', 'attachment', filename=f"Diagnostico_GMB_{empresa_nome.replace(' ', '_')}.pdf")
-            msg_cliente.attach(p_cliente)
+        if pdf_file_path and os.path.exists(pdf_file_path):
+            with open(pdf_file_path, 'rb') as f:
+                p_cliente = MIMEBase('application', 'pdf')
+                p_cliente.set_payload(f.read())
+                encoders.encode_base64(p_cliente)
+                p_cliente.add_header('Content-Disposition', 'attachment', filename=f"Diagnostico_GMB_{empresa_nome.replace(' ', '_')}.pdf")
+                msg_cliente.attach(p_cliente)
 
         server.send_message(msg_cliente)
         server.quit()
+        
+        # Limpa arquivo temporário do servidor
+        if pdf_file_path and os.path.exists(pdf_file_path):
+            os.remove(pdf_file_path)
+
         return True
     except Exception as e:
         print(f"Erro Envio Email: {e}")
@@ -522,10 +531,11 @@ if st.button("🔍 Analisar perfil"):
             else:
                 st.error("❌ Empresa não encontrada. Tente incluir a cidade ou verificar a grafia exata cadastrada no Google.")
 
-# Exibição do Resultado no Card Unificado com Fundo Cinza/Azulado
+# Exibição do Resultado
 if "resultado_busca" in st.session_state:
     dados = st.session_state["resultado_busca"]
     
+    # CARD COM FUNDO CINZA/AZULADO
     st.markdown('<div class="card-resultado-unificado">', unsafe_allow_html=True)
     
     st.markdown(f'<div class="empresa-localizada-titulo">Empresa Localizada: {dados["nome"]}</div>', unsafe_allow_html=True)
