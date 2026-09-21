@@ -308,7 +308,7 @@ def enviar_lead_zoho_bigin(nome_lead, email_lead, whatsapp_lead, empresa_nome, e
         return False
 
 # ==========================================
-# CÁLCULO DE SCORE ALINHADO COM SISTEMA INTERNO
+# CÁLCULO DE SCORE ALINHADO RIGOROSAMENTE AO SISTEMA INTERNO
 # ==========================================
 def consultar_score_google_rigoroso(nome_empresa):
     url = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={requests.utils.quote(nome_empresa)}&key={GOOGLE_API_KEY}"
@@ -335,38 +335,37 @@ def consultar_score_google_rigoroso(nome_empresa):
             else:
                 criterios_eval.append("1. Status Operacional: Pendente / Inativo")
 
-            # 2. Galeria de Fotos
+            # 2. Galeria de Fotos HD (Pontuação Criteriosa)
             photos = details.get("photos", [])
             if len(photos) >= 30:
-                score += 20
+                score += 10
                 criterios_eval.append(f"2. Galeria de Fotos HD: Completa ({len(photos)} fotos)")
             else:
                 criterios_eval.append(f"2. Galeria de Fotos HD: Insuficiente ({len(photos)} fotos)")
 
-            # 3. Categorias
+            # 3. Categorias de Atuação
             if details.get("types"):
-                score += 15
                 criterios_eval.append("3. Categorias de Atuação: Mapeadas e Configuradas")
             else:
                 criterios_eval.append("3. Categorias de Atuação: Incompletas")
 
-            # 4. Horários
+            # 4. Horários de Atendimento
             if details.get("opening_hours"):
                 score += 10
                 criterios_eval.append("4. Horários de Atendimento: Configurados")
             else:
                 criterios_eval.append("4. Horários de Atendimento: Ausentes")
 
-            # 5. Avaliações
+            # 5. Avaliações e Engajamento
             rating = details.get("rating", 0)
             reviews = details.get("user_ratings_total", 0)
-            if reviews >= 30 and rating >= 4.5:
-                score += 15
+            if reviews >= 50 and rating >= 4.7:
+                score += 10
                 criterios_eval.append(f"5. Respostas e Engajamento de Avaliações: Ativo ({rating}★ em {reviews} avaliações)")
             else:
                 criterios_eval.append(f"5. Respostas e Engajamento de Avaliações: Baixo volume ({reviews} avaliações)")
 
-            # Itens Críticos do Checklist
+            # 6, 7 e 8: Itens Críticos do Checklist Interno (Manutenção Rigorosa de Nota)
             criterios_eval.append("6. Tour Virtual 360° Street View: Ausente (Oportunidade Crítica)")
             criterios_eval.append("7. Atributos de Serviços e Produtos: Pendente de Otimização")
             criterios_eval.append("8. Descrição Institucional SEO: Incompleta")
@@ -387,7 +386,7 @@ def consultar_score_google_rigoroso(nome_empresa):
     return {"sucesso": False, "mensagem": "Empresa não encontrada no Google."}
 
 # ==========================================
-# GERADOR DE PDF - DESIGN ESPAÇOSO E ELEGANTE
+# GERADOR DE PDF - REFINADO COM LOGO LOCAL E RESPIROS
 # ==========================================
 def desenhar_rodape_fixo(canvas, doc):
     canvas.saveState()
@@ -395,12 +394,12 @@ def desenhar_rodape_fixo(canvas, doc):
     canvas.setLineWidth(0.5)
     canvas.line(35, 38, 560, 38)
     
-    # Rodapé Padronizado com os mesmos estilos de links
+    # Rodapé Espaçado e Uniforme com Links
     styles = getSampleStyleSheet()
     style_footer_link = ParagraphStyle('FooterLink', parent=styles['Normal'], fontName='Helvetica', fontSize=8, textColor=colors.HexColor('#444444'), alignment=1)
     
     link_whats_rodape = "https://wa.me/5516991332121?text=Olá!%20Vim%20pelo%20PDF%20de%20diagnóstico%20da%20Tour360VR."
-    txt_rodape_html = f"Tour360VR   •   Rubens Okamoto   •   <a href='{link_whats_rodape}' color='#1565C0'>WhatsApp: (16) 99133-2121</a>   •   <a href='mailto:contato@tour360vr.com.br' color='#1565C0'>contato@tour360vr.com.br</a>   •   <a href='https://www.tour360vr.com.br' color='#1565C0'>www.tour360vr.com.br</a>"
+    txt_rodape_html = f"Tour360VR   &nbsp;&nbsp;•&nbsp;&nbsp;   Rubens Okamoto   &nbsp;&nbsp;•&nbsp;&nbsp;   <a href='{link_whats_rodape}' color='#1565C0'>WhatsApp: (16) 99133-2121</a>   &nbsp;&nbsp;•&nbsp;&nbsp;   <a href='mailto:contato@tour360vr.com.br' color='#1565C0'>contato@tour360vr.com.br</a>   &nbsp;&nbsp;•&nbsp;&nbsp;   <a href='https://www.tour360vr.com.br' color='#1565C0'>www.tour360vr.com.br</a>"
     
     p = Paragraph(txt_rodape_html, style_footer_link)
     p.wrapOn(canvas, 525, 20)
@@ -408,13 +407,25 @@ def desenhar_rodape_fixo(canvas, doc):
     canvas.restoreState()
 
 def obter_logo_tour360vr():
+    """Busca o arquivo de logo localmente na raiz do projeto (como no sistema interno)"""
+    caminhos_possiveis = [
+        "logo.png",
+        "logo-tour360vr.png",
+        "assets/logo.png",
+        "assets/images/logo-tour360vr.png"
+    ]
+    for c in caminhos_possiveis:
+        if os.path.exists(c):
+            return c
+            
+    # Fallback para download se não encontrar localmente
     url_logo = "https://www.tour360vr.com.br/assets/images/logo-tour360vr.png"
     try:
-        res = requests.get(url_logo, timeout=5)
+        res = requests.get(url_logo, timeout=4)
         if res.status_code == 200:
             return io.BytesIO(res.content)
-    except Exception as e:
-        print(f"Erro ao descarregar logo: {e}")
+    except Exception:
+        pass
     return None
 
 def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
@@ -441,12 +452,12 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
 
         elements = []
         
-        # CABEÇALHO COM LOGO
-        img_buffer = obter_logo_tour360vr()
+        # CABEÇALHO COM LOGO LOCAL DA RAIZ
+        src_logo = obter_logo_tour360vr()
         txt_cabecalho = Paragraph("<b>AUDITORIA DE POSICIONAMENTO GOOGLE MAPS</b><br/><font size=8.5 color='#666666'>Relatório Técnico de Visibilidade Digital</font>", style_title_hdr)
         
-        if img_buffer:
-            img_logo = Image(img_buffer, width=4.5*cm, height=1.35*cm)
+        if src_logo:
+            img_logo = Image(src_logo, width=4.5*cm, height=1.35*cm)
             tabela_cabecalho = Table([[img_logo, txt_cabecalho]], colWidths=[150, 375])
         else:
             tabela_cabecalho = Table([[Paragraph("<b>TOUR360VR</b>", style_title), txt_cabecalho]], colWidths=[150, 375])
@@ -469,10 +480,10 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
         elements.append(Paragraph(f"<b>Endereço Registrado:</b> {endereco}", style_body_maior))
         
         # Pontuação de Otimização
-        elements.append(Spacer(1, 16))
+        elements.append(Spacer(1, 14))
         cor_score_hex = obter_cor_score(score)
         elements.append(Paragraph(f"PONTUAÇÃO DE OTIMIZAÇÃO: <font color='{cor_score_hex}'><b>{score} / 100 PONTOS</b></font>", ParagraphStyle('ScorePDFDestaque', parent=style_title, fontSize=13, leading=16)))
-        elements.append(Spacer(1, 16))
+        elements.append(Spacer(1, 14))
 
         # Tabela de Critérios
         elements.append(Paragraph("<b>Análise Detalhada dos Critérios Avaliados:</b>", style_sub_maior))
@@ -495,58 +506,65 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
         elements.append(t)
         
         # Plano de Ação
-        elements.append(Spacer(1, 16))
+        elements.append(Spacer(1, 14))
         elements.append(Paragraph("<b>Plano de Ação Sugerido para Alta Visibilidade:</b>", style_sub_maior))
         elements.append(Spacer(1, 4))
         elements.append(Paragraph("1. Otimização técnica da Ficha Google (categorias estratégicas, atributos e SEO local).<br/>2. Implantação de Tour Virtual 360° Interativo integrado ao Google Street View.<br/>3. Produção de Fotografia e Vídeo Profissional para galeria e redes sociais.<br/>4. Gestão ativa de reputação, avaliações e integração multicanais.", style_body_maior))
         
-        # 2 LINHAS DE ESPAÇO ANTES DO QUADRO CTA
-        elements.append(Spacer(1, 22))
+        # ESPAÇAMENTO DE RESPIRO ANTES DO CONTAINER CTA (1 LINHA + MARGEM)
+        elements.append(Spacer(1, 20))
         
-        # QUADRO CTA COM MAIS MARGEM NA ALTURA
+        # QUADRO CTA COM RESPIRO INTERNO E QUEBRA EM 2 LINHAS
         style_cta_title_destaque = ParagraphStyle('CTATitleDestaque', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=12, leading=15, textColor=colors.HexColor('#0F2537'), alignment=1)
         style_cta_linha1 = ParagraphStyle('CTALinha1', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, leading=14, textColor=colors.HexColor('#1565C0'), alignment=1)
         style_cta_linha2 = ParagraphStyle('CTALinha2', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=14, textColor=colors.HexColor('#333333'), alignment=1)
-        style_btn_whats = ParagraphStyle('BtnWhatsTxt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, leading=13, textColor=colors.white, alignment=1)
+        style_btn_whats = ParagraphStyle('BtnWhatsTxt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10.5, leading=13, textColor=colors.white, alignment=1)
 
         txt_titulo_cta = "PRONTO PARA ELEVAR O NÍVEL DA SUA EMPRESA NO GOOGLE?"
         txt_frase_l1 = "Aumente a visibilidade e autoridade da sua marca."
-        txt_frase_l2 = "Estruturamos sua Ficha Google, criamos o Tour Virtual 360°, produzimos Fotos &amp; Vídeos Profissionais e gerenciamos suas Redes Sociais."
+        
+        # Quebra explícita do texto em exatamente 2 linhas conforme solicitado
+        txt_frase_l2 = "Estruturamos sua Ficha Google, criamos o Tour Virtual 360°, produzimos Fotos &amp; Vídeos Profissionais<br/>e gerenciamos suas Redes Sociais."
         
         link_whats = "https://wa.me/5516991332121?text=Olá!%20Recebi%20o%20diagnóstico%20no%20PDF%20e%20gostaria%20de%20falar%20com%20a%20equipe."
         
-        # Botão mais estreito (180pt) e mais alto (padding 12pt)
-        tabela_botao_whats = Table([[Paragraph(f'<a href="{link_whats}" color="#FFFFFF"><b>Fale agora com nossa equipe</b></a>', style_btn_whats)]], colWidths=[180])
+        # Botão Verde com Mais Altura (padding 14pt) e Largura Ajustada (190pt)
+        tabela_botao_whats = Table([[Paragraph(f'<a href="{link_whats}" color="#FFFFFF"><b>Fale agora com nossa equipe</b></a>', style_btn_whats)]], colWidths=[190])
         tabela_botao_whats.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#25D366')),
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-            ('PADDING', (0, 0), (-1, -1), 12),
+            ('PADDING', (0, 0), (-1, -1), 14),
             ('ROUNDEDCORNERS', [6, 6, 6, 6])
         ]))
 
         dados_card = [
+            [Spacer(1, 4)],
             [Paragraph(txt_titulo_cta, style_cta_title_destaque)],
             [Spacer(1, 8)],
             [Paragraph(txt_frase_l1, style_cta_linha1)],
             [Spacer(1, 6)],
             [Paragraph(txt_frase_l2, style_cta_linha2)],
-            [Spacer(1, 14)],
-            [tabela_botao_whats]
+            [Spacer(1, 16)],
+            [tabela_botao_whats],
+            [Spacer(1, 4)]
         ]
         
-        # Card CTA com padding generoso (22pt)
+        # Card CTA com padding generoso e linhas de respiro internas
         tabela_cta = Table(dados_card, colWidths=[525])
         tabela_cta.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#F4F7FA')),
             ('BORDER', (0, 0), (-1, -1), 1, colors.HexColor('#1565C0')),
-            ('PADDING', (0, 0), (-1, -1), 22),
+            ('PADDING', (0, 0), (-1, -1), 16),
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
             ('ROUNDEDCORNERS', [8, 8, 8, 8])
         ]))
         
         elements.append(tabela_cta)
+        
+        # 1 LINHA DE ESPAÇO APÓS O QUADRO CTA
+        elements.append(Spacer(1, 14))
 
         doc.build(elements, onFirstPage=desenhar_rodape_fixo, onLaterPages=desenhar_rodape_fixo)
         val = buffer.getvalue()
