@@ -374,7 +374,7 @@ def consultar_score_google_rigoroso(nome_empresa):
             else:
                 criterios_eval.append("5. Respostas e Engajamento de Avaliações: Ausente")
 
-            # 6, 7 e 8: Itens do Checklist que dependem da otimização manual
+            # 6, 7 e 8: Itens do Checklist
             criterios_eval.append("6. Tour Virtual 360° Street View: Ausente (Oportunidade Crítica)")
             criterios_eval.append("7. Atributos de Serviços e Produtos: Pendente de Otimização")
             criterios_eval.append("8. Descrição Institucional SEO: Incompleta")
@@ -395,7 +395,7 @@ def consultar_score_google_rigoroso(nome_empresa):
     return {"sucesso": False, "mensagem": "Empresa não encontrada no Google."}
 
 # ==========================================
-# GERADOR DE PDF - REFINADO COM LOGO PROPORCIONAL E LINKS CORRIGIDOS
+# GERADOR DE PDF - REFINADO COM LOGO MAIOR E LINKS WHATSAPP DIRETOS
 # ==========================================
 def desenhar_rodape_fixo(canvas, doc):
     canvas.saveState()
@@ -403,12 +403,11 @@ def desenhar_rodape_fixo(canvas, doc):
     canvas.setLineWidth(0.5)
     canvas.line(35, 38, 560, 38)
     
-    # Rodapé Espaçado com URL sem caracteres especiais que corrompem no PDF
     styles = getSampleStyleSheet()
     style_footer_link = ParagraphStyle('FooterLink', parent=styles['Normal'], fontName='Helvetica', fontSize=8, textColor=colors.HexColor('#444444'), alignment=1)
     
-    # URL limpa e segura para PDF (evita %EF%BF%BD)
-    link_whats_rodape = "https://wa.me/5516991332121?text=Ola%21+Vim+pelo+PDF+de+diagnostico+da+Tour360VR."
+    # URL oficial direta e limpa para WhatsApp
+    link_whats_rodape = "https://api.whatsapp.com/send?phone=5516991332121"
     txt_rodape_html = f"Tour360VR   &nbsp;&nbsp;•&nbsp;&nbsp;   Rubens Okamoto   &nbsp;&nbsp;•&nbsp;&nbsp;   <a href='{link_whats_rodape}' color='#1565C0'>WhatsApp: (16) 99133-2121</a>   &nbsp;&nbsp;•&nbsp;&nbsp;   <a href='mailto:contato@tour360vr.com.br' color='#1565C0'>contato@tour360vr.com.br</a>   &nbsp;&nbsp;•&nbsp;&nbsp;   <a href='https://tour360vr.com.br/' color='#1565C0'>https://tour360vr.com.br/</a>"
     
     p = Paragraph(txt_rodape_html, style_footer_link)
@@ -437,8 +436,8 @@ def obter_logo_tour360vr():
         pass
     return None
 
-def criar_imagem_proporcional(caminho_ou_buffer, largura_max_cm=4.2, altura_max_cm=1.4):
-    """Calcula a proporção exata da imagem para evitar qualquer distorção visual"""
+def criar_imagem_proporcional(caminho_ou_buffer, largura_max_cm=5.2, altura_max_cm=1.8):
+    """Calcula a proporção da logo permitindo maior destaque visual"""
     try:
         img_reader = ImageReader(caminho_ou_buffer)
         orig_w, orig_h = img_reader.getSize()
@@ -479,15 +478,15 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
 
         elements = []
         
-        # CABEÇALHO COM LOGO PROPORCIONAL
+        # CABEÇALHO COM LOGO MAIOR
         src_logo = obter_logo_tour360vr()
         txt_cabecalho = Paragraph("<b>AUDITORIA DE POSICIONAMENTO GOOGLE MAPS</b><br/><font size=8.5 color='#666666'>Relatório Técnico de Visibilidade Digital</font>", style_title_hdr)
         
         if src_logo:
-            img_logo = criar_imagem_proporcional(src_logo, largura_max_cm=4.2, altura_max_cm=1.4)
-            tabela_cabecalho = Table([[img_logo, txt_cabecalho]], colWidths=[150, 375])
+            img_logo = criar_imagem_proporcional(src_logo, largura_max_cm=5.2, altura_max_cm=1.8)
+            tabela_cabecalho = Table([[img_logo, txt_cabecalho]], colWidths=[170, 355])
         else:
-            tabela_cabecalho = Table([[Paragraph("<b>TOUR360VR</b>", style_title), txt_cabecalho]], colWidths=[150, 375])
+            tabela_cabecalho = Table([[Paragraph("<b>TOUR360VR</b>", style_title), txt_cabecalho]], colWidths=[170, 355])
             
         tabela_cabecalho.setStyle(TableStyle([
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
@@ -551,10 +550,9 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
         txt_frase_l1 = "Aumente a visibilidade e autoridade da sua marca."
         txt_frase_l2 = "Estruturamos sua Ficha Google, criamos o Tour Virtual 360°, produzimos Fotos &amp; Vídeos Profissionais<br/>e gerenciamos suas Redes Sociais."
         
-        # URL WhatsApp totalmente limpa sem acentos especiais para não corromper no PDF
-        link_whats_cta = "https://wa.me/5516991332121?text=Ola%21+Recebi+o+diagnostico+no+PDF+e+gostaria+de+falar+com+a+equipe."
+        # URL WhatsApp direta para acionamento universal em leitores de PDF
+        link_whats_cta = "https://api.whatsapp.com/send?phone=5516991332121"
         
-        # Botão Verde com Link Limpo
         txt_botao_html = f'<a href="{link_whats_cta}" color="#FFFFFF"><b>Fale agora com nossa equipe</b></a>'
         tabela_botao_whats = Table([[Paragraph(txt_botao_html, style_btn_whats)]], colWidths=[200])
         tabela_botao_whats.setStyle(TableStyle([
@@ -640,7 +638,7 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
                 <div style="background-color: #F8F9FA; padding: 12px; border-radius: 8px; border-left: 4px solid #1565C0; margin: 14px 0;">
                     <p style="margin: 3px 0; font-size: 14px;"><b>Nome:</b> {nome_lead}</p>
                     <p style="margin: 3px 0; font-size: 14px;"><b>E-mail:</b> <a href="mailto:{email_lead}" style="color: #1565C0;">{email_lead}</a></p>
-                    <p style="margin: 3px 0; font-size: 14px;"><b>WhatsApp:</b> <a href="https://wa.me/{whatsapp_lead}" target="_blank" style="color: #1565C0; font-weight: bold;">+{whatsapp_lead}</a></p>
+                    <p style="margin: 3px 0; font-size: 14px;"><b>WhatsApp:</b> <a href="https://api.whatsapp.com/send?phone={whatsapp_lead}" target="_blank" style="color: #1565C0; font-weight: bold;">+{whatsapp_lead}</a></p>
                 </div>
             </div>
         </body>
