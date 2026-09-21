@@ -308,7 +308,7 @@ def enviar_lead_zoho_bigin(nome_lead, email_lead, whatsapp_lead, empresa_nome, e
         return False
 
 # ==========================================
-# CÁLCULO DE SCORE ALINHADO COM O SISTEMA INTERNO
+# CÁLCULO DE SCORE ALINHADO COM SISTEMA INTERNO
 # ==========================================
 def consultar_score_google_rigoroso(nome_empresa):
     url = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={requests.utils.quote(nome_empresa)}&key={GOOGLE_API_KEY}"
@@ -381,7 +381,7 @@ def consultar_score_google_rigoroso(nome_empresa):
     return {"sucesso": False, "mensagem": "Empresa não encontrada no Google."}
 
 # ==========================================
-# GERADOR DE PDF - DESIGN REFINADO E MODERNO
+# GERADOR DE PDF - COM LINK NO WHATSAPP E CARD COM MAIS ALTURA
 # ==========================================
 def desenhar_rodape_fixo(canvas, doc):
     canvas.saveState()
@@ -389,10 +389,16 @@ def desenhar_rodape_fixo(canvas, doc):
     canvas.setLineWidth(0.5)
     canvas.line(35, 38, 560, 38)
     
-    canvas.setFont('Helvetica', 8)
-    canvas.setFillColor(colors.HexColor('#444444'))
-    texto_rodape = "Tour360VR   •   Rubens Okamoto   •   WhatsApp: (16) 99133-2121   •   contato@tour360vr.com.br   •   www.tour360vr.com.br"
-    canvas.drawCentredString(297, 24, texto_rodape)
+    # Rodapé com Link Clicável no WhatsApp
+    styles = getSampleStyleSheet()
+    style_footer_link = ParagraphStyle('FooterLink', parent=styles['Normal'], fontName='Helvetica', fontSize=8, textColor=colors.HexColor('#444444'), alignment=1)
+    
+    link_whats_rodape = "https://wa.me/5516991332121?text=Olá!%20Vim%20pelo%20PDF%20de%20diagnóstico%20da%20Tour360VR."
+    txt_rodape_html = f"Tour360VR   •   Rubens Okamoto   •   WhatsApp: <a href='{link_whats_rodape}' color='#1565C0'><u>(16) 99133-2121</u></a>   •   contato@tour360vr.com.br   •   www.tour360vr.com.br"
+    
+    p = Paragraph(txt_rodape_html, style_footer_link)
+    p.wrapOn(canvas, 525, 20)
+    p.drawOn(canvas, 35, 20)
     canvas.restoreState()
 
 def obter_logo_tour360vr():
@@ -413,7 +419,7 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
             pagesize=A4,
             leftMargin=35,
             rightMargin=35,
-            topMargin=30,
+            topMargin=28,
             bottomMargin=48
         )
         
@@ -457,12 +463,12 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
         elements.append(Paragraph(f"<b>Endereço Registrado:</b> {endereco}", style_body_maior))
         
         # Pontuação de Otimização
-        elements.append(Spacer(1, 18))
+        elements.append(Spacer(1, 16))
         cor_score_hex = obter_cor_score(score)
         elements.append(Paragraph(f"PONTUAÇÃO DE OTIMIZAÇÃO: <font color='{cor_score_hex}'><b>{score} / 100 PONTOS</b></font>", ParagraphStyle('ScorePDFDestaque', parent=style_title, fontSize=13, leading=16)))
-        elements.append(Spacer(1, 18))
+        elements.append(Spacer(1, 16))
 
-        # Tabela de Critérios com Cantos Arredondados
+        # Tabela de Critérios
         elements.append(Paragraph("<b>Análise Detalhada dos Critérios Avaliados:</b>", style_sub_maior))
         elements.append(Spacer(1, 6))
         
@@ -477,13 +483,13 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
         t.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#0F2537')),
             ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#E0E0E0')),
-            ('PADDING', (0, 0), (-1, -1), 3.8),
+            ('PADDING', (0, 0), (-1, -1), 3.5),
             ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.HexColor('#FFFFFF'), colors.HexColor('#F8F9FA')])
         ]))
         elements.append(t)
         
         # Plano de Ação
-        elements.append(Spacer(1, 18))
+        elements.append(Spacer(1, 16))
         elements.append(Paragraph("<b>Plano de Ação Sugerido para Alta Visibilidade:</b>", style_sub_maior))
         elements.append(Spacer(1, 4))
         elements.append(Paragraph("1. Otimização técnica da Ficha Google (categorias estratégicas, atributos e SEO local).<br/>2. Implantação de Tour Virtual 360° Interativo integrado ao Google Street View.<br/>3. Produção de Fotografia e Vídeo Profissional para galeria e redes sociais.<br/>4. Gestão ativa de reputação, avaliações e integração multicanais.", style_body_maior))
@@ -491,11 +497,11 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
         # 1 LINHA DE ESPAÇO ANTES DO QUADRO CTA
         elements.append(Spacer(1, 12))
         
-        # Estilos do Quadro e Texto do CTA
-        style_cta_title_destaque = ParagraphStyle('CTATitleDestaque', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11.5, leading=14, textColor=colors.HexColor('#0F2537'), alignment=1)
+        # CARD CTA: MAIS MARGEM DE ALTURA E BOTÃO MAIS ESTREITO/ALTO
+        style_cta_title_destaque = ParagraphStyle('CTATitleDestaque', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=12, leading=15, textColor=colors.HexColor('#0F2537'), alignment=1)
         style_cta_linha1 = ParagraphStyle('CTALinha1', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, leading=14, textColor=colors.HexColor('#1565C0'), alignment=1)
-        style_cta_linha2 = ParagraphStyle('CTALinha2', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=13, textColor=colors.HexColor('#333333'), alignment=1)
-        style_btn_whats = ParagraphStyle('BtnWhatsTxt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=12, textColor=colors.white, alignment=1)
+        style_cta_linha2 = ParagraphStyle('CTALinha2', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=13.5, textColor=colors.HexColor('#333333'), alignment=1)
+        style_btn_whats = ParagraphStyle('BtnWhatsTxt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10.5, leading=13, textColor=colors.white, alignment=1)
 
         txt_titulo_cta = "PRONTO PARA ELEVAR O NÍVEL DA SUA EMPRESA NO GOOGLE?"
         txt_frase_l1 = "Aumente a visibilidade e autoridade da sua marca."
@@ -503,32 +509,32 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
         
         link_whats = "https://wa.me/5516991332121?text=Olá!%20Recebi%20o%20diagnóstico%20no%20PDF%20e%20gostaria%20de%20falar%20com%20a%20equipe."
         
-        # Botão Proporcional e Centralizado
-        tabela_botao_whats = Table([[Paragraph(f'<a href="{link_whats}" color="#FFFFFF"><b>Fale agora com nossa equipe</b></a>', style_btn_whats)]], colWidths=[240])
+        # Botão com menor largura (200) e maior altura (padding 10)
+        tabela_botao_whats = Table([[Paragraph(f'<a href="{link_whats}" color="#FFFFFF"><b>Fale agora com nossa equipe</b></a>', style_btn_whats)]], colWidths=[200])
         tabela_botao_whats.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#25D366')),
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-            ('PADDING', (0, 0), (-1, -1), 6),
+            ('PADDING', (0, 0), (-1, -1), 10),
             ('ROUNDEDCORNERS', [6, 6, 6, 6])
         ]))
 
         dados_card = [
             [Paragraph(txt_titulo_cta, style_cta_title_destaque)],
-            [Spacer(1, 4)],
+            [Spacer(1, 6)],
             [Paragraph(txt_frase_l1, style_cta_linha1)],
-            [Spacer(1, 3)],
+            [Spacer(1, 5)],
             [Paragraph(txt_frase_l2, style_cta_linha2)],
-            [Spacer(1, 8)],
+            [Spacer(1, 12)],
             [tabela_botao_whats]
         ]
         
-        # Card CTA com Cantos Arredondados
+        # Card com mais respiro interno (padding 16)
         tabela_cta = Table(dados_card, colWidths=[525])
         tabela_cta.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#F4F7FA')),
             ('BORDER', (0, 0), (-1, -1), 1, colors.HexColor('#1565C0')),
-            ('PADDING', (0, 0), (-1, -1), 10),
+            ('PADDING', (0, 0), (-1, -1), 16),
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
             ('ROUNDEDCORNERS', [8, 8, 8, 8])
