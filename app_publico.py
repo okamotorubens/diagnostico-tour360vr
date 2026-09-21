@@ -551,7 +551,7 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
         txt_frase_l2 = "Estruturamos sua Ficha Google, criamos o Tour Virtual 360°, produzimos Fotos &amp; Vídeos Profissionais<br/>e gerenciamos suas Redes Sociais."
         
         # URL WhatsApp direta para acionamento universal em leitores de PDF
-        link_whats_cta = "https://api.whatsapp.com/send?phone=5516991332121"
+        link_whats_cta = "https://api.whatsapp.com/send?phone=5516996222121"
         
         txt_botao_html = f'<a href="{link_whats_cta}" color="#FFFFFF"><b>Fale agora com nossa equipe</b></a>'
         tabela_botao_whats = Table([[Paragraph(txt_botao_html, style_btn_whats)]], colWidths=[200])
