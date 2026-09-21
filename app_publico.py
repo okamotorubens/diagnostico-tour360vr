@@ -335,7 +335,7 @@ def consultar_score_google_rigoroso(nome_empresa):
             else:
                 criterios_eval.append("1. Status Operacional: Pendente / Inativo")
 
-            # 2. Galeria de Fotos HD (Pontuação Criteriosa)
+            # 2. Galeria de Fotos HD
             photos = details.get("photos", [])
             if len(photos) >= 30:
                 score += 10
@@ -365,7 +365,7 @@ def consultar_score_google_rigoroso(nome_empresa):
             else:
                 criterios_eval.append(f"5. Respostas e Engajamento de Avaliações: Baixo volume ({reviews} avaliações)")
 
-            # 6, 7 e 8: Itens Críticos do Checklist Interno (Manutenção Rigorosa de Nota)
+            # 6, 7 e 8: Itens Críticos do Checklist
             criterios_eval.append("6. Tour Virtual 360° Street View: Ausente (Oportunidade Crítica)")
             criterios_eval.append("7. Atributos de Serviços e Produtos: Pendente de Otimização")
             criterios_eval.append("8. Descrição Institucional SEO: Incompleta")
@@ -386,7 +386,7 @@ def consultar_score_google_rigoroso(nome_empresa):
     return {"sucesso": False, "mensagem": "Empresa não encontrada no Google."}
 
 # ==========================================
-# GERADOR DE PDF - REFINADO COM LOGO LOCAL E RESPIROS
+# GERADOR DE PDF - REFINADO COM LOGO LOCAL DA RAIZ
 # ==========================================
 def desenhar_rodape_fixo(canvas, doc):
     canvas.saveState()
@@ -394,7 +394,7 @@ def desenhar_rodape_fixo(canvas, doc):
     canvas.setLineWidth(0.5)
     canvas.line(35, 38, 560, 38)
     
-    # Rodapé Espaçado e Uniforme com Links
+    # Rodapé Espaçado e Uniforme
     styles = getSampleStyleSheet()
     style_footer_link = ParagraphStyle('FooterLink', parent=styles['Normal'], fontName='Helvetica', fontSize=8, textColor=colors.HexColor('#444444'), alignment=1)
     
@@ -407,18 +407,18 @@ def desenhar_rodape_fixo(canvas, doc):
     canvas.restoreState()
 
 def obter_logo_tour360vr():
-    """Busca o arquivo de logo localmente na raiz do projeto (como no sistema interno)"""
+    """Carrega o arquivo logo_tour_transparente.png que está na raiz do repositório"""
     caminhos_possiveis = [
-        "logo.png",
-        "logo-tour360vr.png",
-        "assets/logo.png",
-        "assets/images/logo-tour360vr.png"
+        "logo_tour_transparente.png",
+        "ativos/logo_tour_transparente.png",
+        "ativos/Logo_TOUR_transparente.png",
+        "logo_okamoto.png"
     ]
     for c in caminhos_possiveis:
         if os.path.exists(c):
             return c
             
-    # Fallback para download se não encontrar localmente
+    # Fallback para download se o arquivo local não for encontrado
     url_logo = "https://www.tour360vr.com.br/assets/images/logo-tour360vr.png"
     try:
         res = requests.get(url_logo, timeout=4)
@@ -452,7 +452,7 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
 
         elements = []
         
-        # CABEÇALHO COM LOGO LOCAL DA RAIZ
+        # CABEÇALHO COM LOGO
         src_logo = obter_logo_tour360vr()
         txt_cabecalho = Paragraph("<b>AUDITORIA DE POSICIONAMENTO GOOGLE MAPS</b><br/><font size=8.5 color='#666666'>Relatório Técnico de Visibilidade Digital</font>", style_title_hdr)
         
@@ -511,7 +511,7 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
         elements.append(Spacer(1, 4))
         elements.append(Paragraph("1. Otimização técnica da Ficha Google (categorias estratégicas, atributos e SEO local).<br/>2. Implantação de Tour Virtual 360° Interativo integrado ao Google Street View.<br/>3. Produção de Fotografia e Vídeo Profissional para galeria e redes sociais.<br/>4. Gestão ativa de reputação, avaliações e integração multicanais.", style_body_maior))
         
-        # ESPAÇAMENTO DE RESPIRO ANTES DO CONTAINER CTA (1 LINHA + MARGEM)
+        # ESPAÇAMENTO DE RESPIRO ANTES DO CONTAINER CTA
         elements.append(Spacer(1, 20))
         
         # QUADRO CTA COM RESPIRO INTERNO E QUEBRA EM 2 LINHAS
@@ -522,13 +522,10 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
 
         txt_titulo_cta = "PRONTO PARA ELEVAR O NÍVEL DA SUA EMPRESA NO GOOGLE?"
         txt_frase_l1 = "Aumente a visibilidade e autoridade da sua marca."
-        
-        # Quebra explícita do texto em exatamente 2 linhas conforme solicitado
         txt_frase_l2 = "Estruturamos sua Ficha Google, criamos o Tour Virtual 360°, produzimos Fotos &amp; Vídeos Profissionais<br/>e gerenciamos suas Redes Sociais."
         
         link_whats = "https://wa.me/5516991332121?text=Olá!%20Recebi%20o%20diagnóstico%20no%20PDF%20e%20gostaria%20de%20falar%20com%20a%20equipe."
         
-        # Botão Verde com Mais Altura (padding 14pt) e Largura Ajustada (190pt)
         tabela_botao_whats = Table([[Paragraph(f'<a href="{link_whats}" color="#FFFFFF"><b>Fale agora com nossa equipe</b></a>', style_btn_whats)]], colWidths=[190])
         tabela_botao_whats.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#25D366')),
@@ -550,7 +547,6 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
             [Spacer(1, 4)]
         ]
         
-        # Card CTA com padding generoso e linhas de respiro internas
         tabela_cta = Table(dados_card, colWidths=[525])
         tabela_cta.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#F4F7FA')),
@@ -562,8 +558,6 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
         ]))
         
         elements.append(tabela_cta)
-        
-        # 1 LINHA DE ESPAÇO APÓS O QUADRO CTA
         elements.append(Spacer(1, 14))
 
         doc.build(elements, onFirstPage=desenhar_rodape_fixo, onLaterPages=desenhar_rodape_fixo)
