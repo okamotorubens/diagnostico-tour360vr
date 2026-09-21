@@ -308,7 +308,7 @@ def enviar_lead_zoho_bigin(nome_lead, email_lead, whatsapp_lead, empresa_nome, e
         return False
 
 # ==========================================
-# CÁLCULO DE SCORE ALINHADO RIGOROSAMENTE AO SISTEMA INTERNO
+# CÁLCULO DE SCORE IDENTICO AO SISTEMA INTERNO
 # ==========================================
 def consultar_score_google_rigoroso(nome_empresa):
     url = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={requests.utils.quote(nome_empresa)}&key={GOOGLE_API_KEY}"
@@ -335,37 +335,45 @@ def consultar_score_google_rigoroso(nome_empresa):
             else:
                 criterios_eval.append("1. Status Operacional: Pendente / Inativo")
 
-            # 2. Galeria de Fotos HD
+            # 2. Galeria de Fotos HD (Até 20 pontos)
             photos = details.get("photos", [])
-            if len(photos) >= 30:
+            qtd_fotos = len(photos)
+            if qtd_fotos >= 20:
+                score += 20
+                criterios_eval.append(f"2. Galeria de Fotos HD: Completa ({qtd_fotos} fotos)")
+            elif qtd_fotos >= 5:
                 score += 10
-                criterios_eval.append(f"2. Galeria de Fotos HD: Completa ({len(photos)} fotos)")
+                criterios_eval.append(f"2. Galeria de Fotos HD: Parcial ({qtd_fotos} fotos)")
             else:
-                criterios_eval.append(f"2. Galeria de Fotos HD: Insuficiente ({len(photos)} fotos)")
+                criterios_eval.append(f"2. Galeria de Fotos HD: Insuficiente ({qtd_fotos} fotos)")
 
-            # 3. Categorias de Atuação
+            # 3. Categorias de Atuação (15 pontos)
             if details.get("types"):
+                score += 15
                 criterios_eval.append("3. Categorias de Atuação: Mapeadas e Configuradas")
             else:
                 criterios_eval.append("3. Categorias de Atuação: Incompletas")
 
-            # 4. Horários de Atendimento
+            # 4. Horários de Atendimento (10 pontos)
             if details.get("opening_hours"):
                 score += 10
                 criterios_eval.append("4. Horários de Atendimento: Configurados")
             else:
                 criterios_eval.append("4. Horários de Atendimento: Ausentes")
 
-            # 5. Avaliações e Engajamento
+            # 5. Avaliações e Engajamento (Até 15 pontos)
             rating = details.get("rating", 0)
             reviews = details.get("user_ratings_total", 0)
-            if reviews >= 50 and rating >= 4.7:
-                score += 10
+            if reviews >= 20 and rating >= 4.5:
+                score += 15
                 criterios_eval.append(f"5. Respostas e Engajamento de Avaliações: Ativo ({rating}★ em {reviews} avaliações)")
-            else:
+            elif reviews > 0:
+                score += 5
                 criterios_eval.append(f"5. Respostas e Engajamento de Avaliações: Baixo volume ({reviews} avaliações)")
+            else:
+                criterios_eval.append("5. Respostas e Engajamento de Avaliações: Ausente")
 
-            # 6, 7 e 8: Itens Críticos do Checklist
+            # 6, 7 e 8: Itens do Checklist que dependem da otimização manual
             criterios_eval.append("6. Tour Virtual 360° Street View: Ausente (Oportunidade Crítica)")
             criterios_eval.append("7. Atributos de Serviços e Produtos: Pendente de Otimização")
             criterios_eval.append("8. Descrição Institucional SEO: Incompleta")
