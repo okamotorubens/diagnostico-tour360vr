@@ -407,8 +407,8 @@ def desenhar_rodape_fixo(canvas, doc):
     style_footer_link = ParagraphStyle('FooterLink', parent=styles['Normal'], fontName='Helvetica', fontSize=8, textColor=colors.HexColor('#444444'), alignment=1)
     
     # URL oficial direta e limpa para WhatsApp
-    link_whats_rodape = "https://api.whatsapp.com/send?phone=5516991332121"
-    txt_rodape_html = f"Tour360VR   &nbsp;&nbsp;•&nbsp;&nbsp;   Rubens Okamoto   &nbsp;&nbsp;•&nbsp;&nbsp;   <a href='{link_whats_rodape}' color='#1565C0'>WhatsApp: (16) 99133-2121</a>   &nbsp;&nbsp;•&nbsp;&nbsp;   <a href='mailto:contato@tour360vr.com.br' color='#1565C0'>contato@tour360vr.com.br</a>   &nbsp;&nbsp;•&nbsp;&nbsp;   <a href='https://tour360vr.com.br/' color='#1565C0'>https://tour360vr.com.br/</a>"
+    link_whats_rodape = "https://api.whatsapp.com/send?phone=5516996222121"
+    txt_rodape_html = f"Tour360VR   &nbsp;&nbsp;•&nbsp;&nbsp;   Rubens Okamoto   &nbsp;&nbsp;•&nbsp;&nbsp;   <a href='{link_whats_rodape}' color='#1565C0'>WhatsApp: (16) 99622-2121</a>   &nbsp;&nbsp;•&nbsp;&nbsp;   <a href='mailto:contato@tour360vr.com.br' color='#1565C0'>contato@tour360vr.com.br</a>   &nbsp;&nbsp;•&nbsp;&nbsp;   <a href='https://tour360vr.com.br/' color='#1565C0'>https://tour360vr.com.br/</a>"
     
     p = Paragraph(txt_rodape_html, style_footer_link)
     p.wrapOn(canvas, 525, 20)
