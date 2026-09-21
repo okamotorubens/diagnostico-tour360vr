@@ -12,6 +12,7 @@ from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable, Image
 from reportlab.lib.units import cm
+from reportlab.lib.utils import ImageReader
 
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -312,7 +313,7 @@ def enviar_lead_zoho_bigin(nome_lead, email_lead, whatsapp_lead, empresa_nome, e
 # ==========================================
 def consultar_score_google_rigoroso(nome_empresa):
     url = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={requests.utils.quote(nome_empresa)}&key={GOOGLE_API_KEY}"
-    headers = {"Referer": "https://www.tour360vr.com.br/"}
+    headers = {"Referer": "https://tour360vr.com.br/"}
     
     try:
         response = requests.get(url, headers=headers, timeout=10).json()
@@ -394,7 +395,7 @@ def consultar_score_google_rigoroso(nome_empresa):
     return {"sucesso": False, "mensagem": "Empresa não encontrada no Google."}
 
 # ==========================================
-# GERADOR DE PDF - REFINADO COM LOGO LOCAL DA RAIZ
+# GERADOR DE PDF - REFINADO COM LOGO PROPORCIONAL E LINKS ATIVOS
 # ==========================================
 def desenhar_rodape_fixo(canvas, doc):
     canvas.saveState()
@@ -402,12 +403,12 @@ def desenhar_rodape_fixo(canvas, doc):
     canvas.setLineWidth(0.5)
     canvas.line(35, 38, 560, 38)
     
-    # Rodapé Espaçado e Uniforme
+    # Rodapé Espaçado com Link Oficial sem www
     styles = getSampleStyleSheet()
     style_footer_link = ParagraphStyle('FooterLink', parent=styles['Normal'], fontName='Helvetica', fontSize=8, textColor=colors.HexColor('#444444'), alignment=1)
     
     link_whats_rodape = "https://wa.me/5516991332121?text=Olá!%20Vim%20pelo%20PDF%20de%20diagnóstico%20da%20Tour360VR."
-    txt_rodape_html = f"Tour360VR   &nbsp;&nbsp;•&nbsp;&nbsp;   Rubens Okamoto   &nbsp;&nbsp;•&nbsp;&nbsp;   <a href='{link_whats_rodape}' color='#1565C0'>WhatsApp: (16) 99133-2121</a>   &nbsp;&nbsp;•&nbsp;&nbsp;   <a href='mailto:contato@tour360vr.com.br' color='#1565C0'>contato@tour360vr.com.br</a>   &nbsp;&nbsp;•&nbsp;&nbsp;   <a href='https://www.tour360vr.com.br' color='#1565C0'>www.tour360vr.com.br</a>"
+    txt_rodape_html = f"Tour360VR   &nbsp;&nbsp;•&nbsp;&nbsp;   Rubens Okamoto   &nbsp;&nbsp;•&nbsp;&nbsp;   <a href='{link_whats_rodape}' color='#1565C0'>WhatsApp: (16) 99133-2121</a>   &nbsp;&nbsp;•&nbsp;&nbsp;   <a href='mailto:contato@tour360vr.com.br' color='#1565C0'>contato@tour360vr.com.br</a>   &nbsp;&nbsp;•&nbsp;&nbsp;   <a href='https://tour360vr.com.br/' color='#1565C0'>https://tour360vr.com.br/</a>"
     
     p = Paragraph(txt_rodape_html, style_footer_link)
     p.wrapOn(canvas, 525, 20)
@@ -415,7 +416,7 @@ def desenhar_rodape_fixo(canvas, doc):
     canvas.restoreState()
 
 def obter_logo_tour360vr():
-    """Carrega o arquivo logo_tour_transparente.png que está na raiz do repositório"""
+    """Carrega o ficheiro local logo_tour_transparente.png"""
     caminhos_possiveis = [
         "logo_tour_transparente.png",
         "ativos/logo_tour_transparente.png",
@@ -426,8 +427,7 @@ def obter_logo_tour360vr():
         if os.path.exists(c):
             return c
             
-    # Fallback para download se o arquivo local não for encontrado
-    url_logo = "https://www.tour360vr.com.br/assets/images/logo-tour360vr.png"
+    url_logo = "https://tour360vr.com.br/assets/images/logo-tour360vr.png"
     try:
         res = requests.get(url_logo, timeout=4)
         if res.status_code == 200:
@@ -435,6 +435,24 @@ def obter_logo_tour360vr():
     except Exception:
         pass
     return None
+
+def criar_imagem_proporcional(caminho_ou_buffer, largura_max_cm=4.2, altura_max_cm=1.4):
+    """Calcula a proporção exata da imagem para evitar qualquer distorção visual"""
+    try:
+        img_reader = ImageReader(caminho_ou_buffer)
+        orig_w, orig_h = img_reader.getSize()
+        
+        largura_max = largura_max_cm * cm
+        altura_max = altura_max_cm * cm
+        
+        ratio = min(largura_max / orig_w, altura_max / orig_h)
+        new_w = orig_w * ratio
+        new_h = orig_h * ratio
+        
+        return Image(caminho_ou_buffer, width=new_w, height=new_h)
+    except Exception as e:
+        print(f"Erro ao redimensionar imagem: {e}")
+        return Image(caminho_ou_buffer, width=largura_max_cm*cm, height=altura_max_cm*cm)
 
 def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
     try:
@@ -460,12 +478,12 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
 
         elements = []
         
-        # CABEÇALHO COM LOGO
+        # CABEÇALHO COM LOGO PROPORCIONAL
         src_logo = obter_logo_tour360vr()
         txt_cabecalho = Paragraph("<b>AUDITORIA DE POSICIONAMENTO GOOGLE MAPS</b><br/><font size=8.5 color='#666666'>Relatório Técnico de Visibilidade Digital</font>", style_title_hdr)
         
         if src_logo:
-            img_logo = Image(src_logo, width=4.5*cm, height=1.35*cm)
+            img_logo = criar_imagem_proporcional(src_logo, largura_max_cm=4.2, altura_max_cm=1.4)
             tabela_cabecalho = Table([[img_logo, txt_cabecalho]], colWidths=[150, 375])
         else:
             tabela_cabecalho = Table([[Paragraph("<b>TOUR360VR</b>", style_title), txt_cabecalho]], colWidths=[150, 375])
@@ -534,12 +552,14 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
         
         link_whats = "https://wa.me/5516991332121?text=Olá!%20Recebi%20o%20diagnóstico%20no%20PDF%20e%20gostaria%20de%20falar%20com%20a%20equipe."
         
-        tabela_botao_whats = Table([[Paragraph(f'<a href="{link_whats}" color="#FFFFFF"><b>Fale agora com nossa equipe</b></a>', style_btn_whats)]], colWidths=[190])
+        # Botão Verde com Link Direto Clicável
+        txt_botao_html = f'<a href="{link_whats}" color="#FFFFFF"><b>Fale agora com nossa equipe</b></a>'
+        tabela_botao_whats = Table([[Paragraph(txt_botao_html, style_btn_whats)]], colWidths=[200])
         tabela_botao_whats.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#25D366')),
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-            ('PADDING', (0, 0), (-1, -1), 14),
+            ('PADDING', (0, 0), (-1, -1), 12),
             ('ROUNDEDCORNERS', [6, 6, 6, 6])
         ]))
 
@@ -550,7 +570,7 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
             [Paragraph(txt_frase_l1, style_cta_linha1)],
             [Spacer(1, 6)],
             [Paragraph(txt_frase_l2, style_cta_linha2)],
-            [Spacer(1, 16)],
+            [Spacer(1, 14)],
             [tabela_botao_whats],
             [Spacer(1, 4)]
         ]
@@ -650,7 +670,7 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
 <p style="margin: 0 0 16px 0;">Sua pontuação de otimização atual no Google é: <b style="font-size: 17px; color: {cor_score_hex};">{score}/100</b>.</p>
 <p style="margin: 0 0 16px 0;">Anexamos a este e-mail o seu relatório detalhado em PDF.</p>
 <p style="margin: 32px 0 24px 0;">Em breve, um especialista entrará em contato.</p>
-<p style="margin: 0;">Atenciosamente,<br/><b>Rubens Okamoto | Tour360VR</b><br/><a href="https://www.tour360vr.com.br" target="_blank" style="color: #1565C0;">www.tour360vr.com.br</a></p>
+<p style="margin: 0;">Atenciosamente,<br/><b>Rubens Okamoto | Tour360VR</b><br/><a href="https://tour360vr.com.br/" target="_blank" style="color: #1565C0;">https://tour360vr.com.br/</a></p>
 </div>
 </body>
 </html>
