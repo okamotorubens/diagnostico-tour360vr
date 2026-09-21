@@ -395,7 +395,7 @@ def consultar_score_google_rigoroso(nome_empresa):
     return {"sucesso": False, "mensagem": "Empresa não encontrada no Google."}
 
 # ==========================================
-# GERADOR DE PDF - REFINADO COM LOGO PROPORCIONAL E LINKS ATIVOS
+# GERADOR DE PDF - REFINADO COM LOGO PROPORCIONAL E LINKS CORRIGIDOS
 # ==========================================
 def desenhar_rodape_fixo(canvas, doc):
     canvas.saveState()
@@ -403,11 +403,12 @@ def desenhar_rodape_fixo(canvas, doc):
     canvas.setLineWidth(0.5)
     canvas.line(35, 38, 560, 38)
     
-    # Rodapé Espaçado com Link Oficial sem www
+    # Rodapé Espaçado com URL sem caracteres especiais que corrompem no PDF
     styles = getSampleStyleSheet()
     style_footer_link = ParagraphStyle('FooterLink', parent=styles['Normal'], fontName='Helvetica', fontSize=8, textColor=colors.HexColor('#444444'), alignment=1)
     
-    link_whats_rodape = "https://wa.me/5516991332121?text=Olá!%20Vim%20pelo%20PDF%20de%20diagnóstico%20da%20Tour360VR."
+    # URL limpa e segura para PDF (evita %EF%BF%BD)
+    link_whats_rodape = "https://wa.me/5516991332121?text=Ola%21+Vim+pelo+PDF+de+diagnostico+da+Tour360VR."
     txt_rodape_html = f"Tour360VR   &nbsp;&nbsp;•&nbsp;&nbsp;   Rubens Okamoto   &nbsp;&nbsp;•&nbsp;&nbsp;   <a href='{link_whats_rodape}' color='#1565C0'>WhatsApp: (16) 99133-2121</a>   &nbsp;&nbsp;•&nbsp;&nbsp;   <a href='mailto:contato@tour360vr.com.br' color='#1565C0'>contato@tour360vr.com.br</a>   &nbsp;&nbsp;•&nbsp;&nbsp;   <a href='https://tour360vr.com.br/' color='#1565C0'>https://tour360vr.com.br/</a>"
     
     p = Paragraph(txt_rodape_html, style_footer_link)
@@ -550,10 +551,11 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
         txt_frase_l1 = "Aumente a visibilidade e autoridade da sua marca."
         txt_frase_l2 = "Estruturamos sua Ficha Google, criamos o Tour Virtual 360°, produzimos Fotos &amp; Vídeos Profissionais<br/>e gerenciamos suas Redes Sociais."
         
-        link_whats = "https://wa.me/5516991332121?text=Olá!%20Recebi%20o%20diagnóstico%20no%20PDF%20e%20gostaria%20de%20falar%20com%20a%20equipe."
+        # URL WhatsApp totalmente limpa sem acentos especiais para não corromper no PDF
+        link_whats_cta = "https://wa.me/5516991332121?text=Ola%21+Recebi+o+diagnostico+no+PDF+e+gostaria+de+falar+com+a+equipe."
         
-        # Botão Verde com Link Direto Clicável
-        txt_botao_html = f'<a href="{link_whats}" color="#FFFFFF"><b>Fale agora com nossa equipe</b></a>'
+        # Botão Verde com Link Limpo
+        txt_botao_html = f'<a href="{link_whats_cta}" color="#FFFFFF"><b>Fale agora com nossa equipe</b></a>'
         tabela_botao_whats = Table([[Paragraph(txt_botao_html, style_btn_whats)]], colWidths=[200])
         tabela_botao_whats.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#25D366')),
