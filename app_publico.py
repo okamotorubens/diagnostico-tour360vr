@@ -329,30 +329,35 @@ def consultar_score_google_rigoroso(nome_empresa):
             score = 0
             criterios_eval = []
 
+            # 1. Status Operacional
             if details.get("business_status") == "OPERATIONAL":
                 criterios_eval.append("1. Status Operacional: Ativo no Google Maps")
             else:
                 criterios_eval.append("1. Status Operacional: Pendente / Inativo")
 
+            # 2. Galeria de Fotos
             photos = details.get("photos", [])
-            if len(photos) >= 25:
+            if len(photos) >= 30:
                 score += 20
                 criterios_eval.append(f"2. Galeria de Fotos HD: Completa ({len(photos)} fotos)")
             else:
                 criterios_eval.append(f"2. Galeria de Fotos HD: Insuficiente ({len(photos)} fotos)")
 
+            # 3. Categorias
             if details.get("types"):
                 score += 15
                 criterios_eval.append("3. Categorias de Atuação: Mapeadas e Configuradas")
             else:
                 criterios_eval.append("3. Categorias de Atuação: Incompletas")
 
+            # 4. Horários
             if details.get("opening_hours"):
                 score += 10
                 criterios_eval.append("4. Horários de Atendimento: Configurados")
             else:
                 criterios_eval.append("4. Horários de Atendimento: Ausentes")
 
+            # 5. Avaliações
             rating = details.get("rating", 0)
             reviews = details.get("user_ratings_total", 0)
             if reviews >= 30 and rating >= 4.5:
@@ -361,6 +366,7 @@ def consultar_score_google_rigoroso(nome_empresa):
             else:
                 criterios_eval.append(f"5. Respostas e Engajamento de Avaliações: Baixo volume ({reviews} avaliações)")
 
+            # Itens Críticos do Checklist
             criterios_eval.append("6. Tour Virtual 360° Street View: Ausente (Oportunidade Crítica)")
             criterios_eval.append("7. Atributos de Serviços e Produtos: Pendente de Otimização")
             criterios_eval.append("8. Descrição Institucional SEO: Incompleta")
@@ -381,7 +387,7 @@ def consultar_score_google_rigoroso(nome_empresa):
     return {"sucesso": False, "mensagem": "Empresa não encontrada no Google."}
 
 # ==========================================
-# GERADOR DE PDF - COM LINK NO WHATSAPP E CARD COM MAIS ALTURA
+# GERADOR DE PDF - DESIGN ESPAÇOSO E ELEGANTE
 # ==========================================
 def desenhar_rodape_fixo(canvas, doc):
     canvas.saveState()
@@ -389,12 +395,12 @@ def desenhar_rodape_fixo(canvas, doc):
     canvas.setLineWidth(0.5)
     canvas.line(35, 38, 560, 38)
     
-    # Rodapé com Link Clicável no WhatsApp
+    # Rodapé Padronizado com os mesmos estilos de links
     styles = getSampleStyleSheet()
     style_footer_link = ParagraphStyle('FooterLink', parent=styles['Normal'], fontName='Helvetica', fontSize=8, textColor=colors.HexColor('#444444'), alignment=1)
     
     link_whats_rodape = "https://wa.me/5516991332121?text=Olá!%20Vim%20pelo%20PDF%20de%20diagnóstico%20da%20Tour360VR."
-    txt_rodape_html = f"Tour360VR   •   Rubens Okamoto   •   WhatsApp: <a href='{link_whats_rodape}' color='#1565C0'><u>(16) 99133-2121</u></a>   •   contato@tour360vr.com.br   •   www.tour360vr.com.br"
+    txt_rodape_html = f"Tour360VR   •   Rubens Okamoto   •   <a href='{link_whats_rodape}' color='#1565C0'>WhatsApp: (16) 99133-2121</a>   •   <a href='mailto:contato@tour360vr.com.br' color='#1565C0'>contato@tour360vr.com.br</a>   •   <a href='https://www.tour360vr.com.br' color='#1565C0'>www.tour360vr.com.br</a>"
     
     p = Paragraph(txt_rodape_html, style_footer_link)
     p.wrapOn(canvas, 525, 20)
@@ -419,7 +425,7 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
             pagesize=A4,
             leftMargin=35,
             rightMargin=35,
-            topMargin=28,
+            topMargin=26,
             bottomMargin=48
         )
         
@@ -494,14 +500,14 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
         elements.append(Spacer(1, 4))
         elements.append(Paragraph("1. Otimização técnica da Ficha Google (categorias estratégicas, atributos e SEO local).<br/>2. Implantação de Tour Virtual 360° Interativo integrado ao Google Street View.<br/>3. Produção de Fotografia e Vídeo Profissional para galeria e redes sociais.<br/>4. Gestão ativa de reputação, avaliações e integração multicanais.", style_body_maior))
         
-        # 1 LINHA DE ESPAÇO ANTES DO QUADRO CTA
-        elements.append(Spacer(1, 12))
+        # 2 LINHAS DE ESPAÇO ANTES DO QUADRO CTA
+        elements.append(Spacer(1, 22))
         
-        # CARD CTA: MAIS MARGEM DE ALTURA E BOTÃO MAIS ESTREITO/ALTO
+        # QUADRO CTA COM MAIS MARGEM NA ALTURA
         style_cta_title_destaque = ParagraphStyle('CTATitleDestaque', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=12, leading=15, textColor=colors.HexColor('#0F2537'), alignment=1)
         style_cta_linha1 = ParagraphStyle('CTALinha1', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, leading=14, textColor=colors.HexColor('#1565C0'), alignment=1)
-        style_cta_linha2 = ParagraphStyle('CTALinha2', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=13.5, textColor=colors.HexColor('#333333'), alignment=1)
-        style_btn_whats = ParagraphStyle('BtnWhatsTxt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10.5, leading=13, textColor=colors.white, alignment=1)
+        style_cta_linha2 = ParagraphStyle('CTALinha2', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=14, textColor=colors.HexColor('#333333'), alignment=1)
+        style_btn_whats = ParagraphStyle('BtnWhatsTxt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, leading=13, textColor=colors.white, alignment=1)
 
         txt_titulo_cta = "PRONTO PARA ELEVAR O NÍVEL DA SUA EMPRESA NO GOOGLE?"
         txt_frase_l1 = "Aumente a visibilidade e autoridade da sua marca."
@@ -509,41 +515,38 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
         
         link_whats = "https://wa.me/5516991332121?text=Olá!%20Recebi%20o%20diagnóstico%20no%20PDF%20e%20gostaria%20de%20falar%20com%20a%20equipe."
         
-        # Botão com menor largura (200) e maior altura (padding 10)
-        tabela_botao_whats = Table([[Paragraph(f'<a href="{link_whats}" color="#FFFFFF"><b>Fale agora com nossa equipe</b></a>', style_btn_whats)]], colWidths=[200])
+        # Botão mais estreito (180pt) e mais alto (padding 12pt)
+        tabela_botao_whats = Table([[Paragraph(f'<a href="{link_whats}" color="#FFFFFF"><b>Fale agora com nossa equipe</b></a>', style_btn_whats)]], colWidths=[180])
         tabela_botao_whats.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#25D366')),
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-            ('PADDING', (0, 0), (-1, -1), 10),
+            ('PADDING', (0, 0), (-1, -1), 12),
             ('ROUNDEDCORNERS', [6, 6, 6, 6])
         ]))
 
         dados_card = [
             [Paragraph(txt_titulo_cta, style_cta_title_destaque)],
-            [Spacer(1, 6)],
+            [Spacer(1, 8)],
             [Paragraph(txt_frase_l1, style_cta_linha1)],
-            [Spacer(1, 5)],
+            [Spacer(1, 6)],
             [Paragraph(txt_frase_l2, style_cta_linha2)],
-            [Spacer(1, 12)],
+            [Spacer(1, 14)],
             [tabela_botao_whats]
         ]
         
-        # Card com mais respiro interno (padding 16)
+        # Card CTA com padding generoso (22pt)
         tabela_cta = Table(dados_card, colWidths=[525])
         tabela_cta.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#F4F7FA')),
             ('BORDER', (0, 0), (-1, -1), 1, colors.HexColor('#1565C0')),
-            ('PADDING', (0, 0), (-1, -1), 16),
+            ('PADDING', (0, 0), (-1, -1), 22),
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
             ('ROUNDEDCORNERS', [8, 8, 8, 8])
         ]))
         
         elements.append(tabela_cta)
-        
-        # 1 LINHA DE ESPAÇO EMBAIXO DO QUADRO CTA
-        elements.append(Spacer(1, 12))
 
         doc.build(elements, onFirstPage=desenhar_rodape_fixo, onLaterPages=desenhar_rodape_fixo)
         val = buffer.getvalue()
