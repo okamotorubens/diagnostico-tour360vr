@@ -97,9 +97,7 @@ def gerar_pdf(dados):
     texto_apresentacao = (
         "Com mais de três décadas de atuação no mercado de imagem e fotografia profissional, a Okamoto Mídias Visuais "
         "é especializada na cobertura completa de eventos corporativos, institucionais e científicos, além de produção "
-        "de tours virtuais e conteúdos em vídeo de alta definição.
-
-"
+        "de tours virtuais e conteúdos em vídeo de alta definição."
         "Nossa missão é registrar cada momento do seu evento com precisão técnica, sensibilidade artística e rigor editorial, "
         "garantindo que sua empresa disponha de um acervo visual estratégico para mídias sociais, assessoria de imprensa e relatórios anuais."
     )
