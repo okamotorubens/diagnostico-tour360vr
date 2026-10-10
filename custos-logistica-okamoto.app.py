@@ -525,6 +525,9 @@ with tabs_topo[2]:
         parcelas_cartao = st.number_input("Cartão de Crédito parcelado em X vezes", min_value=1, max_value=12, value=3)
         condicao_pagamento = f"{condicao_pagamento} em {parcelas_cartao}X"
 
+    servico_nome = tipo_servico if tipo_servico != "Outro" else outro_servico_nome
+    nome_serv_ev = nome_servico_input if nome_servico_input else servico_nome
+
     tabela_atual = TABELAS_SERVICOS.get(tipo_servico, TABELAS_SERVICOS["Evento social"])
     
     dias_evento = 1
