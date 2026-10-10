@@ -46,9 +46,9 @@ ESTADOS_BR = [
 st.set_page_config(page_title="Proposta Comercial & Custos - Okamoto Mídias Visuais", page_icon="📊", layout="wide")
 
 # ==========================================
-# CANVAS PROFISSIONAL (RODAPÉ FIXO NA BASE)
+# CANVAS LIMPO E SEGURO (RODAPÉ FIXO)
 # ==========================================
-class ModernCanvas(canvas.Canvas):
+class SafeFooterCanvas(canvas.Canvas):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._saved_page_states = []
@@ -74,9 +74,9 @@ class ModernCanvas(canvas.Canvas):
         self.setLineWidth(0.5)
         self.line(35, 38, 575, 38)
         
-        # Rodapé unificado com links interativos seguros via Paragraph renderizado no canvas
+        # Rodapé corporativo unificado com tags HTML seguras para links em nova aba
         footer_html = 'Okamoto Mídias Visuais    |    <a href="https://okamotomidiasvisuais.com.br" target="_blank" color="#64748b">okamotomidiasvisuais.com.br</a>    |    contato@okamotomidiasvisuais.com.br    |    <a href="https://wa.me/5516991332121" target="_blank" color="#64748b">WhatsApp: 16 99133 2121</a>'
-        p_footer = Paragraph(footer_html, ParagraphStyle('FootCanv', fontName='Helvetica', fontSize=8, alignment=1, textColor=colors.HexColor('#64748b')))
+        p_footer = Paragraph(footer_html, ParagraphStyle('FootSafe', fontName='Helvetica', fontSize=8, alignment=1, textColor=colors.HexColor('#64748b')))
         p_footer.wrap(540, 20)
         p_footer.drawOn(self, 35, 20)
         
@@ -102,8 +102,9 @@ def gerar_pdf_cliente(dados):
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=35, rightMargin=35, topMargin=25, bottomMargin=50)
     
-    nome_servico_titulo = dados['tipo_servico'] if dados['tipo_servico'] != "Outro" else dados['outro_servico_nome']
-    doc.title = f"Proposta comercial - {nome_servico_titulo}"
+    servico_nome = dados['tipo_servico'] if dados['tipo_servico'] != "Outro" else dados['outro_servico_nome']
+    data_ev_str = dados['data_evento'].strftime('%d/%m/%Y')
+    doc.title = f"Proposta comercial - {servico_nome} - {data_ev_str}"
     
     styles = getSampleStyleSheet()
     style_titulo = ParagraphStyle('TituloPDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=20, leading=24, alignment=1, textColor=colors.HexColor('#0f172a'))
@@ -134,7 +135,7 @@ def gerar_pdf_cliente(dados):
     
     story.append(Paragraph("Proposta Comercial", style_titulo))
     story.append(Spacer(1, 6))
-    story.append(Paragraph(nome_servico_titulo, style_servico_sub))
+    story.append(Paragraph(servico_nome, style_servico_sub))
     story.append(Spacer(1, 14))
     
     story.append(Paragraph("<b>1. Dados do cliente:</b>", style_bold))
@@ -146,15 +147,15 @@ def gerar_pdf_cliente(dados):
     story.append(Spacer(1, 10))
     
     story.append(Paragraph("<b>2. Data do evento:</b>", style_bold))
-    data_ev_str = dados['data_evento'].strftime('%d/%m/%Y')
+    data_evento_str = dados['data_evento'].strftime('%d/%m/%Y')
     if dados['tem_data_termino']:
-        data_ev_str += f" até {dados['data_termino'].strftime('%d/%m/%Y')}"
-    texto_evento = f"<b>Data:</b> {data_ev_str} &nbsp;&nbsp; <b>Horário:</b> {dados['horario']} &nbsp;&nbsp; <b>Local:</b> {dados['local']} — {dados['cidade']}/{dados['estado']}"
+        data_evento_str += f" até {dados['data_termino'].strftime('%d/%m/%Y')}"
+    texto_evento = f"<b>Data:</b> {data_evento_str} &nbsp;&nbsp; <b>Horário:</b> {dados['horario']} &nbsp;&nbsp; <b>Local:</b> {dados['local']} — {dados['cidade']}/{dados['estado']}"
     story.append(Paragraph(texto_evento, style_corpo))
     story.append(Spacer(1, 10))
     
     story.append(Paragraph("<b>3. Serviço:</b>", style_bold))
-    story.append(Paragraph(nome_servico_titulo, style_corpo))
+    story.append(Paragraph(servico_nome, style_corpo))
     story.append(Spacer(1, 10))
     
     story.append(Paragraph("<b>4. Escopo do serviço:</b>", style_bold))
@@ -232,7 +233,7 @@ def gerar_pdf_cliente(dados):
     story.append(Spacer(1, 6))
     story.append(Paragraph("<b>Banco do Brasil</b><br/><b>Agência:</b> 3235-2 &nbsp;|&nbsp; <b>C. Corrente:</b> 11.935-0<br/><b>Chave PIX:</b> 04824331000105", style_corpo))
 
-    doc.build(story, canvasmaker=ModernCanvas)
+    doc.build(story, canvasmaker=SafeFooterCanvas)
     buffer.seek(0)
     return buffer
 
@@ -245,7 +246,7 @@ def gerar_pdf_interno(dados):
     
     servico_exibido = dados['tipo_servico'] if dados['tipo_servico'] != "Outro" else dados['outro_servico_nome']
     data_ev_str = dados['data_evento'].strftime('%d/%m/%Y')
-    doc.title = f"Relatório interno - {servico_exibido} - {data_ev_str}"
+    doc.title = f"Relatório interno de custos - {servico_exibido} - {data_ev_str}"
     
     styles = getSampleStyleSheet()
     style_titulo = ParagraphStyle('TitInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=15, leading=18, alignment=1, textColor=colors.HexColor('#0f172a'))
@@ -351,7 +352,7 @@ def gerar_pdf_interno(dados):
     t_res_int.setStyle(ts_res)
     story.append(t_res_int)
     
-    doc.build(story, canvasmaker=ModernCanvas)
+    doc.build(story, canvasmaker=SafeFooterCanvas)
     buffer.seek(0)
     return buffer
 
@@ -456,13 +457,13 @@ with tabs_topo[1]:
         val_hosp_input = st.number_input("R$ Hospedagem (diária)", min_value=0.0, value=250.00, step=10.0, format="%.2f")
         val_hosp = val_hosp_input * 100 if val_hosp_input < 1000 and val_hosp_input % 1 != 0 else val_hosp_input
     with col_h2:
-        almoco_in = st.number_input("Almoço (R$)", min_value=0.0, value=40.00, step=5.0, format="%.2f")
+        almoco_in = st.number_input("Almoço (R$)", min_value=0.0, value=0.00, step=5.0, format="%.2f")
         custo_almoco = almoco_in * 100 if almoco_in < 1000 and almoco_in % 1 != 0 else almoco_in
         
-        jantar_in = st.number_input("Jantar (R$)", min_value=0.0, value=45.00, step=5.0, format="%.2f")
+        jantar_in = st.number_input("Jantar (R$)", min_value=0.0, value=0.00, step=5.0, format="%.2f")
         custo_jantar = jantar_in * 100 if jantar_in < 1000 and jantar_in % 1 != 0 else jantar_in
     with col_h3:
-        estac_in = st.number_input("Estacionamento (R$)", min_value=0.0, value=20.00, step=5.0, format="%.2f")
+        estac_in = st.number_input("Estacionamento (R$)", min_value=0.0, value=0.00, step=5.0, format="%.2f")
         custo_estacionamento = estac_in * 100 if estac_in < 1000 and estac_in % 1 != 0 else estac_in
         
         free_in = st.number_input("Freelancer (R$)", min_value=0.0, value=0.00, step=50.0, format="%.2f")
