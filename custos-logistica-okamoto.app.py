@@ -327,243 +327,153 @@ def gerar_pdf_interno(dados):
     return buffer
 
 # ==========================================
-# INTERFACE DO USUÁRIO - STREAMLIT
+# INTERFACE DO USUÁRIO - STREAMLIT (SEM DUPLICAÇÃO)
 # ==========================================
 st.title("⚡ Sistema de Propostas & Custos")
 st.markdown("Gerencie orçamentos comerciais, analise a viabilidade interna e gere documentação profissional em PDF.")
 
-# Logo centralizada e maior no sistema
 if os.path.exists("logo_okamoto.png"):
     col_img1, col_img2, col_img3 = st.columns([1, 2, 1])
     with col_img2:
         st.image("logo_okamoto.png", width=280)
 
-# Função para renderizar as abas com chaves únicas por bloco (evitando StreamlitDuplicateElementKey)
-def render_conteudo_abas(sufixo=""):
-    tabs_topo = st.tabs([f"1. Dados & Serviços {sufixo}", f"2. Custos & Logística {sufixo}", f"3. Prazos, Resumo & Relatórios {sufixo}"])
+# Abas principais renderizadas uma única vez
+tabs_topo = st.tabs(["1. Dados & Serviços", "2. Custos & Logística", "3. Prazos, Resumo & Relatórios"])
 
-    with tabs_topo[0]:
-        st.subheader("1. Dados do Cliente & Evento")
-        col1, col2 = st.columns(2)
-        with col1:
-            contato = st.text_input("Contato", "", key=f"contato_k{sufixo}")
-            empresa = st.text_input("Empresa", "", key=f"empresa_k{sufixo}")
-            telefone = st.text_input("Telefone", "", key=f"tel_k{sufixo}")
-            email = st.text_input("E-mail", "", key=f"email_k{sufixo}")
-        with col2:
-            data_orcamento = st.date_input("Data do Orçamento", datetime.now(), key=f"dorc_k{sufixo}")
-            data_evento = st.date_input("Data do Evento", datetime.now(), key=f"dev_k{sufixo}")
-            
-            tem_data_termino = st.checkbox("Evento com mais de um dia (Data de Término)", key=f"tem_fim_k{sufixo}")
-            data_termino = data_evento
-            if tem_data_termino:
-                data_termino = st.date_input("Data de Término do Evento", datetime.now(), key=f"dterm_k{sufixo}")
-                
-            horario = st.text_input("Horário (ex: 18h00 às 22h30)", "", key=f"horario_k{sufixo}")
-            local = st.text_input("Local", "", key=f"local_k{sufixo}")
-            
-            col_cidade, col_uf = st.columns([3, 1])
-            with col_cidade:
-                cidade = st.text_input("Cidade", "Ribeirão Preto", key=f"cidade_k{sufixo}")
-            with col_uf:
-                estado = st.selectbox("Estado (UF)", ESTADOS_BR, index=0, key=f"uf_k{sufixo}")
-
-        st.markdown("---")
-        st.subheader("2. Seleção de Serviço & Carga Horária")
-        tipo_servico = st.selectbox("Tipo de Serviço", list(TABELAS_SERVICOS.keys()), key=f"tserv_k{sufixo}")
+with tabs_topo[0]:
+    st.subheader("1. Dados do Cliente & Evento")
+    col1, col2 = st.columns(2)
+    with col1:
+        contato = st.text_input("Contato", "")
+        empresa = st.text_input("Empresa", "")
+        telefone = st.text_input("Telefone", "")
+        email = st.text_input("E-mail", "")
+    with col2:
+        data_orcamento = st.date_input("Data do Orçamento", datetime.now())
+        data_evento = st.date_input("Data do Evento", datetime.now())
         
-        outro_servico_nome = ""
-        if tipo_servico == "Outro":
-            outro_servico_nome = st.text_input("Especifique o nome do serviço", "Serviço Personalizado", key=f"outro_k{sufixo}")
-
-        carga_horaria_sel = st.selectbox("Carga Horária", OPCOES_CARGA_HORARIA, key=f"carga_k{sufixo}")
-        
-        opcoes_desconto_base = [0, 5, 10, 15, 20, 25, 30]
-        tipo_desc = st.radio("Selecione a modalidade de desconto", ["Padrão", "Personalizado (Outro valor)"], horizontal=True, key=f"tdesc_k{sufixo}")
-        if tipo_desc == "Padrão":
-            desconto_perc = st.selectbox("Aplicar Desconto (%)", opcoes_desconto_base, key=f"d_padrao_k{sufixo}")
-        else:
-            desconto_perc = st.number_input("Digite a porcentagem de desconto (%)", min_value=0.0, max_value=100.0, value=10.0, step=0.5, key=f"d_pers_k{sufixo}")
-
-        st.markdown("---")
-        st.subheader("3. Detalhamento Técnico (Escopo & Captação)")
-        
-        nome_servico_atual = tipo_servico if tipo_servico != "Outro" else outro_servico_nome
-        mes_extenso_ev = MESES_PT[data_evento.month]
-        data_str_escopo = f"{data_evento.day} de {mes_extenso_ev} de {data_evento.year}"
+        tem_data_termino = st.checkbox("Evento com mais de um dia (Data de Término)")
+        data_termino = data_evento
         if tem_data_termino:
-            mes_extenso_ter = MESES_PT[data_termino.month]
-            data_str_escopo = f"de {data_evento.day} de {mes_extenso_ev} até {data_termino.day} de {mes_extenso_ter} de {data_termino.year}"
-
-        default_escopo = f"{nome_servico_atual}\n{data_str_escopo}\n{horario}\n{local}\n{cidade} - {estado}\n01 (um) profissional"
-        default_captacao = "Cobertura fotográfica do evento"
-        
-        escopo_servico = st.text_area("Escopo do serviço", default_escopo, height=120, key=f"escopo_k{sufixo}")
-        captacao = st.text_area("Captação", default_captacao, key=f"capt_k{sufixo}")
-
-    with tabs_topo[1]:
-        st.subheader("🚗 Parâmetros de Deslocamento & Logística (Honda HR-V)")
-        col_l1, col_l2, col_l3 = st.columns(3)
-        with col_l1:
-            distancia_ida_volta = st.number_input("Distância Total (Ida e Volta em km)", min_value=0.0, value=40.0, step=5.0, key=f"dist_k{sufixo}")
-        with col_l2:
-            consumo_medio = st.number_input("Consumo Médio (km/L)", min_value=1.0, value=11.50, step=0.5, key=f"cons_k{sufixo}")
-        with col_l3:
-            preco_combustivel = st.number_input("Preço do Litro (R$)", min_value=0.0, value=6.80, step=0.10, key=f"preco_k{sufixo}")
+            data_termino = st.date_input("Data de Término do Evento", datetime.now())
             
-        pedagio_total = st.number_input("Valor Total de Pedágios (R$)", min_value=0.0, value=0.0, step=5.0, key=f"pedag_k{sufixo}")
-
-        st.markdown("---")
-        st.subheader("🍽️ Custos de Alimentação, Hospedagem & Outros")
-        col_al1, col_al2, col_al3, col_al4 = st.columns(4)
-        with col_al1:
-            qtd_almoco = st.number_input("Qtd. Almoços", min_value=0, value=1, step=1, key=f"qalm_k{sufixo}")
-            val_almoco = st.number_input("R$ Almoço (unit.)", min_value=0.0, value=35.0, step=5.0, key=f"valm_k{sufixo}")
-        with col_al2:
-            qtd_janta = st.number_input("Qtd. Jantas", min_value=0, value=1, step=1, key=f"qjan_k{sufixo}")
-            val_janta = st.number_input("R$ Janta (unit.)", min_value=0.0, value=45.0, step=5.0, key=f"vjan_k{sufixo}")
-        with col_al3:
-            qtd_hosp = st.number_input("Qtd. Diárias Hospedagem", min_value=0, value=0, step=1, key=f"qhosp_k{sufixo}")
-            val_hosp = st.number_input("R$ Hospedagem (diária)", min_value=0.0, value=150.0, step=10.0, key=f"vhosp_k{sufixo}")
-        with col_al4:
-            custo_outros = st.number_input("Outros (Estacionamento, etc.) (R$)", min_value=0.0, value=0.0, step=10.0, key=f"outros_k{sufixo}")
-
-        custo_alimentacao_total = (qtd_almoco * val_almoco) + (qtd_janta * val_janta)
-        custo_hospedagem_total = qtd_hosp * val_hosp
-
-        st.markdown("---")
-        st.subheader("💼 Custos Operacionais & Impostos (Uso Interno)")
-        col_op1, col_op2 = st.columns(2)
-        with col_op1:
-            imposto_perc = st.number_input("Alíquota de Impostos / Notas (%)", min_value=0.0, max_value=30.0, value=6.0, step=0.5, key=f"imp_k{sufixo}")
-        with col_op2:
-            custo_extra = st.number_input("Outros Custos / Extras (R$)", min_value=0.0, value=0.0, step=10.0, key=f"cextra_k{sufixo}")
-
-    with tabs_topo[2]:
-        st.subheader("Condições Comerciais & Pagamento")
-        forma_entrega = st.text_input("Forma de entrega", "Link exclusivo para download, disponível por 30 dias.", key=f"fent_k{sufixo}")
+        horario = st.text_input("Horário (ex: 18h00 às 22h30)", "")
+        local = st.text_input("Local", "")
         
-        col_p1, col_p2 = st.columns(2)
-        with col_p1:
-            forma_pagamento_tipo = st.selectbox("Forma de Pagamento", ["À vista", "Parcelado"], key=f"fpg_k{sufixo}")
-        with col_p2:
-            condicao_pagamento = st.selectbox("Condições de Pagamento", ["PIX", "Transferência", "PIX ou transferência bancária", "Cartão de crédito", "Cartão de Crédito parcelado"], key=f"cpg_k{sufixo}")
+        col_cidade, col_uf = st.columns([3, 1])
+        with col_cidade:
+            cidade = st.text_input("Cidade", "Ribeirão Preto")
+        with col_uf:
+            estado = st.selectbox("Estado (UF)", ESTADOS_BR, index=0)
+
+    st.markdown("---")
+    st.subheader("2. Seleção de Serviço & Carga Horária")
+    tipo_servico = st.selectbox("Tipo de Serviço", list(TABELAS_SERVICOS.keys()))
+    
+    outro_servico_nome = ""
+    if tipo_servico == "Outro":
+        outro_servico_nome = st.text_input("Especifique o nome do serviço", "Serviço Personalizado")
+
+    carga_horaria_sel = st.selectbox("Carga Horária", OPCOES_CARGA_HORARIA)
+    
+    opcoes_desconto_base = [0, 5, 10, 15, 20, 25, 30]
+    tipo_desc = st.radio("Selecione a modalidade de desconto", ["Padrão", "Personalizado (Outro valor)"], horizontal=True)
+    if tipo_desc == "Padrão":
+        desconto_perc = st.selectbox("Aplicar Desconto (%)", opcoes_desconto_base)
+    else:
+        desconto_perc = st.number_input("Digite a porcentagem de desconto (%)", min_value=0.0, max_value=100.0, value=10.0, step=0.5)
+
+    st.markdown("---")
+    st.subheader("3. Detalhamento Técnico (Escopo & Captação)")
+    
+    nome_servico_atual = tipo_servico if tipo_servico != "Outro" else outro_servico_nome
+    mes_extenso_ev = MESES_PT[data_evento.month]
+    data_str_escopo = f"{data_evento.day} de {mes_extenso_ev} de {data_evento.year}"
+    if tem_data_termino:
+        mes_extenso_ter = MESES_PT[data_termino.month]
+        data_str_escopo = f"de {data_evento.day} de {mes_extenso_ev} até {data_termino.day} de {mes_extenso_ter} de {data_termino.year}"
+
+    default_escopo = f"{nome_servico_atual}\n{data_str_escopo}\n{horario}\n{local}\n{cidade} - {estado}\n01 (um) profissional"
+    default_captacao = "Cobertura fotográfica do evento"
+    
+    escopo_servico = st.text_area("Escopo do serviço", default_escopo, height=120)
+    captacao = st.text_area("Captação", default_captacao)
+
+with tabs_topo[1]:
+    st.subheader("🚗 Parâmetros de Deslocamento & Logística (Honda HR-V)")
+    col_l1, col_l2, col_l3 = st.columns(3)
+    with col_l1:
+        distancia_ida_volta = st.number_input("Distância Total (Ida e Volta em km)", min_value=0.0, value=40.0, step=5.0)
+    with col_l2:
+        consumo_medio = st.number_input("Consumo Médio (km/L)", min_value=1.0, value=11.50, step=0.5)
+    with col_l3:
+        preco_combustivel = st.number_input("Preço do Litro (R$)", min_value=0.0, value=6.80, step=0.10)
         
-        parcelas_cartao = 1
-        if "parcelado" in condicao_pagamento.lower() or forma_pagamento_tipo == "Parcelado":
-            parcelas_cartao = st.number_input("Cartão de Crédito parcelado em X vezes", min_value=1, max_value=12, value=3, key=f"parc_k{sufixo}")
-            condicao_pagamento = f"{condicao_pagamento} em {parcelas_cartao}X"
+    pedagio_total = st.number_input("Valor Total de Pedágios (R$)", min_value=0.0, value=0.0, step=5.0)
 
-        # CÁLCULOS
-        tabela_atual = TABELAS_SERVICOS.get(tipo_servico, TABELAS_SERVICOS["Evento social"])
-        
-        dias_evento = 1
-        if tem_data_termino:
-            dias_evento = max(1, (data_termino - data_evento).days + 1)
+    st.markdown("---")
+    st.subheader("🍽️ Custos de Alimentação, Hospedagem & Outros")
+    col_al1, col_al2, col_al3, col_al4 = st.columns(4)
+    with col_al1:
+        qtd_almoco = st.number_input("Qtd. Almoços", min_value=0, value=1, step=1)
+        val_almoco = st.number_input("R$ Almoço (unit.)", min_value=0.0, value=35.0, step=5.0)
+    with col_al2:
+        qtd_janta = st.number_input("Qtd. Jantas", min_value=0, value=1, step=1)
+        val_janta = st.number_input("R$ Janta (unit.)", min_value=0.0, value=45.0, step=5.0)
+    with col_al3:
+        qtd_hosp = st.number_input("Qtd. Diárias Hospedagem", min_value=0, value=0, step=1)
+        val_hosp = st.number_input("R$ Hospedagem (diária)", min_value=0.0, value=150.0, step=10.0)
+    with col_al4:
+        custo_outros = st.number_input("Outros (Estacionamento, etc.) (R$)", min_value=0.0, value=0.0, step=10.0)
 
-        if "diária" in carga_horaria_sel:
-            qtd_diarias = int(carga_horaria_sel.split()[0])
-            valor_base = tabela_atual.get(10, 1300.0) * qtd_diarias * dias_evento
-        else:
-            horas_num = int(carga_horaria_sel.replace("h", ""))
-            horas_buscadas = min(horas_num, 12)
-            valor_base = tabela_atual.get(horas_buscadas, 1500.0) * dias_evento
-            if horas_num > 12:
-                valor_base += (horas_num - 12) * tabela_atual.get(1, 180.0) * dias_evento
+    custo_alimentacao_total = (qtd_almoco * val_almoco) + (qtd_janta * val_janta)
+    custo_hospedagem_total = qtd_hosp * val_hosp
 
-        valor_desconto = valor_base * (desconto_perc / 100.0)
-        valor_final = valor_base - valor_desconto
+    st.markdown("---")
+    st.subheader("💼 Custos Operacionais & Impostos (Uso Interno)")
+    col_op1, col_op2 = st.columns(2)
+    with col_op1:
+        imposto_perc = st.number_input("Alíquota de Impostos / Notas (%)", min_value=0.0, max_value=30.0, value=6.0, step=0.5)
+    with col_op2:
+        custo_extra = st.number_input("Outros Custos / Extras (R$)", min_value=0.0, value=0.0, step=10.0)
 
-        litros_gastos = distancia_ida_volta / consumo_medio if consumo_medio > 0 else 0
-        custo_combustivel = litros_gastos * preco_combustivel
-        custo_logistica_total = custo_combustivel + pedagio_total
+with tabs_topo[2]:
+    st.subheader("Condições Comerciais & Pagamento")
+    forma_entrega = st.text_input("Forma de entrega", "Link exclusivo para download, disponível por 30 dias.")
+    
+    col_p1, col_p2 = st.columns(2)
+    with col_p1:
+        forma_pagamento_tipo = st.selectbox("Forma de Pagamento", ["À vista", "Parcelado"])
+    with col_p2:
+        condicao_pagamento = st.selectbox("Condições de Pagamento", ["PIX", "Transferência", "PIX ou transferência bancária", "Cartão de crédito", "Cartão de Crédito parcelado"])
+    
+    parcelas_cartao = 1
+    if "parcelado" in condicao_pagamento.lower() or forma_pagamento_tipo == "Parcelado":
+        parcelas_cartao = st.number_input("Cartão de Crédito parcelado em X vezes", min_value=1, max_value=12, value=3)
+        condicao_pagamento = f"{condicao_pagamento} em {parcelas_cartao}X"
 
-        custo_total_operacional_log = custo_logistica_total + custo_alimentacao_total + custo_hospedagem_total + custo_outros
-        valor_impostos = valor_final * (imposto_perc / 100.0)
-        custo_total_interno = custo_total_operacional_log + valor_impostos + custo_extra
-        lucro_liquido = valor_final - custo_total_interno
-        margem_lucro = (lucro_liquido / valor_final * 100) if valor_final > 0 else 0
+    # CÁLCULOS
+    tabela_atual = TABELAS_SERVICOS.get(tipo_servico, TABELAS_SERVICOS["Evento social"])
+    
+    dias_evento = 1
+    if tem_data_termino:
+        dias_evento = max(1, (data_termino - data_evento).days + 1)
 
-        st.markdown("---")
-        st.subheader("📊 Painel Resumo: Cliente vs. Interno")
-        col_res1, col_res2, col_res3, col_res4 = st.columns(4)
-        col_res1.metric("Valor para o Cliente", fmt_brl(valor_final))
-        col_res2.metric("Custos Operacionais", fmt_brl(custo_total_interno))
-        col_res3.metric("Lucro Líquido Est.", fmt_brl(lucro_liquido))
-        col_res4.metric("Margem de Lucro", f"{margem_lucro:.1f}%")
+    if "diária" in carga_horaria_sel:
+        qtd_diarias = int(carga_horaria_sel.split()[0])
+        valor_base = tabela_atual.get(10, 1300.0) * qtd_diarias * dias_evento
+    else:
+        horas_num = int(carga_horaria_sel.replace("h", ""))
+        horas_buscadas = min(horas_num, 12)
+        valor_base = tabela_atual.get(horas_buscadas, 1500.0) * dias_evento
+        if horas_num > 12:
+            valor_base += (horas_num - 12) * tabela_atual.get(1, 180.0) * dias_evento
 
-        dados_completos = {
-            "contato": contato,
-            "empresa": empresa,
-            "telefone": telefone,
-            "email": email,
-            "data_orcamento": data_orcamento,
-            "data_evento": data_evento,
-            "tem_data_termino": tem_data_termino,
-            "data_termino": data_termino,
-            "horario": horario,
-            "local": local,
-            "cidade": cidade,
-            "estado": estado,
-            "tipo_servico": tipo_servico,
-            "outro_servico_nome": outro_servico_nome,
-            "carga_horaria_sel": carga_horaria_sel,
-            "escopo_servico": escopo_servico,
-            "captacao": captacao,
-            "forma_entrega": forma_entrega,
-            "forma_pagamento_tipo": forma_pagamento_tipo,
-            "condicao_pagamento": condicao_pagamento,
-            "desconto_perc": desconto_perc,
-            "valor_base": valor_base,
-            "valor_desconto": valor_desconto,
-            "valor_final": valor_final,
-            "distancia": distancia_ida_volta,
-            "consumo_veiculo": consumo_medio,
-            "litros_gastos": litros_gastos,
-            "preco_combustivel": preco_combustivel,
-            "custo_combustivel": custo_combustivel,
-            "pedagios": pedagio_total,
-            "custo_alimentacao_total": custo_alimentacao_total,
-            "custo_hospedagem_total": custo_hospedagem_total,
-            "custo_outros_total": custo_outros,
-            "imposto_perc": imposto_perc,
-            "valor_impostos": valor_impostos,
-            "custo_extra": custo_extra,
-            "custo_total_interno": custo_total_interno,
-            "lucro_liquido": lucro_liquido,
-            "margem_lucro": margem_lucro
-        }
+    valor_desconto = valor_base * (desconto_perc / 100.0)
+    valor_final = valor_base - valor_desconto
 
-        st.markdown("---")
-        st.markdown("### 📥 Geração de Documentos (PDF)")
-        col_down1, col_down2 = st.columns(2)
+    litros_gastos = distancia_ida_volta / consumo_medio if consumo_medio > 0 else 0
+    custo_combustivel = litros_gastos * preco_combustivel
+    custo_logistica_total = custo_combustivel + pedagio_total
 
-        with col_down1:
-            pdf_cliente_bytes = gerar_pdf_cliente(dados_completos)
-            st.download_button(
-                label="📄 Baixar Proposta Comercial (Cliente)",
-                data=pdf_cliente_bytes,
-                file_name=f"Proposta_Comercial_{empresa.replace(' ', '_')}.pdf" if empresa else "Proposta_Comercial.pdf",
-                mime="application/pdf",
-                use_container_width=True,
-                key=f"dl_cli_{sufixo}"
-            )
-
-        with col_down2:
-            pdf_interno_bytes = gerar_pdf_interno(dados_completos)
-            st.download_button(
-                label="🔒 Baixar Relatório Interno (Custos)",
-                data=pdf_interno_bytes,
-                file_name=f"Relatorio_Interno_Custos_{empresa.replace(' ', '_')}.pdf" if empresa else "Relatorio_Interno_Custos.pdf",
-                mime="application/pdf",
-                use_container_width=True,
-                key=f"dl_int_{sufixo}"
-            )
-
-# Renderização superior das abas
-render_conteudo_abas(sufixo="_topo")
-
-# Quadros de abas na parte inferior da página
-st.markdown("---")
-st.markdown("### 📌 Navegação Rápida (Inferior)")
-render_conteudo_abas(sufixo="_baixo")
+    custo_total_operacional_log = custo_
