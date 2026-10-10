@@ -261,15 +261,16 @@ def gerar_pdf_interno(dados):
         [Paragraph("Outros Custos", style_corpo), Paragraph("Estacionamento / Freelancer / Outros", style_corpo), Paragraph(fmt_brl(dados['custo_outros_total']), style_corpo)]
     ]
     t_log = Table(tabela_log_dados, colWidths=[130, 275, 110])
-    t_log.setStyle(TableStyle([
-        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#f1f5f9')),
-        ('ALIGN', (0,0), (-1,-1), 'LEFT'),
-        ('ALIGN', (2,0), (2,-1), 'RIGHT'),
-        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 6),
-        ('TOPPADDING', (0,0), (-1,-1), 6),
-        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1'))
-    ]))
+    
+    ts_log = TableStyle()
+    ts_log.add('BACKGROUND', (0,0), (-1,0), colors.HexColor('#f1f5f9'))
+    ts_log.add('ALIGN', (0,0), (-1,-1), 'LEFT')
+    ts_log.add('ALIGN', (2,0), (2,-1), 'RIGHT')
+    ts_log.add('VALIGN', (0,0), (-1,-1), 'MIDDLE')
+    ts_log.add('BOTTOMPADDING', (0,0), (-1,-1), 6)
+    ts_log.add('TOPPADDING', (0,0), (-1,-1), 6)
+    ts_log.add('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1'))
+    t_log.setStyle(ts_log)
     story.append(t_log)
     story.append(Spacer(1, 15))
     
@@ -284,11 +285,34 @@ def gerar_pdf_interno(dados):
         [Paragraph("Outros Custos / Extras", style_corpo), Paragraph("Insumos gerais", style_corpo), Paragraph(fmt_brl(dados['custo_extra']), style_corpo)]
     ]
     t_op = Table(tabela_op_dados, colWidths=[140, 265, 110])
-    t_op.setStyle(TableStyle([
-        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#f1f5f9')),
-        ('ALIGN', (0,0), (-1,-1), 'LEFT'),
-        ('ALIGN', (2,0), (2,-1), 'RIGHT'),
-        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 6),
-        ('TOPPADDING', (0,0), (-1,-1), 6),
-        ('GRID', (0,0), (-1
+    
+    ts_op = TableStyle()
+    ts_op.add('BACKGROUND', (0,0), (-1,0), colors.HexColor('#f1f5f9'))
+    ts_op.add('ALIGN', (0,0), (-1,-1), 'LEFT')
+    ts_op.add('ALIGN', (2,0), (2,-1), 'RIGHT')
+    ts_op.add('VALIGN', (0,0), (-1,-1), 'MIDDLE')
+    ts_op.add('BOTTOMPADDING', (0,0), (-1,-1), 6)
+    ts_op.add('TOPPADDING', (0,0), (-1,-1), 6)
+    ts_op.add('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1'))
+    t_op.setStyle(ts_op)
+    story.append(t_op)
+    story.append(Spacer(1, 15))
+    
+    story.append(Paragraph("3. Fechamento Financeiro & Margem", style_subtitulo))
+    story.append(Spacer(1, 8))
+    
+    tabela_resumo_interno = [
+        [Paragraph("<b>Faturamento Total Proposto:</b>", style_bold), Paragraph(f"<b>{fmt_brl(dados['valor_final'])}</b>", style_corpo)],
+        [Paragraph("<b>Custo Operacional Total:</b>", style_bold), Paragraph(fmt_brl(dados['custo_total_interno']), style_corpo)],
+        [Paragraph("<b>Lucro Líquido Estimado:</b>", style_bold), Paragraph(f"<b>{fmt_brl(dados['lucro_liquido'])} ({dados['margem_lucro']:.1f}%)</b>", style_lucro_destaque)]
+    ]
+    t_res_int = Table(tabela_resumo_interno, colWidths=[315, 200])
+    
+    ts_res = TableStyle()
+    ts_res.add('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#e2e8f0'))
+    ts_res.add('VALIGN', (0,0), (-1,-1), 'MIDDLE')
+    ts_res.add('ALIGN', (1,0), (1,-1), 'RIGHT')
+    ts_res.add('BOTTOMPADDING', (0,0), (-1,-1), 8)
+    ts_res.add('TOPPADDING', (0,0), (-1,-1), 8)
+    ts_res.add('BOX', (0,0), (-1,-1), 1, colors.HexColor('#475569'))
+    t_res_int.setStyle
