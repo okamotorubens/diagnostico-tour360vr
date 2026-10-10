@@ -9,9 +9,6 @@ import os
 from datetime import datetime
 from PIL import Image as PILImage, ImageDraw
 
-# ==========================================
-# CONFIGURAÇÃO DE ESTILO E FORMATAÇÃO BRL
-# ==========================================
 def fmt_brl(val):
     s = f"{val:,.2f}"
     return "R$ " + s.replace(",", "X").replace(".", ",").replace("X", ".")
@@ -45,9 +42,6 @@ ESTADOS_BR = [
 
 st.set_page_config(page_title="Proposta Comercial & Custos - Okamoto Mídias Visuais", page_icon="📊", layout="wide")
 
-# ==========================================
-# CANVAS PARA LINHA E RODAPÉ FIXO PERFEITO
-# ==========================================
 class ModernFooterCanvas(canvas.Canvas):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -104,9 +98,6 @@ def criar_rodape_story(styles):
     )
     return Paragraph(texto, style_footer)
 
-# ==========================================
-# FUNÇÃO 1: GERAR PDF DA PROPOSTA COMERCIAL
-# ==========================================
 def gerar_pdf_cliente(dados):
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=35, rightMargin=35, topMargin=30, bottomMargin=40)
@@ -220,7 +211,6 @@ def gerar_pdf_cliente(dados):
     story.append(Spacer(1, 14))
     story.append(criar_rodape_story(styles))
     
-    # 2ª PÁGINA (INSTITUCIONAL E DADOS DA EMPRESA)
     story.append(PageBreak())
     
     if logo_path:
@@ -268,9 +258,6 @@ def gerar_pdf_cliente(dados):
     buffer.seek(0)
     return buffer
 
-# ==========================================
-# FUNÇÃO 2: GERAR RELATÓRIO INTERNO (CUSTOS)
-# ==========================================
 def gerar_pdf_interno(dados):
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=35, rightMargin=35, topMargin=25, bottomMargin=40)
@@ -345,4 +332,58 @@ def gerar_pdf_interno(dados):
     story.append(t_log)
     story.append(Spacer(1, 12))
     
-    story.append(Paragraph("2. Custos Operacionais, Impostos & Comissão", style
+    story.append(Paragraph("2. Custos Operacionais, Impostos & Comissão", style_subtitulo))
+    story.append(Spacer(1, 6))
+    
+    tabela_op_dados = [
+        [Paragraph("<b>Descrição</b>", style_bold), Paragraph("<b>Base / Alíquota</b>", style_bold), Paragraph("<b>Valor Estimado</b>", style_bold)],
+        [Paragraph("Valor Base dos Serviços", style_corpo), Paragraph(f"Tabela ({dados['carga_horaria_sel']})", style_corpo), Paragraph(fmt_brl(dados['valor_base']), style_corpo)],
+        [Paragraph("Desconto Aplicado", style_corpo), Paragraph("Desconto comercial", style_corpo), Paragraph(f"- {fmt_brl(dados['valor_desconto_calculado'])}", style_corpo)],
+        [Paragraph("Ajuste Manual / Especial", style_corpo), Paragraph("Ajuste personalizado", style_corpo), Paragraph(fmt_brl(dados['ajuste_manual']), style_corpo)],
+        [Paragraph("Impostos (Nota Fiscal)", style_corpo), Paragraph(f"{dados['imposto_perc']}% sobre o faturamento", style_corpo), Paragraph(fmt_brl(dados['valor_impostos']), style_corpo)],
+        [Paragraph("Comissão", style_corpo), Paragraph(f"{dados['comissao_perc']}% sobre o faturamento", style_corpo), Paragraph(fmt_brl(dados['valor_comissao']), style_corpo)]
+    ]
+    t_op = Table(tabela_op_dados, colWidths=[120, 320, 100])
+    ts_op = TableStyle()
+    ts_op.add('BACKGROUND', (0,0), (-1,0), colors.HexColor('#f1f5f9'))
+    ts_op.add('ALIGN', (0,0), (-1,-1), 'LEFT')
+    ts_op.add('ALIGN', (2,0), (2,-1), 'RIGHT')
+    ts_op.add('VALIGN', (0,0), (-1,-1), 'MIDDLE')
+    ts_op.add('BOTTOMPADDING', (0,0), (-1,-1), 4)
+    ts_op.add('TOPPADDING', (0,0), (-1,-1), 4)
+    ts_op.add('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1'))
+    t_op.setStyle(ts_op)
+    story.append(t_op)
+    story.append(Spacer(1, 12))
+    
+    story.append(Paragraph("3. Fechamento Financeiro & Margem", style_subtitulo))
+    story.append(Spacer(1, 6))
+    
+    tabela_resumo_interno = [
+        [Paragraph("<b>Faturamento Total Proposto:</b>", style_bold), Paragraph(f"<b>{fmt_brl(dados['valor_final'])}</b>", style_destaque_fat)],
+        [Paragraph("<b>Custo Operacional Total:</b>", style_bold), Paragraph(fmt_brl(dados['custo_total_interno']), style_corpo)],
+        [Paragraph("<b>Lucro Líquido Estimado:</b>", style_bold), Paragraph(f"<b>{fmt_brl(dados['lucro_liquido'])} ({dados['margem_lucro']:.1f}%)</b>", style_destaque_lucro)]
+    ]
+    t_res_int = Table(tabela_resumo_interno, colWidths=[310, 230])
+    ts_res = TableStyle()
+    ts_res.add('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#e2e8f0'))
+    ts_res.add('VALIGN', (0,0), (-1,-1), 'MIDDLE')
+    ts_res.add('ALIGN', (1,0), (1,-1), 'RIGHT')
+    ts_res.add('BOTTOMPADDING', (0,0), (-1,-1), 6)
+    ts_res.add('TOPPADDING', (0,0), (-1,-1), 6)
+    ts_res.add('BOX', (0,0), (-1,-1), 1, colors.HexColor('#1e3a8a'))
+    t_res_int.setStyle(ts_res)
+    story.append(t_res_int)
+    
+    story.append(Spacer(1, 14))
+    story.append(criar_rodape_story(styles))
+
+    doc.build(story, canvasmaker=ModernFooterCanvas)
+    buffer.seek(0)
+    return buffer
+
+st.title("⚡ Sistema de Propostas & Custos")
+st.markdown("Gerencie orçamentos comerciais, analise a viabilidade interna e gere documentação profissional em PDF.")
+
+logo_path = get_logo_path()
+if
