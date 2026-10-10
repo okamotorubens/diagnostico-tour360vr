@@ -8,6 +8,11 @@ import io
 import os
 from datetime import datetime
 from PIL import Image as PILImage, ImageDraw
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.base import MIMEBase
+from email.mime.text import MIMEText
+from email import encoders
 
 def fmt_brl(val):
     s = f"{val:,.2f}"
@@ -102,21 +107,21 @@ class NumberedCanvas(canvas.Canvas):
         
         self.setFillColor(colors.HexColor('#1e3a8a'))
         self.drawString(135, 24, "okamotomidiasvisuais.com.br")
-        self.linkURL("https://okamotomidiasvisuais.com.br/", (135, 22, 248, 34), relative=0, name=f"lnk_web_{p_num}")
+        self.linkURL("https://okamotomidiasvisuais.com.br/", (135, 22, 248, 34), relative=0)
         
         self.setFillColor(colors.HexColor('#475569'))
         self.drawString(252, 24, "|")
         
         self.setFillColor(colors.HexColor('#1e3a8a'))
         self.drawString(262, 24, "contato@okamotomidiasvisuais.com.br")
-        self.linkURL("mailto:contato@okamotomidiasvisuais.com.br", (262, 22, 428, 34), relative=0, name=f"lnk_mail_{p_num}")
+        self.linkURL("mailto:contato@okamotomidiasvisuais.com.br", (262, 22, 428, 34), relative=0)
         
         self.setFillColor(colors.HexColor('#475569'))
         self.drawString(432, 24, "|")
         
         self.setFillColor(colors.HexColor('#1e3a8a'))
         self.drawString(442, 24, "WhatsApp: 16 99133 2121")
-        self.linkURL("https://wa.me/5516991332121", (442, 22, 530, 34), relative=0, name=f"lnk_wa_{p_num}")
+        self.linkURL("https://wa.me/5516991332121", (442, 22, 530, 34), relative=0)
         
         self.setFillColor(colors.HexColor('#475569'))
         self.drawRightString(575, 24, f"Página {p_num} de {page_count}")
@@ -142,6 +147,44 @@ def criar_imagem_proporcional(path, target_width=150):
         return RLImage(path, width=target_width, height=target_height)
     except Exception:
         return RLImage(path, width=150, height=44)
+
+def enviar_pdf_por_email(pdf_cliente_bytes, pdf_interno_bytes, nome_cliente):
+    try:
+        if "email" not in st.secrets:
+            return False
+        smtp_server = st.secrets["email"]["smtp_server"]
+        smtp_port = st.secrets["email"]["smtp_port"]
+        sender_email = st.secrets["email"]["sender_email"]
+        sender_password = st.secrets["email"]["sender_password"]
+        recipient_email = "contato@tour360vr.com.br"
+
+        msg = MIMEMultipart()
+        msg['From'] = sender_email
+        msg['To'] = recipient_email
+        msg['Subject'] = f"Novo Orçamento Gerado - {nome_cliente or 'Cliente'}"
+
+        corpo = f"Olá!\n\nUm novo orçamento foi gerado pelo sistema para o cliente: {nome_cliente}.\nOs arquivos em PDF (Proposta Comercial e Relatório Interno de Custos) seguem em anexo."
+        msg.attach(MIMEText(corpo, 'plain'))
+
+        part_cliente = MIMEBase('application', 'octet-stream')
+        part_cliente.set_payload(pdf_cliente_bytes.getvalue())
+        encoders.encode_base64(part_cliente)
+        part_cliente.add_header('Content-Disposition', 'attachment', filename=f"Proposta_Comercial_{nome_cliente.replace(' ', '_')}.pdf")
+        msg.attach(part_cliente)
+
+        part_interno = MIMEBase('application', 'octet-stream')
+        part_interno.set_payload(pdf_interno_bytes.getvalue())
+        encoders.encode_base64(part_interno)
+        part_interno.add_header('Content-Disposition', 'attachment', filename=f"Relatorio_Interno_{nome_cliente.replace(' ', '_')}.pdf")
+        msg.attach(part_interno)
+
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            server.starttls()
+            server.login(sender_email, sender_password)
+            server.sendmail(sender_email, recipient_email, msg.as_string())
+        return True
+    except Exception:
+        return False
 
 def gerar_pdf_cliente(dados):
     buffer = io.BytesIO()
@@ -756,26 +799,13 @@ dados_completos = {
 if st.session_state.current_tab_idx == 2:
     st.markdown("---")
     st.subheader("📥 Geração de Documentos (PDF)")
-    col_down1, col_down2 = st.columns(2)
-
-    empresa_nome = st.session_state.get("empresa", "")
     
-    with col_down1:
-        pdf_cliente_bytes = gerar_pdf_cliente(dados_completos)
-        st.download_button(
-            label="📄 Baixar Proposta Comercial (Cliente)",
-            data=pdf_cliente_bytes,
-            file_name=f"Proposta_Comercial_{empresa_nome.replace(' ', '_')}.pdf" if empresa_nome else "Proposta_Comercial.pdf",
-            mime="application/pdf",
-            use_container_width=True
-        )
+    pdf_cliente_bytes = gerar_pdf_cliente(dados_completos)
+    pdf_interno_bytes = gerar_pdf_interno(dados_completos)
 
-    with col_down2:
-        pdf_interno_bytes = gerar_pdf_interno(dados_completos)
-        st.download_button(
-            label="🔒 Baixar Relatório Interno (Custos)",
-            data=pdf_interno_bytes,
-            file_name=f"Relatorio_Interno_Custos_{empresa_nome.replace(' ', '_')}.pdf" if empresa_nome else "Relatorio_Interno_Custos.pdf",
-            mime="application/pdf",
-            use_container_width=True
-        )
+    # Disparo automático para contato@tour360vr.com.br
+    id_envio = f"{dados_completos['empresa']}_{dados_completos['data_evento']}_{dados_completos['valor_final']}"
+    if st.session_state.get("ultimo_envio_email") != id_envio:
+        sucesso = enviar_pdf_por_email(pdf_cliente_bytes, pdf_interno_bytes, dados_completos.get('empresa') or dados_completos.get('contato'))
+        if sucesso:
+            st
