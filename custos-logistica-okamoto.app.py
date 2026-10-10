@@ -68,7 +68,6 @@ class ModernCanvas(canvas.Canvas):
         self.setStrokeColor(colors.HexColor("#cbd5e1"))
         self.setLineWidth(0.5)
         self.line(40, 45, 555, 45)
-        # Rodapé com os links exatos para o site e WhatsApp
         footer_text = "Okamoto Mídias Visuais    |    okamotomidiasvisuais.com.br    |    contato@okamotomidiasvisuais.com.br    |    WhatsApp: 16 99133 2121"
         self.drawCentredString(297.5, 30, footer_text)
         self.restoreState()
@@ -88,11 +87,8 @@ def gerar_pdf_cliente(dados):
     style_assinatura = ParagraphStyle('Assinatura', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=14, textColor=colors.HexColor('#1e293b'))
     
     story = []
-    
-    # Título visível na barra do visualizador de PDF
     doc.title = f"Proposta Comercial - {dados['empresa']}"
 
-    # 1ª PÁGINA (Otimizada para caber em 1 página)
     if os.path.exists("logo_okamoto.png"):
         story.append(RLImage("logo_okamoto.png", width=150, height=56))
     else:
@@ -108,7 +104,7 @@ def gerar_pdf_cliente(dados):
     nome_servico_titulo = dados['tipo_servico'] if dados['tipo_servico'] != "Outro" else dados['outro_servico_nome']
     story.append(Paragraph("<b>Proposta Comercial</b>", style_titulo))
     story.append(Spacer(1, 4))
-    story.append(Paragraph(nome_servico_titulo, style_servico_sub)) # Centralizado
+    story.append(Paragraph(nome_servico_titulo, style_servico_sub))
     story.append(Spacer(1, 10))
     
     story.append(Paragraph("<b>1. Dados do cliente:</b>", style_bold))
@@ -164,7 +160,7 @@ def gerar_pdf_cliente(dados):
     story.append(Paragraph("<b>Rubens Okamoto</b>", style_assinatura))
     story.append(Paragraph("Okamoto Mídias Visuais", style_corpo))
     
-    # 2ª PÁGINA (INSTITUCIONAL FORMATADA EXATAMENTE COMO SOLICITADO)
+    # 2ª PÁGINA (INSTITUCIONAL)
     story.append(PageBreak())
     
     if os.path.exists("logo_okamoto.png"):
@@ -178,9 +174,9 @@ def gerar_pdf_cliente(dados):
     style_destaque_2 = ParagraphStyle('Dest2', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=12, alignment=1, textColor=colors.HexColor('#475569'))
     
     story.append(Paragraph("É registrando a sua história, que nós construímos a nossa!", style_destaque_1))
-    story.append(Spacer(1, 15)) # 2 linhas
+    story.append(Spacer(1, 15))
     story.append(Paragraph("Especialistas em Imagem, Vídeo e Experiências Imersivas", style_destaque_2))
-    story.append(Spacer(1, 25)) # 3 linhas
+    story.append(Spacer(1, 25))
     
     intro_inst = "Unimos a bagagem de três décadas às inovações tecnológicas mais recentes, transformando sua marca com soluções visuais de alta performance:"
     story.append(Paragraph(intro_inst, style_corpo))
@@ -197,7 +193,6 @@ def gerar_pdf_cliente(dados):
     story.append(Paragraph(topicos_inst, style_corpo))
     story.append(Spacer(1, 25))
     
-    # Seções separadas por categoria e espaçamentos maiores
     style_cat_titulo = ParagraphStyle('CatTit', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=12, textColor=colors.HexColor('#1e293b'))
     
     story.append(Paragraph("<b>Dados da Empresa</b>", style_cat_titulo))
@@ -244,7 +239,7 @@ def gerar_pdf_interno(dados):
     story.append(Paragraph("Relatório Interno", style_subtitulo))
     story.append(Spacer(1, 20))
     
-    story.append(Paragraph("Análise Técnica de Custos, Logística e Margem", style_titulo)) # Centralizado
+    story.append(Paragraph("Análise Técnica de Custos, Logística e Margem", style_titulo))
     story.append(Spacer(1, 15))
     
     servico_exibido = dados['tipo_servico'] if dados['tipo_servico'] != "Outro" else dados['outro_servico_nome']
@@ -343,52 +338,52 @@ if os.path.exists("logo_okamoto.png"):
     with col_img2:
         st.image("logo_okamoto.png", width=280)
 
-# Função para renderizar as abas (tanto em cima quanto embaixo)
-def render_conteudo_abas():
-    tabs_topo = st.tabs(["1. Dados & Serviços", "2. Custos & Logística", "3. Prazos, Resumo & Relatórios"])
+# Função para renderizar as abas com chaves únicas por bloco (evitando StreamlitDuplicateElementKey)
+def render_conteudo_abas(sufixo=""):
+    tabs_topo = st.tabs([f"1. Dados & Serviços {sufixo}", f"2. Custos & Logística {sufixo}", f"3. Prazos, Resumo & Relatórios {sufixo}"])
 
     with tabs_topo[0]:
         st.subheader("1. Dados do Cliente & Evento")
         col1, col2 = st.columns(2)
         with col1:
-            contato = st.text_input("Contato", "", key="contato_k")
-            empresa = st.text_input("Empresa", "", key="empresa_k")
-            telefone = st.text_input("Telefone", "", key="tel_k")
-            email = st.text_input("E-mail", "", key="email_k")
+            contato = st.text_input("Contato", "", key=f"contato_k{sufixo}")
+            empresa = st.text_input("Empresa", "", key=f"empresa_k{sufixo}")
+            telefone = st.text_input("Telefone", "", key=f"tel_k{sufixo}")
+            email = st.text_input("E-mail", "", key=f"email_k{sufixo}")
         with col2:
-            data_orcamento = st.date_input("Data do Orçamento", datetime.now(), key="dorc_k")
-            data_evento = st.date_input("Data do Evento", datetime.now(), key="dev_k")
+            data_orcamento = st.date_input("Data do Orçamento", datetime.now(), key=f"dorc_k{sufixo}")
+            data_evento = st.date_input("Data do Evento", datetime.now(), key=f"dev_k{sufixo}")
             
-            tem_data_termino = st.checkbox("Evento com mais de um dia (Data de Término)", key="tem_fim_k")
+            tem_data_termino = st.checkbox("Evento com mais de um dia (Data de Término)", key=f"tem_fim_k{sufixo}")
             data_termino = data_evento
             if tem_data_termino:
-                data_termino = st.date_input("Data de Término do Evento", datetime.now(), key="dterm_k")
+                data_termino = st.date_input("Data de Término do Evento", datetime.now(), key=f"dterm_k{sufixo}")
                 
-            horario = st.text_input("Horário (ex: 18h00 às 22h30)", "", key="horario_k") # Inicia em branco
-            local = st.text_input("Local", "", key="local_k")
+            horario = st.text_input("Horário (ex: 18h00 às 22h30)", "", key=f"horario_k{sufixo}")
+            local = st.text_input("Local", "", key=f"local_k{sufixo}")
             
             col_cidade, col_uf = st.columns([3, 1])
             with col_cidade:
-                cidade = st.text_input("Cidade", "Ribeirão Preto", key="cidade_k")
+                cidade = st.text_input("Cidade", "Ribeirão Preto", key=f"cidade_k{sufixo}")
             with col_uf:
-                estado = st.selectbox("Estado (UF)", ESTADOS_BR, index=0, key="uf_k")
+                estado = st.selectbox("Estado (UF)", ESTADOS_BR, index=0, key=f"uf_k{sufixo}")
 
         st.markdown("---")
         st.subheader("2. Seleção de Serviço & Carga Horária")
-        tipo_servico = st.selectbox("Tipo de Serviço", list(TABELAS_SERVICOS.keys()), key="tserv_k")
+        tipo_servico = st.selectbox("Tipo de Serviço", list(TABELAS_SERVICOS.keys()), key=f"tserv_k{sufixo}")
         
         outro_servico_nome = ""
         if tipo_servico == "Outro":
-            outro_servico_nome = st.text_input("Especifique o nome do serviço", "Serviço Personalizado", key="outro_k")
+            outro_servico_nome = st.text_input("Especifique o nome do serviço", "Serviço Personalizado", key=f"outro_k{sufixo}")
 
-        carga_horaria_sel = st.selectbox("Carga Horária", OPCOES_CARGA_HORARIA, key="carga_k")
+        carga_horaria_sel = st.selectbox("Carga Horária", OPCOES_CARGA_HORARIA, key=f"carga_k{sufixo}")
         
         opcoes_desconto_base = [0, 5, 10, 15, 20, 25, 30]
-        tipo_desc = st.radio("Selecione a modalidade de desconto", ["Padrão", "Personalizado (Outro valor)"], horizontal=True, key="tdesc_k")
+        tipo_desc = st.radio("Selecione a modalidade de desconto", ["Padrão", "Personalizado (Outro valor)"], horizontal=True, key=f"tdesc_k{sufixo}")
         if tipo_desc == "Padrão":
-            desconto_perc = st.selectbox("Aplicar Desconto (%)", opcoes_desconto_base, key="d_padrao_k")
+            desconto_perc = st.selectbox("Aplicar Desconto (%)", opcoes_desconto_base, key=f"d_padrao_k{sufixo}")
         else:
-            desconto_perc = st.number_input("Digite a porcentagem de desconto (%)", min_value=0.0, max_value=100.0, value=10.0, step=0.5, key="d_pers_k")
+            desconto_perc = st.number_input("Digite a porcentagem de desconto (%)", min_value=0.0, max_value=100.0, value=10.0, step=0.5, key=f"d_pers_k{sufixo}")
 
         st.markdown("---")
         st.subheader("3. Detalhamento Técnico (Escopo & Captação)")
@@ -400,39 +395,38 @@ def render_conteudo_abas():
             mes_extenso_ter = MESES_PT[data_termino.month]
             data_str_escopo = f"de {data_evento.day} de {mes_extenso_ev} até {data_termino.day} de {mes_extenso_ter} de {data_termino.year}"
 
-        # Escopo saindo apenas com o resultado dos campos preenchidos
         default_escopo = f"{nome_servico_atual}\n{data_str_escopo}\n{horario}\n{local}\n{cidade} - {estado}\n01 (um) profissional"
         default_captacao = "Cobertura fotográfica do evento"
         
-        escopo_servico = st.text_area("Escopo do serviço", default_escopo, height=120, key="escopo_k")
-        captacao = st.text_area("Captação", default_captacao, key="capt_k")
+        escopo_servico = st.text_area("Escopo do serviço", default_escopo, height=120, key=f"escopo_k{sufixo}")
+        captacao = st.text_area("Captação", default_captacao, key=f"capt_k{sufixo}")
 
     with tabs_topo[1]:
         st.subheader("🚗 Parâmetros de Deslocamento & Logística (Honda HR-V)")
         col_l1, col_l2, col_l3 = st.columns(3)
         with col_l1:
-            distancia_ida_volta = st.number_input("Distância Total (Ida e Volta em km)", min_value=0.0, value=40.0, step=5.0, key="dist_k")
+            distancia_ida_volta = st.number_input("Distância Total (Ida e Volta em km)", min_value=0.0, value=40.0, step=5.0, key=f"dist_k{sufixo}")
         with col_l2:
-            consumo_medio = st.number_input("Consumo Médio (km/L)", min_value=1.0, value=11.50, step=0.5, key="cons_k")
+            consumo_medio = st.number_input("Consumo Médio (km/L)", min_value=1.0, value=11.50, step=0.5, key=f"cons_k{sufixo}")
         with col_l3:
-            preco_combustivel = st.number_input("Preço do Litro (R$)", min_value=0.0, value=6.80, step=0.10, key="preco_k")
+            preco_combustivel = st.number_input("Preço do Litro (R$)", min_value=0.0, value=6.80, step=0.10, key=f"preco_k{sufixo}")
             
-        pedagio_total = st.number_input("Valor Total de Pedágios (R$)", min_value=0.0, value=0.0, step=5.0, key="pedag_k")
+        pedagio_total = st.number_input("Valor Total de Pedágios (R$)", min_value=0.0, value=0.0, step=5.0, key=f"pedag_k{sufixo}")
 
         st.markdown("---")
         st.subheader("🍽️ Custos de Alimentação, Hospedagem & Outros")
         col_al1, col_al2, col_al3, col_al4 = st.columns(4)
         with col_al1:
-            qtd_almoco = st.number_input("Qtd. Almoços", min_value=0, value=1, step=1, key="qalm_k")
-            val_almoco = st.number_input("R$ Almoço (unit.)", min_value=0.0, value=35.0, step=5.0, key="valm_k")
+            qtd_almoco = st.number_input("Qtd. Almoços", min_value=0, value=1, step=1, key=f"qalm_k{sufixo}")
+            val_almoco = st.number_input("R$ Almoço (unit.)", min_value=0.0, value=35.0, step=5.0, key=f"valm_k{sufixo}")
         with col_al2:
-            qtd_janta = st.number_input("Qtd. Jantas", min_value=0, value=1, step=1, key="qjan_k")
-            val_janta = st.number_input("R$ Janta (unit.)", min_value=0.0, value=45.0, step=5.0, key="vjan_k")
+            qtd_janta = st.number_input("Qtd. Jantas", min_value=0, value=1, step=1, key=f"qjan_k{sufixo}")
+            val_janta = st.number_input("R$ Janta (unit.)", min_value=0.0, value=45.0, step=5.0, key=f"vjan_k{sufixo}")
         with col_al3:
-            qtd_hosp = st.number_input("Qtd. Diárias Hospedagem", min_value=0, value=0, step=1, key="qhosp_k")
-            val_hosp = st.number_input("R$ Hospedagem (diária)", min_value=0.0, value=150.0, step=10.0, key="vhosp_k")
+            qtd_hosp = st.number_input("Qtd. Diárias Hospedagem", min_value=0, value=0, step=1, key=f"qhosp_k{sufixo}")
+            val_hosp = st.number_input("R$ Hospedagem (diária)", min_value=0.0, value=150.0, step=10.0, key=f"vhosp_k{sufixo}")
         with col_al4:
-            custo_outros = st.number_input("Outros (Estacionamento, etc.) (R$)", min_value=0.0, value=0.0, step=10.0, key="outros_k")
+            custo_outros = st.number_input("Outros (Estacionamento, etc.) (R$)", min_value=0.0, value=0.0, step=10.0, key=f"outros_k{sufixo}")
 
         custo_alimentacao_total = (qtd_almoco * val_almoco) + (qtd_janta * val_janta)
         custo_hospedagem_total = qtd_hosp * val_hosp
@@ -441,29 +435,28 @@ def render_conteudo_abas():
         st.subheader("💼 Custos Operacionais & Impostos (Uso Interno)")
         col_op1, col_op2 = st.columns(2)
         with col_op1:
-            imposto_perc = st.number_input("Alíquota de Impostos / Notas (%)", min_value=0.0, max_value=30.0, value=6.0, step=0.5, key="imp_k")
+            imposto_perc = st.number_input("Alíquota de Impostos / Notas (%)", min_value=0.0, max_value=30.0, value=6.0, step=0.5, key=f"imp_k{sufixo}")
         with col_op2:
-            custo_extra = st.number_input("Outros Custos / Extras (R$)", min_value=0.0, value=0.0, step=10.0, key="cextra_k")
+            custo_extra = st.number_input("Outros Custos / Extras (R$)", min_value=0.0, value=0.0, step=10.0, key=f"cextra_k{sufixo}")
 
     with tabs_topo[2]:
         st.subheader("Condições Comerciais & Pagamento")
-        forma_entrega = st.text_input("Forma de entrega", "Link exclusivo para download, disponível por 30 dias.", key="fent_k")
+        forma_entrega = st.text_input("Forma de entrega", "Link exclusivo para download, disponível por 30 dias.", key=f"fent_k{sufixo}")
         
         col_p1, col_p2 = st.columns(2)
         with col_p1:
-            forma_pagamento_tipo = st.selectbox("Forma de Pagamento", ["À vista", "Parcelado"], key="fpg_k")
+            forma_pagamento_tipo = st.selectbox("Forma de Pagamento", ["À vista", "Parcelado"], key=f"fpg_k{sufixo}")
         with col_p2:
-            condicao_pagamento = st.selectbox("Condições de Pagamento", ["PIX", "Transferência", "PIX ou transferência bancária", "Cartão de crédito", "Cartão de Crédito parcelado"], key="cpg_k")
+            condicao_pagamento = st.selectbox("Condições de Pagamento", ["PIX", "Transferência", "PIX ou transferência bancária", "Cartão de crédito", "Cartão de Crédito parcelado"], key=f"cpg_k{sufixo}")
         
         parcelas_cartao = 1
         if "parcelado" in condicao_pagamento.lower() or forma_pagamento_tipo == "Parcelado":
-            parcelas_cartao = st.number_input("Cartão de Crédito parcelado em X vezes", min_value=1, max_value=12, value=3, key="parc_k")
+            parcelas_cartao = st.number_input("Cartão de Crédito parcelado em X vezes", min_value=1, max_value=12, value=3, key=f"parc_k{sufixo}")
             condicao_pagamento = f"{condicao_pagamento} em {parcelas_cartao}X"
 
         # CÁLCULOS
         tabela_atual = TABELAS_SERVICOS.get(tipo_servico, TABELAS_SERVICOS["Evento social"])
         
-        # Cálculo baseado nas informações de horários e somados quando for mais de 1 dia
         dias_evento = 1
         if tem_data_termino:
             dias_evento = max(1, (data_termino - data_evento).days + 1)
@@ -552,7 +545,8 @@ def render_conteudo_abas():
                 data=pdf_cliente_bytes,
                 file_name=f"Proposta_Comercial_{empresa.replace(' ', '_')}.pdf" if empresa else "Proposta_Comercial.pdf",
                 mime="application/pdf",
-                use_container_width=True
+                use_container_width=True,
+                key=f"dl_cli_{sufixo}"
             )
 
         with col_down2:
@@ -562,14 +556,14 @@ def render_conteudo_abas():
                 data=pdf_interno_bytes,
                 file_name=f"Relatorio_Interno_Custos_{empresa.replace(' ', '_')}.pdf" if empresa else "Relatorio_Interno_Custos.pdf",
                 mime="application/pdf",
-                use_container_width=True
+                use_container_width=True,
+                key=f"dl_int_{sufixo}"
             )
 
-# Renderiza as abas no topo
-render_conteudo_abas()
+# Renderização superior das abas
+render_conteudo_abas(sufixo="_topo")
 
-# Quadros de abas também na parte inferior da tela
+# Quadros de abas na parte inferior da página
 st.markdown("---")
 st.markdown("### 📌 Navegação Rápida (Inferior)")
-st.info("💡 Dica: Você pode acessar as mesmas abas e opções pelos controles superiores ou utilizando o sistema abaixo.")
-render_conteudo_abas()
+render_conteudo_abas(sufixo="_baixo")
