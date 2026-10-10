@@ -1412,12 +1412,11 @@ elif etapa_atual == 5:
             tel_cliente = f"55{tel_cliente}"
 
         texto_padrao_whatsapp = (
-            f"Olá, {resp_cliente}! Tudo bem?\n\n"
-            f"Meu nome é Rubens Okamoto, da Okamoto Mídias Visuais.\n\n"
-            f"Estava analisando a presença daMeu nome é Rubens Okamoto, da Okamoto Mídias Visuais.\n\n"
-            f"Estava analisando a presença da {nome_empresa_formatado} o Google Maps e identifiquei 3 pontos onde a visibilidade do espaço de vocês pode ser bastante ampliada em relação aos concorrentes da região.\n\n"
-            f"Montei um relatório curto de diagnóstico em PDF. Posso te enviar por aqui para você dar uma olhada?"
-        )
+    f"Olá, {resp_cliente}! Tudo bem?\n\n"
+    f"Meu nome é Rubens Okamoto, da Okamoto Mídias Visuais.\n\n"
+    f"Estava analisando a presença da {nome_empresa_formatado} no Google Maps e identifiquei 3 pontos onde a visibilidade do espaço de vocês pode ser bastante ampliada em relação aos concorrentes da região.\n\n"
+    f"Montei um relatório curto de diagnóstico em PDF. Posso te enviar por aqui para você dar uma olhada?"
+)
 
         st.markdown("<br><b>📝 Mensagem de Abordagem (Editável):</b>", unsafe_allow_html=True)
         mensagem_editada = st.text_area(
