@@ -64,7 +64,6 @@ class NumberedCanvas(canvas.Canvas):
         self.setFont("Helvetica", 8)
         self.setFillColor(colors.HexColor('#64748b'))
         
-        # Linha divisória do rodapé fixa acima da margem inferior
         self.setStrokeColor(colors.HexColor("#cbd5e1"))
         self.setLineWidth(0.75)
         self.line(35, 38, 575, 38)
@@ -295,10 +294,10 @@ def gerar_pdf_interno(dados):
         [Paragraph("Distância Total", style_corpo), Paragraph(f"{dados['distancia']} km (Ida e Volta)", style_corpo), Paragraph("-", style_corpo)],
         [Paragraph("Combustível", style_corpo), Paragraph(combustivel_detalhe, style_corpo), Paragraph(fmt_brl(dados['custo_combustivel']), style_corpo)],
         [Paragraph("Pedágios", style_corpo), Paragraph("Tarifas de estrada", style_corpo), Paragraph(fmt_brl(dados['pedagios']), style_corpo)],
+        [Paragraph("Estacionamento", style_corpo), Paragraph("Estacionamento / Local", style_corpo), Paragraph(fmt_brl(dados['custo_estacionamento']), style_corpo)],
         [Paragraph("Hospedagem", style_corpo), Paragraph("Diárias de hospedagem", style_corpo), Paragraph(fmt_brl(dados['custo_hospedagem_total']), style_corpo)],
         [Paragraph("Almoço", style_corpo), Paragraph("Refeição", style_corpo), Paragraph(fmt_brl(dados['custo_almoco']), style_corpo)],
         [Paragraph("Jantar", style_corpo), Paragraph("Refeição", style_corpo), Paragraph(fmt_brl(dados['custo_jantar']), style_corpo)],
-        [Paragraph("Estacionamento", style_corpo), Paragraph("Estacionamento / Local", style_corpo), Paragraph(fmt_brl(dados['custo_estacionamento']), style_corpo)],
         [Paragraph("Freelancer", style_corpo), Paragraph("Apoio profissional extra", style_corpo), Paragraph(fmt_brl(dados['custo_freelancer']), style_corpo)],
         [Paragraph("Outros", style_corpo), Paragraph("Despesas diversas", style_corpo), Paragraph(fmt_brl(dados['custo_outros']), style_corpo)]
     ]
@@ -399,8 +398,7 @@ with tabs_topo[0]:
         if tem_data_termino:
             data_termino = st.date_input("Data de Término do Serviço (dia/mês/ano)", datetime.now())
             
-        horario_input = st.text_input("Horário do Serviço", "08:00")
-        horario = horario_input
+        horario = st.text_input("Horário do Serviço", "08:00")
             
         nome_servico_input = st.text_input("Nome do Serviço / Evento", "")
         local = st.text_input("Local", "")
@@ -440,12 +438,13 @@ with tabs_topo[0]:
     captacao = st.text_area("Captação", default_captacao, height=80)
     
     st.markdown("---")
-    if st.button("Avançar ➡️", use_container_width=True):
+    if st.button("Avançar ➡️", key="btn_avancar_aba0", use_container_width=True):
         st.session_state.active_tab = 1
         st.rerun()
 
 with tabs_topo[1]:
     st.subheader("Custos operacionais")
+    
     st.markdown("##### 🚗 Parâmetros de Deslocamento & Logística")
     col_l1, col_l2, col_l3 = st.columns(3)
     with col_l1:
@@ -455,23 +454,37 @@ with tabs_topo[1]:
     with col_l3:
         preco_combustivel = st.number_input("Preço do Litro (R$)", min_value=0.0, value=6.80, step=0.10)
         
-    pedagio_total = st.number_input("Valor Total de Pedágios (R$)", min_value=0.0, value=0.00, step=5.0, format="%.2f")
+    col_est1, col_est2 = st.columns(2)
+    with col_est1:
+        pedagio_total = st.number_input("Valor Total de Pedágios (R$)", min_value=0.0, value=0.00, step=5.0, format="%.2f")
+    with col_est2:
+        custo_estacionamento = st.number_input("Estacionamento (R$)", min_value=0.0, value=0.00, step=5.0, format="%.2f")
 
     st.markdown("---")
-    st.markdown("##### 🏨 Hospedagem & Custos Operacionais")
-    col_h1, col_h2, col_h3 = st.columns(3)
+    st.markdown("##### 🏨 Hospedagem")
+    col_h1, col_h2 = st.columns(2)
     with col_h1:
         qtd_hosp = st.number_input("Qtd. Diárias Hospedagem", min_value=0, value=0, step=1)
-        val_hosp = st.number_input("R$ Hospedagem (diária)", min_value=0.0, value=250.00, step=10.0, format="%.2f")
     with col_h2:
-        custo_almoco = st.number_input("Almoço (R$)", min_value=0.0, value=0.00, step=5.0, format="%.2f")
-        custo_jantar = st.number_input("Jantar (R$)", min_value=0.0, value=0.00, step=5.0, format="%.2f")
-    with col_h3:
-        custo_estacionamento = st.number_input("Estacionamento (R$)", min_value=0.0, value=0.00, step=5.0, format="%.2f")
-        custo_freelancer = st.number_input("Freelancer (R$)", min_value=0.0, value=0.00, step=50.0, format="%.2f")
-        custo_outros = st.number_input("Outros (R$)", min_value=0.0, value=0.00, step=10.0, format="%.2f")
+        val_hosp = st.number_input("R$ Hospedagem (diária)", min_value=0.0, value=250.00, step=10.0, format="%.2f")
 
     custo_hospedagem_total = qtd_hosp * val_hosp
+
+    st.markdown("---")
+    st.markdown("##### 🍽️ Alimentação")
+    col_alim1, col_alim2 = st.columns(2)
+    with col_alim1:
+        custo_almoco = st.number_input("Almoço (R$)", min_value=0.0, value=0.00, step=5.0, format="%.2f")
+    with col_alim2:
+        custo_jantar = st.number_input("Jantar (R$)", min_value=0.0, value=0.00, step=5.0, format="%.2f")
+
+    st.markdown("---")
+    st.markdown("##### 🤝 Apoio & Outros Custos")
+    col_ap1, col_ap2 = st.columns(2)
+    with col_ap1:
+        custo_freelancer = st.number_input("Freelancer (R$)", min_value=0.0, value=0.00, step=50.0, format="%.2f")
+    with col_ap2:
+        custo_outros = st.number_input("Outros (R$)", min_value=0.0, value=0.00, step=10.0, format="%.2f")
 
     st.markdown("---")
     st.subheader("Impostos & Comissão")
@@ -486,11 +499,11 @@ with tabs_topo[1]:
     st.markdown("---")
     col_b1, col_b2 = st.columns(2)
     with col_b1:
-        if st.button("⬅️ Voltar", use_container_width=True):
+        if st.button("⬅️ Voltar", key="btn_voltar_aba1", use_container_width=True):
             st.session_state.active_tab = 0
             st.rerun()
     with col_b2:
-        if st.button("Avançar ➡️", use_container_width=True):
+        if st.button("Avançar ➡️", key="btn_avancar_aba1", use_container_width=True):
             st.session_state.active_tab = 2
             st.rerun()
 
@@ -524,7 +537,7 @@ with tabs_topo[2]:
             desconto_valor_input = st.number_input("Desconto em Valor Fixo (R$)", min_value=0.0, value=0.0, step=10.0, format="%.2f")
 
     st.markdown("---")
-    if st.button("⬅️ Voltar", use_container_width=True):
+    if st.button("⬅️ Voltar", key="btn_voltar_aba2", use_container_width=True):
         st.session_state.active_tab = 1
         st.rerun()
 
@@ -565,19 +578,19 @@ try:
     cons_m = consumo_medio if 'consumo_medio' in locals() else 11.5
     p_comb = preco_combustivel if 'preco_combustivel' in locals() else 6.8
     ped_tot = pedagio_total if 'pedagio_total' in locals() else 0.0
+    est_c = custo_estacionamento if 'custo_estacionamento' in locals() else 0.0
     
     litros_gastos = dist_iv / cons_m if cons_m > 0 else 0
     custo_combustivel = litros_gastos * p_comb
-    custo_logistica_total = custo_combustivel + ped_tot
+    custo_logistica_total = custo_combustivel + ped_tot + est_c
 
     hosp_tot = custo_hospedagem_total if 'custo_hospedagem_total' in locals() else 0.0
     alm_c = custo_almoco if 'custo_almoco' in locals() else 0.0
     jan_c = custo_jantar if 'custo_jantar' in locals() else 0.0
-    est_c = custo_estacionamento if 'custo_estacionamento' in locals() else 0.0
     free_c = custo_freelancer if 'custo_freelancer' in locals() else 0.0
     out_c = custo_outros if 'custo_outros' in locals() else 0.0
 
-    custo_total_operacional_log = custo_logistica_total + hosp_tot + alm_c + jan_c + est_c + free_c + out_c
+    custo_total_operacional_log = custo_logistica_total + hosp_tot + alm_c + jan_c + free_c + out_c
     
     imp_p = imposto_perc if 'imposto_perc' in locals() else 6.0
     com_p = comissao_perc if 'comissao_perc' in locals() else 0
@@ -598,10 +611,10 @@ except Exception:
     p_comb = 6.8
     custo_combustivel = 0.0
     ped_tot = 0.0
+    est_c = 0.0
     hosp_tot = 0.0
     alm_c = 0.0
     jan_c = 0.0
-    est_c = 0.0
     free_c = 0.0
     out_c = 0.0
     custo_total_interno = 0.0
@@ -653,10 +666,10 @@ dados_completos["litros_gastos"] = litros_gastos
 dados_completos["preco_combustivel"] = p_comb
 dados_completos["custo_combustivel"] = custo_combustivel
 dados_completos["pedagios"] = ped_tot
+dados_completos["custo_estacionamento"] = est_c
 dados_completos["custo_hospedagem_total"] = hosp_tot
 dados_completos["custo_almoco"] = alm_c
 dados_completos["custo_jantar"] = jan_c
-dados_completos["custo_estacionamento"] = est_c
 dados_completos["custo_freelancer"] = free_c
 dados_completos["custo_outros"] = out_c
 dados_completos["imposto_perc"] = imp_p if 'imp_p' in locals() else 6.0
@@ -677,7 +690,7 @@ with col_down1:
     st.download_button(
         label="📄 Baixar Proposta Comercial (Cliente)",
         data=pdf_cliente_bytes,
-        file_name=f"Proposta Comercial_{empresa.replace(' ', '_')}.pdf" if 'empresa' in locals() and empresa else "Proposta Comercial.pdf",
+        file_name=f"Proposta_Comercial_{empresa.replace(' ', '_')}.pdf" if 'empresa' in locals() and empresa else "Proposta_Comercial.pdf",
         mime="application/pdf",
         use_container_width=True
     )
@@ -687,7 +700,7 @@ with col_down2:
     st.download_button(
         label="🔒 Baixar Relatório Interno (Custos)",
         data=pdf_interno_bytes,
-        file_name=f"Relatorio Interno Custos_{empresa.replace(' ', '_')}.pdf" if 'empresa' in locals() and empresa else "Relatorio Interno Custos.pdf",
+        file_name=f"Relatorio_Interno_Custos_{empresa.replace(' ', '_')}.pdf" if 'empresa' in locals() and empresa else "Relatorio_Interno_Custos.pdf",
         mime="application/pdf",
         use_container_width=True
     )
