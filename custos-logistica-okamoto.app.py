@@ -573,7 +573,26 @@ try:
     lucro_liquido = valor_final - custo_total_interno
     margem_lucro = (lucro_liquido / valor_final * 100) if valor_final > 0 else 0
 except Exception:
-    valor_final, custo_total_interno, lucro_liquido, margem_lucro = 0.0, 0.0, 0.0, 0.0
+    valor_base = 0.0
+    valor_desconto_calculado = 0.0
+    valor_final = 0.0
+    dist_iv = 0
+    cons_m = 11.5
+    litros_gastos = 0.0
+    p_comb = 6.8
+    custo_combustivel = 0.0
+    ped_tot = 0.0
+    hosp_tot = 0.0
+    alm_c = 0.0
+    jan_c = 0.0
+    est_c = 0.0
+    free_c = 0.0
+    out_c = 0.0
+    custo_total_interno = 0.0
+    lucro_liquido = 0.0
+    margem_lucro = 0.0
+    valor_impostos = 0.0
+    valor_comissao = 0.0
 
 # QUADRO DE PRÉVIA EM TEMPO REAL FIXO ABAIXO DAS ABAS
 st.markdown("---")
@@ -591,29 +610,4 @@ dados_completos = {
     "empresa": empresa if 'empresa' in locals() else "",
     "telefone": telefone if 'telefone' in locals() else "",
     "email": email if 'email' in locals() else "",
-    "data_orcamento": data_orcamento if 'data_orcamento' in locals() else datetime.now(),
-    "data_evento": data_evento if 'data_evento' in locals() else datetime.now(),
-    "tem_data_termino": tem_data_termino if 'tem_data_termino' in locals() else False,
-    "data_termino": data_termino if 'data_termino' in locals() else datetime.now(),
-    "horario": horario if 'horario' in locals() else "08h00",
-    "nome_servico_input": nome_servico_input if 'nome_servico_input' in locals() else "",
-    "local": local if 'local' in locals() else "",
-    "cidade": cidade if 'cidade' in locals() else "Ribeirão Preto",
-    "estado": estado if 'estado' in locals() else "SP",
-    "tipo_servico": tipo_servico if 'tipo_servico' in locals() else "Evento social",
-    "outro_servico_nome": outro_servico_nome if 'outro_servico_nome' in locals() else "",
-    "carga_horaria_sel": carga_horaria_sel if 'carga_horaria_sel' in locals() else "1h",
-    "escopo_servico": escopo_servico if 'escopo_servico' in locals() else "",
-    "captacao": captacao if 'captacao' in locals() else "",
-    "validade_orcamento": validade_orcamento if 'validade_orcamento' in locals() else "05 dias",
-    "forma_entrega": forma_entrega if 'forma_entrega' in locals() else "",
-    "forma_pagamento_tipo": forma_pagamento_tipo if 'forma_pagamento_tipo' in locals() else "À vista",
-    "condicao_pagamento": condicao_pagamento if 'condicao_pagamento' in locals() else "PIX",
-    "desconto_perc": desp_perc,
-    "ajuste_manual": aj_man,
-    "valor_base": valor_base if 'valor_base' in locals() else 0.0,
-    "valor_desconto_calculado": valor_desconto_calculado,
-    "valor_final": valor_final,
-    "distancia": dist_iv,
-    "consumo_veiculo": cons_m,
-    "litros_gastos":
+    "data_orcamento": data_orc
