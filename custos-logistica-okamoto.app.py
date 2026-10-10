@@ -42,12 +42,11 @@ ESTADOS_BR = [
 
 st.set_page_config(page_title="Proposta Comercial & Custos - Okamoto Mídias Visuais", page_icon="📊", layout="wide")
 
-# CSS para dar um respiro no topo e evitar cortes na logo da aplicação
 st.markdown("""
     <style>
         .block-container {
             padding-top: 1.5rem !important;
-            padding-bottom: 3rem !important;
+            padding-bottom: 2rem !important;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -86,6 +85,11 @@ class NumberedCanvas(canvas.Canvas):
         full_txt = f"{t1}{separador}{t2}{separador}{t3}"
         self.drawCentredString(295, 24, full_txt)
         
+        # Links clicáveis ativos no rodapé do PDF
+        self.linkURL("https://okamotomidiasvisuais.com.br/", (105, 20, 215, 34), relative=0)
+        self.linkURL("mailto:contato@okamotomidiasvisuais.com.br", (230, 20, 395, 34), relative=0)
+        self.linkURL("https://wa.me/5516991332121", (410, 20, 485, 34), relative=0)
+        
         self.drawRightString(575, 24, f"Página {self._pageNumber} de {page_count}")
         self.restoreState()
 
@@ -101,6 +105,15 @@ def get_logo_pdf_path():
         caminho = "logo_okamoto.png"
     return caminho if os.path.exists(caminho) else None
 
+def criar_imagem_proporcional(path, target_width=150):
+    try:
+        im = PILImage.open(path)
+        orig_w, orig_h = im.size
+        target_height = int(target_width * (orig_h / orig_w))
+        return RLImage(path, width=target_width, height=target_height)
+    except Exception:
+        return RLImage(path, width=150, height=44)
+
 def gerar_pdf_cliente(dados):
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=35, rightMargin=35, topMargin=30, bottomMargin=50)
@@ -112,20 +125,20 @@ def gerar_pdf_cliente(dados):
     doc.title = f"Proposta comercial - {nome_serv_ev} - {data_ev_str}"
     
     styles = getSampleStyleSheet()
-    style_titulo = ParagraphStyle('TituloPDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=19, leading=23, alignment=1, textColor=colors.HexColor('#0f172a'))
-    style_servico_sub = ParagraphStyle('ServSubPDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=13, leading=17, alignment=1, textColor=colors.HexColor('#1e3a8a'))
-    style_corpo = ParagraphStyle('CorpoPDF', parent=styles['Normal'], fontName='Helvetica', fontSize=10, leading=15, textColor=colors.HexColor('#334155'))
-    style_bold = ParagraphStyle('BoldPDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=15, textColor=colors.HexColor('#0f172a'))
-    style_assinatura = ParagraphStyle('AssinaturaPDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10.5, leading=14, textColor=colors.HexColor('#0f172a'))
-    style_cat_titulo = ParagraphStyle('CatTitPDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=13, leading=16, textColor=colors.HexColor('#0f172a'))
-    style_destaque_1 = ParagraphStyle('Dest1PDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=16, leading=20, alignment=1, textColor=colors.HexColor('#0f172a'))
-    style_destaque_2 = ParagraphStyle('Dest2PDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=12, leading=16, alignment=1, textColor=colors.HexColor('#334155'))
+    style_titulo = ParagraphStyle('TituloPDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=18, leading=22, alignment=1, textColor=colors.HexColor('#0f172a'))
+    style_servico_sub = ParagraphStyle('ServSubPDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=13, leading=17, alignment=1, textColor=colors.HexColor('#0f172a')) # Preto conforme solicitado
+    style_corpo = ParagraphStyle('CorpoPDF', parent=styles['Normal'], fontName='Helvetica', fontSize=10, leading=14, textColor=colors.HexColor('#334155'))
+    style_bold = ParagraphStyle('BoldPDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=14, textColor=colors.HexColor('#0f172a'))
+    style_assinatura = ParagraphStyle('AssinaturaPDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=14, textColor=colors.HexColor('#0f172a'))
+    style_cat_titulo = ParagraphStyle('CatTitPDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=12, leading=15, textColor=colors.HexColor('#0f172a'))
+    style_destaque_1 = ParagraphStyle('Dest1PDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=15, leading=19, alignment=1, textColor=colors.HexColor('#0f172a'))
+    style_destaque_2 = ParagraphStyle('Dest2PDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, leading=15, alignment=1, textColor=colors.HexColor('#334155'))
     
     story = []
 
     logo_path = get_logo_pdf_path()
     if logo_path:
-        img = RLImage(logo_path, width=150, height=44)
+        img = criar_imagem_proporcional(logo_path, target_width=150)
         img.hAlign = 'CENTER'
         story.append(img)
     else:
@@ -141,7 +154,7 @@ def gerar_pdf_cliente(dados):
     story.append(Paragraph("Proposta Comercial", style_titulo))
     story.append(Spacer(1, 4))
     story.append(Paragraph(f"{nome_serv_ev}", style_servico_sub))
-    story.append(Spacer(1, 14))
+    story.append(Spacer(1, 20)) # Maior folga e respiro solicitada
     
     story.append(Paragraph("<b>1. Dados do cliente:</b>", style_bold))
     story.append(Spacer(1, 4))
@@ -184,12 +197,12 @@ def gerar_pdf_cliente(dados):
     story.append(Spacer(1, 10))
     
     story.append(Paragraph(f"<b>9. Validade do orçamento:</b> {dados['validade_orcamento']}", style_corpo))
-    story.append(Spacer(1, 14))
+    story.append(Spacer(1, 18)) # Mais espaço antes do quadro
     
     val_fmt = fmt_brl(dados['valor_final'])
     texto_valor = f"<b>VALOR TOTAL DO INVESTIMENTO ({dados['carga_horaria_sel']}):</b><br/>{val_fmt}"
         
-    p_valor = Paragraph(texto_valor, ParagraphStyle('ValBox', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=13, leading=17, alignment=1, textColor=colors.HexColor('#1e3a8a')))
+    p_valor = Paragraph(texto_valor, ParagraphStyle('ValBox', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=12, leading=16, alignment=1, textColor=colors.HexColor('#1e3a8a')))
     t_valor_box = Table([[p_valor]], colWidths=[380])
     t_valor_box.hAlign = 'CENTER'
     t_valor_box.setStyle(TableStyle([
@@ -202,7 +215,7 @@ def gerar_pdf_cliente(dados):
         ('ROUNDEDCORNERS', [8, 8, 8, 8]),
     ]))
     story.append(t_valor_box)
-    story.append(Spacer(1, 14))
+    story.append(Spacer(1, 18)) # Mais espaço depois do quadro
     
     story.append(Paragraph("Ficamos à disposição para quaisquer esclarecimentos e ajustes, caso necessário.", style_corpo))
     story.append(Spacer(1, 12))
@@ -213,7 +226,7 @@ def gerar_pdf_cliente(dados):
     story.append(PageBreak())
     
     if logo_path:
-        img_inst = RLImage(logo_path, width=150, height=44)
+        img_inst = criar_imagem_proporcional(logo_path, target_width=150)
         img_inst.hAlign = 'CENTER'
         story.append(img_inst)
     else:
@@ -233,7 +246,7 @@ def gerar_pdf_cliente(dados):
     story.append(Paragraph(topicos_inst, style_corpo))
     story.append(Spacer(1, 18))
     
-    style_dados_normal = ParagraphStyle('DadosNormais', parent=styles['Normal'], fontName='Helvetica', fontSize=10, leading=15, textColor=colors.HexColor('#334155'))
+    style_dados_normal = ParagraphStyle('DadosNormais', parent=styles['Normal'], fontName='Helvetica', fontSize=10, leading=14, textColor=colors.HexColor('#334155'))
     
     story.append(Paragraph("Dados da Empresa", style_cat_titulo))
     story.append(Spacer(1, 4))
@@ -264,18 +277,18 @@ def gerar_pdf_interno(dados):
     doc.title = f"Relatório de custos - {nome_serv_ev} - {data_ev_str}"
     
     styles = getSampleStyleSheet()
-    style_titulo = ParagraphStyle('TitInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=16, leading=19, alignment=1, textColor=colors.HexColor('#0f172a'))
-    style_subtitulo = ParagraphStyle('SubInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, leading=15, textColor=colors.HexColor('#1e3a8a'))
-    style_corpo = ParagraphStyle('CorpoInt', parent=styles['Normal'], fontName='Helvetica', fontSize=9.5, leading=14, textColor=colors.HexColor('#000000'))
-    style_bold = ParagraphStyle('BoldInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9.5, leading=14, textColor=colors.HexColor('#000000'))
-    style_destaque_fat = ParagraphStyle('FatInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, leading=14, textColor=colors.HexColor('#1e3a8a'))
-    style_destaque_lucro = ParagraphStyle('LucInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=12, leading=15, textColor=colors.HexColor('#047857'))
+    style_titulo = ParagraphStyle('TitInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=15, leading=18, alignment=1, textColor=colors.HexColor('#0f172a'))
+    style_subtitulo = ParagraphStyle('SubInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10.5, leading=14, textColor=colors.HexColor('#1e3a8a'))
+    style_corpo = ParagraphStyle('CorpoInt', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=13, textColor=colors.HexColor('#000000'))
+    style_bold = ParagraphStyle('BoldInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9, leading=13, textColor=colors.HexColor('#000000'))
+    style_destaque_fat = ParagraphStyle('FatInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=13, textColor=colors.HexColor('#1e3a8a'))
+    style_destaque_lucro = ParagraphStyle('LucInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, leading=14, textColor=colors.HexColor('#047857'))
     
     story = []
 
     logo_path = get_logo_pdf_path()
     if logo_path:
-        img_int = RLImage(logo_path, width=140, height=41)
+        img_int = criar_imagem_proporcional(logo_path, target_width=140)
         img_int.hAlign = 'CENTER'
         story.append(img_int)
     else:
@@ -283,7 +296,7 @@ def gerar_pdf_interno(dados):
         
     story.append(Spacer(1, 14))
     story.append(Paragraph("Relatório de Custos", style_titulo))
-    story.append(Spacer(1, 14))
+    story.append(Spacer(1, 24)) # 1 linha a mais de espaço após Relatório de Custos
     
     data_fim_str = dados['data_termino'].strftime('%d/%m/%Y') if dados['tem_data_termino'] else data_ev_str
     local_txt = dados['local'] if dados['local'] else "Local a definir"
@@ -376,7 +389,7 @@ def gerar_pdf_interno(dados):
     buffer.seek(0)
     return buffer
 
-# LOGO DO APP NO TOPO (logo_okamoto.png) com espaçamento corrigido para não cortar
+# LOGO DO APP NO TOPO (logo_okamoto.png)
 logo_app_path = get_logo_app_path()
 if logo_app_path:
     col_vazia1, col_logo, col_vazia2 = st.columns([1, 2, 1])
@@ -387,7 +400,6 @@ st.markdown("<h1 style='text-align: center; margin-top: 1rem;'>⚡ Sistema de Pr
 st.markdown("<p style='text-align: center; color: #64748b;'>Gerencie orçamentos comerciais, analise a viabilidade interna e gere documentação profissional em PDF.</p>", unsafe_allow_html=True)
 st.markdown("---")
 
-# GERENCIAMENTO DE ABAS COM SESSION_STATE
 if 'current_tab_idx' not in st.session_state:
     st.session_state.current_tab_idx = 0
 
@@ -454,8 +466,8 @@ if st.session_state.current_tab_idx == 0:
 
     default_escopo = f"{nome_serv_atual}\n{data_str_escopo}\n{st.session_state.horario if st.session_state.horario else 'Horário a definir'}\n{st.session_state.local if st.session_state.local else 'Local a definir'}\n{st.session_state.cidade} - {st.session_state.estado}\n01 (um) profissional".strip()
     
-    st.session_state.escopo_servico = st.text_area("Escopo do serviço", st.session_state.get("escopo_servico", default_escopo), height=150)
-    st.session_state.captacao = st.text_area("Captação", st.session_state.get("captacao", "Cobertura profissional com equipamentos de alto padrão"), height=80)
+    st.session_state.escopo_servico = st.text_area("Escopo do serviço", st.session_state.get("escopo_servico", default_escopo), height=110)
+    st.session_state.captacao = st.text_area("Captação", st.session_state.get("captacao", "Cobertura profissional com equipamentos de alto padrão"), height=70)
     
     st.markdown("---")
     if st.button("Avançar ➡️", key="btn_avancar_aba0", use_container_width=True):
@@ -539,7 +551,8 @@ elif st.session_state.current_tab_idx == 2:
         cp_idx = cp_opcoes.index(st.session_state.get("condicao_pagamento", "PIX")) if st.session_state.get("condicao_pagamento", "PIX") in cp_opcoes else 0
         st.session_state.condicao_pagamento = st.selectbox("Condições de Pagamento", cp_opcoes, index=cp_idx)
     with col_p3:
-        st.session_state.prazo_pagamento_dias = st.number_input("Prazo de Pagamento (dias)", min_value=0, value=st.session_state.get("prazo_pagamento_dias", 5), step=1, format="%d")
+        # Prazo de pagamento restrito de 1 a 45 dias conforme solicitado
+        st.session_state.prazo_pagamento_dias = st.number_input("Prazo de Pagamento (dias)", min_value=1, max_value=45, value=st.session_state.get("prazo_pagamento_dias", 5), step=1, format="%d")
 
     dias_txt = f"em até {st.session_state.prazo_pagamento_dias} dias" if st.session_state.prazo_pagamento_dias > 0 else "à vista"
     parcelas_cartao = 1
