@@ -393,4 +393,111 @@ if 'dados' not in st.session_state:
         "atributos_ok": False, "resposta_avaliacoes_ok": False, "categorias_detectadas": [], "foto_reference": ""
     }
 
-if 'concorrentes'
+if 'concorrentes' not in st.session_state:
+    st.session_state['concorrentes'] = [
+        {"nome": "", "nota": 0.0, "avaliacoes": 0, "busca_termo": "", "cidade": "", "tem_fotos_hd": "Não", "tem_tour360": "Não", "categorias_ok": "Não", "horarios_ok": "Não", "tem_website": "Não", "tem_descricao": "Não", "atributos_ok": "Não", "respostas_ok": "Não"},
+        {"nome": "", "nota": 0.0, "avaliacoes": 0, "busca_termo": "", "cidade": "", "tem_fotos_hd": "Não", "tem_tour360": "Não", "categorias_ok": "Não", "horarios_ok": "Não", "tem_website": "Não", "tem_descricao": "Não", "atributos_ok": "Não", "respostas_ok": "Não"},
+        {"nome": "", "nota": 0.0, "avaliacoes": 0, "busca_termo": "", "cidade": "", "tem_fotos_hd": "Não", "tem_tour360": "Não", "categorias_ok": "Não", "horarios_ok": "Não", "tem_website": "Não", "tem_descricao": "Não", "atributos_ok": "Não", "respostas_ok": "Não"}
+    ]
+
+if 'planos' not in st.session_state:
+    st.session_state['planos'] = {
+        "start_valor": "500,00", "start_itens": "- Correção cadastral\n- Otimização de SEO\n- Ajuste de categorias\n- Inserção de links",
+        "pro_valor": "1.500,00", "pro_itens": "- Tudo do Plano Start\n- Tour Virtual 360°\n- Ensaio Fotográfico\n- Relatório Visual de Entrega",
+        "gestao_valor": "600,00", "gestao_itens": "- Postagens semanais\n- Gestão de avaliações\n- Atualização de fotos\n- Relatório mensal"
+    }
+
+if 'plano_acao_extra' not in st.session_state:
+    st.session_state['plano_acao_extra'] = "O perfil precisa de otimização urgente! Veja as falhas apontadas no relatório."
+
+if 'unidades_encontradas' not in st.session_state:
+    st.session_state['unidades_encontradas'] = []
+
+# -----------------------------------------------------------------------------
+# 5. GERADOR DE PDF INTELIGENTE
+# -----------------------------------------------------------------------------
+class PDFTour360Oficial(FPDF):
+    def __init__(self, *args, **kwargs):
+        self.capa_incluida = kwargs.pop('capa_incluida', True)
+        self.exibir_numeracao = kwargs.pop('exibir_numeracao', False)
+        super().__init__(*args, **kwargs)
+
+    def header(self):
+        if self.page_no() == 1 and self.capa_incluida:
+            return
+        
+        caminho_logo = obter_caminho_logo("tour360")
+        if caminho_logo:
+            try: self.image(caminho_logo, 21, 8.0, 11, 11)
+            except Exception: pass
+            
+        self.set_xy(35, 9.2)
+        self.set_font('Helvetica', 'B', 10.0)
+        self.set_text_color(30, 64, 175)
+        self.cell(163, 4.0, 'Tour360VR', align='L', ln=True)
+        
+        self.set_x(35)
+        self.set_font('Helvetica', 'B', 7.2)
+        self.set_text_color(100, 116, 139)
+        self.cell(163, 3.8, conv('Gestão de Perfil & Diagnóstico do Google Meu Negócio'), align='L', ln=True)
+        self.set_draw_color(226, 232, 240)
+        self.line(21, 21.0, 198, 21.0)
+
+    def footer(self):
+        self.set_y(-16)
+        self.set_font('Helvetica', '', 8.5)
+        self.set_text_color(100, 116, 139)
+        self.line(21, self.get_y(), 198, self.get_y())
+        self.set_y(-13)
+        
+        if self.page_no() == 1 and self.capa_incluida:
+            self.set_x(21)
+            self.set_font('Helvetica', 'B', 10.5)
+            self.set_text_color(30, 64, 175)
+            self.cell(177, 5, conv("Tour360VR - (16) 99133-2121 - Ribeirão Preto - SP"), align='C')
+        else:
+            self.set_x(35)
+            self.cell(45, 5, 'contato@tour360vr.com.br', link='mailto:contato@tour360vr.com.br', align='C')
+            self.cell(40, 5, 'tour360vr.com.br', link='https://tour360vr.com.br', align='C')
+            self.cell(45, 5, 'WhatsApp: (16) 99133-2121', link='https://wa.me/5516991332121', align='C')
+            if self.exibir_numeracao:
+                self.set_x(170)
+                self.cell(28, 5, f'Página {self.page_no()} de 4', align='R')
+
+    def rounded_rect(self, x, y, w, h, r, style=''):
+        k, hp = self.k, self.h
+        op = 'f' if style == 'F' else ('B' if style in ['FD', 'DF'] else 'S')
+        my_arc = 4/3 * (2**0.5 - 1)
+        self._out(f'{(x+r)*k:.2f} {(hp-y)*k:.2f} m')
+        xc, yc = x + w - r, y + r
+        self._out(f'{xc*k:.2f} {(hp-y)*k:.2f} l')
+        self._arc(xc + r*my_arc, yc - r, xc + r, yc - r*my_arc, xc + r, yc)
+        xc, yc = x + w - r, y + h - r
+        self._out(f'{(x+w)*k:.2f} {(hp-yc)*k:.2f} l')
+        self._arc(xc + r, yc + r*my_arc, xc + r*my_arc, yc + r, xc, yc + r)
+        xc, yc = x + r, y + h - r
+        self._out(f'{(x+r)*k:.2f} {(hp-(y+h))*k:.2f} l')
+        self._arc(xc - r*my_arc, yc + r, xc - r, yc + r*my_arc, xc - r, yc)
+        xc, yc = x + r, y + r
+        self._out(f'{x*k:.2f} {(hp-yc)*k:.2f} l')
+        self._arc(xc - r, yc - r*my_arc, xc - r*my_arc, yc - r, xc, yc - r)
+        self._out(f'{op}')
+
+    def _arc(self, x1, y1, x2, y2, x3, y3):
+        k, hp = self.k, self.h
+        self._out(f'{x1*k:.2f} {(hp-y1)*k:.2f} {x2*k:.2f} {(hp-y2)*k:.2f} {x3*k:.2f} {(hp-y3)*k:.2f} c')
+
+def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], paginas_selecionadas=[1, 2, 3, 4]):
+    score = calcular_score_real(dados)
+    capa_presente = 1 in paginas_selecionadas
+    exibir_num = len(paginas_selecionadas) == 4
+    
+    pdf = PDFTour360Oficial(capa_incluida=capa_presente, exibir_numeracao=exibir_num)
+    pdf.set_margins(21, 12, 12)
+    pdf.set_auto_page_break(auto=False)
+
+    # PÁGINA 1: CAPA
+    if 1 in paginas_selecionadas:
+        pdf.add_page()
+        caminho_logo = obter_caminho_logo("tour360")
+        if caminho_
