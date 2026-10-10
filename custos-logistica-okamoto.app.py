@@ -42,11 +42,11 @@ ESTADOS_BR = [
 
 st.set_page_config(page_title="Proposta Comercial & Custos - Okamoto Mídias Visuais", page_icon="📊", layout="wide")
 
-# CSS para zerar o padding superior padrão do Streamlit e colar a logo no topo exato
+# CSS para dar um respiro no topo e evitar cortes na logo da aplicação
 st.markdown("""
     <style>
         .block-container {
-            padding-top: 0rem !important;
+            padding-top: 1.5rem !important;
             padding-bottom: 3rem !important;
         }
     </style>
@@ -78,22 +78,13 @@ class NumberedCanvas(canvas.Canvas):
         self.setLineWidth(0.75)
         self.line(35, 38, 575, 38)
         
-        # Textos do rodapé centralizados
         t1 = "okamotomidiasvisuais.com.br"
         t2 = "contato@okamotomidiasvisuais.com.br"
         t3 = "WhatsApp: 16 99133 2121"
         separador = "    |    "
         
         full_txt = f"{t1}{separador}{t2}{separador}{t3}"
-        
-        # Desenhando o texto centralizado no rodapé
         self.drawCentredString(295, 24, full_txt)
-        
-        # Adicionando links clicáveis limpos via coordenadas do canvas
-        # Coordenadas aproximadas para as áreas clicáveis dos links
-        self.linkURL("https://okamotomidiasvisuais.com.br/", (105, 22, 215, 34), relative=0)
-        self.linkURL("mailto:contato@okamotomidiasvisuais.com.br", (230, 22, 395, 34), relative=0)
-        self.linkURL("https://wa.me/5516991332121", (410, 22, 485, 34), relative=0)
         
         self.drawRightString(575, 24, f"Página {self._pageNumber} de {page_count}")
         self.restoreState()
@@ -385,7 +376,7 @@ def gerar_pdf_interno(dados):
     buffer.seek(0)
     return buffer
 
-# LOGO DO APP NO TOPO (logo_okamoto.png)
+# LOGO DO APP NO TOPO (logo_okamoto.png) com espaçamento corrigido para não cortar
 logo_app_path = get_logo_app_path()
 if logo_app_path:
     col_vazia1, col_logo, col_vazia2 = st.columns([1, 2, 1])
