@@ -68,12 +68,13 @@ class ModernFooterCanvas(canvas.Canvas):
 def get_logo_path():
     caminho = "logo_okamoto.png"
     try:
-        img = PILImage.new('RGB', (1200, 350), (255, 255, 255))
-        d = ImageDraw.Draw(img)
-        d.rectangle([0, 0, 1200, 350], fill=(255, 255, 255))
-        d.text((50, 80), "OKAMOTO", fill="#0f172a")
-        d.text((50, 180), "MÍDIAS VISUAIS", fill="#64748b")
-        img.save(caminho, "PNG")
+        if not os.path.exists(caminho):
+            img = PILImage.new('RGB', (1200, 350), (255, 255, 255))
+            d = ImageDraw.Draw(img)
+            d.rectangle([0, 0, 1200, 350], fill=(255, 255, 255))
+            d.text((50, 80), "OKAMOTO", fill="#0f172a")
+            d.text((50, 180), "MÍDIAS VISUAIS", fill="#64748b")
+            img.save(caminho, "PNG")
         return caminho
     except Exception:
         if os.path.exists(caminho):
@@ -382,15 +383,22 @@ def gerar_pdf_interno(dados):
     buffer.seek(0)
     return buffer
 
-st.title("⚡ Sistema de Propostas & Custos")
-st.markdown("Gerencie orçamentos comerciais, analise a viabilidade interna e gere documentação profissional em PDF.")
+# HEADER PRINCIPAL COM LOGO DO SISTEMA
+logo_sys_path = get_logo_path()
+if logo_sys_path:
+    col_l_img, col_l_txt = st.columns([1, 4])
+    with col_l_img:
+        st.image(logo_sys_path, width=160)
+    with col_l_txt:
+        st.title("⚡ Sistema de Propostas & Custos")
+        st.markdown("Gerencie orçamentos comerciais, analise a viabilidade interna e gere documentação profissional em PDF.")
+else:
+    st.title("⚡ Sistema de Propostas & Custos")
+    st.markdown("Gerencie orçamentos comerciais, analise a viabilidade interna e gere documentação profissional em PDF.")
 
-logo_path = get_logo_path()
-if logo_path:
-    col_img1, col_img2, col_img3 = st.columns([1, 2, 1])
-    with col_img2:
-        st.image(logo_path, width=340)
+st.markdown("---")
 
+# CAMPOS GLOBAIS (VARIÁVEIS COMPARTILHADAS)
 tabs_topo = st.tabs(["1. Dados & Serviços", "2. Custos & Logística", "3. Prazos, Resumo & Relatórios"])
 
 with tabs_topo[0]:
@@ -434,14 +442,6 @@ with tabs_topo[0]:
         outro_servico_nome = st.text_input("Especifique o nome do serviço", "")
 
     carga_horaria_sel = st.selectbox("Carga Horária", OPCOES_CARGA_HORARIA)
-    
-    tipo_desc_modo = st.radio("Modalidade de Desconto", ["Porcentagem (%)", "Valor Fixo (R$)"], horizontal=True)
-    if tipo_desc_modo == "Porcentagem (%)":
-        desconto_perc = st.slider("Desconto (%)", min_value=0.0, max_value=50.0, value=0.0, step=0.5)
-        desconto_valor_input = 0.0
-    else:
-        desconto_perc = 0.0
-        desconto_valor_input = st.number_input("Desconto em Valor Fixo (R$)", min_value=0.0, value=0.0, step=10.0, format="%.2f")
 
     st.markdown("---")
     st.subheader("3. Detalhamento Técnico (Escopo & Captação)")
@@ -505,12 +505,25 @@ with tabs_topo[1]:
     with col_op1:
         imposto_perc = st.number_input("Alíquota de Impostos / Notas (%)", min_value=0.0, max_value=30.0, value=6.0, step=0.5)
     with col_op2:
-        comissao_perc = st.number_input("Comissão (%)", min_value=0.0, max_value=50.0, value=0.0, step=0.5)
+        comissao_perc = st.number_input("Comissão (%)", min_value=0, max_value=50, value=0, step=1, format="%d")
     with col_op3:
         ajuste_manual = st.number_input("Ajuste Manual do Valor Final (R$ (+ ou -))", value=0.0, step=10.0, format="%.2f")
 
 with tabs_topo[2]:
-    st.subheader("Condições Comerciais & Pagamento")
+    st.subheader("Descontos, Condições Comerciais & Pagamento")
+    
+    col_desc1, col_desc2 = st.columns(2)
+    with col_desc1:
+        tipo_desc_modo = st.radio("Modalidade de Desconto", ["Porcentagem (%)", "Valor Fixo (R$)"], horizontal=True)
+    with col_desc2:
+        if tipo_desc_modo == "Porcentagem (%)":
+            desconto_perc = st.slider("Desconto (%)", min_value=0.0, max_value=50.0, value=0.0, step=0.5)
+            desconto_valor_input = 0.0
+        else:
+            desconto_perc = 0.0
+            desconto_valor_input = st.number_input("Desconto em Valor Fixo (R$)", min_value=0.0, value=0.0, step=10.0, format="%.2f")
+
+    st.markdown("---")
     validade_orcamento = st.text_input("Validade do Orçamento", "05 dias")
     forma_entrega = st.text_input("Forma de entrega", "Link exclusivo para download, disponível por 30 dias.")
     
@@ -525,13 +538,15 @@ with tabs_topo[2]:
         parcelas_cartao = st.number_input("Cartão de Crédito parcelado em X vezes", min_value=1, max_value=12, value=3)
         condicao_pagamento = f"{condicao_pagamento} em {parcelas_cartao}X"
 
+# DECLARAÇÃO DE VARIÁVEIS GLOBAIS DE CÁLCULO PARA O QUADRO EM TEMPO REAL
+try:
     servico_nome = tipo_servico if tipo_servico != "Outro" else outro_servico_nome
-    nome_serv_ev = nome_servico_input if nome_servico_input else servico_nome
-
+    nome_serv_ev = nome_servico_input if 'nome_servico_input' in locals() and nome_servico_input else servico_nome
+    
     tabela_atual = TABELAS_SERVICOS.get(tipo_servico, TABELAS_SERVICOS["Evento social"])
     
     dias_evento = 1
-    if tem_data_termino:
+    if 'tem_data_termino' in locals() and tem_data_termino:
         dias_evento = max(1, (data_termino - data_evento).days + 1)
 
     if "diária" in carga_horaria_sel:
@@ -544,105 +559,70 @@ with tabs_topo[2]:
         if horas_num > 12:
             valor_base += (horas_num - 12) * tabela_atual.get(1, 180.0) * dias_evento
 
-    if desconto_perc > 0:
-        valor_desconto_calculado = valor_base * (desconto_perc / 100.0)
+    desp_perc = desconto_perc if 'desconto_perc' in locals() else 0.0
+    desp_val = desconto_valor_input if 'desconto_valor_input' in locals() else 0.0
+    aj_man = ajuste_manual if 'ajuste_manual' in locals() else 0.0
+    
+    if desp_perc > 0:
+        valor_desconto_calculado = valor_base * (desp_perc / 100.0)
     else:
-        valor_desconto_calculado = desconto_valor_input
+        valor_desconto_calculado = desp_val
 
-    valor_intermediario = valor_base - valor_desconto_calculado + ajuste_manual
+    valor_intermediario = valor_base - valor_desconto_calculado + aj_man
     valor_final = max(0.0, valor_intermediario)
 
-    litros_gastos = distancia_ida_volta / consumo_medio if consumo_medio > 0 else 0
-    custo_combustivel = litros_gastos * preco_combustivel
-    custo_logistica_total = custo_combustivel + pedagio_total
+    dist_iv = distancia_ida_volta if 'distancia_ida_volta' in locals() else 0
+    cons_m = consumo_medio if 'consumo_medio' in locals() else 11.5
+    p_comb = preco_combustivel if 'preco_combustivel' in locals() else 6.8
+    ped_tot = pedagio_total if 'pedagio_total' in locals() else 0.0
+    
+    litros_gastos = dist_iv / cons_m if cons_m > 0 else 0
+    custo_combustivel = litros_gastos * p_comb
+    custo_logistica_total = custo_combustivel + ped_tot
 
-    custo_total_operacional_log = custo_logistica_total + custo_hospedagem_total + custo_almoco + custo_jantar + custo_estacionamento + custo_freelancer + custo_outros
-    valor_impostos = valor_final * (imposto_perc / 100.0)
-    valor_comissao = valor_final * (comissao_perc / 100.0)
+    hosp_tot = custo_hospedagem_total if 'custo_hospedagem_total' in locals() else 0.0
+    alm_c = custo_almoco if 'custo_almoco' in locals() else 0.0
+    jan_c = custo_jantar if 'custo_jantar' in locals() else 0.0
+    est_c = custo_estacionamento if 'custo_estacionamento' in locals() else 0.0
+    free_c = custo_freelancer if 'custo_freelancer' in locals() else 0.0
+    out_c = custo_outros if 'custo_outros' in locals() else 0.0
+
+    custo_total_operacional_log = custo_logistica_total + hosp_tot + alm_c + jan_c + est_c + free_c + out_c
+    
+    imp_p = imposto_perc if 'imposto_perc' in locals() else 6.0
+    com_p = comissao_perc if 'comissao_perc' in locals() else 0
+    
+    valor_impostos = valor_final * (imp_p / 100.0)
+    valor_comissao = valor_final * (com_p / 100.0)
     
     custo_total_interno = custo_total_operacional_log + valor_impostos + valor_comissao
     lucro_liquido = valor_final - custo_total_interno
     margem_lucro = (lucro_liquido / valor_final * 100) if valor_final > 0 else 0
+except Exception:
+    valor_final, custo_total_interno, lucro_liquido, margem_lucro = 0.0, 0.0, 0.0, 0.0
 
-    st.markdown("---")
-    st.subheader("📊 Painel Resumo: Cliente vs. Interno")
-    col_res1, col_res2, col_res3, col_res4 = st.columns(4)
-    col_res1.metric("Valor para o Cliente", fmt_brl(valor_final))
-    col_res2.metric("Custos Operacionais", fmt_brl(custo_total_interno))
-    col_res3.metric("Lucro Líquido Est.", fmt_brl(lucro_liquido))
-    col_res4.metric("Margem de Lucro", f"{margem_lucro:.1f}%")
+# QUADRO DE PRÉVIA EM TEMPO REAL (FIXO / VISÍVEL EM TODAS AS ETAPAS)
+st.markdown("---")
+st.markdown("### 📈 Quadro de Prévia em Tempo Real (Visão Geral)")
+col_res1, col_res2, col_res3, col_res4 = st.columns(4)
+col_res1.metric("Valor para o Cliente", fmt_brl(valor_final))
+col_res2.metric("Custos Operacionais", fmt_brl(custo_total_interno))
+col_res3.metric("Lucro Líquido Est.", fmt_brl(lucro_liquido))
+col_res4.metric("Margem de Lucro", f"{margem_lucro:.1f}%")
 
-    st.info(f"💡 **Prévia em tempo real do serviço:** {servico_nome} ({nome_serv_ev if nome_serv_ev else 'Geral'}) — **Investimento Total:** {fmt_brl(valor_final)} | **Lucro Est.:** {fmt_brl(lucro_liquido)} ({margem_lucro:.1f}%)")
+st.info(f"💡 **Serviço Selecionado:** {servico_nome} ({nome_serv_ev if nome_serv_ev else 'Geral'}) — **Investimento Total:** {fmt_brl(valor_final)} | **Lucro Est.:** {fmt_brl(lucro_liquido)} ({margem_lucro:.1f}%)")
 
-    dados_completos = {
-        "contato": contato,
-        "empresa": empresa,
-        "telefone": telefone,
-        "email": email,
-        "data_orcamento": data_orcamento,
-        "data_evento": data_evento,
-        "tem_data_termino": tem_data_termino,
-        "data_termino": data_termino,
-        "horario": horario,
-        "nome_servico_input": nome_servico_input,
-        "local": local,
-        "cidade": cidade,
-        "estado": estado,
-        "tipo_servico": tipo_servico,
-        "outro_servico_nome": outro_servico_nome,
-        "carga_horaria_sel": carga_horaria_sel,
-        "escopo_servico": escopo_servico,
-        "captacao": captacao,
-        "validade_orcamento": validade_orcamento,
-        "forma_entrega": forma_entrega,
-        "forma_pagamento_tipo": forma_pagamento_tipo,
-        "condicao_pagamento": condicao_pagamento,
-        "desconto_perc": desconto_perc,
-        "ajuste_manual": ajuste_manual,
-        "valor_base": valor_base,
-        "valor_desconto_calculado": valor_desconto_calculado,
-        "valor_final": valor_final,
-        "distancia": distancia_ida_volta,
-        "consumo_veiculo": consumo_medio,
-        "litros_gastos": litros_gastos,
-        "preco_combustivel": preco_combustivel,
-        "custo_combustivel": custo_combustivel,
-        "pedagios": pedagio_total,
-        "custo_hospedagem_total": custo_hospedagem_total,
-        "custo_almoco": custo_almoco,
-        "custo_jantar": custo_jantar,
-        "custo_estacionamento": custo_estacionamento,
-        "custo_freelancer": custo_freelancer,
-        "custo_outros": custo_outros,
-        "imposto_perc": imposto_perc,
-        "valor_impostos": valor_impostos,
-        "comissao_perc": comissao_perc,
-        "valor_comissao": valor_comissao,
-        "custo_total_interno": custo_total_interno,
-        "lucro_liquido": lucro_liquido,
-        "margem_lucro": margem_lucro
-    }
-
-    st.markdown("---")
-    st.markdown("### 📥 Geração de Documentos (PDF)")
-    col_down1, col_down2 = st.columns(2)
-
-    with col_down1:
-        pdf_cliente_bytes = gerar_pdf_cliente(dados_completos)
-        st.download_button(
-            label="📄 Baixar Proposta Comercial (Cliente)",
-            data=pdf_cliente_bytes,
-            file_name=f"Proposta_Comercial_{empresa.replace(' ', '_')}.pdf" if empresa else "Proposta_Comercial.pdf",
-            mime="application/pdf",
-            use_container_width=True
-        )
-
-    with col_down2:
-        pdf_interno_bytes = gerar_pdf_interno(dados_completos)
-        st.download_button(
-            label="🔒 Baixar Relatório Interno (Custos)",
-            data=pdf_interno_bytes,
-            file_name=f"Relatorio_Interno_Custos_{empresa.replace(' ', '_')}.pdf" if empresa else "Relatorio_Interno_Custos.pdf",
-            mime="application/pdf",
-            use_container_width=True
-        )
+dados_completos = {
+    "contato": contato if 'contato' in locals() else "",
+    "empresa": empresa if 'empresa' in locals() else "",
+    "telefone": telefone if 'telefone' in locals() else "",
+    "email": email if 'email' in locals() else "",
+    "data_orcamento": data_orcamento if 'data_orcamento' in locals() else datetime.now(),
+    "data_evento": data_evento if 'data_evento' in locals() else datetime.now(),
+    "tem_data_termino": tem_data_termino if 'tem_data_termino' in locals() else False,
+    "data_termino": data_termino if 'data_termino' in locals() else datetime.now(),
+    "horario": horario if 'horario' in locals() else "08h00",
+    "nome_servico_input": nome_servico_input if 'nome_servico_input' in locals() else "",
+    "local": local if 'local' in locals() else "",
+    "cidade": cidade if 'cidade' in locals() else "Ribeirão Preto",
+    "estado": estado if '
