@@ -46,9 +46,9 @@ ESTADOS_BR = [
 st.set_page_config(page_title="Proposta Comercial & Custos - Okamoto Mídias Visuais", page_icon="📊", layout="wide")
 
 # ==========================================
-# CANVAS COM LINKS ATIVOS SEGUROS NO RODAPÉ
+# CANVAS LIMPO PARA NUMERAÇÃO E LINHA DE RODAPÉ
 # ==========================================
-class ActiveFooterCanvas(canvas.Canvas):
+class CleanFooterCanvas(canvas.Canvas):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._saved_page_states = []
@@ -60,34 +60,16 @@ class ActiveFooterCanvas(canvas.Canvas):
     def save(self):
         for state in self._saved_page_states:
             self.__dict__.update(state)
-            self.draw_fixed_footer()
+            self.draw_footer_line()
             super().showPage()
         super().save()
 
-    def draw_fixed_footer(self):
+    def draw_footer_line(self):
         self.saveState()
-        self.setFont("Helvetica", 8)
-        self.setFillColor(colors.HexColor("#64748b"))
-        
-        # Linha separadora do rodapé
         self.setStrokeColor(colors.HexColor("#cbd5e1"))
         self.setLineWidth(0.5)
+        # Linha separadora discreta no rodapé inferior
         self.line(35, 38, 575, 38)
-        
-        # Textos e links clicáveis ativos via canvas (sem conflito de nomes)
-        self.drawString(35, 24, "Okamoto Mídias Visuais")
-        
-        self.linkURL("https://okamotomidiasvisuais.com.br", (160, 22, 295, 33), relative=0, target="blank")
-        self.setFillColor(colors.HexColor("#1e3a8a"))
-        self.drawString(160, 24, "okamotomidiasvisuais.com.br")
-        
-        self.setFillColor(colors.HexColor("#64748b"))
-        self.drawString(305, 24, "|    contato@okamotomidiasvisuais.com.br    |")
-        
-        self.linkURL("https://wa.me/5516991332121", (465, 22, 575, 33), relative=0, target="blank")
-        self.setFillColor(colors.HexColor("#047857"))
-        self.drawString(465, 24, "WhatsApp: 16 99133 2121")
-        
         self.restoreState()
 
 def get_logo_path():
@@ -105,12 +87,31 @@ def get_logo_path():
             return caminho
         return None
 
+def criar_rodape_story(styles):
+    style_footer = ParagraphStyle(
+        'FooterText', 
+        parent=styles['Normal'], 
+        fontName='Helvetica', 
+        fontSize=8, 
+        leading=10, 
+        alignment=1, 
+        textColor=colors.HexColor('#64748b')
+    )
+    texto = (
+        "Okamoto Mídias Visuais &nbsp;&nbsp;|&nbsp;&nbsp; "
+        "<a href='https://okamotomidiasvisuais.com.br' color='#1e3a8a'><b>okamotomidiasvisuais.com.br</b></a> "
+        "&nbsp;&nbsp;|&nbsp;&nbsp; contato@okamotomidiasvisuais.com.br &nbsp;&nbsp;|&nbsp;&nbsp; "
+        "<a href='https://wa.me/5516991332121' color='#047857'><b>WhatsApp: 16 99133 2121</b></a>"
+    )
+    return Paragraph(texto, style_footer)
+
 # ==========================================
 # FUNÇÃO 1: GERAR PDF DA PROPOSTA COMERCIAL
 # ==========================================
 def gerar_pdf_cliente(dados):
     buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=35, rightMargin=35, topMargin=25, bottomMargin=55)
+    # Margem inferior ampliada para acomodar perfeitamente o rodapé via story
+    doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=35, rightMargin=35, topMargin=25, bottomMargin=45)
     
     servico_nome = dados['tipo_servico'] if dados['tipo_servico'] != "Outro" else dados['outro_servico_nome']
     data_ev_str = dados['data_evento'].strftime('%d/%m/%Y')
@@ -186,7 +187,7 @@ def gerar_pdf_cliente(dados):
     story.append(Spacer(1, 8))
     
     story.append(Paragraph(f"<b>9. Validade do orçamento:</b> {dados['validade_orcamento']}", style_corpo))
-    story.append(Spacer(1, 12))
+    story.append(Spacer(1, 10))
     
     # Caixa de Destaque Especial para o Valor do Investimento
     val_fmt = fmt_brl(dados['valor_final'])
@@ -195,25 +196,28 @@ def gerar_pdf_cliente(dados):
     else:
         texto_valor = f"<b>VALOR TOTAL DO INVESTIMENTO ({dados['carga_horaria_sel']}):</b><br/>{val_fmt}"
         
-    p_valor = Paragraph(texto_valor, ParagraphStyle('ValBox', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=13, leading=18, alignment=1, textColor=colors.HexColor('#1e3a8a')))
+    p_valor = Paragraph(texto_valor, ParagraphStyle('ValBox', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=12, leading=16, alignment=1, textColor=colors.HexColor('#1e3a8a')))
     t_valor_box = Table([[p_valor]], colWidths=[540])
     t_valor_box.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#f1f5f9')),
         ('BOX', (0,0), (-1,-1), 1.5, colors.HexColor('#1e3a8a')),
-        ('TOPPADDING', (0,0), (-1,-1), 10),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 10),
-        ('LEFTPADDING', (0,0), (-1,-1), 10),
-        ('RIGHTPADDING', (0,0), (-1,-1), 10),
+        ('TOPPADDING', (0,0), (-1,-1), 8),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 8),
+        ('LEFTPADDING', (0,0), (-1,-1), 8),
+        ('RIGHTPADDING', (0,0), (-1,-1), 8),
     ]))
     story.append(t_valor_box)
-    story.append(Spacer(1, 12))
+    story.append(Spacer(1, 10))
     
     story.append(Paragraph("Ficamos à disposição para quaisquer esclarecimentos e ajustes, caso necessário.", style_corpo))
-    story.append(Spacer(1, 10))
+    story.append(Spacer(1, 8))
     story.append(Paragraph("Atenciosamente,", style_corpo))
-    story.append(Spacer(1, 3))
+    story.append(Spacer(1, 2))
     story.append(Paragraph("Rubens Okamoto", style_assinatura))
     story.append(Paragraph("Okamoto Mídias Visuais", style_corpo))
+    
+    story.append(Spacer(1, 10))
+    story.append(criar_rodape_story(styles))
     
     # 2ª PÁGINA (INSTITUCIONAL E DADOS DA EMPRESA)
     story.append(PageBreak())
@@ -230,31 +234,34 @@ def gerar_pdf_cliente(dados):
     story.append(Paragraph("É registrando a sua história, que nós construímos a nossa!", style_destaque_1))
     story.append(Spacer(1, 8))
     story.append(Paragraph("Especialistas em Imagem, Vídeo e Experiências Imersivas", style_destaque_2))
-    story.append(Spacer(1, 18))
+    story.append(Spacer(1, 16))
     
     intro_inst = "Unimos a bagagem de três décadas às inovações tecnológicas mais recentes, transformando sua marca com soluções visuais de alta performance:"
     story.append(Paragraph(intro_inst, style_corpo))
-    story.append(Spacer(1, 12))
+    story.append(Spacer(1, 10))
     
     topicos_inst = "<b>• Fotografia Corporativa e Estratégica:</b><br/>Imagens que reforçam a autoridade da sua empresa e destacam seu negócio no mercado.<br/><br/><b>• Tours Virtuais 360º:</b><br/>Experiências imersivas que levam seu cliente para dentro do seu espaço físico.<br/><br/><b>• Vídeos de Alto Impacto:</b><br/>Produções pensadas para converter e engajar seu público em redes sociais e plataformas digitais."
     story.append(Paragraph(topicos_inst, style_corpo))
-    story.append(Spacer(1, 18))
+    story.append(Spacer(1, 16))
     
     story.append(Paragraph("Dados da Empresa", style_cat_titulo))
-    story.append(Spacer(1, 4))
+    story.append(Spacer(1, 3))
     story.append(Paragraph("<b>Okamoto Reportagens Fotográficas SS Ltda</b><br/><b>CNPJ:</b> 04.824.331/0001-05<br/>Rua General Carneiro, 860 — Centro, Brodowski - SP<br/>CEP: 14.340-023", style_corpo))
-    story.append(Spacer(1, 12))
+    story.append(Spacer(1, 10))
     
     story.append(Paragraph("Dados Pessoais", style_cat_titulo))
-    story.append(Spacer(1, 4))
+    story.append(Spacer(1, 3))
     story.append(Paragraph("<b>Rubens Heigasi Okamoto</b><br/><b>CPF:</b> 287.932.298-79 &nbsp;|&nbsp; <b>RG:</b> 25.450.624-0 SSP/SP<br/><b>Tel. Cel.:</b> 16 99133 2121 &nbsp;|&nbsp; <b>E-mail:</b> contato@okamotomidiasvisuais.com.br", style_corpo))
-    story.append(Spacer(1, 12))
+    story.append(Spacer(1, 10))
     
     story.append(Paragraph("Dados Bancários", style_cat_titulo))
-    story.append(Spacer(1, 4))
+    story.append(Spacer(1, 3))
     story.append(Paragraph("<b>Banco do Brasil</b><br/><b>Agência:</b> 3235-2 &nbsp;|&nbsp; <b>C. Corrente:</b> 11.935-0<br/><b>Chave PIX:</b> 04824331000105", style_corpo))
+    
+    story.append(Spacer(1, 14))
+    story.append(criar_rodape_story(styles))
 
-    doc.build(story, canvasmaker=ActiveFooterCanvas)
+    doc.build(story, canvasmaker=CleanFooterCanvas)
     buffer.seek(0)
     return buffer
 
@@ -263,7 +270,7 @@ def gerar_pdf_cliente(dados):
 # ==========================================
 def gerar_pdf_interno(dados):
     buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=35, rightMargin=35, topMargin=20, bottomMargin=50)
+    doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=35, rightMargin=35, topMargin=20, bottomMargin=40)
     
     servico_exibido = dados['tipo_servico'] if dados['tipo_servico'] != "Outro" else dados['outro_servico_nome']
     data_ev_str = dados['data_evento'].strftime('%d/%m/%Y')
@@ -375,7 +382,10 @@ def gerar_pdf_interno(dados):
     t_res_int.setStyle(ts_res)
     story.append(t_res_int)
     
-    doc.build(story, canvasmaker=ActiveFooterCanvas)
+    story.append(Spacer(1, 10))
+    story.append(criar_rodape_story(styles))
+
+    doc.build(story, canvasmaker=CleanFooterCanvas)
     buffer.seek(0)
     return buffer
 
