@@ -2,7 +2,6 @@
 # CÁLCULO DE DESLOCAMENTO E COMBUSTÍVEL
 # ==========================================
 st.subheader("🚗 Custos de Deslocamento e Logística")
-
 with st.expander("Configurar Deslocamento (Distância e Combustível)", expanded=False):
     col_log1, col_log2, col_log3 = st.columns(3)
     
