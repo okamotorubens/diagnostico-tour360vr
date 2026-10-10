@@ -42,10 +42,11 @@ ESTADOS_BR = [
 
 st.set_page_config(page_title="Proposta Comercial & Custos - Okamoto Mídias Visuais", page_icon="📊", layout="wide")
 
+# Espaçamento superior maior para a logo do sistema não cortar
 st.markdown("""
     <style>
         .block-container {
-            padding-top: 1.5rem !important;
+            padding-top: 3.5rem !important;
             padding-bottom: 2rem !important;
         }
     </style>
@@ -77,18 +78,12 @@ class NumberedCanvas(canvas.Canvas):
         self.setLineWidth(0.75)
         self.line(35, 38, 575, 38)
         
-        t1 = "okamotomidiasvisuais.com.br"
-        t2 = "contato@okamotomidiasvisuais.com.br"
-        t3 = "WhatsApp: 16 99133 2121"
-        separador = "    |    "
+        # Rodapé renderizado de forma segura
+        footer_text = '<font color="#475569"><a href="https://okamotomidiasvisuais.com.br/" color="#1e3a8a"><b>okamotomidiasvisuais.com.br</b></a>    |    <a href="mailto:contato@okamotomidiasvisuais.com.br" color="#1e3a8a"><b>contato@okamotomidiasvisuais.com.br</b></a>    |    <a href="https://wa.me/5516991332121" color="#1e3a8a"><b>WhatsApp: 16 99133 2121</b></a></font>'
         
-        full_txt = f"{t1}{separador}{t2}{separador}{t3}"
-        self.drawCentredString(295, 24, full_txt)
-        
-        # Links clicáveis ativos no rodapé do PDF
-        self.linkURL("https://okamotomidiasvisuais.com.br/", (105, 20, 215, 34), relative=0)
-        self.linkURL("mailto:contato@okamotomidiasvisuais.com.br", (230, 20, 395, 34), relative=0)
-        self.linkURL("https://wa.me/5516991332121", (410, 20, 485, 34), relative=0)
+        p = Paragraph(footer_text, ParagraphStyle('FooterStyle', fontName='Helvetica', fontSize=8, leading=10, alignment=1))
+        p.wrapOn(self, 540, 20)
+        p.drawOn(self, 35, 22)
         
         self.drawRightString(575, 24, f"Página {self._pageNumber} de {page_count}")
         self.restoreState()
@@ -126,7 +121,7 @@ def gerar_pdf_cliente(dados):
     
     styles = getSampleStyleSheet()
     style_titulo = ParagraphStyle('TituloPDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=18, leading=22, alignment=1, textColor=colors.HexColor('#0f172a'))
-    style_servico_sub = ParagraphStyle('ServSubPDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=13, leading=17, alignment=1, textColor=colors.HexColor('#0f172a')) # Preto conforme solicitado
+    style_servico_sub = ParagraphStyle('ServSubPDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=13, leading=17, alignment=1, textColor=colors.HexColor('#0f172a'))
     style_corpo = ParagraphStyle('CorpoPDF', parent=styles['Normal'], fontName='Helvetica', fontSize=10, leading=14, textColor=colors.HexColor('#334155'))
     style_bold = ParagraphStyle('BoldPDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=14, textColor=colors.HexColor('#0f172a'))
     style_assinatura = ParagraphStyle('AssinaturaPDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=14, textColor=colors.HexColor('#0f172a'))
@@ -154,7 +149,7 @@ def gerar_pdf_cliente(dados):
     story.append(Paragraph("Proposta Comercial", style_titulo))
     story.append(Spacer(1, 4))
     story.append(Paragraph(f"{nome_serv_ev}", style_servico_sub))
-    story.append(Spacer(1, 20)) # Maior folga e respiro solicitada
+    story.append(Spacer(1, 20))
     
     story.append(Paragraph("<b>1. Dados do cliente:</b>", style_bold))
     story.append(Spacer(1, 4))
@@ -197,7 +192,7 @@ def gerar_pdf_cliente(dados):
     story.append(Spacer(1, 10))
     
     story.append(Paragraph(f"<b>9. Validade do orçamento:</b> {dados['validade_orcamento']}", style_corpo))
-    story.append(Spacer(1, 18)) # Mais espaço antes do quadro
+    story.append(Spacer(1, 18))
     
     val_fmt = fmt_brl(dados['valor_final'])
     texto_valor = f"<b>VALOR TOTAL DO INVESTIMENTO ({dados['carga_horaria_sel']}):</b><br/>{val_fmt}"
@@ -215,7 +210,7 @@ def gerar_pdf_cliente(dados):
         ('ROUNDEDCORNERS', [8, 8, 8, 8]),
     ]))
     story.append(t_valor_box)
-    story.append(Spacer(1, 18)) # Mais espaço depois do quadro
+    story.append(Spacer(1, 18))
     
     story.append(Paragraph("Ficamos à disposição para quaisquer esclarecimentos e ajustes, caso necessário.", style_corpo))
     story.append(Spacer(1, 12))
@@ -296,7 +291,7 @@ def gerar_pdf_interno(dados):
         
     story.append(Spacer(1, 14))
     story.append(Paragraph("Relatório de Custos", style_titulo))
-    story.append(Spacer(1, 24)) # 1 linha a mais de espaço após Relatório de Custos
+    story.append(Spacer(1, 24))
     
     data_fim_str = dados['data_termino'].strftime('%d/%m/%Y') if dados['tem_data_termino'] else data_ev_str
     local_txt = dados['local'] if dados['local'] else "Local a definir"
@@ -389,7 +384,7 @@ def gerar_pdf_interno(dados):
     buffer.seek(0)
     return buffer
 
-# LOGO DO APP NO TOPO (logo_okamoto.png)
+# LOGO DO APP NO TOPO (logo_okamoto.png) com espaçamento adequado
 logo_app_path = get_logo_app_path()
 if logo_app_path:
     col_vazia1, col_logo, col_vazia2 = st.columns([1, 2, 1])
@@ -477,6 +472,7 @@ if st.session_state.current_tab_idx == 0:
 elif st.session_state.current_tab_idx == 1:
     st.subheader("Custos operacionais")
     
+    # Aba 2 com blocos mais compactos e espaçamentos reduzidos
     st.markdown("##### 🚗 Parâmetros de Deslocamento & Logística")
     col_l1, col_l2, col_l3 = st.columns(3)
     with col_l1:
@@ -492,7 +488,6 @@ elif st.session_state.current_tab_idx == 1:
     with col_est2:
         st.session_state.custo_estacionamento = st.number_input("Estacionamento (R$)", min_value=0.0, value=st.session_state.get("custo_estacionamento", 0.00), step=5.0, format="%.2f")
 
-    st.markdown("---")
     st.markdown("##### 🏨 Hospedagem")
     col_h1, col_h2 = st.columns(2)
     with col_h1:
@@ -500,7 +495,6 @@ elif st.session_state.current_tab_idx == 1:
     with col_h2:
         st.session_state.val_hosp = st.number_input("R$ Hospedagem (diária)", min_value=0.0, value=st.session_state.get("val_hosp", 250.00), step=10.0, format="%.2f")
 
-    st.markdown("---")
     st.markdown("##### 🍽️ Alimentação")
     col_alim1, col_alim2 = st.columns(2)
     with col_alim1:
@@ -508,7 +502,6 @@ elif st.session_state.current_tab_idx == 1:
     with col_alim2:
         st.session_state.custo_jantar = st.number_input("Jantar (R$)", min_value=0.0, value=st.session_state.get("custo_jantar", 0.00), step=5.0, format="%.2f")
 
-    st.markdown("---")
     st.markdown("##### 📦 Outros Custos")
     col_ap1, col_ap2 = st.columns(2)
     with col_ap1:
@@ -551,7 +544,6 @@ elif st.session_state.current_tab_idx == 2:
         cp_idx = cp_opcoes.index(st.session_state.get("condicao_pagamento", "PIX")) if st.session_state.get("condicao_pagamento", "PIX") in cp_opcoes else 0
         st.session_state.condicao_pagamento = st.selectbox("Condições de Pagamento", cp_opcoes, index=cp_idx)
     with col_p3:
-        # Prazo de pagamento restrito de 1 a 45 dias conforme solicitado
         st.session_state.prazo_pagamento_dias = st.number_input("Prazo de Pagamento (dias)", min_value=1, max_value=45, value=st.session_state.get("prazo_pagamento_dias", 5), step=1, format="%d")
 
     dias_txt = f"em até {st.session_state.prazo_pagamento_dias} dias" if st.session_state.prazo_pagamento_dias > 0 else "à vista"
