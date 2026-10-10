@@ -42,6 +42,16 @@ ESTADOS_BR = [
 
 st.set_page_config(page_title="Proposta Comercial & Custos - Okamoto Mídias Visuais", page_icon="📊", layout="wide")
 
+# CSS para zerar o padding superior padrão do Streamlit e colar a logo no topo exato
+st.markdown("""
+    <style>
+        .block-container {
+            padding-top: 0rem !important;
+            padding-bottom: 3rem !important;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
 class NumberedCanvas(canvas.Canvas):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -323,7 +333,7 @@ def gerar_pdf_interno(dados):
         [Paragraph("Desconto Aplicado", style_corpo), Paragraph("Desconto comercial", style_corpo), Paragraph(f"- {fmt_brl(dados['valor_desconto_calculado'])}", style_corpo)],
         [Paragraph("Ajuste Manual / Especial", style_corpo), Paragraph("Subtração aplicada", style_corpo), Paragraph(f"- {fmt_brl(dados['ajuste_manual'])}", style_corpo)],
         [Paragraph("Impostos (Nota Fiscal)", style_corpo), Paragraph(f"{dados['imposto_perc']}% sobre o faturamento", style_corpo), Paragraph(fmt_brl(dados['valor_impostos']), style_corpo)],
-        [Paragraph("Comissão", style_corpo), Paragraph(f"{dados['comissao_perc']}% sobre o faturamento", style_corpo), Paragraph(fmt_brl(dados['valor_comissao']), style_corpo)]
+        [Paragraph("Comissão", style_corpo), Paragraph(f"{dados['comissao_perc']}% sobre o faturamento", style_corpo), Paragraph(fmt_brl(dados['comissao']), style_corpo)]
     ]
     t_op = Table(tabela_op_dados, colWidths=[120, 320, 100])
     ts_op = TableStyle()
@@ -361,29 +371,68 @@ def gerar_pdf_interno(dados):
     buffer.seek(0)
     return buffer
 
-# 1. LOGO CENTRALIZADO NO TOPO
+# 1. LOGO CENTRALIZADO BEM NO TOPO SEM ESPAÇO VAZIO
 logo_sys_path = get_logo_path()
 if logo_sys_path:
     col_vazia1, col_logo, col_vazia2 = st.columns([1, 2, 1])
     with col_logo:
         st.image(logo_sys_path, width=320)
 
-# 2. LOGO ABAIXO O TÍTULO DO SISTEMA
-st.markdown("<h1 style='text-align: center;'>⚡ Sistema de Propostas & Custos</h1>", unsafe_allow_html=True)
+# 2. TÍTULO DO SISTEMA LOGO ABAIXO
+st.markdown("<h1 style='text-align: center; margin-top: 0px;'>⚡ Sistema de Propostas & Custos</h1>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; color: #64748b;'>Gerencie orçamentos comerciais, analise a viabilidade interna e gere documentação profissional em PDF.</p>", unsafe_allow_html=True)
 st.markdown("---")
 
-# GERENCIAMENTO DE ABAS VIA SESSION_STATE PARA FUNCIONAR O AVANÇAR/VOLTAR
+# GERENCIAMENTO DE ABAS VIA SESSION_STATE
 if 'current_tab_idx' not in st.session_state:
     st.session_state.current_tab_idx = 0
 
 tab_names = ["1. Dados & Serviços", "2. Custos & Logística", "3. Prazos, Resumo & Relatórios"]
 
-# Seletor visual de abas sincronizado com o session_state
 tab_selecionada = st.radio("Navegação:", tab_names, index=st.session_state.current_tab_idx, horizontal=True, label_visibility="collapsed")
 st.session_state.current_tab_idx = tab_names.index(tab_selecionada)
 
 st.markdown("---")
+
+# DECLARAÇÃO DE VARIÁVEIS PADRÃO PARA EVITAR ERROS ANTES DA RENDERIZAÇÃO DAS ABAS
+contato = ""
+empresa = ""
+telefone = ""
+email = ""
+data_orcamento = datetime.now()
+data_evento = datetime.now()
+tem_data_termino = False
+data_termino = datetime.now()
+horario = "08:00"
+nome_servico_input = ""
+local = ""
+cidade = "Ribeirão Preto"
+estado = "SP"
+tipo_servico = "Evento social"
+outro_servico_nome = ""
+carga_horaria_sel = "1h"
+escopo_servico = ""
+captacao = ""
+distancia_ida_volta = 0
+consumo_medio = 11.50
+preco_combustivel = 6.80
+pedagio_total = 0.0
+custo_estacionamento = 0.0
+qtd_hosp = 0
+val_hosp = 250.00
+custo_almoco = 0.0
+custo_jantar = 0.0
+custo_freelancer = 0.0
+custo_outros = 0.0
+imposto_perc = 6.0
+comissao_perc = 0
+ajuste_manual = 0.0
+validade_orcamento = "05 dias"
+forma_entrega = "Link exclusivo para download, disponível por 30 dias."
+forma_pagamento_tipo = "À vista"
+condicao_pagamento = "PIX"
+desconto_perc = 0.0
+desconto_valor_input = 0.0
 
 if st.session_state.current_tab_idx == 0:
     st.subheader("1. Dados do Cliente & Serviço")
@@ -403,7 +452,6 @@ if st.session_state.current_tab_idx == 0:
             data_termino = st.date_input("Data de Término do Serviço (dia/mês/ano)", datetime.now())
             
         horario = st.text_input("Horário do Serviço", "08:00")
-            
         nome_servico_input = st.text_input("Nome do Serviço / Evento", "")
         local = st.text_input("Local", "")
         
@@ -548,12 +596,12 @@ elif st.session_state.current_tab_idx == 2:
 # CÁLCULOS DINÂMICOS EM TEMPO REAL
 try:
     servico_nome = tipo_servico if tipo_servico != "Outro" else outro_servico_nome
-    nome_serv_ev = nome_servico_input if 'nome_servico_input' in locals() and nome_servico_input else servico_nome
+    nome_serv_ev = nome_servico_input if nome_servico_input else servico_nome
     
     tabela_atual = TABELAS_SERVICOS.get(tipo_servico, TABELAS_SERVICOS["Evento social"])
     
     dias_evento = 1
-    if 'tem_data_termino' in locals() and tem_data_termino:
+    if tem_data_termino:
         dias_evento = max(1, (data_termino - data_evento).days + 1)
 
     if "diária" in carga_horaria_sel:
@@ -566,41 +614,23 @@ try:
         if horas_num > 12:
             valor_base += (horas_num - 12) * tabela_atual.get(1, 180.0) * dias_evento
 
-    desp_perc = desconto_perc if 'desconto_perc' in locals() else 0.0
-    desp_val = desconto_valor_input if 'desconto_valor_input' in locals() else 0.0
-    aj_man = ajuste_manual if 'ajuste_manual' in locals() else 0.0
-    
-    if desp_perc > 0:
-        valor_desconto_calculado = valor_base * (desp_perc / 100.0)
+    if desconto_perc > 0:
+        valor_desconto_calculado = valor_base * (desconto_perc / 100.0)
     else:
-        valor_desconto_calculado = desp_val
+        valor_desconto_calculado = desconto_valor_input
 
-    valor_intermediario = valor_base - valor_desconto_calculado - aj_man
+    valor_intermediario = valor_base - valor_desconto_calculado - ajuste_manual
     valor_final = max(0.0, valor_intermediario)
 
-    dist_iv = distancia_ida_volta if 'distancia_ida_volta' in locals() else 0
-    cons_m = consumo_medio if 'consumo_medio' in locals() else 11.5
-    p_comb = preco_combustivel if 'preco_combustivel' in locals() else 6.8
-    ped_tot = pedagio_total if 'pedagio_total' in locals() else 0.0
-    est_c = custo_estacionamento if 'custo_estacionamento' in locals() else 0.0
-    
-    litros_gastos = dist_iv / cons_m if cons_m > 0 else 0
-    custo_combustivel = litros_gastos * p_comb
-    custo_logistica_total = custo_combustivel + ped_tot + est_c
+    litros_gastos = distancia_ida_volta / consumo_medio if consumo_medio > 0 else 0
+    custo_combustivel = litros_gastos * preco_combustivel
+    custo_logistica_total = custo_combustivel + pedagio_total + custo_estacionamento
 
-    hosp_tot = custo_hospedagem_total if 'custo_hospedagem_total' in locals() else 0.0
-    alm_c = custo_almoco if 'custo_almoco' in locals() else 0.0
-    jan_c = custo_jantar if 'custo_jantar' in locals() else 0.0
-    free_c = custo_freelancer if 'custo_freelancer' in locals() else 0.0
-    out_c = custo_outros if 'custo_outros' in locals() else 0.0
-
-    custo_total_operacional_log = custo_logistica_total + hosp_tot + alm_c + jan_c + free_c + out_c
+    custo_hospedagem_total = qtd_hosp * val_hosp
+    custo_total_operacional_log = custo_logistica_total + custo_hospedagem_total + custo_almoco + custo_jantar + custo_freelancer + custo_outros
     
-    imp_p = imposto_perc if 'imposto_perc' in locals() else 6.0
-    com_p = comissao_perc if 'comissao_perc' in locals() else 0
-    
-    valor_impostos = valor_final * (imp_p / 100.0)
-    valor_comissao = valor_final * (com_p / 100.0)
+    valor_impostos = valor_final * (imposto_perc / 100.0)
+    valor_comissao = valor_final * (comissao_perc / 100.0)
     
     custo_total_interno = custo_total_operacional_log + valor_impostos + valor_comissao
     lucro_liquido = valor_final - custo_total_interno
@@ -609,18 +639,9 @@ except Exception:
     valor_base = 0.0
     valor_desconto_calculado = 0.0
     valor_final = 0.0
-    dist_iv = 0
-    cons_m = 11.5
     litros_gastos = 0.0
-    p_comb = 6.8
     custo_combustivel = 0.0
-    ped_tot = 0.0
-    est_c = 0.0
-    hosp_tot = 0.0
-    alm_c = 0.0
-    jan_c = 0.0
-    free_c = 0.0
-    out_c = 0.0
+    custo_hospedagem_total = 0.0
     custo_total_interno = 0.0
     lucro_liquido = 0.0
     margem_lucro = 0.0
@@ -636,53 +657,54 @@ col_res2.metric("Custos Operacionais", fmt_brl(custo_total_interno))
 col_res3.metric("Lucro Líquido Est.", fmt_brl(lucro_liquido))
 col_res4.metric("Margem de Lucro", f"{margem_lucro:.1f}%")
 
-dados_completos = {}
-dados_completos["contato"] = contato if 'contato' in locals() else ""
-dados_completos["empresa"] = empresa if 'empresa' in locals() else ""
-dados_completos["telefone"] = telefone if 'telefone' in locals() else ""
-dados_completos["email"] = email if 'email' in locals() else ""
-dados_completos["data_orcamento"] = data_orcamento if 'data_orcamento' in locals() else datetime.now()
-dados_completos["data_evento"] = data_evento if 'data_evento' in locals() else datetime.now()
-dados_completos["tem_data_termino"] = tem_data_termino if 'tem_data_termino' in locals() else False
-dados_completos["data_termino"] = data_termino if 'data_termino' in locals() else datetime.now()
-dados_completos["horario"] = horario if 'horario' in locals() else "08:00"
-dados_completos["nome_servico_input"] = nome_servico_input if 'nome_servico_input' in locals() else ""
-dados_completos["local"] = local if 'local' in locals() else ""
-dados_completos["cidade"] = cidade if 'cidade' in locals() else "Ribeirão Preto"
-dados_completos["estado"] = estado if 'estado' in locals() else "SP"
-dados_completos["tipo_servico"] = tipo_servico if 'tipo_servico' in locals() else "Evento social"
-dados_completos["outro_servico_nome"] = outro_servico_nome if 'outro_servico_nome' in locals() else ""
-dados_completos["carga_horaria_sel"] = carga_horaria_sel if 'carga_horaria_sel' in locals() else "1h"
-dados_completos["escopo_servico"] = escopo_servico if 'escopo_servico' in locals() else ""
-dados_completos["captacao"] = captacao if 'captacao' in locals() else ""
-dados_completos["validade_orcamento"] = validade_orcamento if 'validade_orcamento' in locals() else "05 dias"
-dados_completos["forma_entrega"] = forma_entrega if 'forma_entrega' in locals() else ""
-dados_completos["forma_pagamento_tipo"] = forma_pagamento_tipo if 'forma_pagamento_tipo' in locals() else "À vista"
-dados_completos["condicao_pagamento"] = condicao_pagamento if 'condicao_pagamento' in locals() else "PIX"
-dados_completos["desconto_perc"] = desp_perc if 'desp_perc' in locals() else 0.0
-dados_completos["ajuste_manual"] = aj_man if 'ajuste_manual' in locals() else 0.0
-dados_completos["valor_base"] = valor_base
-dados_completos["valor_desconto_calculado"] = valor_desconto_calculado
-dados_completos["valor_final"] = valor_final
-dados_completos["distancia"] = dist_iv
-dados_completos["consumo_veiculo"] = cons_m
-dados_completos["litros_gastos"] = litros_gastos
-dados_completos["preco_combustivel"] = p_comb
-dados_completos["custo_combustivel"] = custo_combustivel
-dados_completos["pedagios"] = ped_tot
-dados_completos["custo_estacionamento"] = est_c
-dados_completos["custo_hospedagem_total"] = hosp_tot
-dados_completos["custo_almoco"] = alm_c
-dados_completos["custo_jantar"] = jan_c
-dados_completos["custo_freelancer"] = free_c
-dados_completos["custo_outros"] = out_c
-dados_completos["imposto_perc"] = imp_p if 'imp_p' in locals() else 6.0
-dados_completos["valor_impostos"] = valor_impostos
-dados_completos["comissao_perc"] = com_p if 'com_p' in locals() else 0
-dados_completos["valor_comissao"] = valor_comissao
-dados_completos["custo_total_interno"] = custo_total_interno
-dados_completos["lucro_liquido"] = lucro_liquido
-dados_completos["margem_lucro"] = margem_lucro
+dados_completos = {
+    "contato": contato,
+    "empresa": empresa,
+    "telefone": telefone,
+    "email": email,
+    "data_orcamento": data_orcamento,
+    "data_evento": data_evento,
+    "tem_data_termino": tem_data_termino,
+    "data_termino": data_termino,
+    "horario": horario,
+    "nome_servico_input": nome_servico_input,
+    "local": local,
+    "cidade": cidade,
+    "estado": estado,
+    "tipo_servico": tipo_servico,
+    "outro_servico_nome": outro_servico_nome,
+    "carga_horaria_sel": carga_horaria_sel,
+    "escopo_servico": escopo_servico,
+    "captacao": captacao,
+    "validade_orcamento": validade_orcamento,
+    "forma_entrega": forma_entrega,
+    "forma_pagamento_tipo": forma_pagamento_tipo,
+    "condicao_pagamento": condicao_pagamento,
+    "desconto_perc": desconto_perc,
+    "ajuste_manual": ajuste_manual,
+    "valor_base": valor_base,
+    "valor_desconto_calculado": valor_desconto_calculado,
+    "valor_final": valor_final,
+    "distancia": distancia_ida_volta,
+    "consumo_veiculo": consumo_medio,
+    "litros_gastos": litros_gastos,
+    "preco_combustivel": preco_combustivel,
+    "custo_combustivel": custo_combustivel,
+    "pedagios": pedagio_total,
+    "custo_estacionamento": custo_estacionamento,
+    "custo_hospedagem_total": custo_hospedagem_total,
+    "custo_almoco": custo_almoco,
+    "custo_jantar": custo_jantar,
+    "custo_freelancer": custo_freelancer,
+    "custo_outros": custo_outros,
+    "imposto_perc": imposto_perc,
+    "valor_impostos": valor_impostos,
+    "comissao_perc": comissao_perc,
+    "comissao": valor_comissao,
+    "custo_total_interno": custo_total_interno,
+    "lucro_liquido": lucro_liquido,
+    "margem_lucro": margem_lucro
+}
 
 # EXIBIÇÃO APENAS NA ABA 3 DA GERAÇÃO DE DOCUMENTOS (PDF)
 if st.session_state.current_tab_idx == 2:
@@ -695,7 +717,7 @@ if st.session_state.current_tab_idx == 2:
         st.download_button(
             label="📄 Baixar Proposta Comercial (Cliente)",
             data=pdf_cliente_bytes,
-            file_name=f"Proposta_Comercial_{empresa.replace(' ', '_')}.pdf" if 'empresa' in locals() and empresa else "Proposta_Comercial.pdf",
+            file_name=f"Proposta_Comercial_{empresa.replace(' ', '_')}.pdf" if empresa else "Proposta_Comercial.pdf",
             mime="application/pdf",
             use_container_width=True
         )
@@ -705,7 +727,7 @@ if st.session_state.current_tab_idx == 2:
         st.download_button(
             label="🔒 Baixar Relatório Interno (Custos)",
             data=pdf_interno_bytes,
-            file_name=f"Relatorio_Interno_Custos_{empresa.replace(' ', '_')}.pdf" if 'empresa' in locals() and empresa else "Relatorio_Interno_Custos.pdf",
+            file_name=f"Relatorio_Interno_Custos_{empresa.replace(' ', '_')}.pdf" if empresa else "Relatorio_Interno_Custos.pdf",
             mime="application/pdf",
             use_container_width=True
         )
