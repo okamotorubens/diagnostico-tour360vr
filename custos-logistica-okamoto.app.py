@@ -447,4 +447,125 @@ with tabs_topo[1]:
     with col_op1:
         imposto_perc = st.number_input("Alíquota de Impostos / Notas (%)", min_value=0.0, max_value=30.0, value=6.0, step=0.5)
     with col_op2:
-        cust
+        custo_extra = st.number_input("Outros Custos / Extras (R$)", min_value=0.0, value=0.0, step=10.0)
+
+with tabs_topo[2]:
+    st.subheader("Condições Comerciais & Pagamento")
+    forma_entrega = st.text_input("Forma de entrega", "Link exclusivo para download, disponível por 30 dias.")
+    
+    col_p1, col_p2 = st.columns(2)
+    with col_p1:
+        forma_pagamento_tipo = st.selectbox("Forma de Pagamento", ["À vista", "Parcelado"])
+    with col_p2:
+        condicao_pagamento = st.selectbox("Condições de Pagamento", ["PIX", "Transferência", "PIX ou transferência bancária", "Cartão de crédito", "Cartão de Crédito parcelado"])
+    
+    parcelas_cartao = 1
+    if "parcelado" in condicao_pagamento.lower() or forma_pagamento_tipo == "Parcelado":
+        parcelas_cartao = st.number_input("Cartão de Crédito parcelado em X vezes", min_value=1, max_value=12, value=3)
+        condicao_pagamento = f"{condicao_pagamento} em {parcelas_cartao}X"
+
+    tabela_atual = TABELAS_SERVICOS.get(tipo_servico, TABELAS_SERVICOS["Evento social"])
+    
+    dias_evento = 1
+    if tem_data_termino:
+        dias_evento = max(1, (data_termino - data_evento).days + 1)
+
+    if "diária" in carga_horaria_sel:
+        qtd_diarias = int(carga_horaria_sel.split()[0])
+        valor_base = tabela_atual.get(10, 1300.0) * qtd_diarias * dias_evento
+    else:
+        horas_num = int(carga_horaria_sel.replace("h", ""))
+        horas_buscadas = min(horas_num, 12)
+        valor_base = tabela_atual.get(horas_buscadas, 1500.0) * dias_evento
+        if horas_num > 12:
+            valor_base += (horas_num - 12) * tabela_atual.get(1, 180.0) * dias_evento
+
+    valor_desconto = valor_base * (desconto_perc / 100.0)
+    valor_final = valor_base - valor_desconto
+
+    litros_gastos = distancia_ida_volta / consumo_medio if consumo_medio > 0 else 0
+    custo_combustivel = litros_gastos * preco_combustivel
+    custo_logistica_total = custo_combustivel + pedagio_total
+
+    custo_total_operacional_log = custo_logistica_total + custo_hospedagem_total + custo_almoco + custo_jantar + custo_estacionamento + custo_freelancer + custo_outros
+    valor_impostos = valor_final * (imposto_perc / 100.0)
+    custo_total_interno = custo_total_operacional_log + valor_impostos + custo_extra
+    lucro_liquido = valor_final - custo_total_interno
+    margem_lucro = (lucro_liquido / valor_final * 100) if valor_final > 0 else 0
+
+    st.markdown("---")
+    st.subheader("📊 Painel Resumo: Cliente vs. Interno")
+    col_res1, col_res2, col_res3, col_res4 = st.columns(4)
+    col_res1.metric("Valor para o Cliente", fmt_brl(valor_final))
+    col_res2.metric("Custos Operacionais", fmt_brl(custo_total_interno))
+    col_res3.metric("Lucro Líquido Est.", fmt_brl(lucro_liquido))
+    col_res4.metric("Margem de Lucro", f"{margem_lucro:.1f}%")
+
+    dados_completos = {
+        "contato": contato,
+        "empresa": empresa,
+        "telefone": telefone,
+        "email": email,
+        "data_orcamento": data_orcamento,
+        "data_evento": data_evento,
+        "tem_data_termino": tem_data_termino,
+        "data_termino": data_termino,
+        "horario": horario,
+        "local": local,
+        "cidade": cidade,
+        "estado": estado,
+        "tipo_servico": tipo_servico,
+        "outro_servico_nome": outro_servico_nome,
+        "carga_horaria_sel": carga_horaria_sel,
+        "escopo_servico": escopo_servico,
+        "captacao": captacao,
+        "forma_entrega": forma_entrega,
+        "forma_pagamento_tipo": forma_pagamento_tipo,
+        "condicao_pagamento": condicao_pagamento,
+        "desconto_perc": desconto_perc,
+        "valor_base": valor_base,
+        "valor_desconto": valor_desconto,
+        "valor_final": valor_final,
+        "distancia": distancia_ida_volta,
+        "consumo_veiculo": consumo_medio,
+        "litros_gastos": litros_gastos,
+        "preco_combustivel": preco_combustivel,
+        "custo_combustivel": custo_combustivel,
+        "pedagios": pedagio_total,
+        "custo_hospedagem_total": custo_hospedagem_total,
+        "custo_almoco": custo_almoco,
+        "custo_jantar": custo_jantar,
+        "custo_estacionamento": custo_estacionamento,
+        "custo_freelancer": custo_freelancer,
+        "custo_outros": custo_outros,
+        "imposto_perc": imposto_perc,
+        "valor_impostos": valor_impostos,
+        "custo_extra": custo_extra,
+        "custo_total_interno": custo_total_interno,
+        "lucro_liquido": lucro_liquido,
+        "margem_lucro": margem_lucro
+    }
+
+    st.markdown("---")
+    st.markdown("### 📥 Geração de Documentos (PDF)")
+    col_down1, col_down2 = st.columns(2)
+
+    with col_down1:
+        pdf_cliente_bytes = gerar_pdf_cliente(dados_completos)
+        st.download_button(
+            label="📄 Baixar Proposta Comercial (Cliente)",
+            data=pdf_cliente_bytes,
+            file_name=f"Proposta_Comercial_{empresa.replace(' ', '_')}.pdf" if empresa else "Proposta_Comercial.pdf",
+            mime="application/pdf",
+            use_container_width=True
+        )
+
+    with col_down2:
+        pdf_interno_bytes = gerar_pdf_interno(dados_completos)
+        st.download_button(
+            label="🔒 Baixar Relatório Interno (Custos)",
+            data=pdf_interno_bytes,
+            file_name=f"Relatorio_Interno_Custos_{empresa.replace(' ', '_')}.pdf" if empresa else "Relatorio_Interno_Custos.pdf",
+            mime="application/pdf",
+            use_container_width=True
+        )
