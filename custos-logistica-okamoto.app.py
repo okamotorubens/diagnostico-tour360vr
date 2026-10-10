@@ -75,7 +75,6 @@ class ModernCanvas(canvas.Canvas):
         footer_text = "Okamoto Mídias Visuais    |    okamotomidiasvisuais.com.br    |    contato@okamotomidiasvisuais.com.br    |    WhatsApp: 16 99133 2121"
         self.drawCentredString(297.5, 18, footer_text)
         
-        # Links interativos no rodapé
         self.linkURL("https://okamotomidiasvisuais.com.br", (170, 14, 300, 25), relative=0)
         self.linkURL("https://wa.me/5516991332121", (440, 14, 540, 25), relative=0)
         
@@ -98,7 +97,6 @@ def gerar_pdf_cliente(dados):
     story = []
     doc.title = f"Proposta Comercial - {dados['empresa'] if dados['empresa'] else 'Cliente'}"
 
-    # Logo no PDF (Centralizada e com bom tamanho)
     if os.path.exists("logo_okamoto.png"):
         img = RLImage("logo_okamoto.png", width=110, height=41)
         img.hAlign = 'CENTER'
@@ -172,7 +170,7 @@ def gerar_pdf_cliente(dados):
     story.append(Paragraph("<b>Rubens Okamoto</b>", style_assinatura))
     story.append(Paragraph("Okamoto Mídias Visuais", style_corpo))
     
-    # 2ª PÁGINA (INSTITUCIONAL COM TEXTOS AMPLIADOS E SEPARADOS)
+    # 2ª PÁGINA (INSTITUCIONAL)
     story.append(PageBreak())
     
     if os.path.exists("logo_okamoto.png"):
@@ -209,4 +207,4 @@ def gerar_pdf_cliente(dados):
     
     story.append(Paragraph("<b>Dados Pessoais</b>", style_cat_titulo))
     story.append(Spacer(1, 4))
-    story.append(Paragraph("<b>Rubens Heigasi Okamoto</b><br/><b>CPF:</b> 287.932.298-79 &nbsp;|&nbsp; <b>RG:</b> 25.450.
+    story.append(Paragraph("<b>Rubens Heigasi Okamoto</b><br/><b>CPF:</b> 287.932.298-79 &
