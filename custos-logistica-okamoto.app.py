@@ -605,9 +605,75 @@ col_res4.metric("Margem de Lucro", f"{margem_lucro:.1f}%")
 
 st.info(f"💡 **Serviço Selecionado:** {servico_nome} ({nome_serv_ev if nome_serv_ev else 'Geral'}) — **Investimento Total:** {fmt_brl(valor_final)} | **Lucro Est.:** {fmt_brl(lucro_liquido)} ({margem_lucro:.1f}%)")
 
-dados_completos = {
-    "contato": contato if 'contato' in locals() else "",
-    "empresa": empresa if 'empresa' in locals() else "",
-    "telefone": telefone if 'telefone' in locals() else "",
-    "email": email if 'email' in locals() else "",
-    "data_orcamento": data_orc
+# DICIONÁRIO MONTADO DE FORMA SEGURA (SEM QUEBRAS)
+dados_completos = {}
+dados_completos["contato"] = contato if 'contato' in locals() else ""
+dados_completos["empresa"] = empresa if 'empresa' in locals() else ""
+dados_completos["telefone"] = telefone if 'telefone' in locals() else ""
+dados_completos["email"] = email if 'email' in locals() else ""
+dados_completos["data_orcamento"] = data_orcamento if 'data_orcamento' in locals() else datetime.now()
+dados_completos["data_evento"] = data_evento if 'data_evento' in locals() else datetime.now()
+dados_completos["tem_data_termino"] = tem_data_termino if 'tem_data_termino' in locals() else False
+dados_completos["data_termino"] = data_termino if 'data_termino' in locals() else datetime.now()
+dados_completos["horario"] = horario if 'horario' in locals() else "08h00"
+dados_completos["nome_servico_input"] = nome_servico_input if 'nome_servico_input' in locals() else ""
+dados_completos["local"] = local if 'local' in locals() else ""
+dados_completos["cidade"] = cidade if 'cidade' in locals() else "Ribeirão Preto"
+dados_completos["estado"] = estado if 'estado' in locals() else "SP"
+dados_completos["tipo_servico"] = tipo_servico if 'tipo_servico' in locals() else "Evento social"
+dados_completos["outro_servico_nome"] = outro_servico_nome if 'outro_servico_nome' in locals() else ""
+dados_completos["carga_horaria_sel"] = carga_horaria_sel if 'carga_horaria_sel' in locals() else "1h"
+dados_completos["escopo_servico"] = escopo_servico if 'escopo_servico' in locals() else ""
+dados_completos["captacao"] = captacao if 'captacao' in locals() else ""
+dados_completos["validade_orcamento"] = validade_orcamento if 'validade_orcamento' in locals() else "05 dias"
+dados_completos["forma_entrega"] = forma_entrega if 'forma_entrega' in locals() else ""
+dados_completos["forma_pagamento_tipo"] = forma_pagamento_tipo if 'forma_pagamento_tipo' in locals() else "À vista"
+dados_completos["condicao_pagamento"] = condicao_pagamento if 'condicao_pagamento' in locals() else "PIX"
+dados_completos["desconto_perc"] = desp_perc if 'desp_perc' in locals() else 0.0
+dados_completos["ajuste_manual"] = aj_man if 'ajuste_manual' in locals() else 0.0
+dados_completos["valor_base"] = valor_base
+dados_completos["valor_desconto_calculado"] = valor_desconto_calculado
+dados_completos["valor_final"] = valor_final
+dados_completos["distancia"] = dist_iv
+dados_completos["consumo_veiculo"] = cons_m
+dados_completos["litros_gastos"] = litros_gastos
+dados_completos["preco_combustivel"] = p_comb
+dados_completos["custo_combustivel"] = custo_combustivel
+dados_completos["pedagios"] = ped_tot
+dados_completos["custo_hospedagem_total"] = hosp_tot
+dados_completos["custo_almoco"] = alm_c
+dados_completos["custo_jantar"] = jan_c
+dados_completos["custo_estacionamento"] = est_c
+dados_completos["custo_freelancer"] = free_c
+dados_completos["custo_outros"] = out_c
+dados_completos["imposto_perc"] = imp_p if 'imp_p' in locals() else 6.0
+dados_completos["valor_impostos"] = valor_impostos
+dados_completos["comissao_perc"] = com_p if 'com_p' in locals() else 0
+dados_completos["valor_comissao"] = valor_comissao
+dados_completos["custo_total_interno"] = custo_total_interno
+dados_completos["lucro_liquido"] = lucro_liquido
+dados_completos["margem_lucro"] = margem_lucro
+
+st.markdown("---")
+st.markdown("### 📥 Geração de Documentos (PDF)")
+col_down1, col_down2 = st.columns(2)
+
+with col_down1:
+    pdf_cliente_bytes = gerar_pdf_cliente(dados_completos)
+    st.download_button(
+        label="📄 Baixar Proposta Comercial (Cliente)",
+        data=pdf_cliente_bytes,
+        file_name=f"Proposta_Comercial_{empresa.replace(' ', '_')}.pdf" if 'empresa' in locals() and empresa else "Proposta_Comercial.pdf",
+        mime="application/pdf",
+        use_container_width=True
+    )
+
+with col_down2:
+    pdf_interno_bytes = gerar_pdf_interno(dados_completos)
+    st.download_button(
+        label="🔒 Baixar Relatório Interno (Custos)",
+        data=pdf_interno_bytes,
+        file_name=f"Relatorio_Interno_Custos_{empresa.replace(' ', '_')}.pdf" if 'empresa' in locals() and empresa else "Relatorio_Interno_Custos.pdf",
+        mime="application/pdf",
+        use_container_width=True
+    )
