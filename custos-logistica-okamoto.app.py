@@ -7,7 +7,7 @@ from reportlab.pdfgen import canvas
 import io
 import os
 from datetime import datetime
-from PIL import Image as PILImage, ImageDraw
+from PIL import Image as PILImage, ImageDraw, ImageFont
 
 # ==========================================
 # CONFIGURAÇÃO DE ESTILO E FORMATAÇÃO BRL
@@ -85,17 +85,17 @@ class ModernCanvas(canvas.Canvas):
         self.restoreState()
 
 def get_logo_path():
-    caminhos = ["logo_okamoto.png", "./logo_okamoto.png", os.path.join(os.getcwd(), "logo_okamoto.png")]
-    for c in caminhos:
-        if os.path.exists(c):
-            return c
+    caminho = "logo_okamoto.png"
+    # Cria uma logo limpa e perfeitamente renderizável via Pillow se não existir ou se precisar recriar
     try:
-        img = PILImage.new('RGBA', (600, 200), (255, 255, 255, 0))
+        img = PILImage.new('RGB', (800, 220), (255, 255, 255))
         d = ImageDraw.Draw(img)
-        d.text((40, 70), "OKAMOTO MÍDIAS VISUAIS", fill="#0f172a")
-        img.save("logo_okamoto.png")
-        return "logo_okamoto.png"
+        d.text((50, 70), "OKAMOTO MÍDIAS VISUAIS", fill="#0f172a")
+        img.save(caminho, "PNG")
+        return caminho
     except Exception:
+        if os.path.exists(caminho):
+            return caminho
         return None
 
 # ==========================================
@@ -122,7 +122,7 @@ def gerar_pdf_cliente(dados):
 
     logo_path = get_logo_path()
     if logo_path:
-        img = RLImage(logo_path, width=130, height=48)
+        img = RLImage(logo_path, width=130, height=36)
         img.hAlign = 'CENTER'
         story.append(img)
     else:
@@ -200,7 +200,7 @@ def gerar_pdf_cliente(dados):
     story.append(PageBreak())
     
     if logo_path:
-        img_inst = RLImage(logo_path, width=140, height=52)
+        img_inst = RLImage(logo_path, width=140, height=38)
         img_inst.hAlign = 'CENTER'
         story.append(img_inst)
     else:
@@ -262,7 +262,7 @@ def gerar_pdf_interno(dados):
 
     logo_path = get_logo_path()
     if logo_path:
-        img_int = RLImage(logo_path, width=110, height=41)
+        img_int = RLImage(logo_path, width=110, height=30)
         img_int.hAlign = 'CENTER'
         story.append(img_int)
     else:
@@ -272,4 +272,33 @@ def gerar_pdf_interno(dados):
     story.append(Paragraph("Relatório Interno de Viabilidade & Custos", style_titulo))
     story.append(Spacer(1, 8))
     
-    data_fim_str = dados['data_termino'].strftime('%d/%m/%Y') if dados['tem_data_termino'] else data_ev_
+    data_fim_str = dados['data_termino'].strftime('%d/%m/%Y') if dados['tem_data_termino'] else data_ev_str
+    
+    info_geral = [
+        [Paragraph("<b>Cliente:</b>", style_bold), Paragraph(dados['contato'], style_corpo), Paragraph("<b>Data de Início:</b>", style_bold), Paragraph(data_ev_str, style_corpo)],
+        [Paragraph("<b>Empresa:</b>", style_bold), Paragraph(dados['empresa'], style_corpo), Paragraph("<b>Data de Término:</b>", style_bold), Paragraph(data_fim_str, style_corpo)],
+        [Paragraph("<b>Serviço:</b>", style_bold), Paragraph(servico_exibido, style_corpo), Paragraph("<b>Carga Horária:</b>", style_bold), Paragraph(dados['carga_horaria_sel'], style_corpo)]
+    ]
+    t_geral = Table(info_geral, colWidths=[80, 185, 95, 145])
+    t_geral.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'TOP'), ('BOTTOMPADDING', (0,0), (-1,-1), 2), ('TOPPADDING', (0,0), (-1,-1), 2)]))
+    story.append(t_geral)
+    story.append(Spacer(1, 8))
+    
+    story.append(Paragraph("1. Custos de Logística, Deslocamento & Operacionais", style_subtitulo))
+    story.append(Spacer(1, 4))
+    
+    tabela_log_dados = [
+        [Paragraph("<b>Parâmetro</b>", style_bold), Paragraph("<b>Detalhe / Métrica</b>", style_bold), Paragraph("<b>Custo Parcial</b>", style_bold)],
+        [Paragraph("Distância Total", style_corpo), Paragraph(f"{dados['distancia']} km (Ida e Volta)", style_corpo), Paragraph("-", style_corpo)],
+        [Paragraph("Combustível", style_corpo), Paragraph(f"Consumo: {dados['consumo_veiculo']} km/L | {dados['litros_gastos']:.1f}L a {fmt_brl(dados['preco_combustivel'])}/L", style_corpo), Paragraph(fmt_brl(dados['custo_combustivel']), style_corpo)],
+        [Paragraph("Pedágios", style_corpo), Paragraph("Tarifas de estrada", style_corpo), Paragraph(fmt_brl(dados['pedagios']), style_corpo)],
+        [Paragraph("Hospedagem", style_corpo), Paragraph("Diárias de hospedagem", style_corpo), Paragraph(fmt_brl(dados['custo_hospedagem_total']), style_corpo)],
+        [Paragraph("Almoço", style_corpo), Paragraph("Refeição", style_corpo), Paragraph(fmt_brl(dados['custo_almoco']), style_corpo)],
+        [Paragraph("Jantar", style_corpo), Paragraph("Refeição", style_corpo), Paragraph(fmt_brl(dados['custo_jantar']), style_corpo)],
+        [Paragraph("Estacionamento", style_corpo), Paragraph("Estacionamento / Local", style_corpo), Paragraph(fmt_brl(dados['custo_estacionamento']), style_corpo)],
+        [Paragraph("Freelancer", style_corpo), Paragraph("Apoio profissional extra", style_corpo), Paragraph(fmt_brl(dados['custo_freelancer']), style_corpo)],
+        [Paragraph("Outros", style_corpo), Paragraph("Despesas diversas", style_corpo), Paragraph(fmt_brl(dados['custo_outros']), style_corpo)]
+    ]
+    t_log = Table(tabela_log_dados, colWidths=[120, 285, 100])
+    ts_log = TableStyle()
+    ts_log
