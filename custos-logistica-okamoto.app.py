@@ -78,37 +78,37 @@ class NumberedCanvas(canvas.Canvas):
         self.setLineWidth(0.75)
         self.line(35, 38, 575, 38)
         
-        # Rodapé centralizado e com links ativados
-        site_link = '<a href="https://okamotomidiasvisuais.com.br/" color="#1e3a8a">okamotomidiasvisuais.com.br</a>'
-        email_link = '<a href="mailto:contato@okamotomidiasvisuais.com.br" color="#1e3a8a">contato@okamotomidiasvisuais.com.br</a>'
-        wpp_link = '<a href="https://wa.me/5516991332121" color="#1e3a8a">WhatsApp: 16 99133 2121</a>'
+        # Textos do rodapé centralizados
+        t1 = "okamotomidiasvisuais.com.br"
+        t2 = "contato@okamotomidiasvisuais.com.br"
+        t3 = "WhatsApp: 16 99133 2121"
+        separador = "    |    "
         
-        texto_rodape_esq = f"{site_link}    |    {email_link}    |    {wpp_link}"
+        full_txt = f"{t1}{separador}{t2}{separador}{t3}"
         
-        p = Paragraph(texto_rodape_esq, ParagraphStyle('Rodape', fontName='Helvetica', fontSize=8, leading=10, textColor=colors.HexColor('#475569')))
-        p.wrapOn(self, 400, 20)
-        p.drawOn(self, 35, 24)
+        # Desenhando o texto centralizado no rodapé
+        self.drawCentredString(295, 24, full_txt)
+        
+        # Adicionando links clicáveis limpos via coordenadas do canvas
+        # Coordenadas aproximadas para as áreas clicáveis dos links
+        self.linkURL("https://okamotomidiasvisuais.com.br/", (105, 22, 215, 34), relative=0)
+        self.linkURL("mailto:contato@okamotomidiasvisuais.com.br", (230, 22, 395, 34), relative=0)
+        self.linkURL("https://wa.me/5516991332121", (410, 22, 485, 34), relative=0)
         
         self.drawRightString(575, 24, f"Página {self._pageNumber} de {page_count}")
         self.restoreState()
 
-def get_logo_path():
+def get_logo_app_path():
     caminho = "logo_okamoto.png"
     if not os.path.exists(caminho):
+        caminho = "okamoto_black.png"
+    return caminho if os.path.exists(caminho) else None
+
+def get_logo_pdf_path():
+    caminho = "okamoto_black.png"
+    if not os.path.exists(caminho):
         caminho = "logo_okamoto.png"
-    try:
-        if not os.path.exists(caminho):
-            img = PILImage.new('RGB', (1200, 350), (255, 255, 255))
-            d = ImageDraw.Draw(img)
-            d.rectangle([0, 0, 1200, 350], fill=(255, 255, 255))
-            d.text((50, 80), "OKAMOTO", fill="#0f172a")
-            d.text((50, 180), "MÍDIAS VISUAIS", fill="#64748b")
-            img.save(caminho, "PNG")
-        return caminho
-    except Exception:
-        if os.path.exists(caminho):
-            return caminho
-        return None
+    return caminho if os.path.exists(caminho) else None
 
 def gerar_pdf_cliente(dados):
     buffer = io.BytesIO()
@@ -128,11 +128,11 @@ def gerar_pdf_cliente(dados):
     style_assinatura = ParagraphStyle('AssinaturaPDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10.5, leading=14, textColor=colors.HexColor('#0f172a'))
     style_cat_titulo = ParagraphStyle('CatTitPDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=13, leading=16, textColor=colors.HexColor('#0f172a'))
     style_destaque_1 = ParagraphStyle('Dest1PDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=16, leading=20, alignment=1, textColor=colors.HexColor('#0f172a'))
-    style_destaque_2 = ParagraphStyle('Dest2PDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=12, leading=16, alignment=1, textColor=colors.HexColor('#334155')) # 1 ponto a mais e cinza mais escuro
+    style_destaque_2 = ParagraphStyle('Dest2PDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=12, leading=16, alignment=1, textColor=colors.HexColor('#334155'))
     
     story = []
 
-    logo_path = get_logo_path()
+    logo_path = get_logo_pdf_path()
     if logo_path:
         img = RLImage(logo_path, width=150, height=44)
         img.hAlign = 'CENTER'
@@ -282,7 +282,7 @@ def gerar_pdf_interno(dados):
     
     story = []
 
-    logo_path = get_logo_path()
+    logo_path = get_logo_pdf_path()
     if logo_path:
         img_int = RLImage(logo_path, width=140, height=41)
         img_int.hAlign = 'CENTER'
@@ -385,12 +385,12 @@ def gerar_pdf_interno(dados):
     buffer.seek(0)
     return buffer
 
-# LOGO CENTRALIZADO BEM NO TOPO
-logo_sys_path = get_logo_path()
-if logo_sys_path:
+# LOGO DO APP NO TOPO (logo_okamoto.png)
+logo_app_path = get_logo_app_path()
+if logo_app_path:
     col_vazia1, col_logo, col_vazia2 = st.columns([1, 2, 1])
     with col_logo:
-        st.image(logo_sys_path, width=320)
+        st.image(logo_app_path, width=320)
 
 st.markdown("<h1 style='text-align: center; margin-top: 1rem;'>⚡ Sistema de Propostas & Custos</h1>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; color: #64748b;'>Gerencie orçamentos comerciais, analise a viabilidade interna e gere documentação profissional em PDF.</p>", unsafe_allow_html=True)
@@ -550,7 +550,6 @@ elif st.session_state.current_tab_idx == 2:
     with col_p3:
         st.session_state.prazo_pagamento_dias = st.number_input("Prazo de Pagamento (dias)", min_value=0, value=st.session_state.get("prazo_pagamento_dias", 5), step=1, format="%d")
 
-    # Monta string descritiva da condição de pagamento com o prazo em dias
     dias_txt = f"em até {st.session_state.prazo_pagamento_dias} dias" if st.session_state.prazo_pagamento_dias > 0 else "à vista"
     parcelas_cartao = 1
     if "parcelado" in st.session_state.condicao_pagamento.lower() or st.session_state.forma_pagamento_tipo == "Parcelado":
