@@ -386,4 +386,115 @@ st.title("⚡ Sistema de Propostas & Custos")
 st.markdown("Gerencie orçamentos comerciais, analise a viabilidade interna e gere documentação profissional em PDF.")
 
 logo_path = get_logo_path()
-if
+if logo_path:
+    col_img1, col_img2, col_img3 = st.columns([1, 2, 1])
+    with col_img2:
+        st.image(logo_path, width=340)
+
+tabs_topo = st.tabs(["1. Dados & Serviços", "2. Custos & Logística", "3. Prazos, Resumo & Relatórios"])
+
+with tabs_topo[0]:
+    st.subheader("1. Dados do Cliente & Serviço")
+    col1, col2 = st.columns(2)
+    with col1:
+        contato = st.text_input("Contato", "")
+        empresa = st.text_input("Empresa", "")
+        telefone = st.text_input("Telefone", "")
+        email = st.text_input("E-mail", "")
+    with col2:
+        data_orcamento = st.date_input("Data do Orçamento (dia/mês/ano)", datetime.now())
+        data_evento = st.date_input("Data do Serviço (dia/mês/ano)", datetime.now())
+        
+        tem_data_termino = st.checkbox("Serviço com mais de um dia (Data de Término)")
+        data_termino = data_evento
+        if tem_data_termino:
+            data_termino = st.date_input("Data de Término do Serviço (dia/mês/ano)", datetime.now())
+            
+        horario_input = st.text_input("Horário do Serviço", "0800")
+        if len(horario_input) == 4 and horario_input.isdigit():
+            horario = f"{horario_input[:2]}h{horario_input[2:]}"
+        else:
+            horario = horario_input
+            
+        nome_servico_input = st.text_input("Nome do Serviço / Evento (Ex: Inauguração Loja X)", "")
+        local = st.text_input("Local", "")
+        
+        col_cidade, col_uf = st.columns([3, 1])
+        with col_cidade:
+            cidade = st.text_input("Cidade", "Ribeirão Preto")
+        with col_uf:
+            estado = st.selectbox("Estado (UF)", ESTADOS_BR, index=0)
+
+    st.markdown("---")
+    st.subheader("2. Seleção de Serviço & Carga Horária")
+    tipo_servico = st.selectbox("Tipo de Serviço", list(TABELAS_SERVICOS.keys()))
+    
+    outro_servico_nome = ""
+    if tipo_servico == "Outro":
+        outro_servico_nome = st.text_input("Especifique o nome do serviço", "")
+
+    carga_horaria_sel = st.selectbox("Carga Horária", OPCOES_CARGA_HORARIA)
+    
+    tipo_desc_modo = st.radio("Modalidade de Desconto", ["Porcentagem (%)", "Valor Fixo (R$)"], horizontal=True)
+    if tipo_desc_modo == "Porcentagem (%)":
+        desconto_perc = st.slider("Desconto (%)", min_value=0.0, max_value=50.0, value=0.0, step=0.5)
+        desconto_valor_input = 0.0
+    else:
+        desconto_perc = 0.0
+        desconto_valor_input = st.number_input("Desconto em Valor Fixo (R$)", min_value=0.0, value=0.0, step=10.0, format="%.2f")
+
+    st.markdown("---")
+    st.subheader("3. Detalhamento Técnico (Escopo & Captação)")
+    
+    nome_servico_atual = tipo_servico if tipo_servico != "Outro" else outro_servico_nome
+    mes_extenso_ev = MESES_PT[data_evento.month]
+    
+    if tem_data_termino:
+        mes_extenso_ter = MESES_PT[data_termino.month]
+        data_str_escopo = f"{data_evento.day} de {mes_extenso_ev} até {data_termino.day} de {mes_extenso_ter} de {data_termino.year}"
+    else:
+        data_str_escopo = f"{data_evento.day} de {mes_extenso_ev} de {data_evento.year}"
+
+    default_escopo = f"{nome_servico_atual} — {nome_servico_input if nome_servico_input else 'Serviço Profissional'}\n{data_str_escopo}\n{horario if horario else 'Horário a definir'}\n{local if local else 'Local a definir'}\n{cidade} - {estado}\n01 (um) profissional"
+    default_captacao = "Cobertura profissional com equipamentos de alto padrão"
+    
+    escopo_servico = st.text_area("Escopo do serviço", default_escopo, height=150)
+    captacao = st.text_area("Captação", default_captacao, height=80)
+
+with tabs_topo[1]:
+    st.subheader("🚗 Parâmetros de Deslocamento & Logística (Honda HR-V)")
+    col_l1, col_l2, col_l3 = st.columns(3)
+    with col_l1:
+        distancia_ida_volta = st.number_input("Distância Total (Ida e Volta em km)", min_value=0, value=0, step=1, format="%d")
+    with col_l2:
+        consumo_medio = st.number_input("Consumo Médio (km/L)", min_value=1.0, value=11.50, step=0.5)
+    with col_l3:
+        preco_combustivel = st.number_input("Preço do Litro (R$)", min_value=0.0, value=6.80, step=0.10)
+        
+    pedagio_in = st.number_input("Valor Total de Pedágios (R$)", min_value=0.0, value=0.00, step=5.0, format="%.2f")
+    pedagio_total = pedagio_in * 100 if pedagio_in < 1000 and pedagio_in % 1 != 0 else pedagio_in
+
+    st.markdown("---")
+    st.subheader("🏨 Hospedagem & Custos Operacionais")
+    col_h1, col_h2, col_h3 = st.columns(3)
+    with col_h1:
+        qtd_hosp = st.number_input("Qtd. Diárias Hospedagem", min_value=0, value=0, step=1)
+        val_hosp_input = st.number_input("R$ Hospedagem (diária)", min_value=0.0, value=250.00, step=10.0, format="%.2f")
+        val_hosp = val_hosp_input * 100 if val_hosp_input < 1000 and val_hosp_input % 1 != 0 else val_hosp_input
+    with col_h2:
+        almoco_in = st.number_input("Almoço (R$)", min_value=0.0, value=0.00, step=5.0, format="%.2f")
+        custo_almoco = almoco_in * 100 if almoco_in < 1000 and almoco_in % 1 != 0 else almoco_in
+        
+        jantar_in = st.number_input("Jantar (R$)", min_value=0.0, value=0.00, step=5.0, format="%.2f")
+        custo_jantar = jantar_in * 100 if jantar_in < 1000 and jantar_in % 1 != 0 else jantar_in
+    with col_h3:
+        estac_in = st.number_input("Estacionamento (R$)", min_value=0.0, value=0.00, step=5.0, format="%.2f")
+        custo_estacionamento = estac_in * 100 if estac_in < 1000 and estac_in % 1 != 0 else estac_in
+        
+        free_in = st.number_input("Freelancer (R$)", min_value=0.0, value=0.00, step=50.0, format="%.2f")
+        custo_freelancer = free_in * 100 if free_in < 1000 and free_in % 1 != 0 else free_in
+        
+        outros_in = st.number_input("Outros (R$)", min_value=0.0, value=0.00, step=10.0, format="%.2f")
+        custo_outros = outros_in * 100 if outros_in < 1000 and outros_in % 1 != 0 else outros_in
+
+    custo_
