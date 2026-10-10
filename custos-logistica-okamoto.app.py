@@ -52,6 +52,14 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+# Função para rolar a página para o topo automaticamente
+def scroll_to_top():
+    st.markdown("""
+        <script>
+            window.scrollTo({top: 0, behavior: 'smooth'});
+        </script>
+    """, unsafe_allow_html=True)
+
 class NumberedCanvas(canvas.Canvas):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -78,13 +86,26 @@ class NumberedCanvas(canvas.Canvas):
         self.setLineWidth(0.75)
         self.line(35, 38, 575, 38)
         
-        # Rodapé renderizado de forma segura
-        footer_text = '<font color="#475569"><a href="https://okamotomidiasvisuais.com.br/" color="#1e3a8a"><b>okamotomidiasvisuais.com.br</b></a>    |    <a href="mailto:contato@okamotomidiasvisuais.com.br" color="#1e3a8a"><b>contato@okamotomidiasvisuais.com.br</b></a>    |    <a href="https://wa.me/5516991332121" color="#1e3a8a"><b>WhatsApp: 16 99133 2121</b></a></font>'
+        # Rodapé limpo desenhado nativamente pelo canvas para evitar conflitos de UUID
+        self.setFillColor(colors.HexColor('#1e3a8a'))
+        self.drawString(105, 24, "okamotomidiasvisuais.com.br")
+        self.linkURL("https://okamotomidiasvisuais.com.br/", (105, 22, 215, 34), relative=0)
         
-        p = Paragraph(footer_text, ParagraphStyle('FooterStyle', fontName='Helvetica', fontSize=8, leading=10, alignment=1))
-        p.wrapOn(self, 540, 20)
-        p.drawOn(self, 35, 22)
+        self.setFillColor(colors.HexColor('#475569'))
+        self.drawString(220, 24, "|")
         
+        self.setFillColor(colors.HexColor('#1e3a8a'))
+        self.drawString(230, 24, "contato@okamotomidiasvisuais.com.br")
+        self.linkURL("mailto:contato@okamotomidiasvisuais.com.br", (230, 22, 395, 34), relative=0)
+        
+        self.setFillColor(colors.HexColor('#475569'))
+        self.drawString(400, 24, "|")
+        
+        self.setFillColor(colors.HexColor('#1e3a8a'))
+        self.drawString(410, 24, "WhatsApp: 16 99133 2121")
+        self.linkURL("https://wa.me/5516991332121", (410, 22, 485, 34), relative=0)
+        
+        self.setFillColor(colors.HexColor('#475569'))
         self.drawRightString(575, 24, f"Página {self._pageNumber} de {page_count}")
         self.restoreState()
 
@@ -459,6 +480,7 @@ if st.session_state.current_tab_idx == 0:
     else:
         data_str_escopo = f"{st.session_state.data_evento.day} de {mes_extenso_ev} de {st.session_state.data_evento.year}"
 
+    # Escopo dinâmico baseado estritamente nos dados atuais da sessão
     default_escopo = f"{nome_serv_atual}\n{data_str_escopo}\n{st.session_state.horario if st.session_state.horario else 'Horário a definir'}\n{st.session_state.local if st.session_state.local else 'Local a definir'}\n{st.session_state.cidade} - {st.session_state.estado}\n01 (um) profissional".strip()
     
     st.session_state.escopo_servico = st.text_area("Escopo do serviço", st.session_state.get("escopo_servico", default_escopo), height=110)
@@ -467,12 +489,13 @@ if st.session_state.current_tab_idx == 0:
     st.markdown("---")
     if st.button("Avançar ➡️", key="btn_avancar_aba0", use_container_width=True):
         st.session_state.current_tab_idx = 1
+        scroll_to_top()
         st.rerun()
 
 elif st.session_state.current_tab_idx == 1:
     st.subheader("Custos operacionais")
     
-    # Aba 2 com blocos mais compactos e espaçamentos reduzidos
+    # Aba 2 com 1 linha de espaço entre os blocos
     st.markdown("##### 🚗 Parâmetros de Deslocamento & Logística")
     col_l1, col_l2, col_l3 = st.columns(3)
     with col_l1:
@@ -488,6 +511,7 @@ elif st.session_state.current_tab_idx == 1:
     with col_est2:
         st.session_state.custo_estacionamento = st.number_input("Estacionamento (R$)", min_value=0.0, value=st.session_state.get("custo_estacionamento", 0.00), step=5.0, format="%.2f")
 
+    st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("##### 🏨 Hospedagem")
     col_h1, col_h2 = st.columns(2)
     with col_h1:
@@ -495,6 +519,7 @@ elif st.session_state.current_tab_idx == 1:
     with col_h2:
         st.session_state.val_hosp = st.number_input("R$ Hospedagem (diária)", min_value=0.0, value=st.session_state.get("val_hosp", 250.00), step=10.0, format="%.2f")
 
+    st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("##### 🍽️ Alimentação")
     col_alim1, col_alim2 = st.columns(2)
     with col_alim1:
@@ -502,6 +527,7 @@ elif st.session_state.current_tab_idx == 1:
     with col_alim2:
         st.session_state.custo_jantar = st.number_input("Jantar (R$)", min_value=0.0, value=st.session_state.get("custo_jantar", 0.00), step=5.0, format="%.2f")
 
+    st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("##### 📦 Outros Custos")
     col_ap1, col_ap2 = st.columns(2)
     with col_ap1:
@@ -524,10 +550,12 @@ elif st.session_state.current_tab_idx == 1:
     with col_b1:
         if st.button("⬅️ Voltar", key="btn_voltar_aba1", use_container_width=True):
             st.session_state.current_tab_idx = 0
+            scroll_to_top()
             st.rerun()
     with col_b2:
         if st.button("Avançar ➡️", key="btn_avancar_aba1", use_container_width=True):
             st.session_state.current_tab_idx = 2
+            scroll_to_top()
             st.rerun()
 
 elif st.session_state.current_tab_idx == 2:
@@ -571,6 +599,7 @@ elif st.session_state.current_tab_idx == 2:
     st.markdown("---")
     if st.button("⬅️ Voltar", key="btn_voltar_aba2", use_container_width=True):
         st.session_state.current_tab_idx = 1
+        scroll_to_top()
         st.rerun()
 
 # CÁLCULOS DINÂMICOS EM TEMPO REAL
