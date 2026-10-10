@@ -1462,7 +1462,7 @@ elif etapa_atual == 5:
                 plano_acao_extra=st.session_state.get('plano_acao_extra', '')
             )
 
-            tipo_doc = "Diagnostico_Preliminar" if len(paginas_escolhidas) <= 2 else "Proposta_Completa"
+            tipo_doc = "Diagnostico Preliminar" if len(paginas_escolhidas) <= 2 else "Proposta Completa"
 
             with col_down1:
                 st.download_button(
