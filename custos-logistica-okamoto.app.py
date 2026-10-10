@@ -9,8 +9,25 @@ import os
 from datetime import datetime
 
 # ==========================================
-# CONFIGURAÇÃO DE ESTILO E FORMATAÇÃO BRL
+# CONFIGURAÇÃO DE ESTILO E TEMA CLARO
 # ==========================================
+st.set_page_config(
+    page_title="Proposta Comercial & Custos - Okamoto Mídias Visuais",
+    page_icon="📊",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# Forçar estilos básicos limpos para evitar tela escura
+st.markdown("""
+    <style>
+        .main {
+            background-color: #ffffff;
+            color: #1e293b;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
 def fmt_brl(val):
     s = f"{val:,.2f}"
     return "R$ " + s.replace(",", "X").replace(".", ",").replace("X", ".")
@@ -41,8 +58,6 @@ ESTADOS_BR = [
     "SP", "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", 
     "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SE", "TO"
 ]
-
-st.set_page_config(page_title="Proposta Comercial & Custos - Okamoto Mídias Visuais", page_icon="📊", layout="wide")
 
 class ModernCanvas(canvas.Canvas):
     def __init__(self, *args, **kwargs):
@@ -315,4 +330,56 @@ def gerar_pdf_interno(dados):
     ts_res.add('BOTTOMPADDING', (0,0), (-1,-1), 8)
     ts_res.add('TOPPADDING', (0,0), (-1,-1), 8)
     ts_res.add('BOX', (0,0), (-1,-1), 1, colors.HexColor('#475569'))
-    t_res_int.setStyle
+    t_res_int.setStyle(ts_res)
+    story.append(t_res_int)
+    
+    doc.build(story, canvasmaker=ModernCanvas)
+    buffer.seek(0)
+    return buffer
+
+# ==========================================
+# INTERFACE DO USUÁRIO - STREAMLIT
+# ==========================================
+st.title("⚡ Sistema de Propostas & Custos")
+st.markdown("Gerencie orçamentos comerciais, analise a viabilidade interna e gere documentação profissional em PDF.")
+
+if os.path.exists("logo_okamoto.png"):
+    col_img1, col_img2, col_img3 = st.columns([1, 2, 1])
+    with col_img2:
+        st.image("logo_okamoto.png", width=280)
+
+tabs_topo = st.tabs(["1. Dados & Serviços", "2. Custos & Logística", "3. Prazos, Resumo & Relatórios"])
+
+with tabs_topo[0]:
+    st.subheader("1. Dados do Cliente & Evento")
+    col1, col2 = st.columns(2)
+    with col1:
+        contato = st.text_input("Contato", "")
+        empresa = st.text_input("Empresa", "")
+        telefone = st.text_input("Telefone", "")
+        email = st.text_input("E-mail", "")
+    with col2:
+        data_orcamento = st.date_input("Data do Orçamento", datetime.now())
+        data_evento = st.date_input("Data do Evento", datetime.now())
+        
+        tem_data_termino = st.checkbox("Evento com mais de um dia (Data de Término)")
+        data_termino = data_evento
+        if tem_data_termino:
+            data_termino = st.date_input("Data de Término do Evento", datetime.now())
+            
+        horario = st.text_input("Horário (ex: 18h00 às 22h30)", "")
+        local = st.text_input("Local", "")
+        
+        col_cidade, col_uf = st.columns([3, 1])
+        with col_cidade:
+            cidade = st.text_input("Cidade", "Ribeirão Preto")
+        with col_uf:
+            estado = st.selectbox("Estado (UF)", ESTADOS_BR, index=0)
+
+    st.markdown("---")
+    st.subheader("2. Seleção de Serviço & Carga Horária")
+    tipo_servico = st.selectbox("Tipo de Serviço", list(TABELAS_SERVICOS.keys()))
+    
+    outro_servico_nome = ""
+    if tipo_servico == "Outro":
+        outro_servico_nome = st.text_input("Especifique o nome do serviço", "Serviço
