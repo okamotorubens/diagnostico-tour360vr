@@ -42,17 +42,19 @@ ESTADOS_BR = [
 
 st.set_page_config(page_title="Proposta Comercial & Custos - Okamoto Mídias Visuais", page_icon="📊", layout="wide")
 
-# Espaçamento superior maior para a logo do sistema não cortar
 st.markdown("""
     <style>
         .block-container {
             padding-top: 3.5rem !important;
             padding-bottom: 2rem !important;
+            max-width: 95rem;
+        }
+        div[data-baseweb="input"] {
+            max-width: 100%;
         }
     </style>
 """, unsafe_allow_html=True)
 
-# Função para rolar a página para o topo automaticamente
 def scroll_to_top():
     st.markdown("""
         <script>
@@ -86,26 +88,12 @@ class NumberedCanvas(canvas.Canvas):
         self.setLineWidth(0.75)
         self.line(35, 38, 575, 38)
         
-        # Rodapé limpo desenhado nativamente pelo canvas para evitar conflitos de UUID
-        self.setFillColor(colors.HexColor('#1e3a8a'))
-        self.drawString(105, 24, "okamotomidiasvisuais.com.br")
-        self.linkURL("https://okamotomidiasvisuais.com.br/", (105, 22, 215, 34), relative=0)
+        footer_text = '<font color="#475569"><a href="https://okamotomidiasvisuais.com.br/" color="#1e3a8a"><b>okamotomidiasvisuais.com.br</b></a>    |    <a href="mailto:contato@okamotomidiasvisuais.com.br" color="#1e3a8a"><b>contato@okamotomidiasvisuais.com.br</b></a>    |    <a href="https://wa.me/5516991332121" color="#1e3a8a"><b>WhatsApp: 16 99133 2121</b></a></font>'
         
-        self.setFillColor(colors.HexColor('#475569'))
-        self.drawString(220, 24, "|")
+        p = Paragraph(footer_text, ParagraphStyle('FooterStyle', fontName='Helvetica', fontSize=8, leading=10, alignment=1))
+        p.wrapOn(self, 540, 20)
+        p.drawOn(self, 35, 22)
         
-        self.setFillColor(colors.HexColor('#1e3a8a'))
-        self.drawString(230, 24, "contato@okamotomidiasvisuais.com.br")
-        self.linkURL("mailto:contato@okamotomidiasvisuais.com.br", (230, 22, 395, 34), relative=0)
-        
-        self.setFillColor(colors.HexColor('#475569'))
-        self.drawString(400, 24, "|")
-        
-        self.setFillColor(colors.HexColor('#1e3a8a'))
-        self.drawString(410, 24, "WhatsApp: 16 99133 2121")
-        self.linkURL("https://wa.me/5516991332121", (410, 22, 485, 34), relative=0)
-        
-        self.setFillColor(colors.HexColor('#475569'))
         self.drawRightString(575, 24, f"Página {self._pageNumber} de {page_count}")
         self.restoreState()
 
@@ -405,14 +393,14 @@ def gerar_pdf_interno(dados):
     buffer.seek(0)
     return buffer
 
-# LOGO DO APP NO TOPO (logo_okamoto.png) com espaçamento adequado
+# LOGO DO APP NO TOPO (logo_okamoto.png) perfeitamente centralizada
 logo_app_path = get_logo_app_path()
 if logo_app_path:
     col_vazia1, col_logo, col_vazia2 = st.columns([1, 2, 1])
     with col_logo:
-        st.image(logo_app_path, width=320)
+        st.image(logo_app_path, use_column_width=True)
 
-st.markdown("<h1 style='text-align: center; margin-top: 1rem;'>⚡ Sistema de Propostas & Custos</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center; margin-top: 0.5rem;'>⚡ Sistema de Propostas & Custos</h1>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; color: #64748b;'>Gerencie orçamentos comerciais, analise a viabilidade interna e gere documentação profissional em PDF.</p>", unsafe_allow_html=True)
 st.markdown("---")
 
@@ -480,11 +468,17 @@ if st.session_state.current_tab_idx == 0:
     else:
         data_str_escopo = f"{st.session_state.data_evento.day} de {mes_extenso_ev} de {st.session_state.data_evento.year}"
 
-    # Escopo dinâmico baseado estritamente nos dados atuais da sessão
+    # Escopo totalmente dinâmico atualizado em tempo real pelos widgets
     default_escopo = f"{nome_serv_atual}\n{data_str_escopo}\n{st.session_state.horario if st.session_state.horario else 'Horário a definir'}\n{st.session_state.local if st.session_state.local else 'Local a definir'}\n{st.session_state.cidade} - {st.session_state.estado}\n01 (um) profissional".strip()
     
-    st.session_state.escopo_servico = st.text_area("Escopo do serviço", st.session_state.get("escopo_servico", default_escopo), height=110)
-    st.session_state.captacao = st.text_area("Captação", st.session_state.get("captacao", "Cobertura profissional com equipamentos de alto padrão"), height=70)
+    if 'escopo_servico' not in st.session_state:
+        st.session_state.escopo_servico = default_escopo
+    else:
+        # Atualiza dinamicamente se o usuário alterou os parâmetros principais e não customizou o texto todo
+        st.session_state.escopo_servico = default_escopo
+
+    st.session_state.escopo_servico = st.text_area("Escopo do serviço", st.session_state.escopo_servico, height=100)
+    st.session_state.captacao = st.text_area("Captação", st.session_state.get("captacao", "Cobertura profissional com equipamentos de alto padrão"), height=60)
     
     st.markdown("---")
     if st.button("Avançar ➡️", key="btn_avancar_aba0", use_container_width=True):
@@ -495,7 +489,6 @@ if st.session_state.current_tab_idx == 0:
 elif st.session_state.current_tab_idx == 1:
     st.subheader("Custos operacionais")
     
-    # Aba 2 com 1 linha de espaço entre os blocos
     st.markdown("##### 🚗 Parâmetros de Deslocamento & Logística")
     col_l1, col_l2, col_l3 = st.columns(3)
     with col_l1:
@@ -749,7 +742,7 @@ if st.session_state.current_tab_idx == 2:
         st.download_button(
             label="📄 Baixar Proposta Comercial (Cliente)",
             data=pdf_cliente_bytes,
-            file_name=f"Proposta_Comercial_{empresa_nome.replace(' ', '_')}.pdf" if empresa_nome else "Proposta_Comercial.pdf",
+            file_name=f"Proposta Comercial_{empresa_nome.replace(' ', '_')}.pdf" if empresa_nome else "Proposta Comercial.pdf",
             mime="application/pdf",
             use_container_width=True
         )
@@ -759,7 +752,7 @@ if st.session_state.current_tab_idx == 2:
         st.download_button(
             label="🔒 Baixar Relatório Interno (Custos)",
             data=pdf_interno_bytes,
-            file_name=f"Relatorio_Interno_Custos_{empresa_nome.replace(' ', '_')}.pdf" if empresa_nome else "Relatorio_Interno_Custos.pdf",
+            file_name=f"Relatorio Interno Custos_{empresa_nome.replace(' ', '_')}.pdf" if empresa_nome else "Relatorio Interno Custos.pdf",
             mime="application/pdf",
             use_container_width=True
         )
