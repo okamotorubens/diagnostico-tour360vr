@@ -623,8 +623,8 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         pdf.set_text_color(245, 158, 11)
         pdf.cell(w_ficha, 4.5, conv(f"Nota {dados.get('nota', 0.0):.1f} *   -   {dados.get('avaliacoes', 0)} avaliações no Google"), align='C', ln=True)
 
-        # Ajuste do quadro do SCORE GERAL (Largura reduzida para 60 e perfeitamente centralizado)
-        w_box_score = 60
+        # Quadro do SCORE GERAL super compacto (Largura 45)
+        w_box_score = 45
         x_box_score = 21.0 + (177.0 - w_box_score) / 2.0
         y_box_score = 66.0
 
@@ -651,7 +651,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         pdf.cell(w_bar, 5.0, "/ 100", align='L', ln=True)
         
         pdf.set_xy(x_box_score, y_box_score + 6.5)
-        pdf.set_font('Helvetica', 'B', 7.2)
+        pdf.set_font('Helvetica', 'B', 6.8)
         pdf.set_text_color(cr, cg, cb)
         pdf.cell(w_box_score, 3.0, conv(f"SCORE GERAL ({status_txt})"), align='C', ln=True)
 
@@ -736,139 +736,4 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             pdf.cell(w_item, h_row, conv("3.Categ"), border=0, fill=True, align='C')
             pdf.cell(w_item, h_row, conv("4.Horár"), border=0, fill=True, align='C')
             pdf.cell(w_item, h_row, conv("5.Web"), border=0, fill=True, align='C')
-            pdf.cell(w_item, h_row, conv("6.Nota"), border=0, fill=True, align='C')
-            pdf.cell(w_item, h_row, conv("7.Desc"), border=0, fill=True, align='C')
-            pdf.cell(w_item, h_row, conv("8.Atrib"), border=0, fill=True, align='C')
-            pdf.cell(w_item, h_row, conv("9.Resp"), border=0, fill=True, align='C')
-            pdf.cell(w_score, h_row, conv("Score Geral"), border=0, fill=True, align='C')
-
-            def celula_sim_nao(pdf_obj, w, h, valor):
-                if valor == "Sim":
-                    pdf_obj.set_fill_color(220, 252, 231)
-                    pdf_obj.set_text_color(22, 101, 52)
-                else:
-                    pdf_obj.set_fill_color(254, 226, 226)
-                    pdf_obj.set_text_color(153, 27, 27)
-                pdf_obj.cell(w, h, conv(valor), border='B', fill=True, align='C')
-
-            y_r1 = y_table + h_row
-            pdf.set_xy(21, y_r1)
-            pdf.set_fill_color(240, 249, 255)
-            pdf.set_font('Helvetica', 'B', 8.5)
-            pdf.set_text_color(30, 64, 175)
-            pdf.cell(w_emp, h_row, conv(f" {str(dados.get('nome', ''))[:25]}"), border='B', fill=True)
-            
-            celula_sim_nao(pdf, w_item, h_row, "Sim" if dados.get('tem_fotos_hd') else "Não")
-            celula_sim_nao(pdf, w_item, h_row, "Sim" if dados.get('tem_tour360') else "Não")
-            celula_sim_nao(pdf, w_item, h_row, "Sim" if dados.get('categorias_completas') else "Não")
-            celula_sim_nao(pdf, w_item, h_row, "Sim" if dados.get('horarios_ok') else "Não")
-            celula_sim_nao(pdf, w_item, h_row, "Sim" if dados.get('website') and dados.get('website') != 'Não possui' else "Não")
-            
-            pdf.set_fill_color(240, 249, 255)
-            pdf.set_text_color(30, 64, 175)
-            pdf.cell(w_item, h_row, conv(f"{dados.get('nota', 0.0):.1f}"), border='B', fill=True, align='C')
-            
-            celula_sim_nao(pdf, w_item, h_row, "Sim" if dados.get('tem_descricao') else "Não")
-            celula_sim_nao(pdf, w_item, h_row, "Sim" if dados.get('atributos_ok') else "Não")
-            celula_sim_nao(pdf, w_item, h_row, "Sim" if dados.get('resposta_avaliacoes_ok') else "Não")
-            
-            pdf.set_fill_color(240, 249, 255)
-            pdf.set_font('Helvetica', 'B', 8.5)
-            pdf.set_text_color(30, 64, 175)
-            pdf.cell(w_score, h_row, conv(f"{score} / 100"), border='B', fill=True, align='C')
-
-            pdf.set_font('Helvetica', '', 8.5)
-            for idx_c, c in enumerate(concorrentes_filtrados):
-                y_rc = y_r1 + ((idx_c + 1) * h_row)
-                score_conc = calcular_score_concorrente(c)
-                pdf.set_xy(21, y_rc)
-                pdf.set_fill_color(255, 255, 255)
-                pdf.set_text_color(51, 65, 85)
-                
-                pdf.cell(w_emp, h_row, conv(f" {c.get('nome', '')[:25]}"), border='B', fill=True)
-                celula_sim_nao(pdf, w_item, h_row, c.get('tem_fotos_hd', 'Não'))
-                celula_sim_nao(pdf, w_item, h_row, c.get('tem_tour360', 'Não'))
-                celula_sim_nao(pdf, w_item, h_row, c.get('categorias_ok', 'Não'))
-                celula_sim_nao(pdf, w_item, h_row, c.get('horarios_ok', 'Não'))
-                celula_sim_nao(pdf, w_item, h_row, c.get('tem_website', 'Não'))
-                
-                pdf.set_fill_color(255, 255, 255)
-                pdf.set_text_color(51, 65, 85)
-                pdf.cell(w_item, h_row, conv(f"{float(c.get('nota', 0.0)):.1f}"), border='B', fill=True, align='C')
-                
-                celula_sim_nao(pdf, w_item, h_row, c.get('tem_descricao', 'Não'))
-                celula_sim_nao(pdf, w_item, h_row, c.get('atributos_ok', 'Não'))
-                celula_sim_nao(pdf, w_item, h_row, c.get('respostas_ok', 'Não'))
-                
-                pdf.set_fill_color(255, 255, 255)
-                pdf.set_font('Helvetica', 'B', 8.5)
-                pdf.set_text_color(51, 65, 85)
-                pdf.cell(w_score, h_row, conv(f"{score_conc} / 100"), border='B', fill=True, align='C')
-                pdf.set_font('Helvetica', '', 8.5)
-
-        if plano_acao_extra and plano_acao_extra.strip() != "":
-            w_extra, x_extra, y_extra, h_box_extra = 177, 21.0, 237.0, 27.0
-            pdf.set_fill_color(240, 249, 255)
-            pdf.set_draw_color(62, 161, 219)
-            pdf.set_line_width(0.4)
-            pdf.rounded_rect(x_extra, y_extra, w_extra, h_box_extra, 2.0, 'FD')
-            pdf.set_line_width(0.2)
-            
-            pdf.set_xy(x_extra, y_extra + 2.5)
-            pdf.set_font('Helvetica', 'B', 8.2)
-            pdf.set_text_color(30, 64, 175)
-            pdf.cell(w_extra, 3.5, conv("PLANO DE AÇÃO E APONTAMENTOS ESTRATÉGICOS PERSONALIZADOS:"), align='C', border=0)
-            
-            pdf.set_xy(x_extra + 4, y_extra + 8.5)
-            pdf.set_font('Helvetica', '', 7.8)
-            pdf.set_text_color(51, 65, 85)
-            pdf.multi_cell(w_extra - 8, 3.5, conv(plano_acao_extra), align='C')
-
-    # PÁGINA 3: PROPOSTA COMERCIAL
-    if 3 in paginas_selecionadas:
-        pdf.add_page()
-        pdf.set_xy(21, 29)
-        pdf.set_font('Helvetica', 'B', 16)
-        pdf.set_text_color(15, 23, 42)
-        pdf.cell(177, 8, conv('PROPOSTA COMERCIAL & ESTRUTURAÇÃO ESTRATÉGICA'), align='C', ln=True)
-
-        pdf.set_y(46.0)
-        pdf.set_font('Helvetica', 'B', 14)
-        pdf.cell(0, 6, conv('PLANOS E INVESTIMENTO'), align='C', ln=True)
-
-        y_p = 66.0
-        val_start_limpo = str(planos.get('start_valor', '')).replace("/mês", "").replace("/mes", "").strip()
-        pdf.set_fill_color(248, 250, 252)
-        pdf.set_draw_color(226, 232, 240)
-        pdf.rounded_rect(21, y_p, 51, 60, 2, 'FD')
-        
-        pdf.set_xy(21, y_p + 4)
-        pdf.set_font('Helvetica', 'B', 15)
-        pdf.set_text_color(15, 23, 42)
-        pdf.cell(51, 5, 'Plano Start', align='C', ln=True)
-        
-        pdf.set_xy(21, y_p + 10)
-        pdf.set_font('Helvetica', 'B', 14)
-        pdf.set_text_color(30, 64, 175)
-        pdf.cell(51, 5, conv(f"R$ {val_start_limpo}"), align='C', ln=True)
-        
-        pdf.set_xy(21, y_p + 16)
-        pdf.set_font('Helvetica', 'B', 9.5)
-        pdf.set_text_color(15, 23, 42)
-        pdf.cell(51, 4, conv('em até 2x'), align='C', ln=True)
-        
-        pdf.set_font('Helvetica', '', 8.5)
-        pdf.set_text_color(51, 65, 85)
-        pdf.set_xy(24, y_p + 25)
-        pdf.multi_cell(45, 4.5, conv(planos.get('start_itens', '')), align='L')
-
-        val_pro_limpo = str(planos.get('pro_valor', '')).replace("/mês", "").replace("/mes", "").strip()
-        pdf.set_fill_color(240, 249, 255)
-        pdf.set_draw_color(30, 64, 175)
-        pdf.set_line_width(1.0)
-        pdf.rounded_rect(76, y_p - 3, 67, 66, 2.5, 'FD')
-        pdf.set_line_width(0.2)
-        
-        pdf.set_xy(76, y_p + 1)
-        pdf.set_font('Helvetica', 'B', 17)
-        pdf.set_text_color(15, 23
+            pdf.cell(w_item,
