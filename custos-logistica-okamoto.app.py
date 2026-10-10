@@ -100,7 +100,6 @@ class NumberedCanvas(canvas.Canvas):
         
         p_num = self._pageNumber
         
-        # Links no rodapé com gerenciamento automático de nomes (sem o parâmetro name)
         self.setFillColor(colors.HexColor('#1e3a8a'))
         self.drawString(135, 24, "okamotomidiasvisuais.com.br")
         self.linkURL("https://okamotomidiasvisuais.com.br/", (135, 22, 248, 34), relative=0)
@@ -772,7 +771,7 @@ if st.session_state.current_tab_idx == 2:
         )
 
     with col_down2:
-        pdf_interno_bytes = gerar_pdf_interno(dados_completos)
+        pdf_interno_bytes =gerar_pdf_interno(dados_completos)
         st.download_button(
             label="🔒 Baixar Relatório Interno (Custos)",
             data=pdf_interno_bytes,
