@@ -382,6 +382,7 @@ else:
 
 st.markdown("---")
 
+# ABAS DO SISTEMA
 tabs_topo = st.tabs(["1. Dados & Serviços", "2. Custos & Logística", "3. Prazos, Resumo & Relatórios"])
 
 with tabs_topo[0]:
@@ -454,31 +455,21 @@ with tabs_topo[1]:
     with col_l3:
         preco_combustivel = st.number_input("Preço do Litro (R$)", min_value=0.0, value=6.80, step=0.10)
         
-    pedagio_in = st.number_input("Valor Total de Pedágios (R$)", min_value=0.0, value=0.00, step=5.0, format="%.2f")
-    pedagio_total = pedagio_in * 100 if pedagio_in < 1000 and pedagio_in % 1 != 0 else pedagio_in
+    pedagio_total = st.number_input("Valor Total de Pedágios (R$)", min_value=0.0, value=0.00, step=5.0, format="%.2f")
 
     st.markdown("---")
     st.subheader("🏨 Hospedagem & Custos Operacionais")
     col_h1, col_h2, col_h3 = st.columns(3)
     with col_h1:
         qtd_hosp = st.number_input("Qtd. Diárias Hospedagem", min_value=0, value=0, step=1)
-        val_hosp_input = st.number_input("R$ Hospedagem (diária)", min_value=0.0, value=250.00, step=10.0, format="%.2f")
-        val_hosp = val_hosp_input * 100 if val_hosp_input < 1000 and val_hosp_input % 1 != 0 else val_hosp_input
+        val_hosp = st.number_input("R$ Hospedagem (diária)", min_value=0.0, value=250.00, step=10.0, format="%.2f")
     with col_h2:
-        almoco_in = st.number_input("Almoço (R$)", min_value=0.0, value=0.00, step=5.0, format="%.2f")
-        custo_almoco = almoco_in * 100 if almoco_in < 1000 and almoco_in % 1 != 0 else almoco_in
-        
-        jantar_in = st.number_input("Jantar (R$)", min_value=0.0, value=0.00, step=5.0, format="%.2f")
-        custo_jantar = jantar_in * 100 if jantar_in < 1000 and jantar_in % 1 != 0 else jantar_in
+        custo_almoco = st.number_input("Almoço (R$)", min_value=0.0, value=0.00, step=5.0, format="%.2f")
+        custo_jantar = st.number_input("Jantar (R$)", min_value=0.0, value=0.00, step=5.0, format="%.2f")
     with col_h3:
-        estac_in = st.number_input("Estacionamento (R$)", min_value=0.0, value=0.00, step=5.0, format="%.2f")
-        custo_estacionamento = estac_in * 100 if estac_in < 1000 and estac_in % 1 != 0 else estac_in
-        
-        free_in = st.number_input("Freelancer (R$)", min_value=0.0, value=0.00, step=50.0, format="%.2f")
-        custo_freelancer = free_in * 100 if free_in < 1000 and free_in % 1 != 0 else free_in
-        
-        outros_in = st.number_input("Outros (R$)", min_value=0.0, value=0.00, step=10.0, format="%.2f")
-        custo_outros = outros_in * 100 if outros_in < 1000 and outros_in % 1 != 0 else outros_in
+        custo_estacionamento = st.number_input("Estacionamento (R$)", min_value=0.0, value=0.00, step=5.0, format="%.2f")
+        custo_freelancer = st.number_input("Freelancer (R$)", min_value=0.0, value=0.00, step=50.0, format="%.2f")
+        custo_outros = st.number_input("Outros (R$)", min_value=0.0, value=0.00, step=10.0, format="%.2f")
 
     custo_hospedagem_total = qtd_hosp * val_hosp
 
@@ -504,3 +495,125 @@ with tabs_topo[2]:
             desconto_valor_input = 0.0
         else:
             desconto_perc = 0.0
+            desconto_valor_input = st.number_input("Desconto em Valor Fixo (R$)", min_value=0.0, value=0.0, step=10.0, format="%.2f")
+
+    st.markdown("---")
+    validade_orcamento = st.text_input("Validade do Orçamento", "05 dias")
+    forma_entrega = st.text_input("Forma de entrega", "Link exclusivo para download, disponível por 30 dias.")
+    
+    col_p1, col_p2 = st.columns(2)
+    with col_p1:
+        forma_pagamento_tipo = st.selectbox("Forma de Pagamento", ["À vista", "Parcelado"])
+    with col_p2:
+        condicao_pagamento = st.selectbox("Condições de Pagamento", ["PIX", "Transferência", "PIX ou transferência bancária", "Cartão de crédito", "Cartão de Crédito parcelado"])
+    
+    parcelas_cartao = 1
+    if "parcelado" in condicao_pagamento.lower() or forma_pagamento_tipo == "Parcelado":
+        parcelas_cartao = st.number_input("Cartão de Crédito parcelado em X vezes", min_value=1, max_value=12, value=3)
+        condicao_pagamento = f"{condicao_pagamento} em {parcelas_cartao}X"
+
+# CÁLCULOS DINÂMICOS EM TEMPO REAL
+try:
+    servico_nome = tipo_servico if tipo_servico != "Outro" else outro_servico_nome
+    nome_serv_ev = nome_servico_input if 'nome_servico_input' in locals() and nome_servico_input else servico_nome
+    
+    tabela_atual = TABELAS_SERVICOS.get(tipo_servico, TABELAS_SERVICOS["Evento social"])
+    
+    dias_evento = 1
+    if 'tem_data_termino' in locals() and tem_data_termino:
+        dias_evento = max(1, (data_termino - data_evento).days + 1)
+
+    if "diária" in carga_horaria_sel:
+        qtd_diarias = int(carga_horaria_sel.split()[0])
+        valor_base = tabela_atual.get(10, 1300.0) * qtd_diarias * dias_evento
+    else:
+        horas_num = int(carga_horaria_sel.replace("h", ""))
+        horas_buscadas = min(horas_num, 12)
+        valor_base = tabela_atual.get(horas_buscadas, 1500.0) * dias_evento
+        if horas_num > 12:
+            valor_base += (horas_num - 12) * tabela_atual.get(1, 180.0) * dias_evento
+
+    desp_perc = desconto_perc if 'desconto_perc' in locals() else 0.0
+    desp_val = desconto_valor_input if 'desconto_valor_input' in locals() else 0.0
+    aj_man = ajuste_manual if 'ajuste_manual' in locals() else 0.0
+    
+    if desp_perc > 0:
+        valor_desconto_calculado = valor_base * (desp_perc / 100.0)
+    else:
+        valor_desconto_calculado = desp_val
+
+    valor_intermediario = valor_base - valor_desconto_calculado + aj_man
+    valor_final = max(0.0, valor_intermediario)
+
+    dist_iv = distancia_ida_volta if 'distancia_ida_volta' in locals() else 0
+    cons_m = consumo_medio if 'consumo_medio' in locals() else 11.5
+    p_comb = preco_combustivel if 'preco_combustivel' in locals() else 6.8
+    ped_tot = pedagio_total if 'pedagio_total' in locals() else 0.0
+    
+    litros_gastos = dist_iv / cons_m if cons_m > 0 else 0
+    custo_combustivel = litros_gastos * p_comb
+    custo_logistica_total = custo_combustivel + ped_tot
+
+    hosp_tot = custo_hospedagem_total if 'custo_hospedagem_total' in locals() else 0.0
+    alm_c = custo_almoco if 'custo_almoco' in locals() else 0.0
+    jan_c = custo_jantar if 'custo_jantar' in locals() else 0.0
+    est_c = custo_estacionamento if 'custo_estacionamento' in locals() else 0.0
+    free_c = custo_freelancer if 'custo_freelancer' in locals() else 0.0
+    out_c = custo_outros if 'custo_outros' in locals() else 0.0
+
+    custo_total_operacional_log = custo_logistica_total + hosp_tot + alm_c + jan_c + est_c + free_c + out_c
+    
+    imp_p = imposto_perc if 'imposto_perc' in locals() else 6.0
+    com_p = comissao_perc if 'comissao_perc' in locals() else 0
+    
+    valor_impostos = valor_final * (imp_p / 100.0)
+    valor_comissao = valor_final * (com_p / 100.0)
+    
+    custo_total_interno = custo_total_operacional_log + valor_impostos + valor_comissao
+    lucro_liquido = valor_final - custo_total_interno
+    margem_lucro = (lucro_liquido / valor_final * 100) if valor_final > 0 else 0
+except Exception:
+    valor_final, custo_total_interno, lucro_liquido, margem_lucro = 0.0, 0.0, 0.0, 0.0
+
+# QUADRO DE PRÉVIA EM TEMPO REAL FIXO ABAIXO DAS ABAS
+st.markdown("---")
+st.markdown("### 📈 Quadro de Prévia em Tempo Real (Visão Geral)")
+col_res1, col_res2, col_res3, col_res4 = st.columns(4)
+col_res1.metric("Valor para o Cliente", fmt_brl(valor_final))
+col_res2.metric("Custos Operacionais", fmt_brl(custo_total_interno))
+col_res3.metric("Lucro Líquido Est.", fmt_brl(lucro_liquido))
+col_res4.metric("Margem de Lucro", f"{margem_lucro:.1f}%")
+
+st.info(f"💡 **Serviço Selecionado:** {servico_nome} ({nome_serv_ev if nome_serv_ev else 'Geral'}) — **Investimento Total:** {fmt_brl(valor_final)} | **Lucro Est.:** {fmt_brl(lucro_liquido)} ({margem_lucro:.1f}%)")
+
+dados_completos = {
+    "contato": contato if 'contato' in locals() else "",
+    "empresa": empresa if 'empresa' in locals() else "",
+    "telefone": telefone if 'telefone' in locals() else "",
+    "email": email if 'email' in locals() else "",
+    "data_orcamento": data_orcamento if 'data_orcamento' in locals() else datetime.now(),
+    "data_evento": data_evento if 'data_evento' in locals() else datetime.now(),
+    "tem_data_termino": tem_data_termino if 'tem_data_termino' in locals() else False,
+    "data_termino": data_termino if 'data_termino' in locals() else datetime.now(),
+    "horario": horario if 'horario' in locals() else "08h00",
+    "nome_servico_input": nome_servico_input if 'nome_servico_input' in locals() else "",
+    "local": local if 'local' in locals() else "",
+    "cidade": cidade if 'cidade' in locals() else "Ribeirão Preto",
+    "estado": estado if 'estado' in locals() else "SP",
+    "tipo_servico": tipo_servico if 'tipo_servico' in locals() else "Evento social",
+    "outro_servico_nome": outro_servico_nome if 'outro_servico_nome' in locals() else "",
+    "carga_horaria_sel": carga_horaria_sel if 'carga_horaria_sel' in locals() else "1h",
+    "escopo_servico": escopo_servico if 'escopo_servico' in locals() else "",
+    "captacao": captacao if 'captacao' in locals() else "",
+    "validade_orcamento": validade_orcamento if 'validade_orcamento' in locals() else "05 dias",
+    "forma_entrega": forma_entrega if 'forma_entrega' in locals() else "",
+    "forma_pagamento_tipo": forma_pagamento_tipo if 'forma_pagamento_tipo' in locals() else "À vista",
+    "condicao_pagamento": condicao_pagamento if 'condicao_pagamento' in locals() else "PIX",
+    "desconto_perc": desp_perc,
+    "ajuste_manual": aj_man,
+    "valor_base": valor_base if 'valor_base' in locals() else 0.0,
+    "valor_desconto_calculado": valor_desconto_calculado,
+    "valor_final": valor_final,
+    "distancia": dist_iv,
+    "consumo_veiculo": cons_m,
+    "litros_gastos":
