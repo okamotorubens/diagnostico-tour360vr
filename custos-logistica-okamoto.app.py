@@ -101,7 +101,6 @@ class NumberedCanvas(canvas.Canvas):
         
         p_num = self._pageNumber
         footer_string = "okamotomidiasvisuais.com.br    |    contato@okamotomidiasvisuais.com.br    |    WhatsApp: 16 99133 2121"
-        # Centralizado exatamente no meio da página A4 (595.27 / 2 = 297.64)
         self.drawCentredString(297.64, 24, footer_string)
         self.drawRightString(575, 24, f"Página {p_num} de {page_count}")
         self.restoreState()
@@ -166,6 +165,7 @@ def gerar_pdf_cliente(dados):
     
     story.append(Paragraph("Proposta Comercial", style_titulo))
     story.append(Spacer(1, 4))
+    # Subtítulo utilizando estritamente o nome do serviço
     story.append(Paragraph(f"{nome_serv_ev}", style_servico_sub))
     story.append(Spacer(1, 24))
     
@@ -314,6 +314,7 @@ def gerar_pdf_interno(dados):
     story.append(Spacer(1, 10))
     story.append(Paragraph("Relatório de Custos", style_titulo))
     story.append(Spacer(1, 2))
+    # Subtítulo utilizando estritamente o nome do serviço
     story.append(Paragraph(f"{nome_serv_ev}", style_subtitulo_serv))
     story.append(Spacer(1, 12))
     
@@ -419,7 +420,7 @@ def gerar_pdf_interno(dados):
     buffer.seek(0)
     return buffer
 
-# LOGO DO APP NO TOPO centralizada via CSS global
+# LOGO DO APP NO TOPO centralizada perfeitamente
 logo_app_path = get_logo_app_path()
 if logo_app_path:
     st.image(logo_app_path, width=280)
@@ -492,7 +493,7 @@ if st.session_state.current_tab_idx == 0:
     else:
         data_str_escopo = f"{st.session_state.data_evento.day} de {mes_extenso_ev} de {st.session_state.data_evento.year}"
 
-    # Escopo formatado um item abaixo do outro (linhas separadas)
+    # Escopo formatado um item abaixo do outro de forma limpa
     default_escopo = f"{nome_serv_atual}\n{data_str_escopo}\n{st.session_state.horario if st.session_state.horario else 'Horário a definir'}\n{st.session_state.local if st.session_state.local else 'Local a definir'}\n{st.session_state.cidade} - {st.session_state.estado}\n01 (um) profissional".strip()
     
     st.session_state.escopo_servico = st.text_area("Escopo do serviço", default_escopo, height=130)
