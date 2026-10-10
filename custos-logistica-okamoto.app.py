@@ -6,26 +6,21 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from reportlab.pdfgen import canvas
 import io
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # ==========================================
 # CONFIGURAÇÃO DE ESTILO E FORMATAÇÃO BRL
 # ==========================================
 def fmt_brl(val):
-    """Formata valores no padrão monetário brasileiro R$ X.XXX,XX"""
     s = f"{val:,.2f}"
     return "R$ " + s.replace(",", "X").replace(".", ",").replace("X", ".")
 
-# Dicionário de meses em português para o PDF
 MESES_PT = {
     1: 'janeiro', 2: 'fevereiro', 3: 'março', 4: 'abril',
     5: 'maio', 6: 'junho', 7: 'julho', 8: 'agosto',
     9: 'setembro', 10: 'outubro', 11: 'novembro', 12: 'dezembro'
 }
 
-# ==========================================
-# TABELAS DE PREÇO POR TIPO DE EVENTO
-# ==========================================
 TABELAS_SERVICOS = {
     "Evento social": {1: 180.0, 2: 350.0, 3: 450.0, 4: 600.0, 5: 750.0, 6: 900.0, 7: 1000.0, 8: 1100.0, 9: 1200.0, 10: 1300.0, 11: 1400.0, 12: 1500.0},
     "Evento Corporativo": {1: 180.0, 2: 350.0, 3: 450.0, 4: 600.0, 5: 750.0, 6: 900.0, 7: 1000.0, 8: 1100.0, 9: 1200.0, 10: 1300.0, 11: 1400.0, 12: 1500.0},
@@ -49,9 +44,6 @@ ESTADOS_BR = [
 
 st.set_page_config(page_title="Proposta Comercial & Custos - Okamoto Mídias Visuais", page_icon="📊", layout="wide")
 
-# ==========================================
-# CANVAS PARA RODAPÉ COM LINKS E E-MAIL
-# ==========================================
 class ModernCanvas(canvas.Canvas):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -73,19 +65,15 @@ class ModernCanvas(canvas.Canvas):
         self.saveState()
         self.setFont("Helvetica", 8)
         self.setFillColor(colors.HexColor("#475569"))
-        
-        # Linha separadora do rodapé
         self.setStrokeColor(colors.HexColor("#cbd5e1"))
         self.setLineWidth(0.5)
         self.line(40, 45, 555, 45)
-        
-        # Rodapé unificado com links e e-mail
         footer_text = "Okamoto Mídias Visuais    |    okamotomidiasvisuais.com.br    |    contato@okamotomidiasvisuais.com.br    |    WhatsApp: 16 99133 2121"
         self.drawCentredString(297.5, 30, footer_text)
         self.restoreState()
 
 # ==========================================
-# FUNÇÃO 1: GERAR PDF DA PROPOSTA COMERCIAL (CLIENTE)
+# FUNÇÃO 1: GERAR PDF DA PROPOSTA COMERCIAL (CLIENTE + 2ª PÁGINA)
 # ==========================================
 def gerar_pdf_cliente(dados):
     buffer = io.BytesIO()
@@ -99,26 +87,23 @@ def gerar_pdf_cliente(dados):
     
     story = []
     
-    # Logotipo no canto esquerdo superior
+    # 1ª PÁGINA: PROPOSTA COMERCIAL
     if os.path.exists("logo_okamoto.png"):
-        story.append(RLImage("logo_okamoto.png", width=140, height=52))
+        story.append(RLImage("logo_okamoto.png", width=180, height=67)) # Logo ampliada
     else:
-        story.append(Paragraph("<b>[ OKAMOTO MÍDIAS VISUAIS ]</b>", ParagraphStyle('LogoTxt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=14, textColor=colors.HexColor('#1e293b'))))
+        story.append(Paragraph("<b>[ OKAMOTO MÍDIAS VISUAIS ]</b>", ParagraphStyle('LogoTxt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=16, textColor=colors.HexColor('#1e293b'))))
     
     story.append(Spacer(1, 15))
     
-    # Data em Português
     d_orc = dados['data_orcamento']
     data_extenso = f"Ribeirão Preto, {d_orc.day} de {MESES_PT[d_orc.month]} de {d_orc.year}"
     story.append(Paragraph(data_extenso, style_corpo))
     story.append(Spacer(1, 15))
     
-    # Título dinâmico
     nome_servico_titulo = dados['tipo_servico'] if dados['tipo_servico'] != "Outro" else dados['outro_servico_nome']
     story.append(Paragraph(f"<b>Proposta Comercial - {nome_servico_titulo}</b>", style_titulo))
     story.append(Spacer(1, 15))
     
-    # 1. Dados do cliente
     story.append(Paragraph("<b>1. Dados do cliente:</b>", style_bold))
     texto_cliente = f"""
     <b>Contato:</b> {dados['contato']}<br/>
@@ -129,7 +114,6 @@ def gerar_pdf_cliente(dados):
     story.append(Paragraph(texto_cliente, style_corpo))
     story.append(Spacer(1, 12))
     
-    # 2. Data do evento
     story.append(Paragraph("<b>2. Data do evento:</b>", style_bold))
     data_ev_str = dados['data_evento'].strftime('%d/%m/%Y')
     if dados['tem_data_termino']:
@@ -143,35 +127,27 @@ def gerar_pdf_cliente(dados):
     story.append(Paragraph(texto_evento, style_corpo))
     story.append(Spacer(1, 12))
     
-    # 3. Serviço (com nome na linha de baixo)
-    servico_exibido = dados['tipo_servico'] if dados['tipo_servico'] != "Outro" else dados['outro_servico_nome']
     story.append(Paragraph("<b>3. Serviço:</b>", style_bold))
-    story.append(Paragraph(servico_exibido, style_corpo))
+    story.append(Paragraph(nome_servico_titulo, style_corpo))
     story.append(Spacer(1, 12))
     
-    # 4. Escopo do serviço
     story.append(Paragraph("<b>4. Escopo do serviço:</b>", style_bold))
     story.append(Paragraph(dados['escopo_servico'].replace('\n', '<br/>'), style_corpo))
     story.append(Spacer(1, 12))
     
-    # 5. Captação
     story.append(Paragraph("<b>5. Captação:</b>", style_bold))
     story.append(Paragraph(dados['captacao'].replace('\n', '<br/>'), style_corpo))
     story.append(Spacer(1, 12))
     
-    # 6. Forma de entrega atualizada
     story.append(Paragraph("<b>6. Forma de entrega:</b> Link exclusivo para download, disponível por 30 dias.", style_corpo))
     story.append(Spacer(1, 12))
     
-    # 7. Formas de pagamento
     story.append(Paragraph(f"<b>7. Formas de pagamento:</b> {dados['forma_pagamento_tipo']}", style_corpo))
     story.append(Spacer(1, 12))
     
-    # 8. Condições de pagamento
     story.append(Paragraph(f"<b>8. Condições de pagamento:</b> {dados['condicao_pagamento']}", style_corpo))
     story.append(Spacer(1, 12))
     
-    # 9. Validade do orçamento & Valor Total em cinza escuro
     story.append(Paragraph("<b>9. Validade do orçamento:</b> 05 dias", style_corpo))
     story.append(Spacer(1, 10))
     
@@ -186,13 +162,55 @@ def gerar_pdf_cliente(dados):
     
     story.append(Paragraph("Ficamos à disposição para quaisquer esclarecimentos e ajustes, caso necessário.", style_corpo))
     story.append(Spacer(1, 12))
-    
     story.append(Paragraph("Atenciosamente,", style_corpo))
     story.append(Spacer(1, 12))
-    
     story.append(Paragraph("<b>Rubens Okamoto</b>", style_assinatura))
     story.append(Paragraph("Okamoto Mídias Visuais", style_corpo))
     
+    # 2ª PÁGINA: DADOS INSTITUCIONAIS E BANCÁRIOS (Conforme anexo)
+    story.append(PageBreak())
+    
+    if os.path.exists("logo_okamoto.png"):
+        story.append(RLImage("logo_okamoto.png", width=180, height=67))
+    else:
+        story.append(Paragraph("<b>[ OKAMOTO MÍDIAS VISUAIS ]</b>", style_bold))
+        
+    story.append(Spacer(1, 20))
+    story.append(Paragraph("<b>Dados da Empresa</b>[cite: 2]", style_titulo))
+    story.append(Spacer(1, 8))
+    
+    dados_empresa_txt = """
+    <b>Okamoto Reportagens Fotográficas SS Ltda</b>[cite: 2]<br/>
+    <b>CNPJ:</b> 04.824.331/0001-05[cite: 2]<br/>
+    Rua General Carneiro, 860[cite: 2]<br/>
+    Centro — Brodowski - SP[cite: 2]<br/>
+    CEP: 14.340-023[cite: 2]
+    """
+    story.append(Paragraph(dados_empresa_txt, style_corpo))
+    story.append(Spacer(1, 15))
+    
+    story.append(Paragraph("<b>Dados Pessoais</b>[cite: 2]", style_titulo))
+    story.append(Spacer(1, 8))
+    dados_pessoais_txt = """
+    <b>Rubens Heigasi Okamoto</b>[cite: 2]<br/>
+    <b>CPF:</b> 287.932.298-79[cite: 2]<br/>
+    <b>RG:</b> 25.450.624-0 — SSP/SP[cite: 2]<br/>
+    <b>Tel. Cel.:</b> 16 99133 2121[cite: 2]<br/>
+    <b>E-mail:</b> contato@okamotomidiasvisuais.com.br[cite: 2]
+    """
+    story.append(Paragraph(dados_pessoais_txt, style_corpo))
+    story.append(Spacer(1, 15))
+    
+    story.append(Paragraph("<b>Dados Bancários</b>[cite: 2]", style_titulo))
+    story.append(Spacer(1, 8))
+    dados_banco_txt = """
+    <b>Banco do Brasil</b>[cite: 2]<br/>
+    <b>Agência:</b> 3235-2[cite: 2]<br/>
+    <b>C. Corrente:</b> 11.935-0[cite: 2]<br/>
+    <b>Chave PIX:</b> 04824331000105[cite: 2]
+    """
+    story.append(Paragraph(dados_banco_txt, style_corpo))
+
     doc.build(story, canvasmaker=ModernCanvas)
     buffer.seek(0)
     return buffer
@@ -212,15 +230,14 @@ def gerar_pdf_interno(dados):
     
     story = []
     
-    # Cabeçalho com logo e apenas "Relatório Interno"
     if os.path.exists("logo_okamoto.png"):
-        story.append(RLImage("logo_okamoto.png", width=130, height=48))
+        story.append(RLImage("logo_okamoto.png", width=180, height=67))
     else:
         story.append(Paragraph("<b>[ LOGO OKAMOTO ]</b>", style_bold))
         
     story.append(Spacer(1, 10))
     story.append(Paragraph("Relatório Interno", style_subtitulo))
-    story.append(Spacer(1, 20)) # Mais espaço antes do título principal conforme solicitado
+    story.append(Spacer(1, 20))
     
     story.append(Paragraph("Análise Técnica de Custos, Logística e Margem", style_titulo))
     story.append(Spacer(1, 15))
@@ -229,7 +246,7 @@ def gerar_pdf_interno(dados):
     
     info_geral = [
         [Paragraph("<b>Cliente / Empresa:</b>", style_bold), Paragraph(f"{dados['empresa']} ({dados['contato']})", style_corpo)],
-        [Paragraph("<b>Serviço:</b>", style_bold), Paragraph(servico_exibido, style_corpo)], # Serviço e Carga horária separados
+        [Paragraph("<b>Serviço:</b>", style_bold), Paragraph(servico_exibido, style_corpo)],
         [Paragraph("<b>Carga Horária:</b>", style_bold), Paragraph(dados['carga_horaria_sel'], style_corpo)],
         [Paragraph("<b>Data do Evento:</b>", style_bold), Paragraph(dados['data_evento'].strftime('%d/%m/%Y'), style_corpo)]
     ]
@@ -238,14 +255,16 @@ def gerar_pdf_interno(dados):
     story.append(t_geral)
     story.append(Spacer(1, 15))
     
-    story.append(Paragraph("1. Custos de Logística e Deslocamento (Honda HR-V)", style_subtitulo))
+    story.append(Paragraph("1. Custos de Logística, Deslocamento & Operacionais", style_subtitulo))
     story.append(Spacer(1, 8))
     
     tabela_log_dados = [
         [Paragraph("<b>Parâmetro</b>", style_bold), Paragraph("<b>Detalhe / Métrica</b>", style_bold), Paragraph("<b>Custo Parcial</b>", style_bold)],
         [Paragraph("Distância Total", style_corpo), Paragraph(f"{dados['distancia']} km (Ida e Volta)", style_corpo), Paragraph("-", style_corpo)],
         [Paragraph("Combustível", style_corpo), Paragraph(f"Consumo: {dados['consumo_veiculo']} km/L | {dados['litros_gastos']:.1f}L a {fmt_brl(dados['preco_combustivel'])}/L", style_corpo), Paragraph(fmt_brl(dados['custo_combustivel']), style_corpo)],
-        [Paragraph("Pedágios", style_corpo), Paragraph("Tarifas de estrada", style_corpo), Paragraph(fmt_brl(dados['pedagios']), style_corpo)]
+        [Paragraph("Pedágios", style_corpo), Paragraph("Tarifas de estrada", style_corpo), Paragraph(fmt_brl(dados['pedagios']), style_corpo)],
+        [Paragraph("Alimentação", style_corpo), Paragraph("Almoço / Janta calculados", style_corpo), Paragraph(fmt_brl(dados['custo_alimentacao_total']), style_corpo)],
+        [Paragraph("Outros Custos", style_corpo), Paragraph("Estacionamento / Freelancer / Outros", style_corpo), Paragraph(fmt_brl(dados['custo_outros_total']), style_corpo)]
     ]
     t_log = Table(tabela_log_dados, colWidths=[130, 275, 110])
     t_log.setStyle(TableStyle([
@@ -268,7 +287,7 @@ def gerar_pdf_interno(dados):
         [Paragraph("Valor Base dos Serviços", style_corpo), Paragraph(f"Tabela ({dados['carga_horaria_sel']})", style_corpo), Paragraph(fmt_brl(dados['valor_base']), style_corpo)],
         [Paragraph("Desconto Aplicado", style_corpo), Paragraph(f"{dados['desconto_perc']}% de desconto comercial", style_corpo), Paragraph(f"- {fmt_brl(dados['valor_desconto'])}", style_corpo)],
         [Paragraph("Impostos (Nota Fiscal)", style_corpo), Paragraph(f"{dados['imposto_perc']}% sobre o faturamento", style_corpo), Paragraph(fmt_brl(dados['valor_impostos']), style_corpo)],
-        [Paragraph("Outros Custos / Extras", style_corpo), Paragraph("Manutenção preventiva / Insumos", style_corpo), Paragraph(fmt_brl(dados['custo_extra']), style_corpo)]
+        [Paragraph("Outros Custos / Extras", style_corpo), Paragraph("Insumos gerais", style_corpo), Paragraph(fmt_brl(dados['custo_extra']), style_corpo)]
     ]
     t_op = Table(tabela_op_dados, colWidths=[140, 265, 110])
     t_op.setStyle(TableStyle([
@@ -288,7 +307,7 @@ def gerar_pdf_interno(dados):
     
     tabela_resumo_interno = [
         [Paragraph("<b>Faturamento Total Proposto:</b>", style_bold), Paragraph(f"<b>{fmt_brl(dados['valor_final'])}</b>", style_corpo)],
-        [Paragraph("<b>Custo Operacional Total (Logística + Impostos + Extras):</b>", style_bold), Paragraph(fmt_brl(dados['custo_total_interno']), style_corpo)],
+        [Paragraph("<b>Custo Operacional Total:</b>", style_bold), Paragraph(fmt_brl(dados['custo_total_interno']), style_corpo)],
         [Paragraph("<b>Lucro Líquido Estimado:</b>", style_bold), Paragraph(f"<b>{fmt_brl(dados['lucro_liquido'])} ({dados['margem_lucro']:.1f}%)</b>", style_bold)]
     ]
     t_res_int = Table(tabela_resumo_interno, colWidths=[315, 200])
@@ -307,18 +326,18 @@ def gerar_pdf_interno(dados):
     return buffer
 
 # ==========================================
-# INTERFACE DO USUÁRIO - STREAMLIT (LAYOUT MODERNO)
+# INTERFACE DO USUÁRIO - STREAMLIT
 # ==========================================
 st.title("⚡ Sistema de Propostas & Custos")
 st.markdown("Gerencie orçamentos comerciais, analise a viabilidade interna e gere documentação profissional em PDF.")
 
-# Inclusão da logo no painel principal do sistema se existir
 if os.path.exists("logo_okamoto.png"):
-    st.image("logo_okamoto.png", width=180)
+    st.image("logo_okamoto.png", width=220) # Logo ampliada no painel
 
-tab1, tab2, tab3 = st.tabs(["1. Dados & Serviços", "2. Custos & Logística", "3. Prazos, Resumo & Relatórios"])
+# Criação de abas duplicadas (em cima e embaixo) para facilitar a navegação sem subir a tela
+tabs_topo = st.tabs(["1. Dados & Serviços", "2. Custos & Logística", "3. Prazos, Resumo & Relatórios"])
 
-with tab1:
+with tabs_topo[0]:
     st.subheader("1. Dados do Cliente & Evento")
     col1, col2 = st.columns(2)
     with col1:
@@ -330,14 +349,13 @@ with tab1:
         data_orcamento = st.date_input("Data do Orçamento", datetime.now())
         data_evento = st.date_input("Data do Evento", datetime.now())
         
-        # Campo opcional de data de término
         tem_data_termino = st.checkbox("Evento com mais de um dia (Data de Término)")
         data_termino = data_evento
         if tem_data_termino:
             data_termino = st.date_input("Data de Término do Evento", datetime.now())
             
-        horario = st.text_input("Horário", "08h00 às 18h00")
-        local = st.text_input("Local", "Rod. Alexandre Balbo km 334,6")
+        horario = st.text_input("Horário", "18h00 às 22h30")
+        local = st.text_input("Local", "Rua Clemente Ferreira, 330")
         
         col_cidade, col_uf = st.columns([3, 1])
         with col_cidade:
@@ -355,7 +373,6 @@ with tab1:
 
     carga_horaria_sel = st.selectbox("Carga Horária", OPCOES_CARGA_HORARIA)
     
-    # Opções de desconto com campo manual
     opcoes_desconto_base = [0, 5, 10, 15, 20, 25, 30]
     tipo_desc = st.radio("Selecione a modalidade de desconto", ["Padrão", "Personalizado (Outro valor)"], horizontal=True)
     if tipo_desc == "Padrão":
@@ -367,23 +384,43 @@ with tab1:
     st.subheader("3. Detalhamento Técnico (Escopo & Captação)")
     
     nome_servico_atual = tipo_servico if tipo_servico != "Outro" else outro_servico_nome
-    default_escopo = f"{nome_servico_atual}, {data_evento.strftime('%d/%m/%Y')}, {horario}, {local} - {cidade}/{estado} e 01 profissional."
+    mes_extenso_ev = MESES_PT[data_evento.month]
+    data_str_escopo = f"em {data_evento.day} de {mes_extenso_ev} de {data_evento.year}"
+    if tem_data_termino:
+        mes_extenso_ter = MESES_PT[data_termino.month]
+        data_str_escopo = f"de {data_evento.day} de {mes_extenso_ev} até {data_termino.day} de {mes_extenso_ter} de {data_termino.year}"
+
+    default_escopo = f"{nome_servico_atual}, {data_str_escopo}, das {horario}, {local} em {cidade} - {estado} e 01 (um) profissional."
     default_captacao = "Cobertura fotográfica do evento"
     
     escopo_servico = st.text_area("Escopo do serviço", default_escopo)
     captacao = st.text_area("Captação", default_captacao)
 
-with tab2:
+with tabs_topo[1]:
     st.subheader("🚗 Parâmetros de Deslocamento & Logística (Honda HR-V)")
     col_l1, col_l2, col_l3 = st.columns(3)
     with col_l1:
         distancia_ida_volta = st.number_input("Distância Total (Ida e Volta em km)", min_value=0.0, value=40.0, step=5.0)
     with col_l2:
-        consumo_medio = st.number_input("Consumo Médio (km/L)", min_value=1.0, value=11.50, step=0.5) # Atualizado para 11,50
+        consumo_medio = st.number_input("Consumo Médio (km/L)", min_value=1.0, value=11.50, step=0.5)
     with col_l3:
-        preco_combustivel = st.number_input("Preço do Litro (R$)", min_value=0.0, value=6.80, step=0.10) # Atualizado para 6,80
+        preco_combustivel = st.number_input("Preço do Litro (R$)", min_value=0.0, value=6.80, step=0.10)
         
     pedagio_total = st.number_input("Valor Total de Pedágios (R$)", min_value=0.0, value=0.0, step=5.0)
+
+    st.markdown("---")
+    st.subheader("🍽️ Custos de Alimentação & Outros")
+    col_al1, col_al2, col_al3 = st.columns(3)
+    with col_al1:
+        qtd_almoco = st.number_input("Qtd. Almoços", min_value=0, value=1, step=1)
+        valor_almoco_unit = st.number_input("Valor Unitário Almoço (R$)", min_value=0.0, value=35.0, step=5.0)
+    with col_al2:
+        qtd_janta = st.number_input("Qtd. Jantas", min_value=0, value=1, step=1)
+        valor_janta_unit = st.number_input("Valor Unitário Janta (R$)", min_value=0.0, value=45.0, step=5.0)
+    with col_al3:
+        custo_outros = st.number_input("Outros (Estacionamento, Freelancer, etc.) (R$)", min_value=0.0, value=0.0, step=10.0)
+
+    custo_alimentacao_total = (qtd_almoco * valor_almoco_unit) + (qtd_janta * valor_janta_unit)
 
     st.markdown("---")
     st.subheader("💼 Custos Operacionais & Impostos (Uso Interno)")
@@ -393,7 +430,7 @@ with tab2:
     with col_op2:
         custo_extra = st.number_input("Outros Custos / Extras (R$)", min_value=0.0, value=0.0, step=10.0)
 
-with tab3:
+with tabs_topo[2]:
     st.subheader("Condições Comerciais & Pagamento")
     forma_entrega = st.text_input("Forma de entrega", "Link exclusivo para download, disponível por 30 dias.")
     
@@ -429,8 +466,9 @@ with tab3:
     custo_combustivel = litros_gastos * preco_combustivel
     custo_logistica_total = custo_combustivel + pedagio_total
 
+    custo_total_operacional_log = custo_logistica_total + custo_alimentacao_total + custo_outros
     valor_impostos = valor_final * (imposto_perc / 100.0)
-    custo_total_interno = custo_logistica_total + valor_impostos + custo_extra
+    custo_total_interno = custo_total_operacional_log + valor_impostos + custo_extra
     lucro_liquido = valor_final - custo_total_interno
     margem_lucro = (lucro_liquido / valor_final * 100) if valor_final > 0 else 0
 
@@ -442,7 +480,6 @@ with tab3:
     col_res3.metric("Lucro Líquido Est.", fmt_brl(lucro_liquido))
     col_res4.metric("Margem de Lucro", f"{margem_lucro:.1f}%")
 
-    # Dicionário consolidado para os relatórios
     dados_completos = {
         "contato": contato,
         "empresa": empresa,
@@ -474,6 +511,8 @@ with tab3:
         "preco_combustivel": preco_combustivel,
         "custo_combustivel": custo_combustivel,
         "pedagios": pedagio_total,
+        "custo_alimentacao_total": custo_alimentacao_total,
+        "custo_outros_total": custo_outros,
         "imposto_perc": imposto_perc,
         "valor_impostos": valor_impostos,
         "custo_extra": custo_extra,
@@ -505,3 +544,14 @@ with tab3:
             mime="application/pdf",
             use_container_width=True
         )
+
+# Abas duplicadas na parte inferior da tela para facilitar a navegação
+st.markdown("---")
+st.markdown("### 📌 Navegação Rápida (Inferior)")
+tabs_baixo = st.tabs(["1. Dados & Serviços (Inf)", "2. Custos & Logística (Inf)", "3. Prazos, Resumo & Relatórios (Inf)"])
+with tabs_baixo[0]:
+    st.info("💡 Dica: Você pode preencher os dados acima na aba superior ou alternar para cá a qualquer momento.")
+with tabs_baixo[1]:
+    st.info("💡 Dica: Os custos de combustível, alimentação e taxas são consolidados automaticamente no relatório interno.")
+with tabs_baixo[2]:
+    st.info("💡 Dica: O painel financeiro e os botões de download dos PDFs encontram-se na aba principal acima.")
