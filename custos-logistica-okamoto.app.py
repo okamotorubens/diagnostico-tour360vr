@@ -88,28 +88,10 @@ class NumberedCanvas(canvas.Canvas):
         self.setLineWidth(0.75)
         self.line(35, 38, 575, 38)
         
-        # Rodapé desenhado com nomes de anotações seguros e únicos por página para evitar o erro de redefining
+        # Rodapé corporativo desenhado puramente via texto sem conflitos de anotações
         p_num = self._pageNumber
-        
-        self.setFillColor(colors.HexColor('#1e3a8a'))
-        self.drawString(105, 24, "okamotomidiasvisuais.com.br")
-        self.linkURL("https://okamotomidiasvisuais.com.br/", (105, 22, 215, 34), relative=0, name=f"web_{p_num}")
-        
-        self.setFillColor(colors.HexColor('#475569'))
-        self.drawString(220, 24, "|")
-        
-        self.setFillColor(colors.HexColor('#1e3a8a'))
-        self.drawString(230, 24, "contato@okamotomidiasvisuais.com.br")
-        self.linkURL("mailto:contato@okamotomidiasvisuais.com.br", (230, 22, 395, 34), relative=0, name=f"mail_{p_num}")
-        
-        self.setFillColor(colors.HexColor('#475569'))
-        self.drawString(400, 24, "|")
-        
-        self.setFillColor(colors.HexColor('#1e3a8a'))
-        self.drawString(410, 24, "WhatsApp: 16 99133 2121")
-        self.linkURL("https://wa.me/5516991332121", (410, 22, 485, 34), relative=0, name=f"wa_{p_num}")
-        
-        self.setFillColor(colors.HexColor('#475569'))
+        footer_string = "okamotomidiasvisuais.com.br    |    contato@okamotomidiasvisuais.com.br    |    WhatsApp: 16 99133 2121"
+        self.drawString(35, 24, footer_string)
         self.drawRightString(575, 24, f"Página {p_num} de {page_count}")
         self.restoreState()
 
@@ -409,7 +391,7 @@ def gerar_pdf_interno(dados):
     buffer.seek(0)
     return buffer
 
-# LOGO DO APP NO TOPO aumentada em 25% (192 * 1.25 = 240) e perfeitamente centralizada
+# LOGO DO APP NO TOPO com tamanho ajustado (240 pixels) e perfeitamente centralizada
 logo_app_path = get_logo_app_path()
 if logo_app_path:
     col_vazia1, col_logo, col_vazia2 = st.columns([1, 2, 1])
