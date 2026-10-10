@@ -6,7 +6,7 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from reportlab.pdfgen import canvas
 import io
 import os
-from datetime import datetime, timedelta
+from datetime import datetime
 
 # ==========================================
 # CONFIGURAÇÃO DE ESTILO E FORMATAÇÃO BRL
@@ -68,12 +68,13 @@ class ModernCanvas(canvas.Canvas):
         self.setStrokeColor(colors.HexColor("#cbd5e1"))
         self.setLineWidth(0.5)
         self.line(40, 45, 555, 45)
+        # Rodapé completo com links clicáveis e e-mail solicitados
         footer_text = "Okamoto Mídias Visuais    |    okamotomidiasvisuais.com.br    |    contato@okamotomidiasvisuais.com.br    |    WhatsApp: 16 99133 2121"
         self.drawCentredString(297.5, 30, footer_text)
         self.restoreState()
 
 # ==========================================
-# FUNÇÃO 1: GERAR PDF DA PROPOSTA COMERCIAL (CLIENTE + 2ª PÁGINA)
+# FUNÇÃO 1: GERAR PDF DA PROPOSTA COMERCIAL
 # ==========================================
 def gerar_pdf_cliente(dados):
     buffer = io.BytesIO()
@@ -81,15 +82,16 @@ def gerar_pdf_cliente(dados):
     
     styles = getSampleStyleSheet()
     style_titulo = ParagraphStyle('Titulo', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=18, leading=22, textColor=colors.HexColor('#1e293b'))
+    style_servico_sub = ParagraphStyle('ServSub', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, leading=15, textColor=colors.HexColor('#334155'))
     style_corpo = ParagraphStyle('Corpo', parent=styles['Normal'], fontName='Helvetica', fontSize=10, leading=15, textColor=colors.HexColor('#334155'))
     style_bold = ParagraphStyle('Bold', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=15, textColor=colors.HexColor('#1e293b'))
     style_assinatura = ParagraphStyle('Assinatura', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, leading=16, textColor=colors.HexColor('#1e293b'))
     
     story = []
     
-    # 1ª PÁGINA: PROPOSTA COMERCIAL
+    # 1ª PÁGINA
     if os.path.exists("logo_okamoto.png"):
-        story.append(RLImage("logo_okamoto.png", width=180, height=67)) # Logo ampliada
+        story.append(RLImage("logo_okamoto.png", width=180, height=67))
     else:
         story.append(Paragraph("<b>[ OKAMOTO MÍDIAS VISUAIS ]</b>", ParagraphStyle('LogoTxt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=16, textColor=colors.HexColor('#1e293b'))))
     
@@ -101,7 +103,9 @@ def gerar_pdf_cliente(dados):
     story.append(Spacer(1, 15))
     
     nome_servico_titulo = dados['tipo_servico'] if dados['tipo_servico'] != "Outro" else dados['outro_servico_nome']
-    story.append(Paragraph(f"<b>Proposta Comercial - {nome_servico_titulo}</b>", style_titulo))
+    story.append(Paragraph("<b>Proposta Comercial</b>", style_titulo))
+    story.append(Spacer(1, 6))
+    story.append(Paragraph(nome_servico_titulo, style_servico_sub)) # Serviço na linha abaixo, menor
     story.append(Spacer(1, 15))
     
     story.append(Paragraph("<b>1. Dados do cliente:</b>", style_bold))
@@ -149,7 +153,7 @@ def gerar_pdf_cliente(dados):
     story.append(Spacer(1, 12))
     
     story.append(Paragraph("<b>9. Validade do orçamento:</b> 05 dias", style_corpo))
-    story.append(Spacer(1, 10))
+    story.append(Spacer(1, 20)) # + 1 linha de espaçamento extra solicitada
     
     val_fmt = fmt_brl(dados['valor_final'])
     if dados['desconto_perc'] > 0:
@@ -158,16 +162,17 @@ def gerar_pdf_cliente(dados):
         texto_valor = f"<b>Valor Total do Investimento ({dados['carga_horaria_sel']}):</b> {val_fmt}"
         
     story.append(Paragraph(texto_valor, ParagraphStyle('ValDark', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, textColor=colors.HexColor('#334155'))))
-    story.append(Spacer(1, 15))
+    story.append(Spacer(1, 20)) # + 1 linha extra solicitada
     
     story.append(Paragraph("Ficamos à disposição para quaisquer esclarecimentos e ajustes, caso necessário.", style_corpo))
-    story.append(Spacer(1, 12))
+    story.append(Spacer(1, 20)) # + 1 linha extra solicitada
+    
     story.append(Paragraph("Atenciosamente,", style_corpo))
     story.append(Spacer(1, 12))
     story.append(Paragraph("<b>Rubens Okamoto</b>", style_assinatura))
     story.append(Paragraph("Okamoto Mídias Visuais", style_corpo))
     
-    # 2ª PÁGINA: DADOS INSTITUCIONAIS E BANCÁRIOS (Conforme anexo)
+    # 2ª PÁGINA (INSTITUCIONAL COMPLETA COM CITAÇÕES REMOVIDAS)
     story.append(PageBreak())
     
     if os.path.exists("logo_okamoto.png"):
@@ -175,41 +180,39 @@ def gerar_pdf_cliente(dados):
     else:
         story.append(Paragraph("<b>[ OKAMOTO MÍDIAS VISUAIS ]</b>", style_bold))
         
+    story.append(Spacer(1, 15))
+    
+    style_center_bold = ParagraphStyle('CenterBold', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=12, alignment=1, textColor=colors.HexColor('#1e293b'))
+    style_center_sub = ParagraphStyle('CenterSub', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, alignment=1, textColor=colors.HexColor('#475569'))
+    
+    story.append(Paragraph("É registrando a sua história, que nós construímos a nossa!", style_center_bold))
+    story.append(Spacer(1, 15)) # 2 linhas de espaço
+    story.append(Paragraph("Especialistas em Imagem, Vídeo e Experiências Imersivas", style_center_sub))
+    story.append(Spacer(1, 25)) # 3 linhas de espaço
+    
+    intro_institucional = "Unimos a bagagem de três décadas às inovações tecnológicas mais recentes, transformando sua marca com soluções visuais de alta performance:"
+    story.append(Paragraph(intro_institucional, style_corpo))
+    story.append(Spacer(1, 10))
+    
+    topicos_inst = """
+    <b>• Fotografia Corporativa e Estratégica:</b><br/>
+    Imagens que reforçam a autoridade da sua empresa e destacam seu negócio no mercado.<br/><br/>
+    <b>• Tours Virtuais 360º:</b><br/>
+    Experiências imersivas que levam seu cliente para dentro do seu espaço físico.<br/><br/>
+    <b>• Vídeos de Alto Impacto:</b><br/>
+    Produções pensadas para converter e engajar seu público em redes sociais e plataformas digitais.
+    """
+    story.append(Paragraph(topicos_inst, style_corpo))
     story.append(Spacer(1, 20))
-    story.append(Paragraph("<b>Dados da Empresa</b>[cite: 2]", style_titulo))
-    story.append(Spacer(1, 8))
     
-    dados_empresa_txt = """
-    <b>Okamoto Reportagens Fotográficas SS Ltda</b>[cite: 2]<br/>
-    <b>CNPJ:</b> 04.824.331/0001-05[cite: 2]<br/>
-    Rua General Carneiro, 860[cite: 2]<br/>
-    Centro — Brodowski - SP[cite: 2]<br/>
-    CEP: 14.340-023[cite: 2]
-    """
-    story.append(Paragraph(dados_empresa_txt, style_corpo))
-    story.append(Spacer(1, 15))
+    story.append(Paragraph("<b>Dados da Empresa</b>", style_bold))
+    story.append(Spacer(1, 4))
+    story.append(Paragraph("Okamoto Reportagens Fotográficas SS Ltda<br/><b>CNPJ:</b> 04.824.331/0001-05<br/>Rua General Carneiro, 860 — Centro, Brodowski - SP<br/>CEP: 14.340-023", style_corpo))
+    story.append(Spacer(1, 10))
     
-    story.append(Paragraph("<b>Dados Pessoais</b>[cite: 2]", style_titulo))
-    story.append(Spacer(1, 8))
-    dados_pessoais_txt = """
-    <b>Rubens Heigasi Okamoto</b>[cite: 2]<br/>
-    <b>CPF:</b> 287.932.298-79[cite: 2]<br/>
-    <b>RG:</b> 25.450.624-0 — SSP/SP[cite: 2]<br/>
-    <b>Tel. Cel.:</b> 16 99133 2121[cite: 2]<br/>
-    <b>E-mail:</b> contato@okamotomidiasvisuais.com.br[cite: 2]
-    """
-    story.append(Paragraph(dados_pessoais_txt, style_corpo))
-    story.append(Spacer(1, 15))
-    
-    story.append(Paragraph("<b>Dados Bancários</b>[cite: 2]", style_titulo))
-    story.append(Spacer(1, 8))
-    dados_banco_txt = """
-    <b>Banco do Brasil</b>[cite: 2]<br/>
-    <b>Agência:</b> 3235-2[cite: 2]<br/>
-    <b>C. Corrente:</b> 11.935-0[cite: 2]<br/>
-    <b>Chave PIX:</b> 04824331000105[cite: 2]
-    """
-    story.append(Paragraph(dados_banco_txt, style_corpo))
+    story.append(Paragraph("<b>Dados Pessoais & Bancários</b>", style_bold))
+    story.append(Spacer(1, 4))
+    story.append(Paragraph("<b>Rubens Heigasi Okamoto</b> | <b>CPF:</b> 287.932.298-79 | <b>RG:</b> 25.450.624-0 SSP/SP<br/><b>Banco do Brasil:</b> Ag: 3235-2 | C.C: 11.935-0 | <b>Chave PIX:</b> 04824331000105", style_corpo))
 
     doc.build(story, canvasmaker=ModernCanvas)
     buffer.seek(0)
@@ -223,19 +226,21 @@ def gerar_pdf_interno(dados):
     doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=40, rightMargin=40, topMargin=40, bottomMargin=60)
     
     styles = getSampleStyleSheet()
-    style_titulo = ParagraphStyle('Titulo', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=16, leading=20, textColor=colors.HexColor('#1e293b'))
+    style_titulo = ParagraphStyle('Titulo', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=18, leading=22, textColor=colors.HexColor('#1e293b')) # Título maior e em destaque
     style_subtitulo = ParagraphStyle('Subtitulo', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, leading=14, textColor=colors.HexColor('#475569'))
     style_corpo = ParagraphStyle('Corpo', parent=styles['Normal'], fontName='Helvetica', fontSize=10, leading=14, textColor=colors.HexColor('#334155'))
     style_bold = ParagraphStyle('Bold', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=14, textColor=colors.HexColor('#1e293b'))
+    style_lucro_destaque = ParagraphStyle('LucroDest', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, leading=15, textColor=colors.HexColor('#1e293b')) # 1 ponto maior
     
     story = []
     
+    # Logo média no canto esquerdo superior
     if os.path.exists("logo_okamoto.png"):
-        story.append(RLImage("logo_okamoto.png", width=180, height=67))
+        story.append(RLImage("logo_okamoto.png", width=140, height=52))
     else:
         story.append(Paragraph("<b>[ LOGO OKAMOTO ]</b>", style_bold))
         
-    story.append(Spacer(1, 10))
+    story.append(Spacer(1, 8))
     story.append(Paragraph("Relatório Interno", style_subtitulo))
     story.append(Spacer(1, 20))
     
@@ -308,7 +313,7 @@ def gerar_pdf_interno(dados):
     tabela_resumo_interno = [
         [Paragraph("<b>Faturamento Total Proposto:</b>", style_bold), Paragraph(f"<b>{fmt_brl(dados['valor_final'])}</b>", style_corpo)],
         [Paragraph("<b>Custo Operacional Total:</b>", style_bold), Paragraph(fmt_brl(dados['custo_total_interno']), style_corpo)],
-        [Paragraph("<b>Lucro Líquido Estimado:</b>", style_bold), Paragraph(f"<b>{fmt_brl(dados['lucro_liquido'])} ({dados['margem_lucro']:.1f}%)</b>", style_bold)]
+        [Paragraph("<b>Lucro Líquido Estimado:</b>", style_bold), Paragraph(f"<b>{fmt_brl(dados['lucro_liquido'])} ({dados['margem_lucro']:.1f}%)</b>", style_lucro_destaque)] # 1 ponto maior
     ]
     t_res_int = Table(tabela_resumo_interno, colWidths=[315, 200])
     t_res_int.setStyle(TableStyle([
@@ -332,19 +337,19 @@ st.title("⚡ Sistema de Propostas & Custos")
 st.markdown("Gerencie orçamentos comerciais, analise a viabilidade interna e gere documentação profissional em PDF.")
 
 if os.path.exists("logo_okamoto.png"):
-    st.image("logo_okamoto.png", width=220) # Logo ampliada no painel
+    st.image("logo_okamoto.png", width=220)
 
-# Criação de abas duplicadas (em cima e embaixo) para facilitar a navegação sem subir a tela
-tabs_topo = st.tabs(["1. Dados & Serviços", "2. Custos & Logística", "3. Prazos, Resumo & Relatórios"])
+# Abas superiores
+tab1_top, tab2_top, tab3_top = st.tabs(["1. Dados & Serviços", "2. Custos & Logística", "3. Prazos, Resumo & Relatórios"])
 
-with tabs_topo[0]:
+with tab1_top:
     st.subheader("1. Dados do Cliente & Evento")
     col1, col2 = st.columns(2)
     with col1:
-        contato = st.text_input("Contato", "Natalia")
-        empresa = st.text_input("Empresa", "Ambient Serviços Ambientais S/A")
-        telefone = st.text_input("Telefone", "(16) 99999-9999")
-        email = st.text_input("E-mail", "natalia@ambient.com.br")
+        contato = st.text_input("Contato", "") # Iniciando em branco
+        empresa = st.text_input("Empresa", "")
+        telefone = st.text_input("Telefone", "")
+        email = st.text_input("E-mail", "")
     with col2:
         data_orcamento = st.date_input("Data do Orçamento", datetime.now())
         data_evento = st.date_input("Data do Evento", datetime.now())
@@ -355,11 +360,11 @@ with tabs_topo[0]:
             data_termino = st.date_input("Data de Término do Evento", datetime.now())
             
         horario = st.text_input("Horário", "18h00 às 22h30")
-        local = st.text_input("Local", "Rua Clemente Ferreira, 330")
+        local = st.text_input("Local", "")
         
         col_cidade, col_uf = st.columns([3, 1])
         with col_cidade:
-            cidade = st.text_input("Cidade", "Ribeirão Preto")
+            cidade = st.text_input("Cidade", "Ribeirão Preto") # Mantido pré-preenchido
         with col_uf:
             estado = st.selectbox("Estado (UF)", ESTADOS_BR, index=0)
 
@@ -385,18 +390,19 @@ with tabs_topo[0]:
     
     nome_servico_atual = tipo_servico if tipo_servico != "Outro" else outro_servico_nome
     mes_extenso_ev = MESES_PT[data_evento.month]
-    data_str_escopo = f"em {data_evento.day} de {mes_extenso_ev} de {data_evento.year}"
+    data_str_escopo = f"{data_evento.day} de {mes_extenso_ev} de {data_evento.year}"
     if tem_data_termino:
         mes_extenso_ter = MESES_PT[data_termino.month]
         data_str_escopo = f"de {data_evento.day} de {mes_extenso_ev} até {data_termino.day} de {mes_extenso_ter} de {data_termino.year}"
 
-    default_escopo = f"{nome_servico_atual}, {data_str_escopo}, das {horario}, {local} em {cidade} - {estado} e 01 (um) profissional."
+    # Escopo formatado com cada informação em 1 linha
+    default_escopo = f"Serviço: {nome_servico_atual}\nData: {data_str_escopo}\nHorário: {horario}\nLocal: {local}\nCidade: {cidade} - {estado}\nQuantidade de profissional: 01 (um) profissional"
     default_captacao = "Cobertura fotográfica do evento"
     
-    escopo_servico = st.text_area("Escopo do serviço", default_escopo)
+    escopo_servico = st.text_area("Escopo do serviço", default_escopo, height=140)
     captacao = st.text_area("Captação", default_captacao)
 
-with tabs_topo[1]:
+with tab2_top:
     st.subheader("🚗 Parâmetros de Deslocamento & Logística (Honda HR-V)")
     col_l1, col_l2, col_l3 = st.columns(3)
     with col_l1:
@@ -430,7 +436,7 @@ with tabs_topo[1]:
     with col_op2:
         custo_extra = st.number_input("Outros Custos / Extras (R$)", min_value=0.0, value=0.0, step=10.0)
 
-with tabs_topo[2]:
+with tab3_top:
     st.subheader("Condições Comerciais & Pagamento")
     forma_entrega = st.text_input("Forma de entrega", "Link exclusivo para download, disponível por 30 dias.")
     
@@ -530,7 +536,7 @@ with tabs_topo[2]:
         st.download_button(
             label="📄 Baixar Proposta Comercial (Cliente)",
             data=pdf_cliente_bytes,
-            file_name=f"Proposta_Comercial_{empresa.replace(' ', '_')}.pdf",
+            file_name=f"Proposta_Comercial_{empresa.replace(' ', '_')}.pdf" if empresa else "Proposta_Comercial.pdf",
             mime="application/pdf",
             use_container_width=True
         )
@@ -540,18 +546,7 @@ with tabs_topo[2]:
         st.download_button(
             label="🔒 Baixar Relatório Interno (Custos)",
             data=pdf_interno_bytes,
-            file_name=f"Relatorio_Interno_Custos_{empresa.replace(' ', '_')}.pdf",
+            file_name=f"Relatorio_Interno_Custos_{empresa.replace(' ', '_')}.pdf" if empresa else "Relatorio_Interno_Custos.pdf",
             mime="application/pdf",
             use_container_width=True
         )
-
-# Abas duplicadas na parte inferior da tela para facilitar a navegação
-st.markdown("---")
-st.markdown("### 📌 Navegação Rápida (Inferior)")
-tabs_baixo = st.tabs(["1. Dados & Serviços (Inf)", "2. Custos & Logística (Inf)", "3. Prazos, Resumo & Relatórios (Inf)"])
-with tabs_baixo[0]:
-    st.info("💡 Dica: Você pode preencher os dados acima na aba superior ou alternar para cá a qualquer momento.")
-with tabs_baixo[1]:
-    st.info("💡 Dica: Os custos de combustível, alimentação e taxas são consolidados automaticamente no relatório interno.")
-with tabs_baixo[2]:
-    st.info("💡 Dica: O painel financeiro e os botões de download dos PDFs encontram-se na aba principal acima.")
