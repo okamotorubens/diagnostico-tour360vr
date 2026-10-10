@@ -660,7 +660,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         pct_atrib = 100 if dados.get('atributos_ok', True) else 40
         pct_resp = 100 if dados.get('resposta_avaliacoes_ok', False) else 30
 
-        desc_fotos = "Atende ao volume recomendado de fotos em HD." if dados.get('tem_fotos_hd') else "Poucas fotos encontradas / antigas no perfil."
+        desc_fotos = "Atende ao volume recomendado de fotos." if dados.get('tem_fotos_hd') else "Poucas fotos encontradas / antigas no perfil."
         rotulo_tour = "Ativo" if dados.get('tem_tour360') else "Pendente de Validação"
         desc_tour = "Tour Virtual 360° ativo e integrado." if dados.get('tem_tour360') else "Não detectado via API. Necessário checagem manual na ficha."
         desc_cat = "Atende às categorias recomendadas." if dados.get('categorias_completas') else "Ajuste necessário em categorias secundárias."
@@ -1091,7 +1091,7 @@ with st.sidebar:
         ]
         st.session_state['planos'] = {
             "start_valor": "500,00", "start_itens": "- Correção cadastral\n- Otimização de SEO\n- Ajuste de categorias\n- Inserção de links",
-            "pro_valor": "1.500,00", "pro_itens": "- Tudo do Plano Start\n- Tour Virtual 360°\n- Ensaio Fotográfico HD\n- Relatório Visual de Entrega",
+            "pro_valor": "1.500,00", "pro_itens": "- Tudo do Plano Start\n- Tour Virtual 360°\n- Ensaio Fotográfico\n- Relatório Visual de Entrega",
             "gestao_valor": "600,00", "gestao_itens": "- Postagens semanais\n- Gestão de avaliações\n- Atualização de fotos\n- Relatório mensal"
         }
         st.session_state['plano_acao_extra'] = "O perfil precisa de otimização urgente! Veja as falhas apontadas no relatório."
@@ -1413,8 +1413,10 @@ elif etapa_atual == 5:
 
         texto_padrao_whatsapp = (
             f"Olá, {resp_cliente}! Tudo bem?\n\n"
-            f"Achei o perfil da {nome_empresa_formatado} no Google e preparei uma análise rápida do seu posicionamento local frente aos concorrentes.\n\n"
-            f"Identifiquei alguns pontos importantes de melhoria de visibilidade. Posso te enviar o relatório preliminar que montei em PDF?"
+            f"Meu nome é Rubens Okamoto, da Okamoto Mídias Visuais.\n\n"
+            f"Estava analisando a presença daMeu nome é Rubens Okamoto, da Okamoto Mídias Visuais.\n\n"
+            f"Estava analisando a presença da {nome_empresa_formatado} o Google Maps e identifiquei 3 pontos onde a visibilidade do espaço de vocês pode ser bastante ampliada em relação aos concorrentes da região.\n\n"
+            f"Montei um relatório curto de diagnóstico em PDF. Posso te enviar por aqui para você dar uma olhada?"
         )
 
         st.markdown("<br><b>📝 Mensagem de Abordagem (Editável):</b>", unsafe_allow_html=True)
