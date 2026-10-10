@@ -100,24 +100,24 @@ class NumberedCanvas(canvas.Canvas):
         
         p_num = self._pageNumber
         
-        # Links no rodapé com nomes únicos por página para evitar conflitos de anotação
+        # Links no rodapé com gerenciamento automático de nomes (sem o parâmetro name)
         self.setFillColor(colors.HexColor('#1e3a8a'))
         self.drawString(135, 24, "okamotomidiasvisuais.com.br")
-        self.linkURL("https://okamotomidiasvisuais.com.br/", (135, 22, 248, 34), relative=0, name=f"web_p{p_num}")
+        self.linkURL("https://okamotomidiasvisuais.com.br/", (135, 22, 248, 34), relative=0)
         
         self.setFillColor(colors.HexColor('#475569'))
         self.drawString(252, 24, "|")
         
         self.setFillColor(colors.HexColor('#1e3a8a'))
         self.drawString(262, 24, "contato@okamotomidiasvisuais.com.br")
-        self.linkURL("mailto:contato@okamotomidiasvisuais.com.br", (262, 22, 428, 34), relative=0, name=f"mail_p{p_num}")
+        self.linkURL("mailto:contato@okamotomidiasvisuais.com.br", (262, 22, 428, 34), relative=0)
         
         self.setFillColor(colors.HexColor('#475569'))
         self.drawString(432, 24, "|")
         
         self.setFillColor(colors.HexColor('#1e3a8a'))
         self.drawString(442, 24, "WhatsApp: 16 99133 2121")
-        self.linkURL("https://wa.me/5516991332121", (442, 22, 530, 34), relative=0, name=f"wa_p{p_num}")
+        self.linkURL("https://wa.me/5516991332121", (442, 22, 530, 34), relative=0)
         
         self.setFillColor(colors.HexColor('#475569'))
         self.drawRightString(575, 24, f"Página {p_num} de {page_count}")
