@@ -77,6 +77,9 @@ def gerar_pdf_cliente(dados):
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=35, rightMargin=35, topMargin=25, bottomMargin=40)
     
+    nome_servico_titulo = dados['tipo_servico'] if dados['tipo_servico'] != "Outro" else dados['outro_servico_nome']
+    doc.title = f"Proposta comercial - {nome_servico_titulo}"
+    
     styles = getSampleStyleSheet()
     style_titulo = ParagraphStyle('TituloPDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=20, leading=24, alignment=1, textColor=colors.HexColor('#0f172a'))
     style_servico_sub = ParagraphStyle('ServSubPDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=14, leading=18, alignment=1, textColor=colors.HexColor('#2563eb'))
@@ -89,7 +92,6 @@ def gerar_pdf_cliente(dados):
     style_rodape = ParagraphStyle('RodapePDF', parent=styles['Normal'], fontName='Helvetica', fontSize=8, alignment=1, textColor=colors.HexColor('#64748b'))
     
     story = []
-    doc.title = f"Proposta Comercial - {dados['empresa'] if dados['empresa'] else 'Cliente'}"
 
     if os.path.exists("logo_okamoto.png"):
         img = RLImage("logo_okamoto.png", width=140, height=52)
@@ -105,7 +107,6 @@ def gerar_pdf_cliente(dados):
     story.append(Paragraph(data_extenso, style_corpo))
     story.append(Spacer(1, 10))
     
-    nome_servico_titulo = dados['tipo_servico'] if dados['tipo_servico'] != "Outro" else dados['outro_servico_nome']
     story.append(Paragraph("Proposta Comercial", style_titulo))
     story.append(Spacer(1, 6))
     story.append(Paragraph(nome_servico_titulo, style_servico_sub))
@@ -221,6 +222,10 @@ def gerar_pdf_interno(dados):
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=35, rightMargin=35, topMargin=30, bottomMargin=40)
     
+    servico_exibido = dados['tipo_servico'] if dados['tipo_servico'] != "Outro" else dados['outro_servico_nome']
+    data_ev_str = dados['data_evento'].strftime('%d/%m/%Y')
+    doc.title = f"Relatório interno - {servico_exibido} - {data_ev_str}"
+    
     styles = getSampleStyleSheet()
     style_titulo = ParagraphStyle('TitInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=18, leading=22, alignment=1, textColor=colors.HexColor('#0f172a'))
     style_subtitulo = ParagraphStyle('SubInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=12, leading=16, textColor=colors.HexColor('#2563eb'))
@@ -229,7 +234,6 @@ def gerar_pdf_interno(dados):
     style_rodape = ParagraphStyle('RodapeInt', parent=styles['Normal'], fontName='Helvetica', fontSize=8, alignment=1, textColor=colors.HexColor('#64748b'))
     
     story = []
-    doc.title = f"Relatório Interno - {dados['empresa'] if dados['empresa'] else 'Custos'}"
 
     if os.path.exists("logo_okamoto.png"):
         img_int = RLImage("logo_okamoto.png", width=130, height=48)
@@ -242,15 +246,14 @@ def gerar_pdf_interno(dados):
     story.append(Paragraph("Relatório Interno de Viabilidade & Custos", style_titulo))
     story.append(Spacer(1, 14))
     
-    servico_exibido = dados['tipo_servico'] if dados['tipo_servico'] != "Outro" else dados['outro_servico_nome']
-    data_fim_str = dados['data_termino'].strftime('%d/%m/%Y') if dados['tem_data_termino'] else dados['data_evento'].strftime('%d/%m/%Y')
+    data_fim_str = dados['data_termino'].strftime('%d/%m/%Y') if dados['tem_data_termino'] else data_ev_str
     
     info_geral = [
         [Paragraph("<b>Cliente:</b>", style_bold), Paragraph(dados['contato'], style_corpo)],
         [Paragraph("<b>Empresa:</b>", style_bold), Paragraph(dados['empresa'], style_corpo)],
         [Paragraph("<b>Serviço:</b>", style_bold), Paragraph(servico_exibido, style_corpo)],
         [Paragraph("<b>Carga Horária:</b>", style_bold), Paragraph(dados['carga_horaria_sel'], style_corpo)],
-        [Paragraph("<b>Data de Início:</b>", style_bold), Paragraph(dados['data_evento'].strftime('%d/%m/%Y'), style_corpo)],
+        [Paragraph("<b>Data de Início:</b>", style_bold), Paragraph(data_ev_str, style_corpo)],
         [Paragraph("<b>Data de Término:</b>", style_bold), Paragraph(data_fim_str, style_corpo)]
     ]
     t_geral = Table(info_geral, colWidths=[110, 425])
@@ -398,7 +401,6 @@ with tabs_topo[0]:
     nome_servico_atual = tipo_servico if tipo_servico != "Outro" else outro_servico_nome
     mes_extenso_ev = MESES_PT[data_evento.month]
     
-    # Removido o "de" inicial conforme solicitado
     if tem_data_termino:
         mes_extenso_ter = MESES_PT[data_termino.month]
         data_str_escopo = f"{data_evento.day} de {mes_extenso_ev} até {data_termino.day} de {mes_extenso_ter} de {data_termino.year}"
@@ -445,83 +447,4 @@ with tabs_topo[1]:
     with col_op1:
         imposto_perc = st.number_input("Alíquota de Impostos / Notas (%)", min_value=0.0, max_value=30.0, value=6.0, step=0.5)
     with col_op2:
-        custo_extra = st.number_input("Outros Custos / Extras (R$)", min_value=0.0, value=0.0, step=10.0)
-
-with tabs_topo[2]:
-    st.subheader("Condições Comerciais & Pagamento")
-    forma_entrega = st.text_input("Forma de entrega", "Link exclusivo para download, disponível por 30 dias.")
-    
-    col_p1, col_p2 = st.columns(2)
-    with col_p1:
-        forma_pagamento_tipo = st.selectbox("Forma de Pagamento", ["À vista", "Parcelado"])
-    with col_p2:
-        condicao_pagamento = st.selectbox("Condições de Pagamento", ["PIX", "Transferência", "PIX ou transferência bancária", "Cartão de crédito", "Cartão de Crédito parcelado"])
-    
-    parcelas_cartao = 1
-    if "parcelado" in condicao_pagamento.lower() or forma_pagamento_tipo == "Parcelado":
-        parcelas_cartao = st.number_input("Cartão de Crédito parcelado em X vezes", min_value=1, max_value=12, value=3)
-        condicao_pagamento = f"{condicao_pagamento} em {parcelas_cartao}X"
-
-    tabela_atual = TABELAS_SERVICOS.get(tipo_servico, TABELAS_SERVICOS["Evento social"])
-    
-    dias_evento = 1
-    if tem_data_termino:
-        dias_evento = max(1, (data_termino - data_evento).days + 1)
-
-    if "diária" in carga_horaria_sel:
-        qtd_diarias = int(carga_horaria_sel.split()[0])
-        valor_base = tabela_atual.get(10, 1300.0) * qtd_diarias * dias_evento
-    else:
-        horas_num = int(carga_horaria_sel.replace("h", ""))
-        horas_buscadas = min(horas_num, 12)
-        valor_base = tabela_atual.get(horas_buscadas, 1500.0) * dias_evento
-        if horas_num > 12:
-            valor_base += (horas_num - 12) * tabela_atual.get(1, 180.0) * dias_evento
-
-    valor_desconto = valor_base * (desconto_perc / 100.0)
-    valor_final = valor_base - valor_desconto
-
-    litros_gastos = distancia_ida_volta / consumo_medio if consumo_medio > 0 else 0
-    custo_combustivel = litros_gastos * preco_combustivel
-    custo_logistica_total = custo_combustivel + pedagio_total
-
-    custo_total_operacional_log = custo_logistica_total + custo_hospedagem_total + custo_almoco + custo_jantar + custo_estacionamento + custo_freelancer + custo_outros
-    valor_impostos = valor_final * (imposto_perc / 100.0)
-    custo_total_interno = custo_total_operacional_log + valor_impostos + custo_extra
-    lucro_liquido = valor_final - custo_total_interno
-    margem_lucro = (lucro_liquido / valor_final * 100) if valor_final > 0 else 0
-
-    st.markdown("---")
-    st.subheader("📊 Painel Resumo: Cliente vs. Interno")
-    col_res1, col_res2, col_res3, col_res4 = st.columns(4)
-    col_res1.metric("Valor para o Cliente", fmt_brl(valor_final))
-    col_res2.metric("Custos Operacionais", fmt_brl(custo_total_interno))
-    col_res3.metric("Lucro Líquido Est.", fmt_brl(lucro_liquido))
-    col_res4.metric("Margem de Lucro", f"{margem_lucro:.1f}%")
-
-    dados_completos = {
-        "contato": contato,
-        "empresa": empresa,
-        "telefone": telefone,
-        "email": email,
-        "data_orcamento": data_orcamento,
-        "data_evento": data_evento,
-        "tem_data_termino": tem_data_termino,
-        "data_termino": data_termino,
-        "horario": horario,
-        "local": local,
-        "cidade": cidade,
-        "estado": estado,
-        "tipo_servico": tipo_servico,
-        "outro_servico_nome": outro_servico_nome,
-        "carga_horaria_sel": carga_horaria_sel,
-        "escopo_servico": escopo_servico,
-        "captacao": captacao,
-        "forma_entrega": forma_entrega,
-        "forma_pagamento_tipo": forma_pagamento_tipo,
-        "condicao_pagamento": condicao_pagamento,
-        "desconto_perc": desconto_perc,
-        "valor_base": valor_base,
-        "valor_desconto": valor_desconto,
-        "valor_final": valor_final,
-        "distancia": distancia_ida_volta,
+        cust
