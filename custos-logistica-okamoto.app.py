@@ -68,7 +68,7 @@ class ModernCanvas(canvas.Canvas):
         self.setStrokeColor(colors.HexColor("#cbd5e1"))
         self.setLineWidth(0.5)
         self.line(40, 45, 555, 45)
-        # Rodapé completo com links clicáveis e e-mail solicitados
+        # Rodapé com os links exatos para o site e WhatsApp
         footer_text = "Okamoto Mídias Visuais    |    okamotomidiasvisuais.com.br    |    contato@okamotomidiasvisuais.com.br    |    WhatsApp: 16 99133 2121"
         self.drawCentredString(297.5, 30, footer_text)
         self.restoreState()
@@ -78,82 +78,75 @@ class ModernCanvas(canvas.Canvas):
 # ==========================================
 def gerar_pdf_cliente(dados):
     buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=40, rightMargin=40, topMargin=40, bottomMargin=60)
+    doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=40, rightMargin=40, topMargin=30, bottomMargin=50)
     
     styles = getSampleStyleSheet()
-    style_titulo = ParagraphStyle('Titulo', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=18, leading=22, textColor=colors.HexColor('#1e293b'))
-    style_servico_sub = ParagraphStyle('ServSub', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, leading=15, textColor=colors.HexColor('#334155'))
-    style_corpo = ParagraphStyle('Corpo', parent=styles['Normal'], fontName='Helvetica', fontSize=10, leading=15, textColor=colors.HexColor('#334155'))
-    style_bold = ParagraphStyle('Bold', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=15, textColor=colors.HexColor('#1e293b'))
-    style_assinatura = ParagraphStyle('Assinatura', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, leading=16, textColor=colors.HexColor('#1e293b'))
+    style_titulo = ParagraphStyle('Titulo', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=16, leading=20, alignment=1, textColor=colors.HexColor('#1e293b'))
+    style_servico_sub = ParagraphStyle('ServSub', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, leading=14, alignment=1, textColor=colors.HexColor('#334155'))
+    style_corpo = ParagraphStyle('Corpo', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=13, textColor=colors.HexColor('#334155'))
+    style_bold = ParagraphStyle('Bold', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9, leading=13, textColor=colors.HexColor('#1e293b'))
+    style_assinatura = ParagraphStyle('Assinatura', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=14, textColor=colors.HexColor('#1e293b'))
     
     story = []
     
-    # 1ª PÁGINA
+    # Título visível na barra do visualizador de PDF
+    doc.title = f"Proposta Comercial - {dados['empresa']}"
+
+    # 1ª PÁGINA (Otimizada para caber em 1 página)
     if os.path.exists("logo_okamoto.png"):
-        story.append(RLImage("logo_okamoto.png", width=180, height=67))
+        story.append(RLImage("logo_okamoto.png", width=150, height=56))
     else:
-        story.append(Paragraph("<b>[ OKAMOTO MÍDIAS VISUAIS ]</b>", ParagraphStyle('LogoTxt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=16, textColor=colors.HexColor('#1e293b'))))
+        story.append(Paragraph("<b>[ OKAMOTO MÍDIAS VISUAIS ]</b>", ParagraphStyle('LogoTxt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=14, textColor=colors.HexColor('#1e293b'))))
     
-    story.append(Spacer(1, 15))
+    story.append(Spacer(1, 8))
     
     d_orc = dados['data_orcamento']
     data_extenso = f"Ribeirão Preto, {d_orc.day} de {MESES_PT[d_orc.month]} de {d_orc.year}"
     story.append(Paragraph(data_extenso, style_corpo))
-    story.append(Spacer(1, 15))
+    story.append(Spacer(1, 8))
     
     nome_servico_titulo = dados['tipo_servico'] if dados['tipo_servico'] != "Outro" else dados['outro_servico_nome']
     story.append(Paragraph("<b>Proposta Comercial</b>", style_titulo))
-    story.append(Spacer(1, 6))
-    story.append(Paragraph(nome_servico_titulo, style_servico_sub)) # Serviço na linha abaixo, menor
-    story.append(Spacer(1, 15))
+    story.append(Spacer(1, 4))
+    story.append(Paragraph(nome_servico_titulo, style_servico_sub)) # Centralizado
+    story.append(Spacer(1, 10))
     
     story.append(Paragraph("<b>1. Dados do cliente:</b>", style_bold))
-    texto_cliente = f"""
-    <b>Contato:</b> {dados['contato']}<br/>
-    <b>Empresa:</b> {dados['empresa']}<br/>
-    <b>Telefone:</b> {dados['telefone']}<br/>
-    <b>E-mail:</b> {dados['email']}
-    """
+    texto_cliente = f"<b>Contato:</b> {dados['contato']} &nbsp;|&nbsp; <b>Empresa:</b> {dados['empresa']} &nbsp;|&nbsp; <b>Tel:</b> {dados['telefone']} &nbsp;|&nbsp; <b>E-mail:</b> {dados['email']}"
     story.append(Paragraph(texto_cliente, style_corpo))
-    story.append(Spacer(1, 12))
+    story.append(Spacer(1, 6))
     
     story.append(Paragraph("<b>2. Data do evento:</b>", style_bold))
     data_ev_str = dados['data_evento'].strftime('%d/%m/%Y')
     if dados['tem_data_termino']:
         data_ev_str += f" até {dados['data_termino'].strftime('%d/%m/%Y')}"
-        
-    texto_evento = f"""
-    <b>Data:</b> {data_ev_str} &nbsp;&nbsp;&nbsp;&nbsp; <b>Horário:</b> {dados['horario']}<br/>
-    <b>Local:</b> {dados['local']}<br/>
-    <b>Cidade / UF:</b> {dados['cidade']} - {dados['estado']}
-    """
+    texto_evento = f"<b>Data:</b> {data_ev_str} &nbsp;&nbsp; <b>Horário:</b> {dados['horario']} &nbsp;&nbsp; <b>Local:</b> {dados['local']} — {dados['cidade']}/{dados['estado']}"
     story.append(Paragraph(texto_evento, style_corpo))
-    story.append(Spacer(1, 12))
+    story.append(Spacer(1, 6))
     
     story.append(Paragraph("<b>3. Serviço:</b>", style_bold))
     story.append(Paragraph(nome_servico_titulo, style_corpo))
-    story.append(Spacer(1, 12))
+    story.append(Spacer(1, 6))
     
     story.append(Paragraph("<b>4. Escopo do serviço:</b>", style_bold))
     story.append(Paragraph(dados['escopo_servico'].replace('\n', '<br/>'), style_corpo))
-    story.append(Spacer(1, 12))
+    story.append(Spacer(1, 6))
     
     story.append(Paragraph("<b>5. Captação:</b>", style_bold))
     story.append(Paragraph(dados['captacao'].replace('\n', '<br/>'), style_corpo))
-    story.append(Spacer(1, 12))
+    story.append(Spacer(1, 6))
     
     story.append(Paragraph("<b>6. Forma de entrega:</b> Link exclusivo para download, disponível por 30 dias.", style_corpo))
-    story.append(Spacer(1, 12))
+    story.append(Spacer(1, 6))
     
     story.append(Paragraph(f"<b>7. Formas de pagamento:</b> {dados['forma_pagamento_tipo']}", style_corpo))
-    story.append(Spacer(1, 12))
+    story.append(Spacer(1, 6))
     
     story.append(Paragraph(f"<b>8. Condições de pagamento:</b> {dados['condicao_pagamento']}", style_corpo))
-    story.append(Spacer(1, 12))
+    story.append(Spacer(1, 6))
     
     story.append(Paragraph("<b>9. Validade do orçamento:</b> 05 dias", style_corpo))
-    story.append(Spacer(1, 20)) # + 1 linha de espaçamento extra solicitada
+    story.append(Spacer(1, 10))
     
     val_fmt = fmt_brl(dados['valor_final'])
     if dados['desconto_perc'] > 0:
@@ -161,18 +154,17 @@ def gerar_pdf_cliente(dados):
     else:
         texto_valor = f"<b>Valor Total do Investimento ({dados['carga_horaria_sel']}):</b> {val_fmt}"
         
-    story.append(Paragraph(texto_valor, ParagraphStyle('ValDark', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, textColor=colors.HexColor('#334155'))))
-    story.append(Spacer(1, 20)) # + 1 linha extra solicitada
+    story.append(Paragraph(texto_valor, ParagraphStyle('ValDark', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, textColor=colors.HexColor('#334155'))))
+    story.append(Spacer(1, 10))
     
     story.append(Paragraph("Ficamos à disposição para quaisquer esclarecimentos e ajustes, caso necessário.", style_corpo))
-    story.append(Spacer(1, 20)) # + 1 linha extra solicitada
-    
+    story.append(Spacer(1, 10))
     story.append(Paragraph("Atenciosamente,", style_corpo))
-    story.append(Spacer(1, 12))
+    story.append(Spacer(1, 6))
     story.append(Paragraph("<b>Rubens Okamoto</b>", style_assinatura))
     story.append(Paragraph("Okamoto Mídias Visuais", style_corpo))
     
-    # 2ª PÁGINA (INSTITUCIONAL COMPLETA COM CITAÇÕES REMOVIDAS)
+    # 2ª PÁGINA (INSTITUCIONAL FORMATADA EXATAMENTE COMO SOLICITADO)
     story.append(PageBreak())
     
     if os.path.exists("logo_okamoto.png"):
@@ -180,19 +172,19 @@ def gerar_pdf_cliente(dados):
     else:
         story.append(Paragraph("<b>[ OKAMOTO MÍDIAS VISUAIS ]</b>", style_bold))
         
-    story.append(Spacer(1, 15))
+    story.append(Spacer(1, 20))
     
-    style_center_bold = ParagraphStyle('CenterBold', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=12, alignment=1, textColor=colors.HexColor('#1e293b'))
-    style_center_sub = ParagraphStyle('CenterSub', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, alignment=1, textColor=colors.HexColor('#475569'))
+    style_destaque_1 = ParagraphStyle('Dest1', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=14, alignment=1, textColor=colors.HexColor('#1e293b'))
+    style_destaque_2 = ParagraphStyle('Dest2', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=12, alignment=1, textColor=colors.HexColor('#475569'))
     
-    story.append(Paragraph("É registrando a sua história, que nós construímos a nossa!", style_center_bold))
-    story.append(Spacer(1, 15)) # 2 linhas de espaço
-    story.append(Paragraph("Especialistas em Imagem, Vídeo e Experiências Imersivas", style_center_sub))
-    story.append(Spacer(1, 25)) # 3 linhas de espaço
+    story.append(Paragraph("É registrando a sua história, que nós construímos a nossa!", style_destaque_1))
+    story.append(Spacer(1, 15)) # 2 linhas
+    story.append(Paragraph("Especialistas em Imagem, Vídeo e Experiências Imersivas", style_destaque_2))
+    story.append(Spacer(1, 25)) # 3 linhas
     
-    intro_institucional = "Unimos a bagagem de três décadas às inovações tecnológicas mais recentes, transformando sua marca com soluções visuais de alta performance:"
-    story.append(Paragraph(intro_institucional, style_corpo))
-    story.append(Spacer(1, 10))
+    intro_inst = "Unimos a bagagem de três décadas às inovações tecnológicas mais recentes, transformando sua marca com soluções visuais de alta performance:"
+    story.append(Paragraph(intro_inst, style_corpo))
+    story.append(Spacer(1, 12))
     
     topicos_inst = """
     <b>• Fotografia Corporativa e Estratégica:</b><br/>
@@ -203,16 +195,24 @@ def gerar_pdf_cliente(dados):
     Produções pensadas para converter e engajar seu público em redes sociais e plataformas digitais.
     """
     story.append(Paragraph(topicos_inst, style_corpo))
-    story.append(Spacer(1, 20))
+    story.append(Spacer(1, 25))
     
-    story.append(Paragraph("<b>Dados da Empresa</b>", style_bold))
-    story.append(Spacer(1, 4))
+    # Seções separadas por categoria e espaçamentos maiores
+    style_cat_titulo = ParagraphStyle('CatTit', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=12, textColor=colors.HexColor('#1e293b'))
+    
+    story.append(Paragraph("<b>Dados da Empresa</b>", style_cat_titulo))
+    story.append(Spacer(1, 6))
     story.append(Paragraph("Okamoto Reportagens Fotográficas SS Ltda<br/><b>CNPJ:</b> 04.824.331/0001-05<br/>Rua General Carneiro, 860 — Centro, Brodowski - SP<br/>CEP: 14.340-023", style_corpo))
-    story.append(Spacer(1, 10))
+    story.append(Spacer(1, 15))
     
-    story.append(Paragraph("<b>Dados Pessoais & Bancários</b>", style_bold))
-    story.append(Spacer(1, 4))
-    story.append(Paragraph("<b>Rubens Heigasi Okamoto</b> | <b>CPF:</b> 287.932.298-79 | <b>RG:</b> 25.450.624-0 SSP/SP<br/><b>Banco do Brasil:</b> Ag: 3235-2 | C.C: 11.935-0 | <b>Chave PIX:</b> 04824331000105", style_corpo))
+    story.append(Paragraph("<b>Dados Pessoais</b>", style_cat_titulo))
+    story.append(Spacer(1, 6))
+    story.append(Paragraph("<b>Rubens Heigasi Okamoto</b><br/><b>CPF:</b> 287.932.298-79 &nbsp;|&nbsp; <b>RG:</b> 25.450.624-0 SSP/SP<br/><b>Tel. Cel.:</b> 16 99133 2121 &nbsp;|&nbsp; <b>E-mail:</b> contato@okamotomidiasvisuais.com.br", style_corpo))
+    story.append(Spacer(1, 15))
+    
+    story.append(Paragraph("<b>Dados Bancários</b>", style_cat_titulo))
+    story.append(Spacer(1, 6))
+    story.append(Paragraph("<b>Banco do Brasil</b><br/><b>Agência:</b> 3235-2 &nbsp;|&nbsp; <b>C. Corrente:</b> 11.935-0<br/><b>Chave PIX:</b> 04824331000105", style_corpo))
 
     doc.build(story, canvasmaker=ModernCanvas)
     buffer.seek(0)
@@ -226,15 +226,15 @@ def gerar_pdf_interno(dados):
     doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=40, rightMargin=40, topMargin=40, bottomMargin=60)
     
     styles = getSampleStyleSheet()
-    style_titulo = ParagraphStyle('Titulo', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=18, leading=22, textColor=colors.HexColor('#1e293b')) # Título maior e em destaque
+    style_titulo = ParagraphStyle('Titulo', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=18, leading=22, alignment=1, textColor=colors.HexColor('#1e293b'))
     style_subtitulo = ParagraphStyle('Subtitulo', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, leading=14, textColor=colors.HexColor('#475569'))
     style_corpo = ParagraphStyle('Corpo', parent=styles['Normal'], fontName='Helvetica', fontSize=10, leading=14, textColor=colors.HexColor('#334155'))
     style_bold = ParagraphStyle('Bold', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=14, textColor=colors.HexColor('#1e293b'))
-    style_lucro_destaque = ParagraphStyle('LucroDest', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, leading=15, textColor=colors.HexColor('#1e293b')) # 1 ponto maior
+    style_lucro_destaque = ParagraphStyle('LucroDest', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=12, leading=16, textColor=colors.HexColor('#1e293b'))
     
     story = []
-    
-    # Logo média no canto esquerdo superior
+    doc.title = f"Relatório Interno - {dados['empresa']}"
+
     if os.path.exists("logo_okamoto.png"):
         story.append(RLImage("logo_okamoto.png", width=140, height=52))
     else:
@@ -244,7 +244,7 @@ def gerar_pdf_interno(dados):
     story.append(Paragraph("Relatório Interno", style_subtitulo))
     story.append(Spacer(1, 20))
     
-    story.append(Paragraph("Análise Técnica de Custos, Logística e Margem", style_titulo))
+    story.append(Paragraph("Análise Técnica de Custos, Logística e Margem", style_titulo)) # Centralizado
     story.append(Spacer(1, 15))
     
     servico_exibido = dados['tipo_servico'] if dados['tipo_servico'] != "Outro" else dados['outro_servico_nome']
@@ -269,6 +269,7 @@ def gerar_pdf_interno(dados):
         [Paragraph("Combustível", style_corpo), Paragraph(f"Consumo: {dados['consumo_veiculo']} km/L | {dados['litros_gastos']:.1f}L a {fmt_brl(dados['preco_combustivel'])}/L", style_corpo), Paragraph(fmt_brl(dados['custo_combustivel']), style_corpo)],
         [Paragraph("Pedágios", style_corpo), Paragraph("Tarifas de estrada", style_corpo), Paragraph(fmt_brl(dados['pedagios']), style_corpo)],
         [Paragraph("Alimentação", style_corpo), Paragraph("Almoço / Janta calculados", style_corpo), Paragraph(fmt_brl(dados['custo_alimentacao_total']), style_corpo)],
+        [Paragraph("Hospedagem", style_corpo), Paragraph("Diárias de hospedagem", style_corpo), Paragraph(fmt_brl(dados['custo_hospedagem_total']), style_corpo)],
         [Paragraph("Outros Custos", style_corpo), Paragraph("Estacionamento / Freelancer / Outros", style_corpo), Paragraph(fmt_brl(dados['custo_outros_total']), style_corpo)]
     ]
     t_log = Table(tabela_log_dados, colWidths=[130, 275, 110])
@@ -313,7 +314,7 @@ def gerar_pdf_interno(dados):
     tabela_resumo_interno = [
         [Paragraph("<b>Faturamento Total Proposto:</b>", style_bold), Paragraph(f"<b>{fmt_brl(dados['valor_final'])}</b>", style_corpo)],
         [Paragraph("<b>Custo Operacional Total:</b>", style_bold), Paragraph(fmt_brl(dados['custo_total_interno']), style_corpo)],
-        [Paragraph("<b>Lucro Líquido Estimado:</b>", style_bold), Paragraph(f"<b>{fmt_brl(dados['lucro_liquido'])} ({dados['margem_lucro']:.1f}%)</b>", style_lucro_destaque)] # 1 ponto maior
+        [Paragraph("<b>Lucro Líquido Estimado:</b>", style_bold), Paragraph(f"<b>{fmt_brl(dados['lucro_liquido'])} ({dados['margem_lucro']:.1f}%)</b>", style_lucro_destaque)]
     ]
     t_res_int = Table(tabela_resumo_interno, colWidths=[315, 200])
     t_res_int.setStyle(TableStyle([
@@ -336,217 +337,239 @@ def gerar_pdf_interno(dados):
 st.title("⚡ Sistema de Propostas & Custos")
 st.markdown("Gerencie orçamentos comerciais, analise a viabilidade interna e gere documentação profissional em PDF.")
 
+# Logo centralizada e maior no sistema
 if os.path.exists("logo_okamoto.png"):
-    st.image("logo_okamoto.png", width=220)
+    col_img1, col_img2, col_img3 = st.columns([1, 2, 1])
+    with col_img2:
+        st.image("logo_okamoto.png", width=280)
 
-# Abas superiores
-tab1_top, tab2_top, tab3_top = st.tabs(["1. Dados & Serviços", "2. Custos & Logística", "3. Prazos, Resumo & Relatórios"])
+# Função para renderizar as abas (tanto em cima quanto embaixo)
+def render_conteudo_abas():
+    tabs_topo = st.tabs(["1. Dados & Serviços", "2. Custos & Logística", "3. Prazos, Resumo & Relatórios"])
 
-with tab1_top:
-    st.subheader("1. Dados do Cliente & Evento")
-    col1, col2 = st.columns(2)
-    with col1:
-        contato = st.text_input("Contato", "") # Iniciando em branco
-        empresa = st.text_input("Empresa", "")
-        telefone = st.text_input("Telefone", "")
-        email = st.text_input("E-mail", "")
-    with col2:
-        data_orcamento = st.date_input("Data do Orçamento", datetime.now())
-        data_evento = st.date_input("Data do Evento", datetime.now())
-        
-        tem_data_termino = st.checkbox("Evento com mais de um dia (Data de Término)")
-        data_termino = data_evento
-        if tem_data_termino:
-            data_termino = st.date_input("Data de Término do Evento", datetime.now())
+    with tabs_topo[0]:
+        st.subheader("1. Dados do Cliente & Evento")
+        col1, col2 = st.columns(2)
+        with col1:
+            contato = st.text_input("Contato", "", key="contato_k")
+            empresa = st.text_input("Empresa", "", key="empresa_k")
+            telefone = st.text_input("Telefone", "", key="tel_k")
+            email = st.text_input("E-mail", "", key="email_k")
+        with col2:
+            data_orcamento = st.date_input("Data do Orçamento", datetime.now(), key="dorc_k")
+            data_evento = st.date_input("Data do Evento", datetime.now(), key="dev_k")
             
-        horario = st.text_input("Horário", "18h00 às 22h30")
-        local = st.text_input("Local", "")
+            tem_data_termino = st.checkbox("Evento com mais de um dia (Data de Término)", key="tem_fim_k")
+            data_termino = data_evento
+            if tem_data_termino:
+                data_termino = st.date_input("Data de Término do Evento", datetime.now(), key="dterm_k")
+                
+            horario = st.text_input("Horário (ex: 18h00 às 22h30)", "", key="horario_k") # Inicia em branco
+            local = st.text_input("Local", "", key="local_k")
+            
+            col_cidade, col_uf = st.columns([3, 1])
+            with col_cidade:
+                cidade = st.text_input("Cidade", "Ribeirão Preto", key="cidade_k")
+            with col_uf:
+                estado = st.selectbox("Estado (UF)", ESTADOS_BR, index=0, key="uf_k")
+
+        st.markdown("---")
+        st.subheader("2. Seleção de Serviço & Carga Horária")
+        tipo_servico = st.selectbox("Tipo de Serviço", list(TABELAS_SERVICOS.keys()), key="tserv_k")
         
-        col_cidade, col_uf = st.columns([3, 1])
-        with col_cidade:
-            cidade = st.text_input("Cidade", "Ribeirão Preto") # Mantido pré-preenchido
-        with col_uf:
-            estado = st.selectbox("Estado (UF)", ESTADOS_BR, index=0)
+        outro_servico_nome = ""
+        if tipo_servico == "Outro":
+            outro_servico_nome = st.text_input("Especifique o nome do serviço", "Serviço Personalizado", key="outro_k")
 
-    st.markdown("---")
-    st.subheader("2. Seleção de Serviço & Carga Horária")
-    tipo_servico = st.selectbox("Tipo de Serviço", list(TABELAS_SERVICOS.keys()))
-    
-    outro_servico_nome = ""
-    if tipo_servico == "Outro":
-        outro_servico_nome = st.text_input("Especifique o nome do serviço", "Serviço Personalizado")
-
-    carga_horaria_sel = st.selectbox("Carga Horária", OPCOES_CARGA_HORARIA)
-    
-    opcoes_desconto_base = [0, 5, 10, 15, 20, 25, 30]
-    tipo_desc = st.radio("Selecione a modalidade de desconto", ["Padrão", "Personalizado (Outro valor)"], horizontal=True)
-    if tipo_desc == "Padrão":
-        desconto_perc = st.selectbox("Aplicar Desconto (%)", opcoes_desconto_base)
-    else:
-        desconto_perc = st.number_input("Digite a porcentagem de desconto (%)", min_value=0.0, max_value=100.0, value=10.0, step=0.5)
-
-    st.markdown("---")
-    st.subheader("3. Detalhamento Técnico (Escopo & Captação)")
-    
-    nome_servico_atual = tipo_servico if tipo_servico != "Outro" else outro_servico_nome
-    mes_extenso_ev = MESES_PT[data_evento.month]
-    data_str_escopo = f"{data_evento.day} de {mes_extenso_ev} de {data_evento.year}"
-    if tem_data_termino:
-        mes_extenso_ter = MESES_PT[data_termino.month]
-        data_str_escopo = f"de {data_evento.day} de {mes_extenso_ev} até {data_termino.day} de {mes_extenso_ter} de {data_termino.year}"
-
-    # Escopo formatado com cada informação em 1 linha
-    default_escopo = f"Serviço: {nome_servico_atual}\nData: {data_str_escopo}\nHorário: {horario}\nLocal: {local}\nCidade: {cidade} - {estado}\nQuantidade de profissional: 01 (um) profissional"
-    default_captacao = "Cobertura fotográfica do evento"
-    
-    escopo_servico = st.text_area("Escopo do serviço", default_escopo, height=140)
-    captacao = st.text_area("Captação", default_captacao)
-
-with tab2_top:
-    st.subheader("🚗 Parâmetros de Deslocamento & Logística (Honda HR-V)")
-    col_l1, col_l2, col_l3 = st.columns(3)
-    with col_l1:
-        distancia_ida_volta = st.number_input("Distância Total (Ida e Volta em km)", min_value=0.0, value=40.0, step=5.0)
-    with col_l2:
-        consumo_medio = st.number_input("Consumo Médio (km/L)", min_value=1.0, value=11.50, step=0.5)
-    with col_l3:
-        preco_combustivel = st.number_input("Preço do Litro (R$)", min_value=0.0, value=6.80, step=0.10)
+        carga_horaria_sel = st.selectbox("Carga Horária", OPCOES_CARGA_HORARIA, key="carga_k")
         
-    pedagio_total = st.number_input("Valor Total de Pedágios (R$)", min_value=0.0, value=0.0, step=5.0)
+        opcoes_desconto_base = [0, 5, 10, 15, 20, 25, 30]
+        tipo_desc = st.radio("Selecione a modalidade de desconto", ["Padrão", "Personalizado (Outro valor)"], horizontal=True, key="tdesc_k")
+        if tipo_desc == "Padrão":
+            desconto_perc = st.selectbox("Aplicar Desconto (%)", opcoes_desconto_base, key="d_padrao_k")
+        else:
+            desconto_perc = st.number_input("Digite a porcentagem de desconto (%)", min_value=0.0, max_value=100.0, value=10.0, step=0.5, key="d_pers_k")
 
-    st.markdown("---")
-    st.subheader("🍽️ Custos de Alimentação & Outros")
-    col_al1, col_al2, col_al3 = st.columns(3)
-    with col_al1:
-        qtd_almoco = st.number_input("Qtd. Almoços", min_value=0, value=1, step=1)
-        valor_almoco_unit = st.number_input("Valor Unitário Almoço (R$)", min_value=0.0, value=35.0, step=5.0)
-    with col_al2:
-        qtd_janta = st.number_input("Qtd. Jantas", min_value=0, value=1, step=1)
-        valor_janta_unit = st.number_input("Valor Unitário Janta (R$)", min_value=0.0, value=45.0, step=5.0)
-    with col_al3:
-        custo_outros = st.number_input("Outros (Estacionamento, Freelancer, etc.) (R$)", min_value=0.0, value=0.0, step=10.0)
+        st.markdown("---")
+        st.subheader("3. Detalhamento Técnico (Escopo & Captação)")
+        
+        nome_servico_atual = tipo_servico if tipo_servico != "Outro" else outro_servico_nome
+        mes_extenso_ev = MESES_PT[data_evento.month]
+        data_str_escopo = f"{data_evento.day} de {mes_extenso_ev} de {data_evento.year}"
+        if tem_data_termino:
+            mes_extenso_ter = MESES_PT[data_termino.month]
+            data_str_escopo = f"de {data_evento.day} de {mes_extenso_ev} até {data_termino.day} de {mes_extenso_ter} de {data_termino.year}"
 
-    custo_alimentacao_total = (qtd_almoco * valor_almoco_unit) + (qtd_janta * valor_janta_unit)
+        # Escopo saindo apenas com o resultado dos campos preenchidos
+        default_escopo = f"{nome_servico_atual}\n{data_str_escopo}\n{horario}\n{local}\n{cidade} - {estado}\n01 (um) profissional"
+        default_captacao = "Cobertura fotográfica do evento"
+        
+        escopo_servico = st.text_area("Escopo do serviço", default_escopo, height=120, key="escopo_k")
+        captacao = st.text_area("Captação", default_captacao, key="capt_k")
 
-    st.markdown("---")
-    st.subheader("💼 Custos Operacionais & Impostos (Uso Interno)")
-    col_op1, col_op2 = st.columns(2)
-    with col_op1:
-        imposto_perc = st.number_input("Alíquota de Impostos / Notas (%)", min_value=0.0, max_value=30.0, value=6.0, step=0.5)
-    with col_op2:
-        custo_extra = st.number_input("Outros Custos / Extras (R$)", min_value=0.0, value=0.0, step=10.0)
+    with tabs_topo[1]:
+        st.subheader("🚗 Parâmetros de Deslocamento & Logística (Honda HR-V)")
+        col_l1, col_l2, col_l3 = st.columns(3)
+        with col_l1:
+            distancia_ida_volta = st.number_input("Distância Total (Ida e Volta em km)", min_value=0.0, value=40.0, step=5.0, key="dist_k")
+        with col_l2:
+            consumo_medio = st.number_input("Consumo Médio (km/L)", min_value=1.0, value=11.50, step=0.5, key="cons_k")
+        with col_l3:
+            preco_combustivel = st.number_input("Preço do Litro (R$)", min_value=0.0, value=6.80, step=0.10, key="preco_k")
+            
+        pedagio_total = st.number_input("Valor Total de Pedágios (R$)", min_value=0.0, value=0.0, step=5.0, key="pedag_k")
 
-with tab3_top:
-    st.subheader("Condições Comerciais & Pagamento")
-    forma_entrega = st.text_input("Forma de entrega", "Link exclusivo para download, disponível por 30 dias.")
-    
-    col_p1, col_p2 = st.columns(2)
-    with col_p1:
-        forma_pagamento_tipo = st.selectbox("Forma de Pagamento", ["À vista", "Parcelado"])
-    with col_p2:
-        condicao_pagamento = st.selectbox("Condições de Pagamento", ["PIX", "Transferência", "PIX ou transferência bancária", "Cartão de crédito", "Cartão de Crédito parcelado"])
-    
-    parcelas_cartao = 1
-    if "parcelado" in condicao_pagamento.lower() or forma_pagamento_tipo == "Parcelado":
-        parcelas_cartao = st.number_input("Cartão de Crédito parcelado em X vezes", min_value=1, max_value=12, value=3)
-        condicao_pagamento = f"{condicao_pagamento} em {parcelas_cartao}X"
+        st.markdown("---")
+        st.subheader("🍽️ Custos de Alimentação, Hospedagem & Outros")
+        col_al1, col_al2, col_al3, col_al4 = st.columns(4)
+        with col_al1:
+            qtd_almoco = st.number_input("Qtd. Almoços", min_value=0, value=1, step=1, key="qalm_k")
+            val_almoco = st.number_input("R$ Almoço (unit.)", min_value=0.0, value=35.0, step=5.0, key="valm_k")
+        with col_al2:
+            qtd_janta = st.number_input("Qtd. Jantas", min_value=0, value=1, step=1, key="qjan_k")
+            val_janta = st.number_input("R$ Janta (unit.)", min_value=0.0, value=45.0, step=5.0, key="vjan_k")
+        with col_al3:
+            qtd_hosp = st.number_input("Qtd. Diárias Hospedagem", min_value=0, value=0, step=1, key="qhosp_k")
+            val_hosp = st.number_input("R$ Hospedagem (diária)", min_value=0.0, value=150.0, step=10.0, key="vhosp_k")
+        with col_al4:
+            custo_outros = st.number_input("Outros (Estacionamento, etc.) (R$)", min_value=0.0, value=0.0, step=10.0, key="outros_k")
 
-    # ==========================================
-    # CÁLCULOS MATEMÁTICOS DE VALORES E CUSTOS
-    # ==========================================
-    tabela_atual = TABELAS_SERVICOS.get(tipo_servico, TABELAS_SERVICOS["Evento social"])
-    if "diária" in carga_horaria_sel:
-        qtd_diarias = int(carga_horaria_sel.split()[0])
-        valor_base = tabela_atual.get(10, 1300.0) * qtd_diarias
-    else:
-        horas_num = int(carga_horaria_sel.replace("h", ""))
-        horas_buscadas = min(horas_num, 12)
-        valor_base = tabela_atual.get(horas_buscadas, 1500.0)
-        if horas_num > 12:
-            valor_base += (horas_num - 12) * tabela_atual.get(1, 180.0)
+        custo_alimentacao_total = (qtd_almoco * val_almoco) + (qtd_janta * val_janta)
+        custo_hospedagem_total = qtd_hosp * val_hosp
 
-    valor_desconto = valor_base * (desconto_perc / 100.0)
-    valor_final = valor_base - valor_desconto
+        st.markdown("---")
+        st.subheader("💼 Custos Operacionais & Impostos (Uso Interno)")
+        col_op1, col_op2 = st.columns(2)
+        with col_op1:
+            imposto_perc = st.number_input("Alíquota de Impostos / Notas (%)", min_value=0.0, max_value=30.0, value=6.0, step=0.5, key="imp_k")
+        with col_op2:
+            custo_extra = st.number_input("Outros Custos / Extras (R$)", min_value=0.0, value=0.0, step=10.0, key="cextra_k")
 
-    litros_gastos = distancia_ida_volta / consumo_medio if consumo_medio > 0 else 0
-    custo_combustivel = litros_gastos * preco_combustivel
-    custo_logistica_total = custo_combustivel + pedagio_total
+    with tabs_topo[2]:
+        st.subheader("Condições Comerciais & Pagamento")
+        forma_entrega = st.text_input("Forma de entrega", "Link exclusivo para download, disponível por 30 dias.", key="fent_k")
+        
+        col_p1, col_p2 = st.columns(2)
+        with col_p1:
+            forma_pagamento_tipo = st.selectbox("Forma de Pagamento", ["À vista", "Parcelado"], key="fpg_k")
+        with col_p2:
+            condicao_pagamento = st.selectbox("Condições de Pagamento", ["PIX", "Transferência", "PIX ou transferência bancária", "Cartão de crédito", "Cartão de Crédito parcelado"], key="cpg_k")
+        
+        parcelas_cartao = 1
+        if "parcelado" in condicao_pagamento.lower() or forma_pagamento_tipo == "Parcelado":
+            parcelas_cartao = st.number_input("Cartão de Crédito parcelado em X vezes", min_value=1, max_value=12, value=3, key="parc_k")
+            condicao_pagamento = f"{condicao_pagamento} em {parcelas_cartao}X"
 
-    custo_total_operacional_log = custo_logistica_total + custo_alimentacao_total + custo_outros
-    valor_impostos = valor_final * (imposto_perc / 100.0)
-    custo_total_interno = custo_total_operacional_log + valor_impostos + custo_extra
-    lucro_liquido = valor_final - custo_total_interno
-    margem_lucro = (lucro_liquido / valor_final * 100) if valor_final > 0 else 0
+        # CÁLCULOS
+        tabela_atual = TABELAS_SERVICOS.get(tipo_servico, TABELAS_SERVICOS["Evento social"])
+        
+        # Cálculo baseado nas informações de horários e somados quando for mais de 1 dia
+        dias_evento = 1
+        if tem_data_termino:
+            dias_evento = max(1, (data_termino - data_evento).days + 1)
 
-    st.markdown("---")
-    st.subheader("📊 Painel Resumo: Cliente vs. Interno")
-    col_res1, col_res2, col_res3, col_res4 = st.columns(4)
-    col_res1.metric("Valor para o Cliente", fmt_brl(valor_final))
-    col_res2.metric("Custos Operacionais", fmt_brl(custo_total_interno))
-    col_res3.metric("Lucro Líquido Est.", fmt_brl(lucro_liquido))
-    col_res4.metric("Margem de Lucro", f"{margem_lucro:.1f}%")
+        if "diária" in carga_horaria_sel:
+            qtd_diarias = int(carga_horaria_sel.split()[0])
+            valor_base = tabela_atual.get(10, 1300.0) * qtd_diarias * dias_evento
+        else:
+            horas_num = int(carga_horaria_sel.replace("h", ""))
+            horas_buscadas = min(horas_num, 12)
+            valor_base = tabela_atual.get(horas_buscadas, 1500.0) * dias_evento
+            if horas_num > 12:
+                valor_base += (horas_num - 12) * tabela_atual.get(1, 180.0) * dias_evento
 
-    dados_completos = {
-        "contato": contato,
-        "empresa": empresa,
-        "telefone": telefone,
-        "email": email,
-        "data_orcamento": data_orcamento,
-        "data_evento": data_evento,
-        "tem_data_termino": tem_data_termino,
-        "data_termino": data_termino,
-        "horario": horario,
-        "local": local,
-        "cidade": cidade,
-        "estado": estado,
-        "tipo_servico": tipo_servico,
-        "outro_servico_nome": outro_servico_nome,
-        "carga_horaria_sel": carga_horaria_sel,
-        "escopo_servico": escopo_servico,
-        "captacao": captacao,
-        "forma_entrega": forma_entrega,
-        "forma_pagamento_tipo": forma_pagamento_tipo,
-        "condicao_pagamento": condicao_pagamento,
-        "desconto_perc": desconto_perc,
-        "valor_base": valor_base,
-        "valor_desconto": valor_desconto,
-        "valor_final": valor_final,
-        "distancia": distancia_ida_volta,
-        "consumo_veiculo": consumo_medio,
-        "litros_gastos": litros_gastos,
-        "preco_combustivel": preco_combustivel,
-        "custo_combustivel": custo_combustivel,
-        "pedagios": pedagio_total,
-        "custo_alimentacao_total": custo_alimentacao_total,
-        "custo_outros_total": custo_outros,
-        "imposto_perc": imposto_perc,
-        "valor_impostos": valor_impostos,
-        "custo_extra": custo_extra,
-        "custo_total_interno": custo_total_interno,
-        "lucro_liquido": lucro_liquido,
-        "margem_lucro": margem_lucro
-    }
+        valor_desconto = valor_base * (desconto_perc / 100.0)
+        valor_final = valor_base - valor_desconto
 
-    st.markdown("---")
-    st.markdown("### 📥 Geração de Documentos (PDF)")
-    col_down1, col_down2 = st.columns(2)
+        litros_gastos = distancia_ida_volta / consumo_medio if consumo_medio > 0 else 0
+        custo_combustivel = litros_gastos * preco_combustivel
+        custo_logistica_total = custo_combustivel + pedagio_total
 
-    with col_down1:
-        pdf_cliente_bytes = gerar_pdf_cliente(dados_completos)
-        st.download_button(
-            label="📄 Baixar Proposta Comercial (Cliente)",
-            data=pdf_cliente_bytes,
-            file_name=f"Proposta_Comercial_{empresa.replace(' ', '_')}.pdf" if empresa else "Proposta_Comercial.pdf",
-            mime="application/pdf",
-            use_container_width=True
-        )
+        custo_total_operacional_log = custo_logistica_total + custo_alimentacao_total + custo_hospedagem_total + custo_outros
+        valor_impostos = valor_final * (imposto_perc / 100.0)
+        custo_total_interno = custo_total_operacional_log + valor_impostos + custo_extra
+        lucro_liquido = valor_final - custo_total_interno
+        margem_lucro = (lucro_liquido / valor_final * 100) if valor_final > 0 else 0
 
-    with col_down2:
-        pdf_interno_bytes = gerar_pdf_interno(dados_completos)
-        st.download_button(
-            label="🔒 Baixar Relatório Interno (Custos)",
-            data=pdf_interno_bytes,
-            file_name=f"Relatorio_Interno_Custos_{empresa.replace(' ', '_')}.pdf" if empresa else "Relatorio_Interno_Custos.pdf",
-            mime="application/pdf",
-            use_container_width=True
-        )
+        st.markdown("---")
+        st.subheader("📊 Painel Resumo: Cliente vs. Interno")
+        col_res1, col_res2, col_res3, col_res4 = st.columns(4)
+        col_res1.metric("Valor para o Cliente", fmt_brl(valor_final))
+        col_res2.metric("Custos Operacionais", fmt_brl(custo_total_interno))
+        col_res3.metric("Lucro Líquido Est.", fmt_brl(lucro_liquido))
+        col_res4.metric("Margem de Lucro", f"{margem_lucro:.1f}%")
+
+        dados_completos = {
+            "contato": contato,
+            "empresa": empresa,
+            "telefone": telefone,
+            "email": email,
+            "data_orcamento": data_orcamento,
+            "data_evento": data_evento,
+            "tem_data_termino": tem_data_termino,
+            "data_termino": data_termino,
+            "horario": horario,
+            "local": local,
+            "cidade": cidade,
+            "estado": estado,
+            "tipo_servico": tipo_servico,
+            "outro_servico_nome": outro_servico_nome,
+            "carga_horaria_sel": carga_horaria_sel,
+            "escopo_servico": escopo_servico,
+            "captacao": captacao,
+            "forma_entrega": forma_entrega,
+            "forma_pagamento_tipo": forma_pagamento_tipo,
+            "condicao_pagamento": condicao_pagamento,
+            "desconto_perc": desconto_perc,
+            "valor_base": valor_base,
+            "valor_desconto": valor_desconto,
+            "valor_final": valor_final,
+            "distancia": distancia_ida_volta,
+            "consumo_veiculo": consumo_medio,
+            "litros_gastos": litros_gastos,
+            "preco_combustivel": preco_combustivel,
+            "custo_combustivel": custo_combustivel,
+            "pedagios": pedagio_total,
+            "custo_alimentacao_total": custo_alimentacao_total,
+            "custo_hospedagem_total": custo_hospedagem_total,
+            "custo_outros_total": custo_outros,
+            "imposto_perc": imposto_perc,
+            "valor_impostos": valor_impostos,
+            "custo_extra": custo_extra,
+            "custo_total_interno": custo_total_interno,
+            "lucro_liquido": lucro_liquido,
+            "margem_lucro": margem_lucro
+        }
+
+        st.markdown("---")
+        st.markdown("### 📥 Geração de Documentos (PDF)")
+        col_down1, col_down2 = st.columns(2)
+
+        with col_down1:
+            pdf_cliente_bytes = gerar_pdf_cliente(dados_completos)
+            st.download_button(
+                label="📄 Baixar Proposta Comercial (Cliente)",
+                data=pdf_cliente_bytes,
+                file_name=f"Proposta_Comercial_{empresa.replace(' ', '_')}.pdf" if empresa else "Proposta_Comercial.pdf",
+                mime="application/pdf",
+                use_container_width=True
+            )
+
+        with col_down2:
+            pdf_interno_bytes = gerar_pdf_interno(dados_completos)
+            st.download_button(
+                label="🔒 Baixar Relatório Interno (Custos)",
+                data=pdf_interno_bytes,
+                file_name=f"Relatorio_Interno_Custos_{empresa.replace(' ', '_')}.pdf" if empresa else "Relatorio_Interno_Custos.pdf",
+                mime="application/pdf",
+                use_container_width=True
+            )
+
+# Renderiza as abas no topo
+render_conteudo_abas()
+
+# Quadros de abas também na parte inferior da tela
+st.markdown("---")
+st.markdown("### 📌 Navegação Rápida (Inferior)")
+st.info("💡 Dica: Você pode acessar as mesmas abas e opções pelos controles superiores ou utilizando o sistema abaixo.")
+render_conteudo_abas()
