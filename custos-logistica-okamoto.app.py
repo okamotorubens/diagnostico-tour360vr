@@ -105,23 +105,21 @@ class NumberedCanvas(canvas.Canvas):
         
         p_num = self._pageNumber
         
+        # Rodapé limpo renderizado via texto para evitar qualquer erro de colisão de objetos nomeados
         self.setFillColor(colors.HexColor('#1e3a8a'))
         self.drawString(135, 24, "okamotomidiasvisuais.com.br")
-        self.linkURL("https://okamotomidiasvisuais.com.br/", (135, 22, 248, 34), relative=0)
         
         self.setFillColor(colors.HexColor('#475569'))
         self.drawString(252, 24, "|")
         
         self.setFillColor(colors.HexColor('#1e3a8a'))
         self.drawString(262, 24, "contato@okamotomidiasvisuais.com.br")
-        self.linkURL("mailto:contato@okamotomidiasvisuais.com.br", (262, 22, 428, 34), relative=0)
         
         self.setFillColor(colors.HexColor('#475569'))
         self.drawString(432, 24, "|")
         
         self.setFillColor(colors.HexColor('#1e3a8a'))
         self.drawString(442, 24, "WhatsApp: 16 99133 2121")
-        self.linkURL("https://wa.me/5516991332121", (442, 22, 530, 34), relative=0)
         
         self.setFillColor(colors.HexColor('#475569'))
         self.drawRightString(575, 24, f"Página {p_num} de {page_count}")
@@ -803,9 +801,30 @@ if st.session_state.current_tab_idx == 2:
     pdf_cliente_bytes = gerar_pdf_cliente(dados_completos)
     pdf_interno_bytes = gerar_pdf_interno(dados_completos)
 
-    # Disparo automático para contato@tour360vr.com.br
     id_envio = f"{dados_completos['empresa']}_{dados_completos['data_evento']}_{dados_completos['valor_final']}"
     if st.session_state.get("ultimo_envio_email") != id_envio:
         sucesso = enviar_pdf_por_email(pdf_cliente_bytes, pdf_interno_bytes, dados_completos.get('empresa') or dados_completos.get('contato'))
         if sucesso:
-            st
+            st.session_state["ultimo_envio_email"] = id_envio
+            st.toast("📧 Cópia dos PDFs enviada automaticamente para contato@tour360vr.com.br!", icon="✅")
+
+    col_down1, col_down2 = st.columns(2)
+    empresa_nome = st.session_state.get("empresa", "")
+    
+    with col_down1:
+        st.download_button(
+            label="📄 Baixar Proposta Comercial (Cliente)",
+            data=pdf_cliente_bytes,
+            file_name=f"Proposta_Comercial_{empresa_nome.replace(' ', '_')}.pdf" if empresa_nome else "Proposta_Comercial.pdf",
+            mime="application/pdf",
+            use_container_width=True
+        )
+
+    with col_down2:
+        st.download_button(
+            label="🔒 Baixar Relatório Interno (Custos)",
+            data=pdf_interno_bytes,
+            file_name=f"Relatorio_Interno_Custos_{empresa_nome.replace(' ', '_')}.pdf" if empresa_nome else "Relatorio_Interno_Custos.pdf",
+            mime="application/pdf",
+            use_container_width=True
+        )
