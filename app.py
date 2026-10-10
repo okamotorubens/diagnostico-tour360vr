@@ -483,4 +483,475 @@ class PDFTour360Oficial(FPDF):
         self._out(f'{(x+r)*k:.2f} {(hp-(y+h))*k:.2f} l')
         self._arc(xc - r*my_arc, yc + r, xc - r, yc + r*my_arc, xc - r, yc)
         xc, yc = x + r, y + r
-        self._out(f'{x*k:.2f}
+        self._out(f'{x*k:.2f} {(hp-yc)*k:.2f} l')
+        self._arc(xc - r, yc - r*my_arc, xc - r*my_arc, yc - r, xc, yc - r)
+        self._out(f'{op}')
+
+    def _arc(self, x1, y1, x2, y2, x3, y3):
+        k, hp = self.k, self.h
+        self._out(f'{x1*k:.2f} {(hp-y1)*k:.2f} {x2*k:.2f} {(hp-y2)*k:.2f} {x3*k:.2f} {(hp-y3)*k:.2f} c')
+
+def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], paginas_selecionadas=[1, 2, 3, 4]):
+    score = calcular_score_real(dados)
+    capa_presente = 1 in paginas_selecionadas
+    exibir_num = len(paginas_selecionadas) == 4
+    
+    pdf = PDFTour360Oficial(capa_incluida=capa_presente, exibir_numeracao=exibir_num)
+    pdf.set_margins(21, 12, 12)
+    pdf.set_auto_page_break(auto=False)
+
+    # PÁGINA 1: CAPA
+    if 1 in paginas_selecionadas:
+        pdf.add_page()
+        caminho_logo = obter_caminho_logo("tour360")
+        if caminho_logo:
+            try:
+                pdf.image(caminho_logo, 90, 20.0, 38, 38)
+            except Exception:
+                pass
+
+        pdf.set_y(78)
+        pdf.set_font('Helvetica', 'B', 21)
+        pdf.set_text_color(30, 64, 175)
+        pdf.cell(0, 8, conv('DIAGNÓSTICO DE PRESENÇA DIGITAL'), align='C', ln=True)
+        pdf.ln(2)
+
+        pdf.set_font('Helvetica', 'B', 15)
+        pdf.cell(0, 6, conv('GOOGLE MEU NEGÓCIO'), align='C', ln=True)
+
+        w_capa, h_capa, x_capa, y_capa = 177, 34, 21.0, 106.0
+        pdf.set_fill_color(248, 250, 252)
+        pdf.set_draw_color(203, 213, 225)
+        pdf.rounded_rect(x_capa, y_capa, w_capa, h_capa, 2.5, 'FD')
+
+        y_conteudo_inicio = y_capa + 6.5
+        pdf.set_xy(x_capa, y_conteudo_inicio)
+        pdf.set_font('Helvetica', 'B', 14.0)
+        pdf.set_text_color(30, 64, 175) 
+        pdf.cell(w_capa, 5.5, conv(f"{dados.get('nome') or 'Nome da Empresa'}"), align='C', ln=True)
+
+        pdf.set_font('Helvetica', 'B', 9.5)
+        pdf.set_text_color(15, 23, 42)
+        pdf.set_x(x_capa)
+        pdf.cell(w_capa, 5.0, conv(f"Cliente: {dados.get('contato') or 'Responsável'}"), align='C', ln=True)
+        
+        pdf.set_font('Helvetica', '', 8.8)
+        pdf.set_text_color(71, 85, 105)
+        pdf.set_x(x_capa)
+        pdf.cell(w_capa, 5.0, conv(f"{dados.get('endereco') or 'Endereço não informado'}"), align='C', ln=True)
+        
+        site_txt = dados.get('website') if dados.get('website') else 'N/I'
+        pdf.set_x(x_capa)
+        pdf.cell(w_capa, 5.0, conv(f"Telefone: {dados.get('telefone') or 'N/I'}   |   {site_txt}"), align='C', ln=True)
+
+        y_foto, h_container, w_container = 144.0, 96.0, 177.0
+        foto_renderizada = False
+
+        if dados.get("foto_reference") and API_KEY_GOOGLE:
+            try:
+                url_img = f"https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photo_reference={dados['foto_reference']}&key={API_KEY_GOOGLE}"
+                resp_img = requests.get(url_img, timeout=4)
+                if resp_img.status_code == 200:
+                    img_data = io.BytesIO(resp_img.content)
+                    img = Image.open(img_data)
+                    orig_w, orig_h = img.size
+
+                    ratio_w = w_container / orig_w
+                    ratio_h = h_container / orig_h
+                    scale = min(ratio_w, ratio_h)
+
+                    final_w = orig_w * scale
+                    final_h = orig_h * scale
+
+                    offset_x = x_capa + (w_container - final_w) / 2.0
+                    offset_y = y_foto + (h_container - final_h) / 2.0
+
+                    img_data.seek(0)
+                    pdf.image(img_data, x=offset_x, y=offset_y, w=final_w, h=final_h)
+                    foto_renderizada = True
+            except Exception:
+                pass
+
+        if not foto_renderizada:
+            pdf.set_fill_color(240, 243, 246)
+            pdf.rounded_rect(x_capa, y_foto, w_container, h_container, 3, 'F')
+            pdf.set_xy(x_capa, y_foto + 42)
+            pdf.set_font('Helvetica', 'B', 11)
+            pdf.set_text_color(100, 116, 139)
+            pdf.cell(w_container, 6, conv("[ IMAGEM DA FICHA GOOGLE DO CLIENTE ]"), align='C', ln=True)
+
+        pdf.set_y(252.0)
+        pdf.set_font('Helvetica', 'B', 10.5)
+        
+        qtd_aval = dados.get('avaliacoes', 0)
+        nota_cli = dados.get('nota', 0.0)
+        tem_tour = dados.get('tem_tour360', False)
+        
+        if tem_tour:
+            pdf.set_text_color(22, 128, 61)
+            sub_txt_1 = f"SEU PERFIL POSSUI EXCELENTE PRESENÇA VISUAL, NOTA {nota_cli:.1f} E {qtd_aval} AVALIAÇÕES."
+            sub_txt_2 = "MANTER A FICHA ATUALIZADA É O SEGREDO PARA LIDERAR O MERCADO."
+        else:
+            pdf.set_text_color(239, 68, 68)
+            if qtd_aval == 0:
+                sub_txt_1 = "SEU PERFIL AINDA NÃO POSSUI AVALIAÇÕES CADASTRADAS NO GOOGLE,"
+                sub_txt_2 = "E A FALTA DE IMPACTO VISUAL FAZ VOCÊ PERDER CLIENTES DIARIAMENTE."
+            elif qtd_aval < 15:
+                sub_txt_1 = f"SEU PERFIL TEM NOTA {nota_cli:.1f} E APENAS {qtd_aval} AVALIAÇÕES NO GOOGLE,"
+                sub_txt_2 = "E A AUSÊNCIA DE CONTEÚDO IMERSIVO LIMITA O SEU CRESCIMENTO."
+            else:
+                sub_txt_1 = f"SEU PERFIL TEM NOTA SÓLIDA DE {nota_cli:.1f} COM {qtd_aval} AVALIAÇÕES NO GOOGLE,"
+                sub_txt_2 = "MAS A FALTA DE EXPERIÊNCIA IMERSIVA DEIXA DINHEIRO NA MESA."
+
+        pdf.cell(0, 5.0, conv(sub_txt_1), align='C', ln=True)
+        pdf.cell(0, 5.0, conv(sub_txt_2), align='C', ln=True)
+
+    # PÁGINA 2: AUDITORIA DETALHADA
+    if 2 in paginas_selecionadas:
+        pdf.add_page()
+        pdf.set_xy(21, 29)
+        pdf.set_font('Helvetica', 'B', 16)
+        pdf.set_text_color(15, 23, 42)
+        pdf.cell(177, 8, conv('AUDITORIA DETALHADA DE PONTOS DE BUSCA'), align='C', ln=True)
+
+        # Quadro da Empresa Analisada ajustado com bordas reduzidas (Largura: 163, Margem Esquerda: 28)
+        w_ficha, x_ficha, y_ficha, h_ficha = 163, 28.0, 43.0, 15.0
+        pdf.set_fill_color(248, 250, 252)
+        pdf.set_draw_color(226, 232, 240)
+        pdf.rounded_rect(x_ficha, y_ficha, w_ficha, h_ficha, 2.5, 'FD')
+        
+        pdf.set_xy(x_ficha, y_ficha + 2.0)
+        pdf.set_font('Helvetica', 'B', 12.0)
+        pdf.set_text_color(30, 64, 175)
+        pdf.cell(w_ficha, 5.0, conv(f"{dados.get('nome') or 'Empresa Analisada'}"), align='C', ln=True)
+
+        pdf.set_x(x_ficha)
+        pdf.set_font('Helvetica', 'B', 9.5)
+        pdf.set_text_color(245, 158, 11)
+        pdf.cell(w_ficha, 4.5, conv(f"Nota {dados.get('nota', 0.0):.1f} *   -   {dados.get('avaliacoes', 0)} avaliações no Google"), align='C', ln=True)
+
+        # Quadro do SCORE GERAL (Largura: 65, Altura: 15.0)
+        w_box_score = 65
+        h_box_score = 15.0
+        x_box_score = 21.0 + (177.0 - w_box_score) / 2.0
+        y_box_score = 63.0
+
+        if score < 50: cr, cg, cb, status_txt = 239, 68, 68, "STATUS CRÍTICO"
+        elif score < 80: cr, cg, cb, status_txt = 245, 158, 11, "STATUS MÉDIO"
+        else: cr, cg, cb, status_txt = 22, 128, 61, "ALTO DESEMPENHO"
+
+        pdf.set_fill_color(240, 249, 255)
+        pdf.set_draw_color(62, 161, 219)
+        pdf.set_line_width(0.4)
+        pdf.rounded_rect(x_box_score, y_box_score, w_box_score, h_box_score, 2.5, 'FD')
+        pdf.set_line_width(0.2)
+
+        pdf.set_font('Helvetica', 'B', 18)
+        w_num = pdf.get_string_width(f"{score} ")
+        w_bar = pdf.get_string_width("/ 100")
+        x_start = x_box_score + (w_box_score - (w_num + w_bar)) / 2.0
+
+        pdf.set_xy(x_start, y_box_score + 1.2)
+        pdf.set_text_color(cr, cg, cb)
+        pdf.cell(w_num, 6.0, f"{score} ", align='L')
+        
+        pdf.set_text_color(15, 23, 42)
+        pdf.cell(w_bar, 6.0, "/ 100", align='L', ln=True)
+        
+        pdf.set_xy(x_box_score, y_box_score + 8.2)
+        pdf.set_font('Helvetica', 'B', 8.5)
+        pdf.set_text_color(cr, cg, cb)
+        pdf.cell(w_box_score, 4.0, conv(f"SCORE GERAL ({status_txt})"), align='C', ln=True)
+
+        pct_avaliacoes = min(int((dados.get('avaliacoes', 0) / 50.0) * 100), 100) if dados.get('avaliacoes', 0) > 0 else 10
+        pct_fotos = 100 if dados.get('tem_fotos_hd') else 30
+        pct_tour = 100 if dados.get('tem_tour360') else 30
+        pct_cat = 100 if dados.get('categorias_completas') else 50
+        pct_hor = 100 if dados.get('horarios_ok') else 40
+        pct_web = 100 if dados.get('website') != 'Não possui' and dados.get('website') != '' else 10
+        pct_desc = 100 if dados.get('tem_descricao', True) else 30
+        pct_atrib = 100 if dados.get('atributos_ok', True) else 40
+        pct_resp = 100 if dados.get('resposta_avaliacoes_ok', False) else 30
+
+        desc_fotos = "Atende ao volume recomendado de fotos em HD." if dados.get('tem_fotos_hd') else "Poucas fotos encontradas / antigas no perfil."
+        rotulo_tour = "Ativo" if dados.get('tem_tour360') else "Pendente de Validação"
+        desc_tour = "Tour Virtual 360° ativo e integrado." if dados.get('tem_tour360') else "Não detectado via API. Necessário checagem manual na ficha."
+        desc_cat = "Atende às categorias recomendadas." if dados.get('categorias_completas') else "Ajuste necessário em categorias secundárias."
+        desc_web = f"Website oficial: {dados.get('website')}" if dados.get('website') != 'Não possui' and dados.get('website') != '' else "Falta link de website cadastrado para conversão."
+        desc_desc = "Resumo editorial ativo no perfil." if dados.get('tem_descricao', True) else "Descrição da empresa incompleta ou ausente."
+        desc_atrib = "Atributos de serviços ativos." if dados.get('atributos_ok', True) else "Falta cadastrar atributos de acessibilidade/serviços."
+        desc_resp = "Frequência ativa de respostas do proprietário." if dados.get('resposta_avaliacoes_ok', False) else "Falta de respostas oficiais às avaliações."
+
+        itens = [
+            ("1. Fotos e Resolução Visual", pct_fotos, "Alto" if dados.get('tem_fotos_hd') else "Baixo", desc_fotos),
+            ("2. Tour Virtual 360° Interativo", pct_tour, rotulo_tour, desc_tour),
+            ("3. Categorias Principal e Secundárias", pct_cat, "Completo" if dados.get('categorias_completas') else "Incompleto", desc_cat),
+            ("4. Horários e Exceções (Feriados)", pct_hor, "Atualizado" if dados.get('horarios_ok') else "Desatualizado", "Falta de horários em feriados."),
+            ("5. Website e Links de Conversão", pct_web, "Ativo" if dados.get('website') != 'Não possui' and dados.get('website') != '' else "Falho", desc_web),
+            ("6. Avaliações no Google (Prova Social)", pct_avaliacoes, f"{dados.get('nota', 0.0):.1f}/5.0", f"{dados.get('avaliacoes', 0)} avaliações."),
+            ("7. Resumo Editorial & Descrição", pct_desc, "Completo" if dados.get('tem_descricao', True) else "Ausente", desc_desc),
+            ("8. Atributos de Acessibilidade/Serviços", pct_atrib, "Ativo" if dados.get('atributos_ok', True) else "Pendente", desc_atrib),
+            ("9. Interação e Resposta a Avaliações", pct_resp, "Ativo" if dados.get('resposta_avaliacoes_ok', False) else "Pendente", desc_resp)
+        ]
+
+        y_start_itens, h_slot = 91.0, 10.5
+        for idx_item, (titulo, pct, rotulo, desc) in enumerate(itens):
+            y_curr = y_start_itens + (idx_item * h_slot)
+            pdf.set_xy(21, y_curr)
+            pdf.set_font('Helvetica', 'B', 9.5)
+            pdf.set_text_color(30, 41, 59)
+            pdf.cell(122, 3.2, conv(titulo), border=0)
+            
+            pdf.set_font('Helvetica', 'B', 9.5)
+            if pct < 40: pdf.set_text_color(239, 68, 68)
+            elif pct < 80: pdf.set_text_color(245, 158, 11)
+            else: pdf.set_text_color(22, 128, 61)
+                
+            pdf.cell(55, 3.2, conv(rotulo), border=0, align='R')
+
+            y_bar = y_curr + 3.6
+            pdf.set_fill_color(226, 232, 240)
+            pdf.rounded_rect(21, y_bar, 177, 1.5, 0.5, 'F')
+            
+            if pct < 40: pdf.set_fill_color(239, 68, 68)
+            elif pct < 80: pdf.set_fill_color(245, 158, 11)
+            else: pdf.set_fill_color(22, 128, 61)
+                
+            pdf.rounded_rect(21, y_bar, max(float(pct) * 1.77, 4.0), 1.5, 0.5, 'F')
+
+            pdf.set_xy(21, y_bar + 2.2)
+            pdf.set_font('Helvetica', '', 8.5)
+            pdf.set_text_color(71, 85, 105)
+            pdf.cell(177, 3.0, conv(f"   Diagnóstico: {desc[:90]}"), border=0)
+
+        concorrentes_filtrados = [c for c in concorrentes if c.get("nome", "").strip() != ""]
+        if concorrentes_filtrados:
+            pdf.set_xy(21, 194.0)
+            pdf.set_font('Helvetica', 'B', 9.5)
+            pdf.set_text_color(30, 64, 175)
+            pdf.cell(0, 4.0, conv("ANÁLISE AUTOMÁTICA DE CONCORRENTES DO SEGMENTO"), border=0)
+
+            w_emp, w_item, w_score, h_row = 53, 11.0, 25.0, 4.6
+            y_table = 199.0
+            pdf.set_xy(21, y_table)
+            pdf.set_fill_color(30, 64, 175)
+            pdf.set_text_color(255, 255, 255)
+            pdf.set_font('Helvetica', 'B', 9.0)
+            
+            pdf.cell(w_emp, h_row, conv(" Empresa / Concorrente"), border=0, fill=True)
+            pdf.cell(w_item, h_row, conv("1.Fotos"), border=0, fill=True, align='C')
+            pdf.cell(w_item, h_row, conv("2.360°"), border=0, fill=True, align='C')
+            pdf.cell(w_item, h_row, conv("3.Categ"), border=0, fill=True, align='C')
+            pdf.cell(w_item, h_row, conv("4.Horár"), border=0, fill=True, align='C')
+            pdf.cell(w_item, h_row, conv("5.Web"), border=0, fill=True, align='C')
+            pdf.cell(w_item, h_row, conv("6.Nota"), border=0, fill=True, align='C')
+            pdf.cell(w_item, h_row, conv("7.Desc"), border=0, fill=True, align='C')
+            pdf.cell(w_item, h_row, conv("8.Atrib"), border=0, fill=True, align='C')
+            pdf.cell(w_item, h_row, conv("9.Resp"), border=0, fill=True, align='C')
+            pdf.cell(w_score, h_row, conv("Score Geral"), border=0, fill=True, align='C')
+
+            def celula_sim_nao(pdf_obj, w, h, valor):
+                if valor == "Sim":
+                    pdf_obj.set_fill_color(220, 252, 231)
+                    pdf_obj.set_text_color(22, 101, 52)
+                else:
+                    pdf_obj.set_fill_color(254, 226, 226)
+                    pdf_obj.set_text_color(153, 27, 27)
+                pdf_obj.cell(w, h, conv(valor), border='B', fill=True, align='C')
+
+            y_r1 = y_table + h_row
+            pdf.set_xy(21, y_r1)
+            pdf.set_fill_color(240, 249, 255)
+            pdf.set_font('Helvetica', 'B', 8.5)
+            pdf.set_text_color(30, 64, 175)
+            pdf.cell(w_emp, h_row, conv(f" {str(dados.get('nome', ''))[:25]}"), border='B', fill=True)
+            
+            celula_sim_nao(pdf, w_item, h_row, "Sim" if dados.get('tem_fotos_hd') else "Não")
+            celula_sim_nao(pdf, w_item, h_row, "Sim" if dados.get('tem_tour360') else "Não")
+            celula_sim_nao(pdf, w_item, h_row, "Sim" if dados.get('categorias_completas') else "Não")
+            celula_sim_nao(pdf, w_item, h_row, "Sim" if dados.get('horarios_ok') else "Não")
+            celula_sim_nao(pdf, w_item, h_row, "Sim" if dados.get('website') and dados.get('website') != 'Não possui' else "Não")
+            
+            pdf.set_fill_color(240, 249, 255)
+            pdf.set_text_color(30, 64, 175)
+            pdf.cell(w_item, h_row, conv(f"{dados.get('nota', 0.0):.1f}"), border='B', fill=True, align='C')
+            
+            celula_sim_nao(pdf, w_item, h_row, "Sim" if dados.get('tem_descricao') else "Não")
+            celula_sim_nao(pdf, w_item, h_row, "Sim" if dados.get('atributos_ok') else "Não")
+            celula_sim_nao(pdf, w_item, h_row, "Sim" if dados.get('resposta_avaliacoes_ok') else "Não")
+            
+            pdf.set_fill_color(240, 249, 255)
+            pdf.set_font('Helvetica', 'B', 8.5)
+            pdf.set_text_color(30, 64, 175)
+            pdf.cell(w_score, h_row, conv(f"{score} / 100"), border='B', fill=True, align='C')
+
+            pdf.set_font('Helvetica', '', 8.5)
+            for idx_c, c in enumerate(concorrentes_filtrados):
+                y_rc = y_r1 + ((idx_c + 1) * h_row)
+                score_conc = calcular_score_concorrente(c)
+                pdf.set_xy(21, y_rc)
+                pdf.set_fill_color(255, 255, 255)
+                pdf.set_text_color(51, 65, 85)
+                
+                pdf.cell(w_emp, h_row, conv(f" {c.get('nome', '')[:25]}"), border='B', fill=True)
+                celula_sim_nao(pdf, w_item, h_row, c.get('tem_fotos_hd', 'Não'))
+                celula_sim_nao(pdf, w_item, h_row, c.get('tem_tour360', 'Não'))
+                celula_sim_nao(pdf, w_item, h_row, c.get('categorias_ok', 'Não'))
+                celula_sim_nao(pdf, w_item, h_row, c.get('horarios_ok', 'Não'))
+                celula_sim_nao(pdf, w_item, h_row, c.get('tem_website', 'Não'))
+                
+                pdf.set_fill_color(255, 255, 255)
+                pdf.set_text_color(51, 65, 85)
+                pdf.cell(w_item, h_row, conv(f"{float(c.get('nota', 0.0)):.1f}"), border='B', fill=True, align='C')
+                
+                celula_sim_nao(pdf, w_item, h_row, c.get('tem_descricao', 'Não'))
+                celula_sim_nao(pdf, w_item, h_row, c.get('atributos_ok', 'Não'))
+                celula_sim_nao(pdf, w_item, h_row, c.get('respostas_ok', 'Não'))
+                
+                pdf.set_fill_color(255, 255, 255)
+                pdf.set_font('Helvetica', 'B', 8.5)
+                pdf.set_text_color(51, 65, 85)
+                pdf.cell(w_score, h_row, conv(f"{score_conc} / 100"), border='B', fill=True, align='C')
+                pdf.set_font('Helvetica', '', 8.5)
+
+        if plano_acao_extra and plano_acao_extra.strip() != "":
+            w_extra, x_extra, y_extra, h_box_extra = 177, 21.0, 237.0, 27.0
+            pdf.set_fill_color(240, 249, 255)
+            pdf.set_draw_color(62, 161, 219)
+            pdf.set_line_width(0.4)
+            pdf.rounded_rect(x_extra, y_extra, w_extra, h_box_extra, 2.0, 'FD')
+            pdf.set_line_width(0.2)
+            
+            pdf.set_xy(x_extra, y_extra + 2.5)
+            pdf.set_font('Helvetica', 'B', 8.2)
+            pdf.set_text_color(30, 64, 175)
+            pdf.cell(w_extra, 3.5, conv("PLANO DE AÇÃO E APONTAMENTOS ESTRATÉGICOS PERSONALIZADOS:"), align='C', border=0)
+            
+            pdf.set_xy(x_extra + 4, y_extra + 8.5)
+            pdf.set_font('Helvetica', '', 7.8)
+            pdf.set_text_color(51, 65, 85)
+            pdf.multi_cell(w_extra - 8, 3.5, conv(plano_acao_extra), align='C')
+
+    # PÁGINA 3: PROPOSTA COMERCIAL
+    if 3 in paginas_selecionadas:
+        pdf.add_page()
+        pdf.set_xy(21, 29)
+        pdf.set_font('Helvetica', 'B', 16)
+        pdf.set_text_color(15, 23, 42)
+        pdf.cell(177, 8, conv('PROPOSTA COMERCIAL & ESTRUTURAÇÃO ESTRATÉGICA'), align='C', ln=True)
+
+        pdf.set_y(46.0)
+        pdf.set_font('Helvetica', 'B', 14)
+        pdf.cell(0, 6, conv('PLANOS E INVESTIMENTO'), align='C', ln=True)
+
+        y_p = 66.0
+        val_start_limpo = str(planos.get('start_valor', '')).replace("/mês", "").replace("/mes", "").strip()
+        pdf.set_fill_color(248, 250, 252)
+        pdf.set_draw_color(226, 232, 240)
+        pdf.rounded_rect(21, y_p, 51, 60, 2, 'FD')
+        
+        pdf.set_xy(21, y_p + 4)
+        pdf.set_font('Helvetica', 'B', 15)
+        pdf.set_text_color(15, 23, 42)
+        pdf.cell(51, 5, 'Plano Start', align='C', ln=True)
+        
+        pdf.set_xy(21, y_p + 10)
+        pdf.set_font('Helvetica', 'B', 14)
+        pdf.set_text_color(30, 64, 175)
+        pdf.cell(51, 5, conv(f"R$ {val_start_limpo}"), align='C', ln=True)
+        
+        pdf.set_xy(21, y_p + 16)
+        pdf.set_font('Helvetica', 'B', 9.5)
+        pdf.set_text_color(15, 23, 42)
+        pdf.cell(51, 4, conv('em até 2x'), align='C', ln=True)
+        
+        pdf.set_font('Helvetica', '', 8.5)
+        pdf.set_text_color(51, 65, 85)
+        pdf.set_xy(24, y_p + 25)
+        pdf.multi_cell(45, 4.5, conv(planos.get('start_itens', '')), align='L')
+
+        val_pro_limpo = str(planos.get('pro_valor', '')).replace("/mês", "").replace("/mes", "").strip()
+        pdf.set_fill_color(240, 249, 255)
+        pdf.set_draw_color(30, 64, 175)
+        pdf.set_line_width(1.0)
+        pdf.rounded_rect(76, y_p - 3, 67, 66, 2.5, 'FD')
+        pdf.set_line_width(0.2)
+        
+        pdf.set_xy(76, y_p + 1)
+        pdf.set_font('Helvetica', 'B', 17)
+        pdf.set_text_color(15, 23, 42)
+        pdf.cell(67, 5, conv('Plano Pro'), align='C', ln=True)
+        
+        pdf.set_xy(76, y_p + 7.0)
+        pdf.set_font('Helvetica', 'B', 10.0)
+        pdf.set_text_color(30, 64, 175)
+        pdf.cell(67, 4, conv('RECOMENDADO'), align='C', ln=True)
+        
+        pdf.set_xy(76, y_p + 12.5)
+        pdf.set_font('Helvetica', 'B', 17)
+        pdf.set_text_color(30, 64, 175)
+        pdf.cell(67, 6, conv(f"R$ {val_pro_limpo}"), align='C', ln=True)
+        
+        pdf.set_xy(76, y_p + 20.0)
+        pdf.set_font('Helvetica', 'B', 9.5)
+        pdf.set_text_color(15, 23, 42)
+        pdf.cell(67, 4, conv('em até 3x'), align='C', ln=True)
+        
+        pdf.set_font('Helvetica', 'B', 9.0)
+        pdf.set_text_color(15, 23, 42)
+        pdf.set_xy(80, y_p + 27.5)
+        pdf.multi_cell(59, 4.5, conv(planos.get('pro_itens', '')), align='L')
+
+        val_gestao_limpo = str(planos.get('gestao_valor', '')).replace("/mês", "").replace("/mes", "").strip()
+        pdf.set_fill_color(248, 250, 252)
+        pdf.set_draw_color(226, 232, 240)
+        pdf.rounded_rect(147, y_p, 51, 60, 2, 'FD')
+        
+        pdf.set_xy(147, y_p + 4)
+        pdf.set_font('Helvetica', 'B', 15)
+        pdf.set_text_color(15, 23, 42)
+        pdf.cell(51, 5, conv('Gestão Mensal'), align='C', ln=True)
+        
+        pdf.set_xy(147, y_p + 10)
+        pdf.set_font('Helvetica', 'B', 14)
+        pdf.set_text_color(30, 64, 175)
+        pdf.cell(51, 5, conv(f"R$ {val_gestao_limpo}"), align='C', ln=True)
+        
+        pdf.set_xy(147, y_p + 16)
+        pdf.set_font('Helvetica', 'B', 9.5)
+        pdf.set_text_color(15, 23, 42)
+        pdf.cell(51, 4, conv('valor mensal'), align='C', ln=True)
+        
+        pdf.set_font('Helvetica', '', 8.5)
+        pdf.set_text_color(51, 65, 85)
+        pdf.set_xy(150, y_p + 25)
+        pdf.multi_cell(45, 4.5, conv(planos.get('gestao_itens', '')), align='L')
+
+        w_info = 177
+        x_info = 21.0
+        pdf.set_fill_color(240, 249, 255)
+        pdf.set_draw_color(62, 161, 219)
+        pdf.set_line_width(0.5)
+        pdf.rounded_rect(x_info, 140, w_info, 36, 2.5, 'FD')
+        pdf.set_line_width(0.2)
+
+        pdf.set_xy(x_info, 142.5)
+        pdf.set_font('Helvetica', 'B', 10.0)
+        pdf.set_text_color(30, 64, 175)
+        pdf.cell(w_info, 4, conv('POR QUE SEU NEGÓCIO PRECISA DE OTIMIZAÇÃO PROFISSIONAL?'), align='C', ln=True)
+
+        pdf.set_font('Helvetica', '', 8.5)
+        pdf.set_text_color(51, 65, 85)
+        txt_exp = (
+            "Mais de 80% das buscas locais no Google e Maps resultam em uma ação imediata (ligação, rota ou mensagem).\n"
+            "Perfis com fotos profissionais e Tour Virtual 360° geram até 2x mais interesse e permanecem no topo das buscas.\n"
+            "Fichas incompletas ou desatualizadas perdem clientes diariamente para concorrentes diretos com nota mais alta."
+        )
+        pdf.set_xy(x_info, 148.5)
+        pdf.multi_cell(w_info, 4.5, conv(txt_exp), align='C')
+
+    # PÁGINA 4: CONTRATO
+    if 4 in paginas_selecionadas:
+        pdf.add_page()
+        pdf.set_xy(21, 29)
+        pdf.set_font('Helvetica', 'B', 16)
