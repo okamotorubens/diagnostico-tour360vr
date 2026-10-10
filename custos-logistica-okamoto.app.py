@@ -46,7 +46,7 @@ ESTADOS_BR = [
 st.set_page_config(page_title="Proposta Comercial & Custos - Okamoto Mídias Visuais", page_icon="📊", layout="wide")
 
 # ==========================================
-# CANVAS COM LINKS ATIVOS NO RODAPÉ
+# CANVAS COM LINKS ATIVOS SEGUROS NO RODAPÉ
 # ==========================================
 class ActiveFooterCanvas(canvas.Canvas):
     def __init__(self, *args, **kwargs):
@@ -74,18 +74,17 @@ class ActiveFooterCanvas(canvas.Canvas):
         self.setLineWidth(0.5)
         self.line(35, 38, 575, 38)
         
-        # Textos e links clicáveis ativos via canvas
-        pnum = self._pageNumber
+        # Textos e links clicáveis ativos via canvas (sem conflito de nomes)
         self.drawString(35, 24, "Okamoto Mídias Visuais")
         
-        self.linkURL("https://okamotomidiasvisuais.com.br", (160, 22, 295, 33), relative=0, target="blank", name=f"link_site_{pnum}")
+        self.linkURL("https://okamotomidiasvisuais.com.br", (160, 22, 295, 33), relative=0, target="blank")
         self.setFillColor(colors.HexColor("#1e3a8a"))
         self.drawString(160, 24, "okamotomidiasvisuais.com.br")
         
         self.setFillColor(colors.HexColor("#64748b"))
         self.drawString(305, 24, "|    contato@okamotomidiasvisuais.com.br    |")
         
-        self.linkURL("https://wa.me/5516991332121", (465, 22, 575, 33), relative=0, target="blank", name=f"link_whats_{pnum}")
+        self.linkURL("https://wa.me/5516991332121", (465, 22, 575, 33), relative=0, target="blank")
         self.setFillColor(colors.HexColor("#047857"))
         self.drawString(465, 24, "WhatsApp: 16 99133 2121")
         
@@ -411,7 +410,6 @@ with tabs_topo[0]:
         if tem_data_termino:
             data_termino = st.date_input("Data de Término do Evento", datetime.now())
             
-        # Campo de horário inteligente sem textos poluindo o label
         horario_input = st.text_input("Horário do Evento", "0800")
         if len(horario_input) == 4 and horario_input.isdigit():
             horario = f"{horario_input[:2]}h{horario_input[2:]}"
