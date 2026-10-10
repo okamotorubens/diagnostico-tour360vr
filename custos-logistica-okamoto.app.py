@@ -388,4 +388,25 @@ if logo_sys_path:
     col_l_img, col_l_txt = st.columns([1, 4])
     with col_l_img:
         st.image(logo_sys_path, width=160)
-    with col_l_
+    with col_l_txt:
+        st.title("⚡ Sistema de Propostas & Custos")
+        st.markdown("Gerencie orçamentos comerciais, analise a viabilidade interna e gere documentação profissional em PDF.")
+else:
+    st.title("⚡ Sistema de Propostas & Custos")
+    st.markdown("Gerencie orçamentos comerciais, analise a viabilidade interna e gere documentação profissional em PDF.")
+
+st.markdown("---")
+
+tabs_topo = st.tabs(["1. Dados & Serviços", "2. Custos & Logística", "3. Prazos, Resumo & Relatórios"])
+
+with tabs_topo[0]:
+    st.subheader("1. Dados do Cliente & Serviço")
+    col1, col2 = st.columns(2)
+    with col1:
+        contato = st.text_input("Contato", "")
+        empresa = st.text_input("Empresa", "")
+        telefone = st.text_input("Telefone", "")
+        email = st.text_input("E-mail", "")
+    with col2:
+        data_orcamento = st.date_input("Data do Orçamento (dia/mês/ano)", datetime.now())
+        data_evento =
