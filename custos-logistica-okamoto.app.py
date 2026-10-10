@@ -100,24 +100,24 @@ class NumberedCanvas(canvas.Canvas):
         
         p_num = self._pageNumber
         
-        # Criação e centralização de links no rodapé com coordenadas exatas
+        # Links no rodapé com nomes únicos por página para evitar conflitos de anotação
         self.setFillColor(colors.HexColor('#1e3a8a'))
         self.drawString(135, 24, "okamotomidiasvisuais.com.br")
-        self.linkURL("https://okamotomidiasvisuais.com.br/", (135, 22, 248, 34), relative=0, name=f"web_{p_num}")
+        self.linkURL("https://okamotomidiasvisuais.com.br/", (135, 22, 248, 34), relative=0, name=f"web_p{p_num}")
         
         self.setFillColor(colors.HexColor('#475569'))
         self.drawString(252, 24, "|")
         
         self.setFillColor(colors.HexColor('#1e3a8a'))
         self.drawString(262, 24, "contato@okamotomidiasvisuais.com.br")
-        self.linkURL("mailto:contato@okamotomidiasvisuais.com.br", (262, 22, 428, 34), relative=0, name=f"mail_{p_num}")
+        self.linkURL("mailto:contato@okamotomidiasvisuais.com.br", (262, 22, 428, 34), relative=0, name=f"mail_p{p_num}")
         
         self.setFillColor(colors.HexColor('#475569'))
         self.drawString(432, 24, "|")
         
         self.setFillColor(colors.HexColor('#1e3a8a'))
         self.drawString(442, 24, "WhatsApp: 16 99133 2121")
-        self.linkURL("https://wa.me/5516991332121", (442, 22, 530, 34), relative=0, name=f"wa_{p_num}")
+        self.linkURL("https://wa.me/5516991332121", (442, 22, 530, 34), relative=0, name=f"wa_p{p_num}")
         
         self.setFillColor(colors.HexColor('#475569'))
         self.drawRightString(575, 24, f"Página {p_num} de {page_count}")
@@ -146,7 +146,6 @@ def criar_imagem_proporcional(path, target_width=150):
 
 def gerar_pdf_cliente(dados):
     buffer = io.BytesIO()
-    # Margem superior reduzida (topMargin=18) para caber todo o conteúdo da página 1 perfeitamente
     doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=35, rightMargin=35, topMargin=18, bottomMargin=48)
     
     servico_nome = dados['tipo_servico'] if dados['tipo_servico'] != "Outro" else dados['outro_servico_nome']
@@ -169,7 +168,7 @@ def gerar_pdf_cliente(dados):
 
     logo_path = get_logo_pdf_path()
     if logo_path:
-        img = criar_imagem_proporcional(logo_path, target_width=150) # Logo menor para economizar espaço vertical inicial
+        img = criar_imagem_proporcional(logo_path, target_width=150)
         img.hAlign = 'CENTER'
         story.append(img)
     else:
@@ -206,7 +205,7 @@ def gerar_pdf_cliente(dados):
     story.append(Paragraph(texto_evento, style_corpo))
     story.append(Spacer(1, 6))
     
-    story.append(Paragraph("<b>3. Escopo do serviço:</b>", style_bold)) # Renumerado após exclusão do antigo item 3
+    story.append(Paragraph("<b>3. Escopo do serviço:</b>", style_bold))
     story.append(Paragraph(dados['escopo_servico'].replace('\n', '<br/>'), style_corpo))
     story.append(Spacer(1, 6))
     
@@ -214,23 +213,20 @@ def gerar_pdf_cliente(dados):
     story.append(Paragraph(dados['captacao'].replace('\n', '<br/>'), style_corpo))
     story.append(Spacer(1, 6))
     
-    # 6. Entrega com a nova informação solicitada
     story.append(Paragraph("<b>5. Entrega:</b> Até 72h após o término do serviço prestado, editado e enviado em link para download, disponível por 30 dias, em alta e baixa resolução.", style_corpo))
     story.append(Spacer(1, 6))
     
     story.append(Paragraph(f"<b>6. Formas de pagamento:</b> {dados['forma_pagamento_tipo']}", style_corpo))
     story.append(Spacer(1, 6))
     
-    # Excluída a palavra "prazo:" do item 7
     story.append(Paragraph(f"<b>7. Condições de pagamento:</b> {dados['condicao_pagamento']}", style_corpo))
     story.append(Spacer(1, 6))
     
-    # Validade do orçamento agora é o item 8 (excluído o antigo item 9 Prazo)
     story.append(Paragraph(f"<b>8. Validade do orçamento:</b> {dados['validade_orcamento']}", style_corpo))
     story.append(Spacer(1, 14))
     
     val_fmt = fmt_brl(dados['valor_final'])
-    texto_valor = f"<b>VALOR TOTAL DO INVESTIMENTO</b>"
+    texto_valor = f"<b>VALOR TOTAL DO INVESTIMENTO ({dados['carga_horaria_sel']}):</b><br/>{val_fmt}"
         
     p_valor = Paragraph(texto_valor, ParagraphStyle('ValBox', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, leading=15, alignment=1, textColor=colors.HexColor('#1e3a8a')))
     t_valor_box = Table([[p_valor]], colWidths=[380])
@@ -250,7 +246,7 @@ def gerar_pdf_cliente(dados):
     story.append(Paragraph("Ficamos à disposição para quaisquer esclarecimentos e ajustes, caso necessário.", style_corpo))
     story.append(Spacer(1, 10))
     story.append(Paragraph("Atenciosamente,", style_corpo))
-    story.append(Spacer(1, 8))  # Subido 1 linha após "Rubens Okamoto" para que Okamoto Mídias Visuais não fique solto na página 2
+    story.append(Spacer(1, 8))
     story.append(Paragraph("Rubens Okamoto", style_assinatura))
     story.append(Paragraph("Okamoto Mídias Visuais", style_corpo))
     story.append(PageBreak())
@@ -329,13 +325,12 @@ def gerar_pdf_interno(dados):
     story.append(Paragraph("Relatório de Custos", style_titulo))
     story.append(Spacer(1, 2))
     story.append(Paragraph(f"{nome_serv_ev}", style_subtitulo_serv))
-    story.append(Spacer(1, 16)) # Mais espaço vertical para aproveitar melhor a página
+    story.append(Spacer(1, 16))
     
     data_fim_str = dados['data_termino'].strftime('%d/%m/%Y') if dados['tem_data_termino'] else data_ev_str
     local_txt = dados['local'] if dados['local'] else "Local a definir"
     data_criacao_str = dados['data_orcamento'].strftime('%d/%m/%Y')
     
-    # Eliminado o espaço excessivo/distanciamento dos itens na tabela de dados do evento
     info_geral = [
         [Paragraph("<b>Cliente:</b>", style_bold), Paragraph(dados['contato'], style_corpo), Paragraph("<b>Data de Criação:</b>", style_bold), Paragraph(data_criacao_str, style_corpo)],
         [Paragraph("<b>Serviço:</b>", style_bold), Paragraph(f"{nome_serv_ev}", style_corpo), Paragraph("<b>Data de Início:</b>", style_bold), Paragraph(data_ev_str, style_corpo)],
@@ -352,14 +347,13 @@ def gerar_pdf_interno(dados):
         ('RIGHTPADDING', (0,0), (-1,-1), 2)
     ]))
     story.append(t_geral)
-    story.append(Spacer(1, 18)) # Mais espaço vertical antes do item 1
+    story.append(Spacer(1, 18))
     
     story.append(Paragraph("1. Custos de Logística, Deslocamento & Operacionais", style_secao))
     story.append(Spacer(1, 6))
     
     combustivel_detalhe = f"Consumo: {dados['consumo_veiculo']} km/L | {dados['litros_gastos']:.1f}L a {fmt_brl(dados['preco_combustivel'])}/L"
     
-    # Tabelas perfeitamente alinhadas e sem espaço vazio à direita (largura total 524)
     tabela_log_dados = [
         [Paragraph("<b>Parâmetro</b>", style_bold), Paragraph("<b>Detalhe / Métrica</b>", style_bold), Paragraph("<b>Custo Parcial</b>", style_bold)],
         [Paragraph("Distância Total", style_corpo), Paragraph(f"{dados['distancia']} km (Ida e Volta)", style_corpo), Paragraph("-", style_corpo)],
@@ -384,7 +378,7 @@ def gerar_pdf_interno(dados):
     ts_log.add('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1'))
     t_log.setStyle(ts_log)
     story.append(t_log)
-    story.append(Spacer(1, 16)) # Mais espaço vertical antes do item 2
+    story.append(Spacer(1, 16))
     
     story.append(Paragraph("2. Impostos & Comissão", style_secao))
     story.append(Spacer(1, 6))
@@ -409,7 +403,7 @@ def gerar_pdf_interno(dados):
     ts_op.add('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1'))
     t_op.setStyle(ts_op)
     story.append(t_op)
-    story.append(Spacer(1, 16)) # Mais espaço vertical antes do item 3
+    story.append(Spacer(1, 16))
     
     story.append(Paragraph("3. Fechamento Financeiro & Margem", style_secao))
     story.append(Spacer(1, 6))
@@ -435,7 +429,6 @@ def gerar_pdf_interno(dados):
     buffer.seek(0)
     return buffer
 
-# LOGO DO APP NO TOPO centralizada perfeitamente
 logo_app_path = get_logo_app_path()
 if logo_app_path:
     st.image(logo_app_path, width=280)
@@ -703,7 +696,6 @@ except Exception:
     valor_impostos = 0.0
     valor_comissao = 0.0
 
-# QUADRO DE PRÉVIA EM TEMPO REAL FIXO ABAIXO DAS ABAS
 st.markdown("---")
 st.markdown("### 📈 Quadro de Prévia em Tempo Real (Visão Geral)")
 col_res1, col_res2, col_res3, col_res4 = st.columns(4)
@@ -762,7 +754,6 @@ dados_completos = {
     "margem_lucro": margem_lucro
 }
 
-# EXIBIÇÃO APENAS NA ABA 3 DA GERAÇÃO DE DOCUMENTOS (PDF)
 if st.session_state.current_tab_idx == 2:
     st.markdown("---")
     st.subheader("📥 Geração de Documentos (PDF)")
@@ -775,7 +766,7 @@ if st.session_state.current_tab_idx == 2:
         st.download_button(
             label="📄 Baixar Proposta Comercial (Cliente)",
             data=pdf_cliente_bytes,
-            file_name=f"Proposta Comercial Okamoto Mídias Visuais {empresa_nome.replace(' ', '_')}.pdf" if empresa_nome else "Proposta Comercial Okamot Mídias Visuais.pdf",
+            file_name=f"Proposta_Comercial_{empresa_nome.replace(' ', '_')}.pdf" if empresa_nome else "Proposta_Comercial.pdf",
             mime="application/pdf",
             use_container_width=True
         )
