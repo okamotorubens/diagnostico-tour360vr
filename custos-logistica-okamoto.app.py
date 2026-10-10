@@ -411,7 +411,7 @@ with tabs_topo[0]:
         if tem_data_termino:
             data_termino = st.date_input("Data de Término do Evento", datetime.now())
             
-        # Campo de horário inteligente (converte 0800 automaticamente para 08h00)
+        # Campo de horário inteligente sem textos poluindo o label
         horario_input = st.text_input("Horário do Evento", "0800")
         if len(horario_input) == 4 and horario_input.isdigit():
             horario = f"{horario_input[:2]}h{horario_input[2:]}"
