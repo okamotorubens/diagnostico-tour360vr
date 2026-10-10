@@ -361,24 +361,31 @@ def gerar_pdf_interno(dados):
     buffer.seek(0)
     return buffer
 
-# CABEÇALHO DO SISTEMA COM LOGO CENTRALIZADO
+# 1. LOGO CENTRALIZADO NO TOPO
 logo_sys_path = get_logo_path()
 if logo_sys_path:
     col_vazia1, col_logo, col_vazia2 = st.columns([1, 2, 1])
     with col_logo:
         st.image(logo_sys_path, width=320)
 
+# 2. LOGO ABAIXO O TÍTULO DO SISTEMA
 st.markdown("<h1 style='text-align: center;'>⚡ Sistema de Propostas & Custos</h1>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; color: #64748b;'>Gerencie orçamentos comerciais, analise a viabilidade interna e gere documentação profissional em PDF.</p>", unsafe_allow_html=True)
 st.markdown("---")
 
-if 'active_tab' not in st.session_state:
-    st.session_state.active_tab = 0
+# GERENCIAMENTO DE ABAS VIA SESSION_STATE PARA FUNCIONAR O AVANÇAR/VOLTAR
+if 'current_tab_idx' not in st.session_state:
+    st.session_state.current_tab_idx = 0
 
 tab_names = ["1. Dados & Serviços", "2. Custos & Logística", "3. Prazos, Resumo & Relatórios"]
-tabs_topo = st.tabs(tab_names)
 
-with tabs_topo[0]:
+# Seletor visual de abas sincronizado com o session_state
+tab_selecionada = st.radio("Navegação:", tab_names, index=st.session_state.current_tab_idx, horizontal=True, label_visibility="collapsed")
+st.session_state.current_tab_idx = tab_names.index(tab_selecionada)
+
+st.markdown("---")
+
+if st.session_state.current_tab_idx == 0:
     st.subheader("1. Dados do Cliente & Serviço")
     col1, col2 = st.columns(2)
     with col1:
@@ -436,10 +443,10 @@ with tabs_topo[0]:
     
     st.markdown("---")
     if st.button("Avançar ➡️", key="btn_avancar_aba0", use_container_width=True):
-        st.session_state.active_tab = 1
+        st.session_state.current_tab_idx = 1
         st.rerun()
 
-with tabs_topo[1]:
+elif st.session_state.current_tab_idx == 1:
     st.subheader("Custos operacionais")
     
     st.markdown("##### 🚗 Parâmetros de Deslocamento & Logística")
@@ -497,14 +504,14 @@ with tabs_topo[1]:
     col_b1, col_b2 = st.columns(2)
     with col_b1:
         if st.button("⬅️ Voltar", key="btn_voltar_aba1", use_container_width=True):
-            st.session_state.active_tab = 0
+            st.session_state.current_tab_idx = 0
             st.rerun()
     with col_b2:
         if st.button("Avançar ➡️", key="btn_avancar_aba1", use_container_width=True):
-            st.session_state.active_tab = 2
+            st.session_state.current_tab_idx = 2
             st.rerun()
 
-with tabs_topo[2]:
+elif st.session_state.current_tab_idx == 2:
     st.subheader("Validade do Orçamento, Forma de Entrega & Pagamento")
     validade_orcamento = st.text_input("Validade do Orçamento", "05 dias")
     forma_entrega = st.text_input("Forma de entrega", "Link exclusivo para download, disponível por 30 dias.")
@@ -535,7 +542,7 @@ with tabs_topo[2]:
 
     st.markdown("---")
     if st.button("⬅️ Voltar", key="btn_voltar_aba2", use_container_width=True):
-        st.session_state.active_tab = 1
+        st.session_state.current_tab_idx = 1
         st.rerun()
 
 # CÁLCULOS DINÂMICOS EM TEMPO REAL
@@ -678,26 +685,27 @@ dados_completos["lucro_liquido"] = lucro_liquido
 dados_completos["margem_lucro"] = margem_lucro
 
 # EXIBIÇÃO APENAS NA ABA 3 DA GERAÇÃO DE DOCUMENTOS (PDF)
-st.markdown("---")
-st.subheader("📥 Geração de Documentos (PDF)")
-col_down1, col_down2 = st.columns(2)
+if st.session_state.current_tab_idx == 2:
+    st.markdown("---")
+    st.subheader("📥 Geração de Documentos (PDF)")
+    col_down1, col_down2 = st.columns(2)
 
-with col_down1:
-    pdf_cliente_bytes = gerar_pdf_cliente(dados_completos)
-    st.download_button(
-        label="📄 Baixar Proposta Comercial (Cliente)",
-        data=pdf_cliente_bytes,
-        file_name=f"Proposta_Comercial_{empresa.replace(' ', '_')}.pdf" if 'empresa' in locals() and empresa else "Proposta_Comercial.pdf",
-        mime="application/pdf",
-        use_container_width=True
-    )
+    with col_down1:
+        pdf_cliente_bytes = gerar_pdf_cliente(dados_completos)
+        st.download_button(
+            label="📄 Baixar Proposta Comercial (Cliente)",
+            data=pdf_cliente_bytes,
+            file_name=f"Proposta_Comercial_{empresa.replace(' ', '_')}.pdf" if 'empresa' in locals() and empresa else "Proposta_Comercial.pdf",
+            mime="application/pdf",
+            use_container_width=True
+        )
 
-with col_down2:
-    pdf_interno_bytes = gerar_pdf_interno(dados_completos)
-    st.download_button(
-        label="🔒 Baixar Relatório Interno (Custos)",
-        data=pdf_interno_bytes,
-        file_name=f"Relatorio_Interno_Custos_{empresa.replace(' ', '_')}.pdf" if 'empresa' in locals() and empresa else "Relatorio_Interno_Custos.pdf",
-        mime="application/pdf",
-        use_container_width=True
-    )
+    with col_down2:
+        pdf_interno_bytes = gerar_pdf_interno(dados_completos)
+        st.download_button(
+            label="🔒 Baixar Relatório Interno (Custos)",
+            data=pdf_interno_bytes,
+            file_name=f"Relatorio_Interno_Custos_{empresa.replace(' ', '_')}.pdf" if 'empresa' in locals() and empresa else "Relatorio_Interno_Custos.pdf",
+            mime="application/pdf",
+            use_container_width=True
+        )
