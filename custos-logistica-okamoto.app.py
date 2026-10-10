@@ -128,7 +128,7 @@ def gerar_pdf_cliente(dados):
     
     story.append(Paragraph("Proposta Comercial", style_titulo))
     story.append(Spacer(1, 4))
-    story.append(Paragraph(f"{servico_nome} — {nome_serv_ev}", style_servico_sub))
+    story.append(Paragraph(f"{nome_serv_ev}", style_servico_sub))
     story.append(Spacer(1, 14))
     
     story.append(Paragraph("<b>1. Dados do cliente:</b>", style_bold))
@@ -248,7 +248,7 @@ def gerar_pdf_interno(dados):
     nome_serv_ev = dados['nome_servico_input'] if dados['nome_servico_input'] else servico_exibido
     data_ev_str = dados['data_evento'].strftime('%d/%m/%Y')
     
-    doc.title = f"Relatório interno de custos - {nome_serv_ev} - {data_ev_str}"
+    doc.title = f"Relatório de custos - {nome_serv_ev} - {data_ev_str}"
     
     styles = getSampleStyleSheet()
     style_titulo = ParagraphStyle('TitInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=15, leading=18, alignment=1, textColor=colors.HexColor('#0f172a'))
@@ -269,7 +269,7 @@ def gerar_pdf_interno(dados):
         story.append(Paragraph("<b>[ LOGO OKAMOTO ]</b>", style_bold))
         
     story.append(Spacer(1, 14))
-    story.append(Paragraph("Relatório Interno de Viabilidade & Custos", style_titulo))
+    story.append(Paragraph("Relatório de Custos", style_titulo))
     story.append(Spacer(1, 14))
     
     data_fim_str = dados['data_termino'].strftime('%d/%m/%Y') if dados['tem_data_termino'] else data_ev_str
@@ -361,18 +361,15 @@ def gerar_pdf_interno(dados):
     buffer.seek(0)
     return buffer
 
+# CABEÇALHO DO SISTEMA COM LOGO CENTRALIZADO
 logo_sys_path = get_logo_path()
 if logo_sys_path:
-    col_l_img, col_l_txt = st.columns([1, 4])
-    with col_l_img:
-        st.image(logo_sys_path, width=280)
-    with col_l_txt:
-        st.title("⚡ Sistema de Propostas & Custos")
-        st.markdown("Gerencie orçamentos comerciais, analise a viabilidade interna e gere documentação profissional em PDF.")
-else:
-    st.title("⚡ Sistema de Propostas & Custos")
-    st.markdown("Gerencie orçamentos comerciais, analise a viabilidade interna e gere documentação profissional em PDF.")
+    col_vazia1, col_logo, col_vazia2 = st.columns([1, 2, 1])
+    with col_logo:
+        st.image(logo_sys_path, width=320)
 
+st.markdown("<h1 style='text-align: center;'>⚡ Sistema de Propostas & Custos</h1>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #64748b;'>Gerencie orçamentos comerciais, analise a viabilidade interna e gere documentação profissional em PDF.</p>", unsafe_allow_html=True)
 st.markdown("---")
 
 if 'active_tab' not in st.session_state:
@@ -479,7 +476,7 @@ with tabs_topo[1]:
         custo_jantar = st.number_input("Jantar (R$)", min_value=0.0, value=0.00, step=5.0, format="%.2f")
 
     st.markdown("---")
-    st.markdown("##### 🤝 Apoio & Outros Custos")
+    st.markdown("##### 📦 Outros Custos")
     col_ap1, col_ap2 = st.columns(2)
     with col_ap1:
         custo_freelancer = st.number_input("Freelancer (R$)", min_value=0.0, value=0.00, step=50.0, format="%.2f")
