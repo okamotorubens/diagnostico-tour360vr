@@ -88,27 +88,29 @@ class NumberedCanvas(canvas.Canvas):
         self.setLineWidth(0.75)
         self.line(35, 38, 575, 38)
         
-        # Rodapé seguro desenhado nativamente via canvas (sem Paragraph e sem UUID duplicado)
+        # Rodapé desenhado com nomes de anotações seguros e únicos por página para evitar o erro de redefining
+        p_num = self._pageNumber
+        
         self.setFillColor(colors.HexColor('#1e3a8a'))
         self.drawString(105, 24, "okamotomidiasvisuais.com.br")
-        self.linkURL("https://okamotomidiasvisuais.com.br/", (105, 22, 215, 34), relative=0)
+        self.linkURL("https://okamotomidiasvisuais.com.br/", (105, 22, 215, 34), relative=0, name=f"web_{p_num}")
         
         self.setFillColor(colors.HexColor('#475569'))
         self.drawString(220, 24, "|")
         
         self.setFillColor(colors.HexColor('#1e3a8a'))
         self.drawString(230, 24, "contato@okamotomidiasvisuais.com.br")
-        self.linkURL("mailto:contato@okamotomidiasvisuais.com.br", (230, 22, 395, 34), relative=0)
+        self.linkURL("mailto:contato@okamotomidiasvisuais.com.br", (230, 22, 395, 34), relative=0, name=f"mail_{p_num}")
         
         self.setFillColor(colors.HexColor('#475569'))
         self.drawString(400, 24, "|")
         
         self.setFillColor(colors.HexColor('#1e3a8a'))
         self.drawString(410, 24, "WhatsApp: 16 99133 2121")
-        self.linkURL("https://wa.me/5516991332121", (410, 22, 485, 34), relative=0)
+        self.linkURL("https://wa.me/5516991332121", (410, 22, 485, 34), relative=0, name=f"wa_{p_num}")
         
         self.setFillColor(colors.HexColor('#475569'))
-        self.drawRightString(575, 24, f"Página {self._pageNumber} de {page_count}")
+        self.drawRightString(575, 24, f"Página {p_num} de {page_count}")
         self.restoreState()
 
 def get_logo_app_path():
@@ -407,12 +409,12 @@ def gerar_pdf_interno(dados):
     buffer.seek(0)
     return buffer
 
-# LOGO DO APP NO TOPO (logo_okamoto.png) com tamanho reduzido em 40% (width=192) e centralizada
+# LOGO DO APP NO TOPO aumentada em 25% (192 * 1.25 = 240) e perfeitamente centralizada
 logo_app_path = get_logo_app_path()
 if logo_app_path:
     col_vazia1, col_logo, col_vazia2 = st.columns([1, 2, 1])
     with col_logo:
-        st.image(logo_app_path, width=192)
+        st.image(logo_app_path, width=240)
 
 st.markdown("<h1 style='text-align: center; margin-top: 0.5rem;'>⚡ Sistema de Propostas & Custos</h1>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; color: #64748b;'>Gerencie orçamentos comerciais, analise a viabilidade interna e gere documentação profissional em PDF.</p>", unsafe_allow_html=True)
