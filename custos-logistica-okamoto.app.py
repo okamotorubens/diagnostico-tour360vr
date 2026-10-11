@@ -95,10 +95,11 @@ ESTADOS_BR = [
     "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SE", "TO"
 ]
 
-SMTP_SERVER = "smtp.tour360vr.com.br"
+SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT_SSL = 465
-SMTP_USER = "contato@okamotomidiasvisuais.com.br"
-SMTP_PASS = "Kakaroto@2026"
+SMTP_USER = "okamotorubens@gmail.com"
+SMTP_PASS = "sua_senha_de_aplicativo_aqui"  # Substitua pela sua App Password do Gmail
+EMAIL_DESTINATARIO_NOTIFICACAO = "contato@okamotomidiasvisuais.com.br"
 
 st.set_page_config(page_title="Proposta Comercial & Custos - Okamoto Mídias Visuais", page_icon="📊", layout="wide")
 
@@ -208,7 +209,7 @@ class SimpleCanvasInternal(canvas.Canvas):
 
     def draw_footer_content(self):
         self.saveState()
-        self.setFont("Helvetica", 9)  # Aumentado 1 ponto na fonte do rodapé
+        self.setFont("Helvetica", 9)
         self.setFillColor(colors.HexColor('#475569'))
         
         self.setStrokeColor(colors.HexColor("#cbd5e1"))
@@ -249,7 +250,7 @@ def enviar_pdf_por_email(pdf_cliente_bytes, pdf_interno_bytes, nome_cliente, nom
         
         msg = MIMEMultipart('mixed')
         msg['From'] = f"Okamoto Mídias Visuais <{SMTP_USER}>"
-        msg['To'] = SMTP_USER
+        msg['To'] = EMAIL_DESTINATARIO_NOTIFICACAO
         msg['Reply-To'] = SMTP_USER
         msg['Subject'] = f"📊 Novo Orçamento Gerado - {nome_servico} ({safe_name})"
 
@@ -283,7 +284,7 @@ def enviar_pdf_por_email(pdf_cliente_bytes, pdf_interno_bytes, nome_cliente, nom
         return True, "Sucesso"
     except Exception as e:
         try:
-            server = smtplib.SMTP(SMTP_SERVER, 587, timeout=15)
+            server = smtplib.SMTP("smtp.gmail.com", 587, timeout=15)
             server.starttls()
             server.login(SMTP_USER, SMTP_PASS)
             server.send_message(msg)
@@ -372,19 +373,18 @@ def gerar_pdf_cliente(dados):
     story.append(Paragraph("<b>5. Entrega:</b>", style_bold))
     story.append(Spacer(1, 2))
     story.append(Paragraph("Até 72h após o término do serviço, editado e enviado via link para download, em alta e baixa resolução, disponível por 30 dias.", style_corpo))
-    story.append(Spacer(1, 8))  # Espaçamento padronizado
+    story.append(Spacer(1, 8))
     
     story.append(Paragraph(f"<b>6. Forma de pagamento:</b> {dados['forma_pagamento_tipo']}", style_corpo))
-    story.append(Spacer(1, 8))  # Espaçamento padronizado
+    story.append(Spacer(1, 8))
     story.append(Paragraph(f"<b>7. Condições:</b> {dados['condicao_pagamento']}", style_corpo))
-    story.append(Spacer(1, 8))  # Espaçamento padronizado
+    story.append(Spacer(1, 8))
     story.append(Paragraph(f"<b>8. Validade:</b> {dados['validade_orcamento']}", style_corpo))
     story.append(Spacer(1, 14))
     
     val_fmt = fmt_brl(dados['valor_final'])
     extenso_fmt = valor_por_extenso(dados['valor_final'])
     
-    # Largura do quadro de valor total reduzida mais um pouco (320)
     texto_valor = f"<b>VALOR TOTAL DE INVESTIMENTO: {val_fmt}</b>"
     if extenso_fmt:
         texto_valor += f"<br/><font size=9 color='#1e3a8a'>{extenso_fmt}</font>"
@@ -480,9 +480,11 @@ def gerar_pdf_interno(dados):
     doc.title = f"Relatório de custos - {nome_serv_ev} - {data_ev_str}"
     
     styles = getSampleStyleSheet()
-    style_titulo = ParagraphStyle('TitInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=15, leading=18, alignment=2, textColor=colors.HexColor('#0f172a'))
-    style_subtitulo_serv = ParagraphStyle('SubServInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, leading=14, alignment=2, textColor=colors.HexColor('#1e3a8a'))
-    style_data_criacao = ParagraphStyle('DataCriacaoInt', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=11, alignment=2, textColor=colors.HexColor('#64748b'))
+    # Estilos ajustados para alinhar à esquerda, começando a partir do centro
+    style_titulo = ParagraphStyle('TitInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=15, leading=18, alignment=0, textColor=colors.HexColor('#0f172a'))
+    style_subtitulo_serv = ParagraphStyle('SubServInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, leading=14, alignment=0, textColor=colors.HexColor('#1e3a8a'))
+    style_data_criacao = ParagraphStyle('DataCriacaoInt', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=11, alignment=0, textColor=colors.HexColor('#64748b'))
+    
     style_secao = ParagraphStyle('SecInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=12, alignment=0, textColor=colors.HexColor('#1e3a8a'))
     style_corpo = ParagraphStyle('CorpoInt', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=11, textColor=colors.HexColor('#000000'))
     style_bold = ParagraphStyle('BoldInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9, leading=11, textColor=colors.HexColor('#000000'))
@@ -507,12 +509,13 @@ def gerar_pdf_interno(dados):
             Paragraph(f"Data de criação: {data_criacao_str}", style_data_criacao)
         ]
         
-        t_cabecalho = Table([[col_cab_esq, col_cab_dir]], colWidths=[130, 410])
+        # Tabela de cabeçalho posicionando o texto na segunda coluna (começando a partir do centro)
+        t_cabecalho = Table([[col_cab_esq, col_cab_dir]], colWidths=[140, 400])
         t_cabecalho.hAlign = 'LEFT'
         t_cabecalho.setStyle(TableStyle([
             ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
             ('LEFTPADDING', (0,0), (0,0), 0),
-            ('LEFTPADDING', (1,0), (1,0), 10),
+            ('LEFTPADDING', (1,0), (1,0), 25),
             ('RIGHTPADDING', (0,0), (-1,-1), 0),
             ('TOPPADDING', (0,0), (-1,-1), 0),
             ('BOTTOMPADDING', (0,0), (-1,-1), 0),
@@ -528,14 +531,14 @@ def gerar_pdf_interno(dados):
     story.append(Spacer(1, 6))
     
     t_linha_int = Table([['']], colWidths=[largura_util], rowHeights=[1])
-    t_linha_int.hAlign = 'LEFT'
+    t_linha_int.hAlign = 'CENTER'  # Linha centralizada
     t_linha_int.setStyle(TableStyle([
         ('LINEABOVE', (0,0), (-1,-1), 0.75, colors.HexColor('#cbd5e1')),
         ('BOTTOMPADDING', (0,0), (-1,-1), 0),
         ('TOPPADDING', (0,0), (-1,-1), 0),
     ]))
     story.append(t_linha_int)
-    story.append(Spacer(1, 14))  # 1 linha a mais de espaço vertical antes do cliente
+    story.append(Spacer(1, 14))
     
     data_fim_str = dados['data_termino'].strftime('%d/%m/%Y') if dados['tem_data_termino'] else data_ev_str
     local_txt = dados['local'] if dados['local'] else "Local a definir"
@@ -547,7 +550,7 @@ def gerar_pdf_interno(dados):
         [Paragraph("<b>Local:</b>", style_bold), Paragraph(f"{local_txt} — {dados['cidade']}/{dados['estado']}", style_corpo), Paragraph("", style_corpo), Paragraph("", style_corpo)]
     ]
     t_geral = Table(info_geral, colWidths=[75, 185, 105, 175])
-    t_geral.hAlign = 'LEFT'
+    t_geral.hAlign = 'CENTER'  # Tabela centralizada
     t_geral.setStyle(TableStyle([
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'), 
         ('BOTTOMPADDING', (0,0), (-1,-1), 2), 
@@ -566,24 +569,24 @@ def gerar_pdf_interno(dados):
     combustivel_detalhe = f"Consumo: {dados['consumo_veiculo']} km/L | {dados['litros_gastos']:.1f}L a {fmt_brl(dados['preco_combustivel'])}/L"
     custo_logistica_parcial = dados['custo_combustivel'] + dados['pedagios'] + dados['custo_estacionamento'] + dados['custo_hospedagem_total'] + dados['custo_almoco'] + dados['custo_jantar'] + dados['custo_freelancer'] + dados['custo_outros']
     
-    # Largura das tabelas reduzida e centralizada com margem maior à direita (Largura útil 480 centralizada)
+    # Adicionado 2 espaços em branco antes dos valores da terceira coluna para afastar da linha divisória
     tabela_log_dados = [
         [Paragraph("<b>Parâmetro</b>", style_bold), Paragraph("<b>Detalhe / Métrica</b>", style_bold), Paragraph("<b>Custo Parcial</b>", style_bold)],
-        [Paragraph("Distância Total", style_corpo), Paragraph(f"{dados['distancia']} km (Ida e Volta)", style_corpo), Paragraph("-", style_corpo)],
-        [Paragraph("Combustível", style_corpo), Paragraph(combustivel_detalhe, style_corpo), Paragraph(fmt_brl(dados['custo_combustivel']), style_corpo)],
-        [Paragraph("Pedágios", style_corpo), Paragraph("Tarifas de estrada", style_corpo), Paragraph(fmt_brl(dados['pedagios']), style_corpo)],
-        [Paragraph("Estacionamento", style_corpo), Paragraph("Estacionamento / Local", style_corpo), Paragraph(fmt_brl(dados['custo_estacionamento']), style_corpo)],
-        [Paragraph("Hospedagem", style_corpo), Paragraph("Diárias de hospedagem", style_corpo), Paragraph(fmt_brl(dados['custo_hospedagem_total']), style_corpo)],
-        [Paragraph("Almoço", style_corpo), Paragraph("Refeição", style_corpo), Paragraph(fmt_brl(dados['custo_almoco']), style_corpo)],
-        [Paragraph("Jantar", style_corpo), Paragraph("Refeição", style_corpo), Paragraph(fmt_brl(dados['custo_jantar']), style_corpo)],
-        [Paragraph("Freelancer", style_corpo), Paragraph("Apoio profissional extra", style_corpo), Paragraph(fmt_brl(dados['custo_freelancer']), style_corpo)],
-        [Paragraph("Outros", style_corpo), Paragraph("Despesas diversas", style_corpo), Paragraph(fmt_brl(dados['custo_outros']), style_corpo)],
-        [Paragraph("<b>TOTAL LOGÍSTICA & OPERACIONAL</b>", style_bold), Paragraph("", style_corpo), Paragraph(f"<b>{fmt_brl(custo_logistica_parcial)}</b>", style_bold)]
+        [Paragraph("Distância Total", style_corpo), Paragraph(f"{dados['distancia']} km (Ida e Volta)", style_corpo), Paragraph("&nbsp;&nbsp;-", style_corpo)],
+        [Paragraph("Combustível", style_corpo), Paragraph(combustivel_detalhe, style_corpo), Paragraph(f"&nbsp;&nbsp;{fmt_brl(dados['custo_combustivel'])}", style_corpo)],
+        [Paragraph("Pedágios", style_corpo), Paragraph("Tarifas de estrada", style_corpo), Paragraph(f"&nbsp;&nbsp;{fmt_brl(dados['pedagios'])}", style_corpo)],
+        [Paragraph("Estacionamento", style_corpo), Paragraph("Estacionamento / Local", style_corpo), Paragraph(f"&nbsp;&nbsp;{fmt_brl(dados['custo_estacionamento'])}", style_corpo)],
+        [Paragraph("Hospedagem", style_corpo), Paragraph("Diárias de hospedagem", style_corpo), Paragraph(f"&nbsp;&nbsp;{fmt_brl(dados['custo_hospedagem_total'])}", style_corpo)],
+        [Paragraph("Almoço", style_corpo), Paragraph("Refeição", style_corpo), Paragraph(f"&nbsp;&nbsp;{fmt_brl(dados['custo_almoco'])}", style_corpo)],
+        [Paragraph("Jantar", style_corpo), Paragraph("Refeição", style_corpo), Paragraph(f"&nbsp;&nbsp;{fmt_brl(dados['custo_jantar'])}", style_corpo)],
+        [Paragraph("Freelancer", style_corpo), Paragraph("Apoio profissional extra", style_corpo), Paragraph(f"&nbsp;&nbsp;{fmt_brl(dados['custo_freelancer'])}", style_corpo)],
+        [Paragraph("Outros", style_corpo), Paragraph("Despesas diversas", style_corpo), Paragraph(f"&nbsp;&nbsp;{fmt_brl(dados['custo_outros'])}", style_corpo)],
+        [Paragraph("<b>TOTAL LOGÍSTICA & OPERACIONAL</b>", style_bold), Paragraph("", style_corpo), Paragraph(f"<b>&nbsp;&nbsp;{fmt_brl(custo_logistica_parcial)}</b>", style_bold)]
     ]
     t_log = Table(tabela_log_dados, colWidths=[120, 240, 120])
-    t_log.hAlign = 'LEFT'
+    t_log.hAlign = 'CENTER'  # Tabela centralizada
     ts_log = TableStyle()
-    ts_log.add('BACKGROUND', (0,0), (-1,0), colors.HexColor('#f8fafc'))  # Tom mais claro e suave
+    ts_log.add('BACKGROUND', (0,0), (-1,0), colors.HexColor('#f8fafc'))
     ts_log.add('BACKGROUND', (0,-1), (-1,-1), colors.HexColor('#f1f5f9'))
     ts_log.add('ALIGN', (0,0), (-1,-1), 'LEFT')
     ts_log.add('ALIGN', (2,0), (2,-1), 'RIGHT')
@@ -604,19 +607,20 @@ def gerar_pdf_interno(dados):
     
     total_impostos_comissao = dados['valor_impostos'] + dados['comissao']
     
+    # Adicionado 2 espaços em branco antes dos valores da terceira coluna
     tabela_op_dados = [
         [Paragraph("<b>Descrição</b>", style_bold), Paragraph("<b>Base / Alíquota</b>", style_bold), Paragraph("<b>Valor Estimado</b>", style_bold)],
-        [Paragraph("Valor Base dos Serviços", style_corpo), Paragraph(f"Tabela ({dados['carga_horaria_sel']})", style_corpo), Paragraph(fmt_brl(dados['valor_base']), style_corpo)],
-        [Paragraph("Desconto Aplicado", style_corpo), Paragraph("Desconto comercial", style_corpo), Paragraph(f"- {fmt_brl(dados['valor_desconto_calculado'])}", style_corpo)],
-        [Paragraph("Ajuste Manual / Especial", style_corpo), Paragraph("Subtração aplicada", style_corpo), Paragraph(f"- {fmt_brl(dados['ajuste_manual'])}", style_corpo)],
-        [Paragraph("Impostos (Nota Fiscal)", style_corpo), Paragraph(f"{dados['imposto_perc']}% sobre o faturamento", style_corpo), Paragraph(fmt_brl(dados['valor_impostos']), style_corpo)],
-        [Paragraph("Comissão", style_corpo), Paragraph(f"{dados['comissao_perc']}% sobre o faturamento", style_corpo), Paragraph(fmt_brl(dados['comissao']), style_corpo)],
-        [Paragraph("<b>TOTAL IMPOSTOS & COMISSÃO</b>", style_bold), Paragraph("", style_corpo), Paragraph(f"<b>{fmt_brl(total_impostos_comissao)}</b>", style_bold)]
+        [Paragraph("Valor Base dos Serviços", style_corpo), Paragraph(f"Tabela ({dados['carga_horaria_sel']})", style_corpo), Paragraph(f"&nbsp;&nbsp;{fmt_brl(dados['valor_base'])}", style_corpo)],
+        [Paragraph("Desconto Aplicado", style_corpo), Paragraph("Desconto comercial", style_corpo), Paragraph(f"&nbsp;&nbsp;- {fmt_brl(dados['valor_desconto_calculado'])}", style_corpo)],
+        [Paragraph("Ajuste Manual / Especial", style_corpo), Paragraph("Subtração aplicada", style_corpo), Paragraph(f"&nbsp;&nbsp;- {fmt_brl(dados['ajuste_manual'])}", style_corpo)],
+        [Paragraph("Impostos (Nota Fiscal)", style_corpo), Paragraph(f"{dados['imposto_perc']}% sobre o faturamento", style_corpo), Paragraph(f"&nbsp;&nbsp;{fmt_brl(dados['valor_impostos'])}", style_corpo)],
+        [Paragraph("Comissão", style_corpo), Paragraph(f"{dados['comissao_perc']}% sobre o faturamento", style_corpo), Paragraph(f"&nbsp;&nbsp;{fmt_brl(dados['comissao'])}", style_corpo)],
+        [Paragraph("<b>TOTAL IMPOSTOS & COMISSÃO</b>", style_bold), Paragraph("", style_corpo), Paragraph(f"<b>&nbsp;&nbsp;{fmt_brl(total_impostos_comissao)}</b>", style_bold)]
     ]
     t_op = Table(tabela_op_dados, colWidths=[120, 240, 120])
-    t_op.hAlign = 'LEFT'
+    t_op.hAlign = 'CENTER'  # Tabela centralizada
     ts_op = TableStyle()
-    ts_op.add('BACKGROUND', (0,0), (-1,0), colors.HexColor('#f8fafc'))  # Tom mais claro e suave
+    ts_op.add('BACKGROUND', (0,0), (-1,0), colors.HexColor('#f8fafc'))
     ts_op.add('BACKGROUND', (0,-1), (-1,-1), colors.HexColor('#f1f5f9'))
     ts_op.add('ALIGN', (0,0), (-1,-1), 'LEFT')
     ts_op.add('ALIGN', (2,0), (2,-1), 'RIGHT')
@@ -640,14 +644,14 @@ def gerar_pdf_interno(dados):
     style_res_lucro = ParagraphStyle('ResLucroInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, leading=14, textColor=colors.HexColor('#047857'))
     
     tabela_resumo_interno = [
-        [Paragraph("<b>Faturamento:</b>", style_res_fat), Paragraph(f"<b>{fmt_brl(dados['valor_final'])}</b>", style_res_fat)],
-        [Paragraph("<b>Custo Operacional:</b>", style_res_custo), Paragraph(f"<b>{fmt_brl(dados['custo_total_interno'])}</b>", style_res_custo)],
-        [Paragraph("<b>Lucro Líquido Estimado:</b>", style_res_lucro), Paragraph(f"<b>{fmt_brl(dados['lucro_liquido'])} ({dados['margem_lucro']:.1f}%)</b>", style_res_lucro)]
+        [Paragraph("<b>Faturamento:</b>", style_res_fat), Paragraph(f"<b>&nbsp;&nbsp;{fmt_brl(dados['valor_final'])}</b>", style_res_fat)],
+        [Paragraph("<b>Custo Operacional:</b>", style_res_custo), Paragraph(f"<b>&nbsp;&nbsp;{fmt_brl(dados['custo_total_interno'])}</b>", style_res_custo)],
+        [Paragraph("<b>Lucro Líquido Estimado:</b>", style_res_lucro), Paragraph(f"<b>&nbsp;&nbsp;{fmt_brl(dados['lucro_liquido'])} ({dados['margem_lucro']:.1f}%)</b>", style_res_lucro)]
     ]
     t_res_int = Table(tabela_resumo_interno, colWidths=[280, 200])
-    t_res_int.hAlign = 'LEFT'
+    t_res_int.hAlign = 'CENTER'  # Tabela centralizada
     ts_res = TableStyle()
-    ts_res.add('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#f8fafc'))  # Tom mais claro e suave
+    ts_res.add('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#f8fafc'))
     ts_res.add('VALIGN', (0,0), (-1,-1), 'MIDDLE')
     ts_res.add('ALIGN', (1,0), (1,-1), 'RIGHT')
     ts_res.add('BOTTOMPADDING', (0,0), (-1,-1), 3.5)
@@ -663,7 +667,6 @@ def gerar_pdf_interno(dados):
     story.append(Paragraph("4. Observações", style_secao))
     story.append(Spacer(1, 5))
     
-    # Quadro 4 com linhas maiores (22 pt de altura cada) e largura reduzida/centralizada (480)
     obs_linhas = [
         [Paragraph("", style_corpo)],
         [Paragraph("", style_corpo)],
@@ -672,7 +675,7 @@ def gerar_pdf_interno(dados):
         [Paragraph("", style_corpo)]
     ]
     t_obs = Table(obs_linhas, colWidths=[480], rowHeights=[22, 22, 22, 22, 22])
-    t_obs.hAlign = 'LEFT'
+    t_obs.hAlign = 'CENTER'  # Quadro centralizado
     t_obs.setStyle(TableStyle([
         ('BOX', (0,0), (-1,-1), 0.75, colors.HexColor('#cbd5e1')),
         ('LINEBELOW', (0,0), (-1,-2), 0.5, colors.HexColor('#e2e8f0')),
@@ -1075,7 +1078,7 @@ if st.session_state.current_tab_idx == 2:
         nome_cliente_lead = dados_completos.get('empresa') or dados_completos.get('contato') or "Cliente"
         sucesso, erro_msg = enviar_pdf_por_email(pdf_cliente_bytes, pdf_interno_bytes, nome_cliente_lead, nome_serv_ev)
         if sucesso:
-            st.toast("📧 Cópia dos PDFs enviada com sucesso para contato@okamotomidiasvisuais.com.br!", icon="✅")
+            st.toast("📧 Cópia dos PDFs enviada com sucesso para contato@okamotomidiasvisuais.com.br via Gmail!", icon="✅")
         else:
             st.warning(f"⚠️ Erro ao enviar e-mail: {erro_msg}")
 
