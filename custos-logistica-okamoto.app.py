@@ -127,6 +127,7 @@ st.markdown("""
             text-align: right;
             padding-right: 12px;
             height: 100%;
+            min-height: 38px;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -291,11 +292,9 @@ def gerar_pdf_cliente(dados):
     d_orc = dados['data_orcamento']
     data_extenso = f"Ribeirão Preto, {d_orc.day} de {MESES_PT[d_orc.month]} de {d_orc.year}"
     story.append(Paragraph(data_extenso, style_corpo))
-    # Mais 1 linha de espaço entre a data e o título "Proposta Comercial"
     story.append(Spacer(1, 14))
     
     story.append(Paragraph("Proposta Comercial", style_titulo))
-    # Menos espaço de altura entre o título "Proposta Comercial" e o nome do serviço
     story.append(Spacer(1, 2))
     story.append(Paragraph(f"{nome_serv_ev}", style_servico_sub))
     story.append(Spacer(1, 16))
@@ -336,7 +335,6 @@ def gerar_pdf_cliente(dados):
     story.append(Paragraph(f"<b>7. Condições:</b> {dados['condicao_pagamento']}", style_corpo))
     story.append(Spacer(1, 8))
     story.append(Paragraph(f"<b>8. Validade:</b> {dados['validade_orcamento']}", style_corpo))
-    # Mais 1 linha de espaço entre o item 8 e o quadro de valor total de investimento
     story.append(Spacer(1, 22))
     
     val_fmt = fmt_brl(dados['valor_final'])
@@ -498,7 +496,9 @@ def gerar_pdf_interno(dados):
     local_txt = dados['local'] if dados['local'] else "Local a definir"
     captacao_txt = dados['captacao'] if dados['captacao'] else "—"
     
-    # Rótulos (Início, Término, Pagamento) e datas/valores da segunda coluna arrastados mais para a direita
+    # Bloco estruturado em 4 colunas precisas (colWidths=[80, 160, 70, 170]):
+    # 1ª coluna: rótulos e textos alinhados à esquerda (esquerda da página)
+    # 2ª coluna: início, término, pagamento e datas alinhados à esquerda (iniciando do meio para a direita)
     info_geral = [
         [Paragraph("<b>Cliente:</b>", style_bold), Paragraph(dados['contato'], style_corpo), Paragraph("<b>Início:</b>", style_bold), Paragraph(data_ev_str, style_corpo)],
         [Paragraph("<b>Empresa:</b>", style_bold), Paragraph(dados['empresa'], style_corpo), Paragraph("<b>Término:</b>", style_bold), Paragraph(data_fim_str, style_corpo)],
@@ -506,14 +506,14 @@ def gerar_pdf_interno(dados):
         [Paragraph("<b>Local:</b>", style_bold), Paragraph(f"{local_txt} — {dados['cidade']}/{dados['estado']}", style_corpo), Paragraph("", style_corpo), Paragraph("", style_corpo)],
         [Paragraph("<b>Captação:</b>", style_bold), Paragraph(captacao_txt, style_corpo), Paragraph("", style_corpo), Paragraph("", style_corpo)]
     ]
-    t_geral = Table(info_geral, colWidths=[70, 160, 95, 155])
+    t_geral = Table(info_geral, colWidths=[80, 160, 70, 170])
     t_geral.hAlign = 'CENTER'
     t_geral.setStyle(TableStyle([
-        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'), 
-        ('BOTTOMPADDING', (0,0), (-1,-1), 2.5), 
-        ('TOPPADDING', (0,0), (-1,-1), 2.5),
+        ('VALIGN', (0,0), (-1,-1), 'TOP'), 
+        ('BOTTOMPADDING', (0,0), (-1,-1), 3), 
+        ('TOPPADDING', (0,0), (-1,-1), 3),
         ('LEFTPADDING', (0,0), (-1,-1), 0),
-        ('RIGHTPADDING', (0,0), (-1,-1), 2),
+        ('RIGHTPADDING', (0,0), (-1,-1), 4),
         ('SPAN', (1, 3), (3, 3)),
         ('SPAN', (1, 4), (3, 4))
     ]))
@@ -615,7 +615,6 @@ def gerar_pdf_interno(dados):
         [Paragraph("Lucro Líquido Estimado:", style_res_label), Paragraph(f"{fmt_brl(dados['lucro_liquido'])} ({dados['margem_lucro']:.1f}%)", style_res_lucro_val)]
     ]
     
-    # Quadro do item 3 com espaçamento reduzido e compacto na altura das linhas
     t_res_int = Table(tabela_resumo_interno, colWidths=[240, 240])
     t_res_int.hAlign = 'CENTER'
     ts_res = TableStyle()
