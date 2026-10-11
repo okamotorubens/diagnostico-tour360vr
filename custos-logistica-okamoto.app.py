@@ -134,7 +134,7 @@ class NumberedCanvasProposal(canvas.Canvas):
         p_num = self._pageNumber
         page_str = f"{p_num:02d} de {page_count:02d}"
         
-        footer_text = "okamotomidiasvisuais.com.br  |  contato@okamotomidiasvisuais.com.br  |  WhatsApp: 16 99133 2121"
+        footer_text = "okamotomidiasvisuais.com.br  |  contato@okamotomidiasvisuais.com.br  |  16 99133 2121"
         self.drawCentredString(297.5, 26, footer_text)
         
         self.drawRightString(555, 26, page_str)
@@ -160,7 +160,7 @@ class SimpleCanvasInternal(canvas.Canvas):
         self.setLineWidth(0.75)
         self.line(35, 35, 575, 35)
         
-        footer_text = "okamotomidiasvisuais.com.br  |  contato@okamotomidiasvisuais.com.br  |  WhatsApp: 16 99133 2121"
+        footer_text = "okamotomidiasvisuais.com.br  |  contato@okamotomidiasvisuais.com.br  |  16 99133 2121"
         self.drawCentredString(305, 22, footer_text)
         self.restoreState()
 
@@ -227,7 +227,8 @@ def enviar_pdf_por_email(pdf_cliente_bytes, pdf_interno_bytes, nome_cliente):
 
 def gerar_pdf_cliente(dados):
     buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=40, rightMargin=40, topMargin=30, bottomMargin=55)
+    # TopMargin reduzido para subir um pouco a logo e abrir espaço para os respiros
+    doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=40, rightMargin=40, topMargin=20, bottomMargin=55)
     
     servico_nome = dados['tipo_servico'] if dados['tipo_servico'] != "Outro" else dados['outro_servico_nome']
     nome_serv_ev = dados['nome_servico_input'] if dados['nome_servico_input'] else servico_nome
@@ -255,18 +256,28 @@ def gerar_pdf_cliente(dados):
     else:
         story.append(Paragraph("<b>[ OKAMOTO MÍDIAS VISUAIS ]</b>", style_titulo))
     
-    story.append(Spacer(1, 14))
+    story.append(Spacer(1, 8))
+    
+    # Linha divisória idêntica à do rodapé
+    t_linha = Table([['']], colWidths=[515], rowHeights=[1])
+    t_linha.hAlign = 'CENTER'
+    t_linha.setStyle(TableStyle([
+        ('LINEABOVE', (0,0), (-1,-1), 0.75, colors.HexColor('#cbd5e1')),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+        ('TOPPADDING', (0,0), (-1,-1), 0),
+    ]))
+    story.append(t_linha)
+    story.append(Spacer(1, 10))
     
     d_orc = dados['data_orcamento']
     data_extenso = f"Ribeirão Preto, {d_orc.day} de {MESES_PT[d_orc.month]} de {d_orc.year}"
     story.append(Paragraph(data_extenso, style_corpo))
-    story.append(Spacer(1, 12))
-    
     story.append(Spacer(1, 10))
+    
     story.append(Paragraph("Proposta Comercial", style_titulo))
-    story.append(Spacer(1, 6))
+    story.append(Spacer(1, 4)) # Espaçamento menor entre título e nome do serviço
     story.append(Paragraph(f"{nome_serv_ev}", style_servico_sub))
-    story.append(Spacer(1, 14))
+    story.append(Spacer(1, 12))
     
     # 1 linha a mais de espaço antes de 1. Dados do cliente
     story.append(Spacer(1, 10))
@@ -286,8 +297,10 @@ def gerar_pdf_cliente(dados):
     
     horario_txt = f"&nbsp;&nbsp; <b>Horário:</b> {dados['horario']}" if dados['horario'] else ""
     local_txt = dados['local'] if dados['local'] else "Local a definir"
-    texto_evento = f"<b>Data:</b> {data_evento_str}{horario_txt} &nbsp;&nbsp; <b>Local:</b> {local_txt} — {dados['cidade']}/{dados['estado']}"
-    story.append(Paragraph(texto_evento, style_corpo))
+    
+    story.append(Paragraph(f"<b>Data:</b> {data_evento_str}{horario_txt}", style_corpo))
+    story.append(Spacer(1, 2))
+    story.append(Paragraph(f"<b>Local:</b> {local_txt} — {dados['cidade']}/{dados['estado']}", style_corpo))
     story.append(Spacer(1, 8))
     
     story.append(Paragraph("<b>3. Escopo do serviço:</b>", style_bold))
@@ -389,7 +402,7 @@ def gerar_pdf_cliente(dados):
 
 def gerar_pdf_interno(dados):
     buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=35, rightMargin=35, topMargin=15, bottomMargin=35)
+    doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=35, rightMargin=35, topMargin=12, bottomMargin=35)
     
     servico_exibido = dados['tipo_servico'] if dados['tipo_servico'] != "Outro" else dados['outro_servico_nome']
     nome_serv_ev = dados['nome_servico_input'] if dados['nome_servico_input'] else servico_exibido
@@ -398,8 +411,7 @@ def gerar_pdf_interno(dados):
     doc.title = f"Relatório de custos - {nome_serv_ev} - {data_ev_str}"
     
     styles = getSampleStyleSheet()
-    # Tamanhos aumentados e espaçamentos otimizados com 2 linhas entre os blocos
-    style_titulo = ParagraphStyle('TitInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=15, leading=18, alignment=1, textColor=colors.HexColor('#0f172a'))
+    style_titulo = ParagraphStyle('TitInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=16, leading=19, alignment=1, textColor=colors.HexColor('#0f172a'))
     style_subtitulo_serv = ParagraphStyle('SubServInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=12, leading=15, alignment=1, textColor=colors.HexColor('#1e3a8a'))
     style_secao = ParagraphStyle('SecInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9, leading=11, textColor=colors.HexColor('#1e3a8a'))
     style_corpo = ParagraphStyle('CorpoInt', parent=styles['Normal'], fontName='Helvetica', fontSize=8, leading=10, textColor=colors.HexColor('#000000'))
@@ -409,19 +421,32 @@ def gerar_pdf_interno(dados):
     
     story = []
 
+    # Logo aumentada no PDF interno
     logo_path = get_logo_pdf_path()
     if logo_path:
-        img_int = criar_imagem_proporcional(logo_path, target_width=150)
+        img_int = criar_imagem_proporcional(logo_path, target_width=165)
         img_int.hAlign = 'CENTER'
         story.append(img_int)
     else:
         story.append(Paragraph("<b>[ LOGO OKAMOTO ]</b>", style_bold))
         
-    story.append(Spacer(1, 14))
+    story.append(Spacer(1, 6))
+    
+    # Linha divisória idêntica à do rodapé
+    t_linha_int = Table([['']], colWidths=[540], rowHeights=[1])
+    t_linha_int.hAlign = 'CENTER'
+    t_linha_int.setStyle(TableStyle([
+        ('LINEABOVE', (0,0), (-1,-1), 0.75, colors.HexColor('#cbd5e1')),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+        ('TOPPADDING', (0,0), (-1,-1), 0),
+    ]))
+    story.append(t_linha_int)
+    story.append(Spacer(1, 10)) # Mais espaço antes do título
+    
     story.append(Paragraph("Relatório de Custos", style_titulo))
     story.append(Spacer(1, 4))
     story.append(Paragraph(f"{nome_serv_ev}", style_subtitulo_serv))
-    story.append(Spacer(1, 14))
+    story.append(Spacer(1, 12)) # Mais espaço antes dos dados do cliente
     
     data_fim_str = dados['data_termino'].strftime('%d/%m/%Y') if dados['tem_data_termino'] else data_ev_str
     local_txt = dados['local'] if dados['local'] else "Local a definir"
@@ -433,7 +458,7 @@ def gerar_pdf_interno(dados):
         [Paragraph("<b>Carga Horária:</b>", style_bold), Paragraph(dados['carga_horaria_sel'], style_corpo), Paragraph("<b>Data de Término:</b>", style_bold), Paragraph(data_fim_str, style_corpo)],
         [Paragraph("<b>Local:</b>", style_bold), Paragraph(f"{local_txt} — {dados['cidade']}/{dados['estado']}", style_corpo), Paragraph("<b>Prazo Pagamento:</b>", style_bold), Paragraph(f"{dados.get('prazo_pagamento_dias', '5')} dias", style_corpo)]
     ]
-    t_geral = Table(info_geral, colWidths=[85, 185, 105, 150])
+    t_geral = Table(info_geral, colWidths=[85, 185, 105, 165])
     t_geral.hAlign = 'CENTER'
     t_geral.setStyle(TableStyle([
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'), 
@@ -443,7 +468,7 @@ def gerar_pdf_interno(dados):
         ('RIGHTPADDING', (0,0), (-1,-1), 3)
     ]))
     story.append(t_geral)
-    story.append(Spacer(1, 14))
+    story.append(Spacer(1, 12)) # Mais espaço antes do item 1
     
     story.append(Paragraph("1. Custos de Logística, Deslocamento & Operacionais", style_secao))
     story.append(Spacer(1, 4))
@@ -464,7 +489,7 @@ def gerar_pdf_interno(dados):
         [Paragraph("Outros", style_corpo), Paragraph("Despesas diversas", style_corpo), Paragraph(fmt_brl(dados['custo_outros']), style_corpo)],
         [Paragraph("<b>TOTAL LOGÍSTICA & OPERACIONAL</b>", style_bold), Paragraph("", style_corpo), Paragraph(f"<b>{fmt_brl(custo_logistica_parcial)}</b>", style_bold)]
     ]
-    t_log = Table(tabela_log_dados, colWidths=[130, 260, 135])
+    t_log = Table(tabela_log_dados, colWidths=[130, 270, 140])
     t_log.hAlign = 'CENTER'
     ts_log = TableStyle()
     ts_log.add('BACKGROUND', (0,0), (-1,0), colors.HexColor('#f1f5f9'))
@@ -479,7 +504,7 @@ def gerar_pdf_interno(dados):
     ts_log.add('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1'))
     t_log.setStyle(ts_log)
     story.append(t_log)
-    story.append(Spacer(1, 14))
+    story.append(Spacer(1, 12)) # Mais espaço antes do item 2
     
     story.append(Paragraph("2. Impostos & Comissão", style_secao))
     story.append(Spacer(1, 4))
@@ -495,7 +520,7 @@ def gerar_pdf_interno(dados):
         [Paragraph("Comissão", style_corpo), Paragraph(f"{dados['comissao_perc']}% sobre o faturamento", style_corpo), Paragraph(fmt_brl(dados['comissao']), style_corpo)],
         [Paragraph("<b>TOTAL IMPOSTOS & COMISSÃO</b>", style_bold), Paragraph("", style_corpo), Paragraph(f"<b>{fmt_brl(total_impostos_comissao)}</b>", style_bold)]
     ]
-    t_op = Table(tabela_op_dados, colWidths=[130, 260, 135])
+    t_op = Table(tabela_op_dados, colWidths=[130, 270, 140])
     t_op.hAlign = 'CENTER'
     ts_op = TableStyle()
     ts_op.add('BACKGROUND', (0,0), (-1,0), colors.HexColor('#f1f5f9'))
@@ -510,7 +535,7 @@ def gerar_pdf_interno(dados):
     ts_op.add('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1'))
     t_op.setStyle(ts_op)
     story.append(t_op)
-    story.append(Spacer(1, 14))
+    story.append(Spacer(1, 12)) # Mais espaço antes do item 3
     
     story.append(Paragraph("3. Fechamento Financeiro & Margem", style_secao))
     story.append(Spacer(1, 4))
@@ -520,7 +545,7 @@ def gerar_pdf_interno(dados):
         [Paragraph("<b>Custo Operacional Total:</b>", style_bold), Paragraph(fmt_brl(dados['custo_total_interno']), style_corpo)],
         [Paragraph("<b>Lucro Líquido Estimado:</b>", style_bold), Paragraph(f"<b>{fmt_brl(dados['lucro_liquido'])} ({dados['margem_lucro']:.1f}%)</b>", style_destaque_lucro)]
     ]
-    t_res_int = Table(tabela_resumo_interno, colWidths=[315, 210])
+    t_res_int = Table(tabela_resumo_interno, colWidths=[320, 220])
     t_res_int.hAlign = 'CENTER'
     ts_res = TableStyle()
     ts_res.add('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#e2e8f0'))
@@ -583,7 +608,6 @@ if st.session_state.current_tab_idx == 0:
         st.session_state.horario = st.text_input("Horário do Serviço", st.session_state.get("horario", "08:00"))
         st.session_state.nome_servico_input = st.text_input("Nome do Serviço / Evento", st.session_state.get("nome_servico_input", ""))
         
-        # Campo local com botão para calcular distância via Google Maps
         st.session_state.local = st.text_input("Local (Rua, Número, Bairro, etc.)", st.session_state.get("local", ""))
         
         col_cidade, col_uf = st.columns([3, 1])
@@ -592,16 +616,15 @@ if st.session_state.current_tab_idx == 0:
         with col_uf:
             st.session_state.estado = st.selectbox("Estado (UF)", ESTADOS_BR, index=ESTADOS_BR.index(st.session_state.get("estado", "SP")) if st.session_state.get("estado", "SP") in ESTADOS_BR else 0)
 
-        # Botão para calcular distância automática via Maps usando Rua Manoel Achê, 327
         if st.button("🗺️ Calcular KM Automático (Google Maps)", use_container_width=True):
             endereco_completo = f"{st.session_state.local}, {st.session_state.cidade} - {st.session_state.estado}"
             km_calc = calcular_distancia_maps(endereco_completo)
             if km_calc is not None:
                 st.session_state.distancia_ida_volta = km_calc
-                st.success(f"Distância calculada com sucesso: {km_calc} km (Ida e Volta) a partir da Rua Manoel Achê, 327!")
+                st.success(f"✅ Rota encontrada com sucesso! Distância de ida e volta: {km_calc} km (a partir da Rua Manoel Achê, 327).")
                 st.rerun()
             else:
-                st.warning("Não foi possível calcular automaticamente. Verifique se o endereço está completo ou configure a chave da API do Maps.")
+                st.error("⚠️ Não foi possível calcular automaticamente. Verifique se preencheu o endereço do local e se a chave da API do Google Maps está configurada corretamente nos segredos.")
 
     st.markdown("---")
     st.subheader("2. Seleção de Serviço & Carga Horária")
@@ -912,12 +935,11 @@ if st.session_state.current_tab_idx == 2:
 
     col_down1, col_down2 = st.columns(2)
     
-    # Nomes dos arquivos PDF conforme combinado
     safe_servico_nome = "".join([c for c in nome_serv_ev if c.isalnum() or c in (' ', '_', '-')]).strip().replace(' ', '_') if nome_serv_ev else "Servico"
     data_arquivo_str = dados_completos['data_evento'].strftime('%d-%m-%Y')
     
-    nome_arquivo_cliente = f"Proposta comercial - Okamoto Midias Visuais - {safe_servico_nome} - {data_arquivo_str}.pdf"
-    nome_arquivo_interno = f"Relatorio de custos - {safe_servico_nome} - {data_arquivo_str}.pdf"
+    nome_arquivo_cliente = f"Proposta_comercial_-_Okamoto_Midias_Visuais_-_{safe_servico_nome}_-_{data_arquivo_str}.pdf"
+    nome_arquivo_interno = f"Relatorio_de_custos_-_{safe_servico_nome}_-_{data_arquivo_str}.pdf"
 
     with col_down1:
         st.download_button(
