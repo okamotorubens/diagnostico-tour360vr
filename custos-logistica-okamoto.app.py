@@ -115,7 +115,6 @@ st.markdown("""
         [data-testid="stNumberInput"] input {
             text-align: center;
         }
-        /* Desloca a logo branca para baixo para evitar que o topo coincida com o limite do container */
         [data-testid="stImage"] {
             display: flex;
             justify-content: center;
@@ -324,25 +323,25 @@ def gerar_pdf_cliente(dados):
         ('TOPPADDING', (0,0), (-1,-1), 0),
     ]))
     story.append(t_linha)
-    story.append(Spacer(1, 16)) # 1 linha a mais de espaço antes do título
+    story.append(Spacer(1, 16))
     
     d_orc = dados['data_orcamento']
     data_extenso = f"Ribeirão Preto, {d_orc.day} de {MESES_PT[d_orc.month]} de {d_orc.year}"
     story.append(Paragraph(data_extenso, style_corpo))
-    story.append(Spacer(1, 6))
+    story.append(Spacer(1, 12))
     
     story.append(Paragraph("Proposta Comercial", style_titulo))
     story.append(Spacer(1, 3))
     story.append(Paragraph(f"{nome_serv_ev}", style_servico_sub))
-    story.append(Spacer(1, 18)) # 1 linha de espaço a mais antes do item 1
+    story.append(Spacer(1, 18))
     
-    # 1. Dados do cliente (um abaixo do outro)
+    # 1. Dados do cliente
     story.append(Paragraph("<b>1. Dados do cliente:</b>", style_bold))
     story.append(Spacer(1, 2))
     story.append(Paragraph(f"<b>Contato:</b> {dados['contato']}<br/><b>Empresa:</b> {dados['empresa']}<br/><b>Telefone:</b> {dados['telefone']}<br/><b>E-mail:</b> {dados['email']}", style_corpo))
     story.append(Spacer(1, 10))
     
-    # 2. Dados do serviço (um abaixo do outro)
+    # 2. Dados do serviço
     data_evento_str = dados['data_evento'].strftime('%d/%m/%Y')
     if dados['tem_data_termino']:
         data_evento_str += f" até {dados['data_termino'].strftime('%d/%m/%Y')}"
@@ -369,12 +368,15 @@ def gerar_pdf_cliente(dados):
     story.append(Paragraph("Até 72h após o término do serviço, editado e enviado via link para download, em alta e baixa resolução, disponível por 30 dias.", style_corpo))
     story.append(Spacer(1, 8))
     
-    # Itens 6, 7 e 8 em uma única linha
-    c_linha_678 = f"<b>6. Forma de pagamento:</b> {dados['forma_pagamento_tipo']} &nbsp;&nbsp;|&nbsp;&nbsp; <b>7. Condições:</b> {dados['condicao_pagamento']} &nbsp;&nbsp;|&nbsp;&nbsp; <b>8. Validade:</b> {dados['validade_orcamento']}"
-    story.append(Paragraph(c_linha_678, style_corpo))
-    story.append(Spacer(1, 12))
+    # Itens 6, 7 e 8 em linhas separadas
+    story.append(Paragraph(f"<b>6. Forma de pagamento:</b> {dados['forma_pagamento_tipo']}", style_corpo))
+    story.append(Spacer(1, 4))
+    story.append(Paragraph(f"<b>7. Condições:</b> {dados['condicao_pagamento']}", style_corpo))
+    story.append(Spacer(1, 4))
+    story.append(Paragraph(f"<b>8. Validade:</b> {dados['validade_orcamento']}", style_corpo))
+    story.append(Spacer(1, 16))
     
-    # Valor total de investimento (sem número 9, valor em negrito, extenso em texto normal sem itálico)
+    # Valor total de investimento ajustado para 515 de largura (preenchendo exatamente de margem a margem)
     val_fmt = fmt_brl(dados['valor_final'])
     extenso_fmt = valor_por_extenso(dados['valor_final'])
     
@@ -383,7 +385,7 @@ def gerar_pdf_cliente(dados):
         texto_valor += f"<br/><font size=9 color='#475569'>{extenso_fmt}</font>"
         
     p_valor = Paragraph(texto_valor, ParagraphStyle('ValBox', parent=styles['Normal'], fontName='Helvetica', fontSize=10, leading=14, alignment=1, textColor=colors.HexColor('#1e3a8a')))
-    t_valor_box = Table([[p_valor]], colWidths=[420])
+    t_valor_box = Table([[p_valor]], colWidths=[515])
     t_valor_box.hAlign = 'CENTER'
     t_valor_box.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#f8fafc')),
@@ -397,11 +399,11 @@ def gerar_pdf_cliente(dados):
     
     bloco_final_p1 = KeepTogether([
         t_valor_box,
-        Spacer(1, 20), # Espaçamento extra antes de "Ficamos à disposição"
+        Spacer(1, 24),
         Paragraph("Ficamos à disposição para quaisquer esclarecimentos e ajustes, caso necessário.", style_corpo),
         Spacer(1, 12),
         Paragraph("Atenciosamente,", style_corpo),
-        Spacer(1, 2),
+        Spacer(1, 12),
         Paragraph("<b>Rubens Okamoto</b>", style_corpo),
         Paragraph("Okamoto Mídias Visuais", style_corpo)
     ])
@@ -498,13 +500,12 @@ def gerar_pdf_interno(dados):
             Paragraph(f"Data de criação: {data_criacao_str}", style_data_criacao)
         ]
         
-        # Recuo maior à esquerda para afastar o texto da logo no relatório interno
-        t_cabecalho = Table([[col_cab_esq, col_cab_dir]], colWidths=[120, 420])
+        t_cabecalho = Table([[col_cab_esq, col_cab_dir]], colWidths=[110, 430])
         t_cabecalho.hAlign = 'LEFT'
         t_cabecalho.setStyle(TableStyle([
             ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
             ('LEFTPADDING', (0,0), (0,0), 0),
-            ('LEFTPADDING', (1,0), (1,0), 16),
+            ('LEFTPADDING', (1,0), (1,0), 22),
             ('RIGHTPADDING', (0,0), (-1,-1), 0),
             ('TOPPADDING', (0,0), (-1,-1), 0),
             ('BOTTOMPADDING', (0,0), (-1,-1), 0),
@@ -541,7 +542,7 @@ def gerar_pdf_interno(dados):
         [Paragraph("<b>Carga Horária:</b>", style_bold), Paragraph(dados['carga_horaria_sel'], style_corpo), Paragraph("<b>Prazo Pagamento:</b>", style_bold), Paragraph(f"{dados.get('prazo_pagamento_dias', '5')} dias", style_corpo)],
         [Paragraph("<b>Local:</b>", style_bold), Paragraph(f"{local_txt} — {dados['cidade']}/{dados['estado']}", style_corpo), Paragraph("", style_corpo), Paragraph("", style_corpo)]
     ]
-    t_geral = Table(info_geral, colWidths=[80, 190, 95, 175])
+    t_geral = Table(info_geral, colWidths=[75, 185, 105, 175])
     t_geral.hAlign = 'LEFT'
     t_geral.setStyle(TableStyle([
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'), 
@@ -553,10 +554,10 @@ def gerar_pdf_interno(dados):
     ]))
     story.append(t_geral)
     
-    story.append(Spacer(1, 18))
+    story.append(Spacer(1, 24))
     
     story.append(Paragraph("1. Custos de Logística, Deslocamento & Operacionais", style_secao))
-    story.append(Spacer(1, 4))
+    story.append(Spacer(1, 6))
     
     combustivel_detalhe = f"Consumo: {dados['consumo_veiculo']} km/L | {dados['litros_gastos']:.1f}L a {fmt_brl(dados['preco_combustivel'])}/L"
     custo_logistica_parcial = dados['custo_combustivel'] + dados['pedagios'] + dados['custo_estacionamento'] + dados['custo_hospedagem_total'] + dados['custo_almoco'] + dados['custo_jantar'] + dados['custo_freelancer'] + dados['custo_outros']
@@ -591,10 +592,10 @@ def gerar_pdf_interno(dados):
     t_log.setStyle(ts_log)
     story.append(t_log)
     
-    story.append(Spacer(1, 10))
+    story.append(Spacer(1, 16))
     
     story.append(Paragraph("2. Impostos & Comissão", style_secao))
-    story.append(Spacer(1, 4))
+    story.append(Spacer(1, 6))
     
     total_impostos_comissao = dados['valor_impostos'] + dados['comissao']
     
@@ -624,12 +625,11 @@ def gerar_pdf_interno(dados):
     t_op.setStyle(ts_op)
     story.append(t_op)
     
-    story.append(Spacer(1, 10))
+    story.append(Spacer(1, 16))
     
     story.append(Paragraph("3. Fechamento Financeiro & Margem", style_secao))
-    story.append(Spacer(1, 4))
+    story.append(Spacer(1, 6))
     
-    # Quadro 3 ajustado: Custo Operacional com fonte 10pt (1 pt a mais) e alinhado com Faturamento e Lucro
     style_res_fat = ParagraphStyle('ResFatInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=13, textColor=colors.HexColor('#1e3a8a'))
     style_res_custo = ParagraphStyle('ResCustoInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=13, textColor=colors.HexColor('#000000'))
     style_res_lucro = ParagraphStyle('ResLucroInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, leading=14, textColor=colors.HexColor('#047857'))
@@ -653,25 +653,26 @@ def gerar_pdf_interno(dados):
     t_res_int.setStyle(ts_res)
     story.append(t_res_int)
     
-    story.append(Spacer(1, 10))
+    story.append(Spacer(1, 16))
     
     story.append(Paragraph("4. Observações", style_secao))
-    story.append(Spacer(1, 4))
+    story.append(Spacer(1, 6))
     
     obs_linhas = [
         [Paragraph("", style_corpo)],
         [Paragraph("", style_corpo)],
         [Paragraph("", style_corpo)],
+        [Paragraph("", style_corpo)],
         [Paragraph("", style_corpo)]
     ]
-    t_obs = Table(obs_linhas, colWidths=[540], rowHeights=[22, 22, 22, 22])
+    t_obs = Table(obs_linhas, colWidths=[540], rowHeights=[20, 20, 20, 20, 20])
     t_obs.hAlign = 'LEFT'
     t_obs.setStyle(TableStyle([
         ('BOX', (0,0), (-1,-1), 0.75, colors.HexColor('#cbd5e1')),
         ('LINEBELOW', (0,0), (-1,-2), 0.5, colors.HexColor('#e2e8f0')),
         ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#fcfcfc')),
-        ('TOPPADDING', (0,0), (-1,-1), 4),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 4),
+        ('TOPPADDING', (0,0), (-1,-1), 3),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 3),
     ]))
     story.append(t_obs)
 
@@ -789,7 +790,7 @@ elif st.session_state.current_tab_idx == 1:
     st.markdown("##### 🚗 Parâmetros de Deslocamento & Logística")
     col_l1, col_l2, col_l3 = st.columns(3)
     with col_l1:
-        st.session_state.distancia_ida_volta = st.number_input("Distância Total (Ida e Volta in km)", min_value=0, value=st.session_state.get("distancia_ida_volta", 0), step=1, format="%d")
+        st.session_state.distancia_ida_volta = st.number_input("Distância Total (Ida e Volta em km)", min_value=0, value=st.session_state.get("distancia_ida_volta", 0), step=1, format="%d")
     with col_l2:
         st.session_state.consumo_medio = st.number_input("Consumo Médio (km/L)", min_value=1.0, value=st.session_state.get("consumo_medio", 11.50), step=0.5)
     with col_l3:
@@ -1058,36 +1059,36 @@ if st.session_state.current_tab_idx == 2:
     pdf_cliente_bytes = gerar_pdf_cliente(dados_completos)
     pdf_interno_bytes = gerar_pdf_interno(dados_completos)
 
-    id_envio = f"{dados_completos['empresa']}_{dados_completos['data_evento']}_{dados_completos['valor_final']}"
-    if st.session_state.get("ultimo_envio_email") != id_envio:
-        nome_cliente_lead = dados_completos.get('empresa') or dados_completos.get('contato') or "Cliente"
-        sucesso, erro_msg = enviar_pdf_por_email(pdf_cliente_bytes, pdf_interno_bytes, nome_cliente_lead, nome_serv_ev)
-        if sucesso:
-            st.session_state["ultimo_envio_email"] = id_envio
-            st.toast("📧 Cópia dos PDFs enviada com sucesso para contato@okamotomidiasvisuais.com.br!", icon="✅")
-        else:
-            st.warning(f"⚠️ Erro ao enviar e-mail automático: {erro_msg}")
-
     col_down1, col_down2 = st.columns(2)
     
     data_arquivo_str = datetime.now().strftime('%d-%m-%Y')
     nome_arquivo_cliente = f"Proposta comercial - Okamoto Midias Visuais - {nome_serv_ev} - {data_arquivo_str}.pdf"
     nome_arquivo_interno = f"Relatorio de custos - {nome_serv_ev} - {data_arquivo_str}.pdf"
 
+    def disparar_email_ao_baixar():
+        nome_cliente_lead = dados_completos.get('empresa') or dados_completos.get('contato') or "Cliente"
+        sucesso, erro_msg = enviar_pdf_por_email(pdf_cliente_bytes, pdf_interno_bytes, nome_cliente_lead, nome_serv_ev)
+        if sucesso:
+            st.toast("📧 Cópia dos PDFs enviada com sucesso para contato@okamotomidiasvisuais.com.br!", icon="✅")
+        else:
+            st.warning(f"⚠️ Erro ao enviar e-mail: {erro_msg}")
+
     with col_down1:
-        st.download_button(
+        if st.download_button(
             label="📄 Baixar Proposta Comercial (Cliente)",
             data=pdf_cliente_bytes,
             file_name=nome_arquivo_cliente,
             mime="application/pdf",
             use_container_width=True
-        )
+        ):
+            disparar_email_ao_baixar()
 
     with col_down2:
-        st.download_button(
+        if st.download_button(
             label="🔒 Baixar Relatório Interno (Custos)",
             data=pdf_interno_bytes,
             file_name=nome_arquivo_interno,
             mime="application/pdf",
             use_container_width=True
-        )
+        ):
+            disparar_email_ao_baixar()
