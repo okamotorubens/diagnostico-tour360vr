@@ -94,8 +94,8 @@ st.set_page_config(page_title="Proposta Comercial & Custos - Okamoto Mídias Vis
 st.markdown("""
     <style>
         .block-container {
-            padding-top: 0.5rem !important;
-            padding-bottom: 1rem !important;
+            padding-top: 1.2rem !important;
+            padding-bottom: 2rem !important;
             max-width: 78rem;
         }
         div[data-baseweb="input"], div[data-baseweb="select"] {
@@ -108,8 +108,8 @@ st.markdown("""
             display: flex;
             justify-content: center;
             align-items: center;
-            padding-top: 15px !important;
-            padding-bottom: 2px !important;
+            padding-top: 25px !important;
+            padding-bottom: 10px !important;
         }
         [data-testid="stImage"] > img {
             max-width: 100% !important;
@@ -118,20 +118,11 @@ st.markdown("""
         }
         .st-key-field-label {
             font-weight: 600;
-            font-size: 13px;
+            font-size: 14px;
             color: #ffffff !important;
             display: flex;
             align-items: center;
             height: 100%;
-        }
-        div.stButton > button {
-            padding-top: 0.3rem !important;
-            padding-bottom: 0.3rem !important;
-            min-height: 2.1rem !important;
-        }
-        /* Compactando margens de elementos Streamlit */
-        [data-testid="stVerticalBlock"] {
-            gap: 0.4rem !important;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -264,6 +255,7 @@ def gerar_pdf_cliente(dados):
     styles = getSampleStyleSheet()
     style_titulo = ParagraphStyle('TituloPDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=18, leading=22, alignment=1, textColor=colors.HexColor('#0f172a'))
     style_servico_sub = ParagraphStyle('ServSubPDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, leading=14, alignment=1, textColor=colors.HexColor('#1e3a8a'))
+    style_data_sub = ParagraphStyle('DataSubPDF', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=12, alignment=1, textColor=colors.HexColor('#475569'))
     style_corpo = ParagraphStyle('CorpoPDF', parent=styles['Normal'], fontName='Helvetica', fontSize=10, leading=14, textColor=colors.HexColor('#334155'))
     style_bold = ParagraphStyle('BoldPDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=14, textColor=colors.HexColor('#0f172a'))
     style_cat_titulo = ParagraphStyle('CatTitPDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, leading=15, textColor=colors.HexColor('#0f172a'))
@@ -300,6 +292,9 @@ def gerar_pdf_cliente(dados):
     story.append(Paragraph("Proposta Comercial", style_titulo))
     story.append(Spacer(1, 3))
     story.append(Paragraph(f"{nome_serv_ev}", style_servico_sub))
+    story.append(Spacer(1, 2))
+    data_criacao_cliente_str = dados['data_orcamento'].strftime('%d/%m/%Y')
+    story.append(Paragraph(data_criacao_cliente_str, style_data_sub))
     story.append(Spacer(1, 18))
     
     story.append(Paragraph("<b>1. Dados do cliente:</b>", style_bold))
@@ -519,7 +514,8 @@ def gerar_pdf_interno(dados):
     ]))
     story.append(t_geral)
     
-    story.append(Spacer(1, 12))
+    # Adicionado mais 1 linha de espaçamento (16pt)
+    story.append(Spacer(1, 16))
     
     t_sec1 = Table([[Paragraph("1. Custos de Logística, Deslocamento & Operacionais", style_secao)]], colWidths=[largura_util])
     t_sec1.hAlign = 'CENTER'
@@ -560,7 +556,8 @@ def gerar_pdf_interno(dados):
     t_log.setStyle(ts_log)
     story.append(t_log)
     
-    story.append(Spacer(1, 10))
+    # Adicionado mais 1 linha de espaçamento (16pt)
+    story.append(Spacer(1, 16))
     
     t_sec2 = Table([[Paragraph("2. Impostos & Comissão", style_secao)]], colWidths=[largura_util])
     t_sec2.hAlign = 'CENTER'
@@ -596,7 +593,8 @@ def gerar_pdf_interno(dados):
     t_op.setStyle(ts_op)
     story.append(t_op)
     
-    story.append(Spacer(1, 10))
+    # Adicionado mais 1 linha de espaçamento (16pt)
+    story.append(Spacer(1, 16))
     
     t_sec3 = Table([[Paragraph("3. Fechamento Financeiro & Margem", style_secao)]], colWidths=[largura_util])
     t_sec3.hAlign = 'CENTER'
@@ -604,32 +602,34 @@ def gerar_pdf_interno(dados):
     story.append(t_sec3)
     story.append(Spacer(1, 4))
     
-    style_res_fat = ParagraphStyle('ResFatInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10.5, leading=14, alignment=0, textColor=colors.HexColor('#1e3a8a'))
-    style_res_fat_val = ParagraphStyle('ResFatVal', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10.5, leading=14, alignment=2, textColor=colors.HexColor('#1e3a8a'))
-    style_res_custo = ParagraphStyle('ResCustoInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10.5, leading=14, alignment=0, textColor=colors.HexColor('#000000'))
-    style_res_custo_val = ParagraphStyle('ResCustoVal', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10.5, leading=14, alignment=2, textColor=colors.HexColor('#000000'))
-    style_res_lucro = ParagraphStyle('ResLucroInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, leading=15, alignment=0, textColor=colors.HexColor('#047857'))
-    style_res_lucro_val = ParagraphStyle('ResLucroVal', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, leading=15, alignment=2, textColor=colors.HexColor('#047857'))
+    style_res_fat = ParagraphStyle('ResFatInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, leading=14, alignment=0, textColor=colors.HexColor('#1e3a8a'))
+    style_res_fat_val = ParagraphStyle('ResFatVal', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, leading=14, alignment=2, textColor=colors.HexColor('#1e3a8a'))
+    style_res_custo = ParagraphStyle('ResCustoInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, leading=14, alignment=0, textColor=colors.HexColor('#000000'))
+    style_res_custo_val = ParagraphStyle('ResCustoVal', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, leading=14, alignment=2, textColor=colors.HexColor('#000000'))
+    style_res_lucro = ParagraphStyle('ResLucroInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11.5, leading=15, alignment=0, textColor=colors.HexColor('#047857'))
+    style_res_lucro_val = ParagraphStyle('ResLucroVal', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11.5, leading=15, alignment=2, textColor=colors.HexColor('#047857'))
     
     tabela_resumo_interno = [
         [Paragraph("Faturamento:", style_res_fat), Paragraph(fmt_brl(dados['valor_final']), style_res_fat_val)],
         [Paragraph("Custo Operacional:", style_res_custo), Paragraph(fmt_brl(dados['custo_total_interno']), style_res_custo_val)],
         [Paragraph("Lucro Líquido Estimado:", style_res_lucro), Paragraph(f"{fmt_brl(dados['lucro_liquido'])} ({dados['margem_lucro']:.1f}%)", style_res_lucro_val)]
     ]
-    t_res_int = Table(tabela_resumo_interno, colWidths=[210, 210])
+    # Quadro de fechamento mais largo (440 total) e compacto nos textos/valores
+    t_res_int = Table(tabela_resumo_interno, colWidths=[220, 220])
     t_res_int.hAlign = 'CENTER'
     ts_res = TableStyle()
     ts_res.add('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#f8fafc'))
     ts_res.add('VALIGN', (0,0), (-1,-1), 'MIDDLE')
-    ts_res.add('BOTTOMPADDING', (0,0), (-1,-1), 5)
-    ts_res.add('TOPPADDING', (0,0), (-1,-1), 5)
-    ts_res.add('LEFTPADDING', (0,0), (-1,-1), 10)
-    ts_res.add('RIGHTPADDING', (0,0), (-1,-1), 10)
+    ts_res.add('BOTTOMPADDING', (0,0), (-1,-1), 6)
+    ts_res.add('TOPPADDING', (0,0), (-1,-1), 6)
+    ts_res.add('LEFTPADDING', (0,0), (-1,-1), 14)
+    ts_res.add('RIGHTPADDING', (0,0), (-1,-1), 14)
     ts_res.add('BOX', (0,0), (-1,-1), 1.2, colors.HexColor('#1e3a8a'))
     t_res_int.setStyle(ts_res)
     story.append(t_res_int)
     
-    story.append(Spacer(1, 10))
+    # Adicionado mais 1 linha de espaçamento (16pt)
+    story.append(Spacer(1, 16))
     
     t_sec4 = Table([[Paragraph("4. Observações", style_secao)]], colWidths=[largura_util])
     t_sec4.hAlign = 'CENTER'
@@ -637,6 +637,7 @@ def gerar_pdf_interno(dados):
     story.append(t_sec4)
     story.append(Spacer(1, 4))
     
+    # Altura das linhas do quadro 4 aumentada para 22 pontos
     obs_linhas = [
         [Paragraph("", style_corpo)],
         [Paragraph("", style_corpo)],
@@ -644,14 +645,14 @@ def gerar_pdf_interno(dados):
         [Paragraph("", style_corpo)],
         [Paragraph("", style_corpo)]
     ]
-    t_obs = Table(obs_linhas, colWidths=[largura_util], rowHeights=[18, 18, 18, 18, 18])
+    t_obs = Table(obs_linhas, colWidths=[largura_util], rowHeights=[22, 22, 22, 22, 22])
     t_obs.hAlign = 'CENTER'
     t_obs.setStyle(TableStyle([
         ('BOX', (0,0), (-1,-1), 0.75, colors.HexColor('#cbd5e1')),
         ('LINEBELOW', (0,0), (-1,-2), 0.5, colors.HexColor('#e2e8f0')),
         ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#fcfcfc')),
-        ('TOPPADDING', (0,0), (-1,-1), 1.5),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 1.5),
+        ('TOPPADDING', (0,0), (-1,-1), 2),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 2),
     ]))
     story.append(t_obs)
 
@@ -661,10 +662,10 @@ def gerar_pdf_interno(dados):
 
 logo_app_path = get_logo_app_path()
 if logo_app_path:
-    st.image(logo_app_path, width=220)
+    st.image(logo_app_path, width=280)
 
-st.markdown("<h1 style='text-align: center; margin-top: -0.5rem; margin-bottom: -0.2rem; font-size: 1.6rem;'>⚡ Sistema de Propostas & Custos</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; color: #94a3b8; margin-top: 0rem; margin-bottom: 0.2rem; font-size: 0.85rem;'>Gerencie orçamentos comerciais, analise a viabilidade interna e gere documentação profissional em PDF.</p>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center; margin-top: -0.2rem; margin-bottom: 0rem;'>⚡ Sistema de Propostas & Custos</h1>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #94a3b8; margin-top: 0rem; margin-bottom: 0.8rem;'>Gerencie orçamentos comerciais, analise a viabilidade interna e gere documentação profissional em PDF.</p>", unsafe_allow_html=True)
 
 if 'current_tab_idx' not in st.session_state:
     st.session_state.current_tab_idx = 0
@@ -680,7 +681,7 @@ if nova_aba_idx != st.session_state.current_tab_idx:
     scroll_to_top()
     st.rerun()
 
-st.markdown("<hr style='margin-top: -2px; margin-bottom: 8px;'>", unsafe_allow_html=True)
+st.markdown("<hr style='margin-top: 0px; margin-bottom: 20px;'>", unsafe_allow_html=True)
 
 default_entrega_txt = "Até 72h após o término do serviço, editado e enviado via link para download, em alta e baixa resolução, disponível por 30 dias."
 
@@ -690,23 +691,23 @@ if st.session_state.current_tab_idx == 0:
     col_l1, col_l2 = st.columns(2)
     
     with col_l1:
-        c_a, c_b = st.columns([1.1, 2.9])
+        c_a, c_b = st.columns([1.2, 2.8])
         with c_a: st.markdown("<div class='st-key-field-label'>Contato</div>", unsafe_allow_html=True)
         with c_b: st.session_state.contato = st.text_input("Contato", st.session_state.get("contato", ""), label_visibility="collapsed")
         
-        c_a, c_b = st.columns([1.1, 2.9])
+        c_a, c_b = st.columns([1.2, 2.8])
         with c_a: st.markdown("<div class='st-key-field-label'>Empresa</div>", unsafe_allow_html=True)
         with c_b: st.session_state.empresa = st.text_input("Empresa", st.session_state.get("empresa", ""), label_visibility="collapsed")
         
-        c_a, c_b = st.columns([1.1, 2.9])
+        c_a, c_b = st.columns([1.2, 2.8])
         with c_a: st.markdown("<div class='st-key-field-label'>Telefone</div>", unsafe_allow_html=True)
         with c_b: st.session_state.telefone = st.text_input("Telefone", st.session_state.get("telefone", ""), label_visibility="collapsed")
         
-        c_a, c_b = st.columns([1.1, 2.9])
+        c_a, c_b = st.columns([1.2, 2.8])
         with c_a: st.markdown("<div class='st-key-field-label'>E-mail</div>", unsafe_allow_html=True)
         with c_b: st.session_state.email = st.text_input("E-mail", st.session_state.get("email", ""), label_visibility="collapsed")
         
-        c_a, c_b = st.columns([1.1, 2.9])
+        c_a, c_b = st.columns([1.2, 2.8])
         with c_a: st.markdown("<div class='st-key-field-label'>Tipo de serviço</div>", unsafe_allow_html=True)
         with c_b:
             tipo_servico_idx = list(TABELAS_SERVICOS.keys()).index(st.session_state.get("tipo_servico", "Evento social")) if st.session_state.get("tipo_servico", "Evento social") in TABELAS_SERVICOS else 0
@@ -714,48 +715,48 @@ if st.session_state.current_tab_idx == 0:
         
         st.session_state.outro_servico_nome = ""
         if st.session_state.tipo_servico == "Outro":
-            c_a, c_b = st.columns([1.1, 2.9])
+            c_a, c_b = st.columns([1.2, 2.8])
             with c_a: st.markdown("<div class='st-key-field-label'>Especifique</div>", unsafe_allow_html=True)
             with c_b: st.session_state.outro_servico_nome = st.text_input("Especifique", st.session_state.get("outro_servico_nome", ""), label_visibility="collapsed")
 
-        c_a, c_b = st.columns([1.1, 2.9])
+        c_a, c_b = st.columns([1.2, 2.8])
         with c_a: st.markdown("<div class='st-key-field-label'>Carga horária</div>", unsafe_allow_html=True)
         with c_b:
             carga_idx = OPCOES_CARGA_HORARIA.index(st.session_state.get("carga_horaria_sel", "1h")) if st.session_state.get("carga_horaria_sel", "1h") in OPCOES_CARGA_HORARIA else 0
             st.session_state.carga_horaria_sel = st.selectbox("Carga horária", OPCOES_CARGA_HORARIA, index=carga_idx, label_visibility="collapsed")
 
     with col_l2:
-        c_a, c_b = st.columns([1.1, 2.9])
+        c_a, c_b = st.columns([1.2, 2.8])
         with c_a: st.markdown("<div class='st-key-field-label'>Nome do serviço</div>", unsafe_allow_html=True)
         with c_b: st.session_state.nome_servico_input = st.text_input("Nome do serviço", st.session_state.get("nome_servico_input", ""), label_visibility="collapsed")
         
-        c_a, c_b = st.columns([1.1, 2.9])
+        c_a, c_b = st.columns([1.2, 2.8])
         with c_a: st.markdown("<div class='st-key-field-label'>Data orçamento</div>", unsafe_allow_html=True)
         with c_b: st.session_state.data_orcamento = st.date_input("Data orçamento", st.session_state.get("data_orcamento", datetime.now()), label_visibility="collapsed")
         
-        c_a, c_b = st.columns([1.1, 2.9])
+        c_a, c_b = st.columns([1.2, 2.8])
         with c_a: st.markdown("<div class='st-key-field-label'>Data do serviço</div>", unsafe_allow_html=True)
         with c_b: st.session_state.data_evento = st.date_input("Data do serviço", st.session_state.get("data_evento", datetime.now()), label_visibility="collapsed")
         
         st.session_state.tem_data_termino = st.checkbox("Serviço com mais de um dia", st.session_state.get("tem_data_termino", False))
         st.session_state.data_termino = st.session_state.data_evento
         if st.session_state.tem_data_termino:
-            c_a, c_b = st.columns([1.1, 2.9])
+            c_a, c_b = st.columns([1.2, 2.8])
             with c_a: st.markdown("<div class='st-key-field-label'>Data término</div>", unsafe_allow_html=True)
             with c_b: st.session_state.data_termino = st.date_input("Data término", st.session_state.get("data_termino", datetime.now()), label_visibility="collapsed")
             
-        c_a, c_b = st.columns([1.1, 2.9])
+        c_a, c_b = st.columns([1.2, 2.8])
         with c_a: st.markdown("<div class='st-key-field-label'>Horário serviço</div>", unsafe_allow_html=True)
         with c_b: st.session_state.horario = st.text_input("Horário serviço", st.session_state.get("horario", "08h00"), label_visibility="collapsed")
         
-        c_a, c_b = st.columns([1.1, 2.9])
+        c_a, c_b = st.columns([1.2, 2.8])
         with c_a: st.markdown("<div class='st-key-field-label'>Local</div>", unsafe_allow_html=True)
         with c_b: st.session_state.local = st.text_input("Local", st.session_state.get("local", ""), label_visibility="collapsed")
         
-        c_a, c_b = st.columns([1.1, 2.9])
+        c_a, c_b = st.columns([1.2, 2.8])
         with c_a: st.markdown("<div class='st-key-field-label'>Cidade / UF</div>", unsafe_allow_html=True)
         with c_b:
-            sub_c1, sub_c2 = st.columns([2.6, 1.4])
+            sub_c1, sub_c2 = st.columns([2.5, 1.5])
             with sub_c1:
                 st.session_state.cidade = st.text_input("Cidade", st.session_state.get("cidade", "Ribeirão Preto"), label_visibility="collapsed")
             with sub_c2:
@@ -787,8 +788,8 @@ if st.session_state.current_tab_idx == 0:
 
     default_escopo = f"{nome_serv_atual}\n{data_str_escopo}\n{st.session_state.horario if st.session_state.horario else 'Horário a definir'}\n{st.session_state.local if st.session_state.local else 'Local a definir'}\n01 (um) profissional".strip()
     
-    st.session_state.escopo_servico = st.text_area("Escopo do serviço", default_escopo, height=120)
-    st.session_state.captacao = st.text_area("Captação", st.session_state.get("captacao", "Cobertura profissional com equipamentos de alto padrão"), height=80)
+    st.session_state.escopo_servico = st.text_area("Escopo do serviço", default_escopo, height=180)
+    st.session_state.captacao = st.text_area("Captação", st.session_state.get("captacao", "Cobertura profissional com equipamentos de alto padrão"), height=110)
     
     st.markdown("---")
     if st.button("Avançar ➡️", key="btn_avancar_aba0", use_container_width=True):
@@ -804,67 +805,67 @@ elif st.session_state.current_tab_idx == 1:
     with c1:
         st.markdown("##### 🚗 Deslocamento & Logística")
         
-        ca, cb = st.columns([1.1, 2.9])
-        with ca: st.markdown("<div class='st-key-field-label'>Distância (km)</div>", unsafe_allow_html=True)
+        ca, cb = st.columns([1.8, 2.2])
+        with ca: st.markdown("<div class='st-key-field-label'>Distância Total (km)</div>", unsafe_allow_html=True)
         with cb: st.session_state.distancia_ida_volta = st.number_input("Distância Total", min_value=0, value=st.session_state.get("distancia_ida_volta", 0), step=1, format="%d", label_visibility="collapsed")
         
-        ca, cb = st.columns([1.1, 2.9])
-        with ca: st.markdown("<div class='st-key-field-label'>Consumo (km/L)</div>", unsafe_allow_html=True)
+        ca, cb = st.columns([1.8, 2.2])
+        with ca: st.markdown("<div class='st-key-field-label'>Consumo Médio (km/L)</div>", unsafe_allow_html=True)
         with cb: st.session_state.consumo_medio = st.number_input("Consumo Médio", min_value=1.0, value=st.session_state.get("consumo_medio", 11.50), step=0.5, label_visibility="collapsed")
         
-        ca, cb = st.columns([1.1, 2.9])
-        with ca: st.markdown("<div class='st-key-field-label'>Preço Litro</div>", unsafe_allow_html=True)
+        ca, cb = st.columns([1.8, 2.2])
+        with ca: st.markdown("<div class='st-key-field-label'>Preço do Litro (R$)</div>", unsafe_allow_html=True)
         with cb: st.session_state.preco_combustivel = st.number_input("Preço do Litro", min_value=0.0, value=st.session_state.get("preco_combustivel", 6.80), step=0.10, label_visibility="collapsed")
         
-        ca, cb = st.columns([1.1, 2.9])
+        ca, cb = st.columns([1.8, 2.2])
         with ca: st.markdown("<div class='st-key-field-label'>Pedágios (R$)</div>", unsafe_allow_html=True)
         with cb: st.session_state.pedagio_total = st.number_input("Pedágios", min_value=0.0, value=st.session_state.get("pedagio_total", 0.00), step=5.0, format="%.2f", label_visibility="collapsed")
         
-        ca, cb = st.columns([1.1, 2.9])
-        with ca: st.markdown("<div class='st-key-field-label'>Estacionamento</div>", unsafe_allow_html=True)
+        ca, cb = st.columns([1.8, 2.2])
+        with ca: st.markdown("<div class='st-key-field-label'>Estacionamento (R$)</div>", unsafe_allow_html=True)
         with cb: st.session_state.custo_estacionamento = st.number_input("Estacionamento", min_value=0.0, value=st.session_state.get("custo_estacionamento", 0.00), step=5.0, format="%.2f", label_visibility="collapsed")
 
         st.markdown("<br>", unsafe_allow_html=True)
         st.markdown("##### 📦 Outros Custos")
-        ca, cb = st.columns([1.1, 2.9])
-        with ca: st.markdown("<div class='st-key-field-label'>Freelancer</div>", unsafe_allow_html=True)
+        ca, cb = st.columns([1.8, 2.2])
+        with ca: st.markdown("<div class='st-key-field-label'>Freelancer (R$)</div>", unsafe_allow_html=True)
         with cb: st.session_state.custo_freelancer = st.number_input("Freelancer", min_value=0.0, value=st.session_state.get("custo_freelancer", 0.00), step=50.0, format="%.2f", label_visibility="collapsed")
         
-        ca, cb = st.columns([1.1, 2.9])
+        ca, cb = st.columns([1.8, 2.2])
         with ca: st.markdown("<div class='st-key-field-label'>Outros (R$)</div>", unsafe_allow_html=True)
         with cb: st.session_state.custo_outros = st.number_input("Outros", min_value=0.0, value=st.session_state.get("custo_outros", 0.00), step=10.0, format="%.2f", label_visibility="collapsed")
 
     with c2:
         st.markdown("##### 🏨 Hospedagem & Alimentação")
         
-        ca, cb = st.columns([1.1, 2.9])
-        with ca: st.markdown("<div class='st-key-field-label'>Qtd. Diárias</div>", unsafe_allow_html=True)
+        ca, cb = st.columns([1.8, 2.2])
+        with ca: st.markdown("<div class='st-key-field-label'>Qtd. Diárias Hosp.</div>", unsafe_allow_html=True)
         with cb: st.session_state.qtd_hosp = st.number_input("Qtd Hosp", min_value=0, value=st.session_state.get("qtd_hosp", 0), step=1, label_visibility="collapsed")
         
-        ca, cb = st.columns([1.1, 2.9])
-        with ca: st.markdown("<div class='st-key-field-label'>R$ Hosp./dia</div>", unsafe_allow_html=True)
+        ca, cb = st.columns([1.8, 2.2])
+        with ca: st.markdown("<div class='st-key-field-label'>R$ Hospedagem (dia)</div>", unsafe_allow_html=True)
         with cb: st.session_state.val_hosp = st.number_input("Valor Hosp", min_value=0.0, value=st.session_state.get("val_hosp", 250.00), step=10.0, format="%.2f", label_visibility="collapsed")
         
-        ca, cb = st.columns([1.1, 2.9])
+        ca, cb = st.columns([1.8, 2.2])
         with ca: st.markdown("<div class='st-key-field-label'>Almoço (R$)</div>", unsafe_allow_html=True)
         with cb: st.session_state.custo_almoco = st.number_input("Almoço", min_value=0.0, value=st.session_state.get("custo_almoco", 0.00), step=5.0, format="%.2f", label_visibility="collapsed")
         
-        ca, cb = st.columns([1.1, 2.9])
+        ca, cb = st.columns([1.8, 2.2])
         with ca: st.markdown("<div class='st-key-field-label'>Jantar (R$)</div>", unsafe_allow_html=True)
         with cb: st.session_state.custo_jantar = st.number_input("Jantar", min_value=0.0, value=st.session_state.get("custo_jantar", 0.00), step=5.0, format="%.2f", label_visibility="collapsed")
 
         st.markdown("<br>", unsafe_allow_html=True)
         st.markdown("##### 🏛️ Impostos & Comissão")
-        ca, cb = st.columns([1.1, 2.9])
-        with ca: st.markdown("<div class='st-key-field-label'>Impostos (%)</div>", unsafe_allow_html=True)
+        ca, cb = st.columns([1.8, 2.2])
+        with ca: st.markdown("<div class='st-key-field-label'>Alíquota Impostos (%)</div>", unsafe_allow_html=True)
         with cb: st.session_state.imposto_perc = st.number_input("Impostos", min_value=0.0, max_value=30.0, value=st.session_state.get("imposto_perc", 6.0), step=0.5, label_visibility="collapsed")
         
-        ca, cb = st.columns([1.1, 2.9])
+        ca, cb = st.columns([1.8, 2.2])
         with ca: st.markdown("<div class='st-key-field-label'>Comissão (%)</div>", unsafe_allow_html=True)
         with cb: st.session_state.comissao_perc = st.number_input("Comissão", min_value=0, max_value=50, value=st.session_state.get("comissao_perc", 0), step=1, format="%d", label_visibility="collapsed")
         
-        ca, cb = st.columns([1.1, 2.9])
-        with ca: st.markdown("<div class='st-key-field-label'>Ajuste (R$)</div>", unsafe_allow_html=True)
+        ca, cb = st.columns([1.8, 2.2])
+        with ca: st.markdown("<div class='st-key-field-label'>Ajuste Manual (R$)</div>", unsafe_allow_html=True)
         with cb: st.session_state.ajuste_manual = st.number_input("Ajuste", min_value=0.0, value=st.session_state.get("ajuste_manual", 0.0), step=10.0, format="%.2f", label_visibility="collapsed")
 
     st.markdown("---")
