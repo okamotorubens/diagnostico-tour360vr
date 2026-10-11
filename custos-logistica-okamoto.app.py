@@ -109,12 +109,9 @@ class NumberedCanvasProposal(canvas.Canvas):
         p_num = self._pageNumber
         page_str = f"{p_num:02d} de {page_count:02d}"
         
-        footer_text = f"<a href='https://okamotomidiasvisuais.com.br/' color='#1e3a8a'>okamotomidiasvisuais.com.br</a>  |  <a href='mailto:contato@okamotomidiasvisuais.com.br' color='#1e3a8a'>contato@okamotomidiasvisuais.com.br</a>  |  <a href='https://wa.me/5516991332121' color='#1e3a8a'>WhatsApp: 16 99133 2121</a>"
-        
-        style_footer = ParagraphStyle('FooterStyle', fontName='Helvetica', fontSize=8, leading=10, alignment=1, textColor=colors.HexColor('#475569'))
-        p = Paragraph(footer_text, style_footer)
-        p.wrap(450, 20)
-        p.drawOn(self, 73, 22)
+        # Rodapé centralizado sem conflitos de anotação nomeada
+        footer_text = "okamotomidiasvisuais.com.br  |  contato@okamotomidiasvisuais.com.br  |  WhatsApp: 16 99133 2121"
+        self.drawCentredString(297.5, 26, footer_text)
         
         self.drawRightString(555, 26, page_str)
         self.restoreState()
@@ -139,13 +136,8 @@ class SimpleCanvasInternal(canvas.Canvas):
         self.setLineWidth(0.75)
         self.line(35, 35, 575, 35)
         
-        footer_text = f"<a href='https://okamotomidiasvisuais.com.br/' color='#1e3a8a'>okamotomidiasvisuais.com.br</a>  |  <a href='mailto:contato@okamotomidiasvisuais.com.br' color='#1e3a8a'>contato@okamotomidiasvisuais.com.br</a>  |  <a href='https://wa.me/5516991332121' color='#1e3a8a'>WhatsApp: 16 99133 2121</a>"
-        
-        style_footer = ParagraphStyle('FooterStyleInt', fontName='Helvetica', fontSize=8, leading=10, alignment=1, textColor=colors.HexColor('#475569'))
-        p = Paragraph(footer_text, style_footer)
-        p.wrap(500, 20)
-        p.drawOn(self, 47, 18)
-        
+        footer_text = "okamotomidiasvisuais.com.br  |  contato@okamotomidiasvisuais.com.br  |  WhatsApp: 16 99133 2121"
+        self.drawCentredString(305, 22, footer_text)
         self.restoreState()
 
 def get_logo_app_path():
