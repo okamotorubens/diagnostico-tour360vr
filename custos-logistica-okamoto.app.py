@@ -907,6 +907,164 @@ elif st.session_state.current_tab_idx == 2:
             st.session_state.condicao_pagamento_final = f"{st.session_state.condicao_pagamento} ({dias_txt})"
 
     st.markdown("---")
+    st.subheader("📥 Geração de Documentos (PDF)")
+    
+    try:
+        s_tipo = st.session_state.get("tipo_servico", "Evento social")
+        s_outro = st.session_state.get("outro_servico_nome", "")
+        s_input = st.session_state.get("nome_servico_input", "")
+        
+        servico_nome = s_tipo if s_tipo != "Outro" else s_outro
+        nome_serv_ev = s_input if s_input else servico_nome
+        
+        tabela_atual = TABELAS_SERVICOS.get(s_tipo, TABELAS_SERVICOS["Evento social"])
+        
+        dias_evento = 1
+        d_ev = st.session_state.get("data_evento", datetime.now())
+        d_ter = st.session_state.get("data_termino", datetime.now())
+        if st.session_state.get("tem_data_termino", False):
+            dias_evento = max(1, (d_ter - d_ev).days + 1)
+
+        val_pers = st.session_state.get("valor_personalizado", 0.0)
+        if val_pers > 0:
+            valor_base = val_pers
+        else:
+            c_horaria = st.session_state.get("carga_horaria_sel", "1h")
+            if "diária" in c_horaria:
+                qtd_diarias = int(c_horaria.split()[0])
+                valor_base = tabela_atual.get(10, 1300.0) * qtd_diarias * dias_evento
+            else:
+                horas_num = int(c_horaria.replace("h", ""))
+                horas_buscadas = min(horas_num, 12)
+                valor_base = tabela_atual.get(horas_buscadas, 1500.0) * dias_evento
+                if horas_num > 12:
+                    valor_base += (horas_num - 12) * tabela_atual.get(1, 180.0) * dias_evento
+
+        d_perc = st.session_state.get("desconto_perc", 0.0)
+        d_val = st.session_state.get("desconto_valor_input", 0.0)
+        aj_man = st.session_state.get("ajuste_manual", 0.0)
+        
+        if d_perc > 0:
+            valor_desconto_calculado = valor_base * (d_perc / 100.0)
+        else:
+            valor_desconto_calculado = d_val
+
+        valor_intermediario = valor_base - valor_desconto_calculado - aj_man
+        valor_final = max(0.0, valor_intermediario)
+
+        dist = st.session_state.get("distancia_ida_volta", 0)
+        cons = st.session_state.get("consumo_medio", 11.5)
+        p_comb = st.session_state.get("preco_combustivel", 6.8)
+        ped = st.session_state.get("pedagio_total", 0.0)
+        est = st.session_state.get("custo_estacionamento", 0.0)
+        
+        litros_gastos = dist / cons if cons > 0 else 0
+        custo_combustivel = litros_gastos * p_comb
+        custo_logistica_total = custo_combustivel + ped + est
+
+        hosp_tot = st.session_state.get("qtd_hosp", 0) * st.session_state.get("val_hosp", 250.0)
+        custo_total_operacional_log = custo_logistica_total + hosp_tot + st.session_state.get("custo_almoco", 0.0) + st.session_state.get("custo_jantar", 0.0) + st.session_state.get("custo_freelancer", 0.0) + st.session_state.get("custo_outros", 0.0)
+        
+        imp_p = st.session_state.get("imposto_perc", 6.0)
+        com_p = st.session_state.get("comissao_perc", 0)
+        
+        valor_impostos = valor_final * (imp_p / 100.0)
+        valor_comissao = valor_final * (com_p / 100.0)
+        
+        custo_total_interno = custo_total_operacional_log + valor_impostos + valor_comissao
+        lucro_liquido = valor_final - custo_total_interno
+        margem_lucro = (lucro_liquido / valor_final * 100) if valor_final > 0 else 0
+    except Exception:
+        valor_base = 0.0
+        valor_desconto_calculado = 0.0
+        valor_final = 0.0
+        litros_gastos = 0.0
+        custo_combustivel = 0.0
+        hosp_tot = 0.0
+        custo_total_interno = 0.0
+        lucro_liquido = 0.0
+        margem_lucro = 0.0
+        valor_impostos = 0.0
+        valor_comissao = 0.0
+
+    dados_completos = {
+        "contato": st.session_state.get("contato", ""),
+        "empresa": st.session_state.get("empresa", ""),
+        "telefone": st.session_state.get("telefone", ""),
+        "email": st.session_state.get("email", ""),
+        "data_orcamento": st.session_state.get("data_orcamento", datetime.now()),
+        "data_evento": st.session_state.get("data_evento", datetime.now()),
+        "tem_data_termino": st.session_state.get("tem_data_termino", False),
+        "data_termino": st.session_state.get("data_termino", datetime.now()),
+        "horario": st.session_state.get("horario", "08h00"),
+        "nome_servico_input": st.session_state.get("nome_servico_input", ""),
+        "local": st.session_state.get("local", ""),
+        "cidade": st.session_state.get("cidade", "Ribeirão Preto"),
+        "estado": st.session_state.get("estado", "SP"),
+        "tipo_servico": st.session_state.get("tipo_servico", "Evento social"),
+        "outro_servico_nome": st.session_state.get("outro_servico_nome", ""),
+        "carga_horaria_sel": st.session_state.get("carga_horaria_sel", "1h"),
+        "escopo_servico": st.session_state.get("escopo_servico", ""),
+        "captacao": st.session_state.get("captacao", ""),
+        "validade_orcamento": st.session_state.get("validade_orcamento", "05 dias"),
+        "forma_entrega": st.session_state.get("forma_entrega", default_entrega_txt),
+        "forma_pagamento_tipo": st.session_state.get("forma_pagamento_tipo", "À vista"),
+        "condicao_pagamento": st.session_state.get("condicao_pagamento_final", "PIX"),
+        "prazo_pagamento_dias": st.session_state.get("prazo_pagamento_dias", 5),
+        "desconto_perc": st.session_state.get("desconto_perc", 0.0),
+        "ajuste_manual": st.session_state.get("ajuste_manual", 0.0),
+        "valor_base": valor_base,
+        "valor_desconto_calculado": valor_desconto_calculado,
+        "valor_final": valor_final,
+        "distancia": st.session_state.get("distancia_ida_volta", 0),
+        "consumo_veiculo": st.session_state.get("consumo_medio", 11.5),
+        "litros_gastos": litros_gastos,
+        "preco_combustivel": st.session_state.get("preco_combustivel", 6.8),
+        "custo_combustivel": custo_combustivel,
+        "pedagios": st.session_state.get("pedagio_total", 0.0),
+        "custo_estacionamento": st.session_state.get("custo_estacionamento", 0.0),
+        "custo_hospedagem_total": hosp_tot,
+        "custo_almoco": st.session_state.get("custo_almoco", 0.0),
+        "custo_jantar": st.session_state.get("custo_jantar", 0.0),
+        "custo_freelancer": st.session_state.get("custo_freelancer", 0.0),
+        "custo_outros": st.session_state.get("custo_outros", 0.0),
+        "imposto_perc": st.session_state.get("imposto_perc", 6.0),
+        "valor_impostos": valor_impostos,
+        "comissao_perc": st.session_state.get("comissao_perc", 0),
+        "comissao": valor_comissao,
+        "custo_total_interno": custo_total_interno,
+        "lucro_liquido": lucro_liquido,
+        "margem_lucro": margem_lucro
+    }
+
+    pdf_cliente_bytes = gerar_pdf_cliente(dados_completos)
+    pdf_interno_bytes = gerar_pdf_interno(dados_completos)
+
+    col_down1, col_down2 = st.columns(2)
+    
+    data_arquivo_str = datetime.now().strftime('%d-%m-%Y')
+    nome_arquivo_cliente = f"Proposta comercial - Okamoto Midias Visuais - {nome_serv_ev} - {data_arquivo_str}.pdf"
+    nome_arquivo_interno = f"Relatorio de custos - {nome_serv_ev} - {data_arquivo_str}.pdf"
+
+    with col_down1:
+        st.download_button(
+            label="📄 Baixar Proposta Comercial (Cliente)",
+            data=pdf_cliente_bytes,
+            file_name=nome_arquivo_cliente,
+            mime="application/pdf",
+            use_container_width=True
+        )
+
+    with col_down2:
+        st.download_button(
+            label="🔒 Baixar Relatório Interno (Custos)",
+            data=pdf_interno_bytes,
+            file_name=nome_arquivo_interno,
+            mime="application/pdf",
+            use_container_width=True
+        )
+
+    st.markdown("<br>", unsafe_allow_html=True)
     if st.button("⬅️ Voltar", key="btn_voltar_aba2", use_container_width=True):
         st.session_state.current_tab_idx = 1
         scroll_to_top()
@@ -989,87 +1147,6 @@ except Exception:
     margem_lucro = 0.0
     valor_impostos = 0.0
     valor_comissao = 0.0
-
-dados_completos = {
-    "contato": st.session_state.get("contato", ""),
-    "empresa": st.session_state.get("empresa", ""),
-    "telefone": st.session_state.get("telefone", ""),
-    "email": st.session_state.get("email", ""),
-    "data_orcamento": st.session_state.get("data_orcamento", datetime.now()),
-    "data_evento": st.session_state.get("data_evento", datetime.now()),
-    "tem_data_termino": st.session_state.get("tem_data_termino", False),
-    "data_termino": st.session_state.get("data_termino", datetime.now()),
-    "horario": st.session_state.get("horario", "08h00"),
-    "nome_servico_input": st.session_state.get("nome_servico_input", ""),
-    "local": st.session_state.get("local", ""),
-    "cidade": st.session_state.get("cidade", "Ribeirão Preto"),
-    "estado": st.session_state.get("estado", "SP"),
-    "tipo_servico": st.session_state.get("tipo_servico", "Evento social"),
-    "outro_servico_nome": st.session_state.get("outro_servico_nome", ""),
-    "carga_horaria_sel": st.session_state.get("carga_horaria_sel", "1h"),
-    "escopo_servico": st.session_state.get("escopo_servico", ""),
-    "captacao": st.session_state.get("captacao", ""),
-    "validade_orcamento": st.session_state.get("validade_orcamento", "05 dias"),
-    "forma_entrega": st.session_state.get("forma_entrega", default_entrega_txt),
-    "forma_pagamento_tipo": st.session_state.get("forma_pagamento_tipo", "À vista"),
-    "condicao_pagamento": st.session_state.get("condicao_pagamento_final", "PIX"),
-    "prazo_pagamento_dias": st.session_state.get("prazo_pagamento_dias", 5),
-    "desconto_perc": st.session_state.get("desconto_perc", 0.0),
-    "ajuste_manual": st.session_state.get("ajuste_manual", 0.0),
-    "valor_base": valor_base,
-    "valor_desconto_calculado": valor_desconto_calculado,
-    "valor_final": valor_final,
-    "distancia": st.session_state.get("distancia_ida_volta", 0),
-    "consumo_veiculo": st.session_state.get("consumo_medio", 11.5),
-    "litros_gastos": litros_gastos,
-    "preco_combustivel": st.session_state.get("preco_combustivel", 6.8),
-    "custo_combustivel": custo_combustivel,
-    "pedagios": st.session_state.get("pedagio_total", 0.0),
-    "custo_estacionamento": st.session_state.get("custo_estacionamento", 0.0),
-    "custo_hospedagem_total": hosp_tot,
-    "custo_almoco": st.session_state.get("custo_almoco", 0.0),
-    "custo_jantar": st.session_state.get("custo_jantar", 0.0),
-    "custo_freelancer": st.session_state.get("custo_freelancer", 0.0),
-    "custo_outros": st.session_state.get("custo_outros", 0.0),
-    "imposto_perc": st.session_state.get("imposto_perc", 6.0),
-    "valor_impostos": valor_impostos,
-    "comissao_perc": st.session_state.get("comissao_perc", 0),
-    "comissao": valor_comissao,
-    "custo_total_interno": custo_total_interno,
-    "lucro_liquido": lucro_liquido,
-    "margem_lucro": margem_lucro
-}
-
-if st.session_state.current_tab_idx == 2:
-    st.markdown("---")
-    st.subheader("📥 Geração de Documentos (PDF)")
-    
-    pdf_cliente_bytes = gerar_pdf_cliente(dados_completos)
-    pdf_interno_bytes = gerar_pdf_interno(dados_completos)
-
-    col_down1, col_down2 = st.columns(2)
-    
-    data_arquivo_str = datetime.now().strftime('%d-%m-%Y')
-    nome_arquivo_cliente = f"Proposta comercial - Okamoto Midias Visuais - {nome_serv_ev} - {data_arquivo_str}.pdf"
-    nome_arquivo_interno = f"Relatorio de custos - {nome_serv_ev} - {data_arquivo_str}.pdf"
-
-    with col_down1:
-        st.download_button(
-            label="📄 Baixar Proposta Comercial (Cliente)",
-            data=pdf_cliente_bytes,
-            file_name=nome_arquivo_cliente,
-            mime="application/pdf",
-            use_container_width=True
-        )
-
-    with col_down2:
-        st.download_button(
-            label="🔒 Baixar Relatório Interno (Custos)",
-            data=pdf_interno_bytes,
-            file_name=nome_arquivo_interno,
-            mime="application/pdf",
-            use_container_width=True
-        )
 
 st.markdown("---")
 st.markdown("### 📈 Quadro de Prévia em Tempo Real (Visão Geral)")
