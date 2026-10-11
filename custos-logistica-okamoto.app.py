@@ -21,16 +21,11 @@ def fmt_brl(val):
     s = f"{val:,.2f}"
     return "R$ " + s.replace(",", "X").replace(".", ",").replace("X", ".")
 
-# Função para converter número em valor por extenso simples para moeda
 def valor_por_extenso(v):
-    # Função auxiliar básica para compor o extenso do valor em Reais
     try:
         inteiro = int(v)
         centavos = int(round((v - inteiro) * 100))
         
-        # Para simplificar e garantir precisão nos valores comuns de propostas fotográficas:
-        # Vamos usar a biblioteca num2words se houver ou um conversor interno robusto.
-        # Caso prefira direto, podemos gerar via regra padrão:
         unidades = ["", "um", "dois", "três", "quatro", "cinco", "seis", "sete", "oito", "nove", "dez", "onze", "doze", "treze", "quatorze", "quinze", "dezesseis", "dezessete", "dezoito", "dezenove"]
         dezenas = ["", "", "vinte", "trinta", "quarenta", "cinquenta", "sessenta", "setenta", "oitenta", "noventa"]
         centenas = ["", "cento", "duzentos", "trezentos", "quatrocentos", "quinhentos", "seiscentos", "setecentos", "oitocentos", "novecentos"]
@@ -102,7 +97,7 @@ ESTADOS_BR = [
 
 SMTP_SERVER = "smtp.tour360vr.com.br"
 SMTP_PORT_SSL = 465
-SMTP_USER = "contato@tour360vr.com.br"
+SMTP_USER = "contato@okamotomidiasvisuais.com.br"
 SMTP_PASS = "Kakaroto@2026"
 
 st.set_page_config(page_title="Proposta Comercial & Custos - Okamoto Mídias Visuais", page_icon="📊", layout="wide")
@@ -120,11 +115,13 @@ st.markdown("""
         [data-testid="stNumberInput"] input {
             text-align: center;
         }
-        /* Correção definitiva para exibir a logo inteira sem cortes na tela */
+        /* Desloca a logo branca para baixo para evitar que o topo coincida com o limite do container */
         [data-testid="stImage"] {
             display: flex;
             justify-content: center;
             align-items: center;
+            padding-top: 18px !important;
+            padding-bottom: 6px !important;
         }
         [data-testid="stImage"] > img {
             max-width: 100% !important;
@@ -327,7 +324,7 @@ def gerar_pdf_cliente(dados):
         ('TOPPADDING', (0,0), (-1,-1), 0),
     ]))
     story.append(t_linha)
-    story.append(Spacer(1, 8))
+    story.append(Spacer(1, 16)) # 1 linha a mais de espaço antes do título
     
     d_orc = dados['data_orcamento']
     data_extenso = f"Ribeirão Preto, {d_orc.day} de {MESES_PT[d_orc.month]} de {d_orc.year}"
@@ -337,23 +334,25 @@ def gerar_pdf_cliente(dados):
     story.append(Paragraph("Proposta Comercial", style_titulo))
     story.append(Spacer(1, 3))
     story.append(Paragraph(f"{nome_serv_ev}", style_servico_sub))
-    story.append(Spacer(1, 10))
+    story.append(Spacer(1, 18)) # 1 linha de espaço a mais antes do item 1
     
-    # Itens 1 a 9 estritamente um abaixo do outro
+    # 1. Dados do cliente (um abaixo do outro)
     story.append(Paragraph("<b>1. Dados do cliente:</b>", style_bold))
     story.append(Spacer(1, 2))
-    story.append(Paragraph(f"<b>Contato:</b> {dados['contato']} &nbsp;&nbsp;|&nbsp;&nbsp; <b>Empresa:</b> {dados['empresa']} &nbsp;&nbsp;|&nbsp;&nbsp; <b>Telefone:</b> {dados['telefone']} &nbsp;&nbsp;|&nbsp;&nbsp; <b>E-mail:</b> {dados['email']}", style_corpo))
-    story.append(Spacer(1, 8))
+    story.append(Paragraph(f"<b>Contato:</b> {dados['contato']}<br/><b>Empresa:</b> {dados['empresa']}<br/><b>Telefone:</b> {dados['telefone']}<br/><b>E-mail:</b> {dados['email']}", style_corpo))
+    story.append(Spacer(1, 10))
     
-    story.append(Paragraph("<b>2. Dados do serviço:</b>", style_bold))
-    story.append(Spacer(1, 2))
+    # 2. Dados do serviço (um abaixo do outro)
     data_evento_str = dados['data_evento'].strftime('%d/%m/%Y')
     if dados['tem_data_termino']:
         data_evento_str += f" até {dados['data_termino'].strftime('%d/%m/%Y')}"
     horario_txt = f"&nbsp;&nbsp; <b>Horário:</b> {dados['horario']}" if dados['horario'] else ""
     local_txt = dados['local'] if dados['local'] else "Local a definir"
-    story.append(Paragraph(f"<b>Data:</b> {data_evento_str}{horario_txt} &nbsp;&nbsp;|&nbsp;&nbsp; <b>Local:</b> {local_txt} — {dados['cidade']}/{dados['estado']}", style_corpo))
-    story.append(Spacer(1, 8))
+    
+    story.append(Paragraph("<b>2. Dados do serviço:</b>", style_bold))
+    story.append(Spacer(1, 2))
+    story.append(Paragraph(f"<b>Data:</b> {data_evento_str}{horario_txt}<br/><b>Local:</b> {local_txt} — {dados['cidade']}/{dados['estado']}", style_corpo))
+    story.append(Spacer(1, 10))
     
     story.append(Paragraph("<b>3. Escopo do serviço:</b>", style_bold))
     story.append(Spacer(1, 2))
@@ -370,28 +369,18 @@ def gerar_pdf_cliente(dados):
     story.append(Paragraph("Até 72h após o término do serviço, editado e enviado via link para download, em alta e baixa resolução, disponível por 30 dias.", style_corpo))
     story.append(Spacer(1, 8))
     
-    story.append(Paragraph("<b>6. Forma de pagamento:</b>", style_bold))
-    story.append(Spacer(1, 2))
-    story.append(Paragraph(dados['forma_pagamento_tipo'], style_corpo))
-    story.append(Spacer(1, 8))
+    # Itens 6, 7 e 8 em uma única linha
+    c_linha_678 = f"<b>6. Forma de pagamento:</b> {dados['forma_pagamento_tipo']} &nbsp;&nbsp;|&nbsp;&nbsp; <b>7. Condições:</b> {dados['condicao_pagamento']} &nbsp;&nbsp;|&nbsp;&nbsp; <b>8. Validade:</b> {dados['validade_orcamento']}"
+    story.append(Paragraph(c_linha_678, style_corpo))
+    story.append(Spacer(1, 12))
     
-    story.append(Paragraph("<b>7. Condições:</b>", style_bold))
-    story.append(Spacer(1, 2))
-    story.append(Paragraph(dados['condicao_pagamento'], style_corpo))
-    story.append(Spacer(1, 8))
-    
-    story.append(Paragraph("<b>8. Validade:</b>", style_bold))
-    story.append(Spacer(1, 2))
-    story.append(Paragraph(dados['validade_orcamento'], style_corpo))
-    story.append(Spacer(1, 10))
-    
-    # 9. Valor total de investimento com valor por extenso na linha de baixo
+    # Valor total de investimento (sem número 9, valor em negrito, extenso em texto normal sem itálico)
     val_fmt = fmt_brl(dados['valor_final'])
     extenso_fmt = valor_por_extenso(dados['valor_final'])
     
-    texto_valor = f"<b>9. VALOR TOTAL DE INVESTIMENTO:</b> {val_fmt}"
+    texto_valor = f"<b>VALOR TOTAL DE INVESTIMENTO: {val_fmt}</b>"
     if extenso_fmt:
-        texto_valor += f"<br/><font size=9 color='#475569'><i>{extenso_fmt}</i></font>"
+        texto_valor += f"<br/><font size=9 color='#475569'>{extenso_fmt}</font>"
         
     p_valor = Paragraph(texto_valor, ParagraphStyle('ValBox', parent=styles['Normal'], fontName='Helvetica', fontSize=10, leading=14, alignment=1, textColor=colors.HexColor('#1e3a8a')))
     t_valor_box = Table([[p_valor]], colWidths=[420])
@@ -408,10 +397,13 @@ def gerar_pdf_cliente(dados):
     
     bloco_final_p1 = KeepTogether([
         t_valor_box,
-        Spacer(1, 12),
+        Spacer(1, 20), # Espaçamento extra antes de "Ficamos à disposição"
         Paragraph("Ficamos à disposição para quaisquer esclarecimentos e ajustes, caso necessário.", style_corpo),
-        Spacer(1, 8),
-        Paragraph("Atenciosamente, &nbsp; <b>Rubens Okamoto</b> (Okamoto Mídias Visuais)", style_corpo)
+        Spacer(1, 12),
+        Paragraph("Atenciosamente,", style_corpo),
+        Spacer(1, 2),
+        Paragraph("<b>Rubens Okamoto</b>", style_corpo),
+        Paragraph("Okamoto Mídias Visuais", style_corpo)
     ])
     story.append(bloco_final_p1)
     story.append(PageBreak())
@@ -493,9 +485,8 @@ def gerar_pdf_interno(dados):
     logo_path = get_logo_pdf_path()
     data_criacao_str = dados['data_orcamento'].strftime('%d/%m/%Y')
     
-    # Alinhamento estrito da logo à esquerda no relatório interno de custos
     if logo_path:
-        img_int = criar_imagem_proporcional(logo_path, target_width=120)
+        img_int = criar_imagem_proporcional(logo_path, target_width=110)
         img_int.hAlign = 'LEFT'
         
         col_cab_esq = img_int
@@ -507,11 +498,13 @@ def gerar_pdf_interno(dados):
             Paragraph(f"Data de criação: {data_criacao_str}", style_data_criacao)
         ]
         
-        t_cabecalho = Table([[col_cab_esq, col_cab_dir]], colWidths=[130, 410])
+        # Recuo maior à esquerda para afastar o texto da logo no relatório interno
+        t_cabecalho = Table([[col_cab_esq, col_cab_dir]], colWidths=[120, 420])
         t_cabecalho.hAlign = 'LEFT'
         t_cabecalho.setStyle(TableStyle([
             ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-            ('LEFTPADDING', (0,0), (-1,-1), 0),
+            ('LEFTPADDING', (0,0), (0,0), 0),
+            ('LEFTPADDING', (1,0), (1,0), 16),
             ('RIGHTPADDING', (0,0), (-1,-1), 0),
             ('TOPPADDING', (0,0), (-1,-1), 0),
             ('BOTTOMPADDING', (0,0), (-1,-1), 0),
@@ -636,14 +629,15 @@ def gerar_pdf_interno(dados):
     story.append(Paragraph("3. Fechamento Financeiro & Margem", style_secao))
     story.append(Spacer(1, 4))
     
+    # Quadro 3 ajustado: Custo Operacional com fonte 10pt (1 pt a mais) e alinhado com Faturamento e Lucro
     style_res_fat = ParagraphStyle('ResFatInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=13, textColor=colors.HexColor('#1e3a8a'))
-    style_res_corpo = ParagraphStyle('ResCorpoInt', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=12, textColor=colors.HexColor('#000000'))
+    style_res_custo = ParagraphStyle('ResCustoInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=13, textColor=colors.HexColor('#000000'))
     style_res_lucro = ParagraphStyle('ResLucroInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, leading=14, textColor=colors.HexColor('#047857'))
     
     tabela_resumo_interno = [
         [Paragraph("<b>Faturamento:</b>", style_res_fat), Paragraph(f"<b>{fmt_brl(dados['valor_final'])}</b>", style_res_fat)],
-        [Paragraph("<b>Custo Operacional:</b>", style_bold), Paragraph(fmt_brl(dados['custo_total_interno']), style_res_corpo)],
-        [Paragraph("<b>Lucro Líquido Estimado:</b>", style_bold), Paragraph(f"<b>{fmt_brl(dados['lucro_liquido'])} ({dados['margem_lucro']:.1f}%)</b>", style_res_lucro)]
+        [Paragraph("<b>Custo Operacional:</b>", style_res_custo), Paragraph(f"<b>{fmt_brl(dados['custo_total_interno'])}</b>", style_res_custo)],
+        [Paragraph("<b>Lucro Líquido Estimado:</b>", style_res_lucro), Paragraph(f"<b>{fmt_brl(dados['lucro_liquido'])} ({dados['margem_lucro']:.1f}%)</b>", style_res_lucro)]
     ]
     t_res_int = Table(tabela_resumo_interno, colWidths=[310, 230])
     t_res_int.hAlign = 'LEFT'
@@ -664,7 +658,6 @@ def gerar_pdf_interno(dados):
     story.append(Paragraph("4. Observações", style_secao))
     story.append(Spacer(1, 4))
     
-    # Altura adequada das linhas do bloco 4 restaurada (22 pontos por linha)
     obs_linhas = [
         [Paragraph("", style_corpo)],
         [Paragraph("", style_corpo)],
@@ -796,7 +789,7 @@ elif st.session_state.current_tab_idx == 1:
     st.markdown("##### 🚗 Parâmetros de Deslocamento & Logística")
     col_l1, col_l2, col_l3 = st.columns(3)
     with col_l1:
-        st.session_state.distancia_ida_volta = st.number_input("Distância Total (Ida e Volta em km)", min_value=0, value=st.session_state.get("distancia_ida_volta", 0), step=1, format="%d")
+        st.session_state.distancia_ida_volta = st.number_input("Distância Total (Ida e Volta in km)", min_value=0, value=st.session_state.get("distancia_ida_volta", 0), step=1, format="%d")
     with col_l2:
         st.session_state.consumo_medio = st.number_input("Consumo Médio (km/L)", min_value=1.0, value=st.session_state.get("consumo_medio", 11.50), step=0.5)
     with col_l3:
