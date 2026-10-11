@@ -130,8 +130,8 @@ st.markdown("""
 def scroll_to_top():
     st.markdown("""
         <script>
-            window.scrollTo({top: 0, behavior: 'smooth'});
-            parent.window.scrollTo({top: 0, behavior: 'smooth'});
+            window.scrollTo({top: 0, behavior: 'auto'});
+            parent.window.scrollTo({top: 0, behavior: 'auto'});
         </script>
     """, unsafe_allow_html=True)
 
@@ -426,7 +426,7 @@ def gerar_pdf_interno(dados):
     styles = getSampleStyleSheet()
     style_titulo = ParagraphStyle('TitInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=15, leading=18, alignment=0, textColor=colors.HexColor('#0f172a'))
     style_subtitulo_serv = ParagraphStyle('SubServInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, leading=14, alignment=0, textColor=colors.HexColor('#1e3a8a'))
-    style_data_criacao = ParagraphStyle('DataCriacaoInt', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=11, alignment=0, textColor=colors.HexColor('#64748b'))
+    style_data_criacao = ParagraphStyle('DataCriacaoInt', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=11, alignment=0, textColor=colors.HexColor('#000000'))
     
     style_secao = ParagraphStyle('SecInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=12, alignment=0, textColor=colors.HexColor('#1e3a8a'))
     style_corpo = ParagraphStyle('CorpoInt', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=11, textColor=colors.HexColor('#000000'))
@@ -489,7 +489,7 @@ def gerar_pdf_interno(dados):
     info_geral = [
         [Paragraph("<b>Cliente:</b>", style_bold), Paragraph(dados['contato'], style_corpo), Paragraph("<b>Data de Início:</b>", style_bold), Paragraph(data_ev_str, style_corpo)],
         [Paragraph("<b>Empresa:</b>", style_bold), Paragraph(dados['empresa'], style_corpo), Paragraph("<b>Data de Término:</b>", style_bold), Paragraph(data_fim_str, style_corpo)],
-        [Paragraph("<b>Carga Horária:</b>", style_bold), Paragraph(dados['carga_horaria_sel'], style_corpo), Paragraph("<b>Prazo Pagamento:</b>", style_bold), Paragraph(f"{dados.get('prazo_pagamento_dias', '5')} dias", style_corpo)],
+        [Paragraph("<b>Carga Horária:</b>", style_bold), Paragraph(dados['carga_horaria_total_texto_pdf'], style_corpo), Paragraph("<b>Prazo Pagamento:</b>", style_bold), Paragraph(f"{dados.get('prazo_pagamento_dias', '5')} dias", style_corpo)],
         [Paragraph("<b>Local:</b>", style_bold), Paragraph(f"{local_txt} — {dados['cidade']}/{dados['estado']}", style_corpo), Paragraph("", style_corpo), Paragraph("", style_corpo)],
         [Paragraph("<b>Captação:</b>", style_bold), Paragraph(captacao_txt, style_corpo), Paragraph("", style_corpo), Paragraph("", style_corpo)]
     ]
@@ -606,8 +606,8 @@ def gerar_pdf_interno(dados):
     ts_res.add('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#f8fafc'))
     ts_res.add('VALIGN', (0,0), (-1,-1), 'MIDDLE')
     ts_res.add('ALIGN', (1,0), (1,-1), 'RIGHT')
-    ts_res.add('BOTTOMPADDING', (0,0), (-1,-1), 3)
-    ts_res.add('TOPPADDING', (0,0), (-1,-1), 3)
+    ts_res.add('BOTTOMPADDING', (0,0), (-1,-1), 6)
+    ts_res.add('TOPPADDING', (0,0), (-1,-1), 6)
     ts_res.add('LEFTPADDING', (0,0), (-1,-1), 8)
     ts_res.add('RIGHTPADDING', (0,0), (-1,-1), 8)
     ts_res.add('BOX', (0,0), (-1,-1), 1.2, colors.HexColor('#1e3a8a'))
@@ -772,7 +772,10 @@ if st.session_state.current_tab_idx == 0:
 
     default_escopo = f"{nome_serv_atual}\n{data_str_escopo}\n{st.session_state.horario if st.session_state.horario else 'Horário a definir'}\n{st.session_state.local if st.session_state.local else 'Local a definir'}\n{st.session_state.cidade} - {st.session_state.estado}\n01 (um) profissional".strip()
     
-    st.session_state.escopo_servico = st.text_area("Escopo do serviço", st.session_state.get("escopo_servico", default_escopo), height=180)
+    if "escopo_servico" not in st.session_state or st.button("🔄 Redefinir Escopo Automático", use_container_width=False):
+        st.session_state.escopo_servico = default_escopo
+
+    st.session_state.escopo_servico = st.text_area("Escopo do serviço", st.session_state.escopo_servico, height=180)
     st.session_state.captacao = st.text_area("Captação", st.session_state.get("captacao", "Cobertura profissional com equipamentos de alto padrão"), height=110)
     
     st.markdown("---")
@@ -880,7 +883,7 @@ elif st.session_state.current_tab_idx == 2:
         with sub_p1:
             st.session_state.validade_orcamento = st.text_input("Validade do Orçamento", st.session_state.get("validade_orcamento", "05 dias"))
         with sub_p2:
-            st.session_state.prazo_pagamento_dias = st.number_input("Prazo Pagamento (dias)", min_value=1, max_value=45, value=st.session_state.get("prazo_pagamento_dias", 5), step=1, format="%d")
+            st.session_state.prazo_pagamento_dias = st.number_input("Prazo Pagamento (dias)", min_value=0, max_value=45, value=st.session_state.get("prazo_pagamento_dias", 5), step=1, format="%d")
 
         sub_fp1, sub_fp2 = st.columns(2)
         with sub_fp1:
@@ -898,12 +901,13 @@ elif st.session_state.current_tab_idx == 2:
         with sub_d2:
             st.session_state.desconto_valor_input = st.number_input("Desconto Valor Fixo (R$)", min_value=0.0, value=st.session_state.get("desconto_valor_input", 0.0), step=10.0, format="%.2f")
 
+        prazo_dias_val = st.session_state.get("prazo_pagamento_dias", 5)
         if "parcelado" in st.session_state.condicao_pagamento.lower() or st.session_state.forma_pagamento_tipo == "Parcelado":
             parcelas_cartao = st.number_input("Cartão de Crédito parcelado em X vezes", min_value=1, max_value=12, value=3)
-            dias_txt = f"em até {st.session_state.prazo_pagamento_dias} dias" if st.session_state.prazo_pagamento_dias > 0 else "à vista"
+            dias_txt = f"em até {prazo_dias_val} dias" if prazo_dias_val > 0 else "à vista"
             st.session_state.condicao_pagamento_final = f"{st.session_state.condicao_pagamento} em {parcelas_cartao}X ({dias_txt})"
         else:
-            dias_txt = f"em até {st.session_state.prazo_pagamento_dias} dias" if st.session_state.prazo_pagamento_dias > 0 else "à vista"
+            dias_txt = f"em até {prazo_dias_val} dias" if prazo_dias_val > 0 else "à vista"
             st.session_state.condicao_pagamento_final = f"{st.session_state.condicao_pagamento} ({dias_txt})"
 
     st.markdown("---")
@@ -987,6 +991,18 @@ elif st.session_state.current_tab_idx == 2:
         valor_impostos = 0.0
         valor_comissao = 0.0
 
+    c_horaria_sel_str = st.session_state.get("carga_horaria_sel", "1h")
+    if "diária" in c_horaria_sel_str:
+        num_diarias_unit = int(c_horaria_sel_str.split()[0])
+        carga_horaria_total_texto_pdf = f"{num_diarias_unit * dias_evento} diária(s)"
+    else:
+        horas_unit = int(c_horaria_sel_str.replace("h", ""))
+        total_horas_calc = horas_unit * dias_evento
+        if dias_evento > 1:
+            carga_horaria_total_texto_pdf = f"{total_horas_calc}h ({dias_evento}d x {horas_unit}h)"
+        else:
+            carga_horaria_total_texto_pdf = f"{total_horas_calc}h"
+
     dados_completos = {
         "contato": st.session_state.get("contato", ""),
         "empresa": st.session_state.get("empresa", ""),
@@ -1004,6 +1020,7 @@ elif st.session_state.current_tab_idx == 2:
         "tipo_servico": st.session_state.get("tipo_servico", "Evento social"),
         "outro_servico_nome": st.session_state.get("outro_servico_nome", ""),
         "carga_horaria_sel": st.session_state.get("carga_horaria_sel", "1h"),
+        "carga_horaria_total_texto_pdf": carga_horaria_total_texto_pdf,
         "escopo_servico": st.session_state.get("escopo_servico", ""),
         "captacao": st.session_state.get("captacao", ""),
         "validade_orcamento": st.session_state.get("validade_orcamento", "05 dias"),
