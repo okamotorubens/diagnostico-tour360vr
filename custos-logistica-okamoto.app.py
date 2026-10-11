@@ -116,9 +116,13 @@ st.markdown("""
             height: auto !important;
             object-fit: contain !important;
         }
-        .row-widget {
+        .st-key-field-label {
+            font-weight: 600;
+            font-size: 14px;
+            color: #1e293b;
             display: flex;
             align-items: center;
+            height: 100%;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -668,41 +672,79 @@ default_entrega_txt = "Até 72h após o término do serviço, editado e enviado 
 if st.session_state.current_tab_idx == 0:
     st.subheader("1. Dados do Cliente e Serviço")
     
-    c1, c2 = st.columns(2)
-    with c1:
-        st.session_state.contato = st.text_input("Contato", st.session_state.get("contato", ""))
-        st.session_state.telefone = st.text_input("Telefone", st.session_state.get("telefone", ""))
+    col_l1, col_l2 = st.columns(2)
+    
+    with col_l1:
+        c_a, c_b = st.columns([1.2, 2.8])
+        with c_a: st.markdown("<div class='st-key-field-label'>Contato</div>", unsafe_allow_html=True)
+        with c_b: st.session_state.contato = st.text_input("Contato", st.session_state.get("contato", ""), label_visibility="collapsed")
         
-        tipo_servico_idx = list(TABELAS_SERVICOS.keys()).index(st.session_state.get("tipo_servico", "Evento social")) if st.session_state.get("tipo_servico", "Evento social") in TABELAS_SERVICOS else 0
-        st.session_state.tipo_servico = st.selectbox("Tipo de Serviço", list(TABELAS_SERVICOS.keys()), index=tipo_servico_idx)
+        c_a, c_b = st.columns([1.2, 2.8])
+        with c_a: st.markdown("<div class='st-key-field-label'>Empresa</div>", unsafe_allow_html=True)
+        with c_b: st.session_state.empresa = st.text_input("Empresa", st.session_state.get("empresa", ""), label_visibility="collapsed")
+        
+        c_a, c_b = st.columns([1.2, 2.8])
+        with c_a: st.markdown("<div class='st-key-field-label'>Telefone</div>", unsafe_allow_html=True)
+        with c_b: st.session_state.telefone = st.text_input("Telefone", st.session_state.get("telefone", ""), label_visibility="collapsed")
+        
+        c_a, c_b = st.columns([1.2, 2.8])
+        with c_a: st.markdown("<div class='st-key-field-label'>E-mail</div>", unsafe_allow_html=True)
+        with c_b: st.session_state.email = st.text_input("E-mail", st.session_state.get("email", ""), label_visibility="collapsed")
+        
+        c_a, c_b = st.columns([1.2, 2.8])
+        with c_a: st.markdown("<div class='st-key-field-label'>Tipo de serviço</div>", unsafe_allow_html=True)
+        with c_b:
+            tipo_servico_idx = list(TABELAS_SERVICOS.keys()).index(st.session_state.get("tipo_servico", "Evento social")) if st.session_state.get("tipo_servico", "Evento social") in TABELAS_SERVICOS else 0
+            st.session_state.tipo_servico = st.selectbox("Tipo de serviço", list(TABELAS_SERVICOS.keys()), index=tipo_servico_idx, label_visibility="collapsed")
         
         st.session_state.outro_servico_nome = ""
         if st.session_state.tipo_servico == "Outro":
-            st.session_state.outro_servico_nome = st.text_input("Especifique o nome do serviço", st.session_state.get("outro_servico_nome", ""))
+            c_a, c_b = st.columns([1.2, 2.8])
+            with c_a: st.markdown("<div class='st-key-field-label'>Especifique</div>", unsafe_allow_html=True)
+            with c_b: st.session_state.outro_servico_nome = st.text_input("Especifique", st.session_state.get("outro_servico_nome", ""), label_visibility="collapsed")
 
-        st.session_state.horario = st.text_input("Horário do Serviço", st.session_state.get("horario", "08h00"))
-        st.session_state.local = st.text_input("Local (Rua, Número, Bairro, etc.)", st.session_state.get("local", ""))
-        st.session_state.cidade = st.text_input("Cidade", st.session_state.get("cidade", "Ribeirão Preto"))
+        c_a, c_b = st.columns([1.2, 2.8])
+        with c_a: st.markdown("<div class='st-key-field-label'>Carga horária</div>", unsafe_allow_html=True)
+        with c_b:
+            carga_idx = OPCOES_CARGA_HORARIA.index(st.session_state.get("carga_horaria_sel", "1h")) if st.session_state.get("carga_horaria_sel", "1h") in OPCOES_CARGA_HORARIA else 0
+            st.session_state.carga_horaria_sel = st.selectbox("Carga horária", OPCOES_CARGA_HORARIA, index=carga_idx, label_visibility="collapsed")
 
-    with c2:
-        st.session_state.empresa = st.text_input("Empresa", st.session_state.get("empresa", ""))
-        st.session_state.email = st.text_input("E-mail", st.session_state.get("email", ""))
-        st.session_state.data_orcamento = st.date_input("Data do Orçamento", st.session_state.get("data_orcamento", datetime.now()))
-        st.session_state.data_evento = st.date_input("Data do Serviço", st.session_state.get("data_evento", datetime.now()))
+    with col_l2:
+        c_a, c_b = st.columns([1.2, 2.8])
+        with c_a: st.markdown("<div class='st-key-field-label'>Nome do serviço</div>", unsafe_allow_html=True)
+        with c_b: st.session_state.nome_servico_input = st.text_input("Nome do serviço", st.session_state.get("nome_servico_input", ""), label_visibility="collapsed")
         
-        st.session_state.tem_data_termino = st.checkbox("Serviço com mais de um dia (Data de Término)", st.session_state.get("tem_data_termino", False))
+        c_a, c_b = st.columns([1.2, 2.8])
+        with c_a: st.markdown("<div class='st-key-field-label'>Data orçamento</div>", unsafe_allow_html=True)
+        with c_b: st.session_state.data_orcamento = st.date_input("Data orçamento", st.session_state.get("data_orcamento", datetime.now()), label_visibility="collapsed")
+        
+        c_a, c_b = st.columns([1.2, 2.8])
+        with c_a: st.markdown("<div class='st-key-field-label'>Data do serviço</div>", unsafe_allow_html=True)
+        with c_b: st.session_state.data_evento = st.date_input("Data do serviço", st.session_state.get("data_evento", datetime.now()), label_visibility="collapsed")
+        
+        st.session_state.tem_data_termino = st.checkbox("Serviço com mais de um dia", st.session_state.get("tem_data_termino", False))
         st.session_state.data_termino = st.session_state.data_evento
         if st.session_state.tem_data_termino:
-            st.session_state.data_termino = st.date_input("Data de Término do Serviço", st.session_state.get("data_termino", datetime.now()))
+            c_a, c_b = st.columns([1.2, 2.8])
+            with c_a: st.markdown("<div class='st-key-field-label'>Data término</div>", unsafe_allow_html=True)
+            with c_b: st.session_state.data_termino = st.date_input("Data término", st.session_state.get("data_termino", datetime.now()), label_visibility="collapsed")
             
-        st.session_state.nome_servico_input = st.text_input("Nome do Serviço / Evento", st.session_state.get("nome_servico_input", ""))
+        c_a, c_b = st.columns([1.2, 2.8])
+        with c_a: st.markdown("<div class='st-key-field-label'>Horário serviço</div>", unsafe_allow_html=True)
+        with c_b: st.session_state.horario = st.text_input("Horário serviço", st.session_state.get("horario", "08h00"), label_visibility="collapsed")
         
-        c_est1, c_est2 = st.columns([2, 1])
-        with c_est1:
-            carga_idx = OPCOES_CARGA_HORARIA.index(st.session_state.get("carga_horaria_sel", "1h")) if st.session_state.get("carga_horaria_sel", "1h") in OPCOES_CARGA_HORARIA else 0
-            st.session_state.carga_horaria_sel = st.selectbox("Carga Horária", OPCOES_CARGA_HORARIA, index=carga_idx)
-        with c_est2:
-            st.session_state.estado = st.selectbox("UF", ESTADOS_BR, index=ESTADOS_BR.index(st.session_state.get("estado", "SP")) if st.session_state.get("estado", "SP") in ESTADOS_BR else 0)
+        c_a, c_b = st.columns([1.2, 2.8])
+        with c_a: st.markdown("<div class='st-key-field-label'>Local</div>", unsafe_allow_html=True)
+        with c_b: st.session_state.local = st.text_input("Local", st.session_state.get("local", ""), label_visibility="collapsed")
+        
+        c_a, c_b = st.columns([1.2, 2.8])
+        with c_a: st.markdown("<div class='st-key-field-label'>Cidade / UF</div>", unsafe_allow_html=True)
+        with c_b:
+            sub_c1, sub_c2 = st.columns([2.5, 1.5])
+            with sub_c1:
+                st.session_state.cidade = st.text_input("Cidade", st.session_state.get("cidade", "Ribeirão Preto"), label_visibility="collapsed")
+            with sub_c2:
+                st.session_state.estado = st.selectbox("UF", ESTADOS_BR, index=ESTADOS_BR.index(st.session_state.get("estado", "SP")) if st.session_state.get("estado", "SP") in ESTADOS_BR else 0, label_visibility="collapsed")
 
     if st.button("🗺️ Calcular KM Automático (Google Maps)", use_container_width=True):
         endereco_completo = f"{st.session_state.local}, {st.session_state.cidade} - {st.session_state.estado}"
@@ -734,8 +776,8 @@ if st.session_state.current_tab_idx == 0:
 
     default_escopo = f"{nome_serv_atual}\n{data_str_escopo}\n{st.session_state.horario if st.session_state.horario else 'Horário a definir'}\n{st.session_state.local if st.session_state.local else 'Local a definir'}\n{st.session_state.cidade} - {st.session_state.estado}\n01 (um) profissional".strip()
     
-    st.session_state.escopo_servico = st.text_area("Escopo do serviço", default_escopo, height=110)
-    st.session_state.captacao = st.text_area("Captação", st.session_state.get("captacao", "Cobertura profissional com equipamentos de alto padrão"), height=50)
+    st.session_state.escopo_servico = st.text_area("Escopo do serviço", default_escopo, height=100)
+    st.session_state.captacao = st.text_area("Captação", st.session_state.get("captacao", "Cobertura profissional com equipamentos de alto padrão"), height=45)
     
     st.markdown("---")
     if st.button("Avançar ➡️", key="btn_avancar_aba0", use_container_width=True):
@@ -747,31 +789,72 @@ elif st.session_state.current_tab_idx == 1:
     st.subheader("Custos Operacionais")
     
     c1, c2 = st.columns(2)
+    
     with c1:
         st.markdown("##### 🚗 Deslocamento & Logística")
-        st.session_state.distancia_ida_volta = st.number_input("Distância Total (Ida e Volta em km)", min_value=0, value=st.session_state.get("distancia_ida_volta", 0), step=1, format="%d")
-        st.session_state.consumo_medio = st.number_input("Consumo Médio (km/L)", min_value=1.0, value=st.session_state.get("consumo_medio", 11.50), step=0.5)
-        st.session_state.preco_combustivel = st.number_input("Preço do Litro (R$)", min_value=0.0, value=st.session_state.get("preco_combustivel", 6.80), step=0.10)
-        st.session_state.pedagio_total = st.number_input("Valor Total de Pedágios (R$)", min_value=0.0, value=st.session_state.get("pedagio_total", 0.00), step=5.0, format="%.2f")
-        st.session_state.custo_estacionamento = st.number_input("Estacionamento (R$)", min_value=0.0, value=st.session_state.get("custo_estacionamento", 0.00), step=5.0, format="%.2f")
+        
+        ca, cb = st.columns([1.8, 2.2])
+        with ca: st.markdown("<div class='st-key-field-label'>Distância Total (km)</div>", unsafe_allow_html=True)
+        with cb: st.session_state.distancia_ida_volta = st.number_input("Distância Total", min_value=0, value=st.session_state.get("distancia_ida_volta", 0), step=1, format="%d", label_visibility="collapsed")
+        
+        ca, cb = st.columns([1.8, 2.2])
+        with ca: st.markdown("<div class='st-key-field-label'>Consumo Médio (km/L)</div>", unsafe_allow_html=True)
+        with cb: st.session_state.consumo_medio = st.number_input("Consumo Médio", min_value=1.0, value=st.session_state.get("consumo_medio", 11.50), step=0.5, label_visibility="collapsed")
+        
+        ca, cb = st.columns([1.8, 2.2])
+        with ca: st.markdown("<div class='st-key-field-label'>Preço do Litro (R$)</div>", unsafe_allow_html=True)
+        with cb: st.session_state.preco_combustivel = st.number_input("Preço do Litro", min_value=0.0, value=st.session_state.get("preco_combustivel", 6.80), step=0.10, label_visibility="collapsed")
+        
+        ca, cb = st.columns([1.8, 2.2])
+        with ca: st.markdown("<div class='st-key-field-label'>Pedágios (R$)</div>", unsafe_allow_html=True)
+        with cb: st.session_state.pedagio_total = st.number_input("Pedágios", min_value=0.0, value=st.session_state.get("pedagio_total", 0.00), step=5.0, format="%.2f", label_visibility="collapsed")
+        
+        ca, cb = st.columns([1.8, 2.2])
+        with ca: st.markdown("<div class='st-key-field-label'>Estacionamento (R$)</div>", unsafe_allow_html=True)
+        with cb: st.session_state.custo_estacionamento = st.number_input("Estacionamento", min_value=0.0, value=st.session_state.get("custo_estacionamento", 0.00), step=5.0, format="%.2f", label_visibility="collapsed")
 
         st.markdown("<br>", unsafe_allow_html=True)
         st.markdown("##### 📦 Outros Custos")
-        st.session_state.custo_freelancer = st.number_input("Freelancer (R$)", min_value=0.0, value=st.session_state.get("custo_freelancer", 0.00), step=50.0, format="%.2f")
-        st.session_state.custo_outros = st.number_input("Outros (R$)", min_value=0.0, value=st.session_state.get("custo_outros", 0.00), step=10.0, format="%.2f")
+        ca, cb = st.columns([1.8, 2.2])
+        with ca: st.markdown("<div class='st-key-field-label'>Freelancer (R$)</div>", unsafe_allow_html=True)
+        with cb: st.session_state.custo_freelancer = st.number_input("Freelancer", min_value=0.0, value=st.session_state.get("custo_freelancer", 0.00), step=50.0, format="%.2f", label_visibility="collapsed")
+        
+        ca, cb = st.columns([1.8, 2.2])
+        with ca: st.markdown("<div class='st-key-field-label'>Outros (R$)</div>", unsafe_allow_html=True)
+        with cb: st.session_state.custo_outros = st.number_input("Outros", min_value=0.0, value=st.session_state.get("custo_outros", 0.00), step=10.0, format="%.2f", label_visibility="collapsed")
 
     with c2:
         st.markdown("##### 🏨 Hospedagem & Alimentação")
-        st.session_state.qtd_hosp = st.number_input("Qtd. Diárias Hospedagem", min_value=0, value=st.session_state.get("qtd_hosp", 0), step=1)
-        st.session_state.val_hosp = st.number_input("R$ Hospedagem (diária)", min_value=0.0, value=st.session_state.get("val_hosp", 250.00), step=10.0, format="%.2f")
-        st.session_state.custo_almoco = st.number_input("Almoço (R$)", min_value=0.0, value=st.session_state.get("custo_almoco", 0.00), step=5.0, format="%.2f")
-        st.session_state.custo_jantar = st.number_input("Jantar (R$)", min_value=0.0, value=st.session_state.get("custo_jantar", 0.00), step=5.0, format="%.2f")
+        
+        ca, cb = st.columns([1.8, 2.2])
+        with ca: st.markdown("<div class='st-key-field-label'>Qtd. Diárias Hosp.</div>", unsafe_allow_html=True)
+        with cb: st.session_state.qtd_hosp = st.number_input("Qtd Hosp", min_value=0, value=st.session_state.get("qtd_hosp", 0), step=1, label_visibility="collapsed")
+        
+        ca, cb = st.columns([1.8, 2.2])
+        with ca: st.markdown("<div class='st-key-field-label'>R$ Hospedagem (dia)</div>", unsafe_allow_html=True)
+        with cb: st.session_state.val_hosp = st.number_input("Valor Hosp", min_value=0.0, value=st.session_state.get("val_hosp", 250.00), step=10.0, format="%.2f", label_visibility="collapsed")
+        
+        ca, cb = st.columns([1.8, 2.2])
+        with ca: st.markdown("<div class='st-key-field-label'>Almoço (R$)</div>", unsafe_allow_html=True)
+        with cb: st.session_state.custo_almoco = st.number_input("Almoço", min_value=0.0, value=st.session_state.get("custo_almoco", 0.00), step=5.0, format="%.2f", label_visibility="collapsed")
+        
+        ca, cb = st.columns([1.8, 2.2])
+        with ca: st.markdown("<div class='st-key-field-label'>Jantar (R$)</div>", unsafe_allow_html=True)
+        with cb: st.session_state.custo_jantar = st.number_input("Jantar", min_value=0.0, value=st.session_state.get("custo_jantar", 0.00), step=5.0, format="%.2f", label_visibility="collapsed")
 
         st.markdown("<br>", unsafe_allow_html=True)
         st.markdown("##### 🏛️ Impostos & Comissão")
-        st.session_state.imposto_perc = st.number_input("Alíquota de Impostos / Notas (%)", min_value=0.0, max_value=30.0, value=st.session_state.get("imposto_perc", 6.0), step=0.5)
-        st.session_state.comissao_perc = st.number_input("Comissão (%)", min_value=0, max_value=50, value=st.session_state.get("comissao_perc", 0), step=1, format="%d")
-        st.session_state.ajuste_manual = st.number_input("Ajuste Manual do Valor Final (R$ - Subtração)", min_value=0.0, value=st.session_state.get("ajuste_manual", 0.0), step=10.0, format="%.2f")
+        ca, cb = st.columns([1.8, 2.2])
+        with ca: st.markdown("<div class='st-key-field-label'>Alíquota Impostos (%)</div>", unsafe_allow_html=True)
+        with cb: st.session_state.imposto_perc = st.number_input("Impostos", min_value=0.0, max_value=30.0, value=st.session_state.get("imposto_perc", 6.0), step=0.5, label_visibility="collapsed")
+        
+        ca, cb = st.columns([1.8, 2.2])
+        with ca: st.markdown("<div class='st-key-field-label'>Comissão (%)</div>", unsafe_allow_html=True)
+        with cb: st.session_state.comissao_perc = st.number_input("Comissão", min_value=0, max_value=50, value=st.session_state.get("comissao_perc", 0), step=1, format="%d", label_visibility="collapsed")
+        
+        ca, cb = st.columns([1.8, 2.2])
+        with ca: st.markdown("<div class='st-key-field-label'>Ajuste Manual (R$)</div>", unsafe_allow_html=True)
+        with cb: st.session_state.ajuste_manual = st.number_input("Ajuste", min_value=0.0, value=st.session_state.get("ajuste_manual", 0.0), step=10.0, format="%.2f", label_visibility="collapsed")
 
     st.markdown("---")
     col_b1, col_b2 = st.columns(2)
@@ -789,39 +872,47 @@ elif st.session_state.current_tab_idx == 1:
 elif st.session_state.current_tab_idx == 2:
     st.subheader("Condições, Prazos & Fechamento")
     
+    # 1. Forma de entrega em primeiro lugar
+    st.session_state.forma_entrega = st.text_input("Forma de entrega", st.session_state.get("forma_entrega", default_entrega_txt))
+    
+    st.markdown("<br>", unsafe_allow_html=True)
     c1, c2 = st.columns(2)
+    
     with c1:
         st.session_state.valor_personalizado = st.number_input("Valor Personalizado / Sob Consulta (R$ - Deixe 0 para tabela)", min_value=0.0, value=st.session_state.get("valor_personalizado", 0.0), step=50.0, format="%.2f")
-        st.session_state.validade_orcamento = st.text_input("Validade do Orçamento", st.session_state.get("validade_orcamento", "05 dias"))
         
-        fp_idx = ["À vista", "Parcelado"].index(st.session_state.get("forma_pagamento_tipo", "À vista")) if st.session_state.get("forma_pagamento_tipo", "À vista") in ["À vista", "Parcelado"] else 0
-        st.session_state.forma_pagamento_tipo = st.selectbox("Forma de Pagamento", ["À vista", "Parcelado"], index=fp_idx)
+        # Validade do orçamento e prazo de pagamento na mesma linha
+        sub_p1, sub_p2 = st.columns(2)
+        with sub_p1:
+            st.session_state.validade_orcamento = st.text_input("Validade do Orçamento", st.session_state.get("validade_orcamento", "05 dias"))
+        with sub_p2:
+            st.session_state.prazo_pagamento_dias = st.number_input("Prazo Pagamento (dias)", min_value=1, max_value=45, value=st.session_state.get("prazo_pagamento_dias", 5), step=1, format="%d")
+
+        # Forma de pagamento e condições de pagamento na mesma linha
+        sub_fp1, sub_fp2 = st.columns(2)
+        with sub_fp1:
+            fp_idx = ["À vista", "Parcelado"].index(st.session_state.get("forma_pagamento_tipo", "À vista")) if st.session_state.get("forma_pagamento_tipo", "À vista") in ["À vista", "Parcelado"] else 0
+            st.session_state.forma_pagamento_tipo = st.selectbox("Forma de Pagamento", ["À vista", "Parcelado"], index=fp_idx)
+        with sub_fp2:
+            cp_opcoes = ["PIX", "Transferência", "PIX ou transferência bancária", "Cartão de crédito", "Cartão de Crédito parcelado"]
+            cp_idx = cp_opcoes.index(st.session_state.get("condicao_pagamento", "PIX")) if st.session_state.get("condicao_pagamento", "PIX") in cp_opcoes else 0
+            st.session_state.condicao_pagamento = st.selectbox("Condições Pagamento", cp_opcoes, index=cp_idx)
 
     with c2:
-        modo_idx = ["Porcentagem (%)", "Valor Fixo (R$)"].index(st.session_state.get("tipo_desc_modo", "Porcentagem (%)")) if st.session_state.get("tipo_desc_modo", "Porcentagem (%)") in ["Porcentagem (%)", "Valor Fixo (R$)"] else 0
-        st.session_state.tipo_desc_modo = st.radio("Modalidade de Desconto", ["Porcentagem (%)", "Valor Fixo (R$)"], index=modo_idx, horizontal=True)
-        
-        if st.session_state.tipo_desc_modo == "Porcentagem (%)":
-            st.session_state.desconto_perc = st.slider("Desconto (%)", min_value=0.0, max_value=50.0, value=st.session_state.get("desconto_perc", 0.0), step=0.5)
-            st.session_state.desconto_valor_input = 0.0
+        # Descontos: Porcentagem e Valor Fixo lado a lado
+        sub_d1, sub_d2 = st.columns(2)
+        with sub_d1:
+            st.session_state.desconto_perc = st.number_input("Desconto (%)", min_value=0.0, max_value=50.0, value=st.session_state.get("desconto_perc", 0.0), step=0.5, format="%.1f")
+        with sub_d2:
+            st.session_state.desconto_valor_input = st.number_input("Desconto Valor Fixo (R$)", min_value=0.0, value=st.session_state.get("desconto_valor_input", 0.0), step=10.0, format="%.2f")
+
+        if "parcelado" in st.session_state.condicao_pagamento.lower() or st.session_state.forma_pagamento_tipo == "Parcelado":
+            parcelas_cartao = st.number_input("Cartão de Crédito parcelado em X vezes", min_value=1, max_value=12, value=3)
+            dias_txt = f"em até {st.session_state.prazo_pagamento_dias} dias" if st.session_state.prazo_pagamento_dias > 0 else "à vista"
+            st.session_state.condicao_pagamento_final = f"{st.session_state.condicao_pagamento} em {parcelas_cartao}X ({dias_txt})"
         else:
-            st.session_state.desconto_perc = 0.0
-            st.session_state.desconto_valor_input = st.number_input("Desconto em Valor Fixo (R$)", min_value=0.0, value=st.session_state.get("desconto_valor_input", 0.0), step=10.0, format="%.2f")
-
-        cp_opcoes = ["PIX", "Transferência", "PIX ou transferência bancária", "Cartão de crédito", "Cartão de Crédito parcelado"]
-        cp_idx = cp_opcoes.index(st.session_state.get("condicao_pagamento", "PIX")) if st.session_state.get("condicao_pagamento", "PIX") in cp_opcoes else 0
-        st.session_state.condicao_pagamento = st.selectbox("Condições de Pagamento", cp_opcoes, index=cp_idx)
-
-    st.session_state.forma_entrega = st.text_input("Forma de entrega", st.session_state.get("forma_entrega", default_entrega_txt))
-    st.session_state.prazo_pagamento_dias = st.number_input("Prazo de Pagamento (dias)", min_value=1, max_value=45, value=st.session_state.get("prazo_pagamento_dias", 5), step=1, format="%d")
-
-    dias_txt = f"em até {st.session_state.prazo_pagamento_dias} dias" if st.session_state.prazo_pagamento_dias > 0 else "à vista"
-    parcelas_cartao = 1
-    if "parcelado" in st.session_state.condicao_pagamento.lower() or st.session_state.forma_pagamento_tipo == "Parcelado":
-        parcelas_cartao = st.number_input("Cartão de Crédito parcelado em X vezes", min_value=1, max_value=12, value=3)
-        st.session_state.condicao_pagamento_final = f"{st.session_state.condicao_pagamento} em {parcelas_cartao}X ({dias_txt})"
-    else:
-        st.session_state.condicao_pagamento_final = f"{st.session_state.condicao_pagamento} ({dias_txt})"
+            dias_txt = f"em até {st.session_state.prazo_pagamento_dias} dias" if st.session_state.prazo_pagamento_dias > 0 else "à vista"
+            st.session_state.condicao_pagamento_final = f"{st.session_state.condicao_pagamento} ({dias_txt})"
 
     st.markdown("---")
     if st.button("⬅️ Voltar", key="btn_voltar_aba2", use_container_width=True):
