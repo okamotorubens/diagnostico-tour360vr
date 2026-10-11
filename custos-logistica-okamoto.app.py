@@ -119,7 +119,7 @@ st.markdown("""
         .st-key-field-label {
             font-weight: 600;
             font-size: 14px;
-            color: #1e293b;
+            color: #ffffff !important;
             display: flex;
             align-items: center;
             height: 100%;
@@ -649,7 +649,7 @@ if logo_app_path:
     st.image(logo_app_path, width=280)
 
 st.markdown("<h1 style='text-align: center; margin-top: -1rem; margin-bottom: 0rem;'>⚡ Sistema de Propostas & Custos</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; color: #64748b; margin-top: 0rem; margin-bottom: 0.5rem;'>Gerencie orçamentos comerciais, analise a viabilidade interna e gere documentação profissional em PDF.</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #94a3b8; margin-top: 0rem; margin-bottom: 0.5rem;'>Gerencie orçamentos comerciais, analise a viabilidade interna e gere documentação profissional em PDF.</p>", unsafe_allow_html=True)
 
 if 'current_tab_idx' not in st.session_state:
     st.session_state.current_tab_idx = 0
@@ -751,13 +751,9 @@ if st.session_state.current_tab_idx == 0:
         km_calc = calcular_distancia_maps(endereco_completo)
         if km_calc is not None:
             st.session_state.distancia_ida_volta = km_calc
-            st.markdown(f"<div style='text-align: center; padding: 10px; background-color: #d1fae5; color: #065f46; border-radius: 6px; margin-top: 10px;'><b>Rota encontrada com sucesso!</b><br>Distância de ida e volta: {km_calc} km (a partir da Rua Manoel Achê, 327).</div>", unsafe_allow_html=True)
-            time.sleep(3)
-            st.rerun()
+            st.success(f"Rota encontrada com sucesso! Distância de ida e volta: {km_calc} km.")
         else:
-            st.markdown("<div style='text-align: center; padding: 10px; background-color: #fee2e2; color: #991b1b; border-radius: 6px; margin-top: 10px;'>⚠️ Não foi possível calcular automaticamente. Verifique o endereço e a chave da API.</div>", unsafe_allow_html=True)
-            time.sleep(3)
-            st.rerun()
+            st.warning("⚠️ Não foi possível calcular automaticamente. Verifique o endereço e a chave da API.")
 
     st.markdown("---")
     st.subheader("2. Detalhamento Técnico (Escopo & Captação)")
@@ -776,8 +772,8 @@ if st.session_state.current_tab_idx == 0:
 
     default_escopo = f"{nome_serv_atual}\n{data_str_escopo}\n{st.session_state.horario if st.session_state.horario else 'Horário a definir'}\n{st.session_state.local if st.session_state.local else 'Local a definir'}\n{st.session_state.cidade} - {st.session_state.estado}\n01 (um) profissional".strip()
     
-    st.session_state.escopo_servico = st.text_area("Escopo do serviço", default_escopo, height=100)
-    st.session_state.captacao = st.text_area("Captação", st.session_state.get("captacao", "Cobertura profissional com equipamentos de alto padrão"), height=45)
+    st.session_state.escopo_servico = st.text_area("Escopo do serviço", st.session_state.get("escopo_servico", default_escopo), height=180)
+    st.session_state.captacao = st.text_area("Captação", st.session_state.get("captacao", "Cobertura profissional com equipamentos de alto padrão"), height=110)
     
     st.markdown("---")
     if st.button("Avançar ➡️", key="btn_avancar_aba0", use_container_width=True):
@@ -872,7 +868,6 @@ elif st.session_state.current_tab_idx == 1:
 elif st.session_state.current_tab_idx == 2:
     st.subheader("Condições, Prazos & Fechamento")
     
-    # 1. Forma de entrega em primeiro lugar
     st.session_state.forma_entrega = st.text_input("Forma de entrega", st.session_state.get("forma_entrega", default_entrega_txt))
     
     st.markdown("<br>", unsafe_allow_html=True)
@@ -881,14 +876,12 @@ elif st.session_state.current_tab_idx == 2:
     with c1:
         st.session_state.valor_personalizado = st.number_input("Valor Personalizado / Sob Consulta (R$ - Deixe 0 para tabela)", min_value=0.0, value=st.session_state.get("valor_personalizado", 0.0), step=50.0, format="%.2f")
         
-        # Validade do orçamento e prazo de pagamento na mesma linha
         sub_p1, sub_p2 = st.columns(2)
         with sub_p1:
             st.session_state.validade_orcamento = st.text_input("Validade do Orçamento", st.session_state.get("validade_orcamento", "05 dias"))
         with sub_p2:
             st.session_state.prazo_pagamento_dias = st.number_input("Prazo Pagamento (dias)", min_value=1, max_value=45, value=st.session_state.get("prazo_pagamento_dias", 5), step=1, format="%d")
 
-        # Forma de pagamento e condições de pagamento na mesma linha
         sub_fp1, sub_fp2 = st.columns(2)
         with sub_fp1:
             fp_idx = ["À vista", "Parcelado"].index(st.session_state.get("forma_pagamento_tipo", "À vista")) if st.session_state.get("forma_pagamento_tipo", "À vista") in ["À vista", "Parcelado"] else 0
@@ -899,7 +892,6 @@ elif st.session_state.current_tab_idx == 2:
             st.session_state.condicao_pagamento = st.selectbox("Condições Pagamento", cp_opcoes, index=cp_idx)
 
     with c2:
-        # Descontos: Porcentagem e Valor Fixo lado a lado
         sub_d1, sub_d2 = st.columns(2)
         with sub_d1:
             st.session_state.desconto_perc = st.number_input("Desconto (%)", min_value=0.0, max_value=50.0, value=st.session_state.get("desconto_perc", 0.0), step=0.5, format="%.1f")
@@ -998,28 +990,6 @@ except Exception:
     valor_impostos = 0.0
     valor_comissao = 0.0
 
-st.markdown("---")
-st.markdown("### 📈 Quadro de Prévia em Tempo Real (Visão Geral)")
-
-c_horaria_sel_str = st.session_state.get("carga_horaria_sel", "1h")
-if "diária" in c_horaria_sel_str:
-    num_diarias_unit = int(c_horaria_sel_str.split()[0])
-    carga_horaria_total_exibida = f"{num_diarias_unit * dias_evento} diária(s)"
-else:
-    horas_unit = int(c_horaria_sel_str.replace("h", ""))
-    total_horas_calc = horas_unit * dias_evento
-    if dias_evento > 1:
-        carga_horaria_total_exibida = f"{total_horas_calc}h ({dias_evento}d x {horas_unit}h)"
-    else:
-        carga_horaria_total_exibida = f"{total_horas_calc}h"
-
-col_res1, col_res2, col_res3, col_res4, col_res5 = st.columns([1.2, 1.2, 1.2, 1.1, 1.3])
-col_res1.metric("Valor Cliente", fmt_brl(valor_final))
-col_res2.metric("Custos", fmt_brl(custo_total_interno))
-col_res3.metric("Lucro Est.", fmt_brl(lucro_liquido))
-col_res4.metric("Margem", f"{margem_lucro:.1f}%")
-col_res5.metric("Carga Horária", carga_horaria_total_exibida)
-
 dados_completos = {
     "contato": st.session_state.get("contato", ""),
     "empresa": st.session_state.get("empresa", ""),
@@ -1036,7 +1006,7 @@ dados_completos = {
     "estado": st.session_state.get("estado", "SP"),
     "tipo_servico": st.session_state.get("tipo_servico", "Evento social"),
     "outro_servico_nome": st.session_state.get("outro_servico_nome", ""),
-    "carga_horaria_sel": carga_horaria_total_exibida,
+    "carga_horaria_sel": st.session_state.get("carga_horaria_sel", "1h"),
     "escopo_servico": st.session_state.get("escopo_servico", ""),
     "captacao": st.session_state.get("captacao", ""),
     "validade_orcamento": st.session_state.get("validade_orcamento", "05 dias"),
@@ -1100,3 +1070,25 @@ if st.session_state.current_tab_idx == 2:
             mime="application/pdf",
             use_container_width=True
         )
+
+st.markdown("---")
+st.markdown("### 📈 Quadro de Prévia em Tempo Real (Visão Geral)")
+
+c_horaria_sel_str = st.session_state.get("carga_horaria_sel", "1h")
+if "diária" in c_horaria_sel_str:
+    num_diarias_unit = int(c_horaria_sel_str.split()[0])
+    carga_horaria_total_exibida = f"{num_diarias_unit * dias_evento} diária(s)"
+else:
+    horas_unit = int(c_horaria_sel_str.replace("h", ""))
+    total_horas_calc = horas_unit * dias_evento
+    if dias_evento > 1:
+        carga_horaria_total_exibida = f"{total_horas_calc}h ({dias_evento}d x {horas_unit}h)"
+    else:
+        carga_horaria_total_exibida = f"{total_horas_calc}h"
+
+col_res1, col_res2, col_res3, col_res4, col_res5 = st.columns([1.2, 1.2, 1.2, 1.1, 1.3])
+col_res1.metric("Valor Cliente", fmt_brl(valor_final))
+col_res2.metric("Custos", fmt_brl(custo_total_interno))
+col_res3.metric("Lucro Est.", fmt_brl(lucro_liquido))
+col_res4.metric("Margem", f"{margem_lucro:.1f}%")
+col_res5.metric("Carga Horária", carga_horaria_total_exibida)
