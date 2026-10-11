@@ -9,6 +9,8 @@ import os
 from datetime import datetime
 from PIL import Image as PILImage
 import smtplib
+import urllib.request
+import json
 from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
 from email.mime.text import MIMEText
@@ -76,9 +78,32 @@ st.markdown("""
 def scroll_to_top():
     st.markdown("""
         <script>
-            window.parent.scrollTo({top: 0, behavior: 'smooth'});
+            window.scrollTo({top: 0, behavior: 'smooth'});
+            parent.window.scrollTo({top: 0, behavior: 'smooth'});
         </script>
     """, unsafe_allow_html=True)
+
+def calcular_distancia_maps(destino_endereco):
+    try:
+        api_key = st.secrets.get("google", {}).get("maps_api_key", "")
+        if not api_key:
+            return None
+        origem = "Rua Manoel Achê, 327, Ribeirão Preto - SP"
+        url = f"https://maps.googleapis.com/maps/api/distancematrix/json?origins={urllib.parse.quote(origem)}&destinations={urllib.parse.quote(destino_endereco)}&key={api_key}&language=pt-BR"
+        
+        req = urllib.request.urlopen(url)
+        data = json.loads(req.read().decode('utf-8'))
+        
+        if data['status'] == 'OK':
+            elemento = data['rows'][0]['elements'][0]
+            if elemento['status'] == 'OK':
+                distancia_metros = elemento['distance']['value']
+                distancia_km_ida = distancia_metros / 1000.0
+                distancia_ida_volta = distancia_km_ida * 2
+                return round(distancia_ida_volta)
+    except Exception:
+        pass
+    return None
 
 class NumberedCanvasProposal(canvas.Canvas):
     def __init__(self, *args, **kwargs):
@@ -109,7 +134,6 @@ class NumberedCanvasProposal(canvas.Canvas):
         p_num = self._pageNumber
         page_str = f"{p_num:02d} de {page_count:02d}"
         
-        # Rodapé centralizado sem conflitos de anotação nomeada
         footer_text = "okamotomidiasvisuais.com.br  |  contato@okamotomidiasvisuais.com.br  |  WhatsApp: 16 99133 2121"
         self.drawCentredString(297.5, 26, footer_text)
         
@@ -244,6 +268,8 @@ def gerar_pdf_cliente(dados):
     story.append(Paragraph(f"{nome_serv_ev}", style_servico_sub))
     story.append(Spacer(1, 14))
     
+    # 1 linha a mais de espaço antes de 1. Dados do cliente
+    story.append(Spacer(1, 10))
     story.append(Paragraph("<b>1. Dados do cliente:</b>", style_bold))
     story.append(Spacer(1, 4))
     story.append(Paragraph(f"<b>Contato:</b> {dados['contato']}", style_corpo))
@@ -302,12 +328,15 @@ def gerar_pdf_cliente(dados):
         ('ROUNDEDCORNERS', [6, 6, 6, 6]),
     ]))
     
+    # 1 linha a mais de espaço antes de "Ficamos à disposição..." e antes de "Atenciosamente"
     bloco_final_p1 = KeepTogether([
         Spacer(1, 10),
         t_valor_box,
         Spacer(1, 16),
+        Spacer(1, 12),
         Paragraph("Ficamos à disposição para quaisquer esclarecimentos e ajustes, caso necessário.", style_corpo),
         Spacer(1, 10),
+        Spacer(1, 12),
         Paragraph("Atenciosamente,", style_corpo),
         Spacer(1, 6),
         Paragraph("Rubens Okamoto", style_assinatura),
@@ -369,11 +398,12 @@ def gerar_pdf_interno(dados):
     doc.title = f"Relatório de custos - {nome_serv_ev} - {data_ev_str}"
     
     styles = getSampleStyleSheet()
-    style_titulo = ParagraphStyle('TitInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=13, leading=15, alignment=1, textColor=colors.HexColor('#0f172a'))
-    style_subtitulo_serv = ParagraphStyle('SubServInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=13, alignment=1, textColor=colors.HexColor('#1e3a8a'))
+    # Tamanhos aumentados e espaçamentos otimizados com 2 linhas entre os blocos
+    style_titulo = ParagraphStyle('TitInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=15, leading=18, alignment=1, textColor=colors.HexColor('#0f172a'))
+    style_subtitulo_serv = ParagraphStyle('SubServInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=12, leading=15, alignment=1, textColor=colors.HexColor('#1e3a8a'))
     style_secao = ParagraphStyle('SecInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9, leading=11, textColor=colors.HexColor('#1e3a8a'))
-    style_corpo = ParagraphStyle('CorpoInt', parent=styles['Normal'], fontName='Helvetica', fontSize=8, leading=10.5, textColor=colors.HexColor('#000000'))
-    style_bold = ParagraphStyle('BoldInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=8, leading=10.5, textColor=colors.HexColor('#000000'))
+    style_corpo = ParagraphStyle('CorpoInt', parent=styles['Normal'], fontName='Helvetica', fontSize=8, leading=10, textColor=colors.HexColor('#000000'))
+    style_bold = ParagraphStyle('BoldInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=8, leading=10, textColor=colors.HexColor('#000000'))
     style_destaque_fat = ParagraphStyle('FatInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=8.5, leading=11, textColor=colors.HexColor('#1e3a8a'))
     style_destaque_lucro = ParagraphStyle('LucInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9.5, leading=12, textColor=colors.HexColor('#047857'))
     
@@ -387,11 +417,11 @@ def gerar_pdf_interno(dados):
     else:
         story.append(Paragraph("<b>[ LOGO OKAMOTO ]</b>", style_bold))
         
-    story.append(Spacer(1, 6))
+    story.append(Spacer(1, 14))
     story.append(Paragraph("Relatório de Custos", style_titulo))
-    story.append(Spacer(1, 2))
+    story.append(Spacer(1, 4))
     story.append(Paragraph(f"{nome_serv_ev}", style_subtitulo_serv))
-    story.append(Spacer(1, 8))
+    story.append(Spacer(1, 14))
     
     data_fim_str = dados['data_termino'].strftime('%d/%m/%Y') if dados['tem_data_termino'] else data_ev_str
     local_txt = dados['local'] if dados['local'] else "Local a definir"
@@ -413,10 +443,10 @@ def gerar_pdf_interno(dados):
         ('RIGHTPADDING', (0,0), (-1,-1), 3)
     ]))
     story.append(t_geral)
-    story.append(Spacer(1, 8))
+    story.append(Spacer(1, 14))
     
     story.append(Paragraph("1. Custos de Logística, Deslocamento & Operacionais", style_secao))
-    story.append(Spacer(1, 3))
+    story.append(Spacer(1, 4))
     
     combustivel_detalhe = f"Consumo: {dados['consumo_veiculo']} km/L | {dados['litros_gastos']:.1f}L a {fmt_brl(dados['preco_combustivel'])}/L"
     custo_logistica_parcial = dados['custo_combustivel'] + dados['pedagios'] + dados['custo_estacionamento'] + dados['custo_hospedagem_total'] + dados['custo_almoco'] + dados['custo_jantar'] + dados['custo_freelancer'] + dados['custo_outros']
@@ -442,17 +472,17 @@ def gerar_pdf_interno(dados):
     ts_log.add('ALIGN', (0,0), (-1,-1), 'LEFT')
     ts_log.add('ALIGN', (2,0), (2,-1), 'RIGHT')
     ts_log.add('VALIGN', (0,0), (-1,-1), 'MIDDLE')
-    ts_log.add('BOTTOMPADDING', (0,0), (-1,-1), 1.8)
-    ts_log.add('TOPPADDING', (0,0), (-1,-1), 1.8)
+    ts_log.add('BOTTOMPADDING', (0,0), (-1,-1), 1.5)
+    ts_log.add('TOPPADDING', (0,0), (-1,-1), 1.5)
     ts_log.add('LEFTPADDING', (0,0), (-1,-1), 5)
     ts_log.add('RIGHTPADDING', (0,0), (-1,-1), 5)
     ts_log.add('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1'))
     t_log.setStyle(ts_log)
     story.append(t_log)
-    story.append(Spacer(1, 8))
+    story.append(Spacer(1, 14))
     
     story.append(Paragraph("2. Impostos & Comissão", style_secao))
-    story.append(Spacer(1, 3))
+    story.append(Spacer(1, 4))
     
     total_impostos_comissao = dados['valor_impostos'] + dados['comissao']
     
@@ -473,17 +503,17 @@ def gerar_pdf_interno(dados):
     ts_op.add('ALIGN', (0,0), (-1,-1), 'LEFT')
     ts_op.add('ALIGN', (2,0), (2,-1), 'RIGHT')
     ts_op.add('VALIGN', (0,0), (-1,-1), 'MIDDLE')
-    ts_op.add('BOTTOMPADDING', (0,0), (-1,-1), 1.8)
-    ts_op.add('TOPPADDING', (0,0), (-1,-1), 1.8)
+    ts_op.add('BOTTOMPADDING', (0,0), (-1,-1), 1.5)
+    ts_op.add('TOPPADDING', (0,0), (-1,-1), 1.5)
     ts_op.add('LEFTPADDING', (0,0), (-1,-1), 5)
     ts_op.add('RIGHTPADDING', (0,0), (-1,-1), 5)
     ts_op.add('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1'))
     t_op.setStyle(ts_op)
     story.append(t_op)
-    story.append(Spacer(1, 8))
+    story.append(Spacer(1, 14))
     
     story.append(Paragraph("3. Fechamento Financeiro & Margem", style_secao))
-    story.append(Spacer(1, 3))
+    story.append(Spacer(1, 4))
     
     tabela_resumo_interno = [
         [Paragraph("<b>Faturamento Total Proposto:</b>", style_bold), Paragraph(f"<b>{fmt_brl(dados['valor_final'])}</b>", style_destaque_fat)],
@@ -496,8 +526,8 @@ def gerar_pdf_interno(dados):
     ts_res.add('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#e2e8f0'))
     ts_res.add('VALIGN', (0,0), (-1,-1), 'MIDDLE')
     ts_res.add('ALIGN', (1,0), (1,-1), 'RIGHT')
-    ts_res.add('BOTTOMPADDING', (0,0), (-1,-1), 3)
-    ts_res.add('TOPPADDING', (0,0), (-1,-1), 3)
+    ts_res.add('BOTTOMPADDING', (0,0), (-1,-1), 2.5)
+    ts_res.add('TOPPADDING', (0,0), (-1,-1), 2.5)
     ts_res.add('LEFTPADDING', (0,0), (-1,-1), 6)
     ts_res.add('RIGHTPADDING', (0,0), (-1,-1), 6)
     ts_res.add('BOX', (0,0), (-1,-1), 1, colors.HexColor('#1e3a8a'))
@@ -522,7 +552,12 @@ if 'current_tab_idx' not in st.session_state:
 tab_names = ["1. 📋 Dados & Serviços", "2. 🚗 Custos & Logística", "3. 📄 Prazos, Resumo & Relatórios"]
 
 tab_selecionada = st.radio("Navegação:", tab_names, index=st.session_state.current_tab_idx, horizontal=True, label_visibility="collapsed")
-st.session_state.current_tab_idx = tab_names.index(tab_selecionada)
+nova_aba_idx = tab_names.index(tab_selecionada)
+
+if nova_aba_idx != st.session_state.current_tab_idx:
+    st.session_state.current_tab_idx = nova_aba_idx
+    scroll_to_top()
+    st.rerun()
 
 st.markdown("---")
 
@@ -547,13 +582,26 @@ if st.session_state.current_tab_idx == 0:
             
         st.session_state.horario = st.text_input("Horário do Serviço", st.session_state.get("horario", "08:00"))
         st.session_state.nome_servico_input = st.text_input("Nome do Serviço / Evento", st.session_state.get("nome_servico_input", ""))
-        st.session_state.local = st.text_input("Local", st.session_state.get("local", ""))
+        
+        # Campo local com botão para calcular distância via Google Maps
+        st.session_state.local = st.text_input("Local (Rua, Número, Bairro, etc.)", st.session_state.get("local", ""))
         
         col_cidade, col_uf = st.columns([3, 1])
         with col_cidade:
             st.session_state.cidade = st.text_input("Cidade", st.session_state.get("cidade", "Ribeirão Preto"))
         with col_uf:
             st.session_state.estado = st.selectbox("Estado (UF)", ESTADOS_BR, index=ESTADOS_BR.index(st.session_state.get("estado", "SP")) if st.session_state.get("estado", "SP") in ESTADOS_BR else 0)
+
+        # Botão para calcular distância automática via Maps usando Rua Manoel Achê, 327
+        if st.button("🗺️ Calcular KM Automático (Google Maps)", use_container_width=True):
+            endereco_completo = f"{st.session_state.local}, {st.session_state.cidade} - {st.session_state.estado}"
+            km_calc = calcular_distancia_maps(endereco_completo)
+            if km_calc is not None:
+                st.session_state.distancia_ida_volta = km_calc
+                st.success(f"Distância calculada com sucesso: {km_calc} km (Ida e Volta) a partir da Rua Manoel Achê, 327!")
+                st.rerun()
+            else:
+                st.warning("Não foi possível calcular automaticamente. Verifique se o endereço está completo ou configure a chave da API do Maps.")
 
     st.markdown("---")
     st.subheader("2. Seleção de Serviço & Carga Horária")
@@ -863,14 +911,19 @@ if st.session_state.current_tab_idx == 2:
             st.toast("📧 Cópia dos PDFs enviada automaticamente para contato@tour360vr.com.br!", icon="✅")
 
     col_down1, col_down2 = st.columns(2)
-    empresa_nome = st.session_state.get("empresa", "")
-    safe_empresa_nome = "".join([c for c in empresa_nome if c.isalnum() or c in (' ', '_', '-')]).strip().replace(' ', '_') if empresa_nome else "Cliente"
     
+    # Nomes dos arquivos PDF conforme combinado
+    safe_servico_nome = "".join([c for c in nome_serv_ev if c.isalnum() or c in (' ', '_', '-')]).strip().replace(' ', '_') if nome_serv_ev else "Servico"
+    data_arquivo_str = dados_completos['data_evento'].strftime('%d-%m-%Y')
+    
+    nome_arquivo_cliente = f"Proposta comercial - Okamoto Midias Visuais - {safe_servico_nome} - {data_arquivo_str}.pdf"
+    nome_arquivo_interno = f"Relatorio de custos - {safe_servico_nome} - {data_arquivo_str}.pdf"
+
     with col_down1:
         st.download_button(
             label="📄 Baixar Proposta Comercial (Cliente)",
             data=pdf_cliente_bytes,
-            file_name=f"Proposta_Comercial_{safe_empresa_nome}.pdf",
+            file_name=nome_arquivo_cliente,
             mime="application/pdf",
             use_container_width=True
         )
@@ -879,7 +932,7 @@ if st.session_state.current_tab_idx == 2:
         st.download_button(
             label="🔒 Baixar Relatório Interno (Custos)",
             data=pdf_interno_bytes,
-            file_name=f"Relatorio_Interno_Custos_{safe_empresa_nome}.pdf",
+            file_name=nome_arquivo_interno,
             mime="application/pdf",
             use_container_width=True
         )
