@@ -53,7 +53,7 @@ st.set_page_config(page_title="Proposta Comercial & Custos - Okamoto Mídias Vis
 st.markdown("""
     <style>
         .block-container {
-            padding-top: 2.5rem !important;
+            padding-top: 1rem !important;
             padding-bottom: 2rem !important;
             max-width: 80rem;
         }
@@ -161,7 +161,6 @@ class SimpleCanvasInternal(canvas.Canvas):
         self.setLineWidth(0.75)
         self.line(35, 35, 575, 35)
         
-        # Rodapé interno devidamente centralizado nas coordenadas A4 (largura 595.27 / 2 = 297.6)
         footer_text = "okamotomidiasvisuais.com.br  |  contato@okamotomidiasvisuais.com.br  |  16 99133 2121"
         self.drawCentredString(297.6, 22, footer_text)
         self.restoreState()
@@ -229,7 +228,8 @@ def enviar_pdf_por_email(pdf_cliente_bytes, pdf_interno_bytes, nome_cliente):
 
 def gerar_pdf_cliente(dados):
     buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=40, rightMargin=40, topMargin=20, bottomMargin=55)
+    # Margens e espaçamentos estritos para garantir 100% que caiba em 1 página
+    doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=40, rightMargin=40, topMargin=15, bottomMargin=50)
     
     servico_nome = dados['tipo_servico'] if dados['tipo_servico'] != "Outro" else dados['outro_servico_nome']
     nome_serv_ev = dados['nome_servico_input'] if dados['nome_servico_input'] else servico_nome
@@ -238,12 +238,11 @@ def gerar_pdf_cliente(dados):
     doc.title = f"Proposta comercial - {nome_serv_ev} - {data_ev_str}"
     
     styles = getSampleStyleSheet()
-    # Proposta Comercial com tamanho maior (22pt) do que o nome do serviço (13pt)
-    style_titulo = ParagraphStyle('TituloPDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=22, leading=26, alignment=1, textColor=colors.HexColor('#0f172a'))
-    style_servico_sub = ParagraphStyle('ServSubPDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=13, leading=16, alignment=1, textColor=colors.HexColor('#1e3a8a'))
-    style_corpo = ParagraphStyle('CorpoPDF', parent=styles['Normal'], fontName='Helvetica', fontSize=9.5, leading=14, textColor=colors.HexColor('#334155'))
-    style_bold = ParagraphStyle('BoldPDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9.5, leading=14, textColor=colors.HexColor('#0f172a'))
-    style_assinatura = ParagraphStyle('AssinaturaPDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9.5, leading=14, textColor=colors.HexColor('#0f172a'))
+    style_titulo = ParagraphStyle('TituloPDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=20, leading=24, alignment=1, textColor=colors.HexColor('#0f172a'))
+    style_servico_sub = ParagraphStyle('ServSubPDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=12, leading=15, alignment=1, textColor=colors.HexColor('#1e3a8a'))
+    style_corpo = ParagraphStyle('CorpoPDF', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=13, textColor=colors.HexColor('#334155'))
+    style_bold = ParagraphStyle('BoldPDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9, leading=13, textColor=colors.HexColor('#0f172a'))
+    style_assinatura = ParagraphStyle('AssinaturaPDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9, leading=13, textColor=colors.HexColor('#0f172a'))
     style_cat_titulo = ParagraphStyle('CatTitPDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, leading=15, textColor=colors.HexColor('#0f172a'))
     style_destaque_1 = ParagraphStyle('Dest1PDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=13, leading=17, alignment=1, textColor=colors.HexColor('#0f172a'))
     style_destaque_2 = ParagraphStyle('Dest2PDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=14, alignment=1, textColor=colors.HexColor('#334155'))
@@ -252,13 +251,13 @@ def gerar_pdf_cliente(dados):
 
     logo_path = get_logo_pdf_path()
     if logo_path:
-        img = criar_imagem_proporcional(logo_path, target_width=190)
+        img = criar_imagem_proporcional(logo_path, target_width=170)
         img.hAlign = 'CENTER'
         story.append(img)
     else:
         story.append(Paragraph("<b>[ OKAMOTO MÍDIAS VISUAIS ]</b>", style_titulo))
     
-    story.append(Spacer(1, 8))
+    story.append(Spacer(1, 6))
     
     t_linha = Table([['']], colWidths=[515], rowHeights=[1])
     t_linha.hAlign = 'CENTER'
@@ -268,92 +267,72 @@ def gerar_pdf_cliente(dados):
         ('TOPPADDING', (0,0), (-1,-1), 0),
     ]))
     story.append(t_linha)
-    story.append(Spacer(1, 10))
+    story.append(Spacer(1, 8))
     
     d_orc = dados['data_orcamento']
     data_extenso = f"Ribeirão Preto, {d_orc.day} de {MESES_PT[d_orc.month]} de {d_orc.year}"
     story.append(Paragraph(data_extenso, style_corpo))
-    story.append(Spacer(1, 10))
-    
-    story.append(Spacer(1, 12))
-    story.append(Paragraph("Proposta Comercial", style_titulo))
     story.append(Spacer(1, 6))
-    story.append(Paragraph(f"{nome_serv_ev}", style_servico_sub))
-    story.append(Spacer(1, 12))
     
-    story.append(Spacer(1, 12))
-    story.append(Paragraph("<b>1. Dados do cliente:</b>", style_bold))
-    story.append(Spacer(1, 4))
-    story.append(Paragraph(f"<b>Contato:</b> {dados['contato']}", style_corpo))
-    story.append(Paragraph(f"<b>Empresa:</b> {dados['empresa']}", style_corpo))
-    story.append(Paragraph(f"<b>Telefone:</b> {dados['telefone']}", style_corpo))
-    story.append(Paragraph(f"<b>E-mail:</b> {dados['email']}", style_corpo))
+    story.append(Paragraph("Proposta Comercial", style_titulo))
+    story.append(Spacer(1, 3))
+    story.append(Paragraph(f"{nome_serv_ev}", style_servico_sub))
     story.append(Spacer(1, 8))
     
+    story.append(Paragraph("<b>1. Dados do cliente:</b>", style_bold))
+    story.append(Spacer(1, 2))
+    story.append(Paragraph(f"<b>Contato:</b> {dados['contato']} &nbsp;&nbsp;|&nbsp;&nbsp; <b>Empresa:</b> {dados['empresa']} &nbsp;&nbsp;|&nbsp;&nbsp; <b>Telefone:</b> {dados['telefone']} &nbsp;&nbsp;|&nbsp;&nbsp; <b>E-mail:</b> {dados['email']}", style_corpo))
+    story.append(Spacer(1, 6))
+    
     story.append(Paragraph("<b>2. Dados do serviço:</b>", style_bold))
-    story.append(Spacer(1, 4))
+    story.append(Spacer(1, 2))
     data_evento_str = dados['data_evento'].strftime('%d/%m/%Y')
     if dados['tem_data_termino']:
         data_evento_str += f" até {dados['data_termino'].strftime('%d/%m/%Y')}"
     
     horario_txt = f"&nbsp;&nbsp; <b>Horário:</b> {dados['horario']}" if dados['horario'] else ""
     local_txt = dados['local'] if dados['local'] else "Local a definir"
-    
-    story.append(Paragraph(f"<b>Data:</b> {data_evento_str}{horario_txt}", style_corpo))
-    story.append(Spacer(1, 2))
-    story.append(Paragraph(f"<b>Local:</b> {local_txt} — {dados['cidade']}/{dados['estado']}", style_corpo))
-    story.append(Spacer(1, 8))
+    story.append(Paragraph(f"<b>Data:</b> {data_evento_str}{horario_txt} &nbsp;&nbsp;|&nbsp;&nbsp; <b>Local:</b> {local_txt} — {dados['cidade']}/{dados['estado']}", style_corpo))
+    story.append(Spacer(1, 6))
     
     story.append(Paragraph("<b>3. Escopo do serviço:</b>", style_bold))
-    story.append(Spacer(1, 4))
+    story.append(Spacer(1, 2))
     story.append(Paragraph(dados['escopo_servico'].replace('\n', '<br/>'), style_corpo))
-    story.append(Spacer(1, 8))
+    story.append(Spacer(1, 6))
     
     story.append(Paragraph("<b>4. Captação:</b>", style_bold))
-    story.append(Spacer(1, 4))
+    story.append(Spacer(1, 2))
     story.append(Paragraph(dados['captacao'].replace('\n', '<br/>'), style_corpo))
-    story.append(Spacer(1, 8))
+    story.append(Spacer(1, 6))
     
     story.append(Paragraph("<b>5. Entrega:</b> Até 72h após o término do serviço, editado e enviado via link para download, em alta e baixa resolução, disponível por 30 dias.", style_corpo))
-    story.append(Spacer(1, 8))
+    story.append(Spacer(1, 6))
     
-    story.append(Paragraph(f"<b>6. Formas de pagamento:</b> {dados['forma_pagamento_tipo']}", style_corpo))
-    story.append(Spacer(1, 8))
-    
-    story.append(Paragraph(f"<b>7. Condições de pagamento:</b> {dados['condicao_pagamento']}", style_corpo))
-    story.append(Spacer(1, 8))
-    
-    story.append(Paragraph(f"<b>8. Validade do orçamento:</b> {dados['validade_orcamento']}", style_corpo))
-    story.append(Spacer(1, 14))
+    story.append(Paragraph(f"<b>6. Formas de pagamento:</b> {dados['forma_pagamento_tipo']} &nbsp;&nbsp;|&nbsp;&nbsp; <b>7. Condições:</b> {dados['condicao_pagamento']} &nbsp;&nbsp;|&nbsp;&nbsp; <b>8. Validade:</b> {dados['validade_orcamento']}", style_corpo))
+    story.append(Spacer(1, 10))
     
     val_fmt = fmt_brl(dados['valor_final'])
-    texto_valor = f"<b>VALOR TOTAL DE INVESTIMENTO:</b><br/>{val_fmt}"
+    texto_valor = f"<b>VALOR TOTAL DE INVESTIMENTO:</b> {val_fmt}"
         
-    p_valor = Paragraph(texto_valor, ParagraphStyle('ValBox', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11.5, leading=16, alignment=1, textColor=colors.HexColor('#1e3a8a')))
-    t_valor_box = Table([[p_valor]], colWidths=[230])
+    p_valor = Paragraph(texto_valor, ParagraphStyle('ValBox', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10.5, leading=14, alignment=1, textColor=colors.HexColor('#1e3a8a')))
+    t_valor_box = Table([[p_valor]], colWidths=[280])
     t_valor_box.hAlign = 'CENTER'
     t_valor_box.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#f8fafc')),
-        ('BOX', (0,0), (-1,-1), 1.2, colors.HexColor('#1e3a8a')),
-        ('TOPPADDING', (0,0), (-1,-1), 10),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 10),
-        ('LEFTPADDING', (0,0), (-1,-1), 12),
-        ('RIGHTPADDING', (0,0), (-1,-1), 12),
-        ('ROUNDEDCORNERS', [6, 6, 6, 6]),
+        ('BOX', (0,0), (-1,-1), 1, colors.HexColor('#1e3a8a')),
+        ('TOPPADDING', (0,0), (-1,-1), 6),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 6),
+        ('LEFTPADDING', (0,0), (-1,-1), 8),
+        ('RIGHTPADDING', (0,0), (-1,-1), 8),
+        ('ROUNDEDCORNERS', [4, 4, 4, 4]),
     ]))
     
     bloco_final_p1 = KeepTogether([
-        Spacer(1, 10),
         t_valor_box,
-        Spacer(1, 16),
-        Spacer(1, 12),
+        Spacer(1, 8),
         Paragraph("Ficamos à disposição para quaisquer esclarecimentos e ajustes, caso necessário.", style_corpo),
-        Spacer(1, 10),
-        Spacer(1, 12),
-        Paragraph("Atenciosamente,", style_corpo),
         Spacer(1, 6),
-        Paragraph("Rubens Okamoto", style_assinatura),
-        Paragraph("Okamoto Mídias Visuais", style_corpo)
+        Paragraph("Atenciosamente, &nbsp; <b>Rubens Okamoto</b> (Okamoto Mídias Visuais)", style_corpo)
     ])
     story.append(bloco_final_p1)
     story.append(PageBreak())
@@ -426,7 +405,8 @@ def gerar_pdf_interno(dados):
     style_titulo = ParagraphStyle('TitInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=15, leading=18, alignment=0, textColor=colors.HexColor('#0f172a'))
     style_subtitulo_serv = ParagraphStyle('SubServInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, leading=14, alignment=0, textColor=colors.HexColor('#1e3a8a'))
     style_data_criacao = ParagraphStyle('DataCriacaoInt', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=11, alignment=0, textColor=colors.HexColor('#64748b'))
-    style_secao = ParagraphStyle('SecInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=12, textColor=colors.HexColor('#1e3a8a'))
+    # Itens de 1 a 4 com alinhamento à esquerda
+    style_secao = ParagraphStyle('SecInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=12, alignment=0, textColor=colors.HexColor('#1e3a8a'))
     style_corpo = ParagraphStyle('CorpoInt', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=11, textColor=colors.HexColor('#000000'))
     style_bold = ParagraphStyle('BoldInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9, leading=11, textColor=colors.HexColor('#000000'))
     style_destaque_fat = ParagraphStyle('FatInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9.5, leading=12, textColor=colors.HexColor('#1e3a8a'))
@@ -437,7 +417,7 @@ def gerar_pdf_interno(dados):
     logo_path = get_logo_pdf_path()
     data_criacao_str = dados['data_orcamento'].strftime('%d/%m/%Y')
     
-    # Cabeçalho arrumado: Logo à esquerda, textos alinhados estritamente à esquerda
+    # Logo um pouco mais à esquerda e cabeçalho alinhado à esquerda
     if logo_path:
         img_int = criar_imagem_proporcional(logo_path, target_width=130)
         img_int.hAlign = 'LEFT'
@@ -451,7 +431,7 @@ def gerar_pdf_interno(dados):
             Paragraph(f"Data de criação: {data_criacao_str}", style_data_criacao)
         ]
         
-        t_cabecalho = Table([[col_cab_esq, col_cab_dir]], colWidths=[150, 390])
+        t_cabecalho = Table([[col_cab_esq, col_cab_dir]], colWidths=[140, 400])
         t_cabecalho.hAlign = 'LEFT'
         t_cabecalho.setStyle(TableStyle([
             ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
@@ -503,7 +483,8 @@ def gerar_pdf_interno(dados):
     ]))
     story.append(t_geral)
     
-    story.append(Spacer(1, 12))
+    # Mais 1 linha de espaço antes do item 1
+    story.append(Spacer(1, 18))
     
     story.append(Paragraph("1. Custos de Logística, Deslocamento & Operacionais", style_secao))
     story.append(Spacer(1, 4))
@@ -583,9 +564,10 @@ def gerar_pdf_interno(dados):
     style_res_corpo = ParagraphStyle('ResCorpoInt', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=12, textColor=colors.HexColor('#000000'))
     style_res_lucro = ParagraphStyle('ResLucroInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, leading=14, textColor=colors.HexColor('#047857'))
     
+    # Quadro 3 ajustado sem as palavras "proposto" e "total", com largura de colWidths=[310, 230] idêntica ao faturamento
     tabela_resumo_interno = [
-        [Paragraph("<b>Faturamento Total Proposto:</b>", style_res_fat), Paragraph(f"<b>{fmt_brl(dados['valor_final'])}</b>", style_res_fat)],
-        [Paragraph("<b>Custo Operacional Total:</b>", style_bold), Paragraph(fmt_brl(dados['custo_total_interno']), style_res_corpo)],
+        [Paragraph("<b>Faturamento:</b>", style_res_fat), Paragraph(f"<b>{fmt_brl(dados['valor_final'])}</b>", style_res_fat)],
+        [Paragraph("<b>Custo Operacional:</b>", style_bold), Paragraph(fmt_brl(dados['custo_total_interno']), style_res_corpo)],
         [Paragraph("<b>Lucro Líquido Estimado:</b>", style_bold), Paragraph(f"<b>{fmt_brl(dados['lucro_liquido'])} ({dados['margem_lucro']:.1f}%)</b>", style_res_lucro)]
     ]
     t_res_int = Table(tabela_resumo_interno, colWidths=[310, 230])
@@ -607,13 +589,15 @@ def gerar_pdf_interno(dados):
     story.append(Paragraph("4. Observações", style_secao))
     story.append(Spacer(1, 4))
     
-    # Bloco 4 ajustado para 3 linhas com altura de 24 para garantir uma única página perfeitamente distribuída
+    # Bloco 4 com 5 linhas novamente, dimensionadas para caber perfeitamente na página única
     obs_linhas = [
+        [Paragraph("", style_corpo)],
+        [Paragraph("", style_corpo)],
         [Paragraph("", style_corpo)],
         [Paragraph("", style_corpo)],
         [Paragraph("", style_corpo)]
     ]
-    t_obs = Table(obs_linhas, colWidths=[540], rowHeights=[24, 24, 24])
+    t_obs = Table(obs_linhas, colWidths=[540], rowHeights=[14, 14, 14, 14, 14])
     t_obs.hAlign = 'CENTER'
     t_obs.setStyle(TableStyle([
         ('BOX', (0,0), (-1,-1), 0.75, colors.HexColor('#cbd5e1')),
@@ -632,7 +616,8 @@ logo_app_path = get_logo_app_path()
 if logo_app_path:
     st.image(logo_app_path, width=280)
 
-st.markdown("<h1 style='text-align: center; margin-top: 0rem; margin-bottom: 0rem;'>⚡ Sistema de Propostas & Custos</h1>", unsafe_allow_html=True)
+# Ajuste do espaçamento do topo e título
+st.markdown("<h1 style='text-align: center; margin-top: -1rem; margin-bottom: 0rem;'>⚡ Sistema de Propostas & Custos</h1>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; color: #64748b; margin-top: 0rem; margin-bottom: 0.5rem;'>Gerencie orçamentos comerciais, analise a viabilidade interna e gere documentação profissional em PDF.</p>", unsafe_allow_html=True)
 
 if 'current_tab_idx' not in st.session_state:
@@ -640,6 +625,8 @@ if 'current_tab_idx' not in st.session_state:
 
 tab_names = ["1. 📋 Dados & Serviços", "2. 🚗 Custos & Logística", "3. 📄 Prazos, Resumo & Relatórios"]
 
+# Etapas descidas em 1 linha e linha separatória logo abaixo sem espaço vazio
+st.markdown("<br>", unsafe_allow_html=True)
 tab_selecionada = st.radio("Navegação:", tab_names, index=st.session_state.current_tab_idx, horizontal=True, label_visibility="collapsed")
 nova_aba_idx = tab_names.index(tab_selecionada)
 
@@ -648,18 +635,31 @@ if nova_aba_idx != st.session_state.current_tab_idx:
     scroll_to_top()
     st.rerun()
 
-st.markdown("---")
+st.markdown("<hr style='margin-top: 0px; margin-bottom: 20px;'>", unsafe_allow_html=True)
 
 default_entrega_txt = "Até 72h após o término do serviço, editado e enviado via link para download, em alta e baixa resolução, disponível por 30 dias."
 
 if st.session_state.current_tab_idx == 0:
-    st.subheader("1. Dados do Cliente & Serviço")
+    st.subheader("1. Dados do Cliente e Serviço")
     col1, col2 = st.columns(2)
     with col1:
         st.session_state.contato = st.text_input("Contato", st.session_state.get("contato", ""))
         st.session_state.empresa = st.text_input("Empresa", st.session_state.get("empresa", ""))
         st.session_state.telefone = st.text_input("Telefone", st.session_state.get("telefone", ""))
         st.session_state.email = st.text_input("E-mail", st.session_state.get("email", ""))
+        
+        # 2. Seleção de Serviço e Carga Horária integrada logo abaixo do e-mail (sem título)
+        st.markdown("<br>", unsafe_allow_html=True)
+        tipo_servico_idx = list(TABELAS_SERVICOS.keys()).index(st.session_state.get("tipo_servico", "Evento social")) if st.session_state.get("tipo_servico", "Evento social") in TABELAS_SERVICOS else 0
+        st.session_state.tipo_servico = st.selectbox("Tipo de Serviço", list(TABELAS_SERVICOS.keys()), index=tipo_servico_idx)
+        
+        st.session_state.outro_servico_nome = ""
+        if st.session_state.tipo_servico == "Outro":
+            st.session_state.outro_servico_nome = st.text_input("Especifique o nome do serviço", st.session_state.get("outro_servico_nome", ""))
+
+        carga_idx = OPCOES_CARGA_HORARIA.index(st.session_state.get("carga_horaria_sel", "1h")) if st.session_state.get("carga_horaria_sel", "1h") in OPCOES_CARGA_HORARIA else 0
+        st.session_state.carga_horaria_sel = st.selectbox("Carga Horária", OPCOES_CARGA_HORARIA, index=carga_idx)
+
     with col2:
         st.session_state.data_orcamento = st.date_input("Data do Orçamento (dia/mês/ano)", st.session_state.get("data_orcamento", datetime.now()))
         st.session_state.data_evento = st.date_input("Data do Serviço (dia/mês/ano)", st.session_state.get("data_evento", datetime.now()))
@@ -685,7 +685,7 @@ if st.session_state.current_tab_idx == 0:
             km_calc = calcular_distancia_maps(endereco_completo)
             if km_calc is not None:
                 st.session_state.distancia_ida_volta = km_calc
-                # Mensagem centralizada
+                # Mensagem centralizada e formatada
                 aviso_km = st.markdown(f"<div style='text-align: center; padding: 10px; background-color: #d1fae5; color: #065f46; border-radius: 6px; margin-top: 10px;'><b>Rota encontrada com sucesso!</b><br>Distância de ida e volta: {km_calc} km (a partir da Rua Manoel Achê, 327).</div>", unsafe_allow_html=True)
                 time.sleep(3)
                 st.rerun()
@@ -695,19 +695,8 @@ if st.session_state.current_tab_idx == 0:
                 st.rerun()
 
     st.markdown("---")
-    st.subheader("2. Seleção de Serviço & Carga Horária")
-    tipo_servico_idx = list(TABELAS_SERVICOS.keys()).index(st.session_state.get("tipo_servico", "Evento social")) if st.session_state.get("tipo_servico", "Evento social") in TABELAS_SERVICOS else 0
-    st.session_state.tipo_servico = st.selectbox("Tipo de Serviço", list(TABELAS_SERVICOS.keys()), index=tipo_servico_idx)
-    
-    st.session_state.outro_servico_nome = ""
-    if st.session_state.tipo_servico == "Outro":
-        st.session_state.outro_servico_nome = st.text_input("Especifique o nome do serviço", st.session_state.get("outro_servico_nome", ""))
-
-    carga_idx = OPCOES_CARGA_HORARIA.index(st.session_state.get("carga_horaria_sel", "1h")) if st.session_state.get("carga_horaria_sel", "1h") in OPCOES_CARGA_HORARIA else 0
-    st.session_state.carga_horaria_sel = st.selectbox("Carga Horária", OPCOES_CARGA_HORARIA, index=carga_idx)
-
-    st.markdown("---")
-    st.subheader("3. Detalhamento Técnico (Escopo & Captação)")
+    # Detalhamento técnico numerado automaticamente como "2."
+    st.subheader("2. Detalhamento Técnico (Escopo & Captação)")
     
     s_tipo = st.session_state.tipo_servico
     s_outro = st.session_state.outro_servico_nome
@@ -932,7 +921,6 @@ except Exception:
 st.markdown("---")
 st.markdown("### 📈 Quadro de Prévia em Tempo Real (Visão Geral)")
 
-# Cálculo da Carga Horária Total considerando múltiplos dias
 c_horaria_sel_str = st.session_state.get("carga_horaria_sel", "1h")
 if "diária" in c_horaria_sel_str:
     num_diarias_unit = int(c_horaria_sel_str.split()[0])
@@ -941,16 +929,17 @@ else:
     horas_unit = int(c_horaria_sel_str.replace("h", ""))
     total_horas_calc = horas_unit * dias_evento
     if dias_evento > 1:
-        carga_horaria_total_exibida = f"{total_horas_calc}h ({dias_evento} dias de {horas_unit}h)"
+        carga_horaria_total_exibida = f"{total_horas_calc}h ({dias_evento}d x {horas_unit}h)"
     else:
         carga_horaria_total_exibida = f"{total_horas_calc}h"
 
-col_res1, col_res2, col_res3, col_res4, col_res5 = st.columns(5)
-col_res1.metric("Valor para o Cliente", fmt_brl(valor_final))
-col_res2.metric("Custos Operacionais", fmt_brl(custo_total_interno))
-col_res3.metric("Lucro Líquido Est.", fmt_brl(lucro_liquido))
-col_res4.metric("Margem de Lucro", f"{margem_lucro:.1f}%")
-col_res5.metric("Carga Horária Total", carga_horaria_total_exibida)
+# Layout do quadro de prévia otimizado para evitar cortes e espaçamentos excessivos
+col_res1, col_res2, col_res3, col_res4, col_res5 = st.columns([1.2, 1.2, 1.2, 1.1, 1.3])
+col_res1.metric("Valor Cliente", fmt_brl(valor_final))
+col_res2.metric("Custos", fmt_brl(custo_total_interno))
+col_res3.metric("Lucro Est.", fmt_brl(lucro_liquido))
+col_res4.metric("Margem", f"{margem_lucro:.1f}%")
+col_res5.metric("Carga Horária", carga_horaria_total_exibida)
 
 dados_completos = {
     "contato": st.session_state.get("contato", ""),
@@ -1018,10 +1007,6 @@ if st.session_state.current_tab_idx == 2:
 
     col_down1, col_down2 = st.columns(2)
     
-    safe_servico_nome = "".join([c for c in nome_serv_ev if c.isalnum() or c in (' ', '_', '-')]).strip().replace(' ', '_') if nome_serv_ev else "Servico"
-    data_arquivo_str = dados_completos['data_evento'].strftime('%d-%m-%Y')
-    
-    # Nomes dos arquivos sem sublinhados extras e usando o nome do serviço
     nome_arquivo_cliente = f"Proposta comercial - Okamoto Midias Visuais - {nome_serv_ev} - {data_arquivo_str}.pdf"
     nome_arquivo_interno = f"Relatorio de custos - {nome_serv_ev} - {data_arquivo_str}.pdf"
 
