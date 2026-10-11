@@ -7,15 +7,15 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from reportlab.pdfgen import canvas
 import io
 import os
+import re
 from datetime import datetime
 from PIL import Image as PILImage
 import smtplib
 import urllib.request
 import json
 from email.mime.multipart import MIMEMultipart
-from email.mime.base import MIMEBase
 from email.mime.text import MIMEText
-from email import encoders
+from email.mime.application import MIMEApplication
 
 def fmt_brl(val):
     s = f"{val:,.2f}"
@@ -48,6 +48,12 @@ ESTADOS_BR = [
     "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SE", "TO"
 ]
 
+# Credenciais oficiais do SMTP
+SMTP_SERVER = "smtp.tour360vr.com.br"
+SMTP_PORT_SSL = 465
+SMTP_USER = "contato@tour360vr.com.br"
+SMTP_PASS = "Kakaroto@2026"
+
 st.set_page_config(page_title="Proposta Comercial & Custos - Okamoto Mídias Visuais", page_icon="📊", layout="wide")
 
 st.markdown("""
@@ -63,15 +69,20 @@ st.markdown("""
         [data-testid="stNumberInput"] input {
             text-align: center;
         }
+        /* Correção da Logo para exibir inteira e centralizada no app */
         [data-testid="stImage"] {
             display: flex;
             justify-content: center;
             align-items: center;
+            width: 100%;
         }
         [data-testid="stImage"] > img {
             display: block;
             margin-left: auto;
             margin-right: auto;
+            max-width: 100% !important;
+            height: auto !important;
+            object-fit: contain;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -186,44 +197,47 @@ def criar_imagem_proporcional(path, target_width=150):
     except Exception:
         return RLImage(path, width=150, height=44)
 
-def enviar_pdf_por_email(pdf_cliente_bytes, pdf_interno_bytes, nome_cliente):
+# Envio de e-mail exclusivo para contato@okamotomidiasvisuais.com.br com SSL
+def enviar_pdf_por_email(pdf_cliente_bytes, pdf_interno_bytes, nome_cliente, nome_servico):
     try:
-        if "email" not in st.secrets:
-            return False, "Seção [email] não encontrada nos segredos (secrets.toml)."
-        
-        email_conf = st.secrets["email"]
-        smtp_server = email_conf.get("smtp_server")
-        smtp_port = int(email_conf.get("smtp_port", 587))
-        sender_email = email_conf.get("sender_email")
-        sender_password = email_conf.get("sender_password")
-        recipient_email = "contato@tour360vr.com.br"
-
-        msg = MIMEMultipart()
-        msg['From'] = sender_email
-        msg['To'] = recipient_email
-        msg['Subject'] = f"Novo Orçamento Gerado - {nome_cliente or 'Cliente'}"
-
-        corpo = f"Olá!\n\nUm novo orçamento foi gerado pelo sistema para o cliente: {nome_cliente}.\nOs arquivos em PDF (Proposta Comercial e Relatório Interno de Custos) seguem em anexo."
-        msg.attach(MIMEText(corpo, 'plain'))
+        server = smtplib.SMTP_SSL(SMTP_SERVER, SMTP_PORT_SSL, timeout=15)
+        server.login(SMTP_USER, SMTP_PASS)
 
         safe_name = "".join([c for c in nome_cliente if c.isalnum() or c in (' ', '_', '-')]).strip().replace(' ', '_') if nome_cliente else "Cliente"
+        
+        msg = MIMEMultipart('mixed')
+        msg['From'] = f"Okamoto Mídias Visuais <{SMTP_USER}>"
+        msg['To'] = SMTP_USER
+        msg['Reply-To'] = SMTP_USER
+        msg['Subject'] = f"📊 Novo Orçamento Gerado - {nome_servico} ({safe_name})"
 
-        part_cliente = MIMEBase('application', 'octet-stream')
-        part_cliente.set_payload(pdf_cliente_bytes.getvalue())
-        encoders.encode_base64(part_cliente)
+        corpo_html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head><meta charset="utf-8"></head>
+        <body style="font-family: Arial, sans-serif; background-color: #F4F6F9; padding: 15px; margin: 0;">
+            <div style="max-width: 580px; background-color: #FFFFFF; padding: 20px; border-radius: 10px; border-top: 5px solid #1565C0; margin: 0 auto;">
+                <h2 style="color: #111111; margin-top: 0; font-size: 18px;">Novo Orçamento Gerado no Sistema!</h2>
+                <hr style="border: 0; border-top: 1px solid #EEEEEE; margin: 12px 0;">
+                <p style="font-size: 14px; margin: 4px 0;"><b>Cliente / Empresa:</b> {nome_cliente}</p>
+                <p style="font-size: 14px; margin: 4px 0;"><b>Serviço:</b> {nome_servico}</p>
+                <p style="font-size: 14px; margin: 12px 0; color: #555;">Os arquivos em PDF (Proposta Comercial e Relatório Interno de Custos) seguem anexados a este e-mail.</p>
+            </div>
+        </body>
+        </html>
+        """
+        msg.attach(MIMEText(corpo_html, 'html', 'utf-8'))
+
+        part_cliente = MIMEApplication(pdf_cliente_bytes.getvalue(), _subtype="pdf")
         part_cliente.add_header('Content-Disposition', 'attachment', filename=f"Proposta_Comercial_{safe_name}.pdf")
         msg.attach(part_cliente)
 
-        part_interno = MIMEBase('application', 'octet-stream')
-        part_interno.set_payload(pdf_interno_bytes.getvalue())
-        encoders.encode_base64(part_interno)
+        part_interno = MIMEApplication(pdf_interno_bytes.getvalue(), _subtype="pdf")
         part_interno.add_header('Content-Disposition', 'attachment', filename=f"Relatorio_Interno_Custos_{safe_name}.pdf")
         msg.attach(part_interno)
 
-        with smtplib.SMTP(smtp_server, smtp_port) as server:
-            server.starttls()
-            server.login(sender_email, sender_password)
-            server.sendmail(sender_email, recipient_email, msg.as_string())
+        server.send_message(msg)
+        server.quit()
         return True, "Sucesso"
     except Exception as e:
         return False, str(e)
@@ -243,7 +257,6 @@ def gerar_pdf_cliente(dados):
     style_servico_sub = ParagraphStyle('ServSubPDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=12, leading=15, alignment=1, textColor=colors.HexColor('#1e3a8a'))
     style_corpo = ParagraphStyle('CorpoPDF', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=13, textColor=colors.HexColor('#334155'))
     style_bold = ParagraphStyle('BoldPDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9, leading=13, textColor=colors.HexColor('#0f172a'))
-    style_assinatura = ParagraphStyle('AssinaturaPDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9, leading=13, textColor=colors.HexColor('#0f172a'))
     style_cat_titulo = ParagraphStyle('CatTitPDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, leading=15, textColor=colors.HexColor('#0f172a'))
     style_destaque_1 = ParagraphStyle('Dest1PDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=13, leading=17, alignment=1, textColor=colors.HexColor('#0f172a'))
     style_destaque_2 = ParagraphStyle('Dest2PDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=14, alignment=1, textColor=colors.HexColor('#334155'))
@@ -409,8 +422,6 @@ def gerar_pdf_interno(dados):
     style_secao = ParagraphStyle('SecInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=12, alignment=0, textColor=colors.HexColor('#1e3a8a'))
     style_corpo = ParagraphStyle('CorpoInt', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=11, textColor=colors.HexColor('#000000'))
     style_bold = ParagraphStyle('BoldInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9, leading=11, textColor=colors.HexColor('#000000'))
-    style_destaque_fat = ParagraphStyle('FatInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9.5, leading=12, textColor=colors.HexColor('#1e3a8a'))
-    style_destaque_lucro = ParagraphStyle('LucInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10.5, leading=13, textColor=colors.HexColor('#047857'))
     
     story = []
 
@@ -990,15 +1001,17 @@ if st.session_state.current_tab_idx == 2:
 
     id_envio = f"{dados_completos['empresa']}_{dados_completos['data_evento']}_{dados_completos['valor_final']}"
     if st.session_state.get("ultimo_envio_email") != id_envio:
-        sucesso, erro_msg = enviar_pdf_por_email(pdf_cliente_bytes, pdf_interno_bytes, dados_completos.get('empresa') or dados_completos.get('contato'))
+        nome_cliente_lead = dados_completos.get('empresa') or dados_completos.get('contato') or "Cliente"
+        sucesso, erro_msg = enviar_pdf_por_email(pdf_cliente_bytes, pdf_interno_bytes, nome_cliente_lead, nome_serv_ev)
         if sucesso:
             st.session_state["ultimo_envio_email"] = id_envio
-            st.toast("📧 Cópia dos PDFs enviada automaticamente para contato@tour360vr.com.br!", icon="✅")
+            st.toast("📧 Cópia dos PDFs enviada com sucesso para contato@okamotomidiasvisuais.com.br!", icon="✅")
         else:
-            st.warning(f"⚠️ Não foi possível enviar o e-mail automático. Detalhe técnico: {erro_msg}")
+            st.warning(f"⚠️ Erro ao enviar e-mail automático: {erro_msg}")
 
     col_down1, col_down2 = st.columns(2)
     
+    data_arquivo_str = datetime.now().strftime('%d-%m-%Y')
     nome_arquivo_cliente = f"Proposta comercial - Okamoto Midias Visuais - {nome_serv_ev} - {data_arquivo_str}.pdf"
     nome_arquivo_interno = f"Relatorio de custos - {nome_serv_ev} - {data_arquivo_str}.pdf"
 
