@@ -670,7 +670,7 @@ st.markdown("<hr style='margin-top: 0px; margin-bottom: 20px;'>", unsafe_allow_h
 default_entrega_txt = "Até 72h após o término do serviço, editado e enviado via link para download, em alta e baixa resolução, disponível por 30 dias."
 
 if st.session_state.current_tab_idx == 0:
-    st.subheader("1. Dados do Cliente e Serviço")
+    st.subheader("📋 Dados do Cliente e Serviço")
     
     col_l1, col_l2 = st.columns(2)
     
@@ -756,7 +756,7 @@ if st.session_state.current_tab_idx == 0:
             st.warning("⚠️ Não foi possível calcular automaticamente. Verifique o endereço e a chave da API.")
 
     st.markdown("---")
-    st.subheader("2. Detalhamento Técnico (Escopo & Captação)")
+    st.subheader("📝 Detalhamento Técnico (Escopo & Captação)")
     
     s_tipo = st.session_state.tipo_servico
     s_outro = st.session_state.outro_servico_nome
@@ -782,7 +782,7 @@ if st.session_state.current_tab_idx == 0:
         st.rerun()
 
 elif st.session_state.current_tab_idx == 1:
-    st.subheader("Custos Operacionais")
+    st.subheader("🚗 Custos Operacionais")
     
     c1, c2 = st.columns(2)
     
@@ -866,7 +866,7 @@ elif st.session_state.current_tab_idx == 1:
             st.rerun()
 
 elif st.session_state.current_tab_idx == 2:
-    st.subheader("Condições, Prazos & Fechamento")
+    st.subheader("📄 Condições, Prazos & Fechamento")
     
     st.session_state.forma_entrega = st.text_input("Forma de entrega", st.session_state.get("forma_entrega", default_entrega_txt))
     
@@ -1064,7 +1064,7 @@ elif st.session_state.current_tab_idx == 2:
             use_container_width=True
         )
 
-    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("---")
     if st.button("⬅️ Voltar", key="btn_voltar_aba2", use_container_width=True):
         st.session_state.current_tab_idx = 1
         scroll_to_top()
