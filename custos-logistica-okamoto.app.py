@@ -1,5 +1,4 @@
 import streamlit as st
-import time
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -7,15 +6,10 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from reportlab.pdfgen import canvas
 import io
 import os
-import re
 from datetime import datetime
 from PIL import Image as PILImage
-import smtplib
 import urllib.request
 import json
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from email.mime.application import MIMEApplication
 
 def fmt_brl(val):
     s = f"{val:,.2f}"
@@ -94,12 +88,6 @@ ESTADOS_BR = [
     "SP", "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", 
     "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SE", "TO"
 ]
-
-SMTP_SERVER = "smtp.office365.com"
-SMTP_PORT_TLS = 587
-SMTP_USER = "okamotofotografia@hotmail.com"
-SMTP_PASS = "sua_senha_do_hotmail_aqui"  # Substitua pela sua senha do Hotmail ou App Password
-EMAIL_DESTINATARIO_NOTIFICACAO = "contato@okamotomidiasvisuais.com.br"
 
 st.set_page_config(page_title="Proposta Comercial & Custos - Okamoto Mídias Visuais", page_icon="📊", layout="wide")
 
@@ -240,51 +228,6 @@ def criar_imagem_proporcional(path, target_width=150):
         return RLImage(path, width=target_width, height=target_height)
     except Exception:
         return RLImage(path, width=150, height=44)
-
-def enviar_pdf_por_email(pdf_cliente_bytes, pdf_interno_bytes, nome_cliente, nome_servico):
-    try:
-        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT_TLS, timeout=15)
-        server.starttls()
-        server.login(SMTP_USER, SMTP_PASS)
-
-        safe_name = "".join([c for c in nome_cliente if c.isalnum() or c in (' ', '_', '-')]).strip().replace(' ', '_') if nome_cliente else "Cliente"
-        
-        msg = MIMEMultipart('mixed')
-        msg['From'] = f"Okamoto Mídias Visuais <{SMTP_USER}>"
-        msg['To'] = EMAIL_DESTINATARIO_NOTIFICACAO
-        msg['Reply-To'] = SMTP_USER
-        msg['Subject'] = f"📊 Novo Orçamento Gerado - {nome_servico} ({safe_name})"
-
-        corpo_html = f"""
-        <!DOCTYPE html>
-        <html>
-        <head><meta charset="utf-8"></head>
-        <body style="font-family: Arial, sans-serif; background-color: #F4F6F9; padding: 15px; margin: 0;">
-            <div style="max-width: 580px; background-color: #FFFFFF; padding: 20px; border-radius: 10px; border-top: 5px solid #1565C0; margin: 0 auto;">
-                <h2 style="color: #111111; margin-top: 0; font-size: 18px;">Novo Orçamento Gerado no Sistema!</h2>
-                <hr style="border: 0; border-top: 1px solid #EEEEEE; margin: 12px 0;">
-                <p style="font-size: 14px; margin: 4px 0;"><b>Cliente / Empresa:</b> {nome_cliente}</p>
-                <p style="font-size: 14px; margin: 4px 0;"><b>Serviço:</b> {nome_servico}</p>
-                <p style="font-size: 14px; margin: 12px 0; color: #555;">Os arquivos em PDF (Proposta Comercial e Relatório Interno de Custos) seguem anexados a este e-mail.</p>
-            </div>
-        </body>
-        </html>
-        """
-        msg.attach(MIMEText(corpo_html, 'html', 'utf-8'))
-
-        part_cliente = MIMEApplication(pdf_cliente_bytes.getvalue(), _subtype="pdf")
-        part_cliente.add_header('Content-Disposition', 'attachment', filename=f"Proposta_Comercial_{safe_name}.pdf")
-        msg.attach(part_cliente)
-
-        part_interno = MIMEApplication(pdf_interno_bytes.getvalue(), _subtype="pdf")
-        part_interno.add_header('Content-Disposition', 'attachment', filename=f"Relatorio_Interno_Custos_{safe_name}.pdf")
-        msg.attach(part_interno)
-
-        server.send_message(msg)
-        server.quit()
-        return True, "Sucesso"
-    except Exception as e:
-        return False, str(e)
 
 def gerar_pdf_cliente(dados):
     buffer = io.BytesIO()
@@ -486,13 +429,13 @@ def gerar_pdf_interno(dados):
     logo_path = get_logo_pdf_path()
     data_criacao_str = dados['data_orcamento'].strftime('%d/%m/%Y')
     
-    largura_util = 480  # Largura padrão das tabelas e do quadro centralizado
+    largura_util = 480  # Largura exata das tabelas e blocos centralizados
     
     if logo_path:
-        # Logo com tamanho aumentado (135 de largura)
         img_int = criar_imagem_proporcional(logo_path, target_width=135)
         img_int.hAlign = 'LEFT'
         
+        # Logo alinhada exatamente na mesma margem esquerda (leftMargin=35), sem recuo extra
         col_cab_esq = img_int
         col_cab_dir = [
             Paragraph("Relatório de Custos", style_titulo),
@@ -502,12 +445,12 @@ def gerar_pdf_interno(dados):
             Paragraph(f"Data de criação: {data_criacao_str}", style_data_criacao)
         ]
         
-        t_cabecalho = Table([[col_cab_esq, col_cab_dir]], colWidths=[140, 400])
-        t_cabecalho.hAlign = 'LEFT'
+        t_cabecalho = Table([[col_cab_esq, col_cab_dir]], colWidths=[140, 340])
+        t_cabecalho.hAlign = 'CENTER'  # Alinhado com as tabelas abaixo
         t_cabecalho.setStyle(TableStyle([
             ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
             ('LEFTPADDING', (0,0), (0,0), 0),
-            ('LEFTPADDING', (1,0), (1,0), 25),
+            ('LEFTPADDING', (1,0), (1,0), 20),
             ('RIGHTPADDING', (0,0), (-1,-1), 0),
             ('TOPPADDING', (0,0), (-1,-1), 0),
             ('BOTTOMPADDING', (0,0), (-1,-1), 0),
@@ -530,16 +473,19 @@ def gerar_pdf_interno(dados):
         ('TOPPADDING', (0,0), (-1,-1), 0),
     ]))
     story.append(t_linha_int)
-    story.append(Spacer(1, 14))
+    story.append(Spacer(1, 12))
     
     data_fim_str = dados['data_termino'].strftime('%d/%m/%Y') if dados['tem_data_termino'] else data_ev_str
     local_txt = dados['local'] if dados['local'] else "Local a definir"
+    captacao_txt = dados['captacao'] if dados['captacao'] else "—"
     
+    # Informações gerais ajustadas: substituído "Serviço" por "Empresa" e incluído "Captação" abaixo de "Local"
     info_geral = [
         [Paragraph("<b>Cliente:</b>", style_bold), Paragraph(dados['contato'], style_corpo), Paragraph("<b>Data de Início:</b>", style_bold), Paragraph(data_ev_str, style_corpo)],
-        [Paragraph("<b>Serviço:</b>", style_bold), Paragraph(f"{nome_serv_ev}", style_corpo), Paragraph("<b>Data de Término:</b>", style_bold), Paragraph(data_fim_str, style_corpo)],
+        [Paragraph("<b>Empresa:</b>", style_bold), Paragraph(dados['empresa'], style_corpo), Paragraph("<b>Data de Término:</b>", style_bold), Paragraph(data_fim_str, style_corpo)],
         [Paragraph("<b>Carga Horária:</b>", style_bold), Paragraph(dados['carga_horaria_sel'], style_corpo), Paragraph("<b>Prazo Pagamento:</b>", style_bold), Paragraph(f"{dados.get('prazo_pagamento_dias', '5')} dias", style_corpo)],
-        [Paragraph("<b>Local:</b>", style_bold), Paragraph(f"{local_txt} — {dados['cidade']}/{dados['estado']}", style_corpo), Paragraph("", style_corpo), Paragraph("", style_corpo)]
+        [Paragraph("<b>Local:</b>", style_bold), Paragraph(f"{local_txt} — {dados['cidade']}/{dados['estado']}", style_corpo), Paragraph("", style_corpo), Paragraph("", style_corpo)],
+        [Paragraph("<b>Captação:</b>", style_bold), Paragraph(captacao_txt, style_corpo), Paragraph("", style_corpo), Paragraph("", style_corpo)]
     ]
     t_geral = Table(info_geral, colWidths=[75, 165, 95, 145])
     t_geral.hAlign = 'CENTER'
@@ -549,18 +495,19 @@ def gerar_pdf_interno(dados):
         ('TOPPADDING', (0,0), (-1,-1), 2),
         ('LEFTPADDING', (0,0), (-1,-1), 0),
         ('RIGHTPADDING', (0,0), (-1,-1), 3),
-        ('SPAN', (1, 3), (3, 3))
+        ('SPAN', (1, 3), (3, 3)),
+        ('SPAN', (1, 4), (3, 4))
     ]))
     story.append(t_geral)
     
-    story.append(Spacer(1, 20))
+    story.append(Spacer(1, 14))
     
-    # Seção 1 alinhada perfeitamente com a tabela de largura 480
+    # Seção 1 alinhada perfeitamente no mesmo rumo das tabelas (largura 480)
     t_sec1 = Table([[Paragraph("1. Custos de Logística, Deslocamento & Operacionais", style_secao)]], colWidths=[largura_util])
     t_sec1.hAlign = 'CENTER'
     t_sec1.setStyle(TableStyle([('LEFTPADDING', (0,0), (-1,-1), 0), ('RIGHTPADDING', (0,0), (-1,-1), 0), ('TOPPADDING', (0,0), (-1,-1), 0), ('BOTTOMPADDING', (0,0), (-1,-1), 0)]))
     story.append(t_sec1)
-    story.append(Spacer(1, 5))
+    story.append(Spacer(1, 4))
     
     combustivel_detalhe = f"Consumo: {dados['consumo_veiculo']} km/L | {dados['litros_gastos']:.1f}L a {fmt_brl(dados['preco_combustivel'])}/L"
     custo_logistica_parcial = dados['custo_combustivel'] + dados['pedagios'] + dados['custo_estacionamento'] + dados['custo_hospedagem_total'] + dados['custo_almoco'] + dados['custo_jantar'] + dados['custo_freelancer'] + dados['custo_outros']
@@ -586,8 +533,8 @@ def gerar_pdf_interno(dados):
     ts_log.add('ALIGN', (0,0), (-1,-1), 'LEFT')
     ts_log.add('ALIGN', (2,0), (2,-1), 'RIGHT')
     ts_log.add('VALIGN', (0,0), (-1,-1), 'MIDDLE')
-    ts_log.add('BOTTOMPADDING', (0,0), (-1,-1), 2)
-    ts_log.add('TOPPADDING', (0,0), (-1,-1), 2)
+    ts_log.add('BOTTOMPADDING', (0,0), (-1,-1), 1.5)
+    ts_log.add('TOPPADDING', (0,0), (-1,-1), 1.5)
     ts_log.add('LEFTPADDING', (0,0), (-1,-1), 5)
     ts_log.add('RIGHTPADDING', (0,0), (-1,-1), 5)
     ts_log.add('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1'))
@@ -595,14 +542,14 @@ def gerar_pdf_interno(dados):
     t_log.setStyle(ts_log)
     story.append(t_log)
     
-    story.append(Spacer(1, 12))
+    story.append(Spacer(1, 10))
     
     # Seção 2 alinhada
     t_sec2 = Table([[Paragraph("2. Impostos & Comissão", style_secao)]], colWidths=[largura_util])
     t_sec2.hAlign = 'CENTER'
     t_sec2.setStyle(TableStyle([('LEFTPADDING', (0,0), (-1,-1), 0), ('RIGHTPADDING', (0,0), (-1,-1), 0), ('TOPPADDING', (0,0), (-1,-1), 0), ('BOTTOMPADDING', (0,0), (-1,-1), 0)]))
     story.append(t_sec2)
-    story.append(Spacer(1, 5))
+    story.append(Spacer(1, 4))
     
     total_impostos_comissao = dados['valor_impostos'] + dados['comissao']
     
@@ -623,8 +570,8 @@ def gerar_pdf_interno(dados):
     ts_op.add('ALIGN', (0,0), (-1,-1), 'LEFT')
     ts_op.add('ALIGN', (2,0), (2,-1), 'RIGHT')
     ts_op.add('VALIGN', (0,0), (-1,-1), 'MIDDLE')
-    ts_op.add('BOTTOMPADDING', (0,0), (-1,-1), 2)
-    ts_op.add('TOPPADDING', (0,0), (-1,-1), 2)
+    ts_op.add('BOTTOMPADDING', (0,0), (-1,-1), 1.5)
+    ts_op.add('TOPPADDING', (0,0), (-1,-1), 1.5)
     ts_op.add('LEFTPADDING', (0,0), (-1,-1), 5)
     ts_op.add('RIGHTPADDING', (0,0), (-1,-1), 5)
     ts_op.add('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1'))
@@ -632,14 +579,14 @@ def gerar_pdf_interno(dados):
     t_op.setStyle(ts_op)
     story.append(t_op)
     
-    story.append(Spacer(1, 12))
+    story.append(Spacer(1, 10))
     
     # Seção 3 alinhada
     t_sec3 = Table([[Paragraph("3. Fechamento Financeiro & Margem", style_secao)]], colWidths=[largura_util])
     t_sec3.hAlign = 'CENTER'
     t_sec3.setStyle(TableStyle([('LEFTPADDING', (0,0), (-1,-1), 0), ('RIGHTPADDING', (0,0), (-1,-1), 0), ('TOPPADDING', (0,0), (-1,-1), 0), ('BOTTOMPADDING', (0,0), (-1,-1), 0)]))
     story.append(t_sec3)
-    story.append(Spacer(1, 5))
+    story.append(Spacer(1, 4))
     
     style_res_fat = ParagraphStyle('ResFatInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=13, textColor=colors.HexColor('#1e3a8a'))
     style_res_custo = ParagraphStyle('ResCustoInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=13, textColor=colors.HexColor('#000000'))
@@ -656,22 +603,22 @@ def gerar_pdf_interno(dados):
     ts_res.add('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#f8fafc'))
     ts_res.add('VALIGN', (0,0), (-1,-1), 'MIDDLE')
     ts_res.add('ALIGN', (1,0), (1,-1), 'RIGHT')
-    ts_res.add('BOTTOMPADDING', (0,0), (-1,-1), 3.5)
-    ts_res.add('TOPPADDING', (0,0), (-1,-1), 3.5)
+    ts_res.add('BOTTOMPADDING', (0,0), (-1,-1), 3)
+    ts_res.add('TOPPADDING', (0,0), (-1,-1), 3)
     ts_res.add('LEFTPADDING', (0,0), (-1,-1), 8)
     ts_res.add('RIGHTPADDING', (0,0), (-1,-1), 8)
     ts_res.add('BOX', (0,0), (-1,-1), 1.2, colors.HexColor('#1e3a8a'))
     t_res_int.setStyle(ts_res)
     story.append(t_res_int)
     
-    story.append(Spacer(1, 12))
+    story.append(Spacer(1, 10))
     
     # Seção 4 alinhada
     t_sec4 = Table([[Paragraph("4. Observações", style_secao)]], colWidths=[largura_util])
     t_sec4.hAlign = 'CENTER'
     t_sec4.setStyle(TableStyle([('LEFTPADDING', (0,0), (-1,-1), 0), ('RIGHTPADDING', (0,0), (-1,-1), 0), ('TOPPADDING', (0,0), (-1,-1), 0), ('BOTTOMPADDING', (0,0), (-1,-1), 0)]))
     story.append(t_sec4)
-    story.append(Spacer(1, 5))
+    story.append(Spacer(1, 4))
     
     obs_linhas = [
         [Paragraph("", style_corpo)],
@@ -680,14 +627,14 @@ def gerar_pdf_interno(dados):
         [Paragraph("", style_corpo)],
         [Paragraph("", style_corpo)]
     ]
-    t_obs = Table(obs_linhas, colWidths=[largura_util], rowHeights=[22, 22, 22, 22, 22])
+    t_obs = Table(obs_linhas, colWidths=[largura_util], rowHeights=[20, 20, 20, 20, 20])
     t_obs.hAlign = 'CENTER'
     t_obs.setStyle(TableStyle([
         ('BOX', (0,0), (-1,-1), 0.75, colors.HexColor('#cbd5e1')),
         ('LINEBELOW', (0,0), (-1,-2), 0.5, colors.HexColor('#e2e8f0')),
         ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#fcfcfc')),
-        ('TOPPADDING', (0,0), (-1,-1), 3),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 3),
+        ('TOPPADDING', (0,0), (-1,-1), 2),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 2),
     ]))
     story.append(t_obs)
 
@@ -1080,30 +1027,20 @@ if st.session_state.current_tab_idx == 2:
     nome_arquivo_cliente = f"Proposta comercial - Okamoto Midias Visuais - {nome_serv_ev} - {data_arquivo_str}.pdf"
     nome_arquivo_interno = f"Relatorio de custos - {nome_serv_ev} - {data_arquivo_str}.pdf"
 
-    def disparar_email_ao_baixar():
-        nome_cliente_lead = dados_completos.get('empresa') or dados_completos.get('contato') or "Cliente"
-        sucesso, erro_msg = enviar_pdf_por_email(pdf_cliente_bytes, pdf_interno_bytes, nome_cliente_lead, nome_serv_ev)
-        if sucesso:
-            st.toast("📧 Cópia dos PDFs enviada com sucesso para contato@okamotomidiasvisuais.com.br via Hotmail!", icon="✅")
-        else:
-            st.warning(f"⚠️ Erro ao enviar e-mail: {erro_msg}")
-
     with col_down1:
-        if st.download_button(
+        st.download_button(
             label="📄 Baixar Proposta Comercial (Cliente)",
             data=pdf_cliente_bytes,
             file_name=nome_arquivo_cliente,
             mime="application/pdf",
             use_container_width=True
-        ):
-            disparar_email_ao_baixar()
+        )
 
     with col_down2:
-        if st.download_button(
+        st.download_button(
             label="🔒 Baixar Relatório Interno (Custos)",
             data=pdf_interno_bytes,
             file_name=nome_arquivo_interno,
             mime="application/pdf",
             use_container_width=True
-        ):
-            disparar_email_ao_baixar()
+        )
