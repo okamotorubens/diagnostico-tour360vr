@@ -109,26 +109,13 @@ class NumberedCanvasProposal(canvas.Canvas):
         p_num = self._pageNumber
         page_str = f"{p_num:02d} de {page_count:02d}"
         
-        # Textos centralizados com links ativos (site e WhatsApp)
-        self.setFillColor(colors.HexColor('#1e3a8a'))
-        self.drawString(85, 26, "okamotomidiasvisuais.com.br")
-        self.linkURL("https://okamotomidiasvisuais.com.br/", (85, 22, 205, 36), relative=0)
+        footer_text = f"<a href='https://okamotomidiasvisuais.com.br/' color='#1e3a8a'>okamotomidiasvisuais.com.br</a>  |  <a href='mailto:contato@okamotomidiasvisuais.com.br' color='#1e3a8a'>contato@okamotomidiasvisuais.com.br</a>  |  <a href='https://wa.me/5516991332121' color='#1e3a8a'>WhatsApp: 16 99133 2121</a>"
         
-        self.setFillColor(colors.HexColor('#475569'))
-        self.drawString(215, 26, "|")
+        style_footer = ParagraphStyle('FooterStyle', fontName='Helvetica', fontSize=8, leading=10, alignment=1, textColor=colors.HexColor('#475569'))
+        p = Paragraph(footer_text, style_footer)
+        p.wrap(450, 20)
+        p.drawOn(self, 73, 22)
         
-        self.setFillColor(colors.HexColor('#1e3a8a'))
-        self.drawString(225, 26, "contato@okamotomidiasvisuais.com.br")
-        self.linkURL("mailto:contato@okamotomidiasvisuais.com.br", (225, 22, 380, 36), relative=0)
-        
-        self.setFillColor(colors.HexColor('#475569'))
-        self.drawString(390, 26, "|")
-        
-        self.setFillColor(colors.HexColor('#1e3a8a'))
-        self.drawString(400, 26, "WhatsApp: 16 99133 2121")
-        self.linkURL("https://wa.me/5516991332121", (400, 22, 515, 36), relative=0)
-        
-        self.setFillColor(colors.HexColor('#475569'))
         self.drawRightString(555, 26, page_str)
         self.restoreState()
 
@@ -152,24 +139,12 @@ class SimpleCanvasInternal(canvas.Canvas):
         self.setLineWidth(0.75)
         self.line(35, 35, 575, 35)
         
-        # Rodapé centralizado com links ativos para o PDF interno
-        self.setFillColor(colors.HexColor('#1e3a8a'))
-        self.drawString(100, 22, "okamotomidiasvisuais.com.br")
-        self.linkURL("https://okamotomidiasvisuais.com.br/", (100, 18, 220, 32), relative=0)
+        footer_text = f"<a href='https://okamotomidiasvisuais.com.br/' color='#1e3a8a'>okamotomidiasvisuais.com.br</a>  |  <a href='mailto:contato@okamotomidiasvisuais.com.br' color='#1e3a8a'>contato@okamotomidiasvisuais.com.br</a>  |  <a href='https://wa.me/5516991332121' color='#1e3a8a'>WhatsApp: 16 99133 2121</a>"
         
-        self.setFillColor(colors.HexColor('#475569'))
-        self.drawString(230, 22, "|")
-        
-        self.setFillColor(colors.HexColor('#1e3a8a'))
-        self.drawString(240, 22, "contato@okamotomidiasvisuais.com.br")
-        self.linkURL("mailto:contato@okamotomidiasvisuais.com.br", (240, 18, 395, 32), relative=0)
-        
-        self.setFillColor(colors.HexColor('#475569'))
-        self.drawString(405, 22, "|")
-        
-        self.setFillColor(colors.HexColor('#1e3a8a'))
-        self.drawString(415, 22, "WhatsApp: 16 99133 2121")
-        self.linkURL("https://wa.me/5516991332121", (415, 18, 530, 32), relative=0)
+        style_footer = ParagraphStyle('FooterStyleInt', fontName='Helvetica', fontSize=8, leading=10, alignment=1, textColor=colors.HexColor('#475569'))
+        p = Paragraph(footer_text, style_footer)
+        p.wrap(500, 20)
+        p.drawOn(self, 47, 18)
         
         self.restoreState()
 
@@ -245,7 +220,6 @@ def gerar_pdf_cliente(dados):
     doc.title = f"Proposta comercial - {nome_serv_ev} - {data_ev_str}"
     
     styles = getSampleStyleSheet()
-    # Título principal e subtítulo com tamanhos aumentados conforme solicitado
     style_titulo = ParagraphStyle('TituloPDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=18, leading=22, alignment=1, textColor=colors.HexColor('#0f172a'))
     style_servico_sub = ParagraphStyle('ServSubPDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=14, leading=18, alignment=1, textColor=colors.HexColor('#1e3a8a'))
     style_corpo = ParagraphStyle('CorpoPDF', parent=styles['Normal'], fontName='Helvetica', fontSize=9.5, leading=14, textColor=colors.HexColor('#334155'))
@@ -272,7 +246,6 @@ def gerar_pdf_cliente(dados):
     story.append(Paragraph(data_extenso, style_corpo))
     story.append(Spacer(1, 12))
     
-    # Mais 1 linha de espaço antes e depois do título e subtítulo
     story.append(Spacer(1, 10))
     story.append(Paragraph("Proposta Comercial", style_titulo))
     story.append(Spacer(1, 6))
@@ -321,7 +294,6 @@ def gerar_pdf_cliente(dados):
     story.append(Paragraph(f"<b>8. Validade do orçamento:</b> {dados['validade_orcamento']}", style_corpo))
     story.append(Spacer(1, 14))
     
-    # Texto trocado de DO para DE e adicionado mais espaço antes e depois do quadro
     val_fmt = fmt_brl(dados['valor_final'])
     texto_valor = f"<b>VALOR TOTAL DE INVESTIMENTO:</b><br/>{val_fmt}"
         
@@ -352,7 +324,6 @@ def gerar_pdf_cliente(dados):
     story.append(bloco_final_p1)
     story.append(PageBreak())
     
-    # --- PÁGINA 2 (Institucional) ---
     if logo_path:
         img_inst = criar_imagem_proporcional(logo_path, target_width=180)
         img_inst.hAlign = 'CENTER'
@@ -397,7 +368,6 @@ def gerar_pdf_cliente(dados):
 
 def gerar_pdf_interno(dados):
     buffer = io.BytesIO()
-    # Margens e espaçamentos otimizados para respeitar rigorosamente o limite de 1 página
     doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=35, rightMargin=35, topMargin=15, bottomMargin=35)
     
     servico_exibido = dados['tipo_servico'] if dados['tipo_servico'] != "Outro" else dados['outro_servico_nome']
@@ -417,7 +387,6 @@ def gerar_pdf_interno(dados):
     
     story = []
 
-    # Logo aumentada para o PDF de uso interno
     logo_path = get_logo_pdf_path()
     if logo_path:
         img_int = criar_imagem_proporcional(logo_path, target_width=150)
@@ -700,7 +669,6 @@ elif st.session_state.current_tab_idx == 1:
 elif st.session_state.current_tab_idx == 2:
     st.subheader("Validade do Orçamento, Forma de Entrega & Condições de Pagamento")
     
-    # Campo para valor personalizado do serviço (diferente da regra base)
     st.session_state.valor_personalizado = st.number_input(
         "Valor Personalizado / Sob Consulta (R$ - Deixe 0 para usar a regra da tabela)",
         min_value=0.0,
