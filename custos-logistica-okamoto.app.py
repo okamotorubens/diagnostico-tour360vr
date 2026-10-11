@@ -21,6 +21,58 @@ def fmt_brl(val):
     s = f"{val:,.2f}"
     return "R$ " + s.replace(",", "X").replace(".", ",").replace("X", ".")
 
+# Função para converter número em valor por extenso simples para moeda
+def valor_por_extenso(v):
+    # Função auxiliar básica para compor o extenso do valor em Reais
+    try:
+        inteiro = int(v)
+        centavos = int(round((v - inteiro) * 100))
+        
+        # Para simplificar e garantir precisão nos valores comuns de propostas fotográficas:
+        # Vamos usar a biblioteca num2words se houver ou um conversor interno robusto.
+        # Caso prefira direto, podemos gerar via regra padrão:
+        unidades = ["", "um", "dois", "três", "quatro", "cinco", "seis", "sete", "oito", "nove", "dez", "onze", "doze", "treze", "quatorze", "quinze", "dezesseis", "dezessete", "dezoito", "dezenove"]
+        dezenas = ["", "", "vinte", "trinta", "quarenta", "cinquenta", "sessenta", "setenta", "oitenta", "noventa"]
+        centenas = ["", "cento", "duzentos", "trezentos", "quatrocentos", "quinhentos", "seiscentos", "setecentos", "oitocentos", "novecentos"]
+
+        def extenso_ate_999(n):
+            if n == 0: return ""
+            if n == 100: return "cem"
+            c = n // 100
+            d = (n % 100) // 10
+            u = n % 10
+            res = []
+            if c > 0: res.append(centenas[c])
+            if n % 100 < 20 and n % 100 > 0:
+                res.append(unidades[n % 100])
+            else:
+                if d > 0: res.append(dezenas[d])
+                if u > 0: res.append(unidades[u])
+            return " e ".join([r for r in res if r])
+
+        if inteiro == 0:
+            str_int = "zero reais"
+        elif inteiro == 1:
+            str_int = "um real"
+        else:
+            milhar = inteiro // 1000
+            resto = inteiro % 1000
+            partes = []
+            if milhar > 0:
+                if milhar == 1: partes.append("mil")
+                else: partes.append(extenso_ate_999(milhar) + " mil")
+            if resto > 0:
+                partes.append(extenso_ate_999(resto))
+            str_int = " e ".join(partes) + " reais"
+            
+        if centavos > 0:
+            str_cent = f" e {extenso_ate_999(centavos)} centavos"
+            return f"({str_int.capitalize()}{str_cent})"
+        else:
+            return f"({str_int.capitalize()})"
+    except Exception:
+        return ""
+
 MESES_PT = {
     1: 'janeiro', 2: 'fevereiro', 3: 'março', 4: 'abril',
     5: 'maio', 6: 'junho', 7: 'julho', 8: 'agosto',
@@ -48,7 +100,6 @@ ESTADOS_BR = [
     "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SE", "TO"
 ]
 
-# Credenciais oficiais do SMTP
 SMTP_SERVER = "smtp.tour360vr.com.br"
 SMTP_PORT_SSL = 465
 SMTP_USER = "contato@tour360vr.com.br"
@@ -69,20 +120,16 @@ st.markdown("""
         [data-testid="stNumberInput"] input {
             text-align: center;
         }
-        /* Correção da Logo para exibir inteira e centralizada no app */
+        /* Correção definitiva para exibir a logo inteira sem cortes na tela */
         [data-testid="stImage"] {
             display: flex;
             justify-content: center;
             align-items: center;
-            width: 100%;
         }
         [data-testid="stImage"] > img {
-            display: block;
-            margin-left: auto;
-            margin-right: auto;
             max-width: 100% !important;
             height: auto !important;
-            object-fit: contain;
+            object-fit: contain !important;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -197,7 +244,6 @@ def criar_imagem_proporcional(path, target_width=150):
     except Exception:
         return RLImage(path, width=150, height=44)
 
-# Envio de e-mail exclusivo para contato@okamotomidiasvisuais.com.br com SSL
 def enviar_pdf_por_email(pdf_cliente_bytes, pdf_interno_bytes, nome_cliente, nome_servico):
     try:
         server = smtplib.SMTP_SSL(SMTP_SERVER, SMTP_PORT_SSL, timeout=15)
@@ -253,10 +299,10 @@ def gerar_pdf_cliente(dados):
     doc.title = f"Proposta comercial - {nome_serv_ev} - {data_ev_str}"
     
     styles = getSampleStyleSheet()
-    style_titulo = ParagraphStyle('TituloPDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=20, leading=24, alignment=1, textColor=colors.HexColor('#0f172a'))
-    style_servico_sub = ParagraphStyle('ServSubPDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=12, leading=15, alignment=1, textColor=colors.HexColor('#1e3a8a'))
-    style_corpo = ParagraphStyle('CorpoPDF', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=13, textColor=colors.HexColor('#334155'))
-    style_bold = ParagraphStyle('BoldPDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9, leading=13, textColor=colors.HexColor('#0f172a'))
+    style_titulo = ParagraphStyle('TituloPDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=18, leading=22, alignment=1, textColor=colors.HexColor('#0f172a'))
+    style_servico_sub = ParagraphStyle('ServSubPDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, leading=14, alignment=1, textColor=colors.HexColor('#1e3a8a'))
+    style_corpo = ParagraphStyle('CorpoPDF', parent=styles['Normal'], fontName='Helvetica', fontSize=10, leading=14, textColor=colors.HexColor('#334155'))
+    style_bold = ParagraphStyle('BoldPDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=14, textColor=colors.HexColor('#0f172a'))
     style_cat_titulo = ParagraphStyle('CatTitPDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, leading=15, textColor=colors.HexColor('#0f172a'))
     style_destaque_1 = ParagraphStyle('Dest1PDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=13, leading=17, alignment=1, textColor=colors.HexColor('#0f172a'))
     style_destaque_2 = ParagraphStyle('Dest2PDF', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=14, alignment=1, textColor=colors.HexColor('#334155'))
@@ -291,45 +337,64 @@ def gerar_pdf_cliente(dados):
     story.append(Paragraph("Proposta Comercial", style_titulo))
     story.append(Spacer(1, 3))
     story.append(Paragraph(f"{nome_serv_ev}", style_servico_sub))
-    story.append(Spacer(1, 8))
+    story.append(Spacer(1, 10))
     
+    # Itens 1 a 9 estritamente um abaixo do outro
     story.append(Paragraph("<b>1. Dados do cliente:</b>", style_bold))
     story.append(Spacer(1, 2))
     story.append(Paragraph(f"<b>Contato:</b> {dados['contato']} &nbsp;&nbsp;|&nbsp;&nbsp; <b>Empresa:</b> {dados['empresa']} &nbsp;&nbsp;|&nbsp;&nbsp; <b>Telefone:</b> {dados['telefone']} &nbsp;&nbsp;|&nbsp;&nbsp; <b>E-mail:</b> {dados['email']}", style_corpo))
-    story.append(Spacer(1, 6))
+    story.append(Spacer(1, 8))
     
     story.append(Paragraph("<b>2. Dados do serviço:</b>", style_bold))
     story.append(Spacer(1, 2))
     data_evento_str = dados['data_evento'].strftime('%d/%m/%Y')
     if dados['tem_data_termino']:
         data_evento_str += f" até {dados['data_termino'].strftime('%d/%m/%Y')}"
-    
     horario_txt = f"&nbsp;&nbsp; <b>Horário:</b> {dados['horario']}" if dados['horario'] else ""
     local_txt = dados['local'] if dados['local'] else "Local a definir"
     story.append(Paragraph(f"<b>Data:</b> {data_evento_str}{horario_txt} &nbsp;&nbsp;|&nbsp;&nbsp; <b>Local:</b> {local_txt} — {dados['cidade']}/{dados['estado']}", style_corpo))
-    story.append(Spacer(1, 6))
+    story.append(Spacer(1, 8))
     
     story.append(Paragraph("<b>3. Escopo do serviço:</b>", style_bold))
     story.append(Spacer(1, 2))
     story.append(Paragraph(dados['escopo_servico'].replace('\n', '<br/>'), style_corpo))
-    story.append(Spacer(1, 6))
+    story.append(Spacer(1, 8))
     
     story.append(Paragraph("<b>4. Captação:</b>", style_bold))
     story.append(Spacer(1, 2))
     story.append(Paragraph(dados['captacao'].replace('\n', '<br/>'), style_corpo))
-    story.append(Spacer(1, 6))
+    story.append(Spacer(1, 8))
     
-    story.append(Paragraph("<b>5. Entrega:</b> Até 72h após o término do serviço, editado e enviado via link para download, em alta e baixa resolução, disponível por 30 dias.", style_corpo))
-    story.append(Spacer(1, 6))
+    story.append(Paragraph("<b>5. Entrega:</b>", style_bold))
+    story.append(Spacer(1, 2))
+    story.append(Paragraph("Até 72h após o término do serviço, editado e enviado via link para download, em alta e baixa resolução, disponível por 30 dias.", style_corpo))
+    story.append(Spacer(1, 8))
     
-    story.append(Paragraph(f"<b>6. Formas de pagamento:</b> {dados['forma_pagamento_tipo']} &nbsp;&nbsp;|&nbsp;&nbsp; <b>7. Condições:</b> {dados['condicao_pagamento']} &nbsp;&nbsp;|&nbsp;&nbsp; <b>8. Validade:</b> {dados['validade_orcamento']}", style_corpo))
+    story.append(Paragraph("<b>6. Forma de pagamento:</b>", style_bold))
+    story.append(Spacer(1, 2))
+    story.append(Paragraph(dados['forma_pagamento_tipo'], style_corpo))
+    story.append(Spacer(1, 8))
+    
+    story.append(Paragraph("<b>7. Condições:</b>", style_bold))
+    story.append(Spacer(1, 2))
+    story.append(Paragraph(dados['condicao_pagamento'], style_corpo))
+    story.append(Spacer(1, 8))
+    
+    story.append(Paragraph("<b>8. Validade:</b>", style_bold))
+    story.append(Spacer(1, 2))
+    story.append(Paragraph(dados['validade_orcamento'], style_corpo))
     story.append(Spacer(1, 10))
     
+    # 9. Valor total de investimento com valor por extenso na linha de baixo
     val_fmt = fmt_brl(dados['valor_final'])
-    texto_valor = f"<b>VALOR TOTAL DE INVESTIMENTO:</b> {val_fmt}"
+    extenso_fmt = valor_por_extenso(dados['valor_final'])
+    
+    texto_valor = f"<b>9. VALOR TOTAL DE INVESTIMENTO:</b> {val_fmt}"
+    if extenso_fmt:
+        texto_valor += f"<br/><font size=9 color='#475569'><i>{extenso_fmt}</i></font>"
         
-    p_valor = Paragraph(texto_valor, ParagraphStyle('ValBox', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10.5, leading=14, alignment=1, textColor=colors.HexColor('#1e3a8a')))
-    t_valor_box = Table([[p_valor]], colWidths=[280])
+    p_valor = Paragraph(texto_valor, ParagraphStyle('ValBox', parent=styles['Normal'], fontName='Helvetica', fontSize=10, leading=14, alignment=1, textColor=colors.HexColor('#1e3a8a')))
+    t_valor_box = Table([[p_valor]], colWidths=[420])
     t_valor_box.hAlign = 'CENTER'
     t_valor_box.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#f8fafc')),
@@ -343,9 +408,9 @@ def gerar_pdf_cliente(dados):
     
     bloco_final_p1 = KeepTogether([
         t_valor_box,
-        Spacer(1, 8),
+        Spacer(1, 12),
         Paragraph("Ficamos à disposição para quaisquer esclarecimentos e ajustes, caso necessário.", style_corpo),
-        Spacer(1, 6),
+        Spacer(1, 8),
         Paragraph("Atenciosamente, &nbsp; <b>Rubens Okamoto</b> (Okamoto Mídias Visuais)", style_corpo)
     ])
     story.append(bloco_final_p1)
@@ -428,8 +493,9 @@ def gerar_pdf_interno(dados):
     logo_path = get_logo_pdf_path()
     data_criacao_str = dados['data_orcamento'].strftime('%d/%m/%Y')
     
+    # Alinhamento estrito da logo à esquerda no relatório interno de custos
     if logo_path:
-        img_int = criar_imagem_proporcional(logo_path, target_width=130)
+        img_int = criar_imagem_proporcional(logo_path, target_width=120)
         img_int.hAlign = 'LEFT'
         
         col_cab_esq = img_int
@@ -441,7 +507,7 @@ def gerar_pdf_interno(dados):
             Paragraph(f"Data de criação: {data_criacao_str}", style_data_criacao)
         ]
         
-        t_cabecalho = Table([[col_cab_esq, col_cab_dir]], colWidths=[140, 400])
+        t_cabecalho = Table([[col_cab_esq, col_cab_dir]], colWidths=[130, 410])
         t_cabecalho.hAlign = 'LEFT'
         t_cabecalho.setStyle(TableStyle([
             ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
@@ -449,6 +515,7 @@ def gerar_pdf_interno(dados):
             ('RIGHTPADDING', (0,0), (-1,-1), 0),
             ('TOPPADDING', (0,0), (-1,-1), 0),
             ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+            ('ALIGN', (0,0), (0,0), 'LEFT'),
         ]))
         story.append(t_cabecalho)
     else:
@@ -461,7 +528,7 @@ def gerar_pdf_interno(dados):
     story.append(Spacer(1, 6))
     
     t_linha_int = Table([['']], colWidths=[540], rowHeights=[1])
-    t_linha_int.hAlign = 'CENTER'
+    t_linha_int.hAlign = 'LEFT'
     t_linha_int.setStyle(TableStyle([
         ('LINEABOVE', (0,0), (-1,-1), 0.75, colors.HexColor('#cbd5e1')),
         ('BOTTOMPADDING', (0,0), (-1,-1), 0),
@@ -482,12 +549,12 @@ def gerar_pdf_interno(dados):
         [Paragraph("<b>Local:</b>", style_bold), Paragraph(f"{local_txt} — {dados['cidade']}/{dados['estado']}", style_corpo), Paragraph("", style_corpo), Paragraph("", style_corpo)]
     ]
     t_geral = Table(info_geral, colWidths=[80, 190, 95, 175])
-    t_geral.hAlign = 'CENTER'
+    t_geral.hAlign = 'LEFT'
     t_geral.setStyle(TableStyle([
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'), 
         ('BOTTOMPADDING', (0,0), (-1,-1), 2), 
         ('TOPPADDING', (0,0), (-1,-1), 2),
-        ('LEFTPADDING', (0,0), (-1,-1), 3),
+        ('LEFTPADDING', (0,0), (-1,-1), 0),
         ('RIGHTPADDING', (0,0), (-1,-1), 3),
         ('SPAN', (1, 3), (3, 3))
     ]))
@@ -515,7 +582,7 @@ def gerar_pdf_interno(dados):
         [Paragraph("<b>TOTAL LOGÍSTICA & OPERACIONAL</b>", style_bold), Paragraph("", style_corpo), Paragraph(f"<b>{fmt_brl(custo_logistica_parcial)}</b>", style_bold)]
     ]
     t_log = Table(tabela_log_dados, colWidths=[130, 270, 140])
-    t_log.hAlign = 'CENTER'
+    t_log.hAlign = 'LEFT'
     ts_log = TableStyle()
     ts_log.add('BACKGROUND', (0,0), (-1,0), colors.HexColor('#f1f5f9'))
     ts_log.add('BACKGROUND', (0,-1), (-1,-1), colors.HexColor('#e2e8f0'))
@@ -548,7 +615,7 @@ def gerar_pdf_interno(dados):
         [Paragraph("<b>TOTAL IMPOSTOS & COMISSÃO</b>", style_bold), Paragraph("", style_corpo), Paragraph(f"<b>{fmt_brl(total_impostos_comissao)}</b>", style_bold)]
     ]
     t_op = Table(tabela_op_dados, colWidths=[130, 270, 140])
-    t_op.hAlign = 'CENTER'
+    t_op.hAlign = 'LEFT'
     ts_op = TableStyle()
     ts_op.add('BACKGROUND', (0,0), (-1,0), colors.HexColor('#f1f5f9'))
     ts_op.add('BACKGROUND', (0,-1), (-1,-1), colors.HexColor('#e2e8f0'))
@@ -579,7 +646,7 @@ def gerar_pdf_interno(dados):
         [Paragraph("<b>Lucro Líquido Estimado:</b>", style_bold), Paragraph(f"<b>{fmt_brl(dados['lucro_liquido'])} ({dados['margem_lucro']:.1f}%)</b>", style_res_lucro)]
     ]
     t_res_int = Table(tabela_resumo_interno, colWidths=[310, 230])
-    t_res_int.hAlign = 'CENTER'
+    t_res_int.hAlign = 'LEFT'
     ts_res = TableStyle()
     ts_res.add('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#e2e8f0'))
     ts_res.add('VALIGN', (0,0), (-1,-1), 'MIDDLE')
@@ -597,21 +664,21 @@ def gerar_pdf_interno(dados):
     story.append(Paragraph("4. Observações", style_secao))
     story.append(Spacer(1, 4))
     
+    # Altura adequada das linhas do bloco 4 restaurada (22 pontos por linha)
     obs_linhas = [
-        [Paragraph("", style_corpo)],
         [Paragraph("", style_corpo)],
         [Paragraph("", style_corpo)],
         [Paragraph("", style_corpo)],
         [Paragraph("", style_corpo)]
     ]
-    t_obs = Table(obs_linhas, colWidths=[540], rowHeights=[14, 14, 14, 14, 14])
-    t_obs.hAlign = 'CENTER'
+    t_obs = Table(obs_linhas, colWidths=[540], rowHeights=[22, 22, 22, 22])
+    t_obs.hAlign = 'LEFT'
     t_obs.setStyle(TableStyle([
         ('BOX', (0,0), (-1,-1), 0.75, colors.HexColor('#cbd5e1')),
         ('LINEBELOW', (0,0), (-1,-2), 0.5, colors.HexColor('#e2e8f0')),
         ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#fcfcfc')),
-        ('TOPPADDING', (0,0), (-1,-1), 0),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+        ('TOPPADDING', (0,0), (-1,-1), 4),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 4),
     ]))
     story.append(t_obs)
 
@@ -841,7 +908,6 @@ elif st.session_state.current_tab_idx == 2:
         scroll_to_top()
         st.rerun()
 
-# CÁLCULOS DINÂMICOS EM TEMPO REAL
 try:
     s_tipo = st.session_state.get("tipo_servico", "Evento social")
     s_outro = st.session_state.get("outro_servico_nome", "")
