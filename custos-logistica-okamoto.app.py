@@ -94,12 +94,12 @@ st.set_page_config(page_title="Proposta Comercial & Custos - Okamoto Mídias Vis
 st.markdown("""
     <style>
         .block-container {
-            padding-top: 1.5rem !important;
+            padding-top: 1.2rem !important;
             padding-bottom: 2rem !important;
-            max-width: 72rem;
+            max-width: 78rem;
         }
         div[data-baseweb="input"], div[data-baseweb="select"] {
-            max-width: 320px !important;
+            width: 100% !important;
         }
         [data-testid="stNumberInput"] input {
             text-align: center;
@@ -108,13 +108,17 @@ st.markdown("""
             display: flex;
             justify-content: center;
             align-items: center;
-            padding-top: 25px !important;
-            padding-bottom: 8px !important;
+            padding-top: 20px !important;
+            padding-bottom: 6px !important;
         }
         [data-testid="stImage"] > img {
             max-width: 100% !important;
             height: auto !important;
             object-fit: contain !important;
+        }
+        .row-widget {
+            display: flex;
+            align-items: center;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -429,13 +433,12 @@ def gerar_pdf_interno(dados):
     logo_path = get_logo_pdf_path()
     data_criacao_str = dados['data_orcamento'].strftime('%d/%m/%Y')
     
-    largura_util = 480  # Largura exata das tabelas e blocos centralizados
+    largura_util = 480
     
     if logo_path:
         img_int = criar_imagem_proporcional(logo_path, target_width=135)
         img_int.hAlign = 'LEFT'
         
-        # Logo alinhada exatamente na mesma margem esquerda (leftMargin=35), sem recuo extra
         col_cab_esq = img_int
         col_cab_dir = [
             Paragraph("Relatório de Custos", style_titulo),
@@ -446,7 +449,7 @@ def gerar_pdf_interno(dados):
         ]
         
         t_cabecalho = Table([[col_cab_esq, col_cab_dir]], colWidths=[140, 340])
-        t_cabecalho.hAlign = 'CENTER'  # Alinhado com as tabelas abaixo
+        t_cabecalho.hAlign = 'CENTER'
         t_cabecalho.setStyle(TableStyle([
             ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
             ('LEFTPADDING', (0,0), (0,0), 0),
@@ -479,7 +482,6 @@ def gerar_pdf_interno(dados):
     local_txt = dados['local'] if dados['local'] else "Local a definir"
     captacao_txt = dados['captacao'] if dados['captacao'] else "—"
     
-    # Informações gerais ajustadas: substituído "Serviço" por "Empresa" e incluído "Captação" abaixo de "Local"
     info_geral = [
         [Paragraph("<b>Cliente:</b>", style_bold), Paragraph(dados['contato'], style_corpo), Paragraph("<b>Data de Início:</b>", style_bold), Paragraph(data_ev_str, style_corpo)],
         [Paragraph("<b>Empresa:</b>", style_bold), Paragraph(dados['empresa'], style_corpo), Paragraph("<b>Data de Término:</b>", style_bold), Paragraph(data_fim_str, style_corpo)],
@@ -502,7 +504,6 @@ def gerar_pdf_interno(dados):
     
     story.append(Spacer(1, 14))
     
-    # Seção 1 alinhada perfeitamente no mesmo rumo das tabelas (largura 480)
     t_sec1 = Table([[Paragraph("1. Custos de Logística, Deslocamento & Operacionais", style_secao)]], colWidths=[largura_util])
     t_sec1.hAlign = 'CENTER'
     t_sec1.setStyle(TableStyle([('LEFTPADDING', (0,0), (-1,-1), 0), ('RIGHTPADDING', (0,0), (-1,-1), 0), ('TOPPADDING', (0,0), (-1,-1), 0), ('BOTTOMPADDING', (0,0), (-1,-1), 0)]))
@@ -544,7 +545,6 @@ def gerar_pdf_interno(dados):
     
     story.append(Spacer(1, 10))
     
-    # Seção 2 alinhada
     t_sec2 = Table([[Paragraph("2. Impostos & Comissão", style_secao)]], colWidths=[largura_util])
     t_sec2.hAlign = 'CENTER'
     t_sec2.setStyle(TableStyle([('LEFTPADDING', (0,0), (-1,-1), 0), ('RIGHTPADDING', (0,0), (-1,-1), 0), ('TOPPADDING', (0,0), (-1,-1), 0), ('BOTTOMPADDING', (0,0), (-1,-1), 0)]))
@@ -581,7 +581,6 @@ def gerar_pdf_interno(dados):
     
     story.append(Spacer(1, 10))
     
-    # Seção 3 alinhada
     t_sec3 = Table([[Paragraph("3. Fechamento Financeiro & Margem", style_secao)]], colWidths=[largura_util])
     t_sec3.hAlign = 'CENTER'
     t_sec3.setStyle(TableStyle([('LEFTPADDING', (0,0), (-1,-1), 0), ('RIGHTPADDING', (0,0), (-1,-1), 0), ('TOPPADDING', (0,0), (-1,-1), 0), ('BOTTOMPADDING', (0,0), (-1,-1), 0)]))
@@ -613,7 +612,6 @@ def gerar_pdf_interno(dados):
     
     story.append(Spacer(1, 10))
     
-    # Seção 4 alinhada
     t_sec4 = Table([[Paragraph("4. Observações", style_secao)]], colWidths=[largura_util])
     t_sec4.hAlign = 'CENTER'
     t_sec4.setStyle(TableStyle([('LEFTPADDING', (0,0), (-1,-1), 0), ('RIGHTPADDING', (0,0), (-1,-1), 0), ('TOPPADDING', (0,0), (-1,-1), 0), ('BOTTOMPADDING', (0,0), (-1,-1), 0)]))
@@ -669,14 +667,12 @@ default_entrega_txt = "Até 72h após o término do serviço, editado e enviado 
 
 if st.session_state.current_tab_idx == 0:
     st.subheader("1. Dados do Cliente e Serviço")
-    col1, col2 = st.columns(2)
-    with col1:
+    
+    c1, c2 = st.columns(2)
+    with c1:
         st.session_state.contato = st.text_input("Contato", st.session_state.get("contato", ""))
-        st.session_state.empresa = st.text_input("Empresa", st.session_state.get("empresa", ""))
         st.session_state.telefone = st.text_input("Telefone", st.session_state.get("telefone", ""))
-        st.session_state.email = st.text_input("E-mail", st.session_state.get("email", ""))
         
-        st.markdown("<br>", unsafe_allow_html=True)
         tipo_servico_idx = list(TABELAS_SERVICOS.keys()).index(st.session_state.get("tipo_servico", "Evento social")) if st.session_state.get("tipo_servico", "Evento social") in TABELAS_SERVICOS else 0
         st.session_state.tipo_servico = st.selectbox("Tipo de Serviço", list(TABELAS_SERVICOS.keys()), index=tipo_servico_idx)
         
@@ -684,41 +680,42 @@ if st.session_state.current_tab_idx == 0:
         if st.session_state.tipo_servico == "Outro":
             st.session_state.outro_servico_nome = st.text_input("Especifique o nome do serviço", st.session_state.get("outro_servico_nome", ""))
 
-        carga_idx = OPCOES_CARGA_HORARIA.index(st.session_state.get("carga_horaria_sel", "1h")) if st.session_state.get("carga_horaria_sel", "1h") in OPCOES_CARGA_HORARIA else 0
-        st.session_state.carga_horaria_sel = st.selectbox("Carga Horária", OPCOES_CARGA_HORARIA, index=carga_idx)
+        st.session_state.horario = st.text_input("Horário do Serviço", st.session_state.get("horario", "08h00"))
+        st.session_state.local = st.text_input("Local (Rua, Número, Bairro, etc.)", st.session_state.get("local", ""))
+        st.session_state.cidade = st.text_input("Cidade", st.session_state.get("cidade", "Ribeirão Preto"))
 
-    with col2:
-        st.session_state.data_orcamento = st.date_input("Data do Orçamento (dia/mês/ano)", st.session_state.get("data_orcamento", datetime.now()))
-        st.session_state.data_evento = st.date_input("Data do Serviço (dia/mês/ano)", st.session_state.get("data_evento", datetime.now()))
+    with c2:
+        st.session_state.empresa = st.text_input("Empresa", st.session_state.get("empresa", ""))
+        st.session_state.email = st.text_input("E-mail", st.session_state.get("email", ""))
+        st.session_state.data_orcamento = st.date_input("Data do Orçamento", st.session_state.get("data_orcamento", datetime.now()))
+        st.session_state.data_evento = st.date_input("Data do Serviço", st.session_state.get("data_evento", datetime.now()))
         
         st.session_state.tem_data_termino = st.checkbox("Serviço com mais de um dia (Data de Término)", st.session_state.get("tem_data_termino", False))
         st.session_state.data_termino = st.session_state.data_evento
         if st.session_state.tem_data_termino:
-            st.session_state.data_termino = st.date_input("Data de Término do Serviço (dia/mês/ano)", st.session_state.get("data_termino", datetime.now()))
+            st.session_state.data_termino = st.date_input("Data de Término do Serviço", st.session_state.get("data_termino", datetime.now()))
             
-        st.session_state.horario = st.text_input("Horário do Serviço", st.session_state.get("horario", "08h00"))
         st.session_state.nome_servico_input = st.text_input("Nome do Serviço / Evento", st.session_state.get("nome_servico_input", ""))
         
-        st.session_state.local = st.text_input("Local (Rua, Número, Bairro, etc.)", st.session_state.get("local", ""))
-        
-        col_cidade, col_uf = st.columns([3, 1])
-        with col_cidade:
-            st.session_state.cidade = st.text_input("Cidade", st.session_state.get("cidade", "Ribeirão Preto"))
-        with col_uf:
-            st.session_state.estado = st.selectbox("Estado (UF)", ESTADOS_BR, index=ESTADOS_BR.index(st.session_state.get("estado", "SP")) if st.session_state.get("estado", "SP") in ESTADOS_BR else 0)
+        c_est1, c_est2 = st.columns([2, 1])
+        with c_est1:
+            carga_idx = OPCOES_CARGA_HORARIA.index(st.session_state.get("carga_horaria_sel", "1h")) if st.session_state.get("carga_horaria_sel", "1h") in OPCOES_CARGA_HORARIA else 0
+            st.session_state.carga_horaria_sel = st.selectbox("Carga Horária", OPCOES_CARGA_HORARIA, index=carga_idx)
+        with c_est2:
+            st.session_state.estado = st.selectbox("UF", ESTADOS_BR, index=ESTADOS_BR.index(st.session_state.get("estado", "SP")) if st.session_state.get("estado", "SP") in ESTADOS_BR else 0)
 
-        if st.button("🗺️ Calcular KM Automático (Google Maps)", use_container_width=True):
-            endereco_completo = f"{st.session_state.local}, {st.session_state.cidade} - {st.session_state.estado}"
-            km_calc = calcular_distancia_maps(endereco_completo)
-            if km_calc is not None:
-                st.session_state.distancia_ida_volta = km_calc
-                st.markdown(f"<div style='text-align: center; padding: 10px; background-color: #d1fae5; color: #065f46; border-radius: 6px; margin-top: 10px;'><b>Rota encontrada com sucesso!</b><br>Distância de ida e volta: {km_calc} km (a partir da Rua Manoel Achê, 327).</div>", unsafe_allow_html=True)
-                time.sleep(3)
-                st.rerun()
-            else:
-                st.markdown("<div style='text-align: center; padding: 10px; background-color: #fee2e2; color: #991b1b; border-radius: 6px; margin-top: 10px;'>⚠️ Não foi possível calcular automaticamente. Verifique o endereço e a chave da API.</div>", unsafe_allow_html=True)
-                time.sleep(3)
-                st.rerun()
+    if st.button("🗺️ Calcular KM Automático (Google Maps)", use_container_width=True):
+        endereco_completo = f"{st.session_state.local}, {st.session_state.cidade} - {st.session_state.estado}"
+        km_calc = calcular_distancia_maps(endereco_completo)
+        if km_calc is not None:
+            st.session_state.distancia_ida_volta = km_calc
+            st.markdown(f"<div style='text-align: center; padding: 10px; background-color: #d1fae5; color: #065f46; border-radius: 6px; margin-top: 10px;'><b>Rota encontrada com sucesso!</b><br>Distância de ida e volta: {km_calc} km (a partir da Rua Manoel Achê, 327).</div>", unsafe_allow_html=True)
+            time.sleep(3)
+            st.rerun()
+        else:
+            st.markdown("<div style='text-align: center; padding: 10px; background-color: #fee2e2; color: #991b1b; border-radius: 6px; margin-top: 10px;'>⚠️ Não foi possível calcular automaticamente. Verifique o endereço e a chave da API.</div>", unsafe_allow_html=True)
+            time.sleep(3)
+            st.rerun()
 
     st.markdown("---")
     st.subheader("2. Detalhamento Técnico (Escopo & Captação)")
@@ -737,8 +734,8 @@ if st.session_state.current_tab_idx == 0:
 
     default_escopo = f"{nome_serv_atual}\n{data_str_escopo}\n{st.session_state.horario if st.session_state.horario else 'Horário a definir'}\n{st.session_state.local if st.session_state.local else 'Local a definir'}\n{st.session_state.cidade} - {st.session_state.estado}\n01 (um) profissional".strip()
     
-    st.session_state.escopo_servico = st.text_area("Escopo do serviço", default_escopo, height=130)
-    st.session_state.captacao = st.text_area("Captação", st.session_state.get("captacao", "Cobertura profissional com equipamentos de alto padrão"), height=60)
+    st.session_state.escopo_servico = st.text_area("Escopo do serviço", default_escopo, height=110)
+    st.session_state.captacao = st.text_area("Captação", st.session_state.get("captacao", "Cobertura profissional com equipamentos de alto padrão"), height=50)
     
     st.markdown("---")
     if st.button("Avançar ➡️", key="btn_avancar_aba0", use_container_width=True):
@@ -747,55 +744,33 @@ if st.session_state.current_tab_idx == 0:
         st.rerun()
 
 elif st.session_state.current_tab_idx == 1:
-    st.subheader("Custos operacionais")
+    st.subheader("Custos Operacionais")
     
-    st.markdown("##### 🚗 Parâmetros de Deslocamento & Logística")
-    col_l1, col_l2, col_l3 = st.columns(3)
-    with col_l1:
+    c1, c2 = st.columns(2)
+    with c1:
+        st.markdown("##### 🚗 Deslocamento & Logística")
         st.session_state.distancia_ida_volta = st.number_input("Distância Total (Ida e Volta em km)", min_value=0, value=st.session_state.get("distancia_ida_volta", 0), step=1, format="%d")
-    with col_l2:
         st.session_state.consumo_medio = st.number_input("Consumo Médio (km/L)", min_value=1.0, value=st.session_state.get("consumo_medio", 11.50), step=0.5)
-    with col_l3:
         st.session_state.preco_combustivel = st.number_input("Preço do Litro (R$)", min_value=0.0, value=st.session_state.get("preco_combustivel", 6.80), step=0.10)
-        
-    col_est1, col_est2 = st.columns(2)
-    with col_est1:
         st.session_state.pedagio_total = st.number_input("Valor Total de Pedágios (R$)", min_value=0.0, value=st.session_state.get("pedagio_total", 0.00), step=5.0, format="%.2f")
-    with col_est2:
         st.session_state.custo_estacionamento = st.number_input("Estacionamento (R$)", min_value=0.0, value=st.session_state.get("custo_estacionamento", 0.00), step=5.0, format="%.2f")
 
-    st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown("##### 🏨 Hospedagem")
-    col_h1, col_h2 = st.columns(2)
-    with col_h1:
-        st.session_state.qtd_hosp = st.number_input("Qtd. Diárias Hospedagem", min_value=0, value=st.session_state.get("qtd_hosp", 0), step=1)
-    with col_h2:
-        st.session_state.val_hosp = st.number_input("R$ Hospedagem (diária)", min_value=0.0, value=st.session_state.get("val_hosp", 250.00), step=10.0, format="%.2f")
-
-    st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown("##### 🍽️ Alimentação")
-    col_alim1, col_alim2 = st.columns(2)
-    with col_alim1:
-        st.session_state.custo_almoco = st.number_input("Almoço (R$)", min_value=0.0, value=st.session_state.get("custo_almoco", 0.00), step=5.0, format="%.2f")
-    with col_alim2:
-        st.session_state.custo_jantar = st.number_input("Jantar (R$)", min_value=0.0, value=st.session_state.get("custo_jantar", 0.00), step=5.0, format="%.2f")
-
-    st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown("##### 📦 Outros Custos")
-    col_ap1, col_ap2 = st.columns(2)
-    with col_ap1:
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown("##### 📦 Outros Custos")
         st.session_state.custo_freelancer = st.number_input("Freelancer (R$)", min_value=0.0, value=st.session_state.get("custo_freelancer", 0.00), step=50.0, format="%.2f")
-    with col_ap2:
         st.session_state.custo_outros = st.number_input("Outros (R$)", min_value=0.0, value=st.session_state.get("custo_outros", 0.00), step=10.0, format="%.2f")
 
-    st.markdown("---")
-    st.subheader("Impostos & Comissão")
-    col_op1, col_op2, col_op3 = st.columns(3)
-    with col_op1:
+    with c2:
+        st.markdown("##### 🏨 Hospedagem & Alimentação")
+        st.session_state.qtd_hosp = st.number_input("Qtd. Diárias Hospedagem", min_value=0, value=st.session_state.get("qtd_hosp", 0), step=1)
+        st.session_state.val_hosp = st.number_input("R$ Hospedagem (diária)", min_value=0.0, value=st.session_state.get("val_hosp", 250.00), step=10.0, format="%.2f")
+        st.session_state.custo_almoco = st.number_input("Almoço (R$)", min_value=0.0, value=st.session_state.get("custo_almoco", 0.00), step=5.0, format="%.2f")
+        st.session_state.custo_jantar = st.number_input("Jantar (R$)", min_value=0.0, value=st.session_state.get("custo_jantar", 0.00), step=5.0, format="%.2f")
+
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown("##### 🏛️ Impostos & Comissão")
         st.session_state.imposto_perc = st.number_input("Alíquota de Impostos / Notas (%)", min_value=0.0, max_value=30.0, value=st.session_state.get("imposto_perc", 6.0), step=0.5)
-    with col_op2:
         st.session_state.comissao_perc = st.number_input("Comissão (%)", min_value=0, max_value=50, value=st.session_state.get("comissao_perc", 0), step=1, format="%d")
-    with col_op3:
         st.session_state.ajuste_manual = st.number_input("Ajuste Manual do Valor Final (R$ - Subtração)", min_value=0.0, value=st.session_state.get("ajuste_manual", 0.0), step=10.0, format="%.2f")
 
     st.markdown("---")
@@ -812,29 +787,33 @@ elif st.session_state.current_tab_idx == 1:
             st.rerun()
 
 elif st.session_state.current_tab_idx == 2:
-    st.subheader("Validade do Orçamento, Forma de Entrega & Condições de Pagamento")
+    st.subheader("Condições, Prazos & Fechamento")
     
-    st.session_state.valor_personalizado = st.number_input(
-        "Valor Personalizado / Sob Consulta (R$ - Deixe 0 para usar a regra da tabela)",
-        min_value=0.0,
-        value=st.session_state.get("valor_personalizado", 0.0),
-        step=50.0,
-        format="%.2f"
-    )
-    
-    st.session_state.validade_orcamento = st.text_input("Validade do Orçamento", st.session_state.get("validade_orcamento", "05 dias"))
-    st.session_state.forma_entrega = st.text_input("Forma de entrega", st.session_state.get("forma_entrega", default_entrega_txt))
-    
-    col_p1, col_p2, col_p3 = st.columns(3)
-    with col_p1:
+    c1, c2 = st.columns(2)
+    with c1:
+        st.session_state.valor_personalizado = st.number_input("Valor Personalizado / Sob Consulta (R$ - Deixe 0 para tabela)", min_value=0.0, value=st.session_state.get("valor_personalizado", 0.0), step=50.0, format="%.2f")
+        st.session_state.validade_orcamento = st.text_input("Validade do Orçamento", st.session_state.get("validade_orcamento", "05 dias"))
+        
         fp_idx = ["À vista", "Parcelado"].index(st.session_state.get("forma_pagamento_tipo", "À vista")) if st.session_state.get("forma_pagamento_tipo", "À vista") in ["À vista", "Parcelado"] else 0
         st.session_state.forma_pagamento_tipo = st.selectbox("Forma de Pagamento", ["À vista", "Parcelado"], index=fp_idx)
-    with col_p2:
+
+    with c2:
+        modo_idx = ["Porcentagem (%)", "Valor Fixo (R$)"].index(st.session_state.get("tipo_desc_modo", "Porcentagem (%)")) if st.session_state.get("tipo_desc_modo", "Porcentagem (%)") in ["Porcentagem (%)", "Valor Fixo (R$)"] else 0
+        st.session_state.tipo_desc_modo = st.radio("Modalidade de Desconto", ["Porcentagem (%)", "Valor Fixo (R$)"], index=modo_idx, horizontal=True)
+        
+        if st.session_state.tipo_desc_modo == "Porcentagem (%)":
+            st.session_state.desconto_perc = st.slider("Desconto (%)", min_value=0.0, max_value=50.0, value=st.session_state.get("desconto_perc", 0.0), step=0.5)
+            st.session_state.desconto_valor_input = 0.0
+        else:
+            st.session_state.desconto_perc = 0.0
+            st.session_state.desconto_valor_input = st.number_input("Desconto em Valor Fixo (R$)", min_value=0.0, value=st.session_state.get("desconto_valor_input", 0.0), step=10.0, format="%.2f")
+
         cp_opcoes = ["PIX", "Transferência", "PIX ou transferência bancária", "Cartão de crédito", "Cartão de Crédito parcelado"]
         cp_idx = cp_opcoes.index(st.session_state.get("condicao_pagamento", "PIX")) if st.session_state.get("condicao_pagamento", "PIX") in cp_opcoes else 0
         st.session_state.condicao_pagamento = st.selectbox("Condições de Pagamento", cp_opcoes, index=cp_idx)
-    with col_p3:
-        st.session_state.prazo_pagamento_dias = st.number_input("Prazo de Pagamento (dias)", min_value=1, max_value=45, value=st.session_state.get("prazo_pagamento_dias", 5), step=1, format="%d")
+
+    st.session_state.forma_entrega = st.text_input("Forma de entrega", st.session_state.get("forma_entrega", default_entrega_txt))
+    st.session_state.prazo_pagamento_dias = st.number_input("Prazo de Pagamento (dias)", min_value=1, max_value=45, value=st.session_state.get("prazo_pagamento_dias", 5), step=1, format="%d")
 
     dias_txt = f"em até {st.session_state.prazo_pagamento_dias} dias" if st.session_state.prazo_pagamento_dias > 0 else "à vista"
     parcelas_cartao = 1
@@ -843,20 +822,6 @@ elif st.session_state.current_tab_idx == 2:
         st.session_state.condicao_pagamento_final = f"{st.session_state.condicao_pagamento} em {parcelas_cartao}X ({dias_txt})"
     else:
         st.session_state.condicao_pagamento_final = f"{st.session_state.condicao_pagamento} ({dias_txt})"
-
-    st.markdown("---")
-    st.subheader("Descontos & Condições Comerciais")
-    col_desc1, col_desc2 = st.columns(2)
-    with col_desc1:
-        modo_idx = ["Porcentagem (%)", "Valor Fixo (R$)"].index(st.session_state.get("tipo_desc_modo", "Porcentagem (%)")) if st.session_state.get("tipo_desc_modo", "Porcentagem (%)") in ["Porcentagem (%)", "Valor Fixo (R$)"] else 0
-        st.session_state.tipo_desc_modo = st.radio("Modalidade de Desconto", ["Porcentagem (%)", "Valor Fixo (R$)"], index=modo_idx, horizontal=True)
-    with col_desc2:
-        if st.session_state.tipo_desc_modo == "Porcentagem (%)":
-            st.session_state.desconto_perc = st.slider("Desconto (%)", min_value=0.0, max_value=50.0, value=st.session_state.get("desconto_perc", 0.0), step=0.5)
-            st.session_state.desconto_valor_input = 0.0
-        else:
-            st.session_state.desconto_perc = 0.0
-            st.session_state.desconto_valor_input = st.number_input("Desconto em Valor Fixo (R$)", min_value=0.0, value=st.session_state.get("desconto_valor_input", 0.0), step=10.0, format="%.2f")
 
     st.markdown("---")
     if st.button("⬅️ Voltar", key="btn_voltar_aba2", use_container_width=True):
