@@ -109,9 +109,9 @@ st.markdown("""
             padding-bottom: 2rem !important;
             max-width: 72rem;
         }
-        /* Limita a largura dos inputs para não ficarem esticados de ponta a ponta sem necessidade */
+        /* Limita a largura dos campos de input e select para ficarem compactos e proporcionais */
         div[data-baseweb="input"], div[data-baseweb="select"] {
-            max-width: 480px !important;
+            max-width: 320px !important;
         }
         [data-testid="stNumberInput"] input {
             text-align: center;
@@ -243,7 +243,6 @@ def criar_imagem_proporcional(path, target_width=150):
 
 def enviar_pdf_por_email(pdf_cliente_bytes, pdf_interno_bytes, nome_cliente, nome_servico):
     try:
-        # Tenta conexão SSL na porta 465 (padrão Locaweb)
         server = smtplib.SMTP_SSL(SMTP_SERVER, SMTP_PORT_SSL, timeout=15)
         server.login(SMTP_USER, SMTP_PASS)
 
@@ -284,7 +283,6 @@ def enviar_pdf_por_email(pdf_cliente_bytes, pdf_interno_bytes, nome_cliente, nom
         server.quit()
         return True, "Sucesso"
     except Exception as e:
-        # Fallback para tentativa com STARTTLS caso a porta 465 exija TLS explícito
         try:
             server = smtplib.SMTP(SMTP_SERVER, 587, timeout=15)
             server.starttls()
@@ -346,13 +344,11 @@ def gerar_pdf_cliente(dados):
     story.append(Paragraph(f"{nome_serv_ev}", style_servico_sub))
     story.append(Spacer(1, 18))
     
-    # 1. Dados do cliente
     story.append(Paragraph("<b>1. Dados do cliente:</b>", style_bold))
     story.append(Spacer(1, 2))
     story.append(Paragraph(f"<b>Contato:</b> {dados['contato']}<br/><b>Empresa:</b> {dados['empresa']}<br/><b>Telefone:</b> {dados['telefone']}<br/><b>E-mail:</b> {dados['email']}", style_corpo))
     story.append(Spacer(1, 10))
     
-    # 2. Dados do serviço
     data_evento_str = dados['data_evento'].strftime('%d/%m/%Y')
     if dados['tem_data_termino']:
         data_evento_str += f" até {dados['data_termino'].strftime('%d/%m/%Y')}"
@@ -379,7 +375,6 @@ def gerar_pdf_cliente(dados):
     story.append(Paragraph("Até 72h após o término do serviço, editado e enviado via link para download, em alta e baixa resolução, disponível por 30 dias.", style_corpo))
     story.append(Spacer(1, 8))
     
-    # Itens 6, 7 e 8 em linhas separadas com espaçamento rigoroso
     story.append(Paragraph(f"<b>6. Forma de pagamento:</b> {dados['forma_pagamento_tipo']}", style_corpo))
     story.append(Spacer(1, 4))
     story.append(Paragraph(f"<b>7. Condições:</b> {dados['condicao_pagamento']}", style_corpo))
@@ -387,7 +382,6 @@ def gerar_pdf_cliente(dados):
     story.append(Paragraph(f"<b>8. Validade:</b> {dados['validade_orcamento']}", style_corpo))
     story.append(Spacer(1, 14))
     
-    # Quadro de valor total com largura reduzida (440) para não sobrar tanto espaço vazio nas laterais
     val_fmt = fmt_brl(dados['valor_final'])
     extenso_fmt = valor_por_extenso(dados['valor_final'])
     
@@ -498,11 +492,9 @@ def gerar_pdf_interno(dados):
     logo_path = get_logo_pdf_path()
     data_criacao_str = dados['data_orcamento'].strftime('%d/%m/%Y')
     
-    # Largura de tabela útil ajustada para 505 (com margens de 45, totaliza 505 de largura útil em A4)
     largura_util = 505
     
     if logo_path:
-        # Logo um pouco maior (125 de largura)
         img_int = criar_imagem_proporcional(logo_path, target_width=125)
         img_int.hAlign = 'LEFT'
         
@@ -515,13 +507,12 @@ def gerar_pdf_interno(dados):
             Paragraph(f"Data de criação: {data_criacao_str}", style_data_criacao)
         ]
         
-        # Colunas bem centralizadas e espaçadas para afastar o texto da logo à esquerda
         t_cabecalho = Table([[col_cab_esq, col_cab_dir]], colWidths=[135, 370])
         t_cabecalho.hAlign = 'CENTER'
         t_cabecalho.setStyle(TableStyle([
             ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
             ('LEFTPADDING', (0,0), (0,0), 0),
-            ('LEFTPADDING', (1,0), (1,0), 28), # Maior respiro para a direita
+            ('LEFTPADDING', (1,0), (1,0), 28),
             ('RIGHTPADDING', (0,0), (-1,-1), 0),
             ('TOPPADDING', (0,0), (-1,-1), 0),
             ('BOTTOMPADDING', (0,0), (-1,-1), 0),
@@ -550,7 +541,6 @@ def gerar_pdf_interno(dados):
     data_fim_str = dados['data_termino'].strftime('%d/%m/%Y') if dados['tem_data_termino'] else data_ev_str
     local_txt = dados['local'] if dados['local'] else "Local a definir"
     
-    # Informações gerais centralizadas e com a segunda coluna deslocada para a direita para dar respiro
     info_geral = [
         [Paragraph("<b>Cliente:</b>", style_bold), Paragraph(dados['contato'], style_corpo), Paragraph("<b>Data de Início:</b>", style_bold), Paragraph(data_ev_str, style_corpo)],
         [Paragraph("<b>Serviço:</b>", style_bold), Paragraph(f"{nome_serv_ev}", style_corpo), Paragraph("<b>Data de Término:</b>", style_bold), Paragraph(data_fim_str, style_corpo)],
@@ -590,7 +580,6 @@ def gerar_pdf_interno(dados):
         [Paragraph("Outros", style_corpo), Paragraph("Despesas diversas", style_corpo), Paragraph(fmt_brl(dados['custo_outros']), style_corpo)],
         [Paragraph("<b>TOTAL LOGÍSTICA & OPERACIONAL</b>", style_bold), Paragraph("", style_corpo), Paragraph(f"<b>{fmt_brl(custo_logistica_parcial)}</b>", style_bold)]
     ]
-    # Tabelas otimizadas com largura de 505 para não ocupar as bordas extremas
     t_log = Table(tabela_log_dados, colWidths=[120, 260, 125])
     t_log.hAlign = 'CENTER'
     ts_log = TableStyle()
@@ -674,7 +663,6 @@ def gerar_pdf_interno(dados):
     story.append(Paragraph("4. Observações", style_secao))
     story.append(Spacer(1, 3))
     
-    # Item 4 expandido para 5 linhas com altura maior (16 pt cada)
     obs_linhas = [
         [Paragraph("", style_corpo)],
         [Paragraph("", style_corpo)],
