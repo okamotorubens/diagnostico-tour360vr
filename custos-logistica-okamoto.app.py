@@ -94,8 +94,8 @@ st.set_page_config(page_title="Proposta Comercial & Custos - Okamoto Mídias Vis
 st.markdown("""
     <style>
         .block-container {
-            padding-top: 1.2rem !important;
-            padding-bottom: 2rem !important;
+            padding-top: 0.6rem !important;
+            padding-bottom: 1rem !important;
             max-width: 78rem;
         }
         div[data-baseweb="input"], div[data-baseweb="select"] {
@@ -108,8 +108,8 @@ st.markdown("""
             display: flex;
             justify-content: center;
             align-items: center;
-            padding-top: 20px !important;
-            padding-bottom: 6px !important;
+            padding-top: 5px !important;
+            padding-bottom: 2px !important;
         }
         [data-testid="stImage"] > img {
             max-width: 100% !important;
@@ -118,11 +118,16 @@ st.markdown("""
         }
         .st-key-field-label {
             font-weight: 600;
-            font-size: 14px;
+            font-size: 13px;
             color: #ffffff !important;
             display: flex;
             align-items: center;
             height: 100%;
+        }
+        div.stButton > button {
+            padding-top: 0.35rem !important;
+            padding-bottom: 0.35rem !important;
+            min-height: 2.2rem !important;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -130,13 +135,13 @@ st.markdown("""
 def scroll_to_top():
     st.markdown("""
         <script>
-            window.scrollTo({top: 0, left: 0, behavior: 'instant'});
-            document.body.scrollTop = 0;
-            document.documentElement.scrollTop = 0;
-            const mainContainer = window.parent.document.querySelector('.main');
-            if (mainContainer) {
-                mainContainer.scrollTop = 0;
-            }
+            try {
+                window.scrollTo(0, 0);
+                document.body.scrollTop = 0;
+                document.documentElement.scrollTop = 0;
+                const containers = window.parent.document.querySelectorAll('section.main, div[data-testid="stAppViewContainer"], div.view-container');
+                containers.forEach(el => { el.scrollTop = 0; });
+            } catch(e) {}
         </script>
     """, unsafe_allow_html=True)
 
@@ -431,7 +436,6 @@ def gerar_pdf_interno(dados):
     styles = getSampleStyleSheet()
     style_titulo = ParagraphStyle('TitInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=15, leading=18, alignment=0, textColor=colors.HexColor('#0f172a'))
     style_subtitulo_serv = ParagraphStyle('SubServInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, leading=14, alignment=0, textColor=colors.HexColor('#1e3a8a'))
-    style_data_criacao = ParagraphStyle('DataCriacaoInt', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=11, alignment=0, textColor=colors.HexColor('#000000'))
     
     style_secao = ParagraphStyle('SecInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=12, alignment=0, textColor=colors.HexColor('#1e3a8a'))
     style_corpo = ParagraphStyle('CorpoInt', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=11, textColor=colors.HexColor('#000000'))
@@ -440,8 +444,6 @@ def gerar_pdf_interno(dados):
     story = []
 
     logo_path = get_logo_pdf_path()
-    data_criacao_str = dados['data_orcamento'].strftime('%d/%m/%Y')
-    
     largura_util = 480
     
     if logo_path:
@@ -452,9 +454,7 @@ def gerar_pdf_interno(dados):
         col_cab_dir = [
             Paragraph("Relatório de Custos", style_titulo),
             Spacer(1, 2),
-            Paragraph(f"{nome_serv_ev}", style_subtitulo_serv),
-            Spacer(1, 2),
-            Paragraph(f"Data de criação: {data_criacao_str}", style_data_criacao)
+            Paragraph(f"{nome_serv_ev}", style_subtitulo_serv)
         ]
         
         t_cabecalho = Table([[col_cab_esq, col_cab_dir]], colWidths=[140, 340])
@@ -473,7 +473,6 @@ def gerar_pdf_interno(dados):
         story.append(Spacer(1, 4))
         story.append(Paragraph("Relatório de Custos", style_titulo))
         story.append(Paragraph(f"{nome_serv_ev}", style_subtitulo_serv))
-        story.append(Paragraph(f"Data de criação: {data_criacao_str}", style_data_criacao))
         
     story.append(Spacer(1, 6))
     
@@ -596,25 +595,27 @@ def gerar_pdf_interno(dados):
     story.append(t_sec3)
     story.append(Spacer(1, 4))
     
-    style_res_fat = ParagraphStyle('ResFatInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=13, textColor=colors.HexColor('#1e3a8a'))
-    style_res_custo = ParagraphStyle('ResCustoInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=13, textColor=colors.HexColor('#000000'))
-    style_res_lucro = ParagraphStyle('ResLucroInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, leading=14, textColor=colors.HexColor('#047857'))
+    style_res_fat = ParagraphStyle('ResFatInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=12, alignment=0, textColor=colors.HexColor('#1e3a8a'))
+    style_res_fat_val = ParagraphStyle('ResFatVal', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=12, alignment=2, textColor=colors.HexColor('#1e3a8a'))
+    style_res_custo = ParagraphStyle('ResCustoInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=12, alignment=0, textColor=colors.HexColor('#000000'))
+    style_res_custo_val = ParagraphStyle('ResCustoVal', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=12, alignment=2, textColor=colors.HexColor('#000000'))
+    style_res_lucro = ParagraphStyle('ResLucroInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10.5, leading=13, alignment=0, textColor=colors.HexColor('#047857'))
+    style_res_lucro_val = ParagraphStyle('ResLucroVal', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10.5, leading=13, alignment=2, textColor=colors.HexColor('#047857'))
     
     tabela_resumo_interno = [
-        [Paragraph("<b>Faturamento:</b>", style_res_fat), Paragraph(f"<b>&nbsp;&nbsp;{fmt_brl(dados['valor_final'])}</b>", style_res_fat)],
-        [Paragraph("<b>Custo Operacional:</b>", style_res_custo), Paragraph(f"<b>&nbsp;&nbsp;{fmt_brl(dados['custo_total_interno'])}</b>", style_res_custo)],
-        [Paragraph("<b>Lucro Líquido Estimado:</b>", style_res_lucro), Paragraph(f"<b>&nbsp;&nbsp;{fmt_brl(dados['lucro_liquido'])} ({dados['margem_lucro']:.1f}%)</b>", style_res_lucro)]
+        [Paragraph("Faturamento:", style_res_fat), Paragraph(fmt_brl(dados['valor_final']), style_res_fat_val)],
+        [Paragraph("Custo Operacional:", style_res_custo), Paragraph(fmt_brl(dados['custo_total_interno']), style_res_custo_val)],
+        [Paragraph("Lucro Líquido Estimado:", style_res_lucro), Paragraph(f"{fmt_brl(dados['lucro_liquido'])} ({dados['margem_lucro']:.1f}%)", style_res_lucro_val)]
     ]
-    t_res_int = Table(tabela_resumo_interno, colWidths=[280, 200])
+    t_res_int = Table(tabela_resumo_interno, colWidths=[200, 200])
     t_res_int.hAlign = 'CENTER'
     ts_res = TableStyle()
     ts_res.add('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#f8fafc'))
     ts_res.add('VALIGN', (0,0), (-1,-1), 'MIDDLE')
-    ts_res.add('ALIGN', (1,0), (1,-1), 'RIGHT')
-    ts_res.add('BOTTOMPADDING', (0,0), (-1,-1), 3.5)
-    ts_res.add('TOPPADDING', (0,0), (-1,-1), 3.5)
-    ts_res.add('LEFTPADDING', (0,0), (-1,-1), 8)
-    ts_res.add('RIGHTPADDING', (0,0), (-1,-1), 8)
+    ts_res.add('BOTTOMPADDING', (0,0), (-1,-1), 2.5)
+    ts_res.add('TOPPADDING', (0,0), (-1,-1), 2.5)
+    ts_res.add('LEFTPADDING', (0,0), (-1,-1), 12)
+    ts_res.add('RIGHTPADDING', (0,0), (-1,-1), 12)
     ts_res.add('BOX', (0,0), (-1,-1), 1.2, colors.HexColor('#1e3a8a'))
     t_res_int.setStyle(ts_res)
     story.append(t_res_int)
@@ -634,14 +635,14 @@ def gerar_pdf_interno(dados):
         [Paragraph("", style_corpo)],
         [Paragraph("", style_corpo)]
     ]
-    t_obs = Table(obs_linhas, colWidths=[largura_util], rowHeights=[20, 20, 20, 20, 20])
+    t_obs = Table(obs_linhas, colWidths=[largura_util], rowHeights=[18, 18, 18, 18, 18])
     t_obs.hAlign = 'CENTER'
     t_obs.setStyle(TableStyle([
         ('BOX', (0,0), (-1,-1), 0.75, colors.HexColor('#cbd5e1')),
         ('LINEBELOW', (0,0), (-1,-2), 0.5, colors.HexColor('#e2e8f0')),
         ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#fcfcfc')),
-        ('TOPPADDING', (0,0), (-1,-1), 2),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 2),
+        ('TOPPADDING', (0,0), (-1,-1), 1.5),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 1.5),
     ]))
     story.append(t_obs)
 
@@ -651,10 +652,10 @@ def gerar_pdf_interno(dados):
 
 logo_app_path = get_logo_app_path()
 if logo_app_path:
-    st.image(logo_app_path, width=280)
+    st.image(logo_app_path, width=250)
 
-st.markdown("<h1 style='text-align: center; margin-top: -1rem; margin-bottom: 0rem;'>⚡ Sistema de Propostas & Custos</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; color: #94a3b8; margin-top: 0rem; margin-bottom: 0.5rem;'>Gerencie orçamentos comerciais, analise a viabilidade interna e gere documentação profissional em PDF.</p>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center; margin-top: -1.2rem; margin-bottom: -0.2rem; font-size: 1.8rem;'>⚡ Sistema de Propostas & Custos</h1>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #94a3b8; margin-top: 0rem; margin-bottom: 0.3rem; font-size: 0.9rem;'>Gerencie orçamentos comerciais, analise a viabilidade interna e gere documentação profissional em PDF.</p>", unsafe_allow_html=True)
 
 if 'current_tab_idx' not in st.session_state:
     st.session_state.current_tab_idx = 0
@@ -670,7 +671,7 @@ if nova_aba_idx != st.session_state.current_tab_idx:
     scroll_to_top()
     st.rerun()
 
-st.markdown("<hr style='margin-top: 0px; margin-bottom: 20px;'>", unsafe_allow_html=True)
+st.markdown("<hr style='margin-top: -5px; margin-bottom: 12px;'>", unsafe_allow_html=True)
 
 default_entrega_txt = "Até 72h após o término do serviço, editado e enviado via link para download, em alta e baixa resolução, disponível por 30 dias."
 
@@ -777,8 +778,8 @@ if st.session_state.current_tab_idx == 0:
 
     default_escopo = f"{nome_serv_atual}\n{data_str_escopo}\n{st.session_state.horario if st.session_state.horario else 'Horário a definir'}\n{st.session_state.local if st.session_state.local else 'Local a definir'}\n01 (um) profissional".strip()
     
-    st.session_state.escopo_servico = st.text_area("Escopo do serviço", default_escopo, height=180)
-    st.session_state.captacao = st.text_area("Captação", st.session_state.get("captacao", "Cobertura profissional com equipamentos de alto padrão"), height=110)
+    st.session_state.escopo_servico = st.text_area("Escopo do serviço", default_escopo, height=130)
+    st.session_state.captacao = st.text_area("Captação", st.session_state.get("captacao", "Cobertura profissional com equipamentos de alto padrão"), height=90)
     
     st.markdown("---")
     if st.button("Avançar ➡️", key="btn_avancar_aba0", use_container_width=True):
