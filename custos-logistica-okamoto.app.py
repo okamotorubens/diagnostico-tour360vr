@@ -130,8 +130,13 @@ st.markdown("""
 def scroll_to_top():
     st.markdown("""
         <script>
-            window.scrollTo({top: 0, behavior: 'auto'});
-            parent.window.scrollTo({top: 0, behavior: 'auto'});
+            window.scrollTo({top: 0, left: 0, behavior: 'instant'});
+            document.body.scrollTop = 0;
+            document.documentElement.scrollTop = 0;
+            const mainContainer = window.parent.document.querySelector('.main');
+            if (mainContainer) {
+                mainContainer.scrollTop = 0;
+            }
         </script>
     """, unsafe_allow_html=True)
 
@@ -606,8 +611,8 @@ def gerar_pdf_interno(dados):
     ts_res.add('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#f8fafc'))
     ts_res.add('VALIGN', (0,0), (-1,-1), 'MIDDLE')
     ts_res.add('ALIGN', (1,0), (1,-1), 'RIGHT')
-    ts_res.add('BOTTOMPADDING', (0,0), (-1,-1), 6)
-    ts_res.add('TOPPADDING', (0,0), (-1,-1), 6)
+    ts_res.add('BOTTOMPADDING', (0,0), (-1,-1), 3.5)
+    ts_res.add('TOPPADDING', (0,0), (-1,-1), 3.5)
     ts_res.add('LEFTPADDING', (0,0), (-1,-1), 8)
     ts_res.add('RIGHTPADDING', (0,0), (-1,-1), 8)
     ts_res.add('BOX', (0,0), (-1,-1), 1.2, colors.HexColor('#1e3a8a'))
@@ -770,12 +775,9 @@ if st.session_state.current_tab_idx == 0:
     else:
         data_str_escopo = f"{st.session_state.data_evento.day} de {mes_extenso_ev} de {st.session_state.data_evento.year}"
 
-    default_escopo = f"{nome_serv_atual}\n{data_str_escopo}\n{st.session_state.horario if st.session_state.horario else 'Horário a definir'}\n{st.session_state.local if st.session_state.local else 'Local a definir'}\n{st.session_state.cidade} - {st.session_state.estado}\n01 (um) profissional".strip()
+    default_escopo = f"{nome_serv_atual}\n{data_str_escopo}\n{st.session_state.horario if st.session_state.horario else 'Horário a definir'}\n{st.session_state.local if st.session_state.local else 'Local a definir'}\n01 (um) profissional".strip()
     
-    if "escopo_servico" not in st.session_state or st.button("🔄 Redefinir Escopo Automático", use_container_width=False):
-        st.session_state.escopo_servico = default_escopo
-
-    st.session_state.escopo_servico = st.text_area("Escopo do serviço", st.session_state.escopo_servico, height=180)
+    st.session_state.escopo_servico = st.text_area("Escopo do serviço", default_escopo, height=180)
     st.session_state.captacao = st.text_area("Captação", st.session_state.get("captacao", "Cobertura profissional com equipamentos de alto padrão"), height=110)
     
     st.markdown("---")
