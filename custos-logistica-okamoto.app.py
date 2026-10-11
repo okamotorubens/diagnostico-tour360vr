@@ -189,11 +189,13 @@ def criar_imagem_proporcional(path, target_width=150):
 def enviar_pdf_por_email(pdf_cliente_bytes, pdf_interno_bytes, nome_cliente):
     try:
         if "email" not in st.secrets:
-            return False
-        smtp_server = st.secrets["email"]["smtp_server"]
-        smtp_port = st.secrets["email"]["smtp_port"]
-        sender_email = st.secrets["email"]["sender_email"]
-        sender_password = st.secrets["email"]["sender_password"]
+            return False, "Seção [email] não encontrada nos segredos (secrets.toml)."
+        
+        email_conf = st.secrets["email"]
+        smtp_server = email_conf.get("smtp_server")
+        smtp_port = int(email_conf.get("smtp_port", 587))
+        sender_email = email_conf.get("sender_email")
+        sender_password = email_conf.get("sender_password")
         recipient_email = "contato@tour360vr.com.br"
 
         msg = MIMEMultipart()
@@ -222,13 +224,12 @@ def enviar_pdf_por_email(pdf_cliente_bytes, pdf_interno_bytes, nome_cliente):
             server.starttls()
             server.login(sender_email, sender_password)
             server.sendmail(sender_email, recipient_email, msg.as_string())
-        return True
-    except Exception:
-        return False
+        return True, "Sucesso"
+    except Exception as e:
+        return False, str(e)
 
 def gerar_pdf_cliente(dados):
     buffer = io.BytesIO()
-    # Margens e espaçamentos estritos para garantir 100% que caiba em 1 página
     doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=40, rightMargin=40, topMargin=15, bottomMargin=50)
     
     servico_nome = dados['tipo_servico'] if dados['tipo_servico'] != "Outro" else dados['outro_servico_nome']
@@ -405,7 +406,6 @@ def gerar_pdf_interno(dados):
     style_titulo = ParagraphStyle('TitInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=15, leading=18, alignment=0, textColor=colors.HexColor('#0f172a'))
     style_subtitulo_serv = ParagraphStyle('SubServInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, leading=14, alignment=0, textColor=colors.HexColor('#1e3a8a'))
     style_data_criacao = ParagraphStyle('DataCriacaoInt', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=11, alignment=0, textColor=colors.HexColor('#64748b'))
-    # Itens de 1 a 4 com alinhamento à esquerda
     style_secao = ParagraphStyle('SecInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=12, alignment=0, textColor=colors.HexColor('#1e3a8a'))
     style_corpo = ParagraphStyle('CorpoInt', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=11, textColor=colors.HexColor('#000000'))
     style_bold = ParagraphStyle('BoldInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9, leading=11, textColor=colors.HexColor('#000000'))
@@ -417,7 +417,6 @@ def gerar_pdf_interno(dados):
     logo_path = get_logo_pdf_path()
     data_criacao_str = dados['data_orcamento'].strftime('%d/%m/%Y')
     
-    # Logo um pouco mais à esquerda e cabeçalho alinhado à esquerda
     if logo_path:
         img_int = criar_imagem_proporcional(logo_path, target_width=130)
         img_int.hAlign = 'LEFT'
@@ -483,7 +482,6 @@ def gerar_pdf_interno(dados):
     ]))
     story.append(t_geral)
     
-    # Mais 1 linha de espaço antes do item 1
     story.append(Spacer(1, 18))
     
     story.append(Paragraph("1. Custos de Logística, Deslocamento & Operacionais", style_secao))
@@ -564,7 +562,6 @@ def gerar_pdf_interno(dados):
     style_res_corpo = ParagraphStyle('ResCorpoInt', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=12, textColor=colors.HexColor('#000000'))
     style_res_lucro = ParagraphStyle('ResLucroInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, leading=14, textColor=colors.HexColor('#047857'))
     
-    # Quadro 3 ajustado sem as palavras "proposto" e "total", com largura de colWidths=[310, 230] idêntica ao faturamento
     tabela_resumo_interno = [
         [Paragraph("<b>Faturamento:</b>", style_res_fat), Paragraph(f"<b>{fmt_brl(dados['valor_final'])}</b>", style_res_fat)],
         [Paragraph("<b>Custo Operacional:</b>", style_bold), Paragraph(fmt_brl(dados['custo_total_interno']), style_res_corpo)],
@@ -589,7 +586,6 @@ def gerar_pdf_interno(dados):
     story.append(Paragraph("4. Observações", style_secao))
     story.append(Spacer(1, 4))
     
-    # Bloco 4 com 5 linhas novamente, dimensionadas para caber perfeitamente na página única
     obs_linhas = [
         [Paragraph("", style_corpo)],
         [Paragraph("", style_corpo)],
@@ -616,7 +612,6 @@ logo_app_path = get_logo_app_path()
 if logo_app_path:
     st.image(logo_app_path, width=280)
 
-# Ajuste do espaçamento do topo e título
 st.markdown("<h1 style='text-align: center; margin-top: -1rem; margin-bottom: 0rem;'>⚡ Sistema de Propostas & Custos</h1>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; color: #64748b; margin-top: 0rem; margin-bottom: 0.5rem;'>Gerencie orçamentos comerciais, analise a viabilidade interna e gere documentação profissional em PDF.</p>", unsafe_allow_html=True)
 
@@ -625,7 +620,6 @@ if 'current_tab_idx' not in st.session_state:
 
 tab_names = ["1. 📋 Dados & Serviços", "2. 🚗 Custos & Logística", "3. 📄 Prazos, Resumo & Relatórios"]
 
-# Etapas descidas em 1 linha e linha separatória logo abaixo sem espaço vazio
 st.markdown("<br>", unsafe_allow_html=True)
 tab_selecionada = st.radio("Navegação:", tab_names, index=st.session_state.current_tab_idx, horizontal=True, label_visibility="collapsed")
 nova_aba_idx = tab_names.index(tab_selecionada)
@@ -648,7 +642,6 @@ if st.session_state.current_tab_idx == 0:
         st.session_state.telefone = st.text_input("Telefone", st.session_state.get("telefone", ""))
         st.session_state.email = st.text_input("E-mail", st.session_state.get("email", ""))
         
-        # 2. Seleção de Serviço e Carga Horária integrada logo abaixo do e-mail (sem título)
         st.markdown("<br>", unsafe_allow_html=True)
         tipo_servico_idx = list(TABELAS_SERVICOS.keys()).index(st.session_state.get("tipo_servico", "Evento social")) if st.session_state.get("tipo_servico", "Evento social") in TABELAS_SERVICOS else 0
         st.session_state.tipo_servico = st.selectbox("Tipo de Serviço", list(TABELAS_SERVICOS.keys()), index=tipo_servico_idx)
@@ -685,17 +678,15 @@ if st.session_state.current_tab_idx == 0:
             km_calc = calcular_distancia_maps(endereco_completo)
             if km_calc is not None:
                 st.session_state.distancia_ida_volta = km_calc
-                # Mensagem centralizada e formatada
-                aviso_km = st.markdown(f"<div style='text-align: center; padding: 10px; background-color: #d1fae5; color: #065f46; border-radius: 6px; margin-top: 10px;'><b>Rota encontrada com sucesso!</b><br>Distância de ida e volta: {km_calc} km (a partir da Rua Manoel Achê, 327).</div>", unsafe_allow_html=True)
+                st.markdown(f"<div style='text-align: center; padding: 10px; background-color: #d1fae5; color: #065f46; border-radius: 6px; margin-top: 10px;'><b>Rota encontrada com sucesso!</b><br>Distância de ida e volta: {km_calc} km (a partir da Rua Manoel Achê, 327).</div>", unsafe_allow_html=True)
                 time.sleep(3)
                 st.rerun()
             else:
-                aviso_err = st.markdown("<div style='text-align: center; padding: 10px; background-color: #fee2e2; color: #991b1b; border-radius: 6px; margin-top: 10px;'>⚠️ Não foi possível calcular automaticamente. Verifique o endereço e a chave da API.</div>", unsafe_allow_html=True)
+                st.markdown("<div style='text-align: center; padding: 10px; background-color: #fee2e2; color: #991b1b; border-radius: 6px; margin-top: 10px;'>⚠️ Não foi possível calcular automaticamente. Verifique o endereço e a chave da API.</div>", unsafe_allow_html=True)
                 time.sleep(3)
                 st.rerun()
 
     st.markdown("---")
-    # Detalhamento técnico numerado automaticamente como "2."
     st.subheader("2. Detalhamento Técnico (Escopo & Captação)")
     
     s_tipo = st.session_state.tipo_servico
@@ -933,7 +924,6 @@ else:
     else:
         carga_horaria_total_exibida = f"{total_horas_calc}h"
 
-# Layout do quadro de prévia otimizado para evitar cortes e espaçamentos excessivos
 col_res1, col_res2, col_res3, col_res4, col_res5 = st.columns([1.2, 1.2, 1.2, 1.1, 1.3])
 col_res1.metric("Valor Cliente", fmt_brl(valor_final))
 col_res2.metric("Custos", fmt_brl(custo_total_interno))
@@ -1000,10 +990,12 @@ if st.session_state.current_tab_idx == 2:
 
     id_envio = f"{dados_completos['empresa']}_{dados_completos['data_evento']}_{dados_completos['valor_final']}"
     if st.session_state.get("ultimo_envio_email") != id_envio:
-        sucesso = enviar_pdf_por_email(pdf_cliente_bytes, pdf_interno_bytes, dados_completos.get('empresa') or dados_completos.get('contato'))
+        sucesso, erro_msg = enviar_pdf_por_email(pdf_cliente_bytes, pdf_interno_bytes, dados_completos.get('empresa') or dados_completos.get('contato'))
         if sucesso:
             st.session_state["ultimo_envio_email"] = id_envio
             st.toast("📧 Cópia dos PDFs enviada automaticamente para contato@tour360vr.com.br!", icon="✅")
+        else:
+            st.warning(f"⚠️ Não foi possível enviar o e-mail automático. Detalhe técnico: {erro_msg}")
 
     col_down1, col_down2 = st.columns(2)
     
