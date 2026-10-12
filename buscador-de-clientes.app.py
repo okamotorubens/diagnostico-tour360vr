@@ -5,6 +5,7 @@ import time
 import os
 import re
 import requests
+import csv
 from datetime import datetime
 from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
@@ -13,7 +14,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 import io
 
 # -----------------------------------------------------------------------------
-# CONFIGURAÇÃO DA PÁGINA STREAMLIT (INCLUINDO FAVICON)
+# CONFIGURAÇÃO DA PÁGINA STREAMLIT (FAVICON INCLUÍDO)
 # -----------------------------------------------------------------------------
 favicon_path = "logo_tour_transparente.png" if os.path.exists("logo_tour_transparente.png") else "🔍"
 
@@ -25,7 +26,7 @@ st.set_page_config(
 )
 
 # -----------------------------------------------------------------------------
-# ESTILIZAÇÃO CSS CUSTOMIZADA (CENTRALIZAÇÃO DE LOGOS E LAYOUT MODERNO)
+# ESTILIZAÇÃO CSS CUSTOMIZADA (LAYOUT MODERNO E LIMPO)
 # -----------------------------------------------------------------------------
 st.markdown("""
     <style>
@@ -50,24 +51,13 @@ st.markdown("""
 
     .critical-item { color: #f87171; font-size: 13px; margin-bottom: 6px; font-weight: 500; }
     
-    /* Centralização de Imagens e Estilo na Sidebar */
-    [data-testid="stSidebar"] [data-testid="stImage"] {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        margin-bottom: 15px;
-    }
-    [data-testid="stSidebar"] img {
-        margin-left: auto;
-        margin-right: auto;
-    }
     .sidebar-title {
         text-align: center;
-        font-size: 18px;
+        font-size: 17px;
         font-weight: 800;
         color: #ffffff;
-        margin-top: 10px;
-        margin-bottom: 20px;
+        margin-top: 15px;
+        margin-bottom: 15px;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -81,7 +71,7 @@ if 'resultados' not in st.session_state:
     st.session_state.resultados = []
 
 # -----------------------------------------------------------------------------
-# INTEGRAÇÃO DE BUSCA (GOOGLE PLACES API OU BASE DE CONTINGÊNCIA REAL)
+# INTEGRAÇÃO DE BUSCA (GOOGLE PLACES API OU BASE DE REGIONALIDADE)
 # -----------------------------------------------------------------------------
 def buscar_google_places_api(nicho, cidade, api_key, limite=10):
     url = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={nicho}+em+{cidade}&language=pt-BR&key={api_key}"
@@ -230,42 +220,45 @@ def minerar_e_auditar_negocios(nicho, cidade, limite=10):
     return resultados
 
 # -----------------------------------------------------------------------------
-# GERADOR DE EXCEL FORMATADO (.XLSX)
+# GERADOR DE PLANILHA FORMATADA EXCEL COM COMPATIBILIDADE NATIVA
 # -----------------------------------------------------------------------------
-def gerar_excel_organizado(dados_leads):
-    df = pd.DataFrame(dados_leads)
+def gerar_csv_excel_formatado(dados_leads):
+    output = io.StringIO()
+    # Adiciona o cabeçalho UTF-8 BOM para forçar o Excel a reconhecer colunas e acentuação
+    output.write('\ufeff')
     
-    # Tratamento de colunas de lista para texto limpo
-    df['pontos_criticos'] = df['pontos_criticos'].apply(lambda x: " | ".join(x) if isinstance(x, list) else str(x))
-    df['oportunidades'] = df['oportunidades'].apply(lambda x: " | ".join(x) if isinstance(x, list) else str(x))
-    df['reivindicada'] = df['reivindicada'].apply(lambda x: "Sim" if x else "Não")
-
-    # Renomeação amigável de cabeçalhos para o Excel
-    df = df.rename(columns={
-        "id": "ID",
-        "nome": "Nome da Empresa",
-        "categoria": "Categoria",
-        "endereco": "Endereço Completo",
-        "telefone": "Telefone",
-        "whatsapp": "WhatsApp",
-        "website": "Website",
-        "nota": "Nota Média",
-        "total_avaliacoes": "Total Avaliações",
-        "reivindicada": "Ficha Reivindicada",
-        "fotos_total": "Qtd. Fotos",
-        "ultima_foto_dias": "Dias sem Fotos",
-        "tour_360": "Possui Tour 360",
-        "pontos_criticos": "Pontos Críticos Identificados",
-        "oportunidades": "Oportunidades Comerciais",
-        "score_oportunidade": "Score de Oportunidade"
-    })
-
-    buffer = io.BytesIO()
-    with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
-        df.to_excel(writer, index=False, sheet_name='Leads Minerados')
+    writer = csv.writer(output, delimiter=';', quoting=csv.QUOTE_MINIMAL)
     
-    buffer.seek(0)
-    return buffer
+    # Cabeçalhos organizados
+    writer.writerow([
+        "ID", "Nome da Empresa", "Categoria", "Endereço Completo", 
+        "Telefone", "WhatsApp", "Website", "Nota Média", "Total Avaliações", 
+        "Ficha Reivindicada", "Qtd. Fotos", "Pontos Críticos Identificados", 
+        "Oportunidades Comerciais", "Score de Oportunidade"
+    ])
+
+    for row in dados_leads:
+        criticos_str = " | ".join(row.get("pontos_criticos", [])) if isinstance(row.get("pontos_criticos"), list) else str(row.get("pontos_criticos", ""))
+        opp_str = " | ".join(row.get("oportunidades", [])) if isinstance(row.get("oportunidades"), list) else str(row.get("oportunidades", ""))
+        
+        writer.writerow([
+            row.get("id", ""),
+            row.get("nome", ""),
+            row.get("categoria", ""),
+            row.get("endereco", ""),
+            row.get("telefone", ""),
+            row.get("whatsapp", ""),
+            row.get("website", ""),
+            str(row.get("nota", "")).replace('.', ','),
+            row.get("total_avaliacoes", ""),
+            "Sim" if row.get("reivindicada") else "Não",
+            row.get("fotos_total", ""),
+            criticos_str,
+            opp_str,
+            row.get("score_oportunidade", "")
+        ])
+
+    return output.getvalue().encode('utf-8')
 
 # -----------------------------------------------------------------------------
 # GERADOR DE PDF DUAL BRAND
@@ -358,14 +351,19 @@ def gerar_pdf_diagnostico(lead):
     return buffer
 
 # -----------------------------------------------------------------------------
-# BARRA LATERAL (LOGOS CENTRALIZADAS E TÍTULO EM DESTAQUE)
+# BARRA LATERAL (LOGOS RIGOROSAMENTE CENTRALIZADAS)
 # -----------------------------------------------------------------------------
 with st.sidebar:
+    # Centralização perfeita usando colunas no Streamlit
     if os.path.exists("logo_okamoto.png"):
-        st.image("logo_okamoto.png", width=160)
+        c1, c2, c3 = st.columns([1, 4, 1])
+        with c2:
+            st.image("logo_okamoto.png", use_container_width=True)
     
     if os.path.exists("logo_tour_transparente.png"):
-        st.image("logo_tour_transparente.png", width=110)
+        c1, c2, c3 = st.columns([1.2, 3.6, 1.2])
+        with c2:
+            st.image("logo_tour_transparente.png", use_container_width=True)
 
     st.markdown('<div class="sidebar-title">Mineração & Diagnóstico Local</div>', unsafe_allow_html=True)
     st.divider()
@@ -441,12 +439,12 @@ elif st.session_state.etapa == 2:
         )
 
     with col_export:
-        excel_bytes = gerar_excel_organizado(st.session_state.resultados)
+        csv_bytes = gerar_csv_excel_formatado(st.session_state.resultados)
         st.download_button(
-            label="📊 Exportar Planilha Excel (.xlsx)",
-            data=excel_bytes,
-            file_name=f"Leads_Minerados_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            label="📊 Exportar Planilha para Excel (.csv)",
+            data=csv_bytes,
+            file_name=f"Leads_Minerados_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
+            mime="text/csv",
             use_container_width=True
         )
 
@@ -517,7 +515,6 @@ elif st.session_state.etapa == 2:
                 use_container_width=True
             )
 
-        # EXPANSOR DE DETALHAMENTO AVANÇADO DA EMPRESA
         with st.expander(f"🔍 Expandir Análise Detalhada & Links de Pesquisa de {lead['nome']}"):
             col_exp1, col_exp2 = st.columns(2)
             with col_exp1:
