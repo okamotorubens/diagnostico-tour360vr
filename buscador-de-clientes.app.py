@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import sqlite3
 import json
 import time
 import os
@@ -14,16 +15,142 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 import io
 
 # -----------------------------------------------------------------------------
-# CONFIGURAÇÃO DA PÁGINA STREAMLIT (INCLUINDO FAVICON)
+# CONFIGURAÇÃO DA PÁGINA STREAMLIT
 # -----------------------------------------------------------------------------
 favicon_path = "logo_tour_transparente.png" if os.path.exists("logo_tour_transparente.png") else "🔍"
 
 st.set_page_config(
-    page_title="Mineração & Diagnóstico Local",
+    page_title="Mineração & Diagnóstico Local | Okamoto & Tour360VR",
     page_icon=favicon_path,
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# -----------------------------------------------------------------------------
+# BANCO DE DADOS PERMANENTE (SQLITE LOCAL)
+# -----------------------------------------------------------------------------
+DB_PATH = "leads_database.db"
+
+def init_db():
+    """Inicializa a tabela de leads no banco de dados SQLite caso não exista."""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS leads (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            data_minacao TEXT,
+            cidade_busca TEXT,
+            nome TEXT,
+            categoria TEXT,
+            endereco TEXT,
+            telefone TEXT,
+            whatsapp TEXT,
+            website TEXT,
+            instagram TEXT,
+            foto_url TEXT,
+            nota REAL,
+            total_avaliacoes INTEGER,
+            reivindicada INTEGER,
+            fotos_total INTEGER,
+            ultima_foto_dias INTEGER,
+            tour_360 INTEGER,
+            pontos_criticos TEXT,
+            oportunidades TEXT,
+            score_oportunidade INTEGER
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
+def salvar_lead_db(lead):
+    """Salva ou atualiza um lead no banco de dados SQLite."""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    
+    # Converte listas para JSON string
+    criticos_json = json.dumps(lead.get('pontos_criticos', []), ensure_ascii=False)
+    opp_json = json.dumps(lead.get('oportunidades', []), ensure_ascii=False)
+    
+    # Verifica duplicidade pelo nome e endereço
+    cursor.execute("SELECT id FROM leads WHERE nome = ? AND endereco = ?", (lead['nome'], lead['endereco']))
+    data = cursor.fetchone()
+    
+    if not data:
+        cursor.execute('''
+            INSERT INTO leads (
+                data_minacao, cidade_busca, nome, categoria, endereco, telefone, whatsapp,
+                website, instagram, foto_url, nota, total_avaliacoes, reivindicada,
+                fotos_total, ultima_foto_dias, tour_360, pontos_criticos, oportunidades, score_oportunidade
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            lead.get('data_minacao', datetime.now().strftime('%d/%m/%Y %H:%M')),
+            lead.get('cidade_busca', ''),
+            lead['nome'],
+            lead['categoria'],
+            lead['endereco'],
+            lead.get('telefone', ''),
+            lead.get('whatsapp', ''),
+            lead.get('website', ''),
+            lead.get('instagram', ''),
+            lead.get('foto_url', ''),
+            lead.get('nota', 0.0),
+            lead.get('total_avaliacoes', 0),
+            1 if lead.get('reivindicada') else 0,
+            lead.get('fotos_total', 0),
+            lead.get('ultima_foto_dias', 0),
+            1 if lead.get('tour_360') else 0,
+            criticos_json,
+            opp_json,
+            lead.get('score_oportunidade', 0)
+        ))
+        conn.commit()
+    conn.close()
+
+def carregar_todos_leads_db():
+    """Carrega todos os leads salvos no banco de dados."""
+    init_db()
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM leads ORDER BY id DESC")
+    rows = cursor.fetchall()
+    conn.close()
+
+    leads = []
+    for r in rows:
+        leads.append({
+            "id": r[0],
+            "data_minacao": r[1],
+            "cidade_busca": r[2],
+            "nome": r[3],
+            "categoria": r[4],
+            "endereco": r[5],
+            "telefone": r[6],
+            "whatsapp": r[7],
+            "website": r[8],
+            "instagram": r[9],
+            "foto_url": r[10],
+            "nota": r[11],
+            "total_avaliacoes": r[12],
+            "reivindicada": bool(r[13]),
+            "fotos_total": r[14],
+            "ultima_foto_dias": r[15],
+            "tour_360": bool(r[16]),
+            "pontos_criticos": json.loads(r[17]) if r[17] else [],
+            "oportunidades": json.loads(r[18]) if r[18] else [],
+            "score_oportunidade": r[19]
+        })
+    return leads
+
+def limpar_banco_dados():
+    """Limpa o histórico completo de buscas salvas."""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM leads")
+    conn.commit()
+    conn.close()
+
+# Inicializa o banco de dados
+init_db()
 
 # -----------------------------------------------------------------------------
 # ESTILIZAÇÃO CSS CUSTOMIZADA
@@ -63,15 +190,15 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# SESSION STATE (ACÚMULO DE BUSCAS NATIVO)
+# SESSION STATE
 # -----------------------------------------------------------------------------
 if 'etapa' not in st.session_state:
     st.session_state.etapa = 1
-if 'base_acumulada' not in st.session_state:
-    st.session_state.base_acumulada = []
+if 'lead_selecionado_diagnostico' not in st.session_state:
+    st.session_state.lead_selecionado_diagnostico = None
 
 # -----------------------------------------------------------------------------
-# INTEGRAÇÃO DE BUSCA E AUDITORIA COMPLETA (COM FOTO DO PERFIL GOOGLE)
+# INTEGRAÇÃO DE BUSCA E AUDITORIA COMPLETA
 # -----------------------------------------------------------------------------
 def buscar_google_places_api(nicho, cidade, api_key, limite=10):
     url = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={nicho}+em+{cidade}&language=pt-BR&key={api_key}"
@@ -95,7 +222,6 @@ def buscar_google_places_api(nicho, cidade, api_key, limite=10):
                 total_avaliacoes = det_res.get("user_ratings_total", place.get("user_ratings_total", 0))
                 photos = det_res.get("photos", place.get("photos", []))
                 
-                # Monta URL da foto real do Google Places API
                 foto_url = ""
                 if photos and len(photos) > 0:
                     photo_reference = photos[0].get("photo_reference")
@@ -109,12 +235,12 @@ def buscar_google_places_api(nicho, cidade, api_key, limite=10):
 
                 if not website:
                     pontos_criticos.append("Sem site oficial vinculado à ficha do Google")
-                    oportunidades.append("Desenvolvimento de Landing Page de Alta Conversão / Website Responsivo")
+                    oportunidades.append("Desenvolvimento de Landing Page / Website Responsivo")
                     score += 25
 
                 if total_avaliacoes < 30:
                     pontos_criticos.append(f"Volume crítico de avaliações ({total_avaliacoes} no total)")
-                    oportunidades.append("Estratégia Acelerada de Gestão de Reputação e Captura de Depoimentos")
+                    oportunidades.append("Estratégia Acelerada de Reputação e Captura de Depoimentos")
                     score += 20
 
                 if len(photos) < 5:
@@ -132,18 +258,16 @@ def buscar_google_places_api(nicho, cidade, api_key, limite=10):
 
                 nome_slug = re.sub(r'[^a-zA-Z0-9]', '', nome.lower())
 
-                leads.append({
-                    "id": len(st.session_state.base_acumulada) + idx + 1,
+                lead_obj = {
+                    "data_minacao": datetime.now().strftime('%d/%m/%Y %H:%M'),
+                    "cidade_busca": cidade,
                     "nome": nome,
                     "categoria": nicho.capitalize(),
-                    "cidade_busca": cidade,
-                    "data_minacao": datetime.now().strftime('%d/%m/%Y %H:%M'),
                     "endereco": endereco,
                     "telefone": telefone or "(16) Contato via Ficha",
                     "whatsapp": clean_phone if len(clean_phone) >= 10 else "16999999999",
                     "website": website,
                     "instagram": f"instagram.com/{nome_slug}",
-                    "facebook": f"facebook.com/{nome_slug}",
                     "foto_url": foto_url,
                     "nota": nota,
                     "total_avaliacoes": total_avaliacoes,
@@ -154,7 +278,11 @@ def buscar_google_places_api(nicho, cidade, api_key, limite=10):
                     "pontos_criticos": pontos_criticos,
                     "oportunidades": oportunidades,
                     "score_oportunidade": min(score, 100)
-                })
+                }
+                
+                # Salva no Banco de Dados SQLite
+                salvar_lead_db(lead_obj)
+                leads.append(lead_obj)
             return leads
     except Exception as e:
         st.warning(f"Aviso de integração API: {str(e)}. Carregando dados de contingência.")
@@ -213,18 +341,16 @@ def minerar_e_auditar_negocios(nicho, cidade, limite=10):
 
         nome_slug = re.sub(r'[^a-zA-Z0-9]', '', item['nome'].lower())
 
-        resultados.append({
-            "id": len(st.session_state.base_acumulada) + i + 1,
+        lead_obj = {
+            "data_minacao": datetime.now().strftime('%d/%m/%Y %H:%M'),
+            "cidade_busca": cidade,
             "nome": item["nome"],
             "categoria": nicho.capitalize(),
-            "cidade_busca": cidade,
-            "data_minacao": datetime.now().strftime('%d/%m/%Y %H:%M'),
             "endereco": f"{item['rua']}, {120 + (i*85)} - {item['bairro']}, {cidade} - SP",
             "telefone": f"(16) 39{i:02d}-4000",
             "whatsapp": f"16997{i:02d}4000",
             "website": f"https://www.{nicho.lower()}exemplo.com.br" if tem_site else "",
             "instagram": f"instagram.com/{nome_slug}",
-            "facebook": f"facebook.com/{nome_slug}",
             "foto_url": item["img"],
             "nota": nota,
             "total_avaliacoes": total_avaliacoes,
@@ -235,7 +361,10 @@ def minerar_e_auditar_negocios(nicho, cidade, limite=10):
             "pontos_criticos": pontos_criticos,
             "oportunidades": oportunidades,
             "score_oportunidade": min(score, 100)
-        })
+        }
+        
+        salvar_lead_db(lead_obj)
+        resultados.append(lead_obj)
 
     return resultados
 
@@ -396,8 +525,10 @@ def gerar_pdf_diagnostico(lead):
     return buffer
 
 # -----------------------------------------------------------------------------
-# BARRA LATERAL (LOGOS CENTRALIZADAS E TÍTULO)
+# BARRA LATERAL (NAVEGAÇÃO UNIFICADA)
 # -----------------------------------------------------------------------------
+base_leads = carregar_todos_leads_db()
+
 with st.sidebar:
     if os.path.exists("logo_okamoto.png"):
         c1, c2, c3 = st.columns([1, 4, 1])
@@ -412,21 +543,24 @@ with st.sidebar:
     st.markdown('<div class="sidebar-title">Mineração & Diagnóstico Local</div>', unsafe_allow_html=True)
     st.divider()
 
-    col_nav1, col_nav2 = st.columns(2)
-    with col_nav1:
-        if st.button("1. Buscar", use_container_width=True, type="primary" if st.session_state.etapa == 1 else "secondary"):
-            st.session_state.etapa = 1
-            st.rerun()
-    with col_nav2:
-        if st.button("2. Analisar", use_container_width=True, type="primary" if st.session_state.etapa == 2 else "secondary", disabled=len(st.session_state.base_acumulada) == 0):
-            st.session_state.etapa = 2
-            st.rerun()
+    st.markdown("### 📌 Módulos Integrados")
+    if st.button("1. Buscador de Clientes", use_container_width=True, type="primary" if st.session_state.etapa == 1 else "secondary"):
+        st.session_state.etapa = 1
+        st.rerun()
+        
+    if st.button("2. Base de Leads Salvos", use_container_width=True, type="primary" if st.session_state.etapa == 2 else "secondary", disabled=len(base_leads) == 0):
+        st.session_state.etapa = 2
+        st.rerun()
 
-    if len(st.session_state.base_acumulada) > 0:
+    if st.button("3. Diagnóstico & Custos", use_container_width=True, type="primary" if st.session_state.etapa == 3 else "secondary"):
+        st.session_state.etapa = 3
+        st.rerun()
+
+    if len(base_leads) > 0:
         st.divider()
-        st.caption(f"📊 Base Acumulada: **{len(st.session_state.base_acumulada)} leads**")
-        if st.button("🗑️ Limpar Histórico de Buscas", use_container_width=True):
-            st.session_state.base_acumulada = []
+        st.caption(f"💾 Banco Permanente: **{len(base_leads)} leads salvos**")
+        if st.button("🗑️ Limpar Banco de Dados", use_container_width=True):
+            limpar_banco_dados()
             st.session_state.etapa = 1
             st.rerun()
 
@@ -453,28 +587,27 @@ if st.session_state.etapa == 1:
         btn_minar = st.form_submit_button("🚀 Iniciar Varredura Profunda", use_container_width=True)
 
     if btn_minar:
-        with st.spinner("Varrendo Google Maps e auditando perfis..."):
+        with st.spinner("Varrendo Google Maps, salvando no banco e auditando perfis..."):
             time.sleep(1)
-            novos_leads = minerar_e_auditar_negocios(nicho_input, cidade_input, limite_input)
-            st.session_state.base_acumulada.extend(novos_leads)
+            minerar_e_auditar_negocios(nicho_input, cidade_input, limite_input)
             st.session_state.etapa = 2
             st.rerun()
 
-    if len(st.session_state.base_acumulada) > 0:
+    if len(base_leads) > 0:
         st.divider()
-        st.info(f"Há **{len(st.session_state.base_acumulada)} leads acumulados** na base atual.")
-        if st.button("Avançar para Análise ➡️", type="primary"):
+        st.info(f"O seu banco possui **{len(base_leads)} leads salvos permanentemente**.")
+        if st.button("Ver Base Completa de Leads ➡️", type="primary"):
             st.session_state.etapa = 2
             st.rerun()
 
 # -----------------------------------------------------------------------------
-# ETAPA 2: ANALISADOR CRÍTICO COM FOTO DA FICHA E EXIBIÇÃO DIRETA
+# ETAPA 2: ANALISADOR E BASE SALVA PERMANENTE
 # -----------------------------------------------------------------------------
 elif st.session_state.etapa == 2:
     st.markdown("""
         <div class="main-header">
-            <h1 class="main-title">📊 Painel de Análise e Diagnóstico de Leads</h1>
-            <div class="main-subtitle">Pontos fracos dos estabelecimentos, mídias e ferramentas para abordagem.</div>
+            <h1 class="main-title">📊 Base de Leads e Histórico Permanente</h1>
+            <div class="main-subtitle">Seus leads minerados ficam salvos automaticamente no banco de dados SQLite.</div>
         </div>
     """, unsafe_allow_html=True)
 
@@ -492,24 +625,24 @@ elif st.session_state.etapa == 2:
         )
 
     with col_export:
-        csv_bytes = gerar_csv_excel_formatado(st.session_state.base_acumulada)
+        csv_bytes = gerar_csv_excel_formatado(base_leads)
         st.download_button(
             label="📊 Exportar Planilha Completa (.csv)",
             data=csv_bytes,
-            file_name=f"Leads_Acumulados_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
+            file_name=f"Leads_Permanentes_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
             mime="text/csv",
             use_container_width=True
         )
 
     st.divider()
 
-    resultados_filtrados = st.session_state.base_acumulada
+    resultados_filtrados = base_leads
     if filtro_status == "Apenas sem Website":
         resultados_filtrados = [r for r in resultados_filtrados if not r['website']]
     elif filtro_status == "Apenas Ficha não Reivindicada":
         resultados_filtrados = [r for r in resultados_filtrados if not r['reivindicada']]
 
-    st.markdown(f"Exibindo **{len(resultados_filtrados)}** oportunidades na base de prospecção:")
+    st.markdown(f"Exibindo **{len(resultados_filtrados)}** oportunidades salvas:")
 
     for lead in resultados_filtrados:
         score = lead['score_oportunidade']
@@ -536,7 +669,6 @@ elif st.session_state.etapa == 2:
             </div>
         """, unsafe_allow_html=True)
 
-        # 4 COLUNAS: FOTO DA FICHA + GOOGLE INDICADORES + PONTOS CRÍTICOS + MÍDIAS & AÇÕES
         col_img, col_details1, col_details2, col_actions = st.columns([2, 2.5, 2.5, 2.5])
 
         with col_img:
@@ -557,19 +689,24 @@ elif st.session_state.etapa == 2:
             st.markdown("**🌐 Mídias & Ações Rápidas:**")
             st.markdown(f"- **Website:** {lead['website'] if lead['website'] else '❌ Sem site'}")
             st.markdown(f"- **Maps:** [Ver no Google Maps](https://www.google.com/maps/search/?api=1&query={lead['nome'].replace(' ', '+')})")
-            st.markdown(f"- **Registro:** [Buscar Domínio](https://registro.br/busca-dominio/?pesquisa={lead['nome'].replace(' ', '')})")
+
+            # BOTÃO PARA ENVIAR O LEAD DIRETO PARA O DIAGNÓSTICO PROFUNDO & CUSTOS
+            if st.button("🛠️ Enviar p/ Diagnóstico Tour360VR", key=f"btn_diag_{lead['id']}", use_container_width=True, type="primary"):
+                st.session_state.lead_selecionado_diagnostico = lead
+                st.session_state.etapa = 3
+                st.rerun()
 
             if lead['whatsapp']:
                 msg_wa = f"Olá! Notei que a ficha da {lead['nome']} no Google apresenta pontos de melhoria..."
                 link_wa = f"https://wa.me/55{lead['whatsapp']}?text={msg_wa.replace(' ', '%20')}"
-                st.markdown(f'<a href="{link_wa}" target="_blank"><button style="width:100%; background-color:#25D366; color:white; border:none; padding:8px; border-radius:6px; font-weight:bold; cursor:pointer; margin-top:6px; margin-bottom:8px;">💬 WhatsApp</button></a>', unsafe_allow_html=True)
+                st.markdown(f'<a href="{link_wa}" target="_blank"><button style="width:100%; background-color:#25D366; color:white; border:none; padding:8px; border-radius:6px; font-weight:bold; cursor:pointer; margin-top:4px; margin-bottom:8px;">💬 WhatsApp</button></a>', unsafe_allow_html=True)
 
             nome_arquivo_limpo = re.sub(r'[^a-zA-Z0-9]', '_', lead['nome'])
             nome_arquivo_limpo = re.sub(r'_+', '_', nome_arquivo_limpo).strip('_')
 
             pdf_bytes = gerar_pdf_diagnostico(lead)
             st.download_button(
-                label="📄 Gerar PDF da Proposta",
+                label="📄 PDF Proposta Rápida",
                 data=pdf_bytes,
                 file_name=f"Diagnostico_{nome_arquivo_limpo}.pdf",
                 mime="application/pdf",
@@ -578,3 +715,62 @@ elif st.session_state.etapa == 2:
             )
 
         st.divider()
+
+# -----------------------------------------------------------------------------
+# ETAPA 3: DIAGNÓSTICO PROFUNDO, CUSTOS & ORÇAMENTO COMPLETO TOUR360VR
+# -----------------------------------------------------------------------------
+elif st.session_state.etapa == 3:
+    lead_sel = st.session_state.lead_selecionado_diagnostico
+
+    st.markdown("""
+        <div class="main-header">
+            <h1 class="main-title">🛠️ Módulo de Diagnóstico Completo & Composição de Custos</h1>
+            <div class="main-subtitle">Integração avançada para orçamento de Tour Virtual 360°, Fotografia Profissional e Logística.</div>
+        </div>
+    """, unsafe_allow_html=True)
+
+    if lead_sel:
+        st.success(f"📌 Lead Carregado Automaticamente do Buscador: **{lead_sel['nome']}** ({lead_sel['endereco']})")
+    else:
+        st.info("Nenhum lead foi selecionado do buscador. Você pode preencher os dados manualmente abaixo:")
+
+    with st.form("form_calculo_completo"):
+        st.markdown("### 1. Dados do Cliente e Localização")
+        c1, c2 = st.columns(2)
+        with c1:
+            nome_cliente = st.text_input("Nome da Empresa / Cliente", value=lead_sel['nome'] if lead_sel else "")
+            categoria_cliente = st.text_input("Categoria / Nicho", value=lead_sel['categoria'] if lead_sel else "")
+        with c2:
+            endereco_cliente = st.text_input("Endereço Completo", value=lead_sel['endereco'] if lead_sel else "")
+            whatsapp_cliente = st.text_input("WhatsApp de Contato", value=lead_sel['whatsapp'] if lead_sel else "")
+
+        st.divider()
+        st.markdown("### 2. Parâmetros de Serviços e Logística Tour360VR")
+        col_s1, col_s2, col_s3 = st.columns(3)
+        with col_s1:
+            qtd_panoramas = st.number_input("Qtd. Panorâmicas 360°", min_value=1, max_value=100, value=10)
+            valor_por_panorama = st.number_input("Valor por Panorâmica (R$)", value=120.0)
+        with col_s2:
+            qtd_fotos_hdr = st.number_input("Qtd. Fotos Estáticas HDR", min_value=0, max_value=200, value=15)
+            valor_por_foto = st.number_input("Valor por Foto HDR (R$)", value=35.0)
+        with col_s3:
+            distancia_km = st.number_input("Distância de Deslocamento (KM)", value=25.0)
+            custo_km = st.number_input("Custo por KM (R$)", value=2.50)
+
+        st.divider()
+        btn_gerar_orcamento = st.form_submit_button("💰 Calcular Orçamento Final & Proposta Oficial", use_container_width=True)
+
+    if btn_gerar_orcamento:
+        tot_panoramas = qtd_panoramas * valor_por_panorama
+        tot_fotos = qtd_fotos_hdr * valor_por_foto
+        tot_logistica = distancia_km * custo_km
+        tot_geral = tot_panoramas + tot_fotos + tot_logistica
+
+        st.markdown("### 📊 Resumo da Composição de Custos:")
+        res_col1, res_col2, res_col3, res_col4 = st.columns(4)
+        res_col1.metric("Tour 360°", f"R$ {tot_panoramas:.2f}")
+        res_col2.metric("Fotografia HDR", f"R$ {tot_fotos:.2f}")
+        res_col3.metric("Logística / Deslocamento", f"R$ {tot_logistica:.2f}")
+        res_col4.metric("INVESTIMENTO TOTAL", f"R$ {tot_geral:.2f}")
+
+        st.success("Proposta comercial calculada com sucesso! Você pode utilizar esses valores para o contrato formal do cliente.")
