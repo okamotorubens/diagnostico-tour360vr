@@ -147,7 +147,7 @@ def limpar_banco_dados():
         st.error(f"Erro ao limpar banco: {str(e)}")
 
 # -----------------------------------------------------------------------------
-# GERADOR DE PDF DO PANORAMA DE NICHO (LOGO MAIOR, TÍTULO PRÓXIMO E LINKS EXATOS)
+# GERADOR DE PDF DO PANORAMA DE NICHO (TÍTULO COLADO À LOGO & LINKS RECALIBRADOS)
 # -----------------------------------------------------------------------------
 def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
     canvas.saveState()
@@ -166,7 +166,6 @@ def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
     logo_tour = "logo_tour_transparente.png" if os.path.exists("logo_tour_transparente.png") else None
     
     if logo_tour:
-        # Logo aumentada
         img_logo = Image(logo_tour, width=155, height=56, kind='proportional')
     else:
         img_logo = Paragraph("<b>TOUR360VR</b>", header_title_style)
@@ -176,8 +175,8 @@ def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
         header_title_style
     )
 
-    # Tabela do cabeçalho com 10pt de separação (155pt logo + 10pt espaço + 375pt texto = 540pt)
-    header_table = Table([[img_logo, "", texto_cabecalho]], colWidths=[155, 10, 375])
+    # Distância entre a logo e o texto reduzida para 5pt (bem próximo)
+    header_table = Table([[img_logo, "", texto_cabecalho]], colWidths=[155, 5, 380])
     header_table.setStyle(TableStyle([
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
         ('LEFTPADDING', (0,0), (-1,-1), 0),
@@ -196,7 +195,7 @@ def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
     canvas.setLineWidth(1.5)
     canvas.line(36, 712, 576, 712)
     
-    # RODAPÉ FIXO COM HIPERLINKS RECALIBRADOS SOBRE OS TEXTOS
+    # RODAPÉ FIXO COM HIPERLINKS EXATAMENTE ALINHADOS COM O TEXTO
     canvas.setLineWidth(1)
     canvas.line(36, 42, 576, 42)
     
@@ -206,14 +205,14 @@ def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
     texto_rodape = "tour360vr.com.br   |   contato@okamotomidiasvisuais.com.br   |   (16) 99133-2121"
     canvas.drawCentredString(306, 25, texto_rodape)
 
-    # Coordenadas precisas para cada link no rodapé
+    # Coordenadas recalibradas para cobrir exatamente cada trecho do texto
     try:
-        # Link 1: Site tour360vr.com.br (X: 105 até 210)
-        canvas.linkURL('https://tour360vr.com.br', (105, 18, 210, 34), relative=0)
-        # Link 2: E-mail contato@okamotomidiasvisuais.com.br (X: 220 até 425)
-        canvas.linkURL('mailto:contato@okamotomidiasvisuais.com.br', (220, 18, 425, 34), relative=0)
-        # Link 3: WhatsApp (16) 99133-2121 (X: 435 até 515)
-        canvas.linkURL('https://wa.me/5516991332121', (435, 18, 515, 34), relative=0)
+        # Link 1: Site tour360vr.com.br (X: 110 até 200)
+        canvas.linkURL('https://tour360vr.com.br', (110, 16, 200, 34), relative=0)
+        # Link 2: E-mail contato@okamotomidiasvisuais.com.br (X: 215 até 415)
+        canvas.linkURL('mailto:contato@okamotomidiasvisuais.com.br', (215, 16, 415, 34), relative=0)
+        # Link 3: WhatsApp (16) 99133-2121 (X: 425 até 505)
+        canvas.linkURL('https://wa.me/5516991332121', (425, 16, 505, 34), relative=0)
     except Exception:
         pass
         
@@ -693,7 +692,7 @@ if st.session_state.etapa == 1:
             mudar_etapa(2)
 
 # -----------------------------------------------------------------------------
-# ETAPA 2: BASE DE LEADS & CRM DE VENDAS
+# ETAPA 2: BASE DE LEADS & CRM DE VENDAS (FILTROS REORDENADOS)
 # -----------------------------------------------------------------------------
 elif st.session_state.etapa == 2:
     st.markdown("""
@@ -708,26 +707,26 @@ elif st.session_state.etapa == 2:
     else:
         df_leads_crm = pd.DataFrame(base_leads)
 
-        col_back, col_f_status, col_f_cid, col_f_nicho, col_export = st.columns([1.2, 2, 2, 2, 2.2])
+        col_back, col_f_nicho, col_f_cid, col_f_status, col_export = st.columns([1.2, 2, 2, 2, 2.2])
         
         with col_back:
             st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
             if st.button("⬅️ Nova Busca", use_container_width=True):
                 mudar_etapa(1)
 
-        with col_f_status:
-            filtro_status = st.selectbox(
-                "Status CRM:",
-                ["Todos os Status", "🆕 Novo Lead", "💬 Em Abordagem", "🛠️ Diagnóstico Gerado", "🤝 Cliente Fechado", "❌ Recusado"]
-            )
+        with col_f_nicho:
+            nichos_existentes = ["Todos os Nichos"] + list(df_leads_crm['categoria'].unique())
+            filtro_nicho = st.selectbox("Filtrar por Nicho:", nichos_existentes)
 
         with col_f_cid:
             cidades_existentes = ["Todas as Cidades"] + list(df_leads_crm['cidade_busca'].unique())
             filtro_cidade = st.selectbox("Filtrar por Cidade:", cidades_existentes)
 
-        with col_f_nicho:
-            nichos_existentes = ["Todos os Nichos"] + list(df_leads_crm['categoria'].unique())
-            filtro_nicho = st.selectbox("Filtrar por Nicho:", nichos_existentes)
+        with col_f_status:
+            filtro_status = st.selectbox(
+                "Status CRM:",
+                ["Todos os Status", "🆕 Novo Lead", "💬 Em Abordagem", "🛠️ Diagnóstico Gerado", "🤝 Cliente Fechado", "❌ Recusado"]
+            )
 
         with col_export:
             st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
@@ -743,12 +742,12 @@ elif st.session_state.etapa == 2:
         st.divider()
 
         resultados_filtrados = base_leads
-        if filtro_status != "Todos os Status":
-            resultados_filtrados = [r for r in resultados_filtrados if r['status_crm'] == filtro_status]
-        if filtro_cidade != "Todas as Cidades":
-            resultados_filtrados = [r for r in resultados_filtrados if r['cidade_busca'] == filtro_cidade]
         if filtro_nicho != "Todos os Nichos":
             resultados_filtrados = [r for r in resultados_filtrados if r['categoria'] == filtro_nicho]
+        if filtro_cidade != "Todas as Cidades":
+            resultados_filtrados = [r for r in resultados_filtrados if r['cidade_busca'] == filtro_cidade]
+        if filtro_status != "Todos os Status":
+            resultados_filtrados = [r for r in resultados_filtrados if r['status_crm'] == filtro_status]
 
         st.markdown(f"Exibindo **{len(resultados_filtrados)}** oportunidades salvas:")
 
@@ -876,7 +875,7 @@ elif st.session_state.etapa == 3:
 
         df_filtrado_sorted = df_filtrado.sort_values(by='score_oportunidade', ascending=False)
 
-        # Nome de arquivo formatado conforme pedido: "Panorama de Mercado - (nicho) - (data)"
+        # Nome de arquivo formatado: "Panorama de Mercado - (nicho) - (data)"
         data_hoje_str = datetime.now().strftime('%d-%m-%Y')
         nicho_limpo = nicho_selecionado.replace(':', '').replace('/', ' ')
         nome_arquivo_pdf = f"Panorama de Mercado - {nicho_limpo} - {data_hoje_str}.pdf"
@@ -950,7 +949,7 @@ elif st.session_state.etapa == 3:
         )
 
 # -----------------------------------------------------------------------------
-# ETAPA 4: MAPA DE PROSPECÇÃO (ABRE NA MAIOR CONCENTRAÇÃO DE RESULTADOS)
+# ETAPA 4: MAPA DE PROSPECÇÃO (PADRONIZADO PARA NICHO)
 # -----------------------------------------------------------------------------
 elif st.session_state.etapa == 4:
     st.markdown("""
@@ -967,8 +966,8 @@ elif st.session_state.etapa == 4:
         
         col_f1, col_f2, col_f3 = st.columns([2, 2, 2])
         with col_f1:
-            cats_mapa = ["Todos os Segmentos"] + list(df_mapa['categoria'].unique())
-            cat_sel_mapa = st.selectbox("🏷️ Segmento no Mapa:", cats_mapa)
+            cats_mapa = ["Todos os Nichos"] + list(df_mapa['categoria'].unique())
+            cat_sel_mapa = st.selectbox("🎯 Nicho no Mapa:", cats_mapa)
             
         with col_f2:
             cids_mapa = ["Todas as Cidades/Regiões"] + list(df_mapa['cidade_busca'].unique())
@@ -981,7 +980,7 @@ elif st.session_state.etapa == 4:
             )
 
         df_mapa_filtrado = df_mapa.copy()
-        if cat_sel_mapa != "Todos os Segmentos":
+        if cat_sel_mapa != "Todos os Nichos":
             df_mapa_filtrado = df_mapa_filtrado[df_mapa_filtrado['categoria'] == cat_sel_mapa]
         if cid_sel_mapa != "Todas as Cidades/Regiões":
             df_mapa_filtrado = df_mapa_filtrado[df_mapa_filtrado['cidade_busca'] == cid_sel_mapa]
@@ -1012,8 +1011,8 @@ elif st.session_state.etapa == 4:
         segmentos_unicos = list(df_mapa['categoria'].unique())
         mapa_cores_seg = {seg: CORES_PINS[idx % len(CORES_PINS)] for idx, seg in enumerate(segmentos_unicos)}
 
-        if cat_sel_mapa == "Todos os Segmentos" and len(segmentos_unicos) > 1:
-            st.markdown("**🎨 Legenda de Cores por Segmento:**")
+        if cat_sel_mapa == "Todos os Nichos" and len(segmentos_unicos) > 1:
+            st.markdown("**🎨 Legenda de Cores por Nicho:**")
             cols_leg = st.columns(min(len(segmentos_unicos), 5))
             for idx, (seg, cor_nome) in enumerate(mapa_cores_seg.items()):
                 hex_cor = CORES_HEX.get(cor_nome, '#ef4444')
@@ -1034,7 +1033,7 @@ elif st.session_state.etapa == 4:
             m = folium.Map(location=[lat_centro, lon_centro], zoom_start=14, tiles="OpenStreetMap")
 
             for _, row in df_mapa_filtrado.iterrows():
-                cor_pin = mapa_cores_seg.get(row['categoria'], 'red') if cat_sel_mapa == "Todos os Segmentos" else 'red'
+                cor_pin = mapa_cores_seg.get(row['categoria'], 'red') if cat_sel_mapa == "Todos os Nichos" else 'red'
                 url_maps_emp = f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(row['nome'])}"
 
                 info_card_html = f"""
