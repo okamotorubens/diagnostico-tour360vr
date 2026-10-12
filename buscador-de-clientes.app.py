@@ -10,12 +10,16 @@ import csv
 import urllib.parse
 from datetime import datetime
 import io
+import streamlit.components.v1 as components
+from streamlit_folium import st_folium
+import folium
 
 # ReportLab para geração do PDF do Panorama
 from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image, HRFlowable
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.graphics.shapes import Drawing, Rect
 
 # -----------------------------------------------------------------------------
 # CONFIGURAÇÃO DO ENDEREÇO DO SEU SISTEMA DE DIAGNÓSTICO
@@ -180,49 +184,57 @@ def limpar_banco_dados():
 init_db()
 
 # -----------------------------------------------------------------------------
-# GERADOR DE PDF DO PANORAMA DE NICHO
+# GERADOR DE PDF DO PANORAMA DE NICHO (LAYOUT REFINADO)
 # -----------------------------------------------------------------------------
 def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=36, leftMargin=36, topMargin=25, bottomMargin=25)
+    doc = SimpleDocTemplate(
+        buffer, pagesize=letter,
+        rightMargin=36, leftMargin=36, topMargin=25, bottomMargin=35,
+        title=f"Panorama de Mercado - {nicho_nome}",
+        author="Tour360VR"
+    )
     styles = getSampleStyleSheet()
     
-    title_style = ParagraphStyle('DocTitle', parent=styles['Heading1'], fontSize=13.5, textColor=colors.HexColor('#0f172a'), fontName='Helvetica-Bold', alignment=1, spaceAfter=4)
-    subtitle_style = ParagraphStyle('DocSubtitle', parent=styles['Normal'], fontSize=9.5, textColor=colors.HexColor('#475569'), alignment=1, spaceAfter=14)
-    section_heading = ParagraphStyle('SectionHeading', parent=styles['Heading2'], fontSize=10.5, textColor=colors.HexColor('#1e293b'), spaceBefore=12, spaceAfter=6, fontName='Helvetica-Bold')
+    title_style = ParagraphStyle('DocTitle', parent=styles['Heading1'], fontSize=13, textColor=colors.HexColor('#0f172a'), fontName='Helvetica-Bold', alignment=0, spaceAfter=8)
+    header_sub_style = ParagraphStyle('HeaderSub', parent=styles['Normal'], fontSize=9.5, textColor=colors.HexColor('#475569'), fontName='Helvetica-Bold', alignment=2)
+    section_heading = ParagraphStyle('SectionHeading', parent=styles['Heading2'], fontSize=10.5, textColor=colors.HexColor('#1e293b'), spaceBefore=8, spaceAfter=6, fontName='Helvetica-Bold', alignment=1)
     body_style = ParagraphStyle('BodyTextCustom', parent=styles['Normal'], fontSize=8.5, textColor=colors.HexColor('#334155'), leading=10.5)
+    body_center = ParagraphStyle('BodyCenter', parent=body_style, alignment=1)
 
     elements = []
 
     logo_tour = "logo_tour_transparente.png" if os.path.exists("logo_tour_transparente.png") else None
-    img_tour = Image(logo_tour, width=160, height=52, kind='proportional') if logo_tour else Paragraph("<b>TOUR360VR</b>", body_style)
+    img_tour = Image(logo_tour, width=150, height=48, kind='proportional') if logo_tour else Paragraph("<b>TOUR360VR</b>", body_style)
 
-    header_table = Table([[img_tour]], colWidths=[540])
+    sub_header_p = Paragraph("Estudo de Inteligência de Mercado Local<br/>e Presença Digital no Google", header_sub_style)
+
+    header_table = Table([[img_tour, sub_header_p]], colWidths=[240, 300])
     header_table.setStyle(TableStyle([
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-        ('ALIGN', (0,0), (-1,-1), 'LEFT'),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 4),
+        ('ALIGN', (0,0), (0,0), 'LEFT'),
+        ('ALIGN', (1,0), (1,0), 'RIGHT'),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 2),
     ]))
     elements.append(header_table)
     
-    elements.append(Spacer(1, 4))
-    elements.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor('#cbd5e1'), spaceBefore=2, spaceAfter=12))
+    elements.append(Spacer(1, 2))
+    elements.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor('#cbd5e1'), spaceBefore=2, spaceAfter=10))
 
     elements.append(Paragraph(f"PANORAMA DE MERCADO: {nicho_nome.upper()}", title_style))
-    elements.append(Paragraph("Estudo de Inteligência de Mercado Local e Presença Digital no Google", subtitle_style))
-
-    elements.append(Spacer(1, 6))
+    elements.append(Spacer(1, 4))
 
     total_emp = len(df_nicho)
     sem_tour = len(df_nicho[df_nicho['tour_360'] == False])
     sem_site = len(df_nicho[df_nicho['website'] == ''])
     nao_reiv = len(df_nicho[df_nicho['reivindicada'] == False])
 
+    # INDICADORES ESTRATÉGICOS
     dados_resumo = [
-        [Paragraph("<b>INDICADOR ESTRATÉGICO</b>", body_style), Paragraph("<b>VOLUME / %</b>", body_style), Paragraph("<b>DIAGNÓSTICO DE OPORTUNIDADE</b>", body_style)],
-        [Paragraph("Sem Tour Virtual 360°", body_style), Paragraph(f"{sem_tour} ({(sem_tour/total_emp*100 if total_emp>0 else 0):.1f}%)", body_style), Paragraph("Oportunidade crítica para implantação de experiência imersiva.", body_style)],
-        [Paragraph("Sem Website Oficial", body_style), Paragraph(f"{sem_site} ({(sem_site/total_emp*100 if total_emp>0 else 0):.1f}%)", body_style), Paragraph("Perda de tráfego direto e dependência de redes sociais.", body_style)],
-        [Paragraph("Fichas Não Reivindicadas", body_style), Paragraph(f"{nao_reiv} ({(nao_reiv/total_emp*100 if total_emp>0 else 0):.1f}%)", body_style), Paragraph("Vulnerabilidade de segurança e falta de gestão do perfil.", body_style)]
+        [Paragraph("<b>INDICADOR ESTRATÉGICO</b>", body_style), Paragraph("<b>VOLUME / %</b>", body_center), Paragraph("<b>DIAGNÓSTICO DE OPORTUNIDADE</b>", body_style)],
+        [Paragraph("Sem Tour Virtual 360°", body_style), Paragraph(f"{sem_tour} ({(sem_tour/total_emp*100 if total_emp>0 else 0):.1f}%)", body_center), Paragraph("Oportunidade crítica para implantação de experiência imersiva.", body_style)],
+        [Paragraph("Sem Website Oficial", body_style), Paragraph(f"{sem_site} ({(sem_site/total_emp*100 if total_emp>0 else 0):.1f}%)", body_center), Paragraph("Perda de tráfego direto e dependência de redes sociais.", body_style)],
+        [Paragraph("Fichas Não Reivindicadas", body_style), Paragraph(f"{nao_reiv} ({(nao_reiv/total_emp*100 if total_emp>0 else 0):.1f}%)", body_center), Paragraph("Vulnerabilidade de segurança e falta de gestão do perfil.", body_style)]
     ]
     t_resumo = Table(dados_resumo, colWidths=[150, 90, 300])
     t_resumo.setStyle(TableStyle([
@@ -231,43 +243,45 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
         ('INNERGRID', (0,0), (-1,-1), 0.5, colors.HexColor('#e2e8f0')),
         ('TOPPADDING', (0,0), (-1,-1), 4),
         ('BOTTOMPADDING', (0,0), (-1,-1), 4),
+        ('ALIGN', (1,0), (1,-1), 'CENTER'),
     ]))
     elements.append(t_resumo)
     
-    elements.append(Spacer(1, 12))
-    elements.append(Paragraph("RANKING DE EMPRESAS AUDITADAS NO SETOR (ORDENADO POR MAIOR SCORE)", section_heading))
-    elements.append(Spacer(1, 6))
+    elements.append(Spacer(1, 10))
+    elements.append(Paragraph("RANKING DE EMPRESAS AUDITADAS NO SETOR", section_heading))
+    elements.append(Spacer(1, 4))
 
     df_nicho_sorted = df_nicho.sort_values(by='score_oportunidade', ascending=False)
 
     t_data = [[
         Paragraph("<b>EMPRESA</b>", body_style), 
-        Paragraph("<b>NOTA</b>", body_style), 
-        Paragraph("<b>SITE</b>", body_style), 
-        Paragraph("<b>360°</b>", body_style), 
-        Paragraph("<b>SCORE (OPORTUNIDADE)</b>", body_style)
+        Paragraph("<b>NOTA</b>", body_center), 
+        Paragraph("<b>SITE</b>", body_center), 
+        Paragraph("<b>360°</b>", body_center), 
+        Paragraph("<b>SCORE</b>", body_center)
     ]]
     
     for idx, row in df_nicho_sorted.head(12).iterrows():
         t_data.append([
-            Paragraph(str(row['nome'])[:38], body_style),
-            Paragraph(str(row['nota']), body_style),
-            Paragraph("Sim" if row['website'] else "Não", body_style),
-            Paragraph("Sim" if row['tour_360'] else "Não", body_style),
-            Paragraph(f"<b>{row['score_oportunidade']}/100</b>", body_style)
+            Paragraph(str(row['nome'])[:40], body_style),
+            Paragraph(str(row['nota']), body_center),
+            Paragraph("Sim" if row['website'] else "Não", body_center),
+            Paragraph("Sim" if row['tour_360'] else "Não", body_center),
+            Paragraph(f"<b>{row['score_oportunidade']}/100</b>", body_center)
         ])
 
-    t_empresas = Table(t_data, colWidths=[230, 45, 45, 45, 175])
+    t_empresas = Table(t_data, colWidths=[240, 60, 60, 60, 120])
     t_empresas.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#f8fafc')),
         ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1')),
         ('INNERGRID', (0,0), (-1,-1), 0.5, colors.HexColor('#f1f5f9')),
         ('TOPPADDING', (0,0), (-1,-1), 3),
         ('BOTTOMPADDING', (0,0), (-1,-1), 3),
+        ('ALIGN', (1,0), (-1,-1), 'CENTER'),
     ]))
     elements.append(t_empresas)
 
-    elements.append(Spacer(1, 12))
+    elements.append(Spacer(1, 14))
     elements.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor('#cbd5e1'), spaceBefore=4, spaceAfter=6))
     
     rodape_text = Paragraph(
@@ -340,13 +354,13 @@ if 'etapa' not in st.session_state:
     st.session_state.etapa = 1
 
 # -----------------------------------------------------------------------------
-# INTEGRAÇÃO DE BUSCA E AUDITORIA
+# INTEGRAÇÃO DE BUSCA PRECISA POR BAIRRO E CIDADE
 # -----------------------------------------------------------------------------
 def buscar_google_places_api(nicho, cidade, bairro, api_key, limite=20):
-    query_str = f"{nicho}"
+    query_str = f'"{nicho}"'
     if bairro:
-        query_str += f" no bairro {bairro}"
-    query_str += f" em {cidade}"
+        query_str += f' no bairro "{bairro}"'
+    query_str += f' em "{cidade}" - SP'
 
     url = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={urllib.parse.quote(query_str)}&language=pt-BR&key={api_key}"
     try:
@@ -365,6 +379,10 @@ def buscar_google_places_api(nicho, cidade, bairro, api_key, limite=20):
                 
                 nome = det_res.get("name") or place.get("name")
                 endereco = det_res.get("formatted_address") or place.get("formatted_address")
+                
+                if bairro and bairro.lower() not in endereco.lower():
+                    pass
+
                 telefone = det_res.get("formatted_phone_number", "")
                 website = det_res.get("website", "")
                 nota = det_res.get("rating", place.get("rating", 0.0))
@@ -451,11 +469,11 @@ def minerar_e_auditar_negocios(nicho, cidade, bairro, limite=20):
 
     bairro_label = f" - Bairro {bairro}" if bairro else ""
     exemplo_estabelecimentos = [
-        {"nome": f"Loja & Boutique {cidade}", "bairro": bairro or "Centro", "rua": "Rua Saldanha Marinho", "lat": -21.1775, "lng": -47.8103, "img": "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&q=80"},
-        {"nome": f"Estilo & Moda {nicho.capitalize()}", "bairro": bairro or "Alto da Boa Vista", "rua": "Av. Independência", "lat": -21.1895, "lng": -47.8050, "img": "https://images.unsplash.com/photo-1567401893414-76b7b1e5a7a5?w=400&q=80"},
+        {"nome": f"Loja & Boutique {cidade}", "bairro": bairro or "Jardim Sumaré", "rua": "Rua Saldanha Marinho", "lat": -21.1775, "lng": -47.8103, "img": "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&q=80"},
+        {"nome": f"Estilo & Moda {nicho.capitalize()}", "bairro": bairro or "Jardim Sumaré", "rua": "Av. Independência", "lat": -21.1895, "lng": -47.8050, "img": "https://images.unsplash.com/photo-1567401893414-76b7b1e5a7a5?w=400&q=80"},
         {"nome": f"Empório & {nicho.capitalize()} do Barão", "bairro": bairro or "Jardim Sumaré", "rua": "Rua Garibaldi", "lat": -21.1920, "lng": -47.8150, "img": "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400&q=80"},
-        {"nome": f"Conceito {nicho.capitalize()} Brasil", "bairro": bairro or "Vila Seixas", "rua": "Rua Amador Bueno", "lat": -21.1800, "lng": -47.8000, "img": "https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=400&q=80"},
-        {"nome": f"Studio & Galeria {nicho.capitalize()}", "bairro": bairro or "Jardim Botânico", "rua": "Av. Professor João Fiúsa", "lat": -21.2050, "lng": -47.8120, "img": "https://images.unsplash.com/photo-1513151233558-d860c5398176?w=400&q=80"}
+        {"nome": f"Conceito {nicho.capitalize()} Brasil", "bairro": bairro or "Jardim Sumaré", "rua": "Rua Amador Bueno", "lat": -21.1800, "lng": -47.8000, "img": "https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=400&q=80"},
+        {"nome": f"Studio & Galeria {nicho.capitalize()}", "bairro": bairro or "Jardim Sumaré", "rua": "Av. Professor João Fiúsa", "lat": -21.2050, "lng": -47.8120, "img": "https://images.unsplash.com/photo-1513151233558-d860c5398176?w=400&q=80"}
     ]
 
     resultados = []
@@ -652,7 +670,7 @@ if st.session_state.etapa == 1:
             st.rerun()
 
 # -----------------------------------------------------------------------------
-# ETAPA 2: BASE DE LEADS & CRM DE VENDAS
+# ETAPA 2: BASE DE LEADS & CRM DE VENDAS (COM FILTRO DUPLO DE STATUS E NICHO)
 # -----------------------------------------------------------------------------
 elif st.session_state.etapa == 2:
     st.markdown("""
@@ -662,22 +680,28 @@ elif st.session_state.etapa == 2:
         </div>
     """, unsafe_allow_html=True)
 
-    col_back, col_filter, col_export = st.columns([1.5, 3, 2.5])
+    df_leads_crm = pd.DataFrame(base_leads)
+
+    col_back, col_f_status, col_f_nicho, col_export = st.columns([1.2, 2, 2, 2])
     with col_back:
         if st.button("⬅️ Nova Busca", use_container_width=True):
             st.session_state.etapa = 1
             st.rerun()
 
-    with col_filter:
+    with col_f_status:
         filtro_status = st.selectbox(
             "Filtrar por Status CRM:",
             ["Todos os Status", "🆕 Novo Lead", "💬 Em Abordagem", "🛠️ Diagnóstico Gerado", "🤝 Cliente Fechado", "❌ Recusado"]
         )
 
+    with col_f_nicho:
+        nichos_existentes = ["Todos os Nichos"] + list(df_leads_crm['categoria'].unique())
+        filtro_nicho = st.selectbox("Filtrar por Nicho:", nichos_existentes)
+
     with col_export:
         csv_bytes = gerar_csv_excel_formatado(base_leads)
         st.download_button(
-            label="📊 Exportar Planilha Completa (.csv)",
+            label="📊 Exportar Planilha (.csv)",
             data=csv_bytes,
             file_name=f"Leads_Completo_CRM_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
             mime="text/csv",
@@ -686,7 +710,11 @@ elif st.session_state.etapa == 2:
 
     st.divider()
 
-    resultados_filtrados = base_leads if filtro_status == "Todos os Status" else [r for r in base_leads if r['status_crm'] == filtro_status]
+    resultados_filtrados = base_leads
+    if filtro_status != "Todos os Status":
+        resultados_filtrados = [r for r in resultados_filtrados if r['status_crm'] == filtro_status]
+    if filtro_nicho != "Todos os Nichos":
+        resultados_filtrados = [r for r in resultados_filtrados if r['categoria'] == filtro_nicho]
 
     st.markdown(f"Exibindo **{len(resultados_filtrados)}** oportunidades salvas:")
 
@@ -779,7 +807,7 @@ TOUR360VR | Okamoto Mídias Visuais
         st.divider()
 
 # -----------------------------------------------------------------------------
-# ETAPA 3: PANORAMA DE NICHO
+# ETAPA 3: PANORAMA DE NICHO (TABELA REFINADA E COMPACTA)
 # -----------------------------------------------------------------------------
 elif st.session_state.etapa == 3:
     st.markdown("""
@@ -848,25 +876,29 @@ elif st.session_state.etapa == 3:
     st.divider()
     st.markdown(f"### 📋 Ranking do Nicho **{nicho_selecionado}** (Do Maior para o Menor Score):")
     
-    df_exibicao = df_filtrado_sorted[['nome', 'cidade_busca', 'score_oportunidade', 'nota', 'total_avaliacoes', 'website', 'tour_360']].copy()
-    df_exibicao.columns = ['EMPRESA', 'CIDADE', 'SCORE (OPORTUNIDADE)', 'NOTA', 'AVALIAÇÕES', 'WEBSITE', 'TOUR 360°']
+    df_exibicao = df_filtrado_sorted[['nome', 'cidade_busca', 'score_oportunidade', 'nota', 'total_avaliacoes', 'website']].copy()
+    df_exibicao.columns = ['EMPRESA', 'CIDADE', 'SCORE', 'NOTA', 'AVALIAÇÕES', 'WEBSITE']
 
-    altura_dinamica = (len(df_exibicao) + 1) * 38 + 5
-    
     st.dataframe(
         df_exibicao,
         use_container_width=True,
-        height=min(max(altura_dinamica, 200), 2500)
+        hide_index=True,
+        column_config={
+            "SCORE": st.column_config.NumberColumn("SCORE", width="small"),
+            "NOTA": st.column_config.NumberColumn("NOTA", width="small"),
+            "AVALIAÇÕES": st.column_config.NumberColumn("AVALIAÇÕES", width="small"),
+            "WEBSITE": st.column_config.TextColumn("WEBSITE", width="medium")
+        }
     )
 
 # -----------------------------------------------------------------------------
-# ETAPA 4: MAPA DE PROSPECÇÃO
+# ETAPA 4: MAPA DE PROSPECÇÃO (MAPA FOLIUM ATIVO E MODO CLARO COM PINS)
 # -----------------------------------------------------------------------------
 elif st.session_state.etapa == 4:
     st.markdown("""
         <div class="main-header">
             <h1 class="main-title">🗺️ Mapa de Localização e Concentração</h1>
-            <div class="main-subtitle">Sua base de dados de empresas mapeadas na região.</div>
+            <div class="main-subtitle">Sua base de dados de empresas mapeadas na região com rótulos e scores.</div>
         </div>
     """, unsafe_allow_html=True)
 
@@ -889,7 +921,37 @@ elif st.session_state.etapa == 4:
 
     st.info(f"📌 Exibindo **{len(df_mapa_filtrado)} empresas** cadastradas para o segmento: **{cat_sel_mapa}** ({cid_sel_mapa})")
 
-    st.dataframe(
-        df_mapa_filtrado[['nome', 'categoria', 'cidade_busca', 'endereco', 'score_oportunidade']],
-        use_container_width=True
-    )
+    if 'latitude' in df_mapa_filtrado.columns and 'longitude' in df_mapa_filtrado.columns and len(df_mapa_filtrado) > 0:
+        lat_centro = df_mapa_filtrado['latitude'].mean()
+        lon_centro = df_mapa_filtrado['longitude'].mean()
+
+        m = folium.Map(location=[lat_centro, lon_centro], zoom_start=13, tiles="OpenStreetMap")
+
+        for _, row in df_mapa_filtrado.iterrows():
+            icon_html = f"""
+            <div style="
+                background-color: #dc2626; color: white; padding: 3px 7px; border-radius: 4px;
+                font-weight: bold; font-size: 11px; font-family: sans-serif; white-space: nowrap;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.3); border: 1px solid white;">
+                📍 {row['nome']} ({row['score_oportunidade']}/100)
+            </div>
+            """
+            
+            popup_html = f"""
+            <div style="font-family: sans-serif; font-size: 12px; min-width: 160px;">
+                <b style="color: #0f172a; font-size: 13px;">{row['nome']}</b><br/>
+                📍 <i>{row['endereco']}</i><br/>
+                🚨 <b>Score Oportunidade:</b> {row['score_oportunidade']}/100<br/>
+                ⭐ <b>Nota:</b> {row['nota']} ({row['total_avaliacoes']} avaliações)
+            </div>
+            """
+
+            folium.Marker(
+                location=[row['latitude'], row['longitude']],
+                popup=folium.Popup(popup_html, max_width=250),
+                icon=folium.DivIcon(html=icon_html)
+            ).add_to(m)
+
+        st_folium(m, width="100%", height=700)
+    else:
+        st.warning("Nenhum registro encontrado para os filtros selecionados.")
