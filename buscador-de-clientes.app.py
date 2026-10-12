@@ -45,19 +45,20 @@ if os.path.exists("logo_tour_transparente.png"):
 
 st.set_page_config(
     page_title="Radar & CRM de Prospecção | Tour360VR",
-    page_icon=favicon_img,
+    page_icon=favicon_img if not favicon_b64 else PILImage.open("logo_tour_transparente.png"),
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# INJEÇÃO HTML/JS PARA FORÇAR O FAVICON NA ABA DO NAVEGADOR
-if favicon_b64:
-    components.html(f"""
-        <script>
-            var body = window.parent.document.querySelector(".main");
-            if (body) {{ body.scrollTop = 0; }}
-            
-            var head = window.parent.document.getElementsByTagName('head')[0];
+# FORÇAR O NAVEGADOR A IR PARA O TOPO E EXIBIR FAVICON
+components.html(f"""
+    <script>
+        window.parent.scrollTo(0, 0);
+        var body = window.parent.document.querySelector(".main");
+        if (body) {{ body.scrollTop = 0; }}
+        
+        var head = window.parent.document.getElementsByTagName('head')[0];
+        if (head && '{favicon_b64}') {{
             var links = window.parent.document.querySelectorAll("link[rel*='icon']");
             links.forEach(function(l) {{ l.parentNode.removeChild(l); }});
             
@@ -66,8 +67,9 @@ if favicon_b64:
             link.rel = 'shortcut icon';
             link.href = 'data:image/png;base64,{favicon_b64}';
             head.appendChild(link);
-        </script>
-    """, height=0)
+        }}
+    </script>
+""", height=0)
 
 # -----------------------------------------------------------------------------
 # CONEXÃO BANCO DE DADOS EM NUVEM PERMANENTE (SUPABASE)
@@ -145,26 +147,49 @@ def limpar_banco_dados():
         st.error(f"Erro ao limpar banco: {str(e)}")
 
 # -----------------------------------------------------------------------------
-# GERADOR DE PDF DO PANORAMA DE NICHO
+# GERADOR DE PDF DO PANORAMA DE NICHO (COM LOGO MAIOR, CABEÇALHO/RODAPÉ EM TODAS PÁGINAS)
 # -----------------------------------------------------------------------------
-def desenhar_rodape_fixo_links(canvas, doc):
+def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
     canvas.saveState()
+    
+    # 1. CABEÇALHO DA PÁGINA
+    logo_tour = "logo_tour_transparente.png" if os.path.exists("logo_tour_transparente.png") else None
+    if logo_tour:
+        try:
+            # Logo com dimensão aumentada
+            canvas.drawImage(logo_tour, 36, 735, width=150, height=58, preserveAspectRatio=True, mask='auto')
+        except Exception:
+            pass
+
+    canvas.setFont('Helvetica-Bold', 12)
+    canvas.setFillColor(colors.HexColor('#0f172a'))
+    
+    # Título do cabeçalho formatado estritamente em 2 linhas
+    canvas.drawCentredString(380, 768, "ESTUDO DE INTELIGÊNCIA DE MERCADO LOCAL E")
+    canvas.drawCentredString(380, 750, "PRESENÇA DIGITAL NO GOOGLE")
+    
     canvas.setStrokeColor(colors.HexColor('#cbd5e1'))
+    canvas.setLineWidth(1.5)
+    canvas.line(36, 730, 576, 730)
+    
+    # 2. RODAPÉ FIXO COM LINKS FUNCIONAIS
     canvas.setLineWidth(1)
-    canvas.line(36, 35, 576, 35)
+    canvas.line(36, 40, 576, 40)
     
     canvas.setFont('Helvetica', 8.5)
-    canvas.setFillColor(colors.HexColor('#000000'))
-    
-    try:
-        canvas.linkURL('https://tour360vr.com.br', (130, 762, 205, 780), relative=1)
-        canvas.linkURL('mailto:contato@okamotomidiasvisuais.com.br', (220, 762, 415, 780), relative=1)
-        canvas.linkURL('https://wa.me/5516991332121', (435, 762, 510, 780), relative=1)
-    except Exception:
-        pass
+    canvas.setFillColor(colors.HexColor('#0f172a'))
     
     texto_rodape = "tour360vr.com.br   |   contato@okamotomidiasvisuais.com.br   |   (16) 99133-2121"
-    canvas.drawCentredString(306, 22, texto_rodape)
+    canvas.drawCentredString(306, 25, texto_rodape)
+
+    # Hiperlinks clicáveis sobre o texto do rodapé
+    try:
+        canvas.linkURL('https://tour360vr.com.br', (120, 15, 210, 35), relative=0)
+        canvas.linkURL('mailto:contato@okamotomidiasvisuais.com.br', (220, 15, 410, 35), relative=0)
+        canvas.linkURL('https://wa.me/5516991332121', (420, 15, 500, 35), relative=0)
+    except Exception:
+        pass
+        
     canvas.restoreState()
 
 def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
@@ -172,66 +197,44 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     
     doc = SimpleDocTemplate(
         buffer, pagesize=letter,
-        rightMargin=36, leftMargin=36, topMargin=20, bottomMargin=50,
+        rightMargin=36, leftMargin=36, topMargin=70, bottomMargin=55,
         title=f"Panorama de Mercado - {nicho_nome}",
         author="Tour360VR"
     )
     styles = getSampleStyleSheet()
     
-    sub_title_header = ParagraphStyle(
-        'SubTitleHeader', parent=styles['Normal'],
-        fontSize=14.5, leading=17, textColor=colors.HexColor('#0f172a'),
-        fontName='Helvetica-Bold', alignment=1
-    )
-    
     main_title_style = ParagraphStyle(
         'MainTitle', parent=styles['Heading1'],
-        fontSize=14, textColor=colors.HexColor('#0f172a'),
-        fontName='Helvetica-Bold', alignment=1, spaceBefore=4, spaceAfter=6
+        fontSize=13.5, textColor=colors.HexColor('#0f172a'),
+        fontName='Helvetica-Bold', alignment=1, spaceBefore=2, spaceAfter=8
     )
     
     section_heading = ParagraphStyle(
         'SectionHeading', parent=styles['Heading2'],
-        fontSize=10.5, textColor=colors.HexColor('#0f172a'),
-        spaceBefore=10, spaceAfter=6, fontName='Helvetica-Bold', alignment=1
+        fontSize=10, textColor=colors.HexColor('#0f172a'),
+        spaceBefore=8, spaceAfter=5, fontName='Helvetica-Bold', alignment=1
     )
     
-    body_style = ParagraphStyle('BodyTextCustom', parent=styles['Normal'], fontSize=9, textColor=colors.HexColor('#334155'), leading=11)
+    body_style = ParagraphStyle('BodyTextCustom', parent=styles['Normal'], fontSize=8.5, textColor=colors.HexColor('#334155'), leading=10.5)
     body_center = ParagraphStyle('BodyCenter', parent=body_style, alignment=1)
 
     elements = []
 
-    logo_tour = "logo_tour_transparente.png" if os.path.exists("logo_tour_transparente.png") else None
-    img_tour = Image(logo_tour, width=125, height=48, kind='proportional') if logo_tour else Paragraph("<b>TOUR360VR</b>", body_style)
-
-    header_p = Paragraph("ESTUDO DE INTELIGÊNCIA DE MERCADO LOCAL E PRESENÇA DIGITAL GOOGLE", sub_title_header)
-
-    header_table = Table([[img_tour, header_p, ""]], colWidths=[125, 290, 125])
-    header_table.setStyle(TableStyle([
-        ('ALIGN', (0,0), (0,0), 'LEFT'),
-        ('ALIGN', (1,0), (1,0), 'CENTER'),
-        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 2),
-    ]))
-    elements.append(header_table)
-    
-    elements.append(HRFlowable(width="100%", thickness=1.5, color=colors.HexColor('#cbd5e1'), spaceBefore=6, spaceAfter=8))
-
-    elements.append(Spacer(1, 2))
+    # Título do Panorama
     title_p = Paragraph(f"PANORAMA DE MERCADO: {nicho_nome.upper()}", main_title_style)
     title_table = Table([[title_p]], colWidths=[540])
     title_table.setStyle(TableStyle([('ALIGN', (0,0), (-1,-1), 'CENTER')]))
     elements.append(title_table)
     
-    elements.append(Spacer(1, 4))
+    elements.append(Spacer(1, 2))
     elements.append(Paragraph("DISTRIBUIÇÃO DE EMPRESAS POR SCORE DE OPORTUNIDADE COMERCIAL (PONTUAÇÃO)", section_heading))
     elements.append(Spacer(1, 2))
 
     scores_counts = df_nicho['score_oportunidade'].value_counts().sort_index(ascending=False)
     
-    chart_draw = Drawing(540, 105)
+    chart_draw = Drawing(540, 100)
     chart_draw.hAlign = 'CENTER'
-    chart_draw.add(Rect(0, 0, 540, 105, fillColor=colors.HexColor('#f8fafc'), strokeColor=colors.HexColor('#cbd5e1'), strokeWidth=0.5, rx=0, ry=0))
+    chart_draw.add(Rect(0, 0, 540, 100, fillColor=colors.HexColor('#f8fafc'), strokeColor=colors.HexColor('#cbd5e1'), strokeWidth=0.5, rx=0, ry=0))
     
     qtd_bars = len(scores_counts)
     if qtd_bars > 0:
@@ -243,26 +246,26 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
         for idx_sc, (score_val, total_lead) in enumerate(scores_counts.items()):
             bx = start_x + idx_sc * (bar_w + gap)
             by = 22
-            bh = max((total_lead / max_val) * 60, 6)
+            bh = max((total_lead / max_val) * 55, 6)
             
             c_fill = colors.HexColor('#4ade80') if score_val >= 60 else (colors.HexColor('#facc15') if score_val >= 30 else colors.HexColor('#f87171'))
             
             chart_draw.add(Rect(bx, by, bar_w, bh, fillColor=c_fill, strokeColor=None, rx=2, ry=2))
-            chart_draw.add(String(bx + (bar_w / 2), by + bh + 5, str(total_lead), fontSize=9, fontName="Helvetica-Bold", fillColor=colors.HexColor('#0f172a'), textAnchor="middle"))
-            chart_draw.add(String(bx + (bar_w / 2), by - 13, f"{score_val} pts", fontSize=8, fontName="Helvetica-Bold", fillColor=colors.HexColor('#475569'), textAnchor="middle"))
+            chart_draw.add(String(bx + (bar_w / 2), by + bh + 4, str(total_lead), fontSize=8.5, fontName="Helvetica-Bold", fillColor=colors.HexColor('#0f172a'), textAnchor="middle"))
+            chart_draw.add(String(bx + (bar_w / 2), by - 12, f"{score_val} pts", fontSize=7.5, fontName="Helvetica-Bold", fillColor=colors.HexColor('#475569'), textAnchor="middle"))
 
     elements.append(chart_draw)
-    elements.append(Spacer(1, 14))
+    elements.append(Spacer(1, 10))
 
     total_emp = len(df_nicho)
-    sem_tour = len(df_nicho[df_nicho['tour_360'] == False])
     sem_site = len(df_nicho[df_nicho['website'] == ''])
     nao_reiv = len(df_nicho[df_nicho['reivindicada'] == False])
+    sem_redes = len(df_nicho[(df_nicho['instagram'] == '') & (df_nicho['facebook'] == '')])
 
     dados_resumo = [
         [Paragraph("<b>INDICADOR ESTRATÉGICO</b>", body_style), Paragraph("<b>VOLUME / %</b>", body_center), Paragraph("<b>DIAGNÓSTICO DE OPORTUNIDADE</b>", body_style)],
-        [Paragraph("Sem Tour Virtual 360°", body_style), Paragraph(f"<b>{sem_tour} ({(sem_tour/total_emp*100 if total_emp>0 else 0):.1f}%)</b>", body_center), Paragraph("Oportunidade crítica para implantação de experiência imersiva.", body_style)],
-        [Paragraph("Sem Website Oficial", body_style), Paragraph(f"<b>{sem_site} ({(sem_site/total_emp*100 if total_emp>0 else 0):.1f}%)</b>", body_center), Paragraph("Perda de tráfego direto e dependência de redes sociais.", body_style)],
+        [Paragraph("Presença em Redes Sociais", body_style), Paragraph(f"<b>{sem_redes} ({(sem_redes/total_emp*100 if total_emp>0 else 0):.1f}%)</b>", body_center), Paragraph("Oportunidade para expansão de canais e engajamento local.", body_style)],
+        [Paragraph("Sem Website Oficial", body_style), Paragraph(f"<b>{sem_site} ({(sem_site/total_emp*100 if total_emp>0 else 0):.1f}%)</b>", body_center), Paragraph("Perda de tráfego direto e dependência de canais de terceiros.", body_style)],
         [Paragraph("Fichas Não Reivindicadas", body_style), Paragraph(f"<b>{nao_reiv} ({(nao_reiv/total_emp*100 if total_emp>0 else 0):.1f}%)</b>", body_center), Paragraph("Vulnerabilidade de segurança e falta de gestão do perfil.", body_style)]
     ]
     t_resumo = Table(dados_resumo, colWidths=[150, 90, 300])
@@ -270,8 +273,8 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#f1f5f9')),
         ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1')),
         ('INNERGRID', (0,0), (-1,-1), 0.5, colors.HexColor('#e2e8f0')),
-        ('TOPPADDING', (0,0), (-1,-1), 4),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 4),
+        ('TOPPADDING', (0,0), (-1,-1), 3.5),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 3.5),
         ('ALIGN', (1,0), (1,-1), 'CENTER'),
     ]))
     elements.append(t_resumo)
@@ -287,7 +290,6 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
         Paragraph("<b>NOTA</b>", body_center), 
         Paragraph("<b>AVALIAÇÕES</b>", body_center),
         Paragraph("<b>SITE</b>", body_center), 
-        Paragraph("<b>360°</b>", body_center), 
         Paragraph("<b>SCORE</b>", body_center)
     ]]
     
@@ -295,8 +297,8 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#f8fafc')),
         ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1')),
         ('INNERGRID', (0,0), (-1,-1), 0.5, colors.HexColor('#f1f5f9')),
-        ('TOPPADDING', (0,0), (-1,-1), 3.5),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 3.5),
+        ('TOPPADDING', (0,0), (-1,-1), 3),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 3),
         ('ALIGN', (1,0), (-1,-1), 'CENTER'),
     ]
 
@@ -317,22 +319,21 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
         p_score = Paragraph(f"<font color='{txt_color}'><b>{sc}/100</b></font>", body_center)
 
         row_idx = idx + 1
-        t_styles.append(('BACKGROUND', (5, row_idx), (5, row_idx), bg_color))
+        t_styles.append(('BACKGROUND', (4, row_idx), (4, row_idx), bg_color))
 
         t_data.append([
-            Paragraph(str(r_data['nome'])[:42], body_style),
+            Paragraph(str(r_data['nome'])[:45], body_style),
             Paragraph(str(r_data['nota']), body_center),
             Paragraph(str(r_data['total_avaliacoes']), body_center),
             Paragraph("Sim" if r_data['website'] else "Não", body_center),
-            Paragraph("Sim" if r_data['tour_360'] else "Não", body_center),
             p_score
         ])
 
-    t_empresas = Table(t_data, colWidths=[230, 45, 75, 45, 45, 100], repeatRows=1)
+    t_empresas = Table(t_data, colWidths=[270, 50, 80, 50, 90], repeatRows=1)
     t_empresas.setStyle(TableStyle(t_styles))
     elements.append(t_empresas)
 
-    doc.build(elements, onFirstPage=desenhar_rodape_fixo_links, onLaterPages=desenhar_rodape_fixo_links)
+    doc.build(elements, onFirstPage=desenhar_cabecalho_rodape_todas_paginas, onLaterPages=desenhar_cabecalho_rodape_todas_paginas)
     buffer.seek(0)
     return buffer
 
@@ -405,16 +406,19 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# SESSION STATE
+# SESSION STATE E CONTROLE DE ETAPA
 # -----------------------------------------------------------------------------
 if 'etapa' not in st.session_state:
     st.session_state.etapa = 1
 
+def mudar_etapa(nova_etapa):
+    st.session_state.etapa = nova_etapa
+    st.rerun()
+
 # -----------------------------------------------------------------------------
-# INTEGRAÇÃO DE BUSCA REAL VIA GOOGLE PLACES API
+# INTEGRAÇÃO DE BUSCA REAL VIA GOOGLE PLACES API COM RAIO DE KM
 # -----------------------------------------------------------------------------
-def buscar_google_places_api(nicho, cidade, bairro, rua, api_key, limite=20):
-    # Formatação limpa da consulta
+def buscar_google_places_api(nicho, cidade, bairro, rua, raio_km, api_key, limite=20):
     termos = []
     if nicho: termos.append(nicho.strip())
     if rua: termos.append(rua.strip())
@@ -422,7 +426,9 @@ def buscar_google_places_api(nicho, cidade, bairro, rua, api_key, limite=20):
     if cidade: termos.append(cidade.strip())
     
     query_str = " ".join(termos)
-    url = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={urllib.parse.quote(query_str)}&language=pt-BR&key={api_key}"
+    raio_metros = int(raio_km * 1000)
+    
+    url = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={urllib.parse.quote(query_str)}&radius={raio_metros}&language=pt-BR&key={api_key}"
     
     try:
         response = requests.get(url, timeout=12)
@@ -520,7 +526,7 @@ def buscar_google_places_api(nicho, cidade, bairro, rua, api_key, limite=20):
                 leads.append(lead_obj)
             return leads
         elif status == "ZERO_RESULTS":
-            st.warning("⚠️ O Google Maps não encontrou empresas para este local/termo exato. Tente buscar sem especificar rua ou bairro.")
+            st.warning("⚠️ O Google Maps não encontrou empresas para este termo exato dentro do raio especificado. Tente aumentar o raio de km.")
         else:
             msg_erro = data.get("error_message", "Sem detalhes adicionais do Google.")
             st.error(f"⚠️ Resposta do Google Maps: **Status '{status}'**. Detalhes: {msg_erro}")
@@ -528,12 +534,12 @@ def buscar_google_places_api(nicho, cidade, bairro, rua, api_key, limite=20):
         st.error(f"Erro na requisição à API do Google Places: {str(e)}")
     return None
 
-def minerar_e_auditar_negocios(nicho, cidade, bairro, rua, limite=20):
+def minerar_e_auditar_negocios(nicho, cidade, bairro, rua, raio_km, limite=20):
     api_key = st.secrets.get("GOOGLE_API_KEY", None) or os.getenv("GOOGLE_API_KEY", None)
     
     if api_key:
         api_key_limpa = api_key.strip().replace('"', '').replace("'", "")
-        leads_reais = buscar_google_places_api(nicho, cidade, bairro, rua, api_key_limpa, limite)
+        leads_reais = buscar_google_places_api(nicho, cidade, bairro, rua, raio_km, api_key_limpa, limite)
         if leads_reais and len(leads_reais) > 0:
             return leads_reais
     else:
@@ -604,20 +610,16 @@ with st.sidebar:
 
     st.markdown("### 📌 Módulos")
     if st.button("1. Buscador de Clientes", use_container_width=True, type="primary" if st.session_state.etapa == 1 else "secondary"):
-        st.session_state.etapa = 1
-        st.rerun()
+        mudar_etapa(1)
         
     if st.button("2. Base & CRM de Leads", use_container_width=True, type="primary" if st.session_state.etapa == 2 else "secondary"):
-        st.session_state.etapa = 2
-        st.rerun()
+        mudar_etapa(2)
 
     if st.button("3. Panorama de Nicho (Estatísticas)", use_container_width=True, type="primary" if st.session_state.etapa == 3 else "secondary"):
-        st.session_state.etapa = 3
-        st.rerun()
+        mudar_etapa(3)
 
     if st.button("4. Mapa de Prospecção", use_container_width=True, type="primary" if st.session_state.etapa == 4 else "secondary"):
-        st.session_state.etapa = 4
-        st.rerun()
+        mudar_etapa(4)
 
     st.divider()
     st.caption(f"☁️ Supabase Nuvem: **{len(base_leads)} leads salvos**")
@@ -625,44 +627,42 @@ with st.sidebar:
     if len(base_leads) > 0:
         if st.button("🗑️ Limpar Banco de Dados", use_container_width=True):
             limpar_banco_dados()
-            st.session_state.etapa = 1
-            st.rerun()
+            mudar_etapa(1)
 
 # -----------------------------------------------------------------------------
-# ETAPA 1: BUSCADOR DE CLIENTES
+# ETAPA 1: BUSCADOR DE CLIENTES (COM SELETOR DE RAIO EM KM)
 # -----------------------------------------------------------------------------
 if st.session_state.etapa == 1:
     st.markdown("""
         <div class="main-header">
             <h1 class="main-title">🔎 Radar e Mineração de Mercado Local</h1>
-            <div class="main-subtitle">Varredura de perfis no Google Maps por Nicho, Cidade, Bairro e Rua com auditoria completa.</div>
+            <div class="main-subtitle">Varredura de perfis no Google Maps por Nicho, Cidade, Bairro, Rua e Raio de Distância (km).</div>
         </div>
     """, unsafe_allow_html=True)
 
     with st.form("form_busca"):
-        col1, col2, col3, col4, col5 = st.columns([2, 2, 2, 2, 1.2])
+        col1, col2, col3, col4, col5, col6 = st.columns([2, 2, 1.8, 1.8, 1.2, 1.2])
         with col1: nicho_input = st.text_input("Nicho / Categoria (Opcional)", value="Moda praia", help="Deixe em branco para buscar empresas gerais no local")
         with col2: cidade_input = st.text_input("Cidade / Município", value="Ribeirão Preto")
         with col3: rua_input = st.text_input("Rua / Avenida (Opcional)", value="", help="Ex: Av. Independência")
         with col4: bairro_input = st.text_input("Bairro / Região (Opcional)", value="", help="Deixe em branco para amplitude de busca na cidade")
-        with col5: limite_input = st.number_input("Qtd. Máxima", min_value=20, max_value=50, value=20, step=5)
+        with col5: raio_input = st.number_input("Raio (km)", min_value=1, max_value=50, value=10, step=1, help="Distância máxima de busca a partir do centro da localidade")
+        with col6: limite_input = st.number_input("Qtd. Máxima", min_value=20, max_value=50, value=20, step=5)
         
         btn_minar = st.form_submit_button("🚀 Iniciar Varredura Profunda", use_container_width=True)
 
     if btn_minar:
-        with st.spinner("Varrendo Google Maps, auditando presença web e salvando na nuvem..."):
+        with st.spinner(f"Varrendo Google Maps num raio de {raio_input} km, auditando presença web e salvando na nuvem..."):
             time.sleep(1)
-            novos = minerar_e_auditar_negocios(nicho_input, cidade_input, bairro_input, rua_input, limite_input)
+            novos = minerar_e_auditar_negocios(nicho_input, cidade_input, bairro_input, rua_input, raio_input, limite_input)
             if novos and len(novos) > 0:
-                st.session_state.etapa = 2
-                st.rerun()
+                mudar_etapa(2)
 
     if len(base_leads) > 0:
         st.divider()
         st.info(f"O seu banco na nuvem possui **{len(base_leads)} leads salvos permanentemente**.")
         if st.button("Ver Base Completa de Leads ➡️", type="primary"):
-            st.session_state.etapa = 2
-            st.rerun()
+            mudar_etapa(2)
 
 # -----------------------------------------------------------------------------
 # ETAPA 2: BASE DE LEADS & CRM DE VENDAS
@@ -685,8 +685,7 @@ elif st.session_state.etapa == 2:
         with col_back:
             st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
             if st.button("⬅️ Nova Busca", use_container_width=True):
-                st.session_state.etapa = 1
-                st.rerun()
+                mudar_etapa(1)
 
         with col_f_status:
             filtro_status = st.selectbox(
@@ -849,7 +848,10 @@ elif st.session_state.etapa == 3:
 
         df_filtrado_sorted = df_filtrado.sort_values(by='score_oportunidade', ascending=False)
 
-        nome_arquivo_pdf = f"Relatorio Panorama {nicho_selecionado}.pdf".replace(':', '').replace('/', ' ')
+        # Nome de arquivo formatado conforme pedido: "Panorama de Mercado - (nicho) - (data)"
+        data_hoje_str = datetime.now().strftime('%d-%m-%Y')
+        nicho_limpo = nicho_selecionado.replace(':', '').replace('/', ' ')
+        nome_arquivo_pdf = f"Panorama de Mercado - {nicho_limpo} - {data_hoje_str}.pdf"
 
         with col_btn_pdf:
             st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
@@ -870,8 +872,8 @@ elif st.session_state.etapa == 3:
         with col_m1: 
             st.metric("Empresas Analisadas", total_count)
         with col_m2: 
-            sem_tour = len(df_filtrado_sorted[df_filtrado_sorted['tour_360'] == False])
-            st.metric("Sem Tour Virtual 360°", f"{(sem_tour / total_count * 100 if total_count > 0 else 0):.1f}%", f"{sem_tour} empresas")
+            sem_redes = len(df_filtrado_sorted[(df_filtrado_sorted['instagram'] == '') & (df_filtrado_sorted['facebook'] == '')])
+            st.metric("Sem Redes Sociais", f"{(sem_redes / total_count * 100 if total_count > 0 else 0):.1f}%", f"{sem_redes} empresas")
         with col_m3: 
             sem_site = len(df_filtrado_sorted[df_filtrado_sorted['website'] == ''])
             st.metric("Sem Website Oficial", f"{(sem_site / total_count * 100 if total_count > 0 else 0):.1f}%", f"{sem_site} empresas")
@@ -920,7 +922,7 @@ elif st.session_state.etapa == 3:
         )
 
 # -----------------------------------------------------------------------------
-# ETAPA 4: MAPA DE PROSPECÇÃO
+# ETAPA 4: MAPA DE PROSPECÇÃO (ABRE NA MAIOR CONCENTRAÇÃO DE RESULTADOS)
 # -----------------------------------------------------------------------------
 elif st.session_state.etapa == 4:
     st.markdown("""
@@ -998,10 +1000,11 @@ elif st.session_state.etapa == 4:
             st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
 
         if 'latitude' in df_mapa_filtrado.columns and 'longitude' in df_mapa_filtrado.columns and len(df_mapa_filtrado) > 0:
+            # Cálculo do centro por média ponderada/ponto médio (centralização exata na concentração)
             lat_centro = df_mapa_filtrado['latitude'].mean()
             lon_centro = df_mapa_filtrado['longitude'].mean()
 
-            m = folium.Map(location=[lat_centro, lon_centro], zoom_start=14.5, tiles="OpenStreetMap")
+            m = folium.Map(location=[lat_centro, lon_centro], zoom_start=14, tiles="OpenStreetMap")
 
             for _, row in df_mapa_filtrado.iterrows():
                 cor_pin = mapa_cores_seg.get(row['categoria'], 'red') if cat_sel_mapa == "Todos os Segmentos" else 'red'
