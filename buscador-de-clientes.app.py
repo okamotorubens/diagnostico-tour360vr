@@ -21,7 +21,7 @@ from supabase import create_client, Client
 # ReportLab para geração do PDF do Panorama
 from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image, HRFlowable
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.graphics.shapes import Drawing, Rect, String
 
@@ -50,12 +50,12 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# FORÇAR O NAVEGADOR A IR PARA O TOPO E EXIBIR FAVICON
+# FORÇAR O NAVEGADOR A IR PARA O TOPO SEMPRE QUE MUDAR DE PÁGINA
 components.html(f"""
     <script>
         window.parent.scrollTo(0, 0);
-        var body = window.parent.document.querySelector(".main");
-        if (body) {{ body.scrollTop = 0; }}
+        var mainContainer = window.parent.document.querySelector(".main");
+        if (mainContainer) {{ mainContainer.scrollTop = 0; }}
         
         var head = window.parent.document.getElementsByTagName('head')[0];
         if (head && '{favicon_b64}') {{
@@ -147,7 +147,7 @@ def limpar_banco_dados():
         st.error(f"Erro ao limpar banco: {str(e)}")
 
 # -----------------------------------------------------------------------------
-# GERADOR DE PDF DO PANORAMA DE NICHO (PROPORCIONALIDADE & LINKS PERFEITOS)
+# GERADOR DE PDF DO PANORAMA DE NICHO (LOGO COLADA AO TÍTULO & LINKS RECALIBRADOS)
 # -----------------------------------------------------------------------------
 def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
     canvas.saveState()
@@ -166,8 +166,7 @@ def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
     logo_tour = "logo_tour_transparente.png" if os.path.exists("logo_tour_transparente.png") else None
     
     if logo_tour:
-        # Logo em tamanho proporcional ideal
-        img_logo = Image(logo_tour, width=160, height=58, kind='proportional')
+        img_logo = Image(logo_tour, width=170, height=60, kind='proportional')
     else:
         img_logo = Paragraph("<b>TOUR360VR</b>", header_title_style)
 
@@ -176,8 +175,8 @@ def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
         header_title_style
     )
 
-    # Tabela com alinhamento rigoroso (160pt logo + 12pt espaço + 368pt texto = 540pt)
-    header_table = Table([[img_logo, "", texto_cabecalho]], colWidths=[160, 12, 368])
+    # Distância entre a logo e o texto ajustada para apenas 10pt (170pt logo + 10pt espaço + 360pt texto = 540pt)
+    header_table = Table([[img_logo, "", texto_cabecalho]], colWidths=[170, 10, 360])
     header_table.setStyle(TableStyle([
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
         ('LEFTPADDING', (0,0), (-1,-1), 0),
@@ -194,9 +193,9 @@ def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
     # Linha divisória horizontal abaixo do cabeçalho
     canvas.setStrokeColor(colors.HexColor('#cbd5e1'))
     canvas.setLineWidth(1.5)
-    canvas.line(36, 710, 576, 710)
+    canvas.line(36, 708, 576, 708)
     
-    # RODAPÉ FIXO COM HIPERLINKS RECALIBRADOS SOBRE OS TEXTOS
+    # RODAPÉ FIXO COM HIPERLINKS EXATOS SOBRE O TEXTO VISÍVEL
     canvas.setLineWidth(1)
     canvas.line(36, 42, 576, 42)
     
@@ -206,11 +205,10 @@ def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
     texto_rodape = "tour360vr.com.br   |   contato@okamotomidiasvisuais.com.br   |   (16) 99133-2121"
     canvas.drawCentredString(306, 25, texto_rodape)
 
-    # Caixas de colisão de links sobre o rodapé
     try:
-        canvas.linkURL('https://tour360vr.com.br', (105, 14, 205, 32), relative=0)
-        canvas.linkURL('mailto:contato@okamotomidiasvisuais.com.br', (215, 14, 420, 32), relative=0)
-        canvas.linkURL('https://wa.me/5516991332121', (430, 14, 510, 32), relative=0)
+        canvas.linkURL('https://tour360vr.com.br', (110, 15, 205, 33), relative=0)
+        canvas.linkURL('mailto:contato@okamotomidiasvisuais.com.br', (215, 15, 420, 33), relative=0)
+        canvas.linkURL('https://wa.me/5516991332121', (430, 15, 510, 33), relative=0)
     except Exception:
         pass
         
@@ -361,7 +359,7 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     return buffer
 
 # -----------------------------------------------------------------------------
-# ESTILIZAÇÃO CSS CUSTOMIZADA
+# ESTILIZAÇÃO CSS CUSTOMIZADA (IGUAL AO DIAGNÓSTICO)
 # -----------------------------------------------------------------------------
 st.markdown("""
     <style>
@@ -388,11 +386,13 @@ st.markdown("""
 
     .critical-item { color: #f87171; font-size: 13px; margin-bottom: 6px; font-weight: 500; }
     
+    /* Título da Sidebar em destaque idêntico ao Diagnóstico */
     .sidebar-title {
-        text-align: center; font-size: 13px; font-weight: 700; color: #ffffff;
-        margin-top: 0px; margin-bottom: 6px;
+        text-align: center; font-size: 15px; font-weight: 800; color: #ffffff;
+        margin-top: -10px; margin-bottom: 10px; letter-spacing: 0.5px;
     }
 
+    /* Botões com contorno e brilho neon padrão */
     .stButton>button, .btn-redirect {
         background-color: #0f172a !important;
         color: #ffffff !important;
@@ -623,14 +623,14 @@ base_leads = carregar_todos_leads_db()
 with st.sidebar:
     st.markdown('<div class="sidebar-title">Radar Comercial</div>', unsafe_allow_html=True)
     
-    # Logo Tour360VR (Ligeiramente menor)
+    # Logo Tour360VR
     if os.path.exists("logo_tour_transparente.png"):
-        c1, c2, c3 = st.columns([1.2, 3.6, 1.2])
+        c1, c2, c3 = st.columns([0.8, 4.4, 0.8])
         with c2: st.image("logo_tour_transparente.png", use_container_width=True)
     
-    # Logo Okamoto (Destacada)
+    # Logo Okamoto Mídias Visuais
     if os.path.exists("logo_okamoto.png"):
-        c1, c2, c3 = st.columns([0.6, 4.8, 0.6])
+        c1, c2, c3 = st.columns([0.8, 4.4, 0.8])
         with c2: st.image("logo_okamoto.png", use_container_width=True)
 
     st.divider()
@@ -943,7 +943,7 @@ elif st.session_state.etapa == 3:
         )
 
 # -----------------------------------------------------------------------------
-# ETAPA 4: MAPA DE PROSPECÇÃO
+# ETAPA 4: MAPA DE PROSPECÇÃO (CENTRALIZAÇÃO DINÂMICA)
 # -----------------------------------------------------------------------------
 elif st.session_state.etapa == 4:
     st.markdown("""
@@ -1024,8 +1024,10 @@ elif st.session_state.etapa == 4:
             lat_centro = df_mapa_filtrado['latitude'].mean()
             lon_centro = df_mapa_filtrado['longitude'].mean()
 
-            m = folium.Map(location=[lat_centro, lon_centro], zoom_start=14, tiles="OpenStreetMap")
+            m = folium.Map(location=[lat_centro, lon_centro], zoom_start=13, tiles="OpenStreetMap")
 
+            # Cálculo automático do enquadramento dos PINS no mapa
+            bounds = []
             for _, row in df_mapa_filtrado.iterrows():
                 cor_pin = mapa_cores_seg.get(row['categoria'], 'red') if cat_sel_mapa == "Todos os Nichos" else 'red'
                 url_maps_emp = f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(row['nome'])}"
@@ -1050,6 +1052,11 @@ elif st.session_state.etapa == 4:
                     popup=folium.Popup(info_card_html, max_width=320),
                     icon=folium.Icon(color=cor_pin, icon="info-sign")
                 ).add_to(m)
+                
+                bounds.append([row['latitude'], row['longitude']])
+
+            if len(bounds) > 0:
+                m.fit_bounds(bounds, padding=[30, 30])
 
             st_folium(m, width="100%", height=700)
         else:
