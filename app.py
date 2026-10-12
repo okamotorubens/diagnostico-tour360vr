@@ -1,17 +1,46 @@
 import streamlit as st
 
-# Lê os parâmetros enviados pelo Buscador através da URL
+# 1. LÊ OS PARÂMETROS ENVIADOS PELO BUSCADOR
 query_params = st.query_params
 
-nome_empresa_recebido = query_params.get("nome", "")
-endereco_recebido = query_params.get("endereco", "")
-categoria_recebida = query_params.get("categoria", "")
-whatsapp_recebido = query_params.get("whatsapp", "")
+nome_param = query_params.get("nome", "")
+endereco_param = query_params.get("endereco", "")
+categoria_param = query_params.get("categoria", "")
+whatsapp_param = query_params.get("whatsapp", "")
+cidade_param = query_params.get("cidade", "")
 
-# Agora basta usar essas variáveis como valor inicial nos seus campos de formulário (st.text_input):
-nome_input = st.text_input("Nome da Empresa", value=nome_empresa_recebido)
-endereco_input = st.text_input("Endereço Completo", value=endereco_recebido)
-categoria_input = st.text_input("Categoria / Nicho", value=categoria_recebida)
+# 2. SE VIERAM DADOS DA URL, ALIMENTA O ESTADO INTERNO DO SISTEMA
+if nome_param:
+    st.session_state['empresa_nome'] = nome_param
+if endereco_param:
+    st.session_state['empresa_endereco'] = endereco_param
+if whatsapp_param:
+    st.session_state['empresa_telefone'] = whatsapp_param
+if categoria_param:
+    st.session_state['empresa_categoria'] = categoria_param
+if cidade_param:
+    st.session_state['empresa_cidade'] = cidade_param
+
+# No bloco DADOS DO CLIENTE da sua tela:
+empresa_input = st.text_input(
+    "Empresa:", 
+    value=st.session_state.get('empresa_nome', '')
+)
+
+responsavel_input = st.text_input(
+    "Responsável:", 
+    value=st.session_state.get('empresa_responsavel', '')
+)
+
+telefone_input = st.text_input(
+    "Telefone / WhatsApp:", 
+    value=st.session_state.get('empresa_telefone', '')
+)
+
+endereco_input = st.text_input(
+    "Endereço:", 
+    value=st.session_state.get('empresa_endereco', '')
+)
 
 import os
 import io
