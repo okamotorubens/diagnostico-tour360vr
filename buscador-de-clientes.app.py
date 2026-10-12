@@ -44,7 +44,7 @@ if os.path.exists("logo_tour_transparente.png"):
         favicon_img = "🔍"
 
 st.set_page_config(
-    page_title="Radar & CRM de Prospecção | Tour360VR",
+    page_title="Radar Comercial | Tour360VR",
     page_icon=favicon_img if not favicon_b64 else PILImage.open("logo_tour_transparente.png"),
     layout="wide",
     initial_sidebar_state="expanded"
@@ -147,7 +147,7 @@ def limpar_banco_dados():
         st.error(f"Erro ao limpar banco: {str(e)}")
 
 # -----------------------------------------------------------------------------
-# GERADOR DE PDF DO PANORAMA DE NICHO (TÍTULO COLADO À LOGO & LINKS RECALIBRADOS)
+# GERADOR DE PDF DO PANORAMA DE NICHO
 # -----------------------------------------------------------------------------
 def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
     canvas.saveState()
@@ -166,7 +166,7 @@ def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
     logo_tour = "logo_tour_transparente.png" if os.path.exists("logo_tour_transparente.png") else None
     
     if logo_tour:
-        img_logo = Image(logo_tour, width=155, height=56, kind='proportional')
+        img_logo = Image(logo_tour, width=125, height=50, kind='proportional')
     else:
         img_logo = Paragraph("<b>TOUR360VR</b>", header_title_style)
 
@@ -175,8 +175,7 @@ def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
         header_title_style
     )
 
-    # Distância entre a logo e o texto reduzida para 5pt (bem próximo)
-    header_table = Table([[img_logo, "", texto_cabecalho]], colWidths=[155, 5, 380])
+    header_table = Table([[img_logo, "", texto_cabecalho]], colWidths=[125, 35, 380])
     header_table.setStyle(TableStyle([
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
         ('LEFTPADDING', (0,0), (-1,-1), 0),
@@ -190,12 +189,10 @@ def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
     header_table.wrapOn(canvas, 540, 60)
     header_table.drawOn(canvas, 36, 720)
 
-    # Linha divisória horizontal abaixo do cabeçalho
     canvas.setStrokeColor(colors.HexColor('#cbd5e1'))
     canvas.setLineWidth(1.5)
     canvas.line(36, 712, 576, 712)
     
-    # RODAPÉ FIXO COM HIPERLINKS EXATAMENTE ALINHADOS COM O TEXTO
     canvas.setLineWidth(1)
     canvas.line(36, 42, 576, 42)
     
@@ -205,13 +202,9 @@ def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
     texto_rodape = "tour360vr.com.br   |   contato@okamotomidiasvisuais.com.br   |   (16) 99133-2121"
     canvas.drawCentredString(306, 25, texto_rodape)
 
-    # Coordenadas recalibradas para cobrir exatamente cada trecho do texto
     try:
-        # Link 1: Site tour360vr.com.br (X: 110 até 200)
         canvas.linkURL('https://tour360vr.com.br', (110, 16, 200, 34), relative=0)
-        # Link 2: E-mail contato@okamotomidiasvisuais.com.br (X: 215 até 415)
         canvas.linkURL('mailto:contato@okamotomidiasvisuais.com.br', (215, 16, 415, 34), relative=0)
-        # Link 3: WhatsApp (16) 99133-2121 (X: 425 até 505)
         canvas.linkURL('https://wa.me/5516991332121', (425, 16, 505, 34), relative=0)
     except Exception:
         pass
@@ -246,7 +239,6 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
 
     elements = []
 
-    # Título do Panorama
     title_p = Paragraph(f"PANORAMA DE MERCADO: {nicho_nome.upper()}", main_title_style)
     title_table = Table([[title_p]], colWidths=[540])
     title_table.setStyle(TableStyle([('ALIGN', (0,0), (-1,-1), 'CENTER')]))
@@ -283,7 +275,6 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     elements.append(chart_draw)
     elements.append(Spacer(1, 8))
 
-    # CÁLCULO DOS INDICADORES ESTRATÉGICOS REAIS
     total_emp = len(df_nicho)
     sem_site = len(df_nicho[df_nicho['website'] == ''])
     nao_reiv = len(df_nicho[df_nicho['reivindicada'] == False])
@@ -394,7 +385,7 @@ st.markdown("""
     
     .sidebar-title {
         text-align: center; font-size: 16px; font-weight: 800; color: #ffffff;
-        margin-top: 5px; margin-bottom: 10px;
+        margin-top: 2px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;
     }
 
     .stButton>button, .btn-redirect {
@@ -431,16 +422,6 @@ st.markdown("""
     }
     </style>
 """, unsafe_allow_html=True)
-
-# -----------------------------------------------------------------------------
-# SESSION STATE E CONTROLE DE ETAPA
-# -----------------------------------------------------------------------------
-if 'etapa' not in st.session_state:
-    st.session_state.etapa = 1
-
-def mudar_etapa(nova_etapa):
-    st.session_state.etapa = nova_etapa
-    st.rerun()
 
 # -----------------------------------------------------------------------------
 # INTEGRAÇÃO DE BUSCA REAL VIA GOOGLE PLACES API COM RAIO DE KM
@@ -620,33 +601,35 @@ def gerar_csv_excel_formatado(dados_leads):
     return output.getvalue().encode('utf-8')
 
 # -----------------------------------------------------------------------------
-# BARRA LATERAL (NAVEGAÇÃO MÓDULOS COM SUPABASE NUVEM)
+# BARRA LATERAL (EXATAMENTE COMO NO DIAGNÓSTICO)
 # -----------------------------------------------------------------------------
 base_leads = carregar_todos_leads_db()
 
 with st.sidebar:
-    if os.path.exists("logo_okamoto.png"):
-        c1, c2, c3 = st.columns([1, 4, 1])
-        with c2: st.image("logo_okamoto.png", use_container_width=True)
+    # 1. TÍTULO RADAR COMERCIAL NO TOPO
+    st.markdown('<div class="sidebar-title">RADAR COMERCIAL</div>', unsafe_allow_html=True)
+    
+    # 2. LOGO TOUR360VR EM DESTAQUE LOGO ABAIXO
     if os.path.exists("logo_tour_transparente.png"):
-        c1, c2, c3 = st.columns([1.2, 3.6, 1.2])
+        c1, c2, c3 = st.columns([0.5, 5.0, 0.5])
         with c2: st.image("logo_tour_transparente.png", use_container_width=True)
+    
+    # 3. LOGO OKAMOTO MIDIAS VISUAIS ABAIXO
+    if os.path.exists("logo_okamoto.png"):
+        c1, c2, c3 = st.columns([1.0, 4.0, 1.0])
+        with c2: st.image("logo_okamoto.png", use_container_width=True)
 
-    st.markdown('<div class="sidebar-title">Radar Comercial Tour360VR</div>', unsafe_allow_html=True)
     st.divider()
 
-    st.markdown("### 📌 Módulos")
-    if st.button("1. Buscador de Clientes", use_container_width=True, type="primary" if st.session_state.etapa == 1 else "secondary"):
-        mudar_etapa(1)
-        
-    if st.button("2. Base & CRM de Leads", use_container_width=True, type="primary" if st.session_state.etapa == 2 else "secondary"):
-        mudar_etapa(2)
-
-    if st.button("3. Panorama de Nicho (Estatísticas)", use_container_width=True, type="primary" if st.session_state.etapa == 3 else "secondary"):
-        mudar_etapa(3)
-
-    if st.button("4. Mapa de Prospecção", use_container_width=True, type="primary" if st.session_state.etapa == 4 else "secondary"):
-        mudar_etapa(4)
+    # NAVEGAÇÃO DE MÓDULOS PADRÃO DIAGNÓSTICO
+    opcoes_modulos = [
+        "1. Buscador de Clientes",
+        "2. Base & CRM de Leads",
+        "3. Panorama de Nicho (Estatísticas)",
+        "4. Mapa de Prospecção"
+    ]
+    
+    modulo_selecionado = st.radio("📌 **Módulos:**", opcoes_modulos, index=0)
 
     st.divider()
     st.caption(f"☁️ Supabase Nuvem: **{len(base_leads)} leads salvos**")
@@ -654,12 +637,12 @@ with st.sidebar:
     if len(base_leads) > 0:
         if st.button("🗑️ Limpar Banco de Dados", use_container_width=True):
             limpar_banco_dados()
-            mudar_etapa(1)
+            st.rerun()
 
 # -----------------------------------------------------------------------------
-# ETAPA 1: BUSCADOR DE CLIENTES (COM SELETOR DE RAIO EM KM)
+# ETAPA 1: BUSCADOR DE CLIENTES
 # -----------------------------------------------------------------------------
-if st.session_state.etapa == 1:
+if modulo_selecionado == "1. Buscador de Clientes":
     st.markdown("""
         <div class="main-header">
             <h1 class="main-title">🔎 Radar e Mineração de Mercado Local</h1>
@@ -683,18 +666,16 @@ if st.session_state.etapa == 1:
             time.sleep(1)
             novos = minerar_e_auditar_negocios(nicho_input, cidade_input, bairro_input, rua_input, raio_input, limite_input)
             if novos and len(novos) > 0:
-                mudar_etapa(2)
+                st.success("Varredura concluída! Acesse o módulo '2. Base & CRM de Leads' no menu lateral para visualizar.")
 
     if len(base_leads) > 0:
         st.divider()
         st.info(f"O seu banco na nuvem possui **{len(base_leads)} leads salvos permanentemente**.")
-        if st.button("Ver Base Completa de Leads ➡️", type="primary"):
-            mudar_etapa(2)
 
 # -----------------------------------------------------------------------------
-# ETAPA 2: BASE DE LEADS & CRM DE VENDAS (FILTROS REORDENADOS)
+# ETAPA 2: BASE DE LEADS & CRM DE VENDAS
 # -----------------------------------------------------------------------------
-elif st.session_state.etapa == 2:
+elif modulo_selecionado == "2. Base & CRM de Leads":
     st.markdown("""
         <div class="main-header">
             <h1 class="main-title">📊 Base de Leads e Gerenciador CRM</h1>
@@ -707,12 +688,7 @@ elif st.session_state.etapa == 2:
     else:
         df_leads_crm = pd.DataFrame(base_leads)
 
-        col_back, col_f_nicho, col_f_cid, col_f_status, col_export = st.columns([1.2, 2, 2, 2, 2.2])
-        
-        with col_back:
-            st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
-            if st.button("⬅️ Nova Busca", use_container_width=True):
-                mudar_etapa(1)
+        col_f_nicho, col_f_cid, col_f_status, col_export = st.columns([2, 2, 2, 2.2])
 
         with col_f_nicho:
             nichos_existentes = ["Todos os Nichos"] + list(df_leads_crm['categoria'].unique())
@@ -843,7 +819,7 @@ TOUR360VR | Okamoto Mídias Visuais
 # -----------------------------------------------------------------------------
 # ETAPA 3: PANORAMA DE NICHO
 # -----------------------------------------------------------------------------
-elif st.session_state.etapa == 3:
+elif modulo_selecionado == "3. Panorama de Nicho (Estatísticas)":
     st.markdown("""
         <div class="main-header">
             <h1 class="main-title">📈 Panorama de Mercado & Inteligência de Nicho</h1>
@@ -875,7 +851,6 @@ elif st.session_state.etapa == 3:
 
         df_filtrado_sorted = df_filtrado.sort_values(by='score_oportunidade', ascending=False)
 
-        # Nome de arquivo formatado: "Panorama de Mercado - (nicho) - (data)"
         data_hoje_str = datetime.now().strftime('%d-%m-%Y')
         nicho_limpo = nicho_selecionado.replace(':', '').replace('/', ' ')
         nome_arquivo_pdf = f"Panorama de Mercado - {nicho_limpo} - {data_hoje_str}.pdf"
@@ -949,9 +924,9 @@ elif st.session_state.etapa == 3:
         )
 
 # -----------------------------------------------------------------------------
-# ETAPA 4: MAPA DE PROSPECÇÃO (PADRONIZADO PARA NICHO)
+# ETAPA 4: MAPA DE PROSPECÇÃO
 # -----------------------------------------------------------------------------
-elif st.session_state.etapa == 4:
+elif modulo_selecionado == "4. Mapa de Prospecção":
     st.markdown("""
         <div class="main-header">
             <h1 class="main-title">🗺️ Mapa de Localização e Concentração</h1>
