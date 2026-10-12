@@ -147,18 +147,19 @@ def limpar_banco_dados():
         st.error(f"Erro ao limpar banco: {str(e)}")
 
 # -----------------------------------------------------------------------------
-# GERADOR DE PDF DO PANORAMA DE NICHO (TEXTO COLADO À LOGO TOUR360VR)
+# GERADOR DE PDF DO PANORAMA DE NICHO (FONTE MAIOR & PARÁGRAFO RECUADO À ESQUERDA)
 # -----------------------------------------------------------------------------
 def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
     canvas.saveState()
     styles = getSampleStyleSheet()
     
+    # Fonte aumentada para 12.5pt com entrelinha 15pt
     header_title_style = ParagraphStyle(
         'HeaderTitleLeft',
         parent=styles['Normal'],
         fontName='Helvetica-Bold',
-        fontSize=11,
-        leading=13.5,
+        fontSize=12.5,
+        leading=15,
         textColor=colors.HexColor('#0f172a'),
         alignment=0
     )
@@ -166,7 +167,7 @@ def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
     logo_tour = "logo_tour_transparente.png" if os.path.exists("logo_tour_transparente.png") else None
     
     if logo_tour:
-        img_logo = Image(logo_tour, width=160, height=58, kind='proportional')
+        img_logo = Image(logo_tour, width=150, height=55, kind='proportional')
     else:
         img_logo = Paragraph("<b>TOUR360VR</b>", header_title_style)
 
@@ -175,8 +176,8 @@ def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
         header_title_style
     )
 
-    # Distância colada: 160pt logo + 2pt espaço + 378pt texto = 540pt
-    header_table = Table([[img_logo, "", texto_cabecalho]], colWidths=[160, 2, 378])
+    # Tabela sem espaçamento intermediário para encostar o texto na logo
+    header_table = Table([[img_logo, texto_cabecalho]], colWidths=[150, 390])
     header_table.setStyle(TableStyle([
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
         ('LEFTPADDING', (0,0), (-1,-1), 0),
@@ -184,16 +185,16 @@ def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
         ('BOTTOMPADDING', (0,0), (-1,-1), 0),
         ('TOPPADDING', (0,0), (-1,-1), 0),
         ('ALIGN', (0,0), (0,0), 'LEFT'),
-        ('ALIGN', (2,0), (2,0), 'LEFT'),
+        ('ALIGN', (1,0), (1,0), 'LEFT'),
     ]))
 
     header_table.wrapOn(canvas, 540, 60)
-    header_table.drawOn(canvas, 36, 718)
+    header_table.drawOn(canvas, 36, 716)
 
     # Linha divisória horizontal abaixo do cabeçalho
     canvas.setStrokeColor(colors.HexColor('#cbd5e1'))
     canvas.setLineWidth(1.5)
-    canvas.line(36, 708, 576, 708)
+    canvas.line(36, 706, 576, 706)
     
     # RODAPÉ FIXO COM HIPERLINKS
     canvas.setLineWidth(1)
@@ -359,16 +360,24 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     return buffer
 
 # -----------------------------------------------------------------------------
-# ESTILIZAÇÃO CSS CUSTOMIZADA (SIDEBAR TRAVADA SEM REDIMENSIONAMENTO)
+# ESTILIZAÇÃO CSS CUSTOMIZADA (SIDEBAR COMPLETAMENTE TRAVADA E SEM SCROLLBAR)
 # -----------------------------------------------------------------------------
 st.markdown("""
     <style>
     .main { background-color: #0e1117; padding-top: 15px !important; }
     .block-container { padding-top: 1rem !important; padding-bottom: 1rem !important; }
     
-    /* BLOQUEAR REDIMENSIONAMENTO DA SIDEBAR */
+    /* BLOQUEAR REDIMENSIONAMENTO E BARRA DE ROLAGEM NA SIDEBAR */
     [data-testid="stSidebar"] {
         resize: none !important;
+        overflow: hidden !important;
+    }
+    [data-testid="stSidebar"] > div:first-child {
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
+    }
+    div[data-testid="stSidebarResizer"] {
+        display: none !important;
     }
     [data-testid="stSidebarNav"] {
         display: none !important;
@@ -631,7 +640,7 @@ base_leads = carregar_todos_leads_db()
 with st.sidebar:
     st.markdown('<div class="sidebar-title">Radar Comercial</div>', unsafe_allow_html=True)
     
-    # Logo Tour360VR (Reduzida em proporção)
+    # Logo Tour360VR
     if os.path.exists("logo_tour_transparente.png"):
         c1, c2, c3 = st.columns([1.2, 3.6, 1.2])
         with c2: st.image("logo_tour_transparente.png", use_container_width=True)
