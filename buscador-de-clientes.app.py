@@ -11,6 +11,7 @@ import urllib.parse
 from datetime import datetime
 import io
 from PIL import Image as PILImage
+import base64
 import streamlit.components.v1 as components
 from streamlit_folium import st_folium
 import folium
@@ -31,9 +32,12 @@ URL_SISTEMA_DIAGNOSTICO = "https://tour360vr.streamlit.app/"
 # CONFIGURAÇÃO DA PÁGINA STREAMLIT E FAVICON NO NAVEGADOR
 # -----------------------------------------------------------------------------
 favicon_img = "🔍"
+favicon_b64 = ""
 if os.path.exists("logo_tour_transparente.png"):
     try:
         favicon_img = PILImage.open("logo_tour_transparente.png")
+        with open("logo_tour_transparente.png", "rb") as f:
+            favicon_b64 = base64.b64encode(f.read()).decode()
     except Exception:
         favicon_img = "🔍"
 
@@ -44,19 +48,24 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# INJEÇÃO HTML PARA FORÇAR O FAVICON E ROLAGEM AO TOPO
-components.html("""
-    <script>
-        var body = window.parent.document.querySelector(".main");
-        if (body) { body.scrollTop = 0; }
-        
-        var link = window.parent.document.querySelector("link[rel*='icon']") || window.parent.document.createElement('link');
-        link.type = 'image/png';
-        link.rel = 'shortcut icon';
-        link.href = 'logo_tour_transparente.png';
-        window.parent.document.getElementsByTagName('head')[0].appendChild(link);
-    </script>
-""", height=0)
+# INJEÇÃO HTML/JS PARA FORÇAR O FAVICON NA ABA DO NAVEGADOR
+if favicon_b64:
+    components.html(f"""
+        <script>
+            var body = window.parent.document.querySelector(".main");
+            if (body) {{ body.scrollTop = 0; }}
+            
+            var head = window.parent.document.getElementsByTagName('head')[0];
+            var links = window.parent.document.querySelectorAll("link[rel*='icon']");
+            links.forEach(function(l) {{ l.parentNode.removeChild(l); }});
+            
+            var link = window.parent.document.createElement('link');
+            link.type = 'image/png';
+            link.rel = 'shortcut icon';
+            link.href = 'data:image/png;base64,{favicon_b64}';
+            head.appendChild(link);
+        </script>
+    """, height=0)
 
 # -----------------------------------------------------------------------------
 # BANCO DE DADOS PERMANENTE (SQLITE LOCAL)
@@ -215,14 +224,15 @@ def desenhar_rodape_fixo_links(canvas, doc):
     canvas.setFont('Helvetica', 8.5)
     canvas.setFillColor(colors.HexColor('#000000'))
     
-    # HIPERLINKS RECALIBRADOS SEM SOBREPOSIÇÃO
+    # HIPERLINKS RECALIBRADOS DE ACORDO COM AS COORDENADAS EXATAS DO TEXTO
+    # Texto: "tour360vr.com.br   |   contato@okamotomidiasvisuais.com.br   |   (16) 99133-2121"
     try:
         # Link 1: tour360vr.com.br
-        canvas.linkURL('https://tour360vr.com.br', (130, 12, 205, 32), relative=1)
+        canvas.linkURL('https://tour360vr.com.br', (135, 15, 205, 30), relative=0)
         # Link 2: contato@okamotomidiasvisuais.com.br
-        canvas.linkURL('mailto:contato@okamotomidiasvisuais.com.br', (220, 12, 420, 32), relative=1)
+        canvas.linkURL('mailto:contato@okamotomidiasvisuais.com.br', (225, 15, 415, 30), relative=0)
         # Link 3: (16) 99133-2121 (WhatsApp)
-        canvas.linkURL('https://wa.me/5516991332121', (435, 12, 520, 32), relative=1)
+        canvas.linkURL('https://wa.me/5516991332121', (435, 15, 505, 30), relative=0)
     except Exception:
         pass
     
@@ -241,10 +251,10 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     )
     styles = getSampleStyleSheet()
     
-    # CABEÇALHO EM NO MÁXIMO 2 LINHAS
+    # CABEÇALHO COM TÍTULO MAIOR (13.5pt) E ENTRELINHA DE 16pt
     sub_title_header = ParagraphStyle(
         'SubTitleHeader', parent=styles['Normal'],
-        fontSize=12, leading=14, textColor=colors.HexColor('#0f172a'),
+        fontSize=13.5, leading=16, textColor=colors.HexColor('#0f172a'),
         fontName='Helvetica-Bold', alignment=1
     )
     
@@ -254,16 +264,11 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
         fontName='Helvetica-Bold', alignment=1, spaceBefore=4, spaceAfter=6
     )
     
+    # ESTILO PADRONIZADO PARA OS TÍTULOS DE SEÇÃO (10.5pt)
     section_heading = ParagraphStyle(
         'SectionHeading', parent=styles['Heading2'],
         fontSize=10.5, textColor=colors.HexColor('#0f172a'),
         spaceBefore=10, spaceAfter=6, fontName='Helvetica-Bold', alignment=1
-    )
-    
-    chart_label_style = ParagraphStyle(
-        'ChartLabel', parent=styles['Normal'],
-        fontSize=9, textColor=colors.HexColor('#475569'),
-        fontName='Helvetica-Bold', alignment=1, spaceAfter=4
     )
     
     body_style = ParagraphStyle('BodyTextCustom', parent=styles['Normal'], fontSize=9, textColor=colors.HexColor('#334155'), leading=11)
@@ -271,13 +276,14 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
 
     elements = []
 
+    # LOGO MAIOR (125pt LARGURA x 48pt ALTURA)
     logo_tour = "logo_tour_transparente.png" if os.path.exists("logo_tour_transparente.png") else None
-    img_tour = Image(logo_tour, width=110, height=42, kind='proportional') if logo_tour else Paragraph("<b>TOUR360VR</b>", body_style)
+    img_tour = Image(logo_tour, width=125, height=48, kind='proportional') if logo_tour else Paragraph("<b>TOUR360VR</b>", body_style)
 
     header_p = Paragraph("ESTUDO DE INTELIGÊNCIA DE MERCADO LOCAL E PRESENÇA DIGITAL GOOGLE", sub_title_header)
 
-    # LARGURA DEDICADA DE 320pt PARA GARANTIR NO MÁXIMO 2 LINHAS NO CABEÇALHO
-    header_table = Table([[img_tour, header_p, ""]], colWidths=[110, 320, 110])
+    # LARGURA SIMÉTRICA REAJUSTADA PARA ACOMODAR A LOGO E TÍTULO MAIORES
+    header_table = Table([[img_tour, header_p, ""]], colWidths=[125, 290, 125])
     header_table.setStyle(TableStyle([
         ('ALIGN', (0,0), (0,0), 'LEFT'),
         ('ALIGN', (1,0), (1,0), 'CENTER'),
@@ -295,7 +301,10 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     elements.append(title_table)
     
     elements.append(Spacer(1, 4))
-    elements.append(Paragraph("Distribuição de Empresas por Score de Oportunidade Comercial (Pontuação)", chart_label_style))
+    
+    # TÍTULO DO GRÁFICO COM MESMO TAMANHO DE "RANKING DE EMPRESAS AUDITADAS NO SETOR" (10.5pt)
+    elements.append(Paragraph("DISTRIBUIÇÃO DE EMPRESAS POR SCORE DE OPORTUNIDADE COMERCIAL (PONTUAÇÃO)", section_heading))
+    elements.append(Spacer(1, 2))
 
     # GRÁFICO VETORIAL ALINHADO
     scores_counts = df_nicho['score_oportunidade'].value_counts().sort_index(ascending=False)
@@ -323,7 +332,7 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
             chart_draw.add(String(bx + (bar_w / 2), by - 13, f"{score_val} pts", fontSize=8, fontName="Helvetica-Bold", fillColor=colors.HexColor('#475569'), textAnchor="middle"))
 
     elements.append(chart_draw)
-    elements.append(Spacer(1, 16))
+    elements.append(Spacer(1, 14))
 
     total_emp = len(df_nicho)
     sem_tour = len(df_nicho[df_nicho['tour_360'] == False])
@@ -1025,7 +1034,6 @@ elif st.session_state.etapa == 3:
         st.divider()
         st.markdown(f"### 📋 Ranking do Nicho **{nicho_selecionado}**:")
         
-        # DATAFRAME COM NOMES DAS EMPRESAS CORRIGIDOS E NATIVOS
         df_exibicao = pd.DataFrame({
             'EMPRESA': df_filtrado_sorted['nome'],
             'CIDADE': df_filtrado_sorted['cidade_busca'],
