@@ -10,9 +10,8 @@ import csv
 import urllib.parse
 from datetime import datetime
 import io
-import pydeck as pdk
 
-# ReportLab para geração do PDF de Nicho em 1 Página
+# ReportLab para geração do PDF de Nicho
 from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image, HRFlowable
@@ -181,43 +180,42 @@ def limpar_banco_dados():
 init_db()
 
 # -----------------------------------------------------------------------------
-# GERADOR DE PDF DO PANORAMA DE NICHO (1 PÁGINA COM DESIGN MELHORADO)
+# GERADOR DE PDF DO PANORAMA DE NICHO (1 PÁGINA COM LARGURAS IGUAIS E MARGENS FIXAS)
 # -----------------------------------------------------------------------------
 def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     buffer = io.BytesIO()
-    # Margens ajustadas para garantir 1 página perfeita
-    doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=25, leftMargin=25, topMargin=25, bottomMargin=25)
+    # Margem exata: 36pt de cada lado -> Largura útil = 612 - 72 = 540pt
+    doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=36, leftMargin=36, topMargin=30, bottomMargin=30)
     styles = getSampleStyleSheet()
     
-    title_style = ParagraphStyle('DocTitle', parent=styles['Heading1'], fontSize=15, textColor=colors.HexColor('#0f172a'), fontName='Helvetica-Bold', alignment=1)
-    subtitle_style = ParagraphStyle('DocSubtitle', parent=styles['Normal'], fontSize=9, textColor=colors.HexColor('#475569'), alignment=1, spaceAfter=8)
-    section_heading = ParagraphStyle('SectionHeading', parent=styles['Heading2'], fontSize=10, textColor=colors.HexColor('#1e293b'), spaceBefore=8, spaceAfter=4, fontName='Helvetica-Bold')
+    title_style = ParagraphStyle('DocTitle', parent=styles['Heading1'], fontSize=13, textColor=colors.HexColor('#0f172a'), fontName='Helvetica-Bold', alignment=0, spaceAfter=2)
+    subtitle_style = ParagraphStyle('DocSubtitle', parent=styles['Normal'], fontSize=8.5, textColor=colors.HexColor('#475569'), alignment=0, spaceAfter=8)
+    section_heading = ParagraphStyle('SectionHeading', parent=styles['Heading2'], fontSize=9.5, textColor=colors.HexColor('#1e293b'), spaceBefore=6, spaceAfter=3, fontName='Helvetica-Bold')
     body_style = ParagraphStyle('BodyTextCustom', parent=styles['Normal'], fontSize=8, textColor=colors.HexColor('#334155'), leading=10)
 
     elements = []
 
-    # Cabeçalho com Logos Alinhados à Esquerda
+    # 1. LOGOS TOTAIS ALINHADOS À ESQUERDA
     logo_okamoto = "logo_okamoto.png" if os.path.exists("logo_okamoto.png") else None
     logo_tour = "logo_tour_transparente.png" if os.path.exists("logo_tour_transparente.png") else None
 
-    img_okamoto = Image(logo_okamoto, width=150, height=45, kind='proportional') if logo_okamoto else Paragraph("<b>OKAMOTO MÍDIAS VISUAIS</b>", body_style)
-    img_tour = Image(logo_tour, width=100, height=35, kind='proportional') if logo_tour else Paragraph("<b>TOUR360VR</b>", body_style)
+    img_okamoto = Image(logo_okamoto, width=140, height=40, kind='proportional') if logo_okamoto else Paragraph("<b>OKAMOTO MÍDIAS VISUAIS</b>", body_style)
+    img_tour = Image(logo_tour, width=90, height=30, kind='proportional') if logo_tour else Paragraph("<b>TOUR360VR</b>", body_style)
 
-    header_table = Table([[img_okamoto, img_tour]], colWidths=[280, 280])
+    header_table = Table([[img_okamoto, img_tour]], colWidths=[150, 390])
     header_table.setStyle(TableStyle([
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-        ('ALIGN', (0,0), (0,0), 'LEFT'),
-        ('ALIGN', (1,0), (1,0), 'LEFT'),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 4),
+        ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 2),
     ]))
     elements.append(header_table)
-    elements.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor('#cbd5e1'), spaceAfter=8))
+    elements.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor('#cbd5e1'), spaceAfter=6))
 
-    # Título Centralizado e Subtítulo
-    elements.append(Paragraph(f"PANORAMA E AUDITORIA DE MERCADO: {nicho_nome.upper()}", title_style))
+    # 2. TÍTULO MENOR E NICHO AVALIADO EXPLICITO
+    elements.append(Paragraph(f"PANORAMA DE MERCADO: {nicho_nome.upper()}", title_style))
     elements.append(Paragraph("Estudo de Inteligência de Mercado Local e Presença Digital no Google", subtitle_style))
 
-    # Tabela Resumo dos Indicadores
+    # 3. TABELA RESUMO DOS INDICADORES (LARGURA TOTAL = 540pt)
     total_emp = len(df_nicho)
     sem_tour = len(df_nicho[df_nicho['tour_360'] == False])
     sem_site = len(df_nicho[df_nicho['website'] == ''])
@@ -225,11 +223,11 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
 
     dados_resumo = [
         [Paragraph("<b>Indicador Estratégico</b>", body_style), Paragraph("<b>Volume / %</b>", body_style), Paragraph("<b>Diagnóstico de Oportunidade</b>", body_style)],
-        [Paragraph("Sem Tour Virtual 360°", body_style), Paragraph(f"{sem_tour} ({sem_tour/total_emp*100:.1f}%)" if total_emp>0 else "0", body_style), Paragraph("Oportunidade crítica para implantação de experiência imersiva.", body_style)],
-        [Paragraph("Sem Website Oficial", body_style), Paragraph(f"{sem_site} ({sem_site/total_emp*100:.1f}%)" if total_emp>0 else "0", body_style), Paragraph("Perda de tráfego direto e dependência de redes sociais.", body_style)],
-        [Paragraph("Fichas Não Reivindicadas", body_style), Paragraph(f"{nao_reiv} ({nao_reiv/total_emp*100:.1f}%)" if total_emp>0 else "0", body_style), Paragraph("Vulnerabilidade de segurança e falta de gestão do perfil.", body_style)]
+        [Paragraph("Sem Tour Virtual 360°", body_style), Paragraph(f"{sem_tour} ({(sem_tour/total_emp*100 if total_emp>0 else 0):.1f}%)", body_style), Paragraph("Oportunidade crítica para implantação de experiência imersiva.", body_style)],
+        [Paragraph("Sem Website Oficial", body_style), Paragraph(f"{sem_site} ({(sem_site/total_emp*100 if total_emp>0 else 0):.1f}%)", body_style), Paragraph("Perda de tráfego direto e dependência de redes sociais.", body_style)],
+        [Paragraph("Fichas Não Reivindicadas", body_style), Paragraph(f"{nao_reiv} ({(nao_reiv/total_emp*100 if total_emp>0 else 0):.1f}%)", body_style), Paragraph("Vulnerabilidade de segurança e falta de gestão do perfil.", body_style)]
     ]
-    t_resumo = Table(dados_resumo, colWidths=[150, 90, 320])
+    t_resumo = Table(dados_resumo, colWidths=[150, 90, 300]) # Soma = 540
     t_resumo.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#f1f5f9')),
         ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1')),
@@ -238,9 +236,9 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
         ('BOTTOMPADDING', (0,0), (-1,-1), 3),
     ]))
     elements.append(t_resumo)
-    elements.append(Spacer(1, 6))
+    elements.append(Spacer(1, 4))
 
-    # Listagem Ordenada do Maior para o Menor Score
+    # 4. TABELA DE RANKING ORDENADA POR MAIOR SCORE (LARGURA TOTAL = 540pt)
     elements.append(Paragraph("RANKING DE EMPRESAS AUDITADAS NO SETOR (ORDENADO POR MAIOR SCORE)", section_heading))
     
     df_nicho_sorted = df_nicho.sort_values(by='score_oportunidade', ascending=False)
@@ -253,8 +251,8 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
         Paragraph("<b>Score (Oportunidade)</b>", body_style)
     ]]
     
-    # Limita em no máximo 15 empresas na tabela para caber em 1 página
-    for idx, row in df_nicho_sorted.head(15).iterrows():
+    # Limita em no máximo 14 empresas para garantir que caiba em 1 página sem estourar
+    for idx, row in df_nicho_sorted.head(14).iterrows():
         t_data.append([
             Paragraph(str(row['nome'])[:38], body_style),
             Paragraph(str(row['nota']), body_style),
@@ -263,20 +261,20 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
             Paragraph(f"<b>{row['score_oportunidade']}/100</b>", body_style)
         ])
 
-    t_empresas = Table(t_data, colWidths=[240, 50, 50, 50, 130])
+    t_empresas = Table(t_data, colWidths=[240, 50, 50, 50, 150]) # Soma = 540
     t_empresas.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#f8fafc')),
         ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1')),
         ('INNERGRID', (0,0), (-1,-1), 0.5, colors.HexColor('#f1f5f9')),
-        ('TOPPADDING', (0,0), (-1,-1), 2.5),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 2.5),
+        ('TOPPADDING', (0,0), (-1,-1), 2),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 2),
     ]))
     elements.append(t_empresas)
 
-    elements.append(Spacer(1, 10))
-    elements.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor('#cbd5e1'), spaceBefore=4, spaceAfter=6))
+    elements.append(Spacer(1, 8))
+    elements.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor('#cbd5e1'), spaceBefore=2, spaceAfter=4))
     
-    # Rodapé Limpo Apenas com os Contatos
+    # 5. RODAPÉ FIXO SEM NENHUM QUADRADO/BOX
     rodape_text = Paragraph(
         "<b>tour360vr.com.br</b> &nbsp;|&nbsp; <b>contato@okamotomidiasvisuais.com.br</b> &nbsp;|&nbsp; <b>(16) 99133-2121</b>",
         ParagraphStyle('Rodape', parent=body_style, alignment=1, textColor=colors.HexColor('#1e293b'))
@@ -769,7 +767,7 @@ Pontos Críticos: {', '.join(lead['pontos_criticos'])}"""
         st.divider()
 
 # -----------------------------------------------------------------------------
-# ETAPA 3: PANORAMA DE NICHO (COM DADOS ORDENADOS POR MAIOR SCORE E PDF 1 PÁGINA)
+# ETAPA 3: PANORAMA DE NICHO (SEM BARRA DE ROLAGEM VERTICAL NA TABELA)
 # -----------------------------------------------------------------------------
 elif st.session_state.etapa == 3:
     st.markdown("""
@@ -836,19 +834,24 @@ elif st.session_state.etapa == 3:
 
     st.divider()
     st.markdown(f"### 📋 Ranking do Nicho **{nicho_selecionado}** (Do Maior para o Menor Score):")
+    
+    # CALCULA ALTURA AUTOMÁTICA DA TABELA PARA NÃO TER BARRA DE ROLAGEM VERTICAL
+    altura_dinamica = (len(df_filtrado_sorted) + 1) * 35 + 3,
+    
     st.dataframe(
         df_filtrado_sorted[['nome', 'cidade_busca', 'score_oportunidade', 'nota', 'total_avaliacoes', 'website', 'tour_360']],
-        use_container_width=True
+        use_container_width=True,
+        height=min(max(altura_dinamica[0], 150), 2000)
     )
 
 # -----------------------------------------------------------------------------
-# ETAPA 4: MAPA DE PROSPECÇÃO (MODO CLARO E NOMES DAS EMPRESAS)
+# ETAPA 4: MAPA DE PROSPECÇÃO (MAPA CLARO FUNCIONAL VIA OPENSTREETMAP)
 # -----------------------------------------------------------------------------
 elif st.session_state.etapa == 4:
     st.markdown("""
         <div class="main-header">
             <h1 class="main-title">🗺️ Mapa de Localização e Concentração (Modo Claro)</h1>
-            <div class="main-subtitle">Passe o mouse sobre os pontos vermelhos para visualizar o nome da empresa e suas métricas.</div>
+            <div class="main-subtitle">Visualização geográfica dos potenciais clientes mapeados.</div>
         </div>
     """, unsafe_allow_html=True)
 
@@ -874,35 +877,9 @@ elif st.session_state.etapa == 4:
     if 'latitude' in df_mapa_filtrado.columns and 'longitude' in df_mapa_filtrado.columns and len(df_mapa_filtrado) > 0:
         df_mapa_clean = df_mapa_filtrado.rename(columns={"latitude": "lat", "longitude": "lon"})
         
-        # MAPA MODO CLARO INTERATIVO COM NOME DAS EMPRESAS (PYDECK)
-        lat_media = df_mapa_clean['lat'].mean()
-        lon_media = df_mapa_clean['lon'].mean()
-
-        view_state = pdk.ViewState(
-            latitude=lat_media,
-            longitude=lon_media,
-            zoom=12,
-            pitch=0
-        )
-
-        layer_pontos = pdk.Layer(
-            "ScatterplotLayer",
-            df_mapa_clean,
-            get_position=["lon", "lat"],
-            get_color=[220, 38, 38, 200],  # Vermelho destaque
-            get_radius=120,
-            pickable=True,
-        )
-
-        mapa_deck = pdk.Deck(
-            layers=[layer_pontos],
-            initial_view_state=view_state,
-            map_style="mapbox://styles/mapbox/light-v10",  # MODO CLARO
-            tooltip={"html": "<b>Empresa:</b> {nome}<br/><b>Endereço:</b> {endereco}<br/><b>Score:</b> {score_oportunidade}/100", "style": {"color": "white", "backgroundColor": "#0f172a"}}
-        )
-
-        st.pydeck_chart(mapa_deck)
+        # MAPA CLARO NATIVO E LEVE DO STREAMLIT (SEM MAPBOX OU FUNDO PRETO)
+        st.map(df_mapa_clean[['lat', 'lon']], zoom=12)
         
-        st.caption("💡 **Dica de Print:** Utilize as teclas `Win + Shift + S` (Windows) ou `Cmd + Shift + 4` (Mac) para capturar este mapa de fundo claro para propostas.")
+        st.caption("💡 **Dica de Print:** Utilize as teclas `Win + Shift + S` (Windows) ou `Cmd + Shift + 4` (Mac) para capturar o mapa em fundo claro para propostas.")
     else:
         st.warning("Nenhum registro encontrado para os filtros selecionados.")
