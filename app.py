@@ -1,3 +1,18 @@
+import streamlit as st
+
+# Lê os parâmetros enviados pelo Buscador através da URL
+query_params = st.query_params
+
+nome_empresa_recebido = query_params.get("nome", "")
+endereco_recebido = query_params.get("endereco", "")
+categoria_recebida = query_params.get("categoria", "")
+whatsapp_recebido = query_params.get("whatsapp", "")
+
+# Agora basta usar essas variáveis como valor inicial nos seus campos de formulário (st.text_input):
+nome_input = st.text_input("Nome da Empresa", value=nome_empresa_recebido)
+endereco_input = st.text_input("Endereço Completo", value=endereco_recebido)
+categoria_input = st.text_input("Categoria / Nicho", value=categoria_recebida)
+
 import os
 import io
 import json
