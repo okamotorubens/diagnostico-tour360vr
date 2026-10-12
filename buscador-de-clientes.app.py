@@ -16,9 +16,9 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 import io
 
 # -----------------------------------------------------------------------------
-# CONFIGURAÇÃO DO ENDEREÇO DO SEU OUTRO SISTEMA DE DIAGNÓSTICO
+# CONFIGURAÇÃO DO ENDEREÇO DO SEU SISTEMA DE DIAGNÓSTICO
 # -----------------------------------------------------------------------------
-URL_SISTEMA_DIAGNOSTICO = "https://tour360vr.streamlit.app/"
+URL_SISTEMA_DIAGNOSTICO = "https://diagnostico-tour360vr.streamlit.app/"
 
 # -----------------------------------------------------------------------------
 # CONFIGURAÇÃO DA PÁGINA STREAMLIT
@@ -152,7 +152,7 @@ def limpar_banco_dados():
 init_db()
 
 # -----------------------------------------------------------------------------
-# ESTILIZAÇÃO CSS CUSTOMIZADA (TEXTO DO BOTÃO EM BRANCO DEFINITIVO)
+# ESTILIZAÇÃO CSS CUSTOMIZADA
 # -----------------------------------------------------------------------------
 st.markdown("""
     <style>
@@ -186,7 +186,6 @@ st.markdown("""
         margin-bottom: 15px;
     }
 
-    /* BOTÃO AZUL COM TEXTO EM BRANCO DE ALTA LEITURA */
     .btn-redirect {
         display: block;
         width: 100%;
@@ -615,7 +614,7 @@ if st.session_state.etapa == 1:
             st.rerun()
 
 # -----------------------------------------------------------------------------
-# ETAPA 2: ANALISADOR E INTEGRAÇÃO DE REDIRECIONAMENTO COM PARÂMETROS
+# ETAPA 2: ANALISADOR, BANCO DE DADOS E COPIA RÁPIDA DE DADOS
 # -----------------------------------------------------------------------------
 elif st.session_state.etapa == 2:
     st.markdown("""
@@ -704,18 +703,8 @@ elif st.session_state.etapa == 2:
             st.markdown(f"- **Website:** {lead['website'] if lead['website'] else '❌ Sem site'}")
             st.markdown(f"- **Maps:** [Ver no Google Maps](https://www.google.com/maps/search/?api=1&query={lead['nome'].replace(' ', '+')})")
 
-            # CONSTRUÇÃO DA URL COM PARÂMETROS PREENCHIDOS
-            params = {
-                "nome": lead['nome'],
-                "endereco": lead['endereco'],
-                "categoria": lead['categoria'],
-                "whatsapp": lead['whatsapp'],
-                "cidade": lead['cidade_busca']
-            }
-            link_sistema_diagnostico = f"{URL_SISTEMA_DIAGNOSTICO}?{urllib.parse.urlencode(params)}"
-
-            # BOTÃO AZUL COM TEXTO EM BRANCO DE ALTA LEITURA
-            st.markdown(f'<a href="{link_sistema_diagnostico}" target="_blank" class="btn-redirect">🛠️ Abrir no Diagnóstico Tour360VR</a>', unsafe_allow_html=True)
+            # BOTÃO DE LINK DIRETO QUE ABRE O SISTEMA DE DIAGNÓSTICO EM NOVA ABA
+            st.markdown(f'<a href="{URL_SISTEMA_DIAGNOSTICO}" target="_blank" class="btn-redirect">🛠️ Abrir no Diagnóstico Tour360VR</a>', unsafe_allow_html=True)
 
             if lead['whatsapp']:
                 msg_wa = f"Olá! Notei que a ficha da {lead['nome']} no Google apresenta pontos de melhoria..."
@@ -734,5 +723,17 @@ elif st.session_state.etapa == 2:
                 key=f"btn_pdf_{lead['id']}",
                 use_container_width=True
             )
+
+        # FUNCIONALIDADE 1: CAIXA PRONTA DE DADOS DO CLIENTE PARA COPIAR E COLAR
+        st.markdown("**📋 Resumo do Cliente para Copiar e Colar no Diagnóstico:**")
+        
+        texto_copia = f"""Empresa: {lead['nome']}
+Endereço: {lead['endereco']}
+Categoria: {lead['categoria']}
+Telefone: {lead['telefone']}
+Website: {lead['website'] if lead['website'] else 'Não possui'}
+Pontos Críticos: {', '.join(lead['pontos_criticos'])}"""
+
+        st.code(texto_copia, language="text")
 
         st.divider()
