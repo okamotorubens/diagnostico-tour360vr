@@ -200,10 +200,10 @@ def desenhar_rodape_fixo_links(canvas, doc):
     canvas.setLineWidth(1)
     canvas.line(36, 35, 576, 35)
     
-    canvas.setFont('Helvetica', 8)
-    canvas.setFillColor(colors.HexColor('#2563eb'))
+    # RODAPÉ PRETO, SEM NEGRITO E COM LINKS ATIVOS
+    canvas.setFont('Helvetica', 8.5)
+    canvas.setFillColor(colors.HexColor('#000000'))
     
-    # LINKS NATIVOS REPORTLAB (CORRIGIDO PARA EVITAR ATTRIBUTEERROR)
     try:
         canvas.linkURL('https://tour360vr.com.br', (36, 18, 160, 32), relative=1)
         canvas.linkURL('mailto:contato@okamotomidiasvisuais.com.br', (180, 18, 380, 32), relative=1)
@@ -217,6 +217,8 @@ def desenhar_rodape_fixo_links(canvas, doc):
 
 def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     buffer = io.BytesIO()
+    
+    # FAVICON E METADADOS DO PDF PARA EXIBIÇÃO NO NAVEGADOR
     doc = SimpleDocTemplate(
         buffer, pagesize=letter,
         rightMargin=36, leftMargin=36, topMargin=20, bottomMargin=50,
@@ -225,14 +227,16 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     )
     styles = getSampleStyleSheet()
     
-    sub_title_header = ParagraphStyle('SubTitleHeader', parent=styles['Normal'], fontSize=11, textColor=colors.HexColor('#0f172a'), fontName='Helvetica-Bold', alignment=1)
-    main_title_style = ParagraphStyle('MainTitle', parent=styles['Heading1'], fontSize=14.5, textColor=colors.HexColor('#0f172a'), fontName='Helvetica-Bold', alignment=1, spaceBefore=6, spaceAfter=8)
-    section_heading = ParagraphStyle('SectionHeading', parent=styles['Heading2'], fontSize=9.5, textColor=colors.HexColor('#0f172a'), spaceBefore=8, spaceAfter=4, fontName='Helvetica-Bold', alignment=1)
-    body_style = ParagraphStyle('BodyTextCustom', parent=styles['Normal'], fontSize=8, textColor=colors.HexColor('#334155'), leading=10)
+    # AUMENTO DE 1 PONTO EM TODOS OS ESTILOS
+    sub_title_header = ParagraphStyle('SubTitleHeader', parent=styles['Normal'], fontSize=12, textColor=colors.HexColor('#0f172a'), fontName='Helvetica-Bold', alignment=1)
+    main_title_style = ParagraphStyle('MainTitle', parent=styles['Heading1'], fontSize=15.5, textColor=colors.HexColor('#0f172a'), fontName='Helvetica-Bold', alignment=1, spaceBefore=6, spaceAfter=8)
+    section_heading = ParagraphStyle('SectionHeading', parent=styles['Heading2'], fontSize=10.5, textColor=colors.HexColor('#0f172a'), spaceBefore=8, spaceAfter=4, fontName='Helvetica-Bold', alignment=1)
+    body_style = ParagraphStyle('BodyTextCustom', parent=styles['Normal'], fontSize=9, textColor=colors.HexColor('#334155'), leading=11)
     body_center = ParagraphStyle('BodyCenter', parent=body_style, alignment=1)
 
     elements = []
 
+    # LOGO E CABEÇALHO CENTRALIZADO
     logo_tour = "logo_tour_transparente.png" if os.path.exists("logo_tour_transparente.png") else None
     img_tour = Image(logo_tour, width=160, height=52, kind='proportional') if logo_tour else Paragraph("<b>TOUR360VR</b>", body_style)
 
@@ -253,38 +257,40 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     elements.append(Paragraph(f"PANORAMA DE MERCADO: {nicho_nome.upper()}", main_title_style))
     elements.append(Spacer(1, 6))
 
+    # GRÁFICO IGUAL AOS DADOS GERADOS EM TELA (DISTRIBUIÇÃO DE SCORES DO NICHO)
+    scores_counts = df_nicho['score_oportunidade'].value_counts().sort_index(ascending=False)
+    
+    chart_draw = Drawing(540, 70)
+    chart_draw.add(Rect(0, 0, 540, 70, fillColor=colors.HexColor('#f8fafc'), strokeColor=colors.HexColor('#cbd5e1'), strokeWidth=0.5, rx=6, ry=6))
+    
+    qtd_bars = len(scores_counts)
+    if qtd_bars > 0:
+        bar_w = min(35, max(14, 380 // qtd_bars))
+        gap = min(20, (500 - (qtd_bars * bar_w)) // (qtd_bars + 1))
+        max_val = max(scores_counts.values) if max(scores_counts.values) > 0 else 1
+        start_x = (540 - (qtd_bars * bar_w + (qtd_bars - 1) * gap)) / 2
+        
+        for idx_sc, (score_val, total_lead) in enumerate(scores_counts.items()):
+            bx = start_x + idx_sc * (bar_w + gap)
+            by = 18
+            bh = max((total_lead / max_val) * 32, 4)
+            
+            # Cor condicional do score (Vermelho, Amarelo, Verde)
+            c_fill = colors.HexColor('#f87171') if score_val >= 60 else (colors.HexColor('#facc15') if score_val >= 30 else colors.HexColor('#4ade80'))
+            
+            chart_draw.add(Rect(bx, by, bar_w, bh, fillColor=c_fill, strokeColor=None, rx=2, ry=2))
+            chart_draw.add(String(bx + (bar_w / 2), by + bh + 3, str(total_lead), fontSize=8, fontName="Helvetica-Bold", fillColor=colors.HexColor('#0f172a'), textAnchor="middle"))
+            chart_draw.add(String(bx + (bar_w / 2), by - 11, f"{score_val} pts", fontSize=7, fontName="Helvetica", fillColor=colors.HexColor('#475569'), textAnchor="middle"))
+
+    elements.append(chart_draw)
+    
+    # 1 LINHA A MAIS DE ESPAÇO ENTRE O GRÁFICO E A TABELA DE INDICADOR ESTRATÉGICO
+    elements.append(Spacer(1, 14))
+
     total_emp = len(df_nicho)
     sem_tour = len(df_nicho[df_nicho['tour_360'] == False])
     sem_site = len(df_nicho[df_nicho['website'] == ''])
     nao_reiv = len(df_nicho[df_nicho['reivindicada'] == False])
-
-    # GRÁFICO VETORIAL ELEGANTE ANTES DA TABELA 1
-    chart_draw = Drawing(540, 65)
-    chart_draw.add(Rect(0, 0, 540, 65, fillColor=colors.HexColor('#f8fafc'), strokeColor=colors.HexColor('#cbd5e1'), strokeWidth=0.5, rx=6, ry=6))
-    
-    col_w = 140
-    gap = 25
-    start_x = 25
-    max_h = 36
-    
-    valores = [sem_tour, sem_site, nao_reiv]
-    labels = ["Sem Tour Virtual 360°", "Sem Website Oficial", "Fichas Não Reivindicadas"]
-    
-    for i in range(3):
-        val = valores[i]
-        lbl = labels[i]
-        pct = (val / total_emp * 100) if total_emp > 0 else 0
-        
-        bx = start_x + i * (col_w + gap)
-        by = 10
-        bh = max((val / total_emp if total_emp > 0 else 0) * max_h, 4)
-        
-        chart_draw.add(Rect(bx, by, 18, bh, fillColor=colors.HexColor('#475569'), strokeColor=None, rx=3, ry=3))
-        chart_draw.add(String(bx + 24, by + 18, f"{val} ({pct:.1f}%)", fontSize=8, fontName="Helvetica-Bold", fillColor=colors.HexColor('#0f172a')))
-        chart_draw.add(String(bx + 24, by + 4, lbl, fontSize=7, fontName="Helvetica", fillColor=colors.HexColor('#475569')))
-
-    elements.append(chart_draw)
-    elements.append(Spacer(1, 10))
 
     dados_resumo = [
         [Paragraph("<b>INDICADOR ESTRATÉGICO</b>", body_style), Paragraph("<b>VOLUME / %</b>", body_center), Paragraph("<b>DIAGNÓSTICO DE OPORTUNIDADE</b>", body_style)],
@@ -297,22 +303,23 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#f1f5f9')),
         ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1')),
         ('INNERGRID', (0,0), (-1,-1), 0.5, colors.HexColor('#e2e8f0')),
-        ('TOPPADDING', (0,0), (-1,-1), 3.5),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 3.5),
+        ('TOPPADDING', (0,0), (-1,-1), 4),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 4),
         ('ALIGN', (1,0), (1,-1), 'CENTER'),
     ]))
     elements.append(t_resumo)
     
-    elements.append(Spacer(1, 14))
+    elements.append(Spacer(1, 12))
     elements.append(Paragraph("RANKING DE EMPRESAS AUDITADAS NO SETOR", section_heading))
     elements.append(Spacer(1, 4))
 
+    # TABELA DE RANKING COM "AVALIAÇÕES" TRADUZIDO
     df_nicho_sorted = df_nicho.sort_values(by='score_oportunidade', ascending=False)
 
     t_data = [[
         Paragraph("<b>EMPRESA</b>", body_style), 
         Paragraph("<b>NOTA</b>", body_center), 
-        Paragraph("<b>REVIEWS</b>", body_center),
+        Paragraph("<b>AVALIAÇÕES</b>", body_center),
         Paragraph("<b>SITE</b>", body_center), 
         Paragraph("<b>360°</b>", body_center), 
         Paragraph("<b>SCORE</b>", body_center)
@@ -322,8 +329,8 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#f8fafc')),
         ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1')),
         ('INNERGRID', (0,0), (-1,-1), 0.5, colors.HexColor('#f1f5f9')),
-        ('TOPPADDING', (0,0), (-1,-1), 3),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 3),
+        ('TOPPADDING', (0,0), (-1,-1), 3.5),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 3.5),
         ('ALIGN', (1,0), (-1,-1), 'CENTER'),
     ]
 
@@ -355,7 +362,7 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
             p_score
         ])
 
-    t_empresas = Table(t_data, colWidths=[240, 50, 60, 50, 50, 90])
+    t_empresas = Table(t_data, colWidths=[230, 45, 75, 45, 45, 100])
     t_empresas.setStyle(TableStyle(t_styles))
     elements.append(t_empresas)
 
@@ -426,6 +433,14 @@ st.markdown("""
         border: 1px solid #334155;
         white-space: pre-wrap;
         margin-bottom: 10px;
+    }
+
+    /* ESTILIZAÇÃO COMPLETA PARA CENTRALIZAR CABEÇALHOS E CÉLULAS DA TABELA STREAMLIT NA ABA 3 */
+    [data-testid="stDataFrame"] th {
+        text-align: center !important;
+    }
+    [data-testid="stDataFrame"] td {
+        text-align: center !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -890,7 +905,7 @@ TOUR360VR | Okamoto Mídias Visuais
         st.divider()
 
 # -----------------------------------------------------------------------------
-# ETAPA 3: PANORAMA DE NICHO
+# ETAPA 3: PANORAMA DE NICHO (TABELA 100% CENTRALIZADA)
 # -----------------------------------------------------------------------------
 elif st.session_state.etapa == 3:
     st.markdown("""
@@ -964,12 +979,15 @@ elif st.session_state.etapa == 3:
 
     altura_dinamica = (len(df_exibicao) + 1) * 35 + 10
 
+    # CONFIGURAÇÃO DE COLUNAS ALINHANDO TÍTULOS E CONTEÚDOS CENTRALIZADOS
     st.dataframe(
         df_exibicao,
         use_container_width=True,
         hide_index=True,
         height=altura_dinamica,
         column_config={
+            "EMPRESA": st.column_config.Column("EMPRESA"),
+            "CIDADE": st.column_config.Column("CIDADE"),
             "SCORE": st.column_config.NumberColumn("SCORE", width="small", format="%d/100"),
             "NOTA": st.column_config.NumberColumn("NOTA", width="small", format="%.1f ⭐"),
             "AVALIAÇÕES": st.column_config.NumberColumn("AVALIAÇÕES", width="small", format="%d"),
@@ -978,7 +996,7 @@ elif st.session_state.etapa == 3:
     )
 
 # -----------------------------------------------------------------------------
-# ETAPA 4: MAPA DE PROSPECÇÃO (PINS VERMELHOS E METRICAS DE FOTOS/ATUALIZAÇÃO)
+# ETAPA 4: MAPA DE PROSPECÇÃO (QUADRO DE INFORMAÇÕES COMPLETO RESTAURADO)
 # -----------------------------------------------------------------------------
 elif st.session_state.etapa == 4:
     st.markdown("""
@@ -1014,26 +1032,26 @@ elif st.session_state.etapa == 4:
         m = folium.Map(location=[lat_centro, lon_centro], zoom_start=14.5, tiles="OpenStreetMap")
 
         for _, row in df_mapa_filtrado.iterrows():
-            popup_html = f"""
-            <div style="font-family: sans-serif; font-size: 12px; min-width: 210px;">
+            # CARD DE INFORMAÇÕES COMPLETO RESTAURADO AO CLICAR/PASSSAR O MOUSE
+            info_card_html = f"""
+            <div style="font-family: sans-serif; font-size: 12px; min-width: 220px; padding: 4px;">
                 <b style="color: #0f172a; font-size: 13.5px;">{row['nome']}</b><br/>
-                📍 <i>{row['endereco']}</i><br/><br/>
+                📍 <i>{row['endereco']}</i><br/><hr style="margin: 6px 0; border: 0.5px solid #cbd5e1;"/>
                 🚨 <b>Score Oportunidade:</b> {row['score_oportunidade']}/100<br/>
-                ⭐ <b>Nota:</b> {row['nota']} ({row['total_avaliacoes']} avaliações)<br/>
-                🌐 <b>Website:</b> {'Sim' if row['website'] else 'Não'}<br/>
-                📷 <b>Fotos na Ficha:</b> {row['fotos_total']} fotos publicadas<br/>
+                ⭐ <b>Nota no Google:</b> {row['nota']} ({row['total_avaliacoes']} avaliações)<br/>
+                🌐 <b>Website Oficial:</b> {'Sim' if row['website'] else 'Não'}<br/>
+                📷 <b>Fotos no Perfil:</b> {row['fotos_total']} fotos publicadas<br/>
                 📅 <b>Última Atualização:</b> há {row['ultima_foto_dias']} dias
             </div>
             """
 
             folium.Marker(
                 location=[row['latitude'], row['longitude']],
-                popup=folium.Popup(popup_html, max_width=290),
-                tooltip=f"📍 {row['nome']} ({row['score_oportunidade']}/100)",
+                popup=folium.Popup(info_card_html, max_width=300),
+                tooltip=f"📍 {row['nome']} | Score: {row['score_oportunidade']}/100",
                 icon=folium.Icon(color="red", icon="info-sign")
             ).add_to(m)
 
-        # MAPA COM ALTURA AJUSTADA PARA 750PX
         st_folium(m, width="100%", height=750)
     else:
         st.warning("Nenhum registro encontrado para os filtros selecionados.")
