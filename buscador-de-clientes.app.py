@@ -13,17 +13,19 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 import io
 
 # -----------------------------------------------------------------------------
-# CONFIGURAÇÃO DA PÁGINA STREAMLIT
+# CONFIGURAÇÃO DA PÁGINA STREAMLIT (INCLUINDO FAVICON)
 # -----------------------------------------------------------------------------
+favicon_path = "logo_tour_transparente.png" if os.path.exists("logo_tour_transparente.png") else "🔍"
+
 st.set_page_config(
-    page_title="Prospecção & Diagnóstico Local | Okamoto & Tour360VR",
-    page_icon="🔍",
+    page_title="Mineração & Diagnóstico Local",
+    page_icon=favicon_path,
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
 # -----------------------------------------------------------------------------
-# ESTILIZAÇÃO CSS CUSTOMIZADA (LAYOUT LIMPO E MODERNO)
+# ESTILIZAÇÃO CSS CUSTOMIZADA (CENTRALIZAÇÃO DE LOGOS E LAYOUT MODERNO)
 # -----------------------------------------------------------------------------
 st.markdown("""
     <style>
@@ -38,7 +40,7 @@ st.markdown("""
 
     .lead-card {
         background-color: #1e293b; border-radius: 10px; padding: 20px;
-        margin-bottom: 20px; border: 1px solid #334155;
+        margin-bottom: 15px; border: 1px solid #334155;
     }
     
     .score-box { text-align: center; padding: 10px; border-radius: 8px; font-weight: bold; width: 140px; }
@@ -48,11 +50,24 @@ st.markdown("""
 
     .critical-item { color: #f87171; font-size: 13px; margin-bottom: 6px; font-weight: 500; }
     
+    /* Centralização de Imagens e Estilo na Sidebar */
+    [data-testid="stSidebar"] [data-testid="stImage"] {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-bottom: 15px;
+    }
     [data-testid="stSidebar"] img {
-        display: block;
         margin-left: auto;
         margin-right: auto;
-        margin-bottom: 15px;
+    }
+    .sidebar-title {
+        text-align: center;
+        font-size: 18px;
+        font-weight: 800;
+        color: #ffffff;
+        margin-top: 10px;
+        margin-bottom: 20px;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -66,7 +81,7 @@ if 'resultados' not in st.session_state:
     st.session_state.resultados = []
 
 # -----------------------------------------------------------------------------
-# INTEGRAÇÃO DE BUSCA (GOOGLE PLACES API OU BASE REALISTA)
+# INTEGRAÇÃO DE BUSCA (GOOGLE PLACES API OU BASE DE CONTINGÊNCIA REAL)
 # -----------------------------------------------------------------------------
 def buscar_google_places_api(nicho, cidade, api_key, limite=10):
     url = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={nicho}+em+{cidade}&language=pt-BR&key={api_key}"
@@ -215,7 +230,45 @@ def minerar_e_auditar_negocios(nicho, cidade, limite=10):
     return resultados
 
 # -----------------------------------------------------------------------------
-# GERADOR DE PDF DUAL BRAND (CORRIGIDO E PROPORCIONAL)
+# GERADOR DE EXCEL FORMATADO (.XLSX)
+# -----------------------------------------------------------------------------
+def gerar_excel_organizado(dados_leads):
+    df = pd.DataFrame(dados_leads)
+    
+    # Tratamento de colunas de lista para texto limpo
+    df['pontos_criticos'] = df['pontos_criticos'].apply(lambda x: " | ".join(x) if isinstance(x, list) else str(x))
+    df['oportunidades'] = df['oportunidades'].apply(lambda x: " | ".join(x) if isinstance(x, list) else str(x))
+    df['reivindicada'] = df['reivindicada'].apply(lambda x: "Sim" if x else "Não")
+
+    # Renomeação amigável de cabeçalhos para o Excel
+    df = df.rename(columns={
+        "id": "ID",
+        "nome": "Nome da Empresa",
+        "categoria": "Categoria",
+        "endereco": "Endereço Completo",
+        "telefone": "Telefone",
+        "whatsapp": "WhatsApp",
+        "website": "Website",
+        "nota": "Nota Média",
+        "total_avaliacoes": "Total Avaliações",
+        "reivindicada": "Ficha Reivindicada",
+        "fotos_total": "Qtd. Fotos",
+        "ultima_foto_dias": "Dias sem Fotos",
+        "tour_360": "Possui Tour 360",
+        "pontos_criticos": "Pontos Críticos Identificados",
+        "oportunidades": "Oportunidades Comerciais",
+        "score_oportunidade": "Score de Oportunidade"
+    })
+
+    buffer = io.BytesIO()
+    with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Leads Minerados')
+    
+    buffer.seek(0)
+    return buffer
+
+# -----------------------------------------------------------------------------
+# GERADOR DE PDF DUAL BRAND
 # -----------------------------------------------------------------------------
 def gerar_pdf_diagnostico(lead):
     buffer = io.BytesIO()
@@ -234,7 +287,6 @@ def gerar_pdf_diagnostico(lead):
     logo_okamoto = "logo_okamoto.png" if os.path.exists("logo_okamoto.png") else None
     logo_tour = "logo_tour_transparente.png" if os.path.exists("logo_tour_transparente.png") else None
 
-    # AJUSTE PROPORCIONAL DE LOGOS (SEM DISTORÇÃO)
     img_okamoto = Image(logo_okamoto, width=140, height=40, kind='proportional') if logo_okamoto else Paragraph("<b>OKAMOTO MÍDIAS VISUAIS</b>", body_style)
     img_tour = Image(logo_tour, width=100, height=40, kind='proportional') if logo_tour else Paragraph("<b>TOUR360VR</b>", body_style)
 
@@ -306,17 +358,16 @@ def gerar_pdf_diagnostico(lead):
     return buffer
 
 # -----------------------------------------------------------------------------
-# BARRA LATERAL COM LOGOS UMA ABAIXO DA OUTRA
+# BARRA LATERAL (LOGOS CENTRALIZADAS E TÍTULO EM DESTAQUE)
 # -----------------------------------------------------------------------------
 with st.sidebar:
     if os.path.exists("logo_okamoto.png"):
-        st.image("logo_okamoto.png", width=170)
+        st.image("logo_okamoto.png", width=160)
     
     if os.path.exists("logo_tour_transparente.png"):
-        st.image("logo_tour_transparente.png", width=120)
+        st.image("logo_tour_transparente.png", width=110)
 
-    st.markdown("### Okamoto & Tour360VR")
-    st.caption("Mineração & Diagnóstico Local")
+    st.markdown('<div class="sidebar-title">Mineração & Diagnóstico Local</div>', unsafe_allow_html=True)
     st.divider()
 
     col_nav1, col_nav2 = st.columns(2)
@@ -390,13 +441,12 @@ elif st.session_state.etapa == 2:
         )
 
     with col_export:
-        df_export = pd.DataFrame(st.session_state.resultados)
-        csv = df_export.to_csv(index=False).encode('utf-8')
+        excel_bytes = gerar_excel_organizado(st.session_state.resultados)
         st.download_button(
-            label="📥 Exportar Dados (CSV)",
-            data=csv,
-            file_name=f"leads_minerados_{datetime.now().strftime('%Y%m%d')}.csv",
-            mime="text/csv",
+            label="📊 Exportar Planilha Excel (.xlsx)",
+            data=excel_bytes,
+            file_name=f"Leads_Minerados_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             use_container_width=True
         )
 
@@ -454,7 +504,6 @@ elif st.session_state.etapa == 2:
                 link_wa = f"https://wa.me/55{lead['whatsapp']}?text={msg_wa.replace(' ', '%20')}"
                 st.markdown(f'<a href="{link_wa}" target="_blank"><button style="width:100%; background-color:#25D366; color:white; border:none; padding:10px; border-radius:6px; font-weight:bold; cursor:pointer; margin-bottom:8px;">💬 WhatsApp</button></a>', unsafe_allow_html=True)
 
-            # NOME DO ARQUIVO SANITIZADO E LIMPO
             nome_arquivo_limpo = re.sub(r'[^a-zA-Z0-9]', '_', lead['nome'])
             nome_arquivo_limpo = re.sub(r'_+', '_', nome_arquivo_limpo).strip('_')
 
@@ -467,5 +516,21 @@ elif st.session_state.etapa == 2:
                 key=f"btn_pdf_{lead['id']}",
                 use_container_width=True
             )
+
+        # EXPANSOR DE DETALHAMENTO AVANÇADO DA EMPRESA
+        with st.expander(f"🔍 Expandir Análise Detalhada & Links de Pesquisa de {lead['nome']}"):
+            col_exp1, col_exp2 = st.columns(2)
+            with col_exp1:
+                st.markdown("**🌐 Pesquisa Externa & Validação:**")
+                st.markdown(f"- [Buscar Empresa no Google Maps](https://www.google.com/maps/search/?api=1&query={lead['nome'].replace(' ', '+')})")
+                st.markdown(f"- [Buscar Dominio / Site no Registro.br](https://registro.br/busca-dominio/?pesquisa={lead['nome'].replace(' ', '')})")
+                st.markdown(f"- **Website:** {lead['website'] if lead['website'] else 'Sem site cadastrado'}")
+            
+            with col_exp2:
+                st.markdown("**💡 Argumento Comercial Recomendado:**")
+                if "Ficha NÃO Reivindicada no Google" in lead['pontos_criticos']:
+                    st.info("Alerte o cliente de que o perfil dele pode ser alterado por terceiros ou até ser removido se não for reivindicado oficialmente.")
+                elif "Ausência de Tour Virtual 360° interativo" in lead['pontos_criticos']:
+                    st.info("Apresente como o Tour Virtual 360° melhora o posicionamento orgânico no Google Maps e gera confiança imediata.")
 
         st.divider()
