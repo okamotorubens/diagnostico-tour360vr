@@ -1,6 +1,6 @@
 import streamlit as st
 
-# 1. LÊ OS PARÂMETROS ENVIADOS PELO BUSCADOR
+# 1. CAPTURA PARÂMETROS DA URL
 query_params = st.query_params
 
 nome_param = query_params.get("nome", "")
@@ -9,39 +9,22 @@ categoria_param = query_params.get("categoria", "")
 whatsapp_param = query_params.get("whatsapp", "")
 cidade_param = query_params.get("cidade", "")
 
-# 2. SE VIERAM DADOS DA URL, ALIMENTA O ESTADO INTERNO DO SISTEMA
+# 2. GARANTE QUE A ESTRUTURA INTERNA EXISTE
+if 'dados' not in st.session_state:
+    st.session_state['dados'] = {}
+
+# 3. SE VIERAM DADOS DA URL, POPULA OS DADOS DO CLIENTE
 if nome_param:
-    st.session_state['empresa_nome'] = nome_param
+    st.session_state['dados']['empresa'] = nome_param
 if endereco_param:
-    st.session_state['empresa_endereco'] = endereco_param
+    st.session_state['dados']['endereco'] = endereco_param
 if whatsapp_param:
-    st.session_state['empresa_telefone'] = whatsapp_param
+    st.session_state['dados']['whatsapp'] = whatsapp_param
 if categoria_param:
-    st.session_state['empresa_categoria'] = categoria_param
+    st.session_state['dados']['categoria'] = categoria_param
 if cidade_param:
-    st.session_state['empresa_cidade'] = cidade_param
-
-# No bloco DADOS DO CLIENTE da sua tela:
-empresa_input = st.text_input(
-    "Empresa:", 
-    value=st.session_state.get('empresa_nome', '')
-)
-
-responsavel_input = st.text_input(
-    "Responsável:", 
-    value=st.session_state.get('empresa_responsavel', '')
-)
-
-telefone_input = st.text_input(
-    "Telefone / WhatsApp:", 
-    value=st.session_state.get('empresa_telefone', '')
-)
-
-endereco_input = st.text_input(
-    "Endereço:", 
-    value=st.session_state.get('empresa_endereco', '')
-)
-
+    st.session_state['dados']['cidade'] = cidade_param
+    
 import os
 import io
 import json
