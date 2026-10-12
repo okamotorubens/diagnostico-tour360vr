@@ -147,19 +147,18 @@ def limpar_banco_dados():
         st.error(f"Erro ao limpar banco: {str(e)}")
 
 # -----------------------------------------------------------------------------
-# GERADOR DE PDF DO PANORAMA DE NICHO (FONTE MAIOR & PARÁGRAFO RECUADO À ESQUERDA)
+# GERADOR DE PDF DO PANORAMA DE NICHO (LOGO MAIOR & TEXTO COLADO À ESQUERDA)
 # -----------------------------------------------------------------------------
 def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
     canvas.saveState()
     styles = getSampleStyleSheet()
     
-    # Fonte aumentada para 12.5pt com entrelinha 15pt
     header_title_style = ParagraphStyle(
         'HeaderTitleLeft',
         parent=styles['Normal'],
         fontName='Helvetica-Bold',
-        fontSize=12.5,
-        leading=15,
+        fontSize=12,
+        leading=14.5,
         textColor=colors.HexColor('#0f172a'),
         alignment=0
     )
@@ -167,7 +166,8 @@ def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
     logo_tour = "logo_tour_transparente.png" if os.path.exists("logo_tour_transparente.png") else None
     
     if logo_tour:
-        img_logo = Image(logo_tour, width=150, height=55, kind='proportional')
+        # Logo aumentada
+        img_logo = Image(logo_tour, width=185, height=68, kind='proportional')
     else:
         img_logo = Paragraph("<b>TOUR360VR</b>", header_title_style)
 
@@ -176,8 +176,8 @@ def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
         header_title_style
     )
 
-    # Tabela sem espaçamento intermediário para encostar o texto na logo
-    header_table = Table([[img_logo, texto_cabecalho]], colWidths=[150, 390])
+    # Texto encostado diretamente na logo (185pt logo + 355pt texto = 540pt total)
+    header_table = Table([[img_logo, texto_cabecalho]], colWidths=[185, 355])
     header_table.setStyle(TableStyle([
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
         ('LEFTPADDING', (0,0), (-1,-1), 0),
@@ -188,13 +188,13 @@ def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
         ('ALIGN', (1,0), (1,0), 'LEFT'),
     ]))
 
-    header_table.wrapOn(canvas, 540, 60)
-    header_table.drawOn(canvas, 36, 716)
+    header_table.wrapOn(canvas, 540, 68)
+    header_table.drawOn(canvas, 36, 712)
 
-    # Linha divisória horizontal abaixo do cabeçalho
+    # Linha divisória horizontal
     canvas.setStrokeColor(colors.HexColor('#cbd5e1'))
     canvas.setLineWidth(1.5)
-    canvas.line(36, 706, 576, 706)
+    canvas.line(36, 704, 576, 704)
     
     # RODAPÉ FIXO COM HIPERLINKS
     canvas.setLineWidth(1)
@@ -360,22 +360,27 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     return buffer
 
 # -----------------------------------------------------------------------------
-# ESTILIZAÇÃO CSS CUSTOMIZADA (SIDEBAR COMPLETAMENTE TRAVADA E SEM SCROLLBAR)
+# ESTILIZAÇÃO CSS CUSTOMIZADA (OCULTAR TOTALMENTE BARRA DE ROLAGEM DA SIDEBAR)
 # -----------------------------------------------------------------------------
 st.markdown("""
     <style>
     .main { background-color: #0e1117; padding-top: 15px !important; }
     .block-container { padding-top: 1rem !important; padding-bottom: 1rem !important; }
     
-    /* BLOQUEAR REDIMENSIONAMENTO E BARRA DE ROLAGEM NA SIDEBAR */
-    [data-testid="stSidebar"] {
-        resize: none !important;
-        overflow: hidden !important;
-    }
-    [data-testid="stSidebar"] > div:first-child {
+    /* BLOQUEIO TOTAL DA BARRA DE ROLAGEM E REDIMENSIONAMENTO NA SIDEBAR */
+    [data-testid="stSidebar"], 
+    [data-testid="stSidebar"] > div, 
+    section[data-testid="stSidebar"] div {
         overflow-x: hidden !important;
-        overflow-y: auto !important;
+        overflow-y: hidden !important;
+        resize: none !important;
     }
+
+    ::-webkit-scrollbar {
+        width: 0px !important;
+        background: transparent !important;
+    }
+
     div[data-testid="stSidebarResizer"] {
         display: none !important;
     }
