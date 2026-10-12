@@ -147,46 +147,46 @@ def limpar_banco_dados():
         st.error(f"Erro ao limpar banco: {str(e)}")
 
 # -----------------------------------------------------------------------------
-# GERADOR DE PDF DO PANORAMA DE NICHO (COM LOGO MAIOR, CABEÇALHO/RODAPÉ EM TODAS PÁGINAS)
+# GERADOR DE PDF DO PANORAMA DE NICHO (REFEITO E AJUSTADO)
 # -----------------------------------------------------------------------------
 def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
     canvas.saveState()
     
-    # 1. CABEÇALHO DA PÁGINA
+    # 1. CABEÇALHO REBAIXADO (SEM CORTAR NO TOPO)
     logo_tour = "logo_tour_transparente.png" if os.path.exists("logo_tour_transparente.png") else None
     if logo_tour:
         try:
-            # Logo com dimensão aumentada
-            canvas.drawImage(logo_tour, 36, 735, width=150, height=58, preserveAspectRatio=True, mask='auto')
+            # Posicionado a 720pt de altura para dar margem no topo
+            canvas.drawImage(logo_tour, 36, 715, width=140, height=52, preserveAspectRatio=True, mask='auto')
         except Exception:
             pass
 
-    canvas.setFont('Helvetica-Bold', 12)
+    canvas.setFont('Helvetica-Bold', 11.5)
     canvas.setFillColor(colors.HexColor('#0f172a'))
     
-    # Título do cabeçalho formatado estritamente em 2 linhas
-    canvas.drawCentredString(380, 768, "ESTUDO DE INTELIGÊNCIA DE MERCADO LOCAL E")
-    canvas.drawCentredString(380, 750, "PRESENÇA DIGITAL NO GOOGLE")
+    # Título do cabeçalho rebaixado em 2 linhas exatas
+    canvas.drawCentredString(380, 748, "ESTUDO DE INTELIGÊNCIA DE MERCADO LOCAL")
+    canvas.drawCentredString(380, 732, "E PRESENÇA DIGITAL NO GOOGLE")
     
     canvas.setStrokeColor(colors.HexColor('#cbd5e1'))
     canvas.setLineWidth(1.5)
-    canvas.line(36, 730, 576, 730)
+    canvas.line(36, 710, 576, 710)
     
-    # 2. RODAPÉ FIXO COM LINKS FUNCIONAIS
+    # 2. RODAPÉ FIXO COM HIPERLINKS PERFEITAMENTE ALINHADOS
     canvas.setLineWidth(1)
-    canvas.line(36, 40, 576, 40)
+    canvas.line(36, 42, 576, 42)
     
     canvas.setFont('Helvetica', 8.5)
     canvas.setFillColor(colors.HexColor('#0f172a'))
     
     texto_rodape = "tour360vr.com.br   |   contato@okamotomidiasvisuais.com.br   |   (16) 99133-2121"
-    canvas.drawCentredString(306, 25, texto_rodape)
+    canvas.drawCentredString(306, 26, texto_rodape)
 
-    # Hiperlinks clicáveis sobre o texto do rodapé
+    # Zonas de links sobre os elementos do rodapé
     try:
-        canvas.linkURL('https://tour360vr.com.br', (120, 15, 210, 35), relative=0)
-        canvas.linkURL('mailto:contato@okamotomidiasvisuais.com.br', (220, 15, 410, 35), relative=0)
-        canvas.linkURL('https://wa.me/5516991332121', (420, 15, 500, 35), relative=0)
+        canvas.linkURL('https://tour360vr.com.br', (120, 20, 215, 36), relative=0)
+        canvas.linkURL('mailto:contato@okamotomidiasvisuais.com.br', (225, 20, 415, 36), relative=0)
+        canvas.linkURL('https://wa.me/5516991332121', (425, 20, 505, 36), relative=0)
     except Exception:
         pass
         
@@ -197,7 +197,7 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     
     doc = SimpleDocTemplate(
         buffer, pagesize=letter,
-        rightMargin=36, leftMargin=36, topMargin=70, bottomMargin=55,
+        rightMargin=36, leftMargin=36, topMargin=90, bottomMargin=55,
         title=f"Panorama de Mercado - {nicho_nome}",
         author="Tour360VR"
     )
@@ -205,13 +205,13 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     
     main_title_style = ParagraphStyle(
         'MainTitle', parent=styles['Heading1'],
-        fontSize=13.5, textColor=colors.HexColor('#0f172a'),
-        fontName='Helvetica-Bold', alignment=1, spaceBefore=2, spaceAfter=8
+        fontSize=13, textColor=colors.HexColor('#0f172a'),
+        fontName='Helvetica-Bold', alignment=1, spaceBefore=0, spaceAfter=8
     )
     
     section_heading = ParagraphStyle(
         'SectionHeading', parent=styles['Heading2'],
-        fontSize=10, textColor=colors.HexColor('#0f172a'),
+        fontSize=9.5, textColor=colors.HexColor('#0f172a'),
         spaceBefore=8, spaceAfter=5, fontName='Helvetica-Bold', alignment=1
     )
     
@@ -232,9 +232,9 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
 
     scores_counts = df_nicho['score_oportunidade'].value_counts().sort_index(ascending=False)
     
-    chart_draw = Drawing(540, 100)
+    chart_draw = Drawing(540, 95)
     chart_draw.hAlign = 'CENTER'
-    chart_draw.add(Rect(0, 0, 540, 100, fillColor=colors.HexColor('#f8fafc'), strokeColor=colors.HexColor('#cbd5e1'), strokeWidth=0.5, rx=0, ry=0))
+    chart_draw.add(Rect(0, 0, 540, 95, fillColor=colors.HexColor('#f8fafc'), strokeColor=colors.HexColor('#cbd5e1'), strokeWidth=0.5, rx=0, ry=0))
     
     qtd_bars = len(scores_counts)
     if qtd_bars > 0:
@@ -246,7 +246,7 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
         for idx_sc, (score_val, total_lead) in enumerate(scores_counts.items()):
             bx = start_x + idx_sc * (bar_w + gap)
             by = 22
-            bh = max((total_lead / max_val) * 55, 6)
+            bh = max((total_lead / max_val) * 52, 6)
             
             c_fill = colors.HexColor('#4ade80') if score_val >= 60 else (colors.HexColor('#facc15') if score_val >= 30 else colors.HexColor('#f87171'))
             
@@ -255,16 +255,17 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
             chart_draw.add(String(bx + (bar_w / 2), by - 12, f"{score_val} pts", fontSize=7.5, fontName="Helvetica-Bold", fillColor=colors.HexColor('#475569'), textAnchor="middle"))
 
     elements.append(chart_draw)
-    elements.append(Spacer(1, 10))
+    elements.append(Spacer(1, 8))
 
+    # CÁLCULO DOS INDICADORES ESTRATÉGICOS REAIS
     total_emp = len(df_nicho)
     sem_site = len(df_nicho[df_nicho['website'] == ''])
     nao_reiv = len(df_nicho[df_nicho['reivindicada'] == False])
-    sem_redes = len(df_nicho[(df_nicho['instagram'] == '') & (df_nicho['facebook'] == '')])
+    poucas_av = len(df_nicho[df_nicho['total_avaliacoes'] < 30])
 
     dados_resumo = [
         [Paragraph("<b>INDICADOR ESTRATÉGICO</b>", body_style), Paragraph("<b>VOLUME / %</b>", body_center), Paragraph("<b>DIAGNÓSTICO DE OPORTUNIDADE</b>", body_style)],
-        [Paragraph("Presença em Redes Sociais", body_style), Paragraph(f"<b>{sem_redes} ({(sem_redes/total_emp*100 if total_emp>0 else 0):.1f}%)</b>", body_center), Paragraph("Oportunidade para expansão de canais e engajamento local.", body_style)],
+        [Paragraph("Otimização de Avaliações", body_style), Paragraph(f"<b>{poucas_av} ({(poucas_av/total_emp*100 if total_emp>0 else 0):.1f}%)</b>", body_center), Paragraph("Volume baixo (<30 avaliações) afetando a prova social e ranking.", body_style)],
         [Paragraph("Sem Website Oficial", body_style), Paragraph(f"<b>{sem_site} ({(sem_site/total_emp*100 if total_emp>0 else 0):.1f}%)</b>", body_center), Paragraph("Perda de tráfego direto e dependência de canais de terceiros.", body_style)],
         [Paragraph("Fichas Não Reivindicadas", body_style), Paragraph(f"<b>{nao_reiv} ({(nao_reiv/total_emp*100 if total_emp>0 else 0):.1f}%)</b>", body_center), Paragraph("Vulnerabilidade de segurança e falta de gestão do perfil.", body_style)]
     ]
@@ -872,8 +873,8 @@ elif st.session_state.etapa == 3:
         with col_m1: 
             st.metric("Empresas Analisadas", total_count)
         with col_m2: 
-            sem_redes = len(df_filtrado_sorted[(df_filtrado_sorted['instagram'] == '') & (df_filtrado_sorted['facebook'] == '')])
-            st.metric("Sem Redes Sociais", f"{(sem_redes / total_count * 100 if total_count > 0 else 0):.1f}%", f"{sem_redes} empresas")
+            poucas_av = len(df_filtrado_sorted[df_filtrado_sorted['total_avaliacoes'] < 30])
+            st.metric("Poucas Avaliações (<30)", f"{(poucas_av / total_count * 100 if total_count > 0 else 0):.1f}%", f"{poucas_av} empresas")
         with col_m3: 
             sem_site = len(df_filtrado_sorted[df_filtrado_sorted['website'] == ''])
             st.metric("Sem Website Oficial", f"{(sem_site / total_count * 100 if total_count > 0 else 0):.1f}%", f"{sem_site} empresas")
@@ -1000,7 +1001,6 @@ elif st.session_state.etapa == 4:
             st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
 
         if 'latitude' in df_mapa_filtrado.columns and 'longitude' in df_mapa_filtrado.columns and len(df_mapa_filtrado) > 0:
-            # Cálculo do centro por média ponderada/ponto médio (centralização exata na concentração)
             lat_centro = df_mapa_filtrado['latitude'].mean()
             lon_centro = df_mapa_filtrado['longitude'].mean()
 
