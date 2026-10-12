@@ -10,6 +10,7 @@ import csv
 import urllib.parse
 from datetime import datetime
 import io
+from PIL import Image as PILImage
 import streamlit.components.v1 as components
 from streamlit_folium import st_folium
 import folium
@@ -27,22 +28,33 @@ from reportlab.graphics.shapes import Drawing, Rect, String
 URL_SISTEMA_DIAGNOSTICO = "https://tour360vr.streamlit.app/"
 
 # -----------------------------------------------------------------------------
-# CONFIGURAÇÃO DA PÁGINA STREAMLIT
+# CONFIGURAÇÃO DA PÁGINA STREAMLIT E FAVICON NO NAVEGADOR
 # -----------------------------------------------------------------------------
-favicon_path = "logo_tour_transparente.png" if os.path.exists("logo_tour_transparente.png") else "🔍"
+favicon_img = "🔍"
+if os.path.exists("logo_tour_transparente.png"):
+    try:
+        favicon_img = PILImage.open("logo_tour_transparente.png")
+    except Exception:
+        favicon_img = "🔍"
 
 st.set_page_config(
     page_title="Radar & CRM de Prospecção | Tour360VR",
-    page_icon=favicon_path,
+    page_icon=favicon_img,
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# ROLAGEM AUTOMÁTICA PARA O TOPO
+# INJEÇÃO HTML PARA FORÇAR O FAVICON E ROLAGEM AO TOPO
 components.html("""
     <script>
         var body = window.parent.document.querySelector(".main");
         if (body) { body.scrollTop = 0; }
+        
+        var link = window.parent.document.querySelector("link[rel*='icon']") || window.parent.document.createElement('link');
+        link.type = 'image/png';
+        link.rel = 'shortcut icon';
+        link.href = 'logo_tour_transparente.png';
+        window.parent.document.getElementsByTagName('head')[0].appendChild(link);
     </script>
 """, height=0)
 
@@ -226,16 +238,17 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     )
     styles = getSampleStyleSheet()
     
+    # TÍTULO DO CABEÇALHO EM TAMANHO GRANDE (16pt) E CENTRALIZADO
     sub_title_header = ParagraphStyle(
         'SubTitleHeader', parent=styles['Normal'],
-        fontSize=16, leading=19, textColor=colors.HexColor('#0f172a'),
+        fontSize=15, leading=18, textColor=colors.HexColor('#0f172a'),
         fontName='Helvetica-Bold', alignment=1
     )
     
     main_title_style = ParagraphStyle(
         'MainTitle', parent=styles['Heading1'],
-        fontSize=15, textColor=colors.HexColor('#0f172a'),
-        fontName='Helvetica-Bold', alignment=1, spaceBefore=6, spaceAfter=8
+        fontSize=14, textColor=colors.HexColor('#0f172a'),
+        fontName='Helvetica-Bold', alignment=1, spaceBefore=4, spaceAfter=6
     )
     
     section_heading = ParagraphStyle(
@@ -256,31 +269,32 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     elements = []
 
     logo_tour = "logo_tour_transparente.png" if os.path.exists("logo_tour_transparente.png") else None
-    img_tour = Image(logo_tour, width=150, height=50, kind='proportional') if logo_tour else Paragraph("<b>TOUR360VR</b>", body_style)
+    img_tour = Image(logo_tour, width=100, height=45, kind='proportional') if logo_tour else Paragraph("<b>TOUR360VR</b>", body_style)
 
     header_p = Paragraph("ESTUDO DE INTELIGÊNCIA DE MERCADO LOCAL E PRESENÇA DIGITAL NO GOOGLE", sub_title_header)
 
-    header_table = Table([[img_tour, header_p]], colWidths=[150, 390])
+    # CABEÇALHO SIMÉTRICO: LOGO (100pt) | TÍTULO CENTRALIZADO (340pt) | ESPAÇADOR (100pt)
+    header_table = Table([[img_tour, header_p, ""]], colWidths=[100, 340, 100])
     header_table.setStyle(TableStyle([
         ('ALIGN', (0,0), (0,0), 'LEFT'),
         ('ALIGN', (1,0), (1,0), 'CENTER'),
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 4),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 2),
     ]))
     elements.append(header_table)
     
-    elements.append(HRFlowable(width="100%", thickness=1.5, color=colors.HexColor('#cbd5e1'), spaceBefore=8, spaceAfter=10))
+    elements.append(HRFlowable(width="100%", thickness=1.5, color=colors.HexColor('#cbd5e1'), spaceBefore=6, spaceAfter=8))
 
-    elements.append(Spacer(1, 4))
+    elements.append(Spacer(1, 2))
     title_p = Paragraph(f"PANORAMA DE MERCADO: {nicho_nome.upper()}", main_title_style)
     title_table = Table([[title_p]], colWidths=[540])
     title_table.setStyle(TableStyle([('ALIGN', (0,0), (-1,-1), 'CENTER')]))
     elements.append(title_table)
     
-    elements.append(Spacer(1, 6))
+    elements.append(Spacer(1, 4))
     elements.append(Paragraph("Distribuição de Empresas por Score de Oportunidade Comercial (Pontuação)", chart_label_style))
 
-    # GRÁFICO VETORIAL
+    # GRÁFICO VETORIAL EXATAMENTE COM LARGURA 540pt ALINHADO COM AS TABELAS
     scores_counts = df_nicho['score_oportunidade'].value_counts().sort_index(ascending=False)
     
     chart_draw = Drawing(540, 105)
@@ -298,7 +312,6 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
             by = 22
             bh = max((total_lead / max_val) * 60, 6)
             
-            # LÓGICA DE CORES: VERDE = SCORE ALTO, VERMELHO = SCORE BAIXO
             c_fill = colors.HexColor('#4ade80') if score_val >= 60 else (colors.HexColor('#facc15') if score_val >= 30 else colors.HexColor('#f87171'))
             
             chart_draw.add(Rect(bx, by, bar_w, bh, fillColor=c_fill, strokeColor=None, rx=3, ry=3))
@@ -306,7 +319,7 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
             chart_draw.add(String(bx + (bar_w / 2), by - 13, f"{score_val} pts", fontSize=8, fontName="Helvetica-Bold", fillColor=colors.HexColor('#475569'), textAnchor="middle"))
 
     elements.append(chart_draw)
-    elements.append(Spacer(1, 18))
+    elements.append(Spacer(1, 16))
 
     total_emp = len(df_nicho)
     sem_tour = len(df_nicho[df_nicho['tour_360'] == False])
@@ -330,7 +343,7 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     ]))
     elements.append(t_resumo)
     
-    elements.append(Spacer(1, 12))
+    elements.append(Spacer(1, 10))
     elements.append(Paragraph("RANKING DE EMPRESAS AUDITADAS NO SETOR", section_heading))
     elements.append(Spacer(1, 4))
 
@@ -345,6 +358,7 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
         Paragraph("<b>SCORE</b>", body_center)
     ]]
     
+    # ESTILO COM FECHAMENTO COMPLETO DE QUADRO PARA QUALQUER PÁGINA (PÁGINA 1, 2, ETC.)
     t_styles = [
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#f8fafc')),
         ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1')),
@@ -358,7 +372,6 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
         r_data = row[1]
         sc = r_data['score_oportunidade']
         
-        # INVERSÃO DE CORES DA TABELA
         if sc >= 60:
             bg_color = colors.HexColor('#86efac') # Verde
             txt_color = '#14532d'
@@ -383,7 +396,7 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
             p_score
         ])
 
-    t_empresas = Table(t_data, colWidths=[230, 45, 75, 45, 45, 100])
+    t_empresas = Table(t_data, colWidths=[230, 45, 75, 45, 45, 100], repeatRows=1)
     t_empresas.setStyle(TableStyle(t_styles))
     elements.append(t_empresas)
 
@@ -424,7 +437,6 @@ st.markdown("""
         margin-top: 5px; margin-bottom: 10px;
     }
 
-    /* ESTILO NEON COMPATÍVEL COM O SISTEMA DE DIAGNÓSTICO PARA BOTÕES */
     .stButton>button, .btn-redirect {
         background-color: #0f172a !important;
         color: #ffffff !important;
@@ -454,7 +466,6 @@ st.markdown("""
         white-space: pre-wrap; margin-bottom: 10px;
     }
 
-    /* CENTRALIZAÇÃO REFORÇADA DOS CABEÇALHOS DA TABELA */
     div[data-testid="stDataFrame"] table th {
         text-align: center !important;
     }
@@ -1005,7 +1016,7 @@ elif st.session_state.etapa == 3:
     st.divider()
     st.markdown(f"### 📋 Ranking do Nicho **{nicho_selecionado}** (Clique para ver no Google Maps):")
     
-    # DATAFRAME COM NOME DA EMPRESA E LINK INDEPENDENTES
+    # DATAFRAME COM NOME DA EMPRESA E LINK CORRIGIDOS
     df_exibicao = pd.DataFrame({
         'LINK_MAPS': df_filtrado_sorted.apply(lambda r: f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(r['nome'])}", axis=1),
         'EMPRESA': df_filtrado_sorted['nome'],
@@ -1024,7 +1035,7 @@ elif st.session_state.etapa == 3:
         hide_index=True,
         height=altura_dinamica,
         column_config={
-            "LINK_MAPS": st.column_config.LinkColumn("EMPRESA", display_text=df_exibicao['EMPRESA'], width="large"),
+            "LINK_MAPS": st.column_config.LinkColumn("EMPRESA", display_text="EMPRESA", width="large"),
             "CIDADE": st.column_config.Column("CIDADE", alignment="center"),
             "SCORE": st.column_config.Column("SCORE", width="small", alignment="center"),
             "NOTA": st.column_config.Column("NOTA", width="small", alignment="center"),
