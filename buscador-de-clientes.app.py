@@ -414,23 +414,23 @@ if 'etapa' not in st.session_state:
 # INTEGRAÇÃO DE BUSCA REAL VIA GOOGLE PLACES API
 # -----------------------------------------------------------------------------
 def buscar_google_places_api(nicho, cidade, bairro, rua, api_key, limite=20):
-    query_parts = []
-    if nicho:
-        query_parts.append(f'"{nicho}"')
-    if rua:
-        query_parts.append(f'na rua "{rua}"')
-    if bairro:
-        query_parts.append(f'no bairro "{bairro}"')
-    query_parts.append(f'em "{cidade}" - SP')
+    # Formatação limpa da consulta
+    termos = []
+    if nicho: termos.append(nicho.strip())
+    if rua: termos.append(rua.strip())
+    if bairro: termos.append(bairro.strip())
+    if cidade: termos.append(cidade.strip())
     
-    query_str = " ".join(query_parts)
-
+    query_str = " ".join(termos)
     url = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={urllib.parse.quote(query_str)}&language=pt-BR&key={api_key}"
+    
     try:
-        response = requests.get(url, timeout=10)
+        response = requests.get(url, timeout=12)
         data = response.json()
         
-        if data.get("status") == "OK":
+        status = data.get("status")
+        
+        if status == "OK":
             results = data.get("results", [])[:limite]
             leads = []
             for place in results:
@@ -519,17 +519,21 @@ def buscar_google_places_api(nicho, cidade, bairro, rua, api_key, limite=20):
                 salvar_lead_db(lead_obj)
                 leads.append(lead_obj)
             return leads
+        elif status == "ZERO_RESULTS":
+            st.warning("⚠️ O Google Maps não encontrou empresas para este local/termo exato. Tente buscar sem especificar rua ou bairro.")
         else:
-            st.error(f"⚠️ Resposta do Google Maps: Status '{data.get('status')}'. Verifique sua GOOGLE_API_KEY.")
+            msg_erro = data.get("error_message", "Sem detalhes adicionais do Google.")
+            st.error(f"⚠️ Resposta do Google Maps: **Status '{status}'**. Detalhes: {msg_erro}")
     except Exception as e:
-        st.error(f"Erro na requisição Google Places: {str(e)}")
+        st.error(f"Erro na requisição à API do Google Places: {str(e)}")
     return None
 
 def minerar_e_auditar_negocios(nicho, cidade, bairro, rua, limite=20):
     api_key = st.secrets.get("GOOGLE_API_KEY", None) or os.getenv("GOOGLE_API_KEY", None)
     
     if api_key:
-        leads_reais = buscar_google_places_api(nicho, cidade, bairro, rua, api_key, limite)
+        api_key_limpa = api_key.strip().replace('"', '').replace("'", "")
+        leads_reais = buscar_google_places_api(nicho, cidade, bairro, rua, api_key_limpa, limite)
         if leads_reais and len(leads_reais) > 0:
             return leads_reais
     else:
@@ -640,7 +644,7 @@ if st.session_state.etapa == 1:
         with col1: nicho_input = st.text_input("Nicho / Categoria (Opcional)", value="Moda praia", help="Deixe em branco para buscar empresas gerais no local")
         with col2: cidade_input = st.text_input("Cidade / Município", value="Ribeirão Preto")
         with col3: rua_input = st.text_input("Rua / Avenida (Opcional)", value="", help="Ex: Av. Independência")
-        with col4: bairro_input = st.text_input("Bairro / Região (Opcional)", value="Jardim Sumaré")
+        with col4: bairro_input = st.text_input("Bairro / Região (Opcional)", value="", help="Deixe em branco para amplitude de busca na cidade")
         with col5: limite_input = st.number_input("Qtd. Máxima", min_value=20, max_value=50, value=20, step=5)
         
         btn_minar = st.form_submit_button("🚀 Iniciar Varredura Profunda", use_container_width=True)
