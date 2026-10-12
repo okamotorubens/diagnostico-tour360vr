@@ -19,7 +19,6 @@ from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image, HRFlowable
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.graphics.shapes import Drawing, Rect
 
 # -----------------------------------------------------------------------------
 # CONFIGURAÇÃO DO ENDEREÇO DO SEU SISTEMA DE DIAGNÓSTICO
@@ -37,6 +36,14 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# ROLAGEM AUTOMÁTICA PARA O TOPO AO TROCAR DE ABA
+components.html("""
+    <script>
+        var body = window.parent.document.querySelector(".main");
+        if (body) { body.scrollTop = 0; }
+    </script>
+""", height=0)
 
 # -----------------------------------------------------------------------------
 # BANCO DE DADOS PERMANENTE (SQLITE LOCAL)
@@ -184,7 +191,7 @@ def limpar_banco_dados():
 init_db()
 
 # -----------------------------------------------------------------------------
-# GERADOR DE PDF DO PANORAMA DE NICHO (LAYOUT REFINADO)
+# GERADOR DE PDF DO PANORAMA DE NICHO
 # -----------------------------------------------------------------------------
 def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     buffer = io.BytesIO()
@@ -229,7 +236,6 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     sem_site = len(df_nicho[df_nicho['website'] == ''])
     nao_reiv = len(df_nicho[df_nicho['reivindicada'] == False])
 
-    # INDICADORES ESTRATÉGICOS
     dados_resumo = [
         [Paragraph("<b>INDICADOR ESTRATÉGICO</b>", body_style), Paragraph("<b>VOLUME / %</b>", body_center), Paragraph("<b>DIAGNÓSTICO DE OPORTUNIDADE</b>", body_style)],
         [Paragraph("Sem Tour Virtual 360°", body_style), Paragraph(f"{sem_tour} ({(sem_tour/total_emp*100 if total_emp>0 else 0):.1f}%)", body_center), Paragraph("Oportunidade crítica para implantação de experiência imersiva.", body_style)],
@@ -299,21 +305,22 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
 # -----------------------------------------------------------------------------
 st.markdown("""
     <style>
-    .main { background-color: #0e1117; }
+    .main { background-color: #0e1117; padding-top: 5px !important; }
+    .block-container { padding-top: 0.5rem !important; }
     .main-header {
         background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-        color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px;
-        border: 1px solid #334155;
+        color: white; padding: 14px 20px; border-radius: 10px; margin-bottom: 15px;
+        border: 1px solid #334155; margin-top: 0px !important;
     }
-    .main-title { font-size: 24px; font-weight: 700; margin: 0; color: #ffffff; }
-    .main-subtitle { font-size: 13px; color: #94a3b8; margin-top: 4px; }
+    .main-title { font-size: 22px; font-weight: 700; margin: 0; color: #ffffff; }
+    .main-subtitle { font-size: 12.5px; color: #94a3b8; margin-top: 3px; }
 
     .lead-card {
-        background-color: #1e293b; border-radius: 10px; padding: 20px;
-        margin-bottom: 15px; border: 1px solid #334155;
+        background-color: #1e293b; border-radius: 10px; padding: 18px;
+        margin-bottom: 12px; border: 1px solid #334155;
     }
     
-    .score-box { text-align: center; padding: 10px; border-radius: 8px; font-weight: bold; width: 140px; }
+    .score-box { text-align: center; padding: 8px; border-radius: 8px; font-weight: bold; width: 130px; }
     .score-high { background-color: #450a0a; color: #fca5a5; border: 1px solid #991b1b; }
     .score-med  { background-color: #451a03; color: #fde047; border: 1px solid #92400e; }
     .score-low  { background-color: #052e16; color: #86efac; border: 1px solid #166534; }
@@ -322,11 +329,11 @@ st.markdown("""
     
     .sidebar-title {
         text-align: center;
-        font-size: 17px;
+        font-size: 16px;
         font-weight: 800;
         color: #ffffff;
-        margin-top: 15px;
-        margin-bottom: 15px;
+        margin-top: 5px;
+        margin-bottom: 10px;
     }
 
     .btn-redirect {
@@ -335,7 +342,7 @@ st.markdown("""
         background-color: #2563eb !important;
         color: #ffffff !important;
         text-align: center;
-        padding: 10px 12px;
+        padding: 9px 10px;
         border-radius: 6px;
         font-weight: 700 !important;
         font-size: 13px;
@@ -344,6 +351,20 @@ st.markdown("""
         box-shadow: 0 2px 4px rgba(0,0,0,0.2);
     }
     .btn-redirect:hover { background-color: #1d4ed8 !important; color: #ffffff !important; }
+
+    /* ESTILO TIPOGRÁFICO DOS SCRIPTS DE VENDAS */
+    .script-box {
+        background-color: #0f172a;
+        color: #f1f5f9;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        font-size: 13.5px;
+        line-height: 1.5;
+        padding: 12px 15px;
+        border-radius: 8px;
+        border: 1px solid #334155;
+        white-space: pre-wrap;
+        margin-bottom: 10px;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -354,7 +375,7 @@ if 'etapa' not in st.session_state:
     st.session_state.etapa = 1
 
 # -----------------------------------------------------------------------------
-# INTEGRAÇÃO DE BUSCA PRECISA POR BAIRRO E CIDADE
+# INTEGRAÇÃO DE BUSCA E AUDITORIA
 # -----------------------------------------------------------------------------
 def buscar_google_places_api(nicho, cidade, bairro, api_key, limite=20):
     query_str = f'"{nicho}"'
@@ -379,9 +400,6 @@ def buscar_google_places_api(nicho, cidade, bairro, api_key, limite=20):
                 
                 nome = det_res.get("name") or place.get("name")
                 endereco = det_res.get("formatted_address") or place.get("formatted_address")
-                
-                if bairro and bairro.lower() not in endereco.lower():
-                    pass
 
                 telefone = det_res.get("formatted_phone_number", "")
                 website = det_res.get("website", "")
@@ -670,7 +688,7 @@ if st.session_state.etapa == 1:
             st.rerun()
 
 # -----------------------------------------------------------------------------
-# ETAPA 2: BASE DE LEADS & CRM DE VENDAS (COM FILTRO DUPLO DE STATUS E NICHO)
+# ETAPA 2: BASE DE LEADS & CRM DE VENDAS
 # -----------------------------------------------------------------------------
 elif st.session_state.etapa == 2:
     st.markdown("""
@@ -682,8 +700,10 @@ elif st.session_state.etapa == 2:
 
     df_leads_crm = pd.DataFrame(base_leads)
 
-    col_back, col_f_status, col_f_nicho, col_export = st.columns([1.2, 2, 2, 2])
+    col_back, col_f_status, col_f_nicho, col_export = st.columns([1.5, 2.5, 2.5, 2.5])
+    
     with col_back:
+        st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
         if st.button("⬅️ Nova Busca", use_container_width=True):
             st.session_state.etapa = 1
             st.rerun()
@@ -699,6 +719,7 @@ elif st.session_state.etapa == 2:
         filtro_nicho = st.selectbox("Filtrar por Nicho:", nichos_existentes)
 
     with col_export:
+        st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
         csv_bytes = gerar_csv_excel_formatado(base_leads)
         st.download_button(
             label="📊 Exportar Planilha (.csv)",
@@ -778,11 +799,11 @@ elif st.session_state.etapa == 2:
                 st.markdown(f'<a href="{link_wa}" target="_blank"><button style="width:100%; background-color:#25D366; color:white; border:none; padding:8px; border-radius:6px; font-weight:bold; cursor:pointer; margin-bottom:8px;">💬 WhatsApp</button></a>', unsafe_allow_html=True)
 
         with st.expander(f"✉️ **Uso Interno — Scripts de Vendas e Abordagem ({lead['nome']})**"):
-            st.markdown("#### 1) Abordagem Inicial — WhatsApp")
+            st.markdown("**1) Abordagem Inicial — WhatsApp**")
             script_wa = f"Olá! Analisei o perfil da {lead['nome']} no Google e identifiquei oportunidades importantes para aumentar suas vendas presenciais com Tour 360° e otimização da ficha. Tenho um diagnóstico completo em PDF que mostra exatamente o que fazer. Posso enviar?"
-            st.code(script_wa, language="text")
+            st.markdown(f'<div class="script-box">{script_wa}</div>', unsafe_allow_html=True)
 
-            st.markdown("#### 2) Abordagem Inicial — E-mail")
+            st.markdown("**2) Abordagem Inicial — E-mail**")
             script_email = f"""Assunto: Oportunidade de Presença Digital: {lead['nome']} no Google
 
 Olá! Analisei o perfil da {lead['nome']} no Google e gostaria de compartilhar uma oportunidade importante.
@@ -798,16 +819,16 @@ Fico à disposição para conversarmos!
 Atenciosamente,
 TOUR360VR | Okamoto Mídias Visuais
 (16) 99133-2121 | tour360vr.com.br"""
-            st.code(script_email, language="text")
+            st.markdown(f'<div class="script-box">{script_email}</div>', unsafe_allow_html=True)
 
-            st.markdown("#### 3) Follow-up 48h — Pós-Envio do Diagnóstico")
+            st.markdown("**3) Follow-up 48h — Pós-Envio do Diagnóstico**")
             script_follow = f"Olá! Só checando por aqui — conseguiu analisar o diagnóstico em PDF da {lead['nome']} que te enviei? Fico no aguardo para tirar qualquer dúvida!"
-            st.code(script_follow, language="text")
+            st.markdown(f'<div class="script-box">{script_follow}</div>', unsafe_allow_html=True)
 
         st.divider()
 
 # -----------------------------------------------------------------------------
-# ETAPA 3: PANORAMA DE NICHO (TABELA REFINADA E COMPACTA)
+# ETAPA 3: PANORAMA DE NICHO
 # -----------------------------------------------------------------------------
 elif st.session_state.etapa == 3:
     st.markdown("""
@@ -835,7 +856,7 @@ elif st.session_state.etapa == 3:
     nome_arquivo_pdf = f"Relatorio Panorama {nicho_selecionado}.pdf".replace(':', '').replace('/', ' ')
 
     with col_btn_pdf:
-        st.write(" ")
+        st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
         pdf_bytes_nicho = gerar_pdf_panorama_nicho(nicho_selecionado, df_filtrado_sorted)
         st.download_button(
             label="📄 Baixar Relatório de Nicho (.pdf)",
@@ -892,13 +913,13 @@ elif st.session_state.etapa == 3:
     )
 
 # -----------------------------------------------------------------------------
-# ETAPA 4: MAPA DE PROSPECÇÃO (MAPA FOLIUM ATIVO E MODO CLARO COM PINS)
+# ETAPA 4: MAPA DE PROSPECÇÃO
 # -----------------------------------------------------------------------------
 elif st.session_state.etapa == 4:
     st.markdown("""
         <div class="main-header">
             <h1 class="main-title">🗺️ Mapa de Localização e Concentração</h1>
-            <div class="main-subtitle">Sua base de dados de empresas mapeadas na região com rótulos e scores.</div>
+            <div class="main-subtitle">Sua base de dados de empresas mapeadas na região com alta precisão e visibilidade.</div>
         </div>
     """, unsafe_allow_html=True)
 
@@ -925,20 +946,20 @@ elif st.session_state.etapa == 4:
         lat_centro = df_mapa_filtrado['latitude'].mean()
         lon_centro = df_mapa_filtrado['longitude'].mean()
 
-        m = folium.Map(location=[lat_centro, lon_centro], zoom_start=13, tiles="OpenStreetMap")
+        m = folium.Map(location=[lat_centro, lon_centro], zoom_start=14.5, tiles="OpenStreetMap")
 
         for _, row in df_mapa_filtrado.iterrows():
             icon_html = f"""
             <div style="
-                background-color: #dc2626; color: white; padding: 3px 7px; border-radius: 4px;
-                font-weight: bold; font-size: 11px; font-family: sans-serif; white-space: nowrap;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.3); border: 1px solid white;">
+                background-color: #fef08a; color: #0f172a; padding: 4px 8px; border-radius: 5px;
+                font-weight: 800; font-size: 11.5px; font-family: sans-serif; white-space: nowrap;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.4); border: 1.5px solid #0f172a;">
                 📍 {row['nome']} ({row['score_oportunidade']}/100)
             </div>
             """
             
             popup_html = f"""
-            <div style="font-family: sans-serif; font-size: 12px; min-width: 160px;">
+            <div style="font-family: sans-serif; font-size: 12px; min-width: 170px;">
                 <b style="color: #0f172a; font-size: 13px;">{row['nome']}</b><br/>
                 📍 <i>{row['endereco']}</i><br/>
                 🚨 <b>Score Oportunidade:</b> {row['score_oportunidade']}/100<br/>
@@ -952,6 +973,6 @@ elif st.session_state.etapa == 4:
                 icon=folium.DivIcon(html=icon_html)
             ).add_to(m)
 
-        st_folium(m, width="100%", height=700)
+        st_folium(m, width="100%", height=850)
     else:
         st.warning("Nenhum registro encontrado para os filtros selecionados.")
