@@ -215,14 +215,14 @@ def desenhar_rodape_fixo_links(canvas, doc):
     canvas.setFont('Helvetica', 8.5)
     canvas.setFillColor(colors.HexColor('#000000'))
     
-    # HIPERLINKS PRECISOS RECALIBRADOS NO RODAPÉ
+    # HIPERLINKS RECALIBRADOS SEM SOBREPOSIÇÃO
     try:
-        # Link do Site (tour360vr.com.br)
-        canvas.linkURL('https://tour360vr.com.br', (120, 12, 210, 32), relative=1)
-        # Link do E-mail (contato@okamotomidiasvisuais.com.br)
-        canvas.linkURL('mailto:contato@okamotomidiasvisuais.com.br', (215, 12, 410, 32), relative=1)
-        # Link do WhatsApp ((16) 99133-2121)
-        canvas.linkURL('https://wa.me/5516991332121', (420, 12, 530, 32), relative=1)
+        # Link 1: tour360vr.com.br
+        canvas.linkURL('https://tour360vr.com.br', (130, 12, 205, 32), relative=1)
+        # Link 2: contato@okamotomidiasvisuais.com.br
+        canvas.linkURL('mailto:contato@okamotomidiasvisuais.com.br', (220, 12, 420, 32), relative=1)
+        # Link 3: (16) 99133-2121 (WhatsApp)
+        canvas.linkURL('https://wa.me/5516991332121', (435, 12, 520, 32), relative=1)
     except Exception:
         pass
     
@@ -241,14 +241,13 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     )
     styles = getSampleStyleSheet()
     
-    # TÍTULO DO CABEÇALHO DENTRO DA TABELA
+    # CABEÇALHO EM NO MÁXIMO 2 LINHAS
     sub_title_header = ParagraphStyle(
         'SubTitleHeader', parent=styles['Normal'],
-        fontSize=15, leading=18, textColor=colors.HexColor('#0f172a'),
+        fontSize=12, leading=14, textColor=colors.HexColor('#0f172a'),
         fontName='Helvetica-Bold', alignment=1
     )
     
-    # TÍTULO DO PANORAMA REDUZIDO EM -1pt (14pt)
     main_title_style = ParagraphStyle(
         'MainTitle', parent=styles['Heading1'],
         fontSize=14, textColor=colors.HexColor('#0f172a'),
@@ -272,14 +271,13 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
 
     elements = []
 
-    # LOGO AUMENTADA (160pt LARGURA x 52pt ALTURA)
     logo_tour = "logo_tour_transparente.png" if os.path.exists("logo_tour_transparente.png") else None
-    img_tour = Image(logo_tour, width=160, height=52, kind='proportional') if logo_tour else Paragraph("<b>TOUR360VR</b>", body_style)
+    img_tour = Image(logo_tour, width=110, height=42, kind='proportional') if logo_tour else Paragraph("<b>TOUR360VR</b>", body_style)
 
-    header_p = Paragraph("ESTUDO DE INTELIGÊNCIA DE MERCADO LOCAL E PRESENÇA DIGITAL NO GOOGLE", sub_title_header)
+    header_p = Paragraph("ESTUDO DE INTELIGÊNCIA DE MERCADO LOCAL E PRESENÇA DIGITAL GOOGLE", sub_title_header)
 
-    # CABEÇALHO SIMÉTRICO E TOTALMENTE CENTRALIZADO: LOGO (160pt) | TÍTULO (220pt) | ESPAÇADOR SIMÉTRICO (160pt)
-    header_table = Table([[img_tour, header_p, ""]], colWidths=[160, 220, 160])
+    # LARGURA DEDICADA DE 320pt PARA GARANTIR NO MÁXIMO 2 LINHAS NO CABEÇALHO
+    header_table = Table([[img_tour, header_p, ""]], colWidths=[110, 320, 110])
     header_table.setStyle(TableStyle([
         ('ALIGN', (0,0), (0,0), 'LEFT'),
         ('ALIGN', (1,0), (1,0), 'CENTER'),
@@ -299,7 +297,7 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     elements.append(Spacer(1, 4))
     elements.append(Paragraph("Distribuição de Empresas por Score de Oportunidade Comercial (Pontuação)", chart_label_style))
 
-    # GRÁFICO VETORIAL COM LARGURA EXATA DE 540pt ALINHADO NAS MARGENS DAS TABELAS
+    # GRÁFICO VETORIAL ALINHADO
     scores_counts = df_nicho['score_oportunidade'].value_counts().sort_index(ascending=False)
     
     chart_draw = Drawing(540, 105)
@@ -724,7 +722,7 @@ def gerar_csv_excel_formatado(dados_leads):
     return output.getvalue().encode('utf-8')
 
 # -----------------------------------------------------------------------------
-# BARRA LATERAL (NAVEGAÇÃO MÓDULOS - PERMITE NAVEGAÇÃO LIVRE NAS BUSCAS ANTIGAS)
+# BARRA LATERAL (NAVEGAÇÃO MÓDULOS)
 # -----------------------------------------------------------------------------
 base_leads = carregar_todos_leads_db()
 
@@ -1025,11 +1023,10 @@ elif st.session_state.etapa == 3:
             st.bar_chart(df_filtrado_sorted['nota'].value_counts())
 
         st.divider()
-        st.markdown(f"### 📋 Ranking do Nicho **{nicho_selecionado}** (Clique no nome para abrir o Google Maps):")
+        st.markdown(f"### 📋 Ranking do Nicho **{nicho_selecionado}**:")
         
-        # DATAFRAME COM EXPRESSÃO REGEX r".*" PARA PEGAR O TEXTO DA CÉLULA DINAMICAMENTE
+        # DATAFRAME COM NOMES DAS EMPRESAS CORRIGIDOS E NATIVOS
         df_exibicao = pd.DataFrame({
-            'LINK_MAPS': df_filtrado_sorted.apply(lambda r: f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(r['nome'])}", axis=1),
             'EMPRESA': df_filtrado_sorted['nome'],
             'CIDADE': df_filtrado_sorted['cidade_busca'],
             'SCORE': df_filtrado_sorted['score_oportunidade'].apply(lambda x: f"{x}/100"),
@@ -1041,12 +1038,12 @@ elif st.session_state.etapa == 3:
         altura_dinamica = (len(df_exibicao) + 1) * 35 + 10
 
         st.dataframe(
-            df_exibicao[['EMPRESA', 'CIDADE', 'SCORE', 'NOTA', 'AVALIAÇÕES', 'WEBSITE']],
+            df_exibicao,
             use_container_width=True,
             hide_index=True,
             height=altura_dinamica,
             column_config={
-                "EMPRESA": st.column_config.LinkColumn("EMPRESA", display_text=r".*", width="large"),
+                "EMPRESA": st.column_config.Column("EMPRESA", width="large"),
                 "CIDADE": st.column_config.Column("CIDADE", alignment="center"),
                 "SCORE": st.column_config.Column("SCORE", width="small", alignment="center"),
                 "NOTA": st.column_config.Column("NOTA", width="small", alignment="center"),
