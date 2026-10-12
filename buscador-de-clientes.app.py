@@ -147,7 +147,7 @@ def limpar_banco_dados():
         st.error(f"Erro ao limpar banco: {str(e)}")
 
 # -----------------------------------------------------------------------------
-# GERADOR DE PDF DO PANORAMA DE NICHO (LOGO MAIOR & TEXTO COLADO À ESQUERDA)
+# GERADOR DE PDF DO PANORAMA DE NICHO (TEXTO ENCOSTADO NA LOGO)
 # -----------------------------------------------------------------------------
 def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
     canvas.saveState()
@@ -160,14 +160,15 @@ def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
         fontSize=12,
         leading=14.5,
         textColor=colors.HexColor('#0f172a'),
-        alignment=0
+        alignment=0,
+        leftIndent=0,
+        firstLineIndent=0
     )
     
     logo_tour = "logo_tour_transparente.png" if os.path.exists("logo_tour_transparente.png") else None
     
     if logo_tour:
-        # Logo aumentada
-        img_logo = Image(logo_tour, width=185, height=68, kind='proportional')
+        img_logo = Image(logo_tour, width=140, height=52, kind='proportional')
     else:
         img_logo = Paragraph("<b>TOUR360VR</b>", header_title_style)
 
@@ -176,8 +177,8 @@ def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
         header_title_style
     )
 
-    # Texto encostado diretamente na logo (185pt logo + 355pt texto = 540pt total)
-    header_table = Table([[img_logo, texto_cabecalho]], colWidths=[185, 355])
+    # Coluna exata da logo (140pt) + texto direto (400pt) = 540pt
+    header_table = Table([[img_logo, texto_cabecalho]], colWidths=[140, 400])
     header_table.setStyle(TableStyle([
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
         ('LEFTPADDING', (0,0), (-1,-1), 0),
@@ -188,13 +189,13 @@ def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
         ('ALIGN', (1,0), (1,0), 'LEFT'),
     ]))
 
-    header_table.wrapOn(canvas, 540, 68)
-    header_table.drawOn(canvas, 36, 712)
+    header_table.wrapOn(canvas, 540, 55)
+    header_table.drawOn(canvas, 36, 720)
 
     # Linha divisória horizontal
     canvas.setStrokeColor(colors.HexColor('#cbd5e1'))
     canvas.setLineWidth(1.5)
-    canvas.line(36, 704, 576, 704)
+    canvas.line(36, 712, 576, 712)
     
     # RODAPÉ FIXO COM HIPERLINKS
     canvas.setLineWidth(1)
@@ -360,30 +361,39 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     return buffer
 
 # -----------------------------------------------------------------------------
-# ESTILIZAÇÃO CSS CUSTOMIZADA (OCULTAR TOTALMENTE BARRA DE ROLAGEM DA SIDEBAR)
+# ESTILIZAÇÃO CSS CUSTOMIZADA (TRAVAMENTO RIGOROSO DA SIDEBAR SEM ALÇAS)
 # -----------------------------------------------------------------------------
 st.markdown("""
     <style>
     .main { background-color: #0e1117; padding-top: 15px !important; }
     .block-container { padding-top: 1rem !important; padding-bottom: 1rem !important; }
     
-    /* BLOQUEIO TOTAL DA BARRA DE ROLAGEM E REDIMENSIONAMENTO NA SIDEBAR */
-    [data-testid="stSidebar"], 
-    [data-testid="stSidebar"] > div, 
-    section[data-testid="stSidebar"] div {
-        overflow-x: hidden !important;
-        overflow-y: hidden !important;
-        resize: none !important;
+    /* BLOQUEIO RIGOROSO DE REDIMENSIONAMENTO E DIVISÓRIAS NA SIDEBAR */
+    section[data-testid="stSidebar"] {
+        width: 310px !important;
+        min-width: 310px !important;
+        max-width: 310px !important;
     }
-
-    ::-webkit-scrollbar {
-        width: 0px !important;
-        background: transparent !important;
-    }
-
-    div[data-testid="stSidebarResizer"] {
+    
+    [data-testid="stSidebarResizer"],
+    div[data-testid="stSidebarResizer"],
+    .st-emotion-cache-12w0q3g,
+    .st-emotion-cache-6q42n4 {
         display: none !important;
+        width: 0px !important;
+        pointer-events: none !important;
+        opacity: 0 !important;
     }
+
+    [data-testid="stSidebar"] * {
+        scrollbar-width: none !important;
+    }
+
+    [data-testid="stSidebar"]::-webkit-scrollbar {
+        display: none !important;
+        width: 0px !important;
+    }
+
     [data-testid="stSidebarNav"] {
         display: none !important;
     }
