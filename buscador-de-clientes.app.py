@@ -205,9 +205,9 @@ def desenhar_rodape_fixo_links(canvas, doc):
     
     # LINKS PRECISOS NO RODAPÉ
     try:
-        canvas.linkURL('https://tour360vr.com.br', (120, 15, 210, 32), relative=1)
-        canvas.linkURL('mailto:contato@okamotomidiasvisuais.com.br', (220, 15, 420, 32), relative=1)
-        canvas.linkURL('https://wa.me/5516991332121', (430, 15, 540, 32), relative=1)
+        canvas.linkURL('https://tour360vr.com.br', (125, 15, 215, 32), relative=1)
+        canvas.linkURL('mailto:contato@okamotomidiasvisuais.com.br', (225, 15, 420, 32), relative=1)
+        canvas.linkURL('https://wa.me/5516991332121', (430, 15, 515, 32), relative=1)
     except Exception:
         pass
     
@@ -226,47 +226,50 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     )
     styles = getSampleStyleSheet()
     
-    # TÍTULO CENTRALIZADO COM ENQUADRAMENTO PERFEITO
     sub_title_header = ParagraphStyle(
         'SubTitleHeader', parent=styles['Normal'],
-        fontSize=12.5, leading=15, textColor=colors.HexColor('#0f172a'),
+        fontSize=16, leading=19, textColor=colors.HexColor('#0f172a'),
         fontName='Helvetica-Bold', alignment=1
     )
+    
     main_title_style = ParagraphStyle(
         'MainTitle', parent=styles['Heading1'],
         fontSize=15, textColor=colors.HexColor('#0f172a'),
         fontName='Helvetica-Bold', alignment=1, spaceBefore=6, spaceAfter=8
     )
+    
     section_heading = ParagraphStyle(
         'SectionHeading', parent=styles['Heading2'],
         fontSize=10.5, textColor=colors.HexColor('#0f172a'),
         spaceBefore=10, spaceAfter=6, fontName='Helvetica-Bold', alignment=1
     )
+    
     chart_label_style = ParagraphStyle(
         'ChartLabel', parent=styles['Normal'],
         fontSize=9, textColor=colors.HexColor('#475569'),
         fontName='Helvetica-Bold', alignment=1, spaceAfter=4
     )
+    
     body_style = ParagraphStyle('BodyTextCustom', parent=styles['Normal'], fontSize=9, textColor=colors.HexColor('#334155'), leading=11)
     body_center = ParagraphStyle('BodyCenter', parent=body_style, alignment=1)
 
     elements = []
 
     logo_tour = "logo_tour_transparente.png" if os.path.exists("logo_tour_transparente.png") else None
-    img_tour = Image(logo_tour, width=130, height=42, kind='proportional') if logo_tour else Paragraph("<b>TOUR360VR</b>", body_style)
+    img_tour = Image(logo_tour, width=150, height=50, kind='proportional') if logo_tour else Paragraph("<b>TOUR360VR</b>", body_style)
 
     header_p = Paragraph("ESTUDO DE INTELIGÊNCIA DE MERCADO LOCAL E PRESENÇA DIGITAL NO GOOGLE", sub_title_header)
 
-    header_table = Table([[img_tour, header_p]], colWidths=[130, 410])
+    header_table = Table([[img_tour, header_p]], colWidths=[150, 390])
     header_table.setStyle(TableStyle([
         ('ALIGN', (0,0), (0,0), 'LEFT'),
         ('ALIGN', (1,0), (1,0), 'CENTER'),
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 2),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 4),
     ]))
     elements.append(header_table)
     
-    elements.append(HRFlowable(width="100%", thickness=1.5, color=colors.HexColor('#cbd5e1'), spaceBefore=6, spaceAfter=10))
+    elements.append(HRFlowable(width="100%", thickness=1.5, color=colors.HexColor('#cbd5e1'), spaceBefore=8, spaceAfter=10))
 
     elements.append(Spacer(1, 4))
     title_p = Paragraph(f"PANORAMA DE MERCADO: {nicho_nome.upper()}", main_title_style)
@@ -277,7 +280,7 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     elements.append(Spacer(1, 6))
     elements.append(Paragraph("Distribuição de Empresas por Score de Oportunidade Comercial (Pontuação)", chart_label_style))
 
-    # GRÁFICO VETORIAL MAIS ALTO (105pt) E LARGURA TOTAL ALINHAMENTO COM TABELAS (540pt)
+    # GRÁFICO VETORIAL
     scores_counts = df_nicho['score_oportunidade'].value_counts().sort_index(ascending=False)
     
     chart_draw = Drawing(540, 105)
@@ -295,15 +298,14 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
             by = 22
             bh = max((total_lead / max_val) * 60, 6)
             
-            c_fill = colors.HexColor('#f87171') if score_val >= 60 else (colors.HexColor('#facc15') if score_val >= 30 else colors.HexColor('#4ade80'))
+            # LÓGICA DE CORES: VERDE = SCORE ALTO, VERMELHO = SCORE BAIXO
+            c_fill = colors.HexColor('#4ade80') if score_val >= 60 else (colors.HexColor('#facc15') if score_val >= 30 else colors.HexColor('#f87171'))
             
             chart_draw.add(Rect(bx, by, bar_w, bh, fillColor=c_fill, strokeColor=None, rx=3, ry=3))
             chart_draw.add(String(bx + (bar_w / 2), by + bh + 5, str(total_lead), fontSize=9, fontName="Helvetica-Bold", fillColor=colors.HexColor('#0f172a'), textAnchor="middle"))
             chart_draw.add(String(bx + (bar_w / 2), by - 13, f"{score_val} pts", fontSize=8, fontName="Helvetica-Bold", fillColor=colors.HexColor('#475569'), textAnchor="middle"))
 
     elements.append(chart_draw)
-    
-    # 1 LINHA COMPLETA A MAIS DE ESPAÇO APÓS O GRÁFICO
     elements.append(Spacer(1, 18))
 
     total_emp = len(df_nicho)
@@ -356,15 +358,16 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
         r_data = row[1]
         sc = r_data['score_oportunidade']
         
+        # INVERSÃO DE CORES DA TABELA
         if sc >= 60:
-            bg_color = colors.HexColor('#fca5a5')
-            txt_color = '#7f1d1d'
+            bg_color = colors.HexColor('#86efac') # Verde
+            txt_color = '#14532d'
         elif sc >= 30:
-            bg_color = colors.HexColor('#fde047')
+            bg_color = colors.HexColor('#fde047') # Amarelo
             txt_color = '#713f12'
         else:
-            bg_color = colors.HexColor('#86efac')
-            txt_color = '#14532d'
+            bg_color = colors.HexColor('#fca5a5') # Vermelho
+            txt_color = '#7f1d1d'
 
         p_score = Paragraph(f"<font color='{txt_color}'><b>{sc}/100</b></font>", body_center)
 
@@ -410,9 +413,9 @@ st.markdown("""
     }
     
     .score-box { text-align: center; padding: 8px; border-radius: 8px; font-weight: bold; width: 130px; }
-    .score-high { background-color: #450a0a; color: #fca5a5; border: 1px solid #991b1b; }
+    .score-high { background-color: #052e16; color: #86efac; border: 1px solid #166534; }
     .score-med  { background-color: #451a03; color: #fde047; border: 1px solid #92400e; }
-    .score-low  { background-color: #052e16; color: #86efac; border: 1px solid #166534; }
+    .score-low  { background-color: #450a0a; color: #fca5a5; border: 1px solid #991b1b; }
 
     .critical-item { color: #f87171; font-size: 13px; margin-bottom: 6px; font-weight: 500; }
     
@@ -927,7 +930,7 @@ TOUR360VR | Okamoto Mídias Visuais
         st.divider()
 
 # -----------------------------------------------------------------------------
-# ETAPA 3: PANORAMA DE NICHO (NOMES DAS EMPRESAS CORRIGIDOS COM LINK)
+# ETAPA 3: PANORAMA DE NICHO
 # -----------------------------------------------------------------------------
 elif st.session_state.etapa == 3:
     st.markdown("""
@@ -1002,9 +1005,10 @@ elif st.session_state.etapa == 3:
     st.divider()
     st.markdown(f"### 📋 Ranking do Nicho **{nicho_selecionado}** (Clique para ver no Google Maps):")
     
-    # DATAFRAME COM LINKS CORRIGIDOS SEM EXIBIR ASTERISCOS
+    # DATAFRAME COM NOME DA EMPRESA E LINK INDEPENDENTES
     df_exibicao = pd.DataFrame({
-        'EMPRESA': df_filtrado_sorted.apply(lambda r: f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(r['nome'])}", axis=1),
+        'LINK_MAPS': df_filtrado_sorted.apply(lambda r: f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(r['nome'])}", axis=1),
+        'EMPRESA': df_filtrado_sorted['nome'],
         'CIDADE': df_filtrado_sorted['cidade_busca'],
         'SCORE': df_filtrado_sorted['score_oportunidade'].apply(lambda x: f"{x}/100"),
         'NOTA': df_filtrado_sorted['nota'].apply(lambda x: f"{x:.1f} ⭐"),
@@ -1015,12 +1019,12 @@ elif st.session_state.etapa == 3:
     altura_dinamica = (len(df_exibicao) + 1) * 35 + 10
 
     st.dataframe(
-        df_exibicao,
+        df_exibicao[['LINK_MAPS', 'CIDADE', 'SCORE', 'NOTA', 'AVALIAÇÕES', 'WEBSITE']],
         use_container_width=True,
         hide_index=True,
         height=altura_dinamica,
         column_config={
-            "EMPRESA": st.column_config.LinkColumn("EMPRESA", width="large"),
+            "LINK_MAPS": st.column_config.LinkColumn("EMPRESA", display_text=df_exibicao['EMPRESA'], width="large"),
             "CIDADE": st.column_config.Column("CIDADE", alignment="center"),
             "SCORE": st.column_config.Column("SCORE", width="small", alignment="center"),
             "NOTA": st.column_config.Column("NOTA", width="small", alignment="center"),
@@ -1030,7 +1034,7 @@ elif st.session_state.etapa == 3:
     )
 
 # -----------------------------------------------------------------------------
-# ETAPA 4: MAPA DE PROSPECÇÃO (LEGENDA DE CORES COM BADGES REAIS)
+# ETAPA 4: MAPA DE PROSPECÇÃO
 # -----------------------------------------------------------------------------
 elif st.session_state.etapa == 4:
     st.markdown("""
@@ -1072,18 +1076,25 @@ elif st.session_state.etapa == 4:
 
     st.info(f"📌 Exibindo **{len(df_mapa_filtrado)} empresas** filtradas no mapa.")
 
-    # MAPEAMENTO EXATO DE CORES
+    # MAPEAMENTO EXATO DE CORES DE PINS E NOMES PARA A LEGENDA
     CORES_PINS = ['red', 'blue', 'green', 'purple', 'orange', 'darkred', 'cadetblue', 'darkgreen', 'darkblue', 'pink']
     CORES_HEX = {
-        'red': '#ef4444', 'blue': '#3b82f6', 'green': '#10b981', 'purple': '#8b5cf6',
-        'orange': '#f97316', 'darkred': '#991b1b', 'cadetblue': '#06b6d4',
-        'darkgreen': '#166534', 'darkblue': '#1e3a8a', 'pink': '#ec4899'
+        'red': '#ef4444', 
+        'blue': '#3b82f6', 
+        'green': '#10b981', 
+        'purple': '#8b5cf6',
+        'orange': '#f97316', 
+        'darkred': '#991b1b', 
+        'cadetblue': '#06b6d4',
+        'darkgreen': '#166534', 
+        'darkblue': '#1e3a8a', 
+        'pink': '#ec4899'
     }
 
     segmentos_unicos = list(df_mapa['categoria'].unique())
     mapa_cores_seg = {seg: CORES_PINS[idx % len(CORES_PINS)] for idx, seg in enumerate(segmentos_unicos)}
 
-    # LEGENDA CORRIGIDA USANDO BADGES STREAMLIT
+    # LEGENDA COM BOLINHAS COLORIDAS CORRESPONDENTES AOS PINS
     if cat_sel_mapa == "Todos os Segmentos" and len(segmentos_unicos) > 1:
         st.markdown("**🎨 Legenda de Cores por Segmento:**")
         cols_leg = st.columns(min(len(segmentos_unicos), 5))
@@ -1091,8 +1102,8 @@ elif st.session_state.etapa == 4:
             hex_cor = CORES_HEX.get(cor_nome, '#ef4444')
             with cols_leg[idx % 5]:
                 st.markdown(
-                    f'<div style="background-color: #1e293b; padding: 6px 12px; border-radius: 6px; border: 1px solid #334155; margin-bottom: 8px;">'
-                    f'<span style="color: {hex_cor}; font-size: 16px;">📍</span> '
+                    f'<div style="background-color: #1e293b; padding: 8px 12px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">'
+                    f'<span style="height: 12px; width: 12px; background-color: {hex_cor}; border-radius: 50%; display: inline-block;"></span>'
                     f'<b style="color: #ffffff; font-size: 13px;">{seg}</b>'
                     f'</div>',
                     unsafe_allow_html=True
