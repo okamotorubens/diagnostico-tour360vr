@@ -1282,8 +1282,9 @@ if etapa_atual == 1:
                     except Exception as e:
                         st.error(f"Erro ao obter detalhes: {e}")
 
-        st.markdown("<div class='card-title' style='margin-top:15px;'>CHECKLIST DE PONTOS CRÍTICOS</div>", unsafe_allow_html=True)
-    c_a, c_b, c_c, c_d = st.columns(4)
+st.markdown("<div class='card-title' style='margin-top:15px;'>CHECKLIST DE PONTOS CRÍTICOS</div>", unsafe_allow_html=True)
+
+c_a, c_b, c_c, c_d = st.columns(4)
 st.session_state['dados']['tem_tour360'] = c_a.checkbox("Tour 360° Ativo", value=st.session_state['dados'].get('tem_tour360', False), key="chk_tour360_diag")
 st.session_state['dados']['tem_fotos_hd'] = c_b.checkbox("Fotos HD", value=st.session_state['dados'].get('tem_fotos_hd', False), key="chk_fotos_hd_diag")
 st.session_state['dados']['categorias_completas'] = c_c.checkbox("Categorias OK", value=st.session_state['dados'].get('categorias_completas', False), key="chk_categorias_diag")
@@ -1294,8 +1295,7 @@ st.session_state['dados']['tem_descricao'] = c_e.checkbox("Descrição", value=s
 st.session_state['dados']['atributos_ok'] = c_f.checkbox("Atributos Serviços", value=st.session_state['dados'].get('atributos_ok', False), key="chk_atributos_diag")
 st.session_state['dados']['resposta_avaliacoes_ok'] = c_g.checkbox("Respostas Ativas", value=st.session_state['dados'].get('resposta_avaliacoes_ok', False), key="chk_respostas_diag")
 
-        st.markdown("</div>", unsafe_allow_html=True)
-
+st.markdown("</div>", unsafe_allow_html=True)
     with col_right:
         st.markdown("<div class='dashboard-card'><div class='card-title'>DADOS DO CLIENTE</div>", unsafe_allow_html=True)
         st.session_state['dados']['nome'] = st.text_input("Empresa:", value=st.session_state['dados'].get('nome', ''), key="input_dados_empresa")
