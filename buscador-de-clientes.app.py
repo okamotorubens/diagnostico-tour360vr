@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-import sqlite3
 import json
 import time
 import os
@@ -15,6 +14,9 @@ import base64
 import streamlit.components.v1 as components
 from streamlit_folium import st_folium
 import folium
+
+# Conexão NUVEM Supabase
+from supabase import create_client, Client
 
 # ReportLab para geração do PDF do Panorama
 from reportlab.lib.pagesizes import letter
@@ -68,149 +70,80 @@ if favicon_b64:
     """, height=0)
 
 # -----------------------------------------------------------------------------
-# BANCO DE DADOS PERMANENTE (SQLITE LOCAL)
+# CONEXÃO BANCO DE DADOS EM NUVEM PERMANENTE (SUPABASE)
 # -----------------------------------------------------------------------------
-DB_PATH = "leads_database.db"
+@st.cache_resource
+def init_supabase():
+    url = st.secrets.get("SUPABASE_URL", os.getenv("SUPABASE_URL"))
+    key = st.secrets.get("SUPABASE_KEY", os.getenv("SUPABASE_KEY"))
+    if url and key:
+        return create_client(url, key)
+    return None
 
-def init_db():
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS leads (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            data_minacao TEXT,
-            cidade_busca TEXT,
-            bairro_busca TEXT,
-            nome TEXT,
-            categoria TEXT,
-            endereco TEXT,
-            latitude REAL,
-            longitude REAL,
-            telefone TEXT,
-            whatsapp TEXT,
-            website TEXT,
-            website_https INTEGER,
-            instagram TEXT,
-            facebook TEXT,
-            foto_url TEXT,
-            nota REAL,
-            total_avaliacoes INTEGER,
-            reivindicada INTEGER,
-            fotos_total INTEGER,
-            ultima_foto_dias INTEGER,
-            tour_360 INTEGER,
-            status_crm TEXT,
-            pontos_criticos TEXT,
-            oportunidades TEXT,
-            score_oportunidade INTEGER
-        )
-    ''')
-    conn.commit()
-    conn.close()
+supabase: Client = init_supabase()
 
 def salvar_lead_db(lead):
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    
-    criticos_json = json.dumps(lead.get('pontos_criticos', []), ensure_ascii=False)
-    opp_json = json.dumps(lead.get('oportunidades', []), ensure_ascii=False)
-    
-    cursor.execute("SELECT id FROM leads WHERE nome = ? AND endereco = ?", (lead['nome'], lead['endereco']))
-    data = cursor.fetchone()
-    
-    if not data:
-        cursor.execute('''
-            INSERT INTO leads (
-                data_minacao, cidade_busca, bairro_busca, nome, categoria, endereco, latitude, longitude,
-                telefone, whatsapp, website, website_https, instagram, facebook, foto_url,
-                nota, total_avaliacoes, reivindicada, fotos_total, ultima_foto_dias, tour_360,
-                status_crm, pontos_criticos, oportunidades, score_oportunidade
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (
-            lead.get('data_minacao', datetime.now().strftime('%d/%m/%Y %H:%M')),
-            lead.get('cidade_busca', ''),
-            lead.get('bairro_busca', ''),
-            lead['nome'],
-            lead['categoria'],
-            lead['endereco'],
-            lead.get('latitude', -21.1775),
-            lead.get('longitude', -47.8103),
-            lead.get('telefone', ''),
-            lead.get('whatsapp', ''),
-            lead.get('website', ''),
-            1 if lead.get('website_https') else 0,
-            lead.get('instagram', ''),
-            lead.get('facebook', ''),
-            lead.get('foto_url', ''),
-            lead.get('nota', 0.0),
-            lead.get('total_avaliacoes', 0),
-            1 if lead.get('reivindicada') else 0,
-            lead.get('fotos_total', 0),
-            lead.get('ultima_foto_dias', 0),
-            1 if lead.get('tour_360') else 0,
-            lead.get('status_crm', '🆕 Novo Lead'),
-            criticos_json,
-            opp_json,
-            lead.get('score_oportunidade', 0)
-        ))
-        conn.commit()
-    conn.close()
+    if not supabase:
+        return
+    try:
+        # Checa duplicidade
+        res = supabase.table("leads").select("id").eq("nome", lead['nome']).eq("endereco", lead['endereco']).execute()
+        if not res.data:
+            supabase.table("leads").insert({
+                "data_minacao": lead.get('data_minacao', datetime.now().strftime('%d/%m/%Y %H:%M')),
+                "cidade_busca": lead.get('cidade_busca', ''),
+                "bairro_busca": lead.get('bairro_busca', ''),
+                "nome": lead['nome'],
+                "categoria": lead['categoria'],
+                "endereco": lead['endereco'],
+                "latitude": lead.get('latitude', -21.1775),
+                "longitude": lead.get('longitude', -47.8103),
+                "telefone": lead.get('telefone', ''),
+                "whatsapp": lead.get('whatsapp', ''),
+                "website": lead.get('website', ''),
+                "website_https": bool(lead.get('website_https')),
+                "instagram": lead.get('instagram', ''),
+                "facebook": lead.get('facebook', ''),
+                "foto_url": lead.get('foto_url', ''),
+                "nota": float(lead.get('nota', 0.0)),
+                "total_avaliacoes": int(lead.get('total_avaliacoes', 0)),
+                "reivindicada": bool(lead.get('reivindicada')),
+                "fotos_total": int(lead.get('fotos_total', 0)),
+                "ultima_foto_dias": int(lead.get('ultima_foto_dias', 0)),
+                "tour_360": bool(lead.get('tour_360')),
+                "status_crm": lead.get('status_crm', '🆕 Novo Lead'),
+                "pontos_criticos": lead.get('pontos_criticos', []),
+                "oportunidades": lead.get('oportunidades', []),
+                "score_oportunidade": int(lead.get('score_oportunidade', 0))
+            }).execute()
+    except Exception as e:
+        st.error(f"Erro ao salvar no banco Supabase: {str(e)}")
 
 def atualizar_status_crm(lead_id, novo_status):
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute("UPDATE leads SET status_crm = ? WHERE id = ?", (novo_status, lead_id))
-    conn.commit()
-    conn.close()
+    if not supabase:
+        return
+    try:
+        supabase.table("leads").update({"status_crm": novo_status}).eq("id", lead_id).execute()
+    except Exception as e:
+        st.error(f"Erro ao atualizar status: {str(e)}")
 
 def carregar_todos_leads_db():
-    init_db()
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM leads ORDER BY id DESC")
-    rows = cursor.fetchall()
-    conn.close()
-
-    leads = []
-    for r in rows:
-        leads.append({
-            "id": r[0],
-            "data_minacao": r[1],
-            "cidade_busca": r[2],
-            "bairro_busca": r[3] if len(r) > 24 else "",
-            "nome": r[4] if len(r) > 24 else r[3],
-            "categoria": r[5] if len(r) > 24 else r[4],
-            "endereco": r[6] if len(r) > 24 else r[5],
-            "latitude": r[7] if (len(r) > 24 and r[7]) else -21.1775,
-            "longitude": r[8] if (len(r) > 24 and r[8]) else -47.8103,
-            "telefone": r[9] if len(r) > 24 else r[8],
-            "whatsapp": r[10] if len(r) > 24 else r[9],
-            "website": r[11] if len(r) > 24 else r[10],
-            "website_https": bool(r[12]) if len(r) > 24 else False,
-            "instagram": r[13] if len(r) > 24 else r[12],
-            "facebook": r[14] if len(r) > 24 else r[13],
-            "foto_url": r[15] if len(r) > 24 else r[14],
-            "nota": r[16] if len(r) > 24 else r[15],
-            "total_avaliacoes": r[17] if len(r) > 24 else r[16],
-            "reivindicada": bool(r[18]) if len(r) > 24 else bool(r[17]),
-            "fotos_total": r[19] if len(r) > 24 else r[18],
-            "ultima_foto_dias": r[20] if len(r) > 24 else r[19],
-            "tour_360": bool(r[21]) if len(r) > 24 else bool(r[20]),
-            "status_crm": (r[22] if len(r) > 24 else r[21]) or '🆕 Novo Lead',
-            "pontos_criticos": json.loads(r[23]) if (len(r) > 24 and r[23]) else [],
-            "oportunidades": json.loads(r[24]) if (len(r) > 24 and r[24]) else [],
-            "score_oportunidade": r[25] if len(r) > 24 else r[24]
-        })
-    return leads
+    if not supabase:
+        return []
+    try:
+        res = supabase.table("leads").select("*").order("id", desc=True).execute()
+        return res.data or []
+    except Exception as e:
+        st.error(f"Erro ao carregar do Supabase: {str(e)}")
+        return []
 
 def limpar_banco_dados():
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM leads")
-    conn.commit()
-    conn.close()
-
-init_db()
+    if not supabase:
+        return
+    try:
+        supabase.table("leads").delete().neq("id", 0).execute()
+    except Exception as e:
+        st.error(f"Erro ao limpar banco: {str(e)}")
 
 # -----------------------------------------------------------------------------
 # GERADOR DE PDF DO PANORAMA DE NICHO
@@ -224,14 +157,9 @@ def desenhar_rodape_fixo_links(canvas, doc):
     canvas.setFont('Helvetica', 8.5)
     canvas.setFillColor(colors.HexColor('#000000'))
     
-    # HIPERLINKS RECALIBRADOS EM COORDENADAS RELATIVAS EXATAS
-    # Posição Y fixa do texto = 22pt (com margem de clique de Y=12 a Y=30)
     try:
-        # Link 1: tour360vr.com.br (X: 130 a 205)
         canvas.linkURL('https://tour360vr.com.br', (130, 762, 205, 780), relative=1)
-        # Link 2: contato@okamotomidiasvisuais.com.br (X: 220 a 415)
         canvas.linkURL('mailto:contato@okamotomidiasvisuais.com.br', (220, 762, 415, 780), relative=1)
-        # Link 3: (16) 99133-2121 (WhatsApp) (X: 435 a 510)
         canvas.linkURL('https://wa.me/5516991332121', (435, 762, 510, 780), relative=1)
     except Exception:
         pass
@@ -251,7 +179,6 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     )
     styles = getSampleStyleSheet()
     
-    # CABEÇALHO COM +1pt NO TÍTULO (14.5pt) E ENTRELINHA DE 17pt
     sub_title_header = ParagraphStyle(
         'SubTitleHeader', parent=styles['Normal'],
         fontSize=14.5, leading=17, textColor=colors.HexColor('#0f172a'),
@@ -301,7 +228,6 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     elements.append(Paragraph("DISTRIBUIÇÃO DE EMPRESAS POR SCORE DE OPORTUNIDADE COMERCIAL (PONTUAÇÃO)", section_heading))
     elements.append(Spacer(1, 2))
 
-    # GRÁFICO VETORIAL COM QUADRO SEM CANTOS ARREDONDADOS (rx=0, ry=0)
     scores_counts = df_nicho['score_oportunidade'].value_counts().sort_index(ascending=False)
     
     chart_draw = Drawing(540, 105)
@@ -412,7 +338,7 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     return buffer
 
 # -----------------------------------------------------------------------------
-# ESTILIZAÇÃO CSS CUSTOMIZADA (DESIGN NEON & COMPACTO)
+# ESTILIZAÇÃO CSS CUSTOMIZADA
 # -----------------------------------------------------------------------------
 st.markdown("""
     <style>
@@ -486,20 +412,25 @@ if 'etapa' not in st.session_state:
     st.session_state.etapa = 1
 
 # -----------------------------------------------------------------------------
-# INTEGRAÇÃO DE BUSCA E AUDITORIA
+# INTEGRAÇÃO DE BUSCA REAL VIA GOOGLE PLACES API
 # -----------------------------------------------------------------------------
 def buscar_google_places_api(nicho, cidade, bairro, rua, api_key, limite=20):
-    query_str = f'"{nicho}"' if nicho else '"Comércio"'
+    query_parts = []
+    if nicho:
+        query_parts.append(nicho)
     if rua:
-        query_str += f' na rua "{rua}"'
+        query_parts.append(f"na {rua}")
     if bairro:
-        query_str += f' no bairro "{bairro}"'
-    query_str += f' em "{cidade}" - SP'
+        query_parts.append(f"no bairro {bairro}")
+    query_parts.append(f"em {cidade} - SP")
+    
+    query_str = " ".join(query_parts)
 
     url = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={urllib.parse.quote(query_str)}&language=pt-BR&key={api_key}"
     try:
         response = requests.get(url, timeout=10)
         data = response.json()
+        
         if data.get("status") == "OK":
             results = data.get("results", [])[:limite]
             leads = []
@@ -508,8 +439,10 @@ def buscar_google_places_api(nicho, cidade, bairro, rua, api_key, limite=20):
                 lat = place.get("geometry", {}).get("location", {}).get("lat", -21.1775)
                 lng = place.get("geometry", {}).get("location", {}).get("lng", -47.8103)
                 
-                details_url = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=name,formatted_address,formatted_phone_number,website,rating,user_ratings_total,photos&language=pt-BR&key={api_key}"
-                det_res = requests.get(details_url, timeout=5).json().get("result", {}) if place_id else {}
+                det_res = {}
+                if place_id:
+                    details_url = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=name,formatted_address,formatted_phone_number,website,rating,user_ratings_total,photos&language=pt-BR&key={api_key}"
+                    det_res = requests.get(details_url, timeout=5).json().get("result", {})
                 
                 nome = det_res.get("name") or place.get("name")
                 endereco = det_res.get("formatted_address") or place.get("formatted_address")
@@ -587,97 +520,23 @@ def buscar_google_places_api(nicho, cidade, bairro, rua, api_key, limite=20):
                 salvar_lead_db(lead_obj)
                 leads.append(lead_obj)
             return leads
+        else:
+            st.warning(f"Google Maps API retornou o status: {data.get('status')}. Verifique se a chave de API é válida.")
     except Exception as e:
-        st.warning(f"Aviso da API: {str(e)}")
+        st.error(f"Erro ao conectar na Google Places API: {str(e)}")
     return None
 
 def minerar_e_auditar_negocios(nicho, cidade, bairro, rua, limite=20):
+    # BUSCA A CHAVE DO GOOGLE NOS SECRETS OU VARIÁVEIS DE AMBIENTE
     api_key = st.secrets.get("GOOGLE_API_KEY", None) or os.getenv("GOOGLE_API_KEY", None)
+    
     if api_key:
         leads_reais = buscar_google_places_api(nicho, cidade, bairro, rua, api_key, limite)
-        if leads_reais:
+        if leads_reais and len(leads_reais) > 0:
             return leads_reais
 
-    bairro_label = f" - Bairro {bairro}" if bairro else ""
-    exemplo_estabelecimentos = [
-        {"nome": f"Loja & Boutique {cidade}", "bairro": bairro or "Jardim Sumaré", "rua": rua or "Rua Saldanha Marinho", "lat": -21.1775, "lng": -47.8103, "img": "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&q=80"},
-        {"nome": f"Estilo & Moda {(nicho or 'Geral').capitalize()}", "bairro": bairro or "Jardim Sumaré", "rua": rua or "Av. Independência", "lat": -21.1895, "lng": -47.8050, "img": "https://images.unsplash.com/photo-1567401893414-76b7b1e5a7a5?w=400&q=80"},
-        {"nome": f"Empório & Commercial do Barão", "bairro": bairro or "Jardim Sumaré", "rua": rua or "Rua Garibaldi", "lat": -21.1920, "lng": -47.8150, "img": "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400&q=80"},
-        {"nome": f"Conceito Brasil", "bairro": bairro or "Jardim Sumaré", "rua": rua or "Rua Amador Bueno", "lat": -21.1800, "lng": -47.8000, "img": "https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=400&q=80"},
-        {"nome": f"Studio & Galeria", "bairro": bairro or "Jardim Sumaré", "rua": rua or "Av. Professor João Fiúsa", "lat": -21.2050, "lng": -47.8120, "img": "https://images.unsplash.com/photo-1513151233558-d860c5398176?w=400&q=80"}
-    ]
-
-    resultados = []
-    for i in range(limite):
-        item = exemplo_estabelecimentos[i % len(exemplo_estabelecimentos)]
-        sufixo = f" #{i+1}" if i >= len(exemplo_estabelecimentos) else ""
-        reivindicada = (i % 2 == 0)
-        tem_site = (i % 3 == 0)
-        nota = round(3.8 + (i * 0.2) % 1.1, 1)
-        total_avaliacoes = 14 + (i * 18) % 150
-
-        pontos_criticos = []
-        oportunidades = []
-        score = 0
-
-        if not reivindicada:
-            pontos_criticos.append("Ficha NÃO Reivindicada no Google")
-            oportunidades.append("Reivindicação e Gestão de Propriedade do Perfil")
-            score += 30
-
-        if not tem_site:
-            pontos_criticos.append("Sem site oficial vinculado à ficha")
-            oportunidades.append("Desenvolvimento de Landing Page / Website Profissional")
-            score += 25
-
-        if total_avaliacoes < 35:
-            pontos_criticos.append(f"Volume baixo de avaliações ({total_avaliacoes} no total)")
-            oportunidades.append("Estratégia de Gestão de Reputação e Prova Social")
-            score += 15
-
-        pontos_criticos.append("Ausência de Tour Virtual 360° interativo")
-        oportunidades.append("Fotografia 360° e Implantação no Google Street View")
-        score += 20
-
-        pontos_criticos.append("Fotos escassas ou desatualizadas no perfil")
-        oportunidades.append("Produção de Fotografia Profissional e Mídias Visuais")
-        score += 15
-
-        nome_empresa = f"{item['nome']}{sufixo}"
-        nome_slug = re.sub(r'[^a-zA-Z0-9]', '', nome_empresa.lower())
-
-        lead_obj = {
-            "data_minacao": datetime.now().strftime('%d/%m/%Y %H:%M'),
-            "cidade_busca": cidade,
-            "bairro_busca": bairro,
-            "nome": nome_empresa,
-            "categoria": (nicho or "Comércio").capitalize(),
-            "endereco": f"{item['rua']}, {120 + (i*85)} - {item['bairro']}{bairro_label}, {cidade} - SP",
-            "latitude": item["lat"] + (i * 0.002),
-            "longitude": item["lng"] + (i * 0.002),
-            "telefone": f"(16) 39{i:02d}-4000",
-            "whatsapp": f"16997{i:02d}4000",
-            "website": f"https://www.exemplo.com.br" if tem_site else "",
-            "website_https": tem_site,
-            "instagram": f"https://instagram.com/{nome_slug}",
-            "facebook": f"https://facebook.com/{nome_slug}",
-            "foto_url": item["img"],
-            "nota": nota,
-            "total_avaliacoes": total_avaliacoes,
-            "reivindicada": reivindicada,
-            "fotos_total": 4 + (i * 3) % 15,
-            "ultima_foto_dias": 45 + (i * 30) % 200,
-            "tour_360": False,
-            "status_crm": "🆕 Novo Lead",
-            "pontos_criticos": pontos_criticos,
-            "oportunidades": oportunidades,
-            "score_oportunidade": min(score, 100)
-        }
-        
-        salvar_lead_db(lead_obj)
-        resultados.append(lead_obj)
-
-    return resultados
+    st.error("⚠️ Não foi possível realizar a busca real via Google Places API. Verifique a chave GOOGLE_API_KEY nos Secrets.")
+    return []
 
 # -----------------------------------------------------------------------------
 # GERADOR DE CSV COMPLETO
@@ -726,7 +585,7 @@ def gerar_csv_excel_formatado(dados_leads):
     return output.getvalue().encode('utf-8')
 
 # -----------------------------------------------------------------------------
-# BARRA LATERAL (NAVEGAÇÃO MÓDULOS + BACKUP E RESTAURAÇÃO DE BASE)
+# BARRA LATERAL (NAVEGAÇÃO MÓDULOS COM SUPABASE NUVEM)
 # -----------------------------------------------------------------------------
 base_leads = carregar_todos_leads_db()
 
@@ -759,29 +618,7 @@ with st.sidebar:
         st.rerun()
 
     st.divider()
-    st.caption(f"💾 Banco Permanente: **{len(base_leads)} leads salvos**")
-    
-    with st.expander("📦 Backup / Restaurar Base"):
-        if len(base_leads) > 0:
-            json_str = json.dumps(base_leads, ensure_ascii=False, indent=2)
-            st.download_button(
-                "⬇️ Baixar Backup (.json)",
-                data=json_str,
-                file_name=f"Backup_Leads_Tour360VR_{datetime.now().strftime('%Y%m%d')}.json",
-                mime="application/json",
-                use_container_width=True
-            )
-        
-        file_restore = st.file_uploader("Restaurar Backup (.json):", type=["json"])
-        if file_restore is not None:
-            try:
-                leads_restaurados = json.load(file_restore)
-                for l_rest in leads_restaurados:
-                    salvar_lead_db(l_rest)
-                st.success("Base de dados restaurada com sucesso!")
-                st.rerun()
-            except Exception as e:
-                st.error("Erro ao importar arquivo de backup.")
+    st.caption(f"☁️ Supabase Nuvem: **{len(base_leads)} leads salvos**")
 
     if len(base_leads) > 0:
         if st.button("🗑️ Limpar Banco de Dados", use_container_width=True):
@@ -811,7 +648,7 @@ if st.session_state.etapa == 1:
         btn_minar = st.form_submit_button("🚀 Iniciar Varredura Profunda", use_container_width=True)
 
     if btn_minar:
-        with st.spinner("Varrendo Google Maps, auditando presença web e salvando no banco..."):
+        with st.spinner("Varrendo Google Maps, auditando presença web e salvando na nuvem..."):
             time.sleep(1)
             minerar_e_auditar_negocios(nicho_input, cidade_input, bairro_input, rua_input, limite_input)
             st.session_state.etapa = 2
@@ -819,7 +656,7 @@ if st.session_state.etapa == 1:
 
     if len(base_leads) > 0:
         st.divider()
-        st.info(f"O seu banco possui **{len(base_leads)} leads salvos permanentemente**.")
+        st.info(f"O seu banco na nuvem possui **{len(base_leads)} leads salvos permanentemente**.")
         if st.button("Ver Base Completa de Leads ➡️", type="primary"):
             st.session_state.etapa = 2
             st.rerun()
@@ -831,12 +668,12 @@ elif st.session_state.etapa == 2:
     st.markdown("""
         <div class="main-header">
             <h1 class="main-title">📊 Base de Leads e Gerenciador CRM</h1>
-            <div class="main-subtitle">Seus leads permanecem salvos indefinidamente no banco de dados. Atualize status, use os scripts de vendas e exporte planilhas.</div>
+            <div class="main-subtitle">Seus leads permanecem salvos na nuvem indefinidamente. Atualize status, use scripts de vendas e exporte planilhas.</div>
         </div>
     """, unsafe_allow_html=True)
 
     if len(base_leads) == 0:
-        st.warning("⚠️ Nenhum lead cadastrado ainda no banco de dados. Faça sua primeira busca no Módulo 1 ou restaure um backup na barra lateral!")
+        st.warning("⚠️ Nenhum lead cadastrado ainda no banco de dados. Faça sua primeira busca no Módulo 1!")
     else:
         df_leads_crm = pd.DataFrame(base_leads)
 
@@ -916,7 +753,7 @@ elif st.session_state.etapa == 2:
                 novo_st = st.selectbox("Status Comercial:", status_opcoes, index=idx_atual, key=f"crm_st_{lead['id']}")
                 if novo_st != lead['status_crm']:
                     atualizar_status_crm(lead['id'], novo_st)
-                    st.toast("Status comercial atualizado com sucesso!")
+                    st.toast("Status comercial atualizado com sucesso na nuvem!")
                     st.rerun()
 
             with col_details1:
@@ -928,7 +765,8 @@ elif st.session_state.etapa == 2:
 
             with col_details2:
                 st.markdown("**🚨 Pontos Críticos Encontrados:**")
-                for pc in lead['pontos_criticos']:
+                criticos_lista = lead['pontos_criticos'] if isinstance(lead['pontos_criticos'], list) else json.loads(lead['pontos_criticos'] or '[]')
+                for pc in criticos_lista:
                     st.markdown(f"<div class='critical-item'>❌ {pc}</div>", unsafe_allow_html=True)
 
             with col_actions:
