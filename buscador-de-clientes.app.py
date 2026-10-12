@@ -18,8 +18,7 @@ import io
 # -----------------------------------------------------------------------------
 # CONFIGURAÇÃO DO ENDEREÇO DO SEU OUTRO SISTEMA DE DIAGNÓSTICO
 # -----------------------------------------------------------------------------
-# Insira a URL exata do seu aplicativo de diagnóstico publicado no Streamlit Cloud
-URL_SISTEMA_DIAGNOSTICO = "https://tour360vr.streamlit.app/"
+URL_SISTEMA_DIAGNOSTICO = "https://diagnostico-tour360vr.streamlit.app/"
 
 # -----------------------------------------------------------------------------
 # CONFIGURAÇÃO DA PÁGINA STREAMLIT
@@ -153,7 +152,7 @@ def limpar_banco_dados():
 init_db()
 
 # -----------------------------------------------------------------------------
-# ESTILIZAÇÃO CSS CUSTOMIZADA
+# ESTILIZAÇÃO CSS CUSTOMIZADA (TEXTO DO BOTÃO EM BRANCO DEFINITIVO)
 # -----------------------------------------------------------------------------
 st.markdown("""
     <style>
@@ -187,22 +186,26 @@ st.markdown("""
         margin-bottom: 15px;
     }
 
+    /* BOTÃO AZUL COM TEXTO EM BRANCO DE ALTA LEITURA */
     .btn-redirect {
-        display: inline-block;
+        display: block;
         width: 100%;
-        background-color: #3b82f6;
-        color: white;
+        background-color: #2563eb !important;
+        color: #ffffff !important;
         text-align: center;
-        padding: 9px;
+        padding: 10px 12px;
         border-radius: 6px;
-        font-weight: bold;
-        text-decoration: none;
+        font-weight: 700 !important;
+        font-size: 13px;
+        text-decoration: none !important;
         margin-bottom: 8px;
-        transition: background-color 0.2s;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        transition: background-color 0.2s, transform 0.1s;
     }
     .btn-redirect:hover {
-        background-color: #2563eb;
-        color: white;
+        background-color: #1d4ed8 !important;
+        color: #ffffff !important;
+        transform: translateY(-1px);
     }
     </style>
 """, unsafe_allow_html=True)
@@ -701,7 +704,7 @@ elif st.session_state.etapa == 2:
             st.markdown(f"- **Website:** {lead['website'] if lead['website'] else '❌ Sem site'}")
             st.markdown(f"- **Maps:** [Ver no Google Maps](https://www.google.com/maps/search/?api=1&query={lead['nome'].replace(' ', '+')})")
 
-            # CONSTRUÇÃO DA URL COM OS DADOS PREENCHIDOS PARA O OUTRO SISTEMA
+            # CONSTRUÇÃO DA URL COM PARÂMETROS PREENCHIDOS
             params = {
                 "nome": lead['nome'],
                 "endereco": lead['endereco'],
@@ -711,7 +714,7 @@ elif st.session_state.etapa == 2:
             }
             link_sistema_diagnostico = f"{URL_SISTEMA_DIAGNOSTICO}?{urllib.parse.urlencode(params)}"
 
-            # BOTÃO DE LINK DIRETO QUE ABRE O OUTRO SISTEMA PREENCHIDO
+            # BOTÃO AZUL COM TEXTO EM BRANCO DE ALTA LEITURA
             st.markdown(f'<a href="{link_sistema_diagnostico}" target="_blank" class="btn-redirect">🛠️ Abrir no Diagnóstico Tour360VR</a>', unsafe_allow_html=True)
 
             if lead['whatsapp']:
