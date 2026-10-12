@@ -10,6 +10,7 @@ import csv
 import urllib.parse
 from datetime import datetime
 import io
+import streamlit.components.v1 as components
 from streamlit_folium import st_folium
 import folium
 
@@ -36,13 +37,13 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ROLAGEM AUTOMÁTICA PARA O TOPO DA PÁGINA AO NAVEGAR
-st.markdown("""
+# INJEÇÃO JS PARA ROLAR AUTOMATICAMENTE PARA O TOPO
+components.html("""
     <script>
         var body = window.parent.document.querySelector(".main");
         if (body) { body.scrollTop = 0; }
     </script>
-""", unsafe_allow_html=True)
+""", height=0)
 
 # -----------------------------------------------------------------------------
 # BANCO DE DADOS PERMANENTE (SQLITE LOCAL)
@@ -190,39 +191,43 @@ def limpar_banco_dados():
 init_db()
 
 # -----------------------------------------------------------------------------
-# GERADOR DE PDF DO PANORAMA DE NICHO (SOMENTE LOGO TOUR360VR, FONTE +1PT)
+# GERADOR DE PDF DO PANORAMA DE NICHO (ESPAÇAMENTOS EXPANDIDOS & LOGO MAIOR)
 # -----------------------------------------------------------------------------
 def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=36, leftMargin=36, topMargin=30, bottomMargin=30)
+    doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=36, leftMargin=36, topMargin=25, bottomMargin=25)
     styles = getSampleStyleSheet()
     
-    # Textos com +1 ponto de tamanho
-    title_style = ParagraphStyle('DocTitle', parent=styles['Heading1'], fontSize=14, textColor=colors.HexColor('#0f172a'), fontName='Helvetica-Bold', alignment=1, spaceAfter=3)
-    subtitle_style = ParagraphStyle('DocSubtitle', parent=styles['Normal'], fontSize=9.5, textColor=colors.HexColor('#475569'), alignment=1, spaceAfter=10)
-    section_heading = ParagraphStyle('SectionHeading', parent=styles['Heading2'], fontSize=10.5, textColor=colors.HexColor('#1e293b'), spaceBefore=8, spaceAfter=4, fontName='Helvetica-Bold')
-    body_style = ParagraphStyle('BodyTextCustom', parent=styles['Normal'], fontSize=9, textColor=colors.HexColor('#334155'), leading=11)
+    title_style = ParagraphStyle('DocTitle', parent=styles['Heading1'], fontSize=13.5, textColor=colors.HexColor('#0f172a'), fontName='Helvetica-Bold', alignment=1, spaceAfter=4)
+    subtitle_style = ParagraphStyle('DocSubtitle', parent=styles['Normal'], fontSize=9.5, textColor=colors.HexColor('#475569'), alignment=1, spaceAfter=14)
+    section_heading = ParagraphStyle('SectionHeading', parent=styles['Heading2'], fontSize=10.5, textColor=colors.HexColor('#1e293b'), spaceBefore=12, spaceAfter=6, fontName='Helvetica-Bold')
+    body_style = ParagraphStyle('BodyTextCustom', parent=styles['Normal'], fontSize=8.5, textColor=colors.HexColor('#334155'), leading=10.5)
 
     elements = []
 
-    # SOMENTE A LOGO DO TOUR360VR ALINHADA À ESQUERDA
+    # LOGO TOUR360VR MAIOR E ALINHADA À ESQUERDA
     logo_tour = "logo_tour_transparente.png" if os.path.exists("logo_tour_transparente.png") else None
-    img_tour = Image(logo_tour, width=130, height=42, kind='proportional') if logo_tour else Paragraph("<b>TOUR360VR</b>", body_style)
+    img_tour = Image(logo_tour, width=160, height=52, kind='proportional') if logo_tour else Paragraph("<b>TOUR360VR</b>", body_style)
 
     header_table = Table([[img_tour]], colWidths=[540])
     header_table.setStyle(TableStyle([
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
         ('ALIGN', (0,0), (-1,-1), 'LEFT'),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 2),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 4),
     ]))
     elements.append(header_table)
-    elements.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor('#cbd5e1'), spaceAfter=8))
+    
+    # MAIS ESPAÇO ENTRE A LOGO E A LINHA
+    elements.append(Spacer(1, 4))
+    elements.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor('#cbd5e1'), spaceBefore=2, spaceAfter=12))
 
-    # TÍTULO E SUBTÍTULO CENTRALIZADOS
+    # TÍTULO E SUBTÍTULO
     elements.append(Paragraph(f"PANORAMA DE MERCADO: {nicho_nome.upper()}", title_style))
     elements.append(Paragraph("Estudo de Inteligência de Mercado Local e Presença Digital no Google", subtitle_style))
 
-    # TABELA RESUMO DOS INDICADORES
+    # MAIS ESPAÇO ANTES DO QUADRO DE INDICADORES
+    elements.append(Spacer(1, 6))
+
     total_emp = len(df_nicho)
     sem_tour = len(df_nicho[df_nicho['tour_360'] == False])
     sem_site = len(df_nicho[df_nicho['website'] == ''])
@@ -243,11 +248,15 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
         ('BOTTOMPADDING', (0,0), (-1,-1), 4),
     ]))
     elements.append(t_resumo)
-    elements.append(Spacer(1, 6))
+    
+    # MAIS ESPAÇO ENTRE O QUADRO E O TÍTULO DO RANKING
+    elements.append(Spacer(1, 12))
 
-    # RANKING COM CABEÇALHO EM CAIXA ALTA E ORDENADO
     elements.append(Paragraph("RANKING DE EMPRESAS AUDITADAS NO SETOR (ORDENADO POR MAIOR SCORE)", section_heading))
     
+    # MAIS ESPAÇO ENTRE O TÍTULO DO RANKING E A TABELA
+    elements.append(Spacer(1, 6))
+
     df_nicho_sorted = df_nicho.sort_values(by='score_oportunidade', ascending=False)
 
     t_data = [[
@@ -258,7 +267,7 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
         Paragraph("<b>SCORE (OPORTUNIDADE)</b>", body_style)
     ]]
     
-    for idx, row in df_nicho_sorted.head(13).iterrows():
+    for idx, row in df_nicho_sorted.head(12).iterrows():
         t_data.append([
             Paragraph(str(row['nome'])[:38], body_style),
             Paragraph(str(row['nota']), body_style),
@@ -277,10 +286,10 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     ]))
     elements.append(t_empresas)
 
-    elements.append(Spacer(1, 10))
-    elements.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor('#cbd5e1'), spaceBefore=2, spaceAfter=4))
+    elements.append(Spacer(1, 12))
+    elements.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor('#cbd5e1'), spaceBefore=4, spaceAfter=6))
     
-    # RODAPÉ SEM NENHUM QUADRADO FIXADO NA PARTE INFERIOR
+    # RODAPÉ SEM QUADRADOS FIXO NA PARTE INFERIOR
     rodape_text = Paragraph(
         "<b>tour360vr.com.br</b> &nbsp;|&nbsp; <b>contato@okamotomidiasvisuais.com.br</b> &nbsp;|&nbsp; <b>(16) 99133-2121</b>",
         ParagraphStyle('Rodape', parent=body_style, alignment=1, textColor=colors.HexColor('#1e293b'))
@@ -727,7 +736,6 @@ elif st.session_state.etapa == 2:
         with col_img:
             st.image(lead['foto_url'], caption="Foto da Ficha do Google", use_container_width=True)
             
-            # GESTÃO DE STATUS DO CRM
             status_opcoes = ["🆕 Novo Lead", "💬 Em Abordagem", "🛠️ Diagnóstico Gerado", "🤝 Cliente Fechado", "❌ Recusado"]
             idx_atual = status_opcoes.index(lead['status_crm']) if lead['status_crm'] in status_opcoes else 0
             novo_st = st.selectbox("Status Comercial:", status_opcoes, index=idx_atual, key=f"crm_st_{lead['id']}")
@@ -796,8 +804,10 @@ elif st.session_state.etapa == 3:
     else:
         df_filtrado = df_leads
 
-    # ORDENAÇÃO PELO MAIOR SCORE DE OPORTUNIDADE
     df_filtrado_sorted = df_filtrado.sort_values(by='score_oportunidade', ascending=False)
+
+    # NOME LIMPO DO ARQUIVO PDF SEM HIFEN
+    nome_arquivo_pdf = f"Relatorio Panorama {nicho_selecionado}.pdf".replace(':', '').replace('/', ' ')
 
     with col_btn_pdf:
         st.write(" ")
@@ -805,7 +815,7 @@ elif st.session_state.etapa == 3:
         st.download_button(
             label="📄 Baixar Relatório de Nicho (.pdf)",
             data=pdf_bytes_nicho,
-            file_name=f"Relatorio_Panorama_{nicho_selecionado.replace(' ', '_')}.pdf",
+            file_name=nome_arquivo_pdf,
             mime="application/pdf",
             use_container_width=True
         )
@@ -841,11 +851,9 @@ elif st.session_state.etapa == 3:
     st.divider()
     st.markdown(f"### 📋 Ranking do Nicho **{nicho_selecionado}** (Do Maior para o Menor Score):")
     
-    # FORMATANDO AS COLUNAS EM CAIXA ALTA
     df_exibicao = df_filtrado_sorted[['nome', 'cidade_busca', 'score_oportunidade', 'nota', 'total_avaliacoes', 'website', 'tour_360']].copy()
     df_exibicao.columns = ['EMPRESA', 'CIDADE', 'SCORE (OPORTUNIDADE)', 'NOTA', 'AVALIAÇÕES', 'WEBSITE', 'TOUR 360°']
 
-    # CALCULA ALTURA AUTOMÁTICA DA TABELA PARA RENDERIZAR COMPLETA NA TELA
     altura_dinamica = (len(df_exibicao) + 1) * 38 + 5
     
     st.dataframe(
@@ -855,13 +863,13 @@ elif st.session_state.etapa == 3:
     )
 
 # -----------------------------------------------------------------------------
-# ETAPA 4: MAPA DE PROSPECÇÃO (INTERATIVO COM NOMES E MODO CLARO)
+# ETAPA 4: MAPA DE PROSPECÇÃO (MAPA EXPANDIDO EM ALTURA 700PX E RÓTULOS FIXOS)
 # -----------------------------------------------------------------------------
 elif st.session_state.etapa == 4:
     st.markdown("""
         <div class="main-header">
             <h1 class="main-title">🗺️ Mapa de Localização e Concentração (Modo Claro)</h1>
-            <div class="main-subtitle">Clique nos marcadores vermelhos para ver o Nome da Empresa, Bairro e Score.</div>
+            <div class="main-subtitle">Todos os nomes das empresas e scores estão rotulados visivelmente para facilitar capturas de tela.</div>
         </div>
     """, unsafe_allow_html=True)
 
@@ -891,6 +899,16 @@ elif st.session_state.etapa == 4:
         m = folium.Map(location=[lat_centro, lon_centro], zoom_start=13, tiles="OpenStreetMap")
 
         for _, row in df_mapa_filtrado.iterrows():
+            # RÓTULO DE TEXTO VISÍVEL DIRETO NO MAPA (PARA SALVAR TELA COM NOMES EXPLICITOS)
+            icon_html = f"""
+            <div style="
+                background-color: #dc2626; color: white; padding: 3px 7px; border-radius: 4px;
+                font-weight: bold; font-size: 11px; font-family: sans-serif; white-space: nowrap;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.3); border: 1px solid white;">
+                📍 {row['nome']} ({row['score_oportunidade']}/100)
+            </div>
+            """
+            
             popup_html = f"""
             <div style="font-family: sans-serif; font-size: 12px; min-width: 160px;">
                 <b style="color: #0f172a; font-size: 13px;">{row['nome']}</b><br/>
@@ -899,14 +917,15 @@ elif st.session_state.etapa == 4:
                 ⭐ <b>Nota:</b> {row['nota']} ({row['total_avaliacoes']} avaliações)
             </div>
             """
+
             folium.Marker(
                 location=[row['latitude'], row['longitude']],
                 popup=folium.Popup(popup_html, max_width=250),
-                tooltip=row['nome'],
-                icon=folium.Icon(color="red", icon="info-sign")
+                icon=folium.DivIcon(html=icon_html)
             ).add_to(m)
 
-        st_folium(m, width="100%", height=500)
-        st.caption("💡 **Dica de Print:** Utilize as teclas `Win + Shift + S` (Windows) ou `Cmd + Shift + 4` (Mac) para capturar o mapa de fundo claro para propostas.")
+        # MAPA COM ALTURA AUMENTADA PARA 700PX
+        st_folium(m, width="100%", height=700)
+        st.caption("💡 **Dica de Print:** Utilize as teclas `Win + Shift + S` (Windows) ou `Cmd + Shift + 4` (Mac) para capturar o mapa expandido com os nomes visíveis.")
     else:
         st.warning("Nenhum registro encontrado para os filtros selecionados.")
