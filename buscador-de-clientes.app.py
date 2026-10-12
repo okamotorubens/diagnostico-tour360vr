@@ -215,11 +215,14 @@ def desenhar_rodape_fixo_links(canvas, doc):
     canvas.setFont('Helvetica', 8.5)
     canvas.setFillColor(colors.HexColor('#000000'))
     
-    # LINKS PRECISOS NO RODAPÉ
+    # HIPERLINKS PRECISOS RECALIBRADOS NO RODAPÉ
     try:
-        canvas.linkURL('https://tour360vr.com.br', (125, 15, 215, 32), relative=1)
-        canvas.linkURL('mailto:contato@okamotomidiasvisuais.com.br', (225, 15, 420, 32), relative=1)
-        canvas.linkURL('https://wa.me/5516991332121', (430, 15, 515, 32), relative=1)
+        # Link do Site (tour360vr.com.br)
+        canvas.linkURL('https://tour360vr.com.br', (120, 12, 210, 32), relative=1)
+        # Link do E-mail (contato@okamotomidiasvisuais.com.br)
+        canvas.linkURL('mailto:contato@okamotomidiasvisuais.com.br', (215, 12, 410, 32), relative=1)
+        # Link do WhatsApp ((16) 99133-2121)
+        canvas.linkURL('https://wa.me/5516991332121', (420, 12, 530, 32), relative=1)
     except Exception:
         pass
     
@@ -238,13 +241,14 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     )
     styles = getSampleStyleSheet()
     
-    # TÍTULO DO CABEÇALHO EM TAMANHO GRANDE (16pt) E CENTRALIZADO
+    # TÍTULO DO CABEÇALHO DENTRO DA TABELA
     sub_title_header = ParagraphStyle(
         'SubTitleHeader', parent=styles['Normal'],
         fontSize=15, leading=18, textColor=colors.HexColor('#0f172a'),
         fontName='Helvetica-Bold', alignment=1
     )
     
+    # TÍTULO DO PANORAMA REDUZIDO EM -1pt (14pt)
     main_title_style = ParagraphStyle(
         'MainTitle', parent=styles['Heading1'],
         fontSize=14, textColor=colors.HexColor('#0f172a'),
@@ -268,13 +272,14 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
 
     elements = []
 
+    # LOGO AUMENTADA (160pt LARGURA x 52pt ALTURA)
     logo_tour = "logo_tour_transparente.png" if os.path.exists("logo_tour_transparente.png") else None
-    img_tour = Image(logo_tour, width=100, height=45, kind='proportional') if logo_tour else Paragraph("<b>TOUR360VR</b>", body_style)
+    img_tour = Image(logo_tour, width=160, height=52, kind='proportional') if logo_tour else Paragraph("<b>TOUR360VR</b>", body_style)
 
     header_p = Paragraph("ESTUDO DE INTELIGÊNCIA DE MERCADO LOCAL E PRESENÇA DIGITAL NO GOOGLE", sub_title_header)
 
-    # CABEÇALHO SIMÉTRICO: LOGO (100pt) | TÍTULO CENTRALIZADO (340pt) | ESPAÇADOR (100pt)
-    header_table = Table([[img_tour, header_p, ""]], colWidths=[100, 340, 100])
+    # CABEÇALHO SIMÉTRICO E TOTALMENTE CENTRALIZADO: LOGO (160pt) | TÍTULO (220pt) | ESPAÇADOR SIMÉTRICO (160pt)
+    header_table = Table([[img_tour, header_p, ""]], colWidths=[160, 220, 160])
     header_table.setStyle(TableStyle([
         ('ALIGN', (0,0), (0,0), 'LEFT'),
         ('ALIGN', (1,0), (1,0), 'CENTER'),
@@ -294,10 +299,11 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     elements.append(Spacer(1, 4))
     elements.append(Paragraph("Distribuição de Empresas por Score de Oportunidade Comercial (Pontuação)", chart_label_style))
 
-    # GRÁFICO VETORIAL EXATAMENTE COM LARGURA 540pt ALINHADO COM AS TABELAS
+    # GRÁFICO VETORIAL COM LARGURA EXATA DE 540pt ALINHADO NAS MARGENS DAS TABELAS
     scores_counts = df_nicho['score_oportunidade'].value_counts().sort_index(ascending=False)
     
     chart_draw = Drawing(540, 105)
+    chart_draw.hAlign = 'CENTER'
     chart_draw.add(Rect(0, 0, 540, 105, fillColor=colors.HexColor('#f8fafc'), strokeColor=colors.HexColor('#cbd5e1'), strokeWidth=0.5, rx=6, ry=6))
     
     qtd_bars = len(scores_counts)
@@ -358,7 +364,6 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
         Paragraph("<b>SCORE</b>", body_center)
     ]]
     
-    # ESTILO COM FECHAMENTO COMPLETO DE QUADRO PARA QUALQUER PÁGINA (PÁGINA 1, 2, ETC.)
     t_styles = [
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#f8fafc')),
         ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1')),
@@ -719,7 +724,7 @@ def gerar_csv_excel_formatado(dados_leads):
     return output.getvalue().encode('utf-8')
 
 # -----------------------------------------------------------------------------
-# BARRA LATERAL (NAVEGAÇÃO MÓDULOS)
+# BARRA LATERAL (NAVEGAÇÃO MÓDULOS - PERMITE NAVEGAÇÃO LIVRE NAS BUSCAS ANTIGAS)
 # -----------------------------------------------------------------------------
 base_leads = carregar_todos_leads_db()
 
@@ -739,15 +744,15 @@ with st.sidebar:
         st.session_state.etapa = 1
         st.rerun()
         
-    if st.button("2. Base & CRM de Leads", use_container_width=True, type="primary" if st.session_state.etapa == 2 else "secondary", disabled=len(base_leads) == 0):
+    if st.button("2. Base & CRM de Leads", use_container_width=True, type="primary" if st.session_state.etapa == 2 else "secondary"):
         st.session_state.etapa = 2
         st.rerun()
 
-    if st.button("3. Panorama de Nicho (Estatísticas)", use_container_width=True, type="primary" if st.session_state.etapa == 3 else "secondary", disabled=len(base_leads) == 0):
+    if st.button("3. Panorama de Nicho (Estatísticas)", use_container_width=True, type="primary" if st.session_state.etapa == 3 else "secondary"):
         st.session_state.etapa = 3
         st.rerun()
 
-    if st.button("4. Mapa de Prospecção", use_container_width=True, type="primary" if st.session_state.etapa == 4 else "secondary", disabled=len(base_leads) == 0):
+    if st.button("4. Mapa de Prospecção", use_container_width=True, type="primary" if st.session_state.etapa == 4 else "secondary"):
         st.session_state.etapa = 4
         st.rerun()
 
@@ -805,119 +810,122 @@ elif st.session_state.etapa == 2:
         </div>
     """, unsafe_allow_html=True)
 
-    df_leads_crm = pd.DataFrame(base_leads)
+    if len(base_leads) == 0:
+        st.warning("⚠️ Nenhum lead cadastrado ainda no banco de dados. Faça sua primeira busca no Módulo 1!")
+    else:
+        df_leads_crm = pd.DataFrame(base_leads)
 
-    col_back, col_f_status, col_f_cid, col_f_nicho, col_export = st.columns([1.2, 2, 2, 2, 2.2])
-    
-    with col_back:
-        st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
-        if st.button("⬅️ Nova Busca", use_container_width=True):
-            st.session_state.etapa = 1
-            st.rerun()
-
-    with col_f_status:
-        filtro_status = st.selectbox(
-            "Status CRM:",
-            ["Todos os Status", "🆕 Novo Lead", "💬 Em Abordagem", "🛠️ Diagnóstico Gerado", "🤝 Cliente Fechado", "❌ Recusado"]
-        )
-
-    with col_f_cid:
-        cidades_existentes = ["Todas as Cidades"] + list(df_leads_crm['cidade_busca'].unique())
-        filtro_cidade = st.selectbox("Filtrar por Cidade:", cidades_existentes)
-
-    with col_f_nicho:
-        nichos_existentes = ["Todos os Nichos"] + list(df_leads_crm['categoria'].unique())
-        filtro_nicho = st.selectbox("Filtrar por Nicho:", nichos_existentes)
-
-    with col_export:
-        st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
-        csv_bytes = gerar_csv_excel_formatado(base_leads)
-        st.download_button(
-            label="📊 Exportar Planilha (.csv)",
-            data=csv_bytes,
-            file_name=f"Leads_Completo_CRM_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
-            mime="text/csv",
-            use_container_width=True
-        )
-
-    st.divider()
-
-    resultados_filtrados = base_leads
-    if filtro_status != "Todos os Status":
-        resultados_filtrados = [r for r in resultados_filtrados if r['status_crm'] == filtro_status]
-    if filtro_cidade != "Todas as Cidades":
-        resultados_filtrados = [r for r in resultados_filtrados if r['cidade_busca'] == filtro_cidade]
-    if filtro_nicho != "Todos os Nichos":
-        resultados_filtrados = [r for r in resultados_filtrados if r['categoria'] == filtro_nicho]
-
-    st.markdown(f"Exibindo **{len(resultados_filtrados)}** oportunidades salvas:")
-
-    for lead in resultados_filtrados:
-        score = lead['score_oportunidade']
-        score_class = "score-high" if score >= 60 else ("score-med" if score >= 30 else "score-low")
-        score_label = "ALTA OPORTUNIDADE" if score >= 60 else ("MÉDIA OPORTUNIDADE" if score >= 30 else "BAIXA OPORTUNIDADE")
-
-        st.markdown(f"""
-            <div class="lead-card">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
-                    <div>
-                        <h2 style="margin: 0; color: #ffffff; font-size: 19px;">{lead['nome']}</h2>
-                        <p style="margin: 3px 0 0 0; color: #94a3b8; font-size: 12.5px;">📍 {lead['endereco']} | 🏷️ {lead['categoria']}</p>
-                    </div>
-                    <div class="score-box {score_class}">
-                        <div style="font-size: 9.5px; font-weight: bold;">SCORE</div>
-                        <div style="font-size: 18px; font-weight: bold;">{score} / 100</div>
-                        <div style="font-size: 8.5px;">{score_label}</div>
-                    </div>
-                </div>
-            </div>
-        """, unsafe_allow_html=True)
-
-        col_img, col_details1, col_details2, col_actions = st.columns([2, 2.5, 2.5, 2.5])
-
-        with col_img:
-            st.image(lead['foto_url'], caption="Foto da Ficha do Google", use_container_width=True)
-            
-            status_opcoes = ["🆕 Novo Lead", "💬 Em Abordagem", "🛠️ Diagnóstico Gerado", "🤝 Cliente Fechado", "❌ Recusado"]
-            idx_atual = status_opcoes.index(lead['status_crm']) if lead['status_crm'] in status_opcoes else 0
-            novo_st = st.selectbox("Status Comercial:", status_opcoes, index=idx_atual, key=f"crm_st_{lead['id']}")
-            if novo_st != lead['status_crm']:
-                atualizar_status_crm(lead['id'], novo_st)
-                st.toast("Status comercial atualizado com sucesso!")
+        col_back, col_f_status, col_f_cid, col_f_nicho, col_export = st.columns([1.2, 2, 2, 2, 2.2])
+        
+        with col_back:
+            st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
+            if st.button("⬅️ Nova Busca", use_container_width=True):
+                st.session_state.etapa = 1
                 st.rerun()
 
-        with col_details1:
-            st.markdown("**📊 Indicadores no Google:**")
-            st.markdown(f"- **Nota Média:** ⭐ {lead['nota']} ({lead['total_avaliacoes']} avaliações)")
-            st.markdown(f"- **Ficha Reivindicada?** {'✅ Sim' if lead['reivindicada'] else '❌ **NÃO REIVINDICADA**'}")
-            st.markdown(f"- **Fotos na Ficha:** {lead['fotos_total']} fotos (última há {lead['ultima_foto_dias']} dias)")
-            st.markdown(f"- **Tour 360°:** {'✅ Presente' if lead['tour_360'] else '❌ **Ausente**'}")
+        with col_f_status:
+            filtro_status = st.selectbox(
+                "Status CRM:",
+                ["Todos os Status", "🆕 Novo Lead", "💬 Em Abordagem", "🛠️ Diagnóstico Gerado", "🤝 Cliente Fechado", "❌ Recusado"]
+            )
 
-        with col_details2:
-            st.markdown("**🚨 Pontos Críticos Encontrados:**")
-            for pc in lead['pontos_criticos']:
-                st.markdown(f"<div class='critical-item'>❌ {pc}</div>", unsafe_allow_html=True)
+        with col_f_cid:
+            cidades_existentes = ["Todas as Cidades"] + list(df_leads_crm['cidade_busca'].unique())
+            filtro_cidade = st.selectbox("Filtrar por Cidade:", cidades_existentes)
 
-        with col_actions:
-            st.markdown("**🌐 Presença Web & Mídias:**")
-            st.markdown(f"- **Website:** {lead['website'] if lead['website'] else '❌ Sem site'}")
-            st.markdown(f"- **Instagram:** [Abrir Perfil]({lead['instagram']})")
-            st.markdown(f"- **Maps:** [Ver no Google Maps](https://www.google.com/maps/search/?api=1&query={lead['nome'].replace(' ', '+')})")
+        with col_f_nicho:
+            nichos_existentes = ["Todos os Nichos"] + list(df_leads_crm['categoria'].unique())
+            filtro_nicho = st.selectbox("Filtrar por Nicho:", nichos_existentes)
 
-            st.markdown(f'<a href="{URL_SISTEMA_DIAGNOSTICO}" target="_blank" class="btn-redirect">🛠️ Abrir no Diagnóstico Tour360VR</a>', unsafe_allow_html=True)
+        with col_export:
+            st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
+            csv_bytes = gerar_csv_excel_formatado(base_leads)
+            st.download_button(
+                label="📊 Exportar Planilha (.csv)",
+                data=csv_bytes,
+                file_name=f"Leads_Completo_CRM_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
+                mime="text/csv",
+                use_container_width=True
+            )
 
-            if lead['whatsapp']:
-                msg_wa = f"Olá! Estava analisando a presença digital da {lead['nome']} no Google..."
-                link_wa = f"https://wa.me/55{lead['whatsapp']}?text={urllib.parse.quote(msg_wa)}"
-                st.markdown(f'<a href="{link_wa}" target="_blank"><button style="width:100%; background-color:#25D366; color:white; border:none; padding:8px; border-radius:6px; font-weight:bold; cursor:pointer; margin-bottom:8px;">💬 WhatsApp</button></a>', unsafe_allow_html=True)
+        st.divider()
 
-        with st.expander(f"✉️ **Uso Interno — Scripts de Vendas e Abordagem ({lead['nome']})**"):
-            st.markdown("**1) Abordagem Inicial — WhatsApp**")
-            script_wa = f"Olá! Analisei o perfil da {lead['nome']} no Google e identifiquei oportunidades importantes para aumentar suas vendas presenciais com Tour 360° e otimização da ficha. Tenho um diagnóstico completo em PDF que mostra exatamente o que fazer. Posso enviar?"
-            st.markdown(f'<div class="script-box">{script_wa}</div>', unsafe_allow_html=True)
+        resultados_filtrados = base_leads
+        if filtro_status != "Todos os Status":
+            resultados_filtrados = [r for r in resultados_filtrados if r['status_crm'] == filtro_status]
+        if filtro_cidade != "Todas as Cidades":
+            resultados_filtrados = [r for r in resultados_filtrados if r['cidade_busca'] == filtro_cidade]
+        if filtro_nicho != "Todos os Nichos":
+            resultados_filtrados = [r for r in resultados_filtrados if r['categoria'] == filtro_nicho]
 
-            st.markdown("**2) Abordagem Inicial — E-mail**")
-            script_email = f"""Assunto: Oportunidade de Presença Digital: {lead['nome']} no Google
+        st.markdown(f"Exibindo **{len(resultados_filtrados)}** oportunidades salvas:")
+
+        for lead in resultados_filtrados:
+            score = lead['score_oportunidade']
+            score_class = "score-high" if score >= 60 else ("score-med" if score >= 30 else "score-low")
+            score_label = "ALTA OPORTUNIDADE" if score >= 60 else ("MÉDIA OPORTUNIDADE" if score >= 30 else "BAIXA OPORTUNIDADE")
+
+            st.markdown(f"""
+                <div class="lead-card">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+                        <div>
+                            <h2 style="margin: 0; color: #ffffff; font-size: 19px;">{lead['nome']}</h2>
+                            <p style="margin: 3px 0 0 0; color: #94a3b8; font-size: 12.5px;">📍 {lead['endereco']} | 🏷️ {lead['categoria']}</p>
+                        </div>
+                        <div class="score-box {score_class}">
+                            <div style="font-size: 9.5px; font-weight: bold;">SCORE</div>
+                            <div style="font-size: 18px; font-weight: bold;">{score} / 100</div>
+                            <div style="font-size: 8.5px;">{score_label}</div>
+                        </div>
+                    </div>
+                </div>
+            """, unsafe_allow_html=True)
+
+            col_img, col_details1, col_details2, col_actions = st.columns([2, 2.5, 2.5, 2.5])
+
+            with col_img:
+                st.image(lead['foto_url'], caption="Foto da Ficha do Google", use_container_width=True)
+                
+                status_opcoes = ["🆕 Novo Lead", "💬 Em Abordagem", "🛠️ Diagnóstico Gerado", "🤝 Cliente Fechado", "❌ Recusado"]
+                idx_atual = status_opcoes.index(lead['status_crm']) if lead['status_crm'] in status_opcoes else 0
+                novo_st = st.selectbox("Status Comercial:", status_opcoes, index=idx_atual, key=f"crm_st_{lead['id']}")
+                if novo_st != lead['status_crm']:
+                    atualizar_status_crm(lead['id'], novo_st)
+                    st.toast("Status comercial atualizado com sucesso!")
+                    st.rerun()
+
+            with col_details1:
+                st.markdown("**📊 Indicadores no Google:**")
+                st.markdown(f"- **Nota Média:** ⭐ {lead['nota']} ({lead['total_avaliacoes']} avaliações)")
+                st.markdown(f"- **Ficha Reivindicada?** {'✅ Sim' if lead['reivindicada'] else '❌ **NÃO REIVINDICADA**'}")
+                st.markdown(f"- **Fotos na Ficha:** {lead['fotos_total']} fotos (última há {lead['ultima_foto_dias']} dias)")
+                st.markdown(f"- **Tour 360°:** {'✅ Presente' if lead['tour_360'] else '❌ **Ausente**'}")
+
+            with col_details2:
+                st.markdown("**🚨 Pontos Críticos Encontrados:**")
+                for pc in lead['pontos_criticos']:
+                    st.markdown(f"<div class='critical-item'>❌ {pc}</div>", unsafe_allow_html=True)
+
+            with col_actions:
+                st.markdown("**🌐 Presença Web & Mídias:**")
+                st.markdown(f"- **Website:** {lead['website'] if lead['website'] else '❌ Sem site'}")
+                st.markdown(f"- **Instagram:** [Abrir Perfil]({lead['instagram']})")
+                st.markdown(f"- **Maps:** [Ver no Google Maps](https://www.google.com/maps/search/?api=1&query={lead['nome'].replace(' ', '+')})")
+
+                st.markdown(f'<a href="{URL_SISTEMA_DIAGNOSTICO}" target="_blank" class="btn-redirect">🛠️ Abrir no Diagnóstico Tour360VR</a>', unsafe_allow_html=True)
+
+                if lead['whatsapp']:
+                    msg_wa = f"Olá! Estava analisando a presença digital da {lead['nome']} no Google..."
+                    link_wa = f"https://wa.me/55{lead['whatsapp']}?text={urllib.parse.quote(msg_wa)}"
+                    st.markdown(f'<a href="{link_wa}" target="_blank"><button style="width:100%; background-color:#25D366; color:white; border:none; padding:8px; border-radius:6px; font-weight:bold; cursor:pointer; margin-bottom:8px;">💬 WhatsApp</button></a>', unsafe_allow_html=True)
+
+            with st.expander(f"✉️ **Uso Interno — Scripts de Vendas e Abordagem ({lead['nome']})**"):
+                st.markdown("**1) Abordagem Inicial — WhatsApp**")
+                script_wa = f"Olá! Analisei o perfil da {lead['nome']} no Google e identifiquei oportunidades importantes para aumentar suas vendas presenciais com Tour 360° e otimização da ficha. Tenho um diagnóstico completo em PDF que mostra exatamente o que fazer. Posso enviar?"
+                st.markdown(f'<div class="script-box">{script_wa}</div>', unsafe_allow_html=True)
+
+                st.markdown("**2) Abordagem Inicial — E-mail**")
+                script_email = f"""Assunto: Oportunidade de Presença Digital: {lead['nome']} no Google
 
 Olá! Analisei o perfil da {lead['nome']} no Google e gostaria de compartilhar uma oportunidade importante.
 
@@ -932,13 +940,13 @@ Fico à disposição para conversarmos!
 Atenciosamente,
 TOUR360VR | Okamoto Mídias Visuais
 (16) 99133-2121 | tour360vr.com.br"""
-            st.markdown(f'<div class="script-box">{script_email}</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="script-box">{script_email}</div>', unsafe_allow_html=True)
 
-            st.markdown("**3) Follow-up 48h — Pós-Envio do Diagnóstico**")
-            script_follow = f"Olá! Só checando por aqui — conseguiu analisar o diagnóstico em PDF da {lead['nome']} que te enviei? Fico no aguardo para tirar qualquer dúvida!"
-            st.markdown(f'<div class="script-box">{script_follow}</div>', unsafe_allow_html=True)
+                st.markdown("**3) Follow-up 48h — Pós-Envio do Diagnóstico**")
+                script_follow = f"Olá! Só checando por aqui — conseguiu analisar o diagnóstico em PDF da {lead['nome']} que te enviei? Fico no aguardo para tirar qualquer dúvida!"
+                st.markdown(f'<div class="script-box">{script_follow}</div>', unsafe_allow_html=True)
 
-        st.divider()
+            st.divider()
 
 # -----------------------------------------------------------------------------
 # ETAPA 3: PANORAMA DE NICHO
@@ -951,98 +959,101 @@ elif st.session_state.etapa == 3:
         </div>
     """, unsafe_allow_html=True)
 
-    df_leads = pd.DataFrame(base_leads)
+    if len(base_leads) == 0:
+        st.warning("⚠️ Nenhum lead cadastrado ainda no banco de dados. Faça sua primeira busca no Módulo 1!")
+    else:
+        df_leads = pd.DataFrame(base_leads)
 
-    categorias_disponiveis = ["Todos os Nichos Mapeados"] + list(df_leads['categoria'].unique())
-    cidades_disponiveis = ["Todas as Cidades"] + list(df_leads['cidade_busca'].unique())
+        categorias_disponiveis = ["Todos os Nichos Mapeados"] + list(df_leads['categoria'].unique())
+        cidades_disponiveis = ["Todas as Cidades"] + list(df_leads['cidade_busca'].unique())
 
-    col_sel_nicho, col_sel_cid, col_btn_pdf = st.columns([2.5, 2.5, 2])
-    
-    with col_sel_nicho:
-        nicho_selecionado = st.selectbox("🎯 Nicho Comercial:", categorias_disponiveis)
+        col_sel_nicho, col_sel_cid, col_btn_pdf = st.columns([2.5, 2.5, 2])
+        
+        with col_sel_nicho:
+            nicho_selecionado = st.selectbox("🎯 Nicho Comercial:", categorias_disponiveis)
 
-    with col_sel_cid:
-        cidade_selecionada = st.selectbox("📍 Cidade / Município:", cidades_disponiveis)
+        with col_sel_cid:
+            cidade_selecionada = st.selectbox("📍 Cidade / Município:", cidades_disponiveis)
 
-    df_filtrado = df_leads.copy()
-    if nicho_selecionado != "Todos os Nichos Mapeados":
-        df_filtrado = df_filtrado[df_filtrado['categoria'] == nicho_selecionado]
-    if cidade_selecionada != "Todas as Cidades":
-        df_filtrado = df_filtrado[df_filtrado['cidade_busca'] == cidade_selecionada]
+        df_filtrado = df_leads.copy()
+        if nicho_selecionado != "Todos os Nichos Mapeados":
+            df_filtrado = df_filtrado[df_filtrado['categoria'] == nicho_selecionado]
+        if cidade_selecionada != "Todas as Cidades":
+            df_filtrado = df_filtrado[df_filtrado['cidade_busca'] == cidade_selecionada]
 
-    df_filtrado_sorted = df_filtrado.sort_values(by='score_oportunidade', ascending=False)
+        df_filtrado_sorted = df_filtrado.sort_values(by='score_oportunidade', ascending=False)
 
-    nome_arquivo_pdf = f"Relatorio Panorama {nicho_selecionado}.pdf".replace(':', '').replace('/', ' ')
+        nome_arquivo_pdf = f"Relatorio Panorama {nicho_selecionado}.pdf".replace(':', '').replace('/', ' ')
 
-    with col_btn_pdf:
-        st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
-        pdf_bytes_nicho = gerar_pdf_panorama_nicho(nicho_selecionado, df_filtrado_sorted)
-        st.download_button(
-            label="📄 Baixar Relatório (.pdf)",
-            data=pdf_bytes_nicho,
-            file_name=nome_arquivo_pdf,
-            mime="application/pdf",
-            use_container_width=True
+        with col_btn_pdf:
+            st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
+            pdf_bytes_nicho = gerar_pdf_panorama_nicho(nicho_selecionado, df_filtrado_sorted)
+            st.download_button(
+                label="📄 Baixar Relatório (.pdf)",
+                data=pdf_bytes_nicho,
+                file_name=nome_arquivo_pdf,
+                mime="application/pdf",
+                use_container_width=True
+            )
+
+        st.divider()
+
+        col_m1, col_m2, col_m3, col_m4 = st.columns(4)
+        total_count = len(df_filtrado_sorted)
+        
+        with col_m1: 
+            st.metric("Empresas Analisadas", total_count)
+        with col_m2: 
+            sem_tour = len(df_filtrado_sorted[df_filtrado_sorted['tour_360'] == False])
+            st.metric("Sem Tour Virtual 360°", f"{(sem_tour / total_count * 100 if total_count > 0 else 0):.1f}%", f"{sem_tour} empresas")
+        with col_m3: 
+            sem_site = len(df_filtrado_sorted[df_filtrado_sorted['website'] == ''])
+            st.metric("Sem Website Oficial", f"{(sem_site / total_count * 100 if total_count > 0 else 0):.1f}%", f"{sem_site} empresas")
+        with col_m4: 
+            nao_reiv = len(df_filtrado_sorted[df_filtrado_sorted['reivindicada'] == False])
+            st.metric("Fichas não Reivindicadas", f"{(nao_reiv / total_count * 100 if total_count > 0 else 0):.1f}%", f"{nao_reiv} empresas")
+
+        st.divider()
+
+        c_chart1, c_chart2 = st.columns(2)
+        with c_chart1:
+            st.markdown("### 📊 Nível de Oportunidade Comercial (Score)")
+            st.bar_chart(df_filtrado_sorted['score_oportunidade'].value_counts())
+
+        with c_chart2:
+            st.markdown("### ⭐ Média de Avaliações no Google")
+            st.bar_chart(df_filtrado_sorted['nota'].value_counts())
+
+        st.divider()
+        st.markdown(f"### 📋 Ranking do Nicho **{nicho_selecionado}** (Clique no nome para abrir o Google Maps):")
+        
+        # DATAFRAME COM EXPRESSÃO REGEX r".*" PARA PEGAR O TEXTO DA CÉLULA DINAMICAMENTE
+        df_exibicao = pd.DataFrame({
+            'LINK_MAPS': df_filtrado_sorted.apply(lambda r: f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(r['nome'])}", axis=1),
+            'EMPRESA': df_filtrado_sorted['nome'],
+            'CIDADE': df_filtrado_sorted['cidade_busca'],
+            'SCORE': df_filtrado_sorted['score_oportunidade'].apply(lambda x: f"{x}/100"),
+            'NOTA': df_filtrado_sorted['nota'].apply(lambda x: f"{x:.1f} ⭐"),
+            'AVALIAÇÕES': df_filtrado_sorted['total_avaliacoes'].astype(str),
+            'WEBSITE': df_filtrado_sorted['website'].apply(lambda x: x if x else "Sem site registrado")
+        })
+
+        altura_dinamica = (len(df_exibicao) + 1) * 35 + 10
+
+        st.dataframe(
+            df_exibicao[['EMPRESA', 'CIDADE', 'SCORE', 'NOTA', 'AVALIAÇÕES', 'WEBSITE']],
+            use_container_width=True,
+            hide_index=True,
+            height=altura_dinamica,
+            column_config={
+                "EMPRESA": st.column_config.LinkColumn("EMPRESA", display_text=r".*", width="large"),
+                "CIDADE": st.column_config.Column("CIDADE", alignment="center"),
+                "SCORE": st.column_config.Column("SCORE", width="small", alignment="center"),
+                "NOTA": st.column_config.Column("NOTA", width="small", alignment="center"),
+                "AVALIAÇÕES": st.column_config.Column("AVALIAÇÕES", width="small", alignment="center"),
+                "WEBSITE": st.column_config.LinkColumn("WEBSITE", width="large")
+            }
         )
-
-    st.divider()
-
-    col_m1, col_m2, col_m3, col_m4 = st.columns(4)
-    total_count = len(df_filtrado_sorted)
-    
-    with col_m1: 
-        st.metric("Empresas Analisadas", total_count)
-    with col_m2: 
-        sem_tour = len(df_filtrado_sorted[df_filtrado_sorted['tour_360'] == False])
-        st.metric("Sem Tour Virtual 360°", f"{(sem_tour / total_count * 100 if total_count > 0 else 0):.1f}%", f"{sem_tour} empresas")
-    with col_m3: 
-        sem_site = len(df_filtrado_sorted[df_filtrado_sorted['website'] == ''])
-        st.metric("Sem Website Oficial", f"{(sem_site / total_count * 100 if total_count > 0 else 0):.1f}%", f"{sem_site} empresas")
-    with col_m4: 
-        nao_reiv = len(df_filtrado_sorted[df_filtrado_sorted['reivindicada'] == False])
-        st.metric("Fichas não Reivindicadas", f"{(nao_reiv / total_count * 100 if total_count > 0 else 0):.1f}%", f"{nao_reiv} empresas")
-
-    st.divider()
-
-    c_chart1, c_chart2 = st.columns(2)
-    with c_chart1:
-        st.markdown("### 📊 Nível de Oportunidade Comercial (Score)")
-        st.bar_chart(df_filtrado_sorted['score_oportunidade'].value_counts())
-
-    with c_chart2:
-        st.markdown("### ⭐ Média de Avaliações no Google")
-        st.bar_chart(df_filtrado_sorted['nota'].value_counts())
-
-    st.divider()
-    st.markdown(f"### 📋 Ranking do Nicho **{nicho_selecionado}** (Clique para ver no Google Maps):")
-    
-    # DATAFRAME COM NOME DA EMPRESA E LINK CORRIGIDOS
-    df_exibicao = pd.DataFrame({
-        'LINK_MAPS': df_filtrado_sorted.apply(lambda r: f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(r['nome'])}", axis=1),
-        'EMPRESA': df_filtrado_sorted['nome'],
-        'CIDADE': df_filtrado_sorted['cidade_busca'],
-        'SCORE': df_filtrado_sorted['score_oportunidade'].apply(lambda x: f"{x}/100"),
-        'NOTA': df_filtrado_sorted['nota'].apply(lambda x: f"{x:.1f} ⭐"),
-        'AVALIAÇÕES': df_filtrado_sorted['total_avaliacoes'].astype(str),
-        'WEBSITE': df_filtrado_sorted['website'].apply(lambda x: x if x else "Sem site registrado")
-    })
-
-    altura_dinamica = (len(df_exibicao) + 1) * 35 + 10
-
-    st.dataframe(
-        df_exibicao[['LINK_MAPS', 'CIDADE', 'SCORE', 'NOTA', 'AVALIAÇÕES', 'WEBSITE']],
-        use_container_width=True,
-        hide_index=True,
-        height=altura_dinamica,
-        column_config={
-            "LINK_MAPS": st.column_config.LinkColumn("EMPRESA", display_text="EMPRESA", width="large"),
-            "CIDADE": st.column_config.Column("CIDADE", alignment="center"),
-            "SCORE": st.column_config.Column("SCORE", width="small", alignment="center"),
-            "NOTA": st.column_config.Column("NOTA", width="small", alignment="center"),
-            "AVALIAÇÕES": st.column_config.Column("AVALIAÇÕES", width="small", alignment="center"),
-            "WEBSITE": st.column_config.LinkColumn("WEBSITE", width="large")
-        }
-    )
 
 # -----------------------------------------------------------------------------
 # ETAPA 4: MAPA DE PROSPECÇÃO
@@ -1055,103 +1066,104 @@ elif st.session_state.etapa == 4:
         </div>
     """, unsafe_allow_html=True)
 
-    df_mapa = pd.DataFrame(base_leads)
-    
-    col_f1, col_f2, col_f3 = st.columns([2, 2, 2])
-    with col_f1:
-        cats_mapa = ["Todos os Segmentos"] + list(df_mapa['categoria'].unique())
-        cat_sel_mapa = st.selectbox("🏷️ Segmento no Mapa:", cats_mapa)
-        
-    with col_f2:
-        cids_mapa = ["Todas as Cidades/Regiões"] + list(df_mapa['cidade_busca'].unique())
-        cid_sel_mapa = st.selectbox("📍 Cidade / Região:", cids_mapa)
-
-    with col_f3:
-        filtro_score_op = st.selectbox(
-            "🎯 Faixa de Score de Oportunidade:",
-            ["Todos os Scores", "🚨 Crítico (Score ≥ 60)", "🟡 Médio (30 a 59)", "🟢 Baixo (< 30)"]
-        )
-
-    df_mapa_filtrado = df_mapa.copy()
-    if cat_sel_mapa != "Todos os Segmentos":
-        df_mapa_filtrado = df_mapa_filtrado[df_mapa_filtrado['categoria'] == cat_sel_mapa]
-    if cid_sel_mapa != "Todas as Cidades/Regiões":
-        df_mapa_filtrado = df_mapa_filtrado[df_mapa_filtrado['cidade_busca'] == cid_sel_mapa]
-
-    if filtro_score_op == "🚨 Crítico (Score ≥ 60)":
-        df_mapa_filtrado = df_mapa_filtrado[df_mapa_filtrado['score_oportunidade'] >= 60]
-    elif filtro_score_op == "🟡 Médio (30 a 59)":
-        df_mapa_filtrado = df_mapa_filtrado[(df_mapa_filtrado['score_oportunidade'] >= 30) & (df_mapa_filtrado['score_oportunidade'] < 60)]
-    elif filtro_score_op == "🟢 Baixo (< 30)":
-        df_mapa_filtrado = df_mapa_filtrado[df_mapa_filtrado['score_oportunidade'] < 30]
-
-    st.info(f"📌 Exibindo **{len(df_mapa_filtrado)} empresas** filtradas no mapa.")
-
-    # MAPEAMENTO EXATO DE CORES DE PINS E NOMES PARA A LEGENDA
-    CORES_PINS = ['red', 'blue', 'green', 'purple', 'orange', 'darkred', 'cadetblue', 'darkgreen', 'darkblue', 'pink']
-    CORES_HEX = {
-        'red': '#ef4444', 
-        'blue': '#3b82f6', 
-        'green': '#10b981', 
-        'purple': '#8b5cf6',
-        'orange': '#f97316', 
-        'darkred': '#991b1b', 
-        'cadetblue': '#06b6d4',
-        'darkgreen': '#166534', 
-        'darkblue': '#1e3a8a', 
-        'pink': '#ec4899'
-    }
-
-    segmentos_unicos = list(df_mapa['categoria'].unique())
-    mapa_cores_seg = {seg: CORES_PINS[idx % len(CORES_PINS)] for idx, seg in enumerate(segmentos_unicos)}
-
-    # LEGENDA COM BOLINHAS COLORIDAS CORRESPONDENTES AOS PINS
-    if cat_sel_mapa == "Todos os Segmentos" and len(segmentos_unicos) > 1:
-        st.markdown("**🎨 Legenda de Cores por Segmento:**")
-        cols_leg = st.columns(min(len(segmentos_unicos), 5))
-        for idx, (seg, cor_nome) in enumerate(mapa_cores_seg.items()):
-            hex_cor = CORES_HEX.get(cor_nome, '#ef4444')
-            with cols_leg[idx % 5]:
-                st.markdown(
-                    f'<div style="background-color: #1e293b; padding: 8px 12px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">'
-                    f'<span style="height: 12px; width: 12px; background-color: {hex_cor}; border-radius: 50%; display: inline-block;"></span>'
-                    f'<b style="color: #ffffff; font-size: 13px;">{seg}</b>'
-                    f'</div>',
-                    unsafe_allow_html=True
-                )
-        st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
-
-    if 'latitude' in df_mapa_filtrado.columns and 'longitude' in df_mapa_filtrado.columns and len(df_mapa_filtrado) > 0:
-        lat_centro = df_mapa_filtrado['latitude'].mean()
-        lon_centro = df_mapa_filtrado['longitude'].mean()
-
-        m = folium.Map(location=[lat_centro, lon_centro], zoom_start=14.5, tiles="OpenStreetMap")
-
-        for _, row in df_mapa_filtrado.iterrows():
-            cor_pin = mapa_cores_seg.get(row['categoria'], 'red') if cat_sel_mapa == "Todos os Segmentos" else 'red'
-            url_maps_emp = f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(row['nome'])}"
-
-            info_card_html = f"""
-            <div style="font-family: Arial, sans-serif; font-size: 12px; min-width: 240px; padding: 6px; line-height: 1.5;">
-                <a href="{url_maps_emp}" target="_blank" style="text-decoration: none;">
-                    <b style="color: #2563eb; font-size: 14px;">{row['nome']} 🔗</b>
-                </a><br/>
-                <span style="color: #475569; font-size: 11px;">📍 {row['endereco']}</span><br/>
-                <hr style="margin: 6px 0; border: 0.5px solid #cbd5e1;"/>
-                🚨 <b>Score de Oportunidade:</b> <span style="color: #dc2626; font-weight: bold;">{row['score_oportunidade']}/100</span><br/>
-                ⭐ <b>Nota no Google:</b> {row['nota']} ({row['total_avaliacoes']} avaliações)<br/>
-                🌐 <b>Website Oficial:</b> {'✅ Presente' if row['website'] else '❌ Ausente'}<br/>
-                📷 <b>Fotos na Ficha:</b> {row['fotos_total']} fotos publicadas<br/>
-                📅 <b>Última Atualização:</b> há {row['ultima_foto_dias']} dias
-            </div>
-            """
-
-            folium.Marker(
-                location=[row['latitude'], row['longitude']],
-                popup=folium.Popup(info_card_html, max_width=320),
-                icon=folium.Icon(color=cor_pin, icon="info-sign")
-            ).add_to(m)
-
-        st_folium(m, width="100%", height=700)
+    if len(base_leads) == 0:
+        st.warning("⚠️ Nenhum lead cadastrado ainda no banco de dados. Faça sua primeira busca no Módulo 1!")
     else:
-        st.warning("Nenhum registro encontrado para os filtros selecionados.")
+        df_mapa = pd.DataFrame(base_leads)
+        
+        col_f1, col_f2, col_f3 = st.columns([2, 2, 2])
+        with col_f1:
+            cats_mapa = ["Todos os Segmentos"] + list(df_mapa['categoria'].unique())
+            cat_sel_mapa = st.selectbox("🏷️ Segmento no Mapa:", cats_mapa)
+            
+        with col_f2:
+            cids_mapa = ["Todas as Cidades/Regiões"] + list(df_mapa['cidade_busca'].unique())
+            cid_sel_mapa = st.selectbox("📍 Cidade / Região:", cids_mapa)
+
+        with col_f3:
+            filtro_score_op = st.selectbox(
+                "🎯 Faixa de Score de Oportunidade:",
+                ["Todos os Scores", "🚨 Crítico (Score ≥ 60)", "🟡 Médio (30 a 59)", "🟢 Baixo (< 30)"]
+            )
+
+        df_mapa_filtrado = df_mapa.copy()
+        if cat_sel_mapa != "Todos os Segmentos":
+            df_mapa_filtrado = df_mapa_filtrado[df_mapa_filtrado['categoria'] == cat_sel_mapa]
+        if cid_sel_mapa != "Todas as Cidades/Regiões":
+            df_mapa_filtrado = df_mapa_filtrado[df_mapa_filtrado['cidade_busca'] == cid_sel_mapa]
+
+        if filtro_score_op == "🚨 Crítico (Score ≥ 60)":
+            df_mapa_filtrado = df_mapa_filtrado[df_mapa_filtrado['score_oportunidade'] >= 60]
+        elif filtro_score_op == "🟡 Médio (30 a 59)":
+            df_mapa_filtrado = df_mapa_filtrado[(df_mapa_filtrado['score_oportunidade'] >= 30) & (df_mapa_filtrado['score_oportunidade'] < 60)]
+        elif filtro_score_op == "🟢 Baixo (< 30)":
+            df_mapa_filtrado = df_mapa_filtrado[df_mapa_filtrado['score_oportunidade'] < 30]
+
+        st.info(f"📌 Exibindo **{len(df_mapa_filtrado)} empresas** filtradas no mapa.")
+
+        CORES_PINS = ['red', 'blue', 'green', 'purple', 'orange', 'darkred', 'cadetblue', 'darkgreen', 'darkblue', 'pink']
+        CORES_HEX = {
+            'red': '#ef4444', 
+            'blue': '#3b82f6', 
+            'green': '#10b981', 
+            'purple': '#8b5cf6',
+            'orange': '#f97316', 
+            'darkred': '#991b1b', 
+            'cadetblue': '#06b6d4',
+            'darkgreen': '#166534', 
+            'darkblue': '#1e3a8a', 
+            'pink': '#ec4899'
+        }
+
+        segmentos_unicos = list(df_mapa['categoria'].unique())
+        mapa_cores_seg = {seg: CORES_PINS[idx % len(CORES_PINS)] for idx, seg in enumerate(segmentos_unicos)}
+
+        if cat_sel_mapa == "Todos os Segmentos" and len(segmentos_unicos) > 1:
+            st.markdown("**🎨 Legenda de Cores por Segmento:**")
+            cols_leg = st.columns(min(len(segmentos_unicos), 5))
+            for idx, (seg, cor_nome) in enumerate(mapa_cores_seg.items()):
+                hex_cor = CORES_HEX.get(cor_nome, '#ef4444')
+                with cols_leg[idx % 5]:
+                    st.markdown(
+                        f'<div style="background-color: #1e293b; padding: 8px 12px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">'
+                        f'<span style="height: 12px; width: 12px; background-color: {hex_cor}; border-radius: 50%; display: inline-block;"></span>'
+                        f'<b style="color: #ffffff; font-size: 13px;">{seg}</b>'
+                        f'</div>',
+                        unsafe_allow_html=True
+                    )
+            st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
+
+        if 'latitude' in df_mapa_filtrado.columns and 'longitude' in df_mapa_filtrado.columns and len(df_mapa_filtrado) > 0:
+            lat_centro = df_mapa_filtrado['latitude'].mean()
+            lon_centro = df_mapa_filtrado['longitude'].mean()
+
+            m = folium.Map(location=[lat_centro, lon_centro], zoom_start=14.5, tiles="OpenStreetMap")
+
+            for _, row in df_mapa_filtrado.iterrows():
+                cor_pin = mapa_cores_seg.get(row['categoria'], 'red') if cat_sel_mapa == "Todos os Segmentos" else 'red'
+                url_maps_emp = f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(row['nome'])}"
+
+                info_card_html = f"""
+                <div style="font-family: Arial, sans-serif; font-size: 12px; min-width: 240px; padding: 6px; line-height: 1.5;">
+                    <a href="{url_maps_emp}" target="_blank" style="text-decoration: none;">
+                        <b style="color: #2563eb; font-size: 14px;">{row['nome']} 🔗</b>
+                    </a><br/>
+                    <span style="color: #475569; font-size: 11px;">📍 {row['endereco']}</span><br/>
+                    <hr style="margin: 6px 0; border: 0.5px solid #cbd5e1;"/>
+                    🚨 <b>Score de Oportunidade:</b> <span style="color: #dc2626; font-weight: bold;">{row['score_oportunidade']}/100</span><br/>
+                    ⭐ <b>Nota no Google:</b> {row['nota']} ({row['total_avaliacoes']} avaliações)<br/>
+                    🌐 <b>Website Oficial:</b> {'✅ Presente' if row['website'] else '❌ Ausente'}<br/>
+                    📷 <b>Fotos na Ficha:</b> {row['fotos_total']} fotos publicadas<br/>
+                    📅 <b>Última Atualização:</b> há {row['ultima_foto_dias']} dias
+                </div>
+                """
+
+                folium.Marker(
+                    location=[row['latitude'], row['longitude']],
+                    popup=folium.Popup(info_card_html, max_width=320),
+                    icon=folium.Icon(color=cor_pin, icon="info-sign")
+                ).add_to(m)
+
+            st_folium(m, width="100%", height=700)
+        else:
+            st.warning("Nenhum registro encontrado para os filtros selecionados.")
