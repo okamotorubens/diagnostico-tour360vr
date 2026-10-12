@@ -1,30 +1,3 @@
-import streamlit as st
-
-# 1. CAPTURA PARÂMETROS DA URL
-query_params = st.query_params
-
-nome_param = query_params.get("nome", "")
-endereco_param = query_params.get("endereco", "")
-categoria_param = query_params.get("categoria", "")
-whatsapp_param = query_params.get("whatsapp", "")
-cidade_param = query_params.get("cidade", "")
-
-# 2. GARANTE QUE A ESTRUTURA INTERNA EXISTE
-if 'dados' not in st.session_state:
-    st.session_state['dados'] = {}
-
-# 3. SE VIERAM DADOS DA URL, POPULA OS DADOS DO CLIENTE
-if nome_param:
-    st.session_state['dados']['empresa'] = nome_param
-if endereco_param:
-    st.session_state['dados']['endereco'] = endereco_param
-if whatsapp_param:
-    st.session_state['dados']['whatsapp'] = whatsapp_param
-if categoria_param:
-    st.session_state['dados']['categoria'] = categoria_param
-if cidade_param:
-    st.session_state['dados']['cidade'] = cidade_param
-    
 import os
 import io
 import json
@@ -1282,29 +1255,31 @@ if etapa_atual == 1:
                     except Exception as e:
                         st.error(f"Erro ao obter detalhes: {e}")
 
-st.markdown("<div class='card-title' style='margin-top:15px;'>CHECKLIST DE PONTOS CRÍTICOS</div>", unsafe_allow_html=True)
+        st.markdown("<div class='card-title' style='margin-top:15px;'>CHECKLIST DE PONTOS CRÍTICOS</div>", unsafe_allow_html=True)
+        
+        c_a, c_b, c_c, c_d = st.columns(4)
+        st.session_state['dados']['tem_tour360'] = c_a.checkbox("Tour 360° Ativo", value=st.session_state['dados']['tem_tour360'])
+        st.session_state['dados']['tem_fotos_hd'] = c_b.checkbox("Fotos HD", value=st.session_state['dados']['tem_fotos_hd'])
+        st.session_state['dados']['categorias_completas'] = c_c.checkbox("Categorias OK", value=st.session_state['dados']['categorias_completas'])
+        st.session_state['dados']['horarios_ok'] = c_d.checkbox("Horários OK", value=st.session_state['dados']['horarios_ok'])
+        
+        c_e, c_f, c_g = st.columns(3)
+        st.session_state['dados']['tem_descricao'] = c_e.checkbox("Descrição", value=st.session_state['dados']['tem_descricao'])
+        st.session_state['dados']['atributos_ok'] = c_f.checkbox("Atributos Serviços", value=st.session_state['dados']['atributos_ok'])
+        st.session_state['dados']['resposta_avaliacoes_ok'] = c_g.checkbox("Respostas Ativas", value=st.session_state['dados']['resposta_avaliacoes_ok'])
 
-c_a, c_b, c_c, c_d = st.columns(4)
-st.session_state['dados']['tem_tour360'] = c_a.checkbox("Tour 360° Ativo", value=st.session_state['dados'].get('tem_tour360', False), key="chk_tour360_diag")
-st.session_state['dados']['tem_fotos_hd'] = c_b.checkbox("Fotos HD", value=st.session_state['dados'].get('tem_fotos_hd', False), key="chk_fotos_hd_diag")
-st.session_state['dados']['categorias_completas'] = c_c.checkbox("Categorias OK", value=st.session_state['dados'].get('categorias_completas', False), key="chk_categorias_diag")
-st.session_state['dados']['horarios_ok'] = c_d.checkbox("Horários OK", value=st.session_state['dados'].get('horarios_ok', False), key="chk_horarios_diag")
+        st.markdown("</div>", unsafe_allow_html=True)
 
-c_e, c_f, c_g = st.columns(3)
-st.session_state['dados']['tem_descricao'] = c_e.checkbox("Descrição", value=st.session_state['dados'].get('tem_descricao', False), key="chk_descricao_diag")
-st.session_state['dados']['atributos_ok'] = c_f.checkbox("Atributos Serviços", value=st.session_state['dados'].get('atributos_ok', False), key="chk_atributos_diag")
-st.session_state['dados']['resposta_avaliacoes_ok'] = c_g.checkbox("Respostas Ativas", value=st.session_state['dados'].get('resposta_avaliacoes_ok', False), key="chk_respostas_diag")
+    with col_right:
+        st.markdown("<div class='dashboard-card'><div class='card-title'>DADOS DO CLIENTE</div>", unsafe_allow_html=True)
+        st.session_state['dados']['nome'] = st.text_input("Empresa:", value=st.session_state['dados']['nome'])
+        st.session_state['dados']['contato'] = st.text_input("Responsável:", value=st.session_state['dados']['contato'])
+        st.session_state['dados']['telefone'] = st.text_input("Telefone:", value=st.session_state['dados']['telefone'])
+        st.session_state['dados']['website'] = st.text_input("Website:", value=st.session_state['dados']['website'])
+        st.session_state['dados']['endereco'] = st.text_area("Endereço:", value=st.session_state['dados']['endereco'], height=80)
+        st.markdown("</div>", unsafe_allow_html=True)
 
-st.markdown("</div>", unsafe_allow_html=True)
-
-with col_right:
-    st.markdown("<div class='dashboard-card'><div class='card-title'>DADOS DO CLIENTE</div>", unsafe_allow_html=True)
-    st.session_state['dados']['nome'] = st.text_input("Empresa:", value=st.session_state['dados'].get('nome', ''), key="input_dados_empresa")
-    st.session_state['dados']['contato'] = st.text_input("Responsável:", value=st.session_state['dados'].get('contato', ''), key="input_dados_contato")
-    st.session_state['dados']['telefone'] = st.text_input("Telefone:", value=st.session_state['dados'].get('telefone', '') or st.session_state['dados'].get('whatsapp', ''), key="input_dados_telefone")
-    st.session_state['dados']['website'] = st.text_input("Website:", value=st.session_state['dados'].get('website', ''), key="input_dados_website")
-    st.session_state['dados']['endereco'] = st.text_area("Endereço:", value=st.session_state['dados'].get('endereco', ''), height=80, key="input_dados_endereco")
-    st.markdown("</div>", unsafe_allow_html=True)
+    col_nav1, col_nav2 = st.columns([2, 1])
     with col_nav2:
         if st.button("Avançar para Concorrentes ➡️", use_container_width=True, key="btn_nav_aba1", type="secondary"):
             st.session_state['etapa_atual'] = 2
