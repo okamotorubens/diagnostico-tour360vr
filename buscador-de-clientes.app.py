@@ -203,14 +203,15 @@ def desenhar_rodape_fixo_links(canvas, doc):
     canvas.setFont('Helvetica', 8.5)
     canvas.setFillColor(colors.HexColor('#000000'))
     
+    # HIPERLINKS REPOSITONADOS EXACTAMENTE SOBRE OS TEXTOS
     try:
-        canvas.linkURL('https://tour360vr.com.br', (120, 15, 220, 32), relative=1)
+        canvas.linkURL('https://tour360vr.com.br', (130, 15, 220, 32), relative=1)
         canvas.linkURL('mailto:contato@okamotomidiasvisuais.com.br', (230, 15, 420, 32), relative=1)
-        canvas.linkURL('https://wa.me/5516991332121', (430, 15, 540, 32), relative=1)
+        canvas.linkURL('https://wa.me/5516991332121', (430, 15, 520, 32), relative=1)
     except Exception:
         pass
     
-    texto_rodape = "tour360vr.com.br   |   contato@okamotomidiasvisuais.com.br   |   WhatsApp: (16) 99133-2121"
+    texto_rodape = "tour360vr.com.br   |   contato@okamotomidiasvisuais.com.br   |   (16) 99133-2121"
     canvas.drawCentredString(306, 22, texto_rodape)
     canvas.restoreState()
 
@@ -225,7 +226,6 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     )
     styles = getSampleStyleSheet()
     
-    # TITULO DO CABEÇALHO COM FONTE MAIOR (13.5pt) E CENTRALIZADO
     sub_title_header = ParagraphStyle(
         'SubTitleHeader', parent=styles['Normal'],
         fontSize=13.5, leading=16, textColor=colors.HexColor('#0f172a'),
@@ -234,12 +234,17 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     main_title_style = ParagraphStyle(
         'MainTitle', parent=styles['Heading1'],
         fontSize=15.5, textColor=colors.HexColor('#0f172a'),
-        fontName='Helvetica-Bold', alignment=1, spaceBefore=10, spaceAfter=12
+        fontName='Helvetica-Bold', alignment=1, spaceBefore=8, spaceAfter=8
     )
     section_heading = ParagraphStyle(
         'SectionHeading', parent=styles['Heading2'],
         fontSize=10.5, textColor=colors.HexColor('#0f172a'),
         spaceBefore=10, spaceAfter=6, fontName='Helvetica-Bold', alignment=1
+    )
+    chart_label_style = ParagraphStyle(
+        'ChartLabel', parent=styles['Normal'],
+        fontSize=9, textColor=colors.HexColor('#475569'),
+        fontName='Helvetica-Bold', alignment=1, spaceAfter=4
     )
     body_style = ParagraphStyle('BodyTextCustom', parent=styles['Normal'], fontSize=9, textColor=colors.HexColor('#334155'), leading=11)
     body_center = ParagraphStyle('BodyCenter', parent=body_style, alignment=1)
@@ -260,24 +265,24 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     ]))
     elements.append(header_table)
     
-    # LINHA DIVISÓRIA
-    elements.append(HRFlowable(width="100%", thickness=1.5, color=colors.HexColor('#cbd5e1'), spaceBefore=6, spaceAfter=12))
+    elements.append(HRFlowable(width="100%", thickness=1.5, color=colors.HexColor('#cbd5e1'), spaceBefore=6, spaceAfter=10))
 
-    # ESPAÇO ENTRE A LINHA E O TÍTULO
-    elements.append(Spacer(1, 10))
+    elements.append(Spacer(1, 6))
     title_p = Paragraph(f"PANORAMA DE MERCADO: {nicho_nome.upper()}", main_title_style)
     title_table = Table([[title_p]], colWidths=[540])
     title_table.setStyle(TableStyle([('ALIGN', (0,0), (-1,-1), 'CENTER')]))
     elements.append(title_table)
     
-    # ESPAÇO ENTRE O TÍTULO E O GRÁFICO
-    elements.append(Spacer(1, 14))
+    elements.append(Spacer(1, 8))
 
-    # GRÁFICO VETORIAL COM A CONTAGEM EXATA DE SCORES
+    # TEXTO INDICATIVO SOBRE O GRÁFICO
+    elements.append(Paragraph("Distribuição de Empresas por Score de Oportunidade Comercial (Pontuação)", chart_label_style))
+
+    # GRÁFICO VETORIAL
     scores_counts = df_nicho['score_oportunidade'].value_counts().sort_index(ascending=False)
     
-    chart_draw = Drawing(540, 70)
-    chart_draw.add(Rect(0, 0, 540, 70, fillColor=colors.HexColor('#f8fafc'), strokeColor=colors.HexColor('#cbd5e1'), strokeWidth=0.5, rx=6, ry=6))
+    chart_draw = Drawing(540, 68)
+    chart_draw.add(Rect(0, 0, 540, 68, fillColor=colors.HexColor('#f8fafc'), strokeColor=colors.HexColor('#cbd5e1'), strokeWidth=0.5, rx=6, ry=6))
     
     qtd_bars = len(scores_counts)
     if qtd_bars > 0:
@@ -298,7 +303,9 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
             chart_draw.add(String(bx + (bar_w / 2), by - 11, f"{score_val} pts", fontSize=7, fontName="Helvetica", fillColor=colors.HexColor('#475569'), textAnchor="middle"))
 
     elements.append(chart_draw)
-    elements.append(Spacer(1, 14))
+    
+    # 1 LINHA A MAIS DE ESPAÇO APÓS O GRÁFICO
+    elements.append(Spacer(1, 16))
 
     total_emp = len(df_nicho)
     sem_tour = len(df_nicho[df_nicho['tour_360'] == False])
@@ -383,23 +390,24 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     return buffer
 
 # -----------------------------------------------------------------------------
-# ESTILIZAÇÃO CSS CUSTOMIZADA
+# ESTILIZAÇÃO CSS CUSTOMIZADA (DESIGN NEON & COMPACTO)
 # -----------------------------------------------------------------------------
 st.markdown("""
     <style>
-    .main { background-color: #0e1117; padding-top: 25px !important; }
-    .block-container { padding-top: 2rem !important; }
+    .main { background-color: #0e1117; padding-top: 15px !important; }
+    .block-container { padding-top: 1rem !important; padding-bottom: 1rem !important; }
+    
     .main-header {
         background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-        color: white; padding: 16px 20px; border-radius: 10px; margin-bottom: 20px;
-        border: 1px solid #334155; margin-top: 10px !important;
+        color: white; padding: 14px 18px; border-radius: 10px; margin-bottom: 15px;
+        border: 1px solid #334155; margin-top: 5px !important;
     }
-    .main-title { font-size: 22px; font-weight: 700; margin: 0; color: #ffffff; }
-    .main-subtitle { font-size: 12.5px; color: #94a3b8; margin-top: 4px; }
+    .main-title { font-size: 21px; font-weight: 700; margin: 0; color: #ffffff; }
+    .main-subtitle { font-size: 12px; color: #94a3b8; margin-top: 3px; }
 
     .lead-card {
-        background-color: #1e293b; border-radius: 10px; padding: 16px;
-        margin-bottom: 12px; border: 1px solid #334155;
+        background-color: #1e293b; border-radius: 10px; padding: 14px;
+        margin-bottom: 10px; border: 1px solid #334155;
     }
     
     .score-box { text-align: center; padding: 8px; border-radius: 8px; font-weight: bold; width: 130px; }
@@ -410,48 +418,42 @@ st.markdown("""
     .critical-item { color: #f87171; font-size: 13px; margin-bottom: 6px; font-weight: 500; }
     
     .sidebar-title {
-        text-align: center;
-        font-size: 16px;
-        font-weight: 800;
-        color: #ffffff;
-        margin-top: 5px;
-        margin-bottom: 10px;
+        text-align: center; font-size: 16px; font-weight: 800; color: #ffffff;
+        margin-top: 5px; margin-bottom: 10px;
+    }
+
+    /* ESTILO NEON COMPATÍVEL COM O SISTEMA DE DIAGNÓSTICO PARA BOTÕES */
+    .stButton>button, .btn-redirect {
+        background-color: #0f172a !important;
+        color: #ffffff !important;
+        border: 1px solid #cbd5e1 !important;
+        border-radius: 8px !important;
+        font-weight: 600 !important;
+        font-size: 13px !important;
+        transition: all 0.3s ease !important;
+        box-shadow: 0 0 4px rgba(255, 255, 255, 0.2) !important;
+    }
+    .stButton>button:hover, .btn-redirect:hover {
+        border-color: #ffffff !important;
+        box-shadow: 0 0 12px rgba(255, 255, 255, 0.7) !important;
+        background-color: #1e293b !important;
     }
 
     .btn-redirect {
-        display: block;
-        width: 100%;
-        background-color: #2563eb !important;
-        color: #ffffff !important;
-        text-align: center;
-        padding: 9px 10px;
-        border-radius: 6px;
-        font-weight: 700 !important;
-        font-size: 13px;
-        text-decoration: none !important;
-        margin-bottom: 8px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        display: block; width: 100%; text-align: center; padding: 8px 10px;
+        text-decoration: none !important; margin-bottom: 8px;
     }
-    .btn-redirect:hover { background-color: #1d4ed8 !important; color: #ffffff !important; }
 
     .script-box {
-        background-color: #0f172a;
-        color: #f1f5f9;
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        font-size: 13.5px;
-        line-height: 1.5;
-        padding: 12px 15px;
-        border-radius: 8px;
-        border: 1px solid #334155;
-        white-space: pre-wrap;
-        margin-bottom: 10px;
+        background-color: #0f172a; color: #f1f5f9;
+        font-family: 'Inter', -apple-system, sans-serif;
+        font-size: 13px; line-height: 1.5; padding: 12px 15px;
+        border-radius: 8px; border: 1px solid #334155;
+        white-space: pre-wrap; margin-bottom: 10px;
     }
 
-    /* CSS FORÇADO PARA CENTRALIZAR CABEÇALHO E CÉLULAS DA DATAFRAME */
+    /* CENTRALIZAÇÃO REFORÇADA DOS CABEÇALHOS DA TABELA */
     div[data-testid="stDataFrame"] table th {
-        text-align: center !important;
-    }
-    div[data-testid="stDataFrame"] table td {
         text-align: center !important;
     }
     </style>
@@ -466,8 +468,10 @@ if 'etapa' not in st.session_state:
 # -----------------------------------------------------------------------------
 # INTEGRAÇÃO DE BUSCA E AUDITORIA
 # -----------------------------------------------------------------------------
-def buscar_google_places_api(nicho, cidade, bairro, api_key, limite=20):
+def buscar_google_places_api(nicho, cidade, bairro, rua, api_key, limite=20):
     query_str = f'"{nicho}"'
+    if rua:
+        query_str += f' na rua "{rua}"'
     if bairro:
         query_str += f' no bairro "{bairro}"'
     query_str += f' em "{cidade}" - SP'
@@ -567,20 +571,20 @@ def buscar_google_places_api(nicho, cidade, bairro, api_key, limite=20):
         st.warning(f"Aviso da API: {str(e)}")
     return None
 
-def minerar_e_auditar_negocios(nicho, cidade, bairro, limite=20):
+def minerar_e_auditar_negocios(nicho, cidade, bairro, rua, limite=20):
     api_key = st.secrets.get("GOOGLE_API_KEY", None) or os.getenv("GOOGLE_API_KEY", None)
     if api_key:
-        leads_reais = buscar_google_places_api(nicho, cidade, bairro, api_key, limite)
+        leads_reais = buscar_google_places_api(nicho, cidade, bairro, rua, api_key, limite)
         if leads_reais:
             return leads_reais
 
     bairro_label = f" - Bairro {bairro}" if bairro else ""
     exemplo_estabelecimentos = [
-        {"nome": f"Loja & Boutique {cidade}", "bairro": bairro or "Jardim Sumaré", "rua": "Rua Saldanha Marinho", "lat": -21.1775, "lng": -47.8103, "img": "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&q=80"},
-        {"nome": f"Estilo & Moda {nicho.capitalize()}", "bairro": bairro or "Jardim Sumaré", "rua": "Av. Independência", "lat": -21.1895, "lng": -47.8050, "img": "https://images.unsplash.com/photo-1567401893414-76b7b1e5a7a5?w=400&q=80"},
-        {"nome": f"Empório & {nicho.capitalize()} do Barão", "bairro": bairro or "Jardim Sumaré", "rua": "Rua Garibaldi", "lat": -21.1920, "lng": -47.8150, "img": "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400&q=80"},
-        {"nome": f"Conceito {nicho.capitalize()} Brasil", "bairro": bairro or "Jardim Sumaré", "rua": "Rua Amador Bueno", "lat": -21.1800, "lng": -47.8000, "img": "https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=400&q=80"},
-        {"nome": f"Studio & Galeria {nicho.capitalize()}", "bairro": bairro or "Jardim Sumaré", "rua": "Av. Professor João Fiúsa", "lat": -21.2050, "lng": -47.8120, "img": "https://images.unsplash.com/photo-1513151233558-d860c5398176?w=400&q=80"}
+        {"nome": f"Loja & Boutique {cidade}", "bairro": bairro or "Jardim Sumaré", "rua": rua or "Rua Saldanha Marinho", "lat": -21.1775, "lng": -47.8103, "img": "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&q=80"},
+        {"nome": f"Estilo & Moda {nicho.capitalize()}", "bairro": bairro or "Jardim Sumaré", "rua": rua or "Av. Independência", "lat": -21.1895, "lng": -47.8050, "img": "https://images.unsplash.com/photo-1567401893414-76b7b1e5a7a5?w=400&q=80"},
+        {"nome": f"Empório & {nicho.capitalize()} do Barão", "bairro": bairro or "Jardim Sumaré", "rua": rua or "Rua Garibaldi", "lat": -21.1920, "lng": -47.8150, "img": "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400&q=80"},
+        {"nome": f"Conceito {nicho.capitalize()} Brasil", "bairro": bairro or "Jardim Sumaré", "rua": rua or "Rua Amador Bueno", "lat": -21.1800, "lng": -47.8000, "img": "https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=400&q=80"},
+        {"nome": f"Studio & Galeria {nicho.capitalize()}", "bairro": bairro or "Jardim Sumaré", "rua": rua or "Av. Professor João Fiúsa", "lat": -21.2050, "lng": -47.8120, "img": "https://images.unsplash.com/photo-1513151233558-d860c5398176?w=400&q=80"}
     ]
 
     resultados = []
@@ -743,29 +747,30 @@ with st.sidebar:
             st.rerun()
 
 # -----------------------------------------------------------------------------
-# ETAPA 1: BUSCADOR DE CLIENTES
+# ETAPA 1: BUSCADOR DE CLIENTES (COM CAMPO OPCIONAL DE RUA / AVENIDA)
 # -----------------------------------------------------------------------------
 if st.session_state.etapa == 1:
     st.markdown("""
         <div class="main-header">
             <h1 class="main-title">🔎 Radar e Mineração de Mercado Local</h1>
-            <div class="main-subtitle">Varredura de perfis no Google Maps por Nicho, Cidade e Bairro com auditoria completa.</div>
+            <div class="main-subtitle">Varredura de perfis no Google Maps por Nicho, Cidade, Bairro e Rua com auditoria completa.</div>
         </div>
     """, unsafe_allow_html=True)
 
     with st.form("form_busca"):
-        col1, col2, col3, col4 = st.columns([2, 2, 2, 1.2])
+        col1, col2, col3, col4, col5 = st.columns([2, 2, 2, 2, 1.2])
         with col1: nicho_input = st.text_input("Nicho / Categoria Comercial", value="Moda praia")
         with col2: cidade_input = st.text_input("Cidade / Município", value="Ribeirão Preto")
-        with col3: bairro_input = st.text_input("Bairro / Região (Opcional)", value="Jardim Sumaré", help="Deixe em branco para buscar na cidade inteira")
-        with col4: limite_input = st.number_input("Qtd. Máxima", min_value=20, max_value=50, value=20, step=5)
+        with col3: rua_input = st.text_input("Rua / Avenida (Opcional)", value="", help="Ex: Av. Independência")
+        with col4: bairro_input = st.text_input("Bairro / Região (Opcional)", value="Jardim Sumaré")
+        with col5: limite_input = st.number_input("Qtd. Máxima", min_value=20, max_value=50, value=20, step=5)
         
         btn_minar = st.form_submit_button("🚀 Iniciar Varredura Profunda", use_container_width=True)
 
     if btn_minar:
         with st.spinner("Varrendo Google Maps, auditando presença web e salvando no banco..."):
             time.sleep(1)
-            minerar_e_auditar_negocios(nicho_input, cidade_input, bairro_input, limite_input)
+            minerar_e_auditar_negocios(nicho_input, cidade_input, bairro_input, rua_input, limite_input)
             st.session_state.etapa = 2
             st.rerun()
 
@@ -777,7 +782,7 @@ if st.session_state.etapa == 1:
             st.rerun()
 
 # -----------------------------------------------------------------------------
-# ETAPA 2: BASE DE LEADS & CRM DE VENDAS
+# ETAPA 2: BASE DE LEADS & CRM DE VENDAS (COM FILTRO POR CIDADE)
 # -----------------------------------------------------------------------------
 elif st.session_state.etapa == 2:
     st.markdown("""
@@ -789,7 +794,7 @@ elif st.session_state.etapa == 2:
 
     df_leads_crm = pd.DataFrame(base_leads)
 
-    col_back, col_f_status, col_f_nicho, col_export = st.columns([1.5, 2.5, 2.5, 2.5])
+    col_back, col_f_status, col_f_cid, col_f_nicho, col_export = st.columns([1.2, 2, 2, 2, 2.2])
     
     with col_back:
         st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
@@ -799,9 +804,13 @@ elif st.session_state.etapa == 2:
 
     with col_f_status:
         filtro_status = st.selectbox(
-            "Filtrar por Status CRM:",
+            "Status CRM:",
             ["Todos os Status", "🆕 Novo Lead", "💬 Em Abordagem", "🛠️ Diagnóstico Gerado", "🤝 Cliente Fechado", "❌ Recusado"]
         )
+
+    with col_f_cid:
+        cidades_existentes = ["Todas as Cidades"] + list(df_leads_crm['cidade_busca'].unique())
+        filtro_cidade = st.selectbox("Filtrar por Cidade:", cidades_existentes)
 
     with col_f_nicho:
         nichos_existentes = ["Todos os Nichos"] + list(df_leads_crm['categoria'].unique())
@@ -823,6 +832,8 @@ elif st.session_state.etapa == 2:
     resultados_filtrados = base_leads
     if filtro_status != "Todos os Status":
         resultados_filtrados = [r for r in resultados_filtrados if r['status_crm'] == filtro_status]
+    if filtro_cidade != "Todas as Cidades":
+        resultados_filtrados = [r for r in resultados_filtrados if r['cidade_busca'] == filtro_cidade]
     if filtro_nicho != "Todos os Nichos":
         resultados_filtrados = [r for r in resultados_filtrados if r['categoria'] == filtro_nicho]
 
@@ -917,28 +928,34 @@ TOUR360VR | Okamoto Mídias Visuais
         st.divider()
 
 # -----------------------------------------------------------------------------
-# ETAPA 3: PANORAMA DE NICHO (CENTRALIZAÇÃO COMPLETA DA TABELA)
+# ETAPA 3: PANORAMA DE NICHO (LINKS CLICÁVEIS E FILTRO DE CIDADE NA LINHA)
 # -----------------------------------------------------------------------------
 elif st.session_state.etapa == 3:
     st.markdown("""
         <div class="main-header">
             <h1 class="main-title">📈 Panorama de Mercado & Inteligência de Nicho</h1>
-            <div class="main-subtitle">Análise detalhada por categoria ordenada por maior oportunidade comercial (Score).</div>
+            <div class="main-subtitle">Análise detalhada por categoria e município ordenada por maior oportunidade comercial.</div>
         </div>
     """, unsafe_allow_html=True)
 
     df_leads = pd.DataFrame(base_leads)
 
     categorias_disponiveis = ["Todos os Nichos Mapeados"] + list(df_leads['categoria'].unique())
-    col_sel_nicho, col_btn_pdf = st.columns([3, 2])
+    cidades_disponiveis = ["Todas as Cidades"] + list(df_leads['cidade_busca'].unique())
+
+    col_sel_nicho, col_sel_cid, col_btn_pdf = st.columns([2.5, 2.5, 2])
     
     with col_sel_nicho:
-        nicho_selecionado = st.selectbox("🎯 Selecione o Nicho Comercial para Analisar:", categorias_disponiveis)
+        nicho_selecionado = st.selectbox("🎯 Nicho Comercial:", categorias_disponiveis)
 
+    with col_sel_cid:
+        cidade_selecionada = st.selectbox("📍 Cidade / Município:", cidades_disponiveis)
+
+    df_filtrado = df_leads.copy()
     if nicho_selecionado != "Todos os Nichos Mapeados":
-        df_filtrado = df_leads[df_leads['categoria'] == nicho_selecionado]
-    else:
-        df_filtrado = df_leads
+        df_filtrado = df_filtrado[df_filtrado['categoria'] == nicho_selecionado]
+    if cidade_selecionada != "Todas as Cidades":
+        df_filtrado = df_filtrado[df_filtrado['cidade_busca'] == cidade_selecionada]
 
     df_filtrado_sorted = df_filtrado.sort_values(by='score_oportunidade', ascending=False)
 
@@ -948,7 +965,7 @@ elif st.session_state.etapa == 3:
         st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
         pdf_bytes_nicho = gerar_pdf_panorama_nicho(nicho_selecionado, df_filtrado_sorted)
         st.download_button(
-            label="📄 Baixar Relatório de Nicho (.pdf)",
+            label="📄 Baixar Relatório (.pdf)",
             data=pdf_bytes_nicho,
             file_name=nome_arquivo_pdf,
             mime="application/pdf",
@@ -984,38 +1001,38 @@ elif st.session_state.etapa == 3:
         st.bar_chart(df_filtrado_sorted['nota'].value_counts())
 
     st.divider()
-    st.markdown(f"### 📋 Ranking do Nicho **{nicho_selecionado}** (Do Maior para o Menor Score):")
+    st.markdown(f"### 📋 Ranking do Nicho **{nicho_selecionado}** (Links Clicáveis):")
     
-    # DATAFRAME FORMATADO COMO STRING PARA FORÇAR A CENTRALIZAÇÃO EM CADA CÉLULA
+    # LINKS GERADOS PARA EMPRESA E WEBSITE
     df_exibicao = pd.DataFrame({
-        'EMPRESA': df_filtrado_sorted['nome'],
+        'EMPRESA': df_filtrado_sorted.apply(lambda r: f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(r['nome'])}", axis=1),
+        'NOME_EMPRESA': df_filtrado_sorted['nome'],
         'CIDADE': df_filtrado_sorted['cidade_busca'],
         'SCORE': df_filtrado_sorted['score_oportunidade'].apply(lambda x: f"{x}/100"),
         'NOTA': df_filtrado_sorted['nota'].apply(lambda x: f"{x:.1f} ⭐"),
         'AVALIAÇÕES': df_filtrado_sorted['total_avaliacoes'].astype(str),
-        'WEBSITE': df_filtrado_sorted['website'].apply(lambda x: x if x else "Não possui")
+        'WEBSITE': df_filtrado_sorted['website'].apply(lambda x: x if x else "Sem site registrado")
     })
 
-    altura_dinamica = (len(df_exibicao) + 1) * 35 + 15
+    altura_dinamica = (len(df_exibicao) + 1) * 35 + 10
 
-    # EXIBIÇÃO COM ALINHAMENTO DEFINIDO COMO CENTER
     st.dataframe(
-        df_exibicao,
+        df_exibicao[['NOME_EMPRESA', 'CIDADE', 'SCORE', 'NOTA', 'AVALIAÇÕES', 'WEBSITE']],
         use_container_width=True,
         hide_index=True,
         height=altura_dinamica,
         column_config={
-            "EMPRESA": st.column_config.Column("EMPRESA", alignment="center"),
+            "NOME_EMPRESA": st.column_config.LinkColumn("EMPRESA", display_text=r".*", alignment="left"),
             "CIDADE": st.column_config.Column("CIDADE", alignment="center"),
             "SCORE": st.column_config.Column("SCORE", width="small", alignment="center"),
             "NOTA": st.column_config.Column("NOTA", width="small", alignment="center"),
             "AVALIAÇÕES": st.column_config.Column("AVALIAÇÕES", width="small", alignment="center"),
-            "WEBSITE": st.column_config.Column("WEBSITE", width="large", alignment="center")
+            "WEBSITE": st.column_config.LinkColumn("WEBSITE", width="large", alignment="left")
         }
     )
 
 # -----------------------------------------------------------------------------
-# ETAPA 4: MAPA DE PROSPECÇÃO (CARD COMPLETO NO POPUP E TOOLTIP)
+# ETAPA 4: MAPA DE PROSPECÇÃO (FAIXA DE SCORE, CORES, LEGENDA E CLIQUE)
 # -----------------------------------------------------------------------------
 elif st.session_state.etapa == 4:
     st.markdown("""
@@ -1027,22 +1044,49 @@ elif st.session_state.etapa == 4:
 
     df_mapa = pd.DataFrame(base_leads)
     
-    col_filtro_cat, col_filtro_cid = st.columns(2)
-    with col_filtro_cat:
+    col_f1, col_f2, col_f3 = st.columns([2, 2, 2])
+    with col_f1:
         cats_mapa = ["Todos os Segmentos"] + list(df_mapa['categoria'].unique())
-        cat_sel_mapa = st.selectbox("🏷️ Filtrar Segmento no Mapa:", cats_mapa)
+        cat_sel_mapa = st.selectbox("🏷️ Segmento no Mapa:", cats_mapa)
         
-    with col_filtro_cid:
+    with col_f2:
         cids_mapa = ["Todas as Cidades/Regiões"] + list(df_mapa['cidade_busca'].unique())
-        cid_sel_mapa = st.selectbox("📍 Filtrar Cidade/Região:", cids_mapa)
+        cid_sel_mapa = st.selectbox("📍 Cidade / Região:", cids_mapa)
 
-    df_mapa_filtrado = df_mapa
+    with col_f3:
+        filtro_score_op = st.selectbox(
+            "🎯 Faixa de Score de Oportunidade:",
+            ["Todos os Scores", "🚨 Crítico (Score ≥ 60)", "🟡 Médio (30 a 59)", "🟢 Baixo (< 30)"]
+        )
+
+    df_mapa_filtrado = df_mapa.copy()
     if cat_sel_mapa != "Todos os Segmentos":
         df_mapa_filtrado = df_mapa_filtrado[df_mapa_filtrado['categoria'] == cat_sel_mapa]
     if cid_sel_mapa != "Todas as Cidades/Regiões":
         df_mapa_filtrado = df_mapa_filtrado[df_mapa_filtrado['cidade_busca'] == cid_sel_mapa]
 
-    st.info(f"📌 Exibindo **{len(df_mapa_filtrado)} empresas** cadastradas para o segmento: **{cat_sel_mapa}** ({cid_sel_mapa})")
+    if filtro_score_op == "🚨 Crítico (Score ≥ 60)":
+        df_mapa_filtrado = df_mapa_filtrado[df_mapa_filtrado['score_oportunidade'] >= 60]
+    elif filtro_score_op == "🟡 Médio (30 a 59)":
+        df_mapa_filtrado = df_mapa_filtrado[(df_mapa_filtrado['score_oportunidade'] >= 30) & (df_mapa_filtrado['score_oportunidade'] < 60)]
+    elif filtro_score_op == "🟢 Baixo (< 30)":
+        df_mapa_filtrado = df_mapa_filtrado[df_mapa_filtrado['score_oportunidade'] < 30]
+
+    st.info(f"📌 Exibindo **{len(df_mapa_filtrado)} empresas** filtradas no mapa.")
+
+    # PALETA DE CORES PARA DIVERSOS SEGMENTOS
+    CORES_PINS = ['red', 'blue', 'green', 'purple', 'orange', 'darkred', 'cadetblue', 'darkgreen', 'darkblue', 'pink']
+    segmentos_unicos = list(df_mapa['categoria'].unique())
+    mapa_cores_seg = {seg: CORES_PINS[idx % len(CORES_PINS)] for idx, seg in enumerate(segmentos_unicos)}
+
+    # EXIBIÇÃO DA LEGENDA DE CORES
+    if cat_sel_mapa == "Todos os Segmentos" and len(segmentos_unicos) > 1:
+        st.markdown("**🎨 Legenda de Cores por Segmento:**")
+        cols_leg = st.columns(min(len(segmentos_unicos), 5))
+        for idx, (seg, cor) in enumerate(mapa_cores_seg.items()):
+            with cols_leg[idx % 5]:
+                st.markdown(f"🔴 **<font color='{cor}'>{seg}</font>**", unsafe_allow_html=True)
+        st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
 
     if 'latitude' in df_mapa_filtrado.columns and 'longitude' in df_mapa_filtrado.columns and len(df_mapa_filtrado) > 0:
         lat_centro = df_mapa_filtrado['latitude'].mean()
@@ -1051,10 +1095,14 @@ elif st.session_state.etapa == 4:
         m = folium.Map(location=[lat_centro, lon_centro], zoom_start=14.5, tiles="OpenStreetMap")
 
         for _, row in df_mapa_filtrado.iterrows():
-            # CARD DETALHADO COMPLETO QUE APARECE TANTO NO POPUP QUANTO NO HOVER (TOOLTIP)
+            cor_pin = mapa_cores_seg.get(row['categoria'], 'red') if cat_sel_mapa == "Todos os Segmentos" else 'red'
+            url_maps_emp = f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(row['nome'])}"
+
             info_card_html = f"""
             <div style="font-family: Arial, sans-serif; font-size: 12px; min-width: 240px; padding: 6px; line-height: 1.5;">
-                <b style="color: #0f172a; font-size: 14px;">{row['nome']}</b><br/>
+                <a href="{url_maps_emp}" target="_blank" style="text-decoration: none;">
+                    <b style="color: #2563eb; font-size: 14px;">{row['nome']} 🔗</b>
+                </a><br/>
                 <span style="color: #475569; font-size: 11px;">📍 {row['endereco']}</span><br/>
                 <hr style="margin: 6px 0; border: 0.5px solid #cbd5e1;"/>
                 🚨 <b>Score de Oportunidade:</b> <span style="color: #dc2626; font-weight: bold;">{row['score_oportunidade']}/100</span><br/>
@@ -1068,10 +1116,9 @@ elif st.session_state.etapa == 4:
             folium.Marker(
                 location=[row['latitude'], row['longitude']],
                 popup=folium.Popup(info_card_html, max_width=320),
-                tooltip=folium.Tooltip(info_card_html, sticky=True),
-                icon=folium.Icon(color="red", icon="info-sign")
+                icon=folium.Icon(color=cor_pin, icon="info-sign")
             ).add_to(m)
 
-        st_folium(m, width="100%", height=750)
+        st_folium(m, width="100%", height=700)
     else:
         st.warning("Nenhum registro encontrado para os filtros selecionados.")
