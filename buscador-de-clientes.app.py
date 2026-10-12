@@ -71,7 +71,7 @@ if 'base_acumulada' not in st.session_state:
     st.session_state.base_acumulada = []
 
 # -----------------------------------------------------------------------------
-# INTEGRAÇÃO DE BUSCA E AUDITORIA COMPLETA
+# INTEGRAÇÃO DE BUSCA E AUDITORIA COMPLETA (COM FOTO DO PERFIL GOOGLE)
 # -----------------------------------------------------------------------------
 def buscar_google_places_api(nicho, cidade, api_key, limite=10):
     url = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={nicho}+em+{cidade}&language=pt-BR&key={api_key}"
@@ -95,6 +95,14 @@ def buscar_google_places_api(nicho, cidade, api_key, limite=10):
                 total_avaliacoes = det_res.get("user_ratings_total", place.get("user_ratings_total", 0))
                 photos = det_res.get("photos", place.get("photos", []))
                 
+                # Monta URL da foto real do Google Places API
+                foto_url = ""
+                if photos and len(photos) > 0:
+                    photo_reference = photos[0].get("photo_reference")
+                    foto_url = f"https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference={photo_reference}&key={api_key}"
+                else:
+                    foto_url = "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&q=80"
+
                 pontos_criticos = []
                 oportunidades = []
                 score = 0
@@ -122,7 +130,6 @@ def buscar_google_places_api(nicho, cidade, api_key, limite=10):
                 if len(clean_phone) > 10 and clean_phone.startswith("55"):
                     clean_phone = clean_phone[2:]
 
-                # Simulação visual de pesquisas de mídias para exibição imediata
                 nome_slug = re.sub(r'[^a-zA-Z0-9]', '', nome.lower())
 
                 leads.append({
@@ -137,6 +144,7 @@ def buscar_google_places_api(nicho, cidade, api_key, limite=10):
                     "website": website,
                     "instagram": f"instagram.com/{nome_slug}",
                     "facebook": f"facebook.com/{nome_slug}",
+                    "foto_url": foto_url,
                     "nota": nota,
                     "total_avaliacoes": total_avaliacoes,
                     "reivindicada": True,
@@ -161,13 +169,11 @@ def minerar_e_auditar_negocios(nicho, cidade, limite=10):
             return leads_reais
 
     exemplo_estabelecimentos = [
-        {"nome": f"Loja & Boutique {cidade}", "bairro": "Centro", "rua": "Rua Saldanha Marinho"},
-        {"nome": f"Estilo & Moda {nicho.capitalize()}", "bairro": "Alto da Boa Vista", "rua": "Av. Independência"},
-        {"nome": f"Empório & {nicho.capitalize()} do Barão", "bairro": "Jardim Sumaré", "rua": "Rua Garibaldi"},
-        {"nome": f"Conceito {nicho.capitalize()} Brasil", "bairro": "Vila Seixas", "rua": "Rua Amador Bueno"},
-        {"nome": f"Studio & Galeria {nicho.capitalize()}", "bairro": "Jardim Botânico", "rua": "Av. Professor João Fiúsa"},
-        {"nome": f"Casa & {nicho.capitalize()} Real", "bairro": "Campos Elíseos", "rua": "Av. Saudade"},
-        {"nome": f"Ateliê {nicho.capitalize()} & Cia", "bairro": "Ipiranga", "rua": "Rua Dom Pedro II"}
+        {"nome": f"Loja & Boutique {cidade}", "bairro": "Centro", "rua": "Rua Saldanha Marinho", "img": "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&q=80"},
+        {"nome": f"Estilo & Moda {nicho.capitalize()}", "bairro": "Alto da Boa Vista", "rua": "Av. Independência", "img": "https://images.unsplash.com/photo-1567401893414-76b7b1e5a7a5?w=400&q=80"},
+        {"nome": f"Empório & {nicho.capitalize()} do Barão", "bairro": "Jardim Sumaré", "rua": "Rua Garibaldi", "img": "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400&q=80"},
+        {"nome": f"Conceito {nicho.capitalize()} Brasil", "bairro": "Vila Seixas", "rua": "Rua Amador Bueno", "img": "https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=400&q=80"},
+        {"nome": f"Studio & Galeria {nicho.capitalize()}", "bairro": "Jardim Botânico", "rua": "Av. Professor João Fiúsa", "img": "https://images.unsplash.com/photo-1513151233558-d860c5398176?w=400&q=80"}
     ]
 
     resultados = []
@@ -219,6 +225,7 @@ def minerar_e_auditar_negocios(nicho, cidade, limite=10):
             "website": f"https://www.{nicho.lower()}exemplo.com.br" if tem_site else "",
             "instagram": f"instagram.com/{nome_slug}",
             "facebook": f"facebook.com/{nome_slug}",
+            "foto_url": item["img"],
             "nota": nota,
             "total_avaliacoes": total_avaliacoes,
             "reivindicada": reivindicada,
@@ -233,11 +240,11 @@ def minerar_e_auditar_negocios(nicho, cidade, limite=10):
     return resultados
 
 # -----------------------------------------------------------------------------
-# GERADOR DE CSV COMPATÍVEL COM EXCEL (FORMATADO EM COLUNAS LARGAS E UTF-8 BOM)
+# GERADOR DE CSV COMPATÍVEL COM EXCEL
 # -----------------------------------------------------------------------------
 def gerar_csv_excel_formatado(dados_leads):
     output = io.StringIO()
-    output.write('\ufeff') # UTF-8 BOM para forçar o Excel a reconhecer colunas e acentos
+    output.write('\ufeff')
     
     writer = csv.writer(output, delimiter=';', quoting=csv.QUOTE_MINIMAL)
     
@@ -275,7 +282,7 @@ def gerar_csv_excel_formatado(dados_leads):
     return output.getvalue().encode('utf-8')
 
 # -----------------------------------------------------------------------------
-# GERADOR DE PDF COMPLETO COM LOGO MAIOR, 3 SEÇÕES E RODAPÉ FIXO
+# GERADOR DE PDF DUAL BRAND
 # -----------------------------------------------------------------------------
 def gerar_pdf_diagnostico(lead):
     buffer = io.BytesIO()
@@ -294,7 +301,6 @@ def gerar_pdf_diagnostico(lead):
     logo_okamoto = "logo_okamoto.png" if os.path.exists("logo_okamoto.png") else None
     logo_tour = "logo_tour_transparente.png" if os.path.exists("logo_tour_transparente.png") else None
 
-    # LOGO EM DESTAQUE NO CANTO ESQUERDO
     img_okamoto = Image(logo_okamoto, width=180, height=55, kind='proportional') if logo_okamoto else Paragraph("<b>OKAMOTO MÍDIAS VISUAIS</b>", body_style)
     img_tour = Image(logo_tour, width=120, height=45, kind='proportional') if logo_tour else Paragraph("<b>TOUR360VR</b>", body_style)
 
@@ -329,7 +335,6 @@ def gerar_pdf_diagnostico(lead):
     elements.append(t_empresa)
     elements.append(Spacer(1, 10))
 
-    # 1. DIAGNÓSTICO TÉCNICO E FALHAS DETALHADAS
     elements.append(Paragraph("1. DIAGNÓSTICO TÉCNICO E FALHAS IDENTIFICADAS", section_heading))
     criticos_list = []
     for pnt in lead['pontos_criticos']:
@@ -345,7 +350,6 @@ def gerar_pdf_diagnostico(lead):
     elements.append(t_criticos)
     elements.append(Spacer(1, 10))
 
-    # 2. PLANO DE AÇÃO E OPORTUNIDADES
     elements.append(Paragraph("2. PLANO DE AÇÃO E OPORTUNIDADES DE MELHORIA", section_heading))
     opp_list = []
     for opp in lead['oportunidades']:
@@ -361,7 +365,6 @@ def gerar_pdf_diagnostico(lead):
     elements.append(t_opp)
     elements.append(Spacer(1, 10))
 
-    # 3. CRONOGRAMA DE IMPLEMENTAÇÃO E RECOMENDAÇÕES
     elements.append(Paragraph("3. ESTRATÉGIA DE IMPLEMENTAÇÃO RECOMENDADA", section_heading))
     plano_acao = [
         [Paragraph("<b>Fase 1 (Imediata):</b>", body_style), Paragraph("Regularização do perfil no Google Business, atualização de categorias e proteção de marca.", body_style)],
@@ -379,12 +382,11 @@ def gerar_pdf_diagnostico(lead):
     elements.append(t_plano)
     elements.append(Spacer(1, 15))
 
-    # RODAPÉ FIXO COM DADOS DE CONTATO NO FIM DA PÁGINA
     elements.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor('#cbd5e1'), spaceBefore=10, spaceAfter=8))
     rodape_text = Paragraph(
         "<font color='#1e293b'><b>OKAMOTO MÍDIAS VISUAIS & TOUR360VR</b></font><br/>"
         "<font color='#475569' size=8>🌐 <b>Site:</b> tour360vr.com.br &nbsp;|&nbsp; ✉️ <b>E-mail:</b> contato@okamotomidiasvisuais.com.br &nbsp;|&nbsp; 💬 <b>WhatsApp:</b> (16) 99765-4321<br/>"
-        "Especialistas em Imagem Profissional, Tours Virtuais 360° e Posicionamento Local.</font>",
+        "Especialistas em Imagem Profissional, Tours Virtuais 360° e Otimização de Presença Local.</font>",
         ParagraphStyle('Rodape', parent=body_style, alignment=1)
     )
     elements.append(rodape_text)
@@ -454,8 +456,6 @@ if st.session_state.etapa == 1:
         with st.spinner("Varrendo Google Maps e auditando perfis..."):
             time.sleep(1)
             novos_leads = minerar_e_auditar_negocios(nicho_input, cidade_input, limite_input)
-            
-            # ACÚMULO AUTOMÁTICO DE BUSCAS SEM DUPLICAR
             st.session_state.base_acumulada.extend(novos_leads)
             st.session_state.etapa = 2
             st.rerun()
@@ -468,7 +468,7 @@ if st.session_state.etapa == 1:
             st.rerun()
 
 # -----------------------------------------------------------------------------
-# ETAPA 2: ANALISADOR CRÍTICO E EXIBIÇÃO DIRETA
+# ETAPA 2: ANALISADOR CRÍTICO COM FOTO DA FICHA E EXIBIÇÃO DIRETA
 # -----------------------------------------------------------------------------
 elif st.session_state.etapa == 2:
     st.markdown("""
@@ -536,7 +536,11 @@ elif st.session_state.etapa == 2:
             </div>
         """, unsafe_allow_html=True)
 
-        col_details1, col_details2, col_media, col_actions = st.columns([2.5, 2.5, 2.5, 2.5])
+        # 4 COLUNAS: FOTO DA FICHA + GOOGLE INDICADORES + PONTOS CRÍTICOS + MÍDIAS & AÇÕES
+        col_img, col_details1, col_details2, col_actions = st.columns([2, 2.5, 2.5, 2.5])
+
+        with col_img:
+            st.image(lead['foto_url'], caption="Foto da Ficha do Google", use_container_width=True)
 
         with col_details1:
             st.markdown("**📊 Indicadores no Google:**")
@@ -549,19 +553,16 @@ elif st.session_state.etapa == 2:
             for pc in lead['pontos_criticos']:
                 st.markdown(f"<div class='critical-item'>❌ {pc}</div>", unsafe_allow_html=True)
 
-        # EXIBIÇÃO DIRETA DAS INFORMAÇÕES DE REDES E VALIDAÇÃO EXTERNA
-        with col_media:
-            st.markdown("**🌐 Presença Digital & Validação:**")
-            st.markdown(f"- **Website:** {lead['website'] if lead['website'] else '❌ Sem site cadastrado'}")
-            st.markdown(f"- **Instagram:** [Abrir Perfil](https://{lead['instagram']})")
-            st.markdown(f"- **Google Maps:** [Ver no Mapa](https://www.google.com/maps/search/?api=1&query={lead['nome'].replace(' ', '+')})")
-            st.markdown(f"- **Domínio:** [Buscar no Registro.br](https://registro.br/busca-dominio/?pesquisa={lead['nome'].replace(' ', '')})")
-
         with col_actions:
+            st.markdown("**🌐 Mídias & Ações Rápidas:**")
+            st.markdown(f"- **Website:** {lead['website'] if lead['website'] else '❌ Sem site'}")
+            st.markdown(f"- **Maps:** [Ver no Google Maps](https://www.google.com/maps/search/?api=1&query={lead['nome'].replace(' ', '+')})")
+            st.markdown(f"- **Registro:** [Buscar Domínio](https://registro.br/busca-dominio/?pesquisa={lead['nome'].replace(' ', '')})")
+
             if lead['whatsapp']:
                 msg_wa = f"Olá! Notei que a ficha da {lead['nome']} no Google apresenta pontos de melhoria..."
                 link_wa = f"https://wa.me/55{lead['whatsapp']}?text={msg_wa.replace(' ', '%20')}"
-                st.markdown(f'<a href="{link_wa}" target="_blank"><button style="width:100%; background-color:#25D366; color:white; border:none; padding:10px; border-radius:6px; font-weight:bold; cursor:pointer; margin-bottom:8px;">💬 WhatsApp</button></a>', unsafe_allow_html=True)
+                st.markdown(f'<a href="{link_wa}" target="_blank"><button style="width:100%; background-color:#25D366; color:white; border:none; padding:8px; border-radius:6px; font-weight:bold; cursor:pointer; margin-top:6px; margin-bottom:8px;">💬 WhatsApp</button></a>', unsafe_allow_html=True)
 
             nome_arquivo_limpo = re.sub(r'[^a-zA-Z0-9]', '_', lead['nome'])
             nome_arquivo_limpo = re.sub(r'_+', '_', nome_arquivo_limpo).strip('_')
