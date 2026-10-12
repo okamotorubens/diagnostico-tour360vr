@@ -1296,15 +1296,15 @@ st.session_state['dados']['atributos_ok'] = c_f.checkbox("Atributos Serviços", 
 st.session_state['dados']['resposta_avaliacoes_ok'] = c_g.checkbox("Respostas Ativas", value=st.session_state['dados'].get('resposta_avaliacoes_ok', False), key="chk_respostas_diag")
 
 st.markdown("</div>", unsafe_allow_html=True)
-    with col_right:
-        st.markdown("<div class='dashboard-card'><div class='card-title'>DADOS DO CLIENTE</div>", unsafe_allow_html=True)
-        st.session_state['dados']['nome'] = st.text_input("Empresa:", value=st.session_state['dados'].get('nome', ''), key="input_dados_empresa")
-        st.session_state['dados']['contato'] = st.text_input("Responsável:", value=st.session_state['dados'].get('contato', ''), key="input_dados_contato")
-        st.session_state['dados']['telefone'] = st.text_input("Telefone:", value=st.session_state['dados'].get('telefone', '') or st.session_state['dados'].get('whatsapp', ''), key="input_dados_telefone")
-        st.session_state['dados']['website'] = st.text_input("Website:", value=st.session_state['dados'].get('website', ''), key="input_dados_website")
-        st.session_state['dados']['endereco'] = st.text_area("Endereço:", value=st.session_state['dados'].get('endereco', ''), height=80, key="input_dados_endereco")
-        st.markdown("</div>", unsafe_allow_html=True)
 
+with col_right:
+st.markdown("<div class='dashboard-card'><div class='card-title'>DADOS DO CLIENTE</div>", unsafe_allow_html=True)
+st.session_state['dados']['nome'] = st.text_input("Empresa:", value=st.session_state['dados'].get('nome', ''), key="input_dados_empresa")
+st.session_state['dados']['contato'] = st.text_input("Responsável:", value=st.session_state['dados'].get('contato', ''), key="input_dados_contato")
+st.session_state['dados']['telefone'] = st.text_input("Telefone:", value=st.session_state['dados'].get('telefone', '') or st.session_state['dados'].get('whatsapp', ''), key="input_dados_telefone")
+st.session_state['dados']['website'] = st.text_input("Website:", value=st.session_state['dados'].get('website', ''), key="input_dados_website")
+st.session_state['dados']['endereco'] = st.text_area("Endereço:", value=st.session_state['dados'].get('endereco', ''), height=80, key="input_dados_endereco")
+st.markdown("</div>", unsafe_allow_html=True)
     col_nav1, col_nav2 = st.columns([2, 1])
     with col_nav2:
         if st.button("Avançar para Concorrentes ➡️", use_container_width=True, key="btn_nav_aba1", type="secondary"):
