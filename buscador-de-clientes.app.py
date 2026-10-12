@@ -224,15 +224,15 @@ def desenhar_rodape_fixo_links(canvas, doc):
     canvas.setFont('Helvetica', 8.5)
     canvas.setFillColor(colors.HexColor('#000000'))
     
-    # HIPERLINKS RECALIBRADOS DE ACORDO COM AS COORDENADAS EXATAS DO TEXTO
-    # Texto: "tour360vr.com.br   |   contato@okamotomidiasvisuais.com.br   |   (16) 99133-2121"
+    # HIPERLINKS RECALIBRADOS EM COORDENADAS RELATIVAS EXATAS
+    # Posição Y fixa do texto = 22pt (com margem de clique de Y=12 a Y=30)
     try:
-        # Link 1: tour360vr.com.br
-        canvas.linkURL('https://tour360vr.com.br', (135, 15, 205, 30), relative=0)
-        # Link 2: contato@okamotomidiasvisuais.com.br
-        canvas.linkURL('mailto:contato@okamotomidiasvisuais.com.br', (225, 15, 415, 30), relative=0)
-        # Link 3: (16) 99133-2121 (WhatsApp)
-        canvas.linkURL('https://wa.me/5516991332121', (435, 15, 505, 30), relative=0)
+        # Link 1: tour360vr.com.br (X: 130 a 205)
+        canvas.linkURL('https://tour360vr.com.br', (130, 762, 205, 780), relative=1)
+        # Link 2: contato@okamotomidiasvisuais.com.br (X: 220 a 415)
+        canvas.linkURL('mailto:contato@okamotomidiasvisuais.com.br', (220, 762, 415, 780), relative=1)
+        # Link 3: (16) 99133-2121 (WhatsApp) (X: 435 a 510)
+        canvas.linkURL('https://wa.me/5516991332121', (435, 762, 510, 780), relative=1)
     except Exception:
         pass
     
@@ -251,10 +251,10 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     )
     styles = getSampleStyleSheet()
     
-    # CABEÇALHO COM TÍTULO MAIOR (13.5pt) E ENTRELINHA DE 16pt
+    # CABEÇALHO COM +1pt NO TÍTULO (14.5pt) E ENTRELINHA DE 17pt
     sub_title_header = ParagraphStyle(
         'SubTitleHeader', parent=styles['Normal'],
-        fontSize=13.5, leading=16, textColor=colors.HexColor('#0f172a'),
+        fontSize=14.5, leading=17, textColor=colors.HexColor('#0f172a'),
         fontName='Helvetica-Bold', alignment=1
     )
     
@@ -264,7 +264,6 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
         fontName='Helvetica-Bold', alignment=1, spaceBefore=4, spaceAfter=6
     )
     
-    # ESTILO PADRONIZADO PARA OS TÍTULOS DE SEÇÃO (10.5pt)
     section_heading = ParagraphStyle(
         'SectionHeading', parent=styles['Heading2'],
         fontSize=10.5, textColor=colors.HexColor('#0f172a'),
@@ -276,13 +275,11 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
 
     elements = []
 
-    # LOGO MAIOR (125pt LARGURA x 48pt ALTURA)
     logo_tour = "logo_tour_transparente.png" if os.path.exists("logo_tour_transparente.png") else None
     img_tour = Image(logo_tour, width=125, height=48, kind='proportional') if logo_tour else Paragraph("<b>TOUR360VR</b>", body_style)
 
     header_p = Paragraph("ESTUDO DE INTELIGÊNCIA DE MERCADO LOCAL E PRESENÇA DIGITAL GOOGLE", sub_title_header)
 
-    # LARGURA SIMÉTRICA REAJUSTADA PARA ACOMODAR A LOGO E TÍTULO MAIORES
     header_table = Table([[img_tour, header_p, ""]], colWidths=[125, 290, 125])
     header_table.setStyle(TableStyle([
         ('ALIGN', (0,0), (0,0), 'LEFT'),
@@ -301,17 +298,15 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     elements.append(title_table)
     
     elements.append(Spacer(1, 4))
-    
-    # TÍTULO DO GRÁFICO COM MESMO TAMANHO DE "RANKING DE EMPRESAS AUDITADAS NO SETOR" (10.5pt)
     elements.append(Paragraph("DISTRIBUIÇÃO DE EMPRESAS POR SCORE DE OPORTUNIDADE COMERCIAL (PONTUAÇÃO)", section_heading))
     elements.append(Spacer(1, 2))
 
-    # GRÁFICO VETORIAL ALINHADO
+    # GRÁFICO VETORIAL COM QUADRO SEM CANTOS ARREDONDADOS (rx=0, ry=0)
     scores_counts = df_nicho['score_oportunidade'].value_counts().sort_index(ascending=False)
     
     chart_draw = Drawing(540, 105)
     chart_draw.hAlign = 'CENTER'
-    chart_draw.add(Rect(0, 0, 540, 105, fillColor=colors.HexColor('#f8fafc'), strokeColor=colors.HexColor('#cbd5e1'), strokeWidth=0.5, rx=6, ry=6))
+    chart_draw.add(Rect(0, 0, 540, 105, fillColor=colors.HexColor('#f8fafc'), strokeColor=colors.HexColor('#cbd5e1'), strokeWidth=0.5, rx=0, ry=0))
     
     qtd_bars = len(scores_counts)
     if qtd_bars > 0:
@@ -327,7 +322,7 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
             
             c_fill = colors.HexColor('#4ade80') if score_val >= 60 else (colors.HexColor('#facc15') if score_val >= 30 else colors.HexColor('#f87171'))
             
-            chart_draw.add(Rect(bx, by, bar_w, bh, fillColor=c_fill, strokeColor=None, rx=3, ry=3))
+            chart_draw.add(Rect(bx, by, bar_w, bh, fillColor=c_fill, strokeColor=None, rx=2, ry=2))
             chart_draw.add(String(bx + (bar_w / 2), by + bh + 5, str(total_lead), fontSize=9, fontName="Helvetica-Bold", fillColor=colors.HexColor('#0f172a'), textAnchor="middle"))
             chart_draw.add(String(bx + (bar_w / 2), by - 13, f"{score_val} pts", fontSize=8, fontName="Helvetica-Bold", fillColor=colors.HexColor('#475569'), textAnchor="middle"))
 
@@ -731,7 +726,7 @@ def gerar_csv_excel_formatado(dados_leads):
     return output.getvalue().encode('utf-8')
 
 # -----------------------------------------------------------------------------
-# BARRA LATERAL (NAVEGAÇÃO MÓDULOS)
+# BARRA LATERAL (NAVEGAÇÃO MÓDULOS + BACKUP E RESTAURAÇÃO DE BASE)
 # -----------------------------------------------------------------------------
 base_leads = carregar_todos_leads_db()
 
@@ -763,9 +758,32 @@ with st.sidebar:
         st.session_state.etapa = 4
         st.rerun()
 
+    st.divider()
+    st.caption(f"💾 Banco Permanente: **{len(base_leads)} leads salvos**")
+    
+    with st.expander("📦 Backup / Restaurar Base"):
+        if len(base_leads) > 0:
+            json_str = json.dumps(base_leads, ensure_ascii=False, indent=2)
+            st.download_button(
+                "⬇️ Baixar Backup (.json)",
+                data=json_str,
+                file_name=f"Backup_Leads_Tour360VR_{datetime.now().strftime('%Y%m%d')}.json",
+                mime="application/json",
+                use_container_width=True
+            )
+        
+        file_restore = st.file_uploader("Restaurar Backup (.json):", type=["json"])
+        if file_restore is not None:
+            try:
+                leads_restaurados = json.load(file_restore)
+                for l_rest in leads_restaurados:
+                    salvar_lead_db(l_rest)
+                st.success("Base de dados restaurada com sucesso!")
+                st.rerun()
+            except Exception as e:
+                st.error("Erro ao importar arquivo de backup.")
+
     if len(base_leads) > 0:
-        st.divider()
-        st.caption(f"💾 Banco Permanente: **{len(base_leads)} leads salvos**")
         if st.button("🗑️ Limpar Banco de Dados", use_container_width=True):
             limpar_banco_dados()
             st.session_state.etapa = 1
@@ -818,7 +836,7 @@ elif st.session_state.etapa == 2:
     """, unsafe_allow_html=True)
 
     if len(base_leads) == 0:
-        st.warning("⚠️ Nenhum lead cadastrado ainda no banco de dados. Faça sua primeira busca no Módulo 1!")
+        st.warning("⚠️ Nenhum lead cadastrado ainda no banco de dados. Faça sua primeira busca no Módulo 1 ou restaure um backup na barra lateral!")
     else:
         df_leads_crm = pd.DataFrame(base_leads)
 
