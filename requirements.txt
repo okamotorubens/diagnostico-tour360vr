@@ -7,3 +7,5 @@ st-gsheets-connection
 openpyxl
 folium
 streamlit-folium
+Pillow
+supabase
