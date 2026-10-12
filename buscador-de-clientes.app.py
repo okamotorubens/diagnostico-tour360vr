@@ -19,8 +19,7 @@ from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image, HRFlowable
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.graphics.shapes import Drawing, Rect
-from reportlab.graphics.charts.barcharts import VerticalBarChart
+from reportlab.graphics.shapes import Drawing, Rect, String
 
 # -----------------------------------------------------------------------------
 # CONFIGURAÇÃO DO ENDEREÇO DO SEU SISTEMA DE DIAGNÓSTICO
@@ -195,14 +194,20 @@ init_db()
 # -----------------------------------------------------------------------------
 # GERADOR DE PDF DO PANORAMA DE NICHO
 # -----------------------------------------------------------------------------
-def desenhar_rodape_fixo(canvas, doc):
+def desenhar_rodape_fixo_links(canvas, doc):
     canvas.saveState()
     canvas.setStrokeColor(colors.HexColor('#cbd5e1'))
     canvas.setLineWidth(1)
     canvas.line(36, 35, 576, 35)
     
-    canvas.setFont('Helvetica-Bold', 8)
-    canvas.setFillColor(colors.HexColor('#1e293b'))
+    canvas.setFont('Helvetica', 8)
+    canvas.setFillColor(colors.HexColor('#2563eb'))
+    
+    # RODAPÉ COM LINKS CLICÁVEIS E SEM NEGRITO
+    canvas.addLinkURL('https://tour360vr.com.br', (36, 18, 160, 32))
+    canvas.addLinkURL('mailto:contato@okamotomidiasvisuais.com.br', (180, 18, 380, 32))
+    canvas.addLinkURL('https://wa.me/5516991332121', (390, 18, 576, 32))
+    
     texto_rodape = "tour360vr.com.br   |   contato@okamotomidiasvisuais.com.br   |   (16) 99133-2121"
     canvas.drawCentredString(306, 22, texto_rodape)
     canvas.restoreState()
@@ -217,21 +222,21 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     )
     styles = getSampleStyleSheet()
     
-    sub_title_header = ParagraphStyle('SubTitleHeader', parent=styles['Normal'], fontSize=11.5, textColor=colors.HexColor('#0f172a'), fontName='Helvetica-Bold', alignment=1)
-    main_title_style = ParagraphStyle('MainTitle', parent=styles['Heading1'], fontSize=13, textColor=colors.HexColor('#0f172a'), fontName='Helvetica-Bold', alignment=1, spaceAfter=8)
-    section_heading = ParagraphStyle('SectionHeading', parent=styles['Heading2'], fontSize=9.5, textColor=colors.HexColor('#0f172a'), spaceBefore=6, spaceAfter=4, fontName='Helvetica-Bold', alignment=1)
+    sub_title_header = ParagraphStyle('SubTitleHeader', parent=styles['Normal'], fontSize=11, textColor=colors.HexColor('#0f172a'), fontName='Helvetica-Bold', alignment=1)
+    main_title_style = ParagraphStyle('MainTitle', parent=styles['Heading1'], fontSize=14.5, textColor=colors.HexColor('#0f172a'), fontName='Helvetica-Bold', alignment=1, spaceBefore=6, spaceAfter=8)
+    section_heading = ParagraphStyle('SectionHeading', parent=styles['Heading2'], fontSize=9.5, textColor=colors.HexColor('#0f172a'), spaceBefore=8, spaceAfter=4, fontName='Helvetica-Bold', alignment=1)
     body_style = ParagraphStyle('BodyTextCustom', parent=styles['Normal'], fontSize=8, textColor=colors.HexColor('#334155'), leading=10)
     body_center = ParagraphStyle('BodyCenter', parent=body_style, alignment=1)
 
     elements = []
 
-    # LOGO ALINHADA À ESQUERDA E TÍTULO AUMENTADO CENTRALIZADO
+    # LOGO MAIOR ALINHADA À ESQUERDA E TÍTULO MAIOR CENTRALIZADO
     logo_tour = "logo_tour_transparente.png" if os.path.exists("logo_tour_transparente.png") else None
-    img_tour = Image(logo_tour, width=130, height=42, kind='proportional') if logo_tour else Paragraph("<b>TOUR360VR</b>", body_style)
+    img_tour = Image(logo_tour, width=160, height=52, kind='proportional') if logo_tour else Paragraph("<b>TOUR360VR</b>", body_style)
 
     header_p = Paragraph("ESTUDO DE INTELIGÊNCIA DE MERCADO LOCAL E PRESENÇA DIGITAL NO GOOGLE", sub_title_header)
 
-    header_table = Table([[img_tour, header_p]], colWidths=[140, 400])
+    header_table = Table([[img_tour, header_p]], colWidths=[160, 380])
     header_table.setStyle(TableStyle([
         ('ALIGN', (0,0), (0,0), 'LEFT'),
         ('ALIGN', (1,0), (1,0), 'CENTER'),
@@ -242,8 +247,7 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     
     elements.append(HRFlowable(width="100%", thickness=1.5, color=colors.HexColor('#cbd5e1'), spaceBefore=4, spaceAfter=10))
 
-    # LINHA A MAIS DE ESPAÇO ANTES DO TÍTULO
-    elements.append(Spacer(1, 12))
+    elements.append(Spacer(1, 4))
     elements.append(Paragraph(f"PANORAMA DE MERCADO: {nicho_nome.upper()}", main_title_style))
     elements.append(Spacer(1, 6))
 
@@ -252,6 +256,40 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     sem_site = len(df_nicho[df_nicho['website'] == ''])
     nao_reiv = len(df_nicho[df_nicho['reivindicada'] == False])
 
+    # GRÁFICO VETORIAL ELEGANTE COM AZUL SUAVE ILUSTRANDO ANTES DA TABELA 1
+    chart_draw = Drawing(540, 65)
+    
+    # Fundo do card
+    chart_draw.add(Rect(0, 0, 540, 65, fillColor=colors.HexColor('#f8fafc'), strokeColor=colors.HexColor('#cbd5e1'), strokeWidth=0.5, rx=6, ry=6))
+    
+    col_w = 140
+    gap = 25
+    start_x = 25
+    max_h = 36
+    
+    valores = [sem_tour, sem_site, nao_reiv]
+    labels = ["Sem Tour Virtual 360°", "Sem Website Oficial", "Fichas Não Reivindicadas"]
+    
+    for i in range(3):
+        val = valores[i]
+        lbl = labels[i]
+        pct = (val / total_emp * 100) if total_emp > 0 else 0
+        
+        bx = start_x + i * (col_w + gap)
+        by = 10
+        bh = max((val / total_emp if total_emp > 0 else 0) * max_h, 4)
+        
+        # Barra azul suave profissional
+        chart_draw.add(Rect(bx, by, 18, bh, fillColor=colors.HexColor('#475569'), strokeColor=None, rx=3, ry=3))
+        
+        # Textos e Indicadores
+        chart_draw.add(String(bx + 24, by + 18, f"{val} ({pct:.1f}%)", fontSize=8, fontName="Helvetica-Bold", fillColor=colors.HexColor('#0f172a')))
+        chart_draw.add(String(bx + 24, by + 4, lbl, fontSize=7, fontName="Helvetica", fillColor=colors.HexColor('#475569')))
+
+    elements.append(chart_draw)
+    elements.append(Spacer(1, 10))
+
+    # TABELA 1: INDICADORES ESTRATÉGICOS (LARGURA TOTAL = 540)
     dados_resumo = [
         [Paragraph("<b>INDICADOR ESTRATÉGICO</b>", body_style), Paragraph("<b>VOLUME / %</b>", body_center), Paragraph("<b>DIAGNÓSTICO DE OPORTUNIDADE</b>", body_style)],
         [Paragraph("Sem Tour Virtual 360°", body_style), Paragraph(f"<b>{sem_tour} ({(sem_tour/total_emp*100 if total_emp>0 else 0):.1f}%)</b>", body_center), Paragraph("Oportunidade crítica para implantação de experiência imersiva.", body_style)],
@@ -263,32 +301,18 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#f1f5f9')),
         ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1')),
         ('INNERGRID', (0,0), (-1,-1), 0.5, colors.HexColor('#e2e8f0')),
-        ('TOPPADDING', (0,0), (-1,-1), 3),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 3),
+        ('TOPPADDING', (0,0), (-1,-1), 3.5),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 3.5),
         ('ALIGN', (1,0), (1,-1), 'CENTER'),
     ]))
     elements.append(t_resumo)
     
-    elements.append(Spacer(1, 8))
-
-    # GRÁFICOS AZUL CLARO E BARRAS MAIS ESTREITAS
-    chart_drawing = Drawing(540, 60)
-    bc = VerticalBarChart()
-    bc.x = 80
-    bc.y = 10
-    bc.height = 42
-    bc.width = 380
-    bc.data = [[sem_tour, sem_site, nao_reiv]]
-    bc.categoryAxis.categoryNames = ['Sem Tour 360°', 'Sem Website', 'Não Reivindicadas']
-    bc.bars[0].fillColor = colors.HexColor('#38bdf8') # Azul Claro
-    bc.barWidth = 14
-    chart_drawing.add(bc)
-    elements.append(chart_drawing)
-
-    elements.append(Spacer(1, 4))
+    # MAIS ESPAÇO ANTES DO RANKING
+    elements.append(Spacer(1, 14))
     elements.append(Paragraph("RANKING DE EMPRESAS AUDITADAS NO SETOR", section_heading))
     elements.append(Spacer(1, 4))
 
+    # TABELA 2: RANKING (LARGURA TOTAL = 540 IGUALIZADA)
     df_nicho_sorted = df_nicho.sort_values(by='score_oportunidade', ascending=False)
 
     t_data = [[
@@ -329,7 +353,7 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
         t_styles.append(('BACKGROUND', (5, row_idx), (5, row_idx), bg_color))
 
         t_data.append([
-            Paragraph(str(r_data['nome'])[:38], body_style),
+            Paragraph(str(r_data['nome'])[:42], body_style),
             Paragraph(str(r_data['nota']), body_center),
             Paragraph(str(r_data['total_avaliacoes']), body_center),
             Paragraph("Sim" if r_data['website'] else "Não", body_center),
@@ -337,12 +361,12 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
             p_score
         ])
 
-    # COMPACTAÇÃO DA COLUNA DE SCORE (LARGURA REDUZIDA PARA 80)
-    t_empresas = Table(t_data, colWidths=[230, 45, 55, 45, 45, 80])
+    # LARGURA TOTAL DAS COLUNAS SOMA 540 (ALINHAMENTO COM A TABELA 1)
+    t_empresas = Table(t_data, colWidths=[240, 50, 60, 50, 50, 90])
     t_empresas.setStyle(TableStyle(t_styles))
     elements.append(t_empresas)
 
-    doc.build(elements, onFirstPage=desenhar_rodape_fixo, onLaterPages=desenhar_rodape_fixo)
+    doc.build(elements, onFirstPage=desenhar_rodape_fixo_links, onLaterPages=desenhar_rodape_fixo_links)
     buffer.seek(0)
     return buffer
 
@@ -873,7 +897,7 @@ TOUR360VR | Okamoto Mídias Visuais
         st.divider()
 
 # -----------------------------------------------------------------------------
-# ETAPA 3: PANORAMA DE NICHO (ALINHAMENTO CENTRALIZADO NAS COLUNAS 3, 4 E 5)
+# ETAPA 3: PANORAMA DE NICHO
 # -----------------------------------------------------------------------------
 elif st.session_state.etapa == 3:
     st.markdown("""
@@ -961,7 +985,7 @@ elif st.session_state.etapa == 3:
     )
 
 # -----------------------------------------------------------------------------
-# ETAPA 4: MAPA DE PROSPECÇÃO (INFORMAÇÕES COMPLETAS NO TOOLTIP E POPUP DO PIN)
+# ETAPA 4: MAPA DE PROSPECÇÃO (RETÂNGULO COMPLETO DE INFORMAÇÕES RESTAURADO)
 # -----------------------------------------------------------------------------
 elif st.session_state.etapa == 4:
     st.markdown("""
@@ -997,8 +1021,18 @@ elif st.session_state.etapa == 4:
         m = folium.Map(location=[lat_centro, lon_centro], zoom_start=14.5, tiles="OpenStreetMap")
 
         for _, row in df_mapa_filtrado.iterrows():
-            info_completa_html = f"""
-            <div style="font-family: sans-serif; font-size: 12px; min-width: 190px;">
+            # QUADRO RETANGULAR DE INFORMAÇÕES COMPLETO
+            box_html = f"""
+            <div style="
+                background-color: #fef08a; color: #0f172a; padding: 6px 10px; border-radius: 6px;
+                font-weight: bold; font-size: 11.5px; font-family: sans-serif; white-space: nowrap;
+                box-shadow: 0 3px 6px rgba(0,0,0,0.4); border: 1.5px solid #0f172a;">
+                📍 {row['nome']} ({row['score_oportunidade']}/100)
+            </div>
+            """
+
+            popup_html = f"""
+            <div style="font-family: sans-serif; font-size: 12px; min-width: 200px;">
                 <b style="color: #0f172a; font-size: 13.5px;">{row['nome']}</b><br/>
                 📍 <i>{row['endereco']}</i><br/><br/>
                 🚨 <b>Score Oportunidade:</b> {row['score_oportunidade']}/100<br/>
@@ -1010,9 +1044,8 @@ elif st.session_state.etapa == 4:
 
             folium.Marker(
                 location=[row['latitude'], row['longitude']],
-                popup=folium.Popup(info_completa_html, max_width=280),
-                tooltip=f"📍 {row['nome']} | ⭐ {row['nota']} ({row['total_avaliacoes']}) | Score: {row['score_oportunidade']}/100",
-                icon=folium.Icon(color="red", icon="info-sign")
+                popup=folium.Popup(popup_html, max_width=280),
+                icon=folium.DivIcon(html=box_html)
             ).add_to(m)
 
         st_folium(m, width="100%", height=850)
