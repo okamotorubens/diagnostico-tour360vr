@@ -200,14 +200,14 @@ def desenhar_rodape_fixo_links(canvas, doc):
     canvas.setLineWidth(1)
     canvas.line(36, 35, 576, 35)
     
-    # RODAPÉ PRETO, SEM NEGRITO E COM LINKS ATIVOS
     canvas.setFont('Helvetica', 8.5)
     canvas.setFillColor(colors.HexColor('#000000'))
     
+    # LINKS PRECISOS SOMENTE SOBRE OS TEXTOS DO RODAPÉ
     try:
-        canvas.linkURL('https://tour360vr.com.br', (36, 18, 160, 32), relative=1)
-        canvas.linkURL('mailto:contato@okamotomidiasvisuais.com.br', (180, 18, 380, 32), relative=1)
-        canvas.linkURL('https://wa.me/5516991332121', (390, 18, 576, 32), relative=1)
+        canvas.linkURL('https://tour360vr.com.br', (160, 18, 230, 32), relative=1)
+        canvas.linkURL('mailto:contato@okamotomidiasvisuais.com.br', (245, 18, 430, 32), relative=1)
+        canvas.linkURL('https://wa.me/5516991332121', (445, 18, 520, 32), relative=1)
     except Exception:
         pass
     
@@ -218,7 +218,6 @@ def desenhar_rodape_fixo_links(canvas, doc):
 def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     buffer = io.BytesIO()
     
-    # FAVICON E METADADOS DO PDF PARA EXIBIÇÃO NO NAVEGADOR
     doc = SimpleDocTemplate(
         buffer, pagesize=letter,
         rightMargin=36, leftMargin=36, topMargin=20, bottomMargin=50,
@@ -227,22 +226,22 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     )
     styles = getSampleStyleSheet()
     
-    # AUMENTO DE 1 PONTO EM TODOS OS ESTILOS
     sub_title_header = ParagraphStyle('SubTitleHeader', parent=styles['Normal'], fontSize=12, textColor=colors.HexColor('#0f172a'), fontName='Helvetica-Bold', alignment=1)
-    main_title_style = ParagraphStyle('MainTitle', parent=styles['Heading1'], fontSize=15.5, textColor=colors.HexColor('#0f172a'), fontName='Helvetica-Bold', alignment=1, spaceBefore=6, spaceAfter=8)
+    main_title_style = ParagraphStyle('MainTitle', parent=styles['Heading1'], fontSize=15.5, textColor=colors.HexColor('#0f172a'), fontName='Helvetica-Bold', alignment=1, spaceBefore=4, spaceAfter=8)
     section_heading = ParagraphStyle('SectionHeading', parent=styles['Heading2'], fontSize=10.5, textColor=colors.HexColor('#0f172a'), spaceBefore=8, spaceAfter=4, fontName='Helvetica-Bold', alignment=1)
     body_style = ParagraphStyle('BodyTextCustom', parent=styles['Normal'], fontSize=9, textColor=colors.HexColor('#334155'), leading=11)
     body_center = ParagraphStyle('BodyCenter', parent=body_style, alignment=1)
 
     elements = []
 
-    # LOGO E CABEÇALHO CENTRALIZADO
+    # LOGO À ESQUERDA E TÍTULO TOTALMENTE CENTRALIZADO NA PÁGINA (LARGURA TOTAL 540pt)
     logo_tour = "logo_tour_transparente.png" if os.path.exists("logo_tour_transparente.png") else None
-    img_tour = Image(logo_tour, width=160, height=52, kind='proportional') if logo_tour else Paragraph("<b>TOUR360VR</b>", body_style)
+    img_tour = Image(logo_tour, width=140, height=45, kind='proportional') if logo_tour else Paragraph("<b>TOUR360VR</b>", body_style)
 
     header_p = Paragraph("ESTUDO DE INTELIGÊNCIA DE MERCADO LOCAL E PRESENÇA DIGITAL NO GOOGLE", sub_title_header)
 
-    header_table = Table([[img_tour, header_p]], colWidths=[160, 380])
+    # Tabela 1: Logo e Cabeçalho
+    header_table = Table([[img_tour, header_p]], colWidths=[140, 400])
     header_table.setStyle(TableStyle([
         ('ALIGN', (0,0), (0,0), 'LEFT'),
         ('ALIGN', (1,0), (1,0), 'CENTER'),
@@ -251,13 +250,16 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     ]))
     elements.append(header_table)
     
-    elements.append(HRFlowable(width="100%", thickness=1.5, color=colors.HexColor('#cbd5e1'), spaceBefore=4, spaceAfter=10))
+    elements.append(HRFlowable(width="100%", thickness=1.5, color=colors.HexColor('#cbd5e1'), spaceBefore=4, spaceAfter=8))
 
-    elements.append(Spacer(1, 4))
-    elements.append(Paragraph(f"PANORAMA DE MERCADO: {nicho_nome.upper()}", main_title_style))
+    # TÍTULO PRINCIPAL CENTRALIZADO EM LARGURA TOTAL
+    title_p = Paragraph(f"PANORAMA DE MERCADO: {nicho_nome.upper()}", main_title_style)
+    title_table = Table([[title_p]], colWidths=[540])
+    title_table.setStyle(TableStyle([('ALIGN', (0,0), (-1,-1), 'CENTER')]))
+    elements.append(title_table)
     elements.append(Spacer(1, 6))
 
-    # GRÁFICO IGUAL AOS DADOS GERADOS EM TELA (DISTRIBUIÇÃO DE SCORES DO NICHO)
+    # GRÁFICO VETORIAL COM OS MESMOS DADOS DA TELA
     scores_counts = df_nicho['score_oportunidade'].value_counts().sort_index(ascending=False)
     
     chart_draw = Drawing(540, 70)
@@ -275,7 +277,6 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
             by = 18
             bh = max((total_lead / max_val) * 32, 4)
             
-            # Cor condicional do score (Vermelho, Amarelo, Verde)
             c_fill = colors.HexColor('#f87171') if score_val >= 60 else (colors.HexColor('#facc15') if score_val >= 30 else colors.HexColor('#4ade80'))
             
             chart_draw.add(Rect(bx, by, bar_w, bh, fillColor=c_fill, strokeColor=None, rx=2, ry=2))
@@ -283,8 +284,6 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
             chart_draw.add(String(bx + (bar_w / 2), by - 11, f"{score_val} pts", fontSize=7, fontName="Helvetica", fillColor=colors.HexColor('#475569'), textAnchor="middle"))
 
     elements.append(chart_draw)
-    
-    # 1 LINHA A MAIS DE ESPAÇO ENTRE O GRÁFICO E A TABELA DE INDICADOR ESTRATÉGICO
     elements.append(Spacer(1, 14))
 
     total_emp = len(df_nicho)
@@ -313,7 +312,6 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     elements.append(Paragraph("RANKING DE EMPRESAS AUDITADAS NO SETOR", section_heading))
     elements.append(Spacer(1, 4))
 
-    # TABELA DE RANKING COM "AVALIAÇÕES" TRADUZIDO
     df_nicho_sorted = df_nicho.sort_values(by='score_oportunidade', ascending=False)
 
     t_data = [[
@@ -435,7 +433,7 @@ st.markdown("""
         margin-bottom: 10px;
     }
 
-    /* ESTILIZAÇÃO COMPLETA PARA CENTRALIZAR CABEÇALHOS E CÉLULAS DA TABELA STREAMLIT NA ABA 3 */
+    /* CENTRALIZAÇÃO REFORÇADA PARA AS COLUNAS 3, 4 E 5 DA TABELA STREAMLIT NA ABA 3 */
     [data-testid="stDataFrame"] th {
         text-align: center !important;
     }
@@ -905,7 +903,7 @@ TOUR360VR | Okamoto Mídias Visuais
         st.divider()
 
 # -----------------------------------------------------------------------------
-# ETAPA 3: PANORAMA DE NICHO (TABELA 100% CENTRALIZADA)
+# ETAPA 3: PANORAMA DE NICHO (CENTRALIZAÇÃO DE CONTEÚDOS DAS COLUNAS 3, 4 E 5)
 # -----------------------------------------------------------------------------
 elif st.session_state.etapa == 3:
     st.markdown("""
@@ -979,7 +977,7 @@ elif st.session_state.etapa == 3:
 
     altura_dinamica = (len(df_exibicao) + 1) * 35 + 10
 
-    # CONFIGURAÇÃO DE COLUNAS ALINHANDO TÍTULOS E CONTEÚDOS CENTRALIZADOS
+    # TABELA COM ALINHAMENTO CENTRALIZADO EM TODAS AS COLUNAS SOLICITADAS
     st.dataframe(
         df_exibicao,
         use_container_width=True,
@@ -996,7 +994,7 @@ elif st.session_state.etapa == 3:
     )
 
 # -----------------------------------------------------------------------------
-# ETAPA 4: MAPA DE PROSPECÇÃO (QUADRO DE INFORMAÇÕES COMPLETO RESTAURADO)
+# ETAPA 4: MAPA DE PROSPECÇÃO (QUADRO DE INFORMAÇÕES RELEVANTES COMPLETO)
 # -----------------------------------------------------------------------------
 elif st.session_state.etapa == 4:
     st.markdown("""
@@ -1032,22 +1030,23 @@ elif st.session_state.etapa == 4:
         m = folium.Map(location=[lat_centro, lon_centro], zoom_start=14.5, tiles="OpenStreetMap")
 
         for _, row in df_mapa_filtrado.iterrows():
-            # CARD DE INFORMAÇÕES COMPLETO RESTAURADO AO CLICAR/PASSSAR O MOUSE
+            # QUADRO COMPLETO COM TODAS AS INFORMAÇÕES ESTRATÉGICAS
             info_card_html = f"""
-            <div style="font-family: sans-serif; font-size: 12px; min-width: 220px; padding: 4px;">
-                <b style="color: #0f172a; font-size: 13.5px;">{row['nome']}</b><br/>
-                📍 <i>{row['endereco']}</i><br/><hr style="margin: 6px 0; border: 0.5px solid #cbd5e1;"/>
-                🚨 <b>Score Oportunidade:</b> {row['score_oportunidade']}/100<br/>
+            <div style="font-family: sans-serif; font-size: 12px; min-width: 230px; padding: 6px;">
+                <b style="color: #0f172a; font-size: 14px;">{row['nome']}</b><br/>
+                <span style="color: #475569; font-size: 11px;">📍 {row['endereco']}</span><br/>
+                <hr style="margin: 6px 0; border: 0.5px solid #cbd5e1;"/>
+                🚨 <b>Score Oportunidade:</b> <span style="color: #dc2626; font-weight: bold;">{row['score_oportunidade']}/100</span><br/>
                 ⭐ <b>Nota no Google:</b> {row['nota']} ({row['total_avaliacoes']} avaliações)<br/>
-                🌐 <b>Website Oficial:</b> {'Sim' if row['website'] else 'Não'}<br/>
-                📷 <b>Fotos no Perfil:</b> {row['fotos_total']} fotos publicadas<br/>
+                🌐 <b>Website Oficial:</b> {'✅ Presente' if row['website'] else '❌ Ausente'}<br/>
+                📷 <b>Fotos na Ficha:</b> {row['fotos_total']} fotos publicadas<br/>
                 📅 <b>Última Atualização:</b> há {row['ultima_foto_dias']} dias
             </div>
             """
 
             folium.Marker(
                 location=[row['latitude'], row['longitude']],
-                popup=folium.Popup(info_card_html, max_width=300),
+                popup=folium.Popup(info_card_html, max_width=320),
                 tooltip=f"📍 {row['nome']} | Score: {row['score_oportunidade']}/100",
                 icon=folium.Icon(color="red", icon="info-sign")
             ).add_to(m)
