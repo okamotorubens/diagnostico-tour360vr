@@ -147,32 +147,58 @@ def limpar_banco_dados():
         st.error(f"Erro ao limpar banco: {str(e)}")
 
 # -----------------------------------------------------------------------------
-# GERADOR DE PDF DO PANORAMA DE NICHO (REFEITO E AJUSTADO)
+# GERADOR DE PDF DO PANORAMA DE NICHO (CABEÇALHO ALINHADO À ESQUERDA COMO NO MODELO)
 # -----------------------------------------------------------------------------
 def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
     canvas.saveState()
+    styles = getSampleStyleSheet()
     
-    # 1. CABEÇALHO REBAIXADO (SEM CORTAR NO TOPO)
+    # Estilo do Título do Cabeçalho: Alinhado à esquerda e com tamanho harmonioso
+    header_title_style = ParagraphStyle(
+        'HeaderTitleLeft',
+        parent=styles['Normal'],
+        fontName='Helvetica-Bold',
+        fontSize=11,
+        leading=13.5,
+        textColor=colors.HexColor('#0f172a'),
+        alignment=0 # Alinhado à esquerda
+    )
+    
     logo_tour = "logo_tour_transparente.png" if os.path.exists("logo_tour_transparente.png") else None
+    
     if logo_tour:
-        try:
-            # Posicionado a 720pt de altura para dar margem no topo
-            canvas.drawImage(logo_tour, 36, 715, width=140, height=52, preserveAspectRatio=True, mask='auto')
-        except Exception:
-            pass
+        img_logo = Image(logo_tour, width=130, height=48, kind='proportional')
+    else:
+        img_logo = Paragraph("<b>TOUR360VR</b>", header_title_style)
 
-    canvas.setFont('Helvetica-Bold', 11.5)
-    canvas.setFillColor(colors.HexColor('#0f172a'))
-    
-    # Título do cabeçalho rebaixado em 2 linhas exatas
-    canvas.drawCentredString(380, 748, "ESTUDO DE INTELIGÊNCIA DE MERCADO LOCAL")
-    canvas.drawCentredString(380, 732, "E PRESENÇA DIGITAL NO GOOGLE")
-    
+    texto_cabecalho = Paragraph(
+        "ESTUDO DE INTELIGÊNCIA DE MERCADO LOCAL<br/>E PRESENÇA DIGITAL NO GOOGLE",
+        header_title_style
+    )
+
+    # Tabela do cabeçalho alinhada rigorosamente com a linha divisória (540pt de largura total)
+    # Coluna 1 (Logo): 140pt | Coluna 2 (Espaçamento de 10 caracteres): 25pt | Coluna 3 (Título): 375pt
+    header_table = Table([[img_logo, "", texto_cabecalho]], colWidths=[140, 25, 375])
+    header_table.setStyle(TableStyle([
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('LEFTPADDING', (0,0), (-1,-1), 0),
+        ('RIGHTPADDING', (0,0), (-1,-1), 0),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+        ('TOPPADDING', (0,0), (-1,-1), 0),
+        ('ALIGN', (0,0), (0,0), 'LEFT'),
+        ('ALIGN', (2,0), (2,0), 'LEFT'),
+    ]))
+
+    # Desenha a tabela do cabeçalho na altura Y = 725 (deixando margem topo agradável)
+    header_table.wrapOn(canvas, 540, 60)
+    header_table.drawOn(canvas, 36, 725)
+
+    # Linha divisória horizontal abaixo do cabeçalho
     canvas.setStrokeColor(colors.HexColor('#cbd5e1'))
     canvas.setLineWidth(1.5)
-    canvas.line(36, 710, 576, 710)
+    canvas.line(36, 715, 576, 715)
     
-    # 2. RODAPÉ FIXO COM HIPERLINKS PERFEITAMENTE ALINHADOS
+    # RODAPÉ FIXO COM HIPERLINKS PERFEITAMENTE ALINHADOS
     canvas.setLineWidth(1)
     canvas.line(36, 42, 576, 42)
     
@@ -182,7 +208,7 @@ def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
     texto_rodape = "tour360vr.com.br   |   contato@okamotomidiasvisuais.com.br   |   (16) 99133-2121"
     canvas.drawCentredString(306, 26, texto_rodape)
 
-    # Zonas de links sobre os elementos do rodapé
+    # Zonas de links clicáveis sobre os textos do rodapé
     try:
         canvas.linkURL('https://tour360vr.com.br', (120, 20, 215, 36), relative=0)
         canvas.linkURL('mailto:contato@okamotomidiasvisuais.com.br', (225, 20, 415, 36), relative=0)
@@ -197,7 +223,7 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     
     doc = SimpleDocTemplate(
         buffer, pagesize=letter,
-        rightMargin=36, leftMargin=36, topMargin=90, bottomMargin=55,
+        rightMargin=36, leftMargin=36, topMargin=95, bottomMargin=55,
         title=f"Panorama de Mercado - {nicho_nome}",
         author="Tour360VR"
     )
