@@ -147,13 +147,12 @@ def limpar_banco_dados():
         st.error(f"Erro ao limpar banco: {str(e)}")
 
 # -----------------------------------------------------------------------------
-# GERADOR DE PDF DO PANORAMA DE NICHO (CABEÇALHO ALINHADO À ESQUERDA COMO NO MODELO)
+# GERADOR DE PDF DO PANORAMA DE NICHO (LOGO MAIOR, TÍTULO PRÓXIMO E LINKS EXATOS)
 # -----------------------------------------------------------------------------
 def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
     canvas.saveState()
     styles = getSampleStyleSheet()
     
-    # Estilo do Título do Cabeçalho: Alinhado à esquerda e com tamanho harmonioso
     header_title_style = ParagraphStyle(
         'HeaderTitleLeft',
         parent=styles['Normal'],
@@ -161,13 +160,14 @@ def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
         fontSize=11,
         leading=13.5,
         textColor=colors.HexColor('#0f172a'),
-        alignment=0 # Alinhado à esquerda
+        alignment=0
     )
     
     logo_tour = "logo_tour_transparente.png" if os.path.exists("logo_tour_transparente.png") else None
     
     if logo_tour:
-        img_logo = Image(logo_tour, width=130, height=48, kind='proportional')
+        # Logo aumentada
+        img_logo = Image(logo_tour, width=155, height=56, kind='proportional')
     else:
         img_logo = Paragraph("<b>TOUR360VR</b>", header_title_style)
 
@@ -176,9 +176,8 @@ def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
         header_title_style
     )
 
-    # Tabela do cabeçalho alinhada rigorosamente com a linha divisória (540pt de largura total)
-    # Coluna 1 (Logo): 140pt | Coluna 2 (Espaçamento de 10 caracteres): 25pt | Coluna 3 (Título): 375pt
-    header_table = Table([[img_logo, "", texto_cabecalho]], colWidths=[140, 25, 375])
+    # Tabela do cabeçalho com 10pt de separação (155pt logo + 10pt espaço + 375pt texto = 540pt)
+    header_table = Table([[img_logo, "", texto_cabecalho]], colWidths=[155, 10, 375])
     header_table.setStyle(TableStyle([
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
         ('LEFTPADDING', (0,0), (-1,-1), 0),
@@ -189,16 +188,15 @@ def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
         ('ALIGN', (2,0), (2,0), 'LEFT'),
     ]))
 
-    # Desenha a tabela do cabeçalho na altura Y = 725 (deixando margem topo agradável)
     header_table.wrapOn(canvas, 540, 60)
-    header_table.drawOn(canvas, 36, 725)
+    header_table.drawOn(canvas, 36, 720)
 
     # Linha divisória horizontal abaixo do cabeçalho
     canvas.setStrokeColor(colors.HexColor('#cbd5e1'))
     canvas.setLineWidth(1.5)
-    canvas.line(36, 715, 576, 715)
+    canvas.line(36, 712, 576, 712)
     
-    # RODAPÉ FIXO COM HIPERLINKS PERFEITAMENTE ALINHADOS
+    # RODAPÉ FIXO COM HIPERLINKS RECALIBRADOS SOBRE OS TEXTOS
     canvas.setLineWidth(1)
     canvas.line(36, 42, 576, 42)
     
@@ -206,13 +204,16 @@ def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
     canvas.setFillColor(colors.HexColor('#0f172a'))
     
     texto_rodape = "tour360vr.com.br   |   contato@okamotomidiasvisuais.com.br   |   (16) 99133-2121"
-    canvas.drawCentredString(306, 26, texto_rodape)
+    canvas.drawCentredString(306, 25, texto_rodape)
 
-    # Zonas de links clicáveis sobre os textos do rodapé
+    # Coordenadas precisas para cada link no rodapé
     try:
-        canvas.linkURL('https://tour360vr.com.br', (120, 20, 215, 36), relative=0)
-        canvas.linkURL('mailto:contato@okamotomidiasvisuais.com.br', (225, 20, 415, 36), relative=0)
-        canvas.linkURL('https://wa.me/5516991332121', (425, 20, 505, 36), relative=0)
+        # Link 1: Site tour360vr.com.br (X: 105 até 210)
+        canvas.linkURL('https://tour360vr.com.br', (105, 18, 210, 34), relative=0)
+        # Link 2: E-mail contato@okamotomidiasvisuais.com.br (X: 220 até 425)
+        canvas.linkURL('mailto:contato@okamotomidiasvisuais.com.br', (220, 18, 425, 34), relative=0)
+        # Link 3: WhatsApp (16) 99133-2121 (X: 435 até 515)
+        canvas.linkURL('https://wa.me/5516991332121', (435, 18, 515, 34), relative=0)
     except Exception:
         pass
         
