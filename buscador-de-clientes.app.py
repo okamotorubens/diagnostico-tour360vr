@@ -154,13 +154,13 @@ def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
     styles = getSampleStyleSheet()
     
     header_title_style = ParagraphStyle(
-        'HeaderTitleLeft',
+        'HeaderTitleCenter',
         parent=styles['Normal'],
         fontName='Helvetica-Bold',
         fontSize=12,
         leading=14.5,
         textColor=colors.HexColor('#0f172a'),
-        alignment=0,
+        alignment=1,  # 1 = Centralizado (Center)
         leftIndent=0,
         firstLineIndent=0
     )
@@ -177,16 +177,15 @@ def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
         header_title_style
     )
 
-    # Coluna exata da logo (140pt) + texto direto (400pt) = 540pt
     header_table = Table([[img_logo, texto_cabecalho]], colWidths=[140, 400])
     header_table.setStyle(TableStyle([
-        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'), # Garante alinhamento vertical centralizado
         ('LEFTPADDING', (0,0), (-1,-1), 0),
         ('RIGHTPADDING', (0,0), (-1,-1), 0),
         ('BOTTOMPADDING', (0,0), (-1,-1), 0),
         ('TOPPADDING', (0,0), (-1,-1), 0),
         ('ALIGN', (0,0), (0,0), 'LEFT'),
-        ('ALIGN', (1,0), (1,0), 'LEFT'),
+        ('ALIGN', (1,0), (1,0), 'CENTER'), # Garante alinhamento horizontal centralizado na célula
     ]))
 
     header_table.wrapOn(canvas, 540, 55)
