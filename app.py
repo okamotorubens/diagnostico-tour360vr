@@ -1283,17 +1283,16 @@ if etapa_atual == 1:
                         st.error(f"Erro ao obter detalhes: {e}")
 
         st.markdown("<div class='card-title' style='margin-top:15px;'>CHECKLIST DE PONTOS CRÍTICOS</div>", unsafe_allow_html=True)
-        
-        c_a, c_b, c_c, c_d = st.columns(4)
-        st.session_state['dados']['tem_tour360'] = c_a.checkbox("Tour 360° Ativo", value=st.session_state['dados']['tem_tour360'])
-        st.session_state['dados']['tem_fotos_hd'] = c_b.checkbox("Fotos HD", value=st.session_state['dados']['tem_fotos_hd'])
-        st.session_state['dados']['categorias_completas'] = c_c.checkbox("Categorias OK", value=st.session_state['dados']['categorias_completas'])
-        st.session_state['dados']['horarios_ok'] = c_d.checkbox("Horários OK", value=st.session_state['dados']['horarios_ok'])
-        
-        c_e, c_f, c_g = st.columns(3)
-        st.session_state['dados']['tem_descricao'] = c_e.checkbox("Descrição", value=st.session_state['dados']['tem_descricao'])
-        st.session_state['dados']['atributos_ok'] = c_f.checkbox("Atributos Serviços", value=st.session_state['dados']['atributos_ok'])
-        st.session_state['dados']['resposta_avaliacoes_ok'] = c_g.checkbox("Respostas Ativas", value=st.session_state['dados']['resposta_avaliacoes_ok'])
+    c_a, c_b, c_c, c_d = st.columns(4)
+st.session_state['dados']['tem_tour360'] = c_a.checkbox("Tour 360° Ativo", value=st.session_state['dados'].get('tem_tour360', False), key="chk_tour360_diag")
+st.session_state['dados']['tem_fotos_hd'] = c_b.checkbox("Fotos HD", value=st.session_state['dados'].get('tem_fotos_hd', False), key="chk_fotos_hd_diag")
+st.session_state['dados']['categorias_completas'] = c_c.checkbox("Categorias OK", value=st.session_state['dados'].get('categorias_completas', False), key="chk_categorias_diag")
+st.session_state['dados']['horarios_ok'] = c_d.checkbox("Horários OK", value=st.session_state['dados'].get('horarios_ok', False), key="chk_horarios_diag")
+
+c_e, c_f, c_g = st.columns(3)
+st.session_state['dados']['tem_descricao'] = c_e.checkbox("Descrição", value=st.session_state['dados'].get('tem_descricao', False), key="chk_descricao_diag")
+st.session_state['dados']['atributos_ok'] = c_f.checkbox("Atributos Serviços", value=st.session_state['dados'].get('atributos_ok', False), key="chk_atributos_diag")
+st.session_state['dados']['resposta_avaliacoes_ok'] = c_g.checkbox("Respostas Ativas", value=st.session_state['dados'].get('resposta_avaliacoes_ok', False), key="chk_respostas_diag")
 
         st.markdown("</div>", unsafe_allow_html=True)
 
