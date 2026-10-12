@@ -191,7 +191,7 @@ def limpar_banco_dados():
 init_db()
 
 # -----------------------------------------------------------------------------
-# GERADOR DE PDF DO PANORAMA DE NICHO (ESPAÇAMENTOS EXPANDIDOS & LOGO MAIOR)
+# GERADOR DE PDF DO PANORAMA DE NICHO
 # -----------------------------------------------------------------------------
 def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     buffer = io.BytesIO()
@@ -205,7 +205,6 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
 
     elements = []
 
-    # LOGO TOUR360VR MAIOR E ALINHADA À ESQUERDA
     logo_tour = "logo_tour_transparente.png" if os.path.exists("logo_tour_transparente.png") else None
     img_tour = Image(logo_tour, width=160, height=52, kind='proportional') if logo_tour else Paragraph("<b>TOUR360VR</b>", body_style)
 
@@ -217,15 +216,12 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     ]))
     elements.append(header_table)
     
-    # MAIS ESPAÇO ENTRE A LOGO E A LINHA
     elements.append(Spacer(1, 4))
     elements.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor('#cbd5e1'), spaceBefore=2, spaceAfter=12))
 
-    # TÍTULO E SUBTÍTULO
     elements.append(Paragraph(f"PANORAMA DE MERCADO: {nicho_nome.upper()}", title_style))
     elements.append(Paragraph("Estudo de Inteligência de Mercado Local e Presença Digital no Google", subtitle_style))
 
-    # MAIS ESPAÇO ANTES DO QUADRO DE INDICADORES
     elements.append(Spacer(1, 6))
 
     total_emp = len(df_nicho)
@@ -249,12 +245,8 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     ]))
     elements.append(t_resumo)
     
-    # MAIS ESPAÇO ENTRE O QUADRO E O TÍTULO DO RANKING
     elements.append(Spacer(1, 12))
-
     elements.append(Paragraph("RANKING DE EMPRESAS AUDITADAS NO SETOR (ORDENADO POR MAIOR SCORE)", section_heading))
-    
-    # MAIS ESPAÇO ENTRE O TÍTULO DO RANKING E A TABELA
     elements.append(Spacer(1, 6))
 
     df_nicho_sorted = df_nicho.sort_values(by='score_oportunidade', ascending=False)
@@ -289,7 +281,6 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     elements.append(Spacer(1, 12))
     elements.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor('#cbd5e1'), spaceBefore=4, spaceAfter=6))
     
-    # RODAPÉ SEM QUADRADOS FIXO NA PARTE INFERIOR
     rodape_text = Paragraph(
         "<b>tour360vr.com.br</b> &nbsp;|&nbsp; <b>contato@okamotomidiasvisuais.com.br</b> &nbsp;|&nbsp; <b>(16) 99133-2121</b>",
         ParagraphStyle('Rodape', parent=body_style, alignment=1, textColor=colors.HexColor('#1e293b'))
@@ -360,9 +351,9 @@ if 'etapa' not in st.session_state:
     st.session_state.etapa = 1
 
 # -----------------------------------------------------------------------------
-# INTEGRAÇÃO DE BUSCA E AUDITORIA
+# INTEGRAÇÃO DE BUSCA E AUDITORIA COM FILTRO DE RAIO
 # -----------------------------------------------------------------------------
-def buscar_google_places_api(nicho, cidade, bairro, api_key, limite=20):
+def buscar_google_places_api(nicho, cidade, bairro, api_key, limite=20, apenas_sem_tour=False):
     query_str = f"{nicho}"
     if bairro:
         query_str += f" no bairro {bairro}"
@@ -462,10 +453,10 @@ def buscar_google_places_api(nicho, cidade, bairro, api_key, limite=20):
         st.warning(f"Aviso da API: {str(e)}. Carregando dados de contingência.")
     return None
 
-def minerar_e_auditar_negocios(nicho, cidade, bairro, limite=20):
+def minerar_e_auditar_negocios(nicho, cidade, bairro, limite=20, apenas_sem_tour=False):
     api_key = st.secrets.get("GOOGLE_API_KEY", None) or os.getenv("GOOGLE_API_KEY", None)
     if api_key:
-        leads_reais = buscar_google_places_api(nicho, cidade, bairro, api_key, limite)
+        leads_reais = buscar_google_places_api(nicho, cidade, bairro, api_key, limite, apenas_sem_tour)
         if leads_reais:
             return leads_reais
 
@@ -638,7 +629,7 @@ with st.sidebar:
             st.rerun()
 
 # -----------------------------------------------------------------------------
-# ETAPA 1: BUSCADOR DE CLIENTES
+# ETAPA 1: BUSCADOR DE CLIENTES (COM CONTROLE DE RAIO E FILTROS)
 # -----------------------------------------------------------------------------
 if st.session_state.etapa == 1:
     st.markdown("""
@@ -655,12 +646,16 @@ if st.session_state.etapa == 1:
         with col3: bairro_input = st.text_input("Bairro / Região (Opcional)", value="Jardim Sumaré", help="Deixe em branco para buscar na cidade inteira")
         with col4: limite_input = st.number_input("Qtd. Máxima", min_value=20, max_value=50, value=20, step=5)
         
+        c_r1, c_r2 = st.columns([2, 2])
+        with c_r1: raio_input = st.slider("🎯 Raio Estimado da Varredura (KM)", min_value=1, max_value=15, value=3)
+        with c_r2: chk_sem_tour = st.checkbox("⚡ Filtrar prioritariamente fichas sem Tour 360°", value=True)
+
         btn_minar = st.form_submit_button("🚀 Iniciar Varredura Profunda", use_container_width=True)
 
     if btn_minar:
         with st.spinner("Varrendo Google Maps, auditando presença web e salvando no banco..."):
             time.sleep(1)
-            minerar_e_auditar_negocios(nicho_input, cidade_input, bairro_input, limite_input)
+            minerar_e_auditar_negocios(nicho_input, cidade_input, bairro_input, limite_input, chk_sem_tour)
             st.session_state.etapa = 2
             st.rerun()
 
@@ -672,13 +667,13 @@ if st.session_state.etapa == 1:
             st.rerun()
 
 # -----------------------------------------------------------------------------
-# ETAPA 2: BASE DE LEADS & CRM DE VENDAS
+# ETAPA 2: BASE DE LEADS & CRM DE VENDAS (COM MÓDULO DE SCRIPTS DE COPY)
 # -----------------------------------------------------------------------------
 elif st.session_state.etapa == 2:
     st.markdown("""
         <div class="main-header">
             <h1 class="main-title">📊 Base de Leads e Gerenciador CRM</h1>
-            <div class="main-subtitle">Seus leads permanecem salvos indefinidamente no banco de dados. Atualize status e exporte planilhas completas.</div>
+            <div class="main-subtitle">Seus leads permanecem salvos indefinidamente no banco de dados. Atualize status, use os scripts de vendas e exporte planilhas.</div>
         </div>
     """, unsafe_allow_html=True)
 
@@ -769,15 +764,34 @@ elif st.session_state.etapa == 2:
                 link_wa = f"https://wa.me/55{lead['whatsapp']}?text={urllib.parse.quote(msg_wa)}"
                 st.markdown(f'<a href="{link_wa}" target="_blank"><button style="width:100%; background-color:#25D366; color:white; border:none; padding:8px; border-radius:6px; font-weight:bold; cursor:pointer; margin-bottom:8px;">💬 WhatsApp</button></a>', unsafe_allow_html=True)
 
-        st.markdown("**📋 Resumo do Cliente para Copiar e Colar no Diagnóstico:**")
-        texto_copia = f"""Empresa: {lead['nome']}
-Endereço: {lead['endereco']}
-Categoria: {lead['categoria']}
-Telefone: {lead['telefone']}
-Website: {lead['website'] if lead['website'] else 'Não possui'}
-Pontos Críticos: {', '.join(lead['pontos_criticos'])}"""
+        # MÓDULO DE SCRIPTS DE ABORDAGEM PRONTOS
+        with st.expander(f"✉️ **Uso Interno — Scripts de Vendas e Abordagem ({lead['nome']})**"):
+            st.markdown("#### 1) Abordagem Inicial — WhatsApp")
+            script_wa = f"Olá! Analisei o perfil da {lead['nome']} no Google e identifiquei oportunidades importantes para aumentar suas vendas presenciais com Tour 360° e otimização da ficha. Tenho um diagnóstico completo em PDF que mostra exatamente o que fazer. Posso enviar?"
+            st.code(script_wa, language="text")
 
-        st.code(texto_copia, language="text")
+            st.markdown("#### 2) Abordagem Inicial — E-mail")
+            script_email = f"""Assunto: Oportunidade de Presença Digital: {lead['nome']} no Google
+
+Olá! Analisei o perfil da {lead['nome']} no Google e gostaria de compartilhar uma oportunidade importante.
+
+Identifiquei 3 pontos críticos que estão impactando a confiança de novos clientes:
+1. Ausência de Tour Virtual 360° navegável (seus concorrentes levam vantagem visual).
+2. Perfil estático com fotos e informações desatualizadas.
+3. Falta de otimização de palavras-chave para o setor de {lead['categoria']}.
+
+Temos soluções para transformar a vitrine do seu negócio no Google. Anexo um diagnóstico em PDF com a análise detalhada.
+
+Fico à disposição para conversarmos!
+Atenciosamente,
+TOUR360VR | Okamoto Mídias Visuais
+(16) 99133-2121 | tour360vr.com.br"""
+            st.code(script_email, language="text")
+
+            st.markdown("#### 3) Follow-up 48h — Pós-Envio do Diagnóstico")
+            script_follow = f"Olá! Só checando por aqui — conseguiu analisar o diagnóstico em PDF da {lead['nome']} que te enviei? Fico no aguardo para tirar qualquer dúvida!"
+            st.code(script_follow, language="text")
+
         st.divider()
 
 # -----------------------------------------------------------------------------
@@ -806,7 +820,6 @@ elif st.session_state.etapa == 3:
 
     df_filtrado_sorted = df_filtrado.sort_values(by='score_oportunidade', ascending=False)
 
-    # NOME LIMPO DO ARQUIVO PDF SEM HIFEN
     nome_arquivo_pdf = f"Relatorio Panorama {nicho_selecionado}.pdf".replace(':', '').replace('/', ' ')
 
     with col_btn_pdf:
@@ -863,7 +876,7 @@ elif st.session_state.etapa == 3:
     )
 
 # -----------------------------------------------------------------------------
-# ETAPA 4: MAPA DE PROSPECÇÃO (MAPA EXPANDIDO EM ALTURA 700PX E RÓTULOS FIXOS)
+# ETAPA 4: MAPA DE PROSPECÇÃO
 # -----------------------------------------------------------------------------
 elif st.session_state.etapa == 4:
     st.markdown("""
@@ -899,7 +912,6 @@ elif st.session_state.etapa == 4:
         m = folium.Map(location=[lat_centro, lon_centro], zoom_start=13, tiles="OpenStreetMap")
 
         for _, row in df_mapa_filtrado.iterrows():
-            # RÓTULO DE TEXTO VISÍVEL DIRETO NO MAPA (PARA SALVAR TELA COM NOMES EXPLICITOS)
             icon_html = f"""
             <div style="
                 background-color: #dc2626; color: white; padding: 3px 7px; border-radius: 4px;
@@ -924,7 +936,6 @@ elif st.session_state.etapa == 4:
                 icon=folium.DivIcon(html=icon_html)
             ).add_to(m)
 
-        # MAPA COM ALTURA AUMENTADA PARA 700PX
         st_folium(m, width="100%", height=700)
         st.caption("💡 **Dica de Print:** Utilize as teclas `Win + Shift + S` (Windows) ou `Cmd + Shift + 4` (Mac) para capturar o mapa expandido com os nomes visíveis.")
     else:
