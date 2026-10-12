@@ -5,3 +5,5 @@ fpdf2
 reportlab
 st-gsheets-connection
 openpyxl
+folium
+streamlit-folium
