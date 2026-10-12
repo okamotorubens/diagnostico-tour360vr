@@ -7,6 +7,7 @@ import os
 import re
 import requests
 import csv
+import urllib.parse
 from datetime import datetime
 from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
@@ -15,12 +16,18 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 import io
 
 # -----------------------------------------------------------------------------
+# CONFIGURAÇÃO DO ENDEREÇO DO SEU OUTRO SISTEMA DE DIAGNÓSTICO
+# -----------------------------------------------------------------------------
+# Insira a URL exata do seu aplicativo de diagnóstico publicado no Streamlit Cloud
+URL_SISTEMA_DIAGNOSTICO = "https://tour360vr.streamlit.app/"
+
+# -----------------------------------------------------------------------------
 # CONFIGURAÇÃO DA PÁGINA STREAMLIT
 # -----------------------------------------------------------------------------
 favicon_path = "logo_tour_transparente.png" if os.path.exists("logo_tour_transparente.png") else "🔍"
 
 st.set_page_config(
-    page_title="Mineração & Diagnóstico Local | Okamoto & Tour360VR",
+    page_title="Mineração & Diagnóstico Local",
     page_icon=favicon_path,
     layout="wide",
     initial_sidebar_state="expanded"
@@ -32,7 +39,6 @@ st.set_page_config(
 DB_PATH = "leads_database.db"
 
 def init_db():
-    """Inicializa a tabela de leads no banco de dados SQLite caso não exista."""
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute('''
@@ -63,15 +69,12 @@ def init_db():
     conn.close()
 
 def salvar_lead_db(lead):
-    """Salva ou atualiza um lead no banco de dados SQLite."""
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     
-    # Converte listas para JSON string
     criticos_json = json.dumps(lead.get('pontos_criticos', []), ensure_ascii=False)
     opp_json = json.dumps(lead.get('oportunidades', []), ensure_ascii=False)
     
-    # Verifica duplicidade pelo nome e endereço
     cursor.execute("SELECT id FROM leads WHERE nome = ? AND endereco = ?", (lead['nome'], lead['endereco']))
     data = cursor.fetchone()
     
@@ -107,7 +110,6 @@ def salvar_lead_db(lead):
     conn.close()
 
 def carregar_todos_leads_db():
-    """Carrega todos os leads salvos no banco de dados."""
     init_db()
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
@@ -142,14 +144,12 @@ def carregar_todos_leads_db():
     return leads
 
 def limpar_banco_dados():
-    """Limpa o histórico completo de buscas salvas."""
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute("DELETE FROM leads")
     conn.commit()
     conn.close()
 
-# Inicializa o banco de dados
 init_db()
 
 # -----------------------------------------------------------------------------
@@ -186,6 +186,24 @@ st.markdown("""
         margin-top: 15px;
         margin-bottom: 15px;
     }
+
+    .btn-redirect {
+        display: inline-block;
+        width: 100%;
+        background-color: #3b82f6;
+        color: white;
+        text-align: center;
+        padding: 9px;
+        border-radius: 6px;
+        font-weight: bold;
+        text-decoration: none;
+        margin-bottom: 8px;
+        transition: background-color 0.2s;
+    }
+    .btn-redirect:hover {
+        background-color: #2563eb;
+        color: white;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -194,8 +212,6 @@ st.markdown("""
 # -----------------------------------------------------------------------------
 if 'etapa' not in st.session_state:
     st.session_state.etapa = 1
-if 'lead_selecionado_diagnostico' not in st.session_state:
-    st.session_state.lead_selecionado_diagnostico = None
 
 # -----------------------------------------------------------------------------
 # INTEGRAÇÃO DE BUSCA E AUDITORIA COMPLETA
@@ -280,7 +296,6 @@ def buscar_google_places_api(nicho, cidade, api_key, limite=10):
                     "score_oportunidade": min(score, 100)
                 }
                 
-                # Salva no Banco de Dados SQLite
                 salvar_lead_db(lead_obj)
                 leads.append(lead_obj)
             return leads
@@ -525,7 +540,7 @@ def gerar_pdf_diagnostico(lead):
     return buffer
 
 # -----------------------------------------------------------------------------
-# BARRA LATERAL (NAVEGAÇÃO UNIFICADA)
+# BARRA LATERAL (NAVEGAÇÃO COMPACTA)
 # -----------------------------------------------------------------------------
 base_leads = carregar_todos_leads_db()
 
@@ -543,17 +558,13 @@ with st.sidebar:
     st.markdown('<div class="sidebar-title">Mineração & Diagnóstico Local</div>', unsafe_allow_html=True)
     st.divider()
 
-    st.markdown("### 📌 Módulos Integrados")
+    st.markdown("### 📌 Módulos")
     if st.button("1. Buscador de Clientes", use_container_width=True, type="primary" if st.session_state.etapa == 1 else "secondary"):
         st.session_state.etapa = 1
         st.rerun()
         
     if st.button("2. Base de Leads Salvos", use_container_width=True, type="primary" if st.session_state.etapa == 2 else "secondary", disabled=len(base_leads) == 0):
         st.session_state.etapa = 2
-        st.rerun()
-
-    if st.button("3. Diagnóstico & Custos", use_container_width=True, type="primary" if st.session_state.etapa == 3 else "secondary"):
-        st.session_state.etapa = 3
         st.rerun()
 
     if len(base_leads) > 0:
@@ -601,7 +612,7 @@ if st.session_state.etapa == 1:
             st.rerun()
 
 # -----------------------------------------------------------------------------
-# ETAPA 2: ANALISADOR E BASE SALVA PERMANENTE
+# ETAPA 2: ANALISADOR E INTEGRAÇÃO DE REDIRECIONAMENTO COM PARÂMETROS
 # -----------------------------------------------------------------------------
 elif st.session_state.etapa == 2:
     st.markdown("""
@@ -690,16 +701,23 @@ elif st.session_state.etapa == 2:
             st.markdown(f"- **Website:** {lead['website'] if lead['website'] else '❌ Sem site'}")
             st.markdown(f"- **Maps:** [Ver no Google Maps](https://www.google.com/maps/search/?api=1&query={lead['nome'].replace(' ', '+')})")
 
-            # BOTÃO PARA ENVIAR O LEAD DIRETO PARA O DIAGNÓSTICO PROFUNDO & CUSTOS
-            if st.button("🛠️ Enviar p/ Diagnóstico Tour360VR", key=f"btn_diag_{lead['id']}", use_container_width=True, type="primary"):
-                st.session_state.lead_selecionado_diagnostico = lead
-                st.session_state.etapa = 3
-                st.rerun()
+            # CONSTRUÇÃO DA URL COM OS DADOS PREENCHIDOS PARA O OUTRO SISTEMA
+            params = {
+                "nome": lead['nome'],
+                "endereco": lead['endereco'],
+                "categoria": lead['categoria'],
+                "whatsapp": lead['whatsapp'],
+                "cidade": lead['cidade_busca']
+            }
+            link_sistema_diagnostico = f"{URL_SISTEMA_DIAGNOSTICO}?{urllib.parse.urlencode(params)}"
+
+            # BOTÃO DE LINK DIRETO QUE ABRE O OUTRO SISTEMA PREENCHIDO
+            st.markdown(f'<a href="{link_sistema_diagnostico}" target="_blank" class="btn-redirect">🛠️ Abrir no Diagnóstico Tour360VR</a>', unsafe_allow_html=True)
 
             if lead['whatsapp']:
                 msg_wa = f"Olá! Notei que a ficha da {lead['nome']} no Google apresenta pontos de melhoria..."
                 link_wa = f"https://wa.me/55{lead['whatsapp']}?text={msg_wa.replace(' ', '%20')}"
-                st.markdown(f'<a href="{link_wa}" target="_blank"><button style="width:100%; background-color:#25D366; color:white; border:none; padding:8px; border-radius:6px; font-weight:bold; cursor:pointer; margin-top:4px; margin-bottom:8px;">💬 WhatsApp</button></a>', unsafe_allow_html=True)
+                st.markdown(f'<a href="{link_wa}" target="_blank"><button style="width:100%; background-color:#25D366; color:white; border:none; padding:8px; border-radius:6px; font-weight:bold; cursor:pointer; margin-bottom:8px;">💬 WhatsApp</button></a>', unsafe_allow_html=True)
 
             nome_arquivo_limpo = re.sub(r'[^a-zA-Z0-9]', '_', lead['nome'])
             nome_arquivo_limpo = re.sub(r'_+', '_', nome_arquivo_limpo).strip('_')
@@ -715,62 +733,3 @@ elif st.session_state.etapa == 2:
             )
 
         st.divider()
-
-# -----------------------------------------------------------------------------
-# ETAPA 3: DIAGNÓSTICO PROFUNDO, CUSTOS & ORÇAMENTO COMPLETO TOUR360VR
-# -----------------------------------------------------------------------------
-elif st.session_state.etapa == 3:
-    lead_sel = st.session_state.lead_selecionado_diagnostico
-
-    st.markdown("""
-        <div class="main-header">
-            <h1 class="main-title">🛠️ Módulo de Diagnóstico Completo & Composição de Custos</h1>
-            <div class="main-subtitle">Integração avançada para orçamento de Tour Virtual 360°, Fotografia Profissional e Logística.</div>
-        </div>
-    """, unsafe_allow_html=True)
-
-    if lead_sel:
-        st.success(f"📌 Lead Carregado Automaticamente do Buscador: **{lead_sel['nome']}** ({lead_sel['endereco']})")
-    else:
-        st.info("Nenhum lead foi selecionado do buscador. Você pode preencher os dados manualmente abaixo:")
-
-    with st.form("form_calculo_completo"):
-        st.markdown("### 1. Dados do Cliente e Localização")
-        c1, c2 = st.columns(2)
-        with c1:
-            nome_cliente = st.text_input("Nome da Empresa / Cliente", value=lead_sel['nome'] if lead_sel else "")
-            categoria_cliente = st.text_input("Categoria / Nicho", value=lead_sel['categoria'] if lead_sel else "")
-        with c2:
-            endereco_cliente = st.text_input("Endereço Completo", value=lead_sel['endereco'] if lead_sel else "")
-            whatsapp_cliente = st.text_input("WhatsApp de Contato", value=lead_sel['whatsapp'] if lead_sel else "")
-
-        st.divider()
-        st.markdown("### 2. Parâmetros de Serviços e Logística Tour360VR")
-        col_s1, col_s2, col_s3 = st.columns(3)
-        with col_s1:
-            qtd_panoramas = st.number_input("Qtd. Panorâmicas 360°", min_value=1, max_value=100, value=10)
-            valor_por_panorama = st.number_input("Valor por Panorâmica (R$)", value=120.0)
-        with col_s2:
-            qtd_fotos_hdr = st.number_input("Qtd. Fotos Estáticas HDR", min_value=0, max_value=200, value=15)
-            valor_por_foto = st.number_input("Valor por Foto HDR (R$)", value=35.0)
-        with col_s3:
-            distancia_km = st.number_input("Distância de Deslocamento (KM)", value=25.0)
-            custo_km = st.number_input("Custo por KM (R$)", value=2.50)
-
-        st.divider()
-        btn_gerar_orcamento = st.form_submit_button("💰 Calcular Orçamento Final & Proposta Oficial", use_container_width=True)
-
-    if btn_gerar_orcamento:
-        tot_panoramas = qtd_panoramas * valor_por_panorama
-        tot_fotos = qtd_fotos_hdr * valor_por_foto
-        tot_logistica = distancia_km * custo_km
-        tot_geral = tot_panoramas + tot_fotos + tot_logistica
-
-        st.markdown("### 📊 Resumo da Composição de Custos:")
-        res_col1, res_col2, res_col3, res_col4 = st.columns(4)
-        res_col1.metric("Tour 360°", f"R$ {tot_panoramas:.2f}")
-        res_col2.metric("Fotografia HDR", f"R$ {tot_fotos:.2f}")
-        res_col3.metric("Logística / Deslocamento", f"R$ {tot_logistica:.2f}")
-        res_col4.metric("INVESTIMENTO TOTAL", f"R$ {tot_geral:.2f}")
-
-        st.success("Proposta comercial calculada com sucesso! Você pode utilizar esses valores para o contrato formal do cliente.")
