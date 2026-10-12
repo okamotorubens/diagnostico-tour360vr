@@ -18,7 +18,7 @@ import io
 # -----------------------------------------------------------------------------
 # CONFIGURAÇÃO DO ENDEREÇO DO SEU OUTRO SISTEMA DE DIAGNÓSTICO
 # -----------------------------------------------------------------------------
-URL_SISTEMA_DIAGNOSTICO = "https://diagnostico-tour360vr.streamlit.app/"
+URL_SISTEMA_DIAGNOSTICO = "https://tour360vr.streamlit.app/"
 
 # -----------------------------------------------------------------------------
 # CONFIGURAÇÃO DA PÁGINA STREAMLIT
