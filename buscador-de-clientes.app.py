@@ -147,7 +147,7 @@ def limpar_banco_dados():
         st.error(f"Erro ao limpar banco: {str(e)}")
 
 # -----------------------------------------------------------------------------
-# GERADOR DE PDF DO PANORAMA DE NICHO (LOGO COLADA AO TÍTULO & LINKS RECALIBRADOS)
+# GERADOR DE PDF DO PANORAMA DE NICHO (TEXTO COLADO À LOGO TOUR360VR)
 # -----------------------------------------------------------------------------
 def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
     canvas.saveState()
@@ -166,7 +166,7 @@ def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
     logo_tour = "logo_tour_transparente.png" if os.path.exists("logo_tour_transparente.png") else None
     
     if logo_tour:
-        img_logo = Image(logo_tour, width=170, height=60, kind='proportional')
+        img_logo = Image(logo_tour, width=160, height=58, kind='proportional')
     else:
         img_logo = Paragraph("<b>TOUR360VR</b>", header_title_style)
 
@@ -175,8 +175,8 @@ def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
         header_title_style
     )
 
-    # Distância entre a logo e o texto ajustada para apenas 10pt (170pt logo + 10pt espaço + 360pt texto = 540pt)
-    header_table = Table([[img_logo, "", texto_cabecalho]], colWidths=[170, 10, 360])
+    # Distância colada: 160pt logo + 2pt espaço + 378pt texto = 540pt
+    header_table = Table([[img_logo, "", texto_cabecalho]], colWidths=[160, 2, 378])
     header_table.setStyle(TableStyle([
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
         ('LEFTPADDING', (0,0), (-1,-1), 0),
@@ -195,7 +195,7 @@ def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
     canvas.setLineWidth(1.5)
     canvas.line(36, 708, 576, 708)
     
-    # RODAPÉ FIXO COM HIPERLINKS EXATOS SOBRE O TEXTO VISÍVEL
+    # RODAPÉ FIXO COM HIPERLINKS
     canvas.setLineWidth(1)
     canvas.line(36, 42, 576, 42)
     
@@ -359,12 +359,20 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     return buffer
 
 # -----------------------------------------------------------------------------
-# ESTILIZAÇÃO CSS CUSTOMIZADA (IGUAL AO DIAGNÓSTICO)
+# ESTILIZAÇÃO CSS CUSTOMIZADA (SIDEBAR TRAVADA SEM REDIMENSIONAMENTO)
 # -----------------------------------------------------------------------------
 st.markdown("""
     <style>
     .main { background-color: #0e1117; padding-top: 15px !important; }
     .block-container { padding-top: 1rem !important; padding-bottom: 1rem !important; }
+    
+    /* BLOQUEAR REDIMENSIONAMENTO DA SIDEBAR */
+    [data-testid="stSidebar"] {
+        resize: none !important;
+    }
+    [data-testid="stSidebarNav"] {
+        display: none !important;
+    }
     
     .main-header {
         background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
@@ -623,9 +631,9 @@ base_leads = carregar_todos_leads_db()
 with st.sidebar:
     st.markdown('<div class="sidebar-title">Radar Comercial</div>', unsafe_allow_html=True)
     
-    # Logo Tour360VR
+    # Logo Tour360VR (Reduzida em proporção)
     if os.path.exists("logo_tour_transparente.png"):
-        c1, c2, c3 = st.columns([0.8, 4.4, 0.8])
+        c1, c2, c3 = st.columns([1.2, 3.6, 1.2])
         with c2: st.image("logo_tour_transparente.png", use_container_width=True)
     
     # Logo Okamoto Mídias Visuais
