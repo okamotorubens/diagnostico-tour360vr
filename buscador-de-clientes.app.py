@@ -203,15 +203,14 @@ def desenhar_rodape_fixo_links(canvas, doc):
     canvas.setFont('Helvetica', 8.5)
     canvas.setFillColor(colors.HexColor('#000000'))
     
-    # LINKS PRECISOS SOMENTE SOBRE OS TEXTOS DO RODAPÉ
     try:
-        canvas.linkURL('https://tour360vr.com.br', (160, 18, 230, 32), relative=1)
-        canvas.linkURL('mailto:contato@okamotomidiasvisuais.com.br', (245, 18, 430, 32), relative=1)
-        canvas.linkURL('https://wa.me/5516991332121', (445, 18, 520, 32), relative=1)
+        canvas.linkURL('https://tour360vr.com.br', (120, 15, 220, 32), relative=1)
+        canvas.linkURL('mailto:contato@okamotomidiasvisuais.com.br', (230, 15, 420, 32), relative=1)
+        canvas.linkURL('https://wa.me/5516991332121', (430, 15, 540, 32), relative=1)
     except Exception:
         pass
     
-    texto_rodape = "tour360vr.com.br   |   contato@okamotomidiasvisuais.com.br   |   (16) 99133-2121"
+    texto_rodape = "tour360vr.com.br   |   contato@okamotomidiasvisuais.com.br   |   WhatsApp: (16) 99133-2121"
     canvas.drawCentredString(306, 22, texto_rodape)
     canvas.restoreState()
 
@@ -226,21 +225,32 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     )
     styles = getSampleStyleSheet()
     
-    sub_title_header = ParagraphStyle('SubTitleHeader', parent=styles['Normal'], fontSize=12, textColor=colors.HexColor('#0f172a'), fontName='Helvetica-Bold', alignment=1)
-    main_title_style = ParagraphStyle('MainTitle', parent=styles['Heading1'], fontSize=15.5, textColor=colors.HexColor('#0f172a'), fontName='Helvetica-Bold', alignment=1, spaceBefore=4, spaceAfter=8)
-    section_heading = ParagraphStyle('SectionHeading', parent=styles['Heading2'], fontSize=10.5, textColor=colors.HexColor('#0f172a'), spaceBefore=8, spaceAfter=4, fontName='Helvetica-Bold', alignment=1)
+    # TITULO DO CABEÇALHO COM FONTE MAIOR (13.5pt) E CENTRALIZADO
+    sub_title_header = ParagraphStyle(
+        'SubTitleHeader', parent=styles['Normal'],
+        fontSize=13.5, leading=16, textColor=colors.HexColor('#0f172a'),
+        fontName='Helvetica-Bold', alignment=1
+    )
+    main_title_style = ParagraphStyle(
+        'MainTitle', parent=styles['Heading1'],
+        fontSize=15.5, textColor=colors.HexColor('#0f172a'),
+        fontName='Helvetica-Bold', alignment=1, spaceBefore=10, spaceAfter=12
+    )
+    section_heading = ParagraphStyle(
+        'SectionHeading', parent=styles['Heading2'],
+        fontSize=10.5, textColor=colors.HexColor('#0f172a'),
+        spaceBefore=10, spaceAfter=6, fontName='Helvetica-Bold', alignment=1
+    )
     body_style = ParagraphStyle('BodyTextCustom', parent=styles['Normal'], fontSize=9, textColor=colors.HexColor('#334155'), leading=11)
     body_center = ParagraphStyle('BodyCenter', parent=body_style, alignment=1)
 
     elements = []
 
-    # LOGO À ESQUERDA E TÍTULO TOTALMENTE CENTRALIZADO NA PÁGINA (LARGURA TOTAL 540pt)
     logo_tour = "logo_tour_transparente.png" if os.path.exists("logo_tour_transparente.png") else None
     img_tour = Image(logo_tour, width=140, height=45, kind='proportional') if logo_tour else Paragraph("<b>TOUR360VR</b>", body_style)
 
     header_p = Paragraph("ESTUDO DE INTELIGÊNCIA DE MERCADO LOCAL E PRESENÇA DIGITAL NO GOOGLE", sub_title_header)
 
-    # Tabela 1: Logo e Cabeçalho
     header_table = Table([[img_tour, header_p]], colWidths=[140, 400])
     header_table.setStyle(TableStyle([
         ('ALIGN', (0,0), (0,0), 'LEFT'),
@@ -250,16 +260,20 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     ]))
     elements.append(header_table)
     
-    elements.append(HRFlowable(width="100%", thickness=1.5, color=colors.HexColor('#cbd5e1'), spaceBefore=4, spaceAfter=8))
+    # LINHA DIVISÓRIA
+    elements.append(HRFlowable(width="100%", thickness=1.5, color=colors.HexColor('#cbd5e1'), spaceBefore=6, spaceAfter=12))
 
-    # TÍTULO PRINCIPAL CENTRALIZADO EM LARGURA TOTAL
+    # ESPAÇO ENTRE A LINHA E O TÍTULO
+    elements.append(Spacer(1, 10))
     title_p = Paragraph(f"PANORAMA DE MERCADO: {nicho_nome.upper()}", main_title_style)
     title_table = Table([[title_p]], colWidths=[540])
     title_table.setStyle(TableStyle([('ALIGN', (0,0), (-1,-1), 'CENTER')]))
     elements.append(title_table)
-    elements.append(Spacer(1, 6))
+    
+    # ESPAÇO ENTRE O TÍTULO E O GRÁFICO
+    elements.append(Spacer(1, 14))
 
-    # GRÁFICO VETORIAL COM OS MESMOS DADOS DA TELA
+    # GRÁFICO VETORIAL COM A CONTAGEM EXATA DE SCORES
     scores_counts = df_nicho['score_oportunidade'].value_counts().sort_index(ascending=False)
     
     chart_draw = Drawing(540, 70)
@@ -433,11 +447,11 @@ st.markdown("""
         margin-bottom: 10px;
     }
 
-    /* CENTRALIZAÇÃO REFORÇADA PARA AS COLUNAS 3, 4 E 5 DA TABELA STREAMLIT NA ABA 3 */
-    [data-testid="stDataFrame"] th {
+    /* CSS FORÇADO PARA CENTRALIZAR CABEÇALHO E CÉLULAS DA DATAFRAME */
+    div[data-testid="stDataFrame"] table th {
         text-align: center !important;
     }
-    [data-testid="stDataFrame"] td {
+    div[data-testid="stDataFrame"] table td {
         text-align: center !important;
     }
     </style>
@@ -903,7 +917,7 @@ TOUR360VR | Okamoto Mídias Visuais
         st.divider()
 
 # -----------------------------------------------------------------------------
-# ETAPA 3: PANORAMA DE NICHO (CENTRALIZAÇÃO DE CONTEÚDOS DAS COLUNAS 3, 4 E 5)
+# ETAPA 3: PANORAMA DE NICHO (CENTRALIZAÇÃO COMPLETA DA TABELA)
 # -----------------------------------------------------------------------------
 elif st.session_state.etapa == 3:
     st.markdown("""
@@ -972,29 +986,36 @@ elif st.session_state.etapa == 3:
     st.divider()
     st.markdown(f"### 📋 Ranking do Nicho **{nicho_selecionado}** (Do Maior para o Menor Score):")
     
-    df_exibicao = df_filtrado_sorted[['nome', 'cidade_busca', 'score_oportunidade', 'nota', 'total_avaliacoes', 'website']].copy()
-    df_exibicao.columns = ['EMPRESA', 'CIDADE', 'SCORE', 'NOTA', 'AVALIAÇÕES', 'WEBSITE']
+    # DATAFRAME FORMATADO COMO STRING PARA FORÇAR A CENTRALIZAÇÃO EM CADA CÉLULA
+    df_exibicao = pd.DataFrame({
+        'EMPRESA': df_filtrado_sorted['nome'],
+        'CIDADE': df_filtrado_sorted['cidade_busca'],
+        'SCORE': df_filtrado_sorted['score_oportunidade'].apply(lambda x: f"{x}/100"),
+        'NOTA': df_filtrado_sorted['nota'].apply(lambda x: f"{x:.1f} ⭐"),
+        'AVALIAÇÕES': df_filtrado_sorted['total_avaliacoes'].astype(str),
+        'WEBSITE': df_filtrado_sorted['website'].apply(lambda x: x if x else "Não possui")
+    })
 
-    altura_dinamica = (len(df_exibicao) + 1) * 35 + 10
+    altura_dinamica = (len(df_exibicao) + 1) * 35 + 15
 
-    # TABELA COM ALINHAMENTO CENTRALIZADO EM TODAS AS COLUNAS SOLICITADAS
+    # EXIBIÇÃO COM ALINHAMENTO DEFINIDO COMO CENTER
     st.dataframe(
         df_exibicao,
         use_container_width=True,
         hide_index=True,
         height=altura_dinamica,
         column_config={
-            "EMPRESA": st.column_config.Column("EMPRESA"),
-            "CIDADE": st.column_config.Column("CIDADE"),
-            "SCORE": st.column_config.NumberColumn("SCORE", width="small", format="%d/100"),
-            "NOTA": st.column_config.NumberColumn("NOTA", width="small", format="%.1f ⭐"),
-            "AVALIAÇÕES": st.column_config.NumberColumn("AVALIAÇÕES", width="small", format="%d"),
-            "WEBSITE": st.column_config.TextColumn("WEBSITE", width="large")
+            "EMPRESA": st.column_config.Column("EMPRESA", alignment="center"),
+            "CIDADE": st.column_config.Column("CIDADE", alignment="center"),
+            "SCORE": st.column_config.Column("SCORE", width="small", alignment="center"),
+            "NOTA": st.column_config.Column("NOTA", width="small", alignment="center"),
+            "AVALIAÇÕES": st.column_config.Column("AVALIAÇÕES", width="small", alignment="center"),
+            "WEBSITE": st.column_config.Column("WEBSITE", width="large", alignment="center")
         }
     )
 
 # -----------------------------------------------------------------------------
-# ETAPA 4: MAPA DE PROSPECÇÃO (QUADRO DE INFORMAÇÕES RELEVANTES COMPLETO)
+# ETAPA 4: MAPA DE PROSPECÇÃO (CARD COMPLETO NO POPUP E TOOLTIP)
 # -----------------------------------------------------------------------------
 elif st.session_state.etapa == 4:
     st.markdown("""
@@ -1030,13 +1051,13 @@ elif st.session_state.etapa == 4:
         m = folium.Map(location=[lat_centro, lon_centro], zoom_start=14.5, tiles="OpenStreetMap")
 
         for _, row in df_mapa_filtrado.iterrows():
-            # QUADRO COMPLETO COM TODAS AS INFORMAÇÕES ESTRATÉGICAS
+            # CARD DETALHADO COMPLETO QUE APARECE TANTO NO POPUP QUANTO NO HOVER (TOOLTIP)
             info_card_html = f"""
-            <div style="font-family: sans-serif; font-size: 12px; min-width: 230px; padding: 6px;">
+            <div style="font-family: Arial, sans-serif; font-size: 12px; min-width: 240px; padding: 6px; line-height: 1.5;">
                 <b style="color: #0f172a; font-size: 14px;">{row['nome']}</b><br/>
                 <span style="color: #475569; font-size: 11px;">📍 {row['endereco']}</span><br/>
                 <hr style="margin: 6px 0; border: 0.5px solid #cbd5e1;"/>
-                🚨 <b>Score Oportunidade:</b> <span style="color: #dc2626; font-weight: bold;">{row['score_oportunidade']}/100</span><br/>
+                🚨 <b>Score de Oportunidade:</b> <span style="color: #dc2626; font-weight: bold;">{row['score_oportunidade']}/100</span><br/>
                 ⭐ <b>Nota no Google:</b> {row['nota']} ({row['total_avaliacoes']} avaliações)<br/>
                 🌐 <b>Website Oficial:</b> {'✅ Presente' if row['website'] else '❌ Ausente'}<br/>
                 📷 <b>Fotos na Ficha:</b> {row['fotos_total']} fotos publicadas<br/>
@@ -1047,7 +1068,7 @@ elif st.session_state.etapa == 4:
             folium.Marker(
                 location=[row['latitude'], row['longitude']],
                 popup=folium.Popup(info_card_html, max_width=320),
-                tooltip=f"📍 {row['nome']} | Score: {row['score_oportunidade']}/100",
+                tooltip=folium.Tooltip(info_card_html, sticky=True),
                 icon=folium.Icon(color="red", icon="info-sign")
             ).add_to(m)
 
