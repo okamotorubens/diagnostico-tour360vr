@@ -86,7 +86,6 @@ def salvar_lead_db(lead):
     if not supabase:
         return
     try:
-        # Checa duplicidade
         res = supabase.table("leads").select("id").eq("nome", lead['nome']).eq("endereco", lead['endereco']).execute()
         if not res.data:
             supabase.table("leads").insert({
@@ -96,8 +95,8 @@ def salvar_lead_db(lead):
                 "nome": lead['nome'],
                 "categoria": lead['categoria'],
                 "endereco": lead['endereco'],
-                "latitude": lead.get('latitude', -21.1775),
-                "longitude": lead.get('longitude', -47.8103),
+                "latitude": float(lead.get('latitude', -21.1775)),
+                "longitude": float(lead.get('longitude', -47.8103)),
                 "telefone": lead.get('telefone', ''),
                 "whatsapp": lead.get('whatsapp', ''),
                 "website": lead.get('website', ''),
@@ -117,7 +116,7 @@ def salvar_lead_db(lead):
                 "score_oportunidade": int(lead.get('score_oportunidade', 0))
             }).execute()
     except Exception as e:
-        st.error(f"Erro ao salvar no banco Supabase: {str(e)}")
+        st.error(f"Erro ao salvar lead '{lead.get('nome')}': {str(e)}")
 
 def atualizar_status_crm(lead_id, novo_status):
     if not supabase:
@@ -134,7 +133,7 @@ def carregar_todos_leads_db():
         res = supabase.table("leads").select("*").order("id", desc=True).execute()
         return res.data or []
     except Exception as e:
-        st.error(f"Erro ao carregar do Supabase: {str(e)}")
+        st.error(f"Erro ao carregar dados do Supabase: {str(e)}")
         return []
 
 def limpar_banco_dados():
@@ -306,13 +305,13 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
         sc = r_data['score_oportunidade']
         
         if sc >= 60:
-            bg_color = colors.HexColor('#86efac') # Verde
+            bg_color = colors.HexColor('#86efac')
             txt_color = '#14532d'
         elif sc >= 30:
-            bg_color = colors.HexColor('#fde047') # Amarelo
+            bg_color = colors.HexColor('#fde047')
             txt_color = '#713f12'
         else:
-            bg_color = colors.HexColor('#fca5a5') # Vermelho
+            bg_color = colors.HexColor('#fca5a5')
             txt_color = '#7f1d1d'
 
         p_score = Paragraph(f"<font color='{txt_color}'><b>{sc}/100</b></font>", body_center)
@@ -417,12 +416,12 @@ if 'etapa' not in st.session_state:
 def buscar_google_places_api(nicho, cidade, bairro, rua, api_key, limite=20):
     query_parts = []
     if nicho:
-        query_parts.append(nicho)
+        query_parts.append(f'"{nicho}"')
     if rua:
-        query_parts.append(f"na {rua}")
+        query_parts.append(f'na rua "{rua}"')
     if bairro:
-        query_parts.append(f"no bairro {bairro}")
-    query_parts.append(f"em {cidade} - SP")
+        query_parts.append(f'no bairro "{bairro}"')
+    query_parts.append(f'em "{cidade}" - SP')
     
     query_str = " ".join(query_parts)
 
@@ -521,21 +520,20 @@ def buscar_google_places_api(nicho, cidade, bairro, rua, api_key, limite=20):
                 leads.append(lead_obj)
             return leads
         else:
-            st.warning(f"Google Maps API retornou o status: {data.get('status')}. Verifique se a chave de API é válida.")
+            st.error(f"⚠️ Resposta do Google Maps: Status '{data.get('status')}'. Verifique sua GOOGLE_API_KEY.")
     except Exception as e:
-        st.error(f"Erro ao conectar na Google Places API: {str(e)}")
+        st.error(f"Erro na requisição Google Places: {str(e)}")
     return None
 
 def minerar_e_auditar_negocios(nicho, cidade, bairro, rua, limite=20):
-    # BUSCA A CHAVE DO GOOGLE NOS SECRETS OU VARIÁVEIS DE AMBIENTE
     api_key = st.secrets.get("GOOGLE_API_KEY", None) or os.getenv("GOOGLE_API_KEY", None)
     
     if api_key:
         leads_reais = buscar_google_places_api(nicho, cidade, bairro, rua, api_key, limite)
         if leads_reais and len(leads_reais) > 0:
             return leads_reais
-
-    st.error("⚠️ Não foi possível realizar a busca real via Google Places API. Verifique a chave GOOGLE_API_KEY nos Secrets.")
+    else:
+        st.error("⚠️ A chave 'GOOGLE_API_KEY' não foi encontrada nos Secrets do Streamlit Cloud.")
     return []
 
 # -----------------------------------------------------------------------------
@@ -650,9 +648,10 @@ if st.session_state.etapa == 1:
     if btn_minar:
         with st.spinner("Varrendo Google Maps, auditando presença web e salvando na nuvem..."):
             time.sleep(1)
-            minerar_e_auditar_negocios(nicho_input, cidade_input, bairro_input, rua_input, limite_input)
-            st.session_state.etapa = 2
-            st.rerun()
+            novos = minerar_e_auditar_negocios(nicho_input, cidade_input, bairro_input, rua_input, limite_input)
+            if novos and len(novos) > 0:
+                st.session_state.etapa = 2
+                st.rerun()
 
     if len(base_leads) > 0:
         st.divider()
