@@ -153,7 +153,7 @@ def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
     canvas.saveState()
     styles = getSampleStyleSheet()
     
-    # 1. LOGO DESENHADA NA ESQUERDA (Tamanho ampliado)
+    # 1. LOGO DESENHADA NA ESQUERDA
     logo_tour = "logo_tour_transparente.png" if os.path.exists("logo_tour_transparente.png") else None
     if logo_tour:
         img_logo = Image(logo_tour, width=170, height=60, kind='proportional')
@@ -164,7 +164,7 @@ def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
         canvas.setFillColor(colors.HexColor('#0f172a'))
         canvas.drawString(36, 735, "TOUR360VR")
 
-    # 2. TEXTO CENTRALIZADO NO MEIO DA PÁGINA (Largura total 540pt)
+    # 2. TEXTO CENTRALIZADO NA PÁGINA E ALINHADO NA ALTURA DA LOGO
     header_title_style = ParagraphStyle(
         'HeaderTitleCenterPage',
         parent=styles['Normal'],
@@ -172,7 +172,7 @@ def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
         fontSize=12,
         leading=15,
         textColor=colors.HexColor('#0f172a'),
-        alignment=1,  # 1 = Centralizado
+        alignment=1,  # Centralizado
         leftIndent=0,
         firstLineIndent=0
     )
@@ -182,7 +182,6 @@ def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
         header_title_style
     )
 
-    # Tabela de 1 coluna ocupando toda a largura útil da folha (540pt)
     texto_table = Table([[texto_cabecalho]], colWidths=[540])
     texto_table.setStyle(TableStyle([
         ('ALIGN', (0,0), (-1,-1), 'CENTER'),
@@ -193,17 +192,17 @@ def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
         ('BOTTOMPADDING', (0,0), (-1,-1), 0),
     ]))
 
-    # Renderiza o texto exatamente no centro horizontal da folha
+    # Posição Y ajustada para 730 (subiu o texto para centralizar na altura da logo)
     texto_table.wrapOn(canvas, 540, 60)
-    texto_table.drawOn(canvas, 36, 720)
+    texto_table.drawOn(canvas, 36, 730)
 
-    # 3. LINHA DIVISÓRIA HORIZONTAL
+    # 3. LINHA DIVISÓRIA HORIZONTAL DO CABEÇALHO (Espessura fina: 0.5)
     canvas.setStrokeColor(colors.HexColor('#cbd5e1'))
-    canvas.setLineWidth(1.5)
+    canvas.setLineWidth(0.5)
     canvas.line(36, 706, 576, 706)
     
-    # 4. RODAPÉ FIXO COM HIPERLINKS
-    canvas.setLineWidth(1)
+    # 4. RODAPÉ FIXO COM LINHA DIVISÓRIA FINA (Espessura fina: 0.5)
+    canvas.setLineWidth(0.5)
     canvas.line(36, 42, 576, 42)
     
     canvas.setFont('Helvetica', 8.5)
