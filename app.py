@@ -41,17 +41,9 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Estilização limpa e ajustada (sem CSS que force a renderização de elementos nulos)
 st.markdown("""
     <style>
-    div.element-container:has(div.stMarkdown:empty),
-    div.stMarkdown:empty,
-    .element-container:empty {
-        display: none !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        border: none !important;
-    }
-
     [data-testid="stSidebarNav"] { display: none !important; }
 
     .stApp { 
@@ -1667,9 +1659,9 @@ elif etapa_atual == 5:
                 paginas_selecionadas=paginas_escolhidas
             )
 
-            # Salva no histórico silenciosamente atribuindo a uma variável oculta
+            # Salva no histórico de forma limpa
             score_calc = calcular_score_real(st.session_state['dados'])
-            _ = salvar_no_historico(
+            salvar_no_historico(
                 st.session_state['dados'], 
                 score_calc, 
                 concorrentes=st.session_state.get('concorrentes', []), 
