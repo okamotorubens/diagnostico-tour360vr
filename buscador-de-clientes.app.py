@@ -708,12 +708,12 @@ if st.session_state.etapa == 1:
 
     with st.form("form_busca"):
         col1, col2, col3, col4, col5, col6 = st.columns([2, 2, 1.8, 1.8, 1.2, 1.2])
-        with col1: nicho_input = st.text_input("Nicho / Categoria (Opcional)", value="Moda praia", help="Deixe em branco para buscar empresas gerais no local")
+        with col1: nicho_input = st.text_input("Nicho / Categoria (Opcional)", value="", help="Deixe em branco para buscar empresas gerais no local")
         with col2: cidade_input = st.text_input("Cidade / Município", value="Ribeirão Preto")
         with col3: rua_input = st.text_input("Rua / Avenida (Opcional)", value="", help="Ex: Av. Independência")
         with col4: bairro_input = st.text_input("Bairro / Região (Opcional)", value="", help="Deixe em branco para amplitude de busca na cidade")
         with col5: raio_input = st.number_input("Raio (km)", min_value=1, max_value=50, value=10, step=1, help="Distância máxima de busca a partir do centro da localidade")
-        with col6: limite_input = st.number_input("Qtd. Máxima", min_value=20, max_value=50, value=20, step=5)
+        with col6: limite_input = st.number_input("Qtd. Máxima", min_value=20, max_value=70, value=20, step=5)
         
         btn_minar = st.form_submit_button("🚀 Iniciar Varredura Profunda", use_container_width=True)
 
@@ -841,13 +841,19 @@ elif st.session_state.etapa == 2:
                 st.markdown(f'<a href="{URL_SISTEMA_DIAGNOSTICO}" target="_blank" class="btn-redirect">🛠️ Abrir no Diagnóstico Tour360VR</a>', unsafe_allow_html=True)
 
                 if lead['whatsapp']:
-                    msg_wa = f"Olá! Estava analisando a presença digital da {lead['nome']} no Google..."
+                    msg_wa = f"Olá! Tudo bem?
+Meu nome é Rubens Okamoto, da Okamoto Mídias Visuais e do Tour360VR.
+Estava analisando a presença da {lead['nome']} no Google, e identifiquei 3 pontos onde a visibilidade do espaço de vocês pode ser bastante ampliada em relação aos concorrentes da região.
+Montei um relatório curto de diagnóstico em PDF. Posso te enviar por aqui para você dar uma olhada?."
                     link_wa = f"https://wa.me/55{lead['whatsapp']}?text={urllib.parse.quote(msg_wa)}"
                     st.markdown(f'<a href="{link_wa}" target="_blank"><button style="width:100%; background-color:#25D366; color:white; border:none; padding:8px; border-radius:6px; font-weight:bold; cursor:pointer; margin-bottom:8px;">💬 WhatsApp</button></a>', unsafe_allow_html=True)
 
             with st.expander(f"✉️ **Uso Interno — Scripts de Vendas e Abordagem ({lead['nome']})**"):
                 st.markdown("**1) Abordagem Inicial — WhatsApp**")
-                script_wa = f"Olá! Analisei o perfil da {lead['nome']} no Google e identifiquei oportunidades importantes para aumentar suas vendas presenciais com Tour 360° e otimização da ficha. Tenho um diagnóstico completo em PDF que mostra exatamente o que fazer. Posso enviar?"
+                script_wa = f"Olá! Tudo bem?
+Meu nome é Rubens Okamoto, da Okamoto Mídias Visuais e do Tour360VR.
+Estava analisando a presença da {lead['nome']} no Google, e identifiquei 3 pontos onde a visibilidade do espaço de vocês pode ser bastante ampliada em relação aos concorrentes da região.
+Montei um relatório curto de diagnóstico em PDF. Posso te enviar por aqui para você dar uma olhada?
                 st.markdown(f'<div class="script-box">{script_wa}</div>', unsafe_allow_html=True)
 
                 st.markdown("**2) Abordagem Inicial — E-mail**")
