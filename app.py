@@ -409,8 +409,16 @@ if 'planos' not in st.session_state:
         "gestao_valor": "600,00", "gestao_itens": "- Postagens semanais\n- Gestão de avaliações\n- Atualização de fotos\n- Relatório mensal"
     }
 
+TEXTO_PLANO_ACAO_PADRAO = (
+    "Ações prioritárias para otimização e diferenciação local:\n"
+    "1. Atração Local (SEO): Correção cadastral e otimização das categorias principal e secundárias.\n"
+    "2. Segurança & Posicionamento: Frequência de atualização para sinalizar ao Google que o perfil está ativo.\n"
+    "3. Confiança & Autoridade: Publicação do Tour Virtual 360° no Street View e fotos em alta resolução.\n"
+    "4. Vitrine Imersiva: Padronização do acervo visual do espaço e integração dos canais de contato direto."
+)
+
 if 'plano_acao_extra' not in st.session_state:
-    st.session_state['plano_acao_extra'] = "A ficha do Google Meu Negócio é a primeira impressão física e digital que o seu cliente tem da sua empresa na internet.\nHoje, mais de 80% dos consumidores pesquisam no Google Maps antes de decidir onde comprar ou contratar um serviço presencial.\n\nAções prioritárias para otimização e diferenciação local:\n1. Atração e Destaque no Ranking Local (SEO): Perfis completos, ativamente atualizados e com fotos recentes recebem até 7x mais cliques e solicitações de rota/ligação do que perfis estáticos ou desatualizados.\n2. Segurança e Posicionamento Orgânico: Fichas atualizadas com frequência sinalizam ao algoritmo do Google que seu negócio está ativo e relevante, melhorando diretamente seu posicionamento nas buscas por proximidade.\n3. Autoridade e Confiança Instantânea: A ausência de fotos profissionais e a falta do Tour Virtual 360° geram dúvida no consumidor, fazendo com que ele escolha o concorrente que transmite mais transparência e estrutura visual.\n4. Transformação da Ficha em uma Vitrine Imersiva: Implantação da experiência de navegação 360° integrada ao Google Street View, produção e publicação de imagens de alta resolução focadas nos produtos, serviços e detalhes do espaço e ambiente, além da otimização dos canais de contato direto (WhatsApp e Website oficial)."
+    st.session_state['plano_acao_extra'] = TEXTO_PLANO_ACAO_PADRAO
 
 if 'unidades_encontradas' not in st.session_state:
     st.session_state['unidades_encontradas'] = []
@@ -609,32 +617,32 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
     # PÁGINA 2: AUDITORIA DETALHADA
     if 2 in paginas_selecionadas:
         pdf.add_page()
-        pdf.set_xy(21, 29)
-        pdf.set_font('Helvetica', 'B', 16)
+        pdf.set_xy(21, 25)
+        pdf.set_font('Helvetica', 'B', 15)
         pdf.set_text_color(15, 23, 42)
-        pdf.cell(177, 8, conv('AUDITORIA DETALHADA DE PONTOS DE BUSCA'), align='C', ln=True)
+        pdf.cell(177, 7, conv('AUDITORIA DETALHADA DE PONTOS DE BUSCA'), align='C', ln=True)
 
         # Quadro da Empresa Analisada
-        w_ficha, x_ficha, y_ficha, h_ficha = 163, 28.0, 43.0, 15.0
+        w_ficha, x_ficha, y_ficha, h_ficha = 163, 28.0, 34.0, 14.0
         pdf.set_fill_color(248, 250, 252)
         pdf.set_draw_color(226, 232, 240)
-        pdf.rounded_rect(x_ficha, y_ficha, w_ficha, h_ficha, 2.5, 'FD')
+        pdf.rounded_rect(x_ficha, y_ficha, w_ficha, h_ficha, 2.0, 'FD')
         
-        pdf.set_xy(x_ficha, y_ficha + 2.0)
-        pdf.set_font('Helvetica', 'B', 12.0)
+        pdf.set_xy(x_ficha, y_ficha + 1.8)
+        pdf.set_font('Helvetica', 'B', 11.0)
         pdf.set_text_color(30, 64, 175)
-        pdf.cell(w_ficha, 5.0, conv(f"{dados.get('nome') or 'Empresa Analisada'}"), align='C', ln=True)
+        pdf.cell(w_ficha, 4.5, conv(f"{dados.get('nome') or 'Empresa Analisada'}"), align='C', ln=True)
 
         pdf.set_x(x_ficha)
-        pdf.set_font('Helvetica', 'B', 9.5)
+        pdf.set_font('Helvetica', 'B', 9.0)
         pdf.set_text_color(245, 158, 11)
-        pdf.cell(w_ficha, 4.5, conv(f"Nota {dados.get('nota', 0.0):.1f} *   -   {dados.get('avaliacoes', 0)} avaliações no Google"), align='C', ln=True)
+        pdf.cell(w_ficha, 4.0, conv(f"Nota {dados.get('nota', 0.0):.1f} *   -   {dados.get('avaliacoes', 0)} avaliações no Google"), align='C', ln=True)
 
         # Quadro do SCORE GERAL
         w_box_score = 65
-        h_box_score = 15.0
+        h_box_score = 13.5
         x_box_score = 21.0 + (177.0 - w_box_score) / 2.0
-        y_box_score = 63.0
+        y_box_score = 50.5
 
         if score < 50: cr, cg, cb, status_txt = 239, 68, 68, "STATUS CRÍTICO"
         elif score < 80: cr, cg, cb, status_txt = 245, 158, 11, "STATUS MÉDIO"
@@ -643,25 +651,25 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         pdf.set_fill_color(240, 249, 255)
         pdf.set_draw_color(62, 161, 219)
         pdf.set_line_width(0.4)
-        pdf.rounded_rect(x_box_score, y_box_score, w_box_score, h_box_score, 2.5, 'FD')
+        pdf.rounded_rect(x_box_score, y_box_score, w_box_score, h_box_score, 2.0, 'FD')
         pdf.set_line_width(0.2)
 
-        pdf.set_font('Helvetica', 'B', 18)
+        pdf.set_font('Helvetica', 'B', 16)
         w_num = pdf.get_string_width(f"{score} ")
         w_bar = pdf.get_string_width("/ 100")
         x_start = x_box_score + (w_box_score - (w_num + w_bar)) / 2.0
 
-        pdf.set_xy(x_start, y_box_score + 1.2)
+        pdf.set_xy(x_start, y_box_score + 1.0)
         pdf.set_text_color(cr, cg, cb)
-        pdf.cell(w_num, 6.0, f"{score} ", align='L')
+        pdf.cell(w_num, 5.5, f"{score} ", align='L')
         
         pdf.set_text_color(15, 23, 42)
-        pdf.cell(w_bar, 6.0, "/ 100", align='L', ln=True)
+        pdf.cell(w_bar, 5.5, "/ 100", align='L', ln=True)
         
-        pdf.set_xy(x_box_score, y_box_score + 8.2)
-        pdf.set_font('Helvetica', 'B', 8.5)
+        pdf.set_xy(x_box_score, y_box_score + 7.2)
+        pdf.set_font('Helvetica', 'B', 8.0)
         pdf.set_text_color(cr, cg, cb)
-        pdf.cell(w_box_score, 4.0, conv(f"SCORE GERAL ({status_txt})"), align='C', ln=True)
+        pdf.cell(w_box_score, 3.5, conv(f"SCORE GERAL ({status_txt})"), align='C', ln=True)
 
         pct_avaliacoes = min(int((dados.get('avaliacoes', 0) / 50.0) * 100), 100) if dados.get('avaliacoes', 0) > 0 else 10
         pct_fotos = 100 if dados.get('tem_fotos_hd') else 30
@@ -694,49 +702,49 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             ("9. Interação e Resposta a Avaliações", pct_resp, "Ativo" if dados.get('resposta_avaliacoes_ok', False) else "Pendente", desc_resp)
         ]
 
-        y_start_itens, h_slot = 91.0, 10.5
+        y_start_itens, h_slot = 67.0, 9.5
         for idx_item, (titulo, pct, rotulo, desc) in enumerate(itens):
             y_curr = y_start_itens + (idx_item * h_slot)
             pdf.set_xy(21, y_curr)
-            pdf.set_font('Helvetica', 'B', 9.5)
+            pdf.set_font('Helvetica', 'B', 8.8)
             pdf.set_text_color(30, 41, 59)
-            pdf.cell(122, 3.2, conv(titulo), border=0)
+            pdf.cell(122, 3.0, conv(titulo), border=0)
             
-            pdf.set_font('Helvetica', 'B', 9.5)
+            pdf.set_font('Helvetica', 'B', 8.8)
             if pct < 40: pdf.set_text_color(239, 68, 68)
             elif pct < 80: pdf.set_text_color(245, 158, 11)
             else: pdf.set_text_color(22, 128, 61)
                 
-            pdf.cell(55, 3.2, conv(rotulo), border=0, align='R')
+            pdf.cell(55, 3.0, conv(rotulo), border=0, align='R')
 
-            y_bar = y_curr + 3.6
+            y_bar = y_curr + 3.2
             pdf.set_fill_color(226, 232, 240)
-            pdf.rounded_rect(21, y_bar, 177, 1.5, 0.5, 'F')
+            pdf.rounded_rect(21, y_bar, 177, 1.3, 0.4, 'F')
             
             if pct < 40: pdf.set_fill_color(239, 68, 68)
             elif pct < 80: pdf.set_fill_color(245, 158, 11)
             else: pdf.set_fill_color(22, 128, 61)
                 
-            pdf.rounded_rect(21, y_bar, max(float(pct) * 1.77, 4.0), 1.5, 0.5, 'F')
+            pdf.rounded_rect(21, y_bar, max(float(pct) * 1.77, 4.0), 1.3, 0.4, 'F')
 
-            pdf.set_xy(21, y_bar + 2.2)
-            pdf.set_font('Helvetica', '', 8.5)
+            pdf.set_xy(21, y_bar + 1.8)
+            pdf.set_font('Helvetica', '', 7.8)
             pdf.set_text_color(71, 85, 105)
-            pdf.cell(177, 3.0, conv(f"   Diagnóstico: {desc[:90]}"), border=0)
+            pdf.cell(177, 2.8, conv(f"   Diagnóstico: {desc[:90]}"), border=0)
 
         concorrentes_filtrados = [c for c in concorrentes if c.get("nome", "").strip() != ""]
         if concorrentes_filtrados:
-            pdf.set_xy(21, 194.0)
-            pdf.set_font('Helvetica', 'B', 9.5)
+            pdf.set_xy(21, 156.0)
+            pdf.set_font('Helvetica', 'B', 9.0)
             pdf.set_text_color(30, 64, 175)
-            pdf.cell(0, 4.0, conv("ANÁLISE AUTOMÁTICA DE CONCORRENTES DO SEGMENTO"), border=0)
+            pdf.cell(0, 3.8, conv("ANÁLISE AUTOMÁTICA DE CONCORRENTES DO SEGMENTO"), border=0)
 
-            w_emp, w_item, w_score, h_row = 53, 11.0, 25.0, 4.6
-            y_table = 199.0
+            w_emp, w_item, w_score, h_row = 53, 11.0, 25.0, 4.2
+            y_table = 160.5
             pdf.set_xy(21, y_table)
             pdf.set_fill_color(30, 64, 175)
             pdf.set_text_color(255, 255, 255)
-            pdf.set_font('Helvetica', 'B', 9.0)
+            pdf.set_font('Helvetica', 'B', 8.2)
             
             pdf.cell(w_emp, h_row, conv(" Empresa / Concorrente"), border=0, fill=True)
             pdf.cell(w_item, h_row, conv("1.Fotos"), border=0, fill=True, align='C')
@@ -762,7 +770,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             y_r1 = y_table + h_row
             pdf.set_xy(21, y_r1)
             pdf.set_fill_color(240, 249, 255)
-            pdf.set_font('Helvetica', 'B', 8.5)
+            pdf.set_font('Helvetica', 'B', 8.0)
             pdf.set_text_color(30, 64, 175)
             pdf.cell(w_emp, h_row, conv(f" {str(dados.get('nome', ''))[:25]}"), border='B', fill=True)
             
@@ -781,11 +789,11 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             celula_sim_nao(pdf, w_item, h_row, "Sim" if dados.get('resposta_avaliacoes_ok') else "Não")
             
             pdf.set_fill_color(240, 249, 255)
-            pdf.set_font('Helvetica', 'B', 8.5)
+            pdf.set_font('Helvetica', 'B', 8.0)
             pdf.set_text_color(30, 64, 175)
             pdf.cell(w_score, h_row, conv(f"{score} / 100"), border='B', fill=True, align='C')
 
-            pdf.set_font('Helvetica', '', 8.5)
+            pdf.set_font('Helvetica', '', 8.0)
             for idx_c, c in enumerate(concorrentes_filtrados):
                 y_rc = y_r1 + ((idx_c + 1) * h_row)
                 score_conc = calcular_score_concorrente(c)
@@ -809,28 +817,28 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
                 celula_sim_nao(pdf, w_item, h_row, c.get('respostas_ok', 'Não'))
                 
                 pdf.set_fill_color(255, 255, 255)
-                pdf.set_font('Helvetica', 'B', 8.5)
+                pdf.set_font('Helvetica', 'B', 8.0)
                 pdf.set_text_color(51, 65, 85)
                 pdf.cell(w_score, h_row, conv(f"{score_conc} / 100"), border='B', fill=True, align='C')
-                pdf.set_font('Helvetica', '', 8.5)
+                pdf.set_font('Helvetica', '', 8.0)
 
         if plano_acao_extra and plano_acao_extra.strip() != "":
-            w_extra, x_extra, y_extra, h_box_extra = 177, 21.0, 229.0, 35.0
+            w_extra, x_extra, y_extra, h_box_extra = 177, 21.0, 203.0, 24.0
             pdf.set_fill_color(240, 249, 255)
             pdf.set_draw_color(62, 161, 219)
             pdf.set_line_width(0.4)
-            pdf.rounded_rect(x_extra, y_extra, w_extra, h_box_extra, 2.0, 'FD')
+            pdf.rounded_rect(x_extra, y_extra, w_extra, h_box_extra, 1.8, 'FD')
             pdf.set_line_width(0.2)
             
-            pdf.set_xy(x_extra, y_extra + 2.0)
-            pdf.set_font('Helvetica', 'B', 8.0)
+            pdf.set_xy(x_extra, y_extra + 1.8)
+            pdf.set_font('Helvetica', 'B', 7.8)
             pdf.set_text_color(30, 64, 175)
-            pdf.cell(w_extra, 3.2, conv("PLANO DE AÇÃO E APONTAMENTOS ESTRATÉGICOS PERSONALIZADOS:"), align='C', border=0)
+            pdf.cell(w_extra, 3.0, conv("PLANO DE AÇÃO E APONTAMENTOS ESTRATÉGICOS PERSONALIZADOS:"), align='C', border=0)
             
-            pdf.set_xy(x_extra + 4, y_extra + 6.0)
-            pdf.set_font('Helvetica', '', 7.2)
+            pdf.set_xy(x_extra + 4, y_extra + 5.2)
+            pdf.set_font('Helvetica', '', 6.8)
             pdf.set_text_color(51, 65, 85)
-            pdf.multi_cell(w_extra - 8, 3.1, conv(plano_acao_extra), align='L')
+            pdf.multi_cell(w_extra - 8, 2.9, conv(plano_acao_extra), align='L')
 
     # PÁGINA 3: PROPOSTA COMERCIAL
     if 3 in paginas_selecionadas:
@@ -938,14 +946,14 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         pdf.set_xy(x_info, 142.5)
         pdf.set_font('Helvetica', 'B', 10.0)
         pdf.set_text_color(30, 64, 175)
-        pdf.cell(w_info, 4, conv('POR QUE SEU NEGÓCIO PRECISA DE OTIMIZAÇÃO PROFISSIONAL?'), align='C', ln=True)
+        pdf.cell(w_info, 4, conv('BENEFÍCIOS E IMPACTO COMERCIAL DA OTIMIZAÇÃO'), align='C', ln=True)
 
         pdf.set_font('Helvetica', '', 8.5)
         pdf.set_text_color(51, 65, 85)
         txt_exp = (
-            "Mais de 80% das buscas locais no Google e Maps resultam em uma ação imediata (ligação, rota ou mensagem).\n"
-            "Perfis com fotos profissionais e Tour Virtual 360° geram até 2x mais interesse e permanecem no topo das buscas.\n"
-            "Fichas incompletas ou desatualizadas perdem clientes diariamente para concorrentes diretos com nota mais alta."
+            "• Conversão Imediata: Perfis com Tour 360° e acervo fotográfico profissional geram até 2x mais interesse de visitação presencial.\n"
+            "• Domínio de Região: A otimização contínua coloca sua vitrine no Top 3 das pesquisas por proximidade no Google Maps.\n"
+            "• Autoridade de Marca: Elimina a hesitação do cliente, transmitindo transparência total e acelerando a decisão de compra."
         )
         pdf.set_xy(x_info, 148.5)
         pdf.multi_cell(w_info, 4.5, conv(txt_exp), align='C')
@@ -1107,7 +1115,7 @@ with st.sidebar:
             "pro_valor": "1.500,00", "pro_itens": "- Tudo do Plano Start\n- Tour Virtual 360°\n- Ensaio Fotográfico\n- Relatório Visual de Entrega",
             "gestao_valor": "600,00", "gestao_itens": "- Postagens semanais\n- Gestão de avaliações\n- Atualização de fotos\n- Relatório mensal"
         }
-        st.session_state['plano_acao_extra'] = "A ficha do Google Meu Negócio é a primeira impressão física e digital que o seu cliente tem da sua empresa na internet.\nHoje, mais de 80% dos consumidores pesquisam no Google Maps antes de decidir onde comprar ou contratar um serviço presencial.\n\nAções prioritárias para otimização e diferenciação local:\n1. Atração e Destaque no Ranking Local (SEO): Perfis completos, ativamente atualizados e com fotos recentes recebem até 7x mais cliques e solicitações de rota/ligação do que perfis estáticos ou desatualizados.\n2. Segurança e Posicionamento Orgânico: Fichas atualizadas com frequência sinalizam ao algoritmo do Google que seu negócio está ativo e relevante, melhorando diretamente seu posicionamento nas buscas por proximidade.\n3. Autoridade e Confiança Instantânea: A ausência de fotos profissionais e a falta do Tour Virtual 360° geram dúvida no consumidor, fazendo com que ele escolha o concorrente que transmite mais transparência e estrutura visual.\n4. Transformação da Ficha em uma Vitrine Imersiva: Implantação da experiência de navegação 360° integrada ao Google Street View, produção e publicação de imagens de alta resolução focadas nos produtos, serviços e detalhes do espaço e ambiente, além da otimização dos canais de contato direto (WhatsApp e Website oficial)."
+        st.session_state['plano_acao_extra'] = TEXTO_PLANO_ACAO_PADRAO
         st.rerun()
 
     st.markdown("""
@@ -1353,7 +1361,7 @@ elif etapa_atual == 3:
     st.session_state['plano_acao_extra'] = st.text_area(
         "Edite o plano de ação personalizado:",
         value=st.session_state['plano_acao_extra'],
-        height=220
+        height=180
     )
     st.markdown("</div>", unsafe_allow_html=True)
 
