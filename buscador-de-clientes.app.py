@@ -53,9 +53,16 @@ st.set_page_config(
 # FORÇAR O NAVEGADOR A IR PARA O TOPO SEMPRE QUE MUDAR DE PÁGINA
 components.html(f"""
     <script>
-        window.parent.scrollTo(0, 0);
-        var mainContainer = window.parent.document.querySelector(".main");
-        if (mainContainer) {{ mainContainer.scrollTop = 0; }}
+        function scrollToTop() {{
+            window.parent.scrollTo(0, 0);
+            var mainContainer = window.parent.document.querySelector(".main");
+            if (mainContainer) {{ mainContainer.scrollTop = 0; }}
+            var appContainer = window.parent.document.querySelector(".stAppViewContainer");
+            if (appContainer) {{ appContainer.scrollTop = 0; }}
+        }}
+        scrollToTop();
+        setTimeout(scrollToTop, 100);
+        setTimeout(scrollToTop, 300);
         
         var head = window.parent.document.getElementsByTagName('head')[0];
         if (head && '{favicon_b64}') {{
@@ -147,7 +154,7 @@ def limpar_banco_dados():
         st.error(f"Erro ao limpar banco: {str(e)}")
 
 # -----------------------------------------------------------------------------
-# GERADOR DE PDF DO PANORAMA DE NICHO (LOGO AMPLIADA & TÍTULO CENTRALIZADO)
+# GERADOR DE PDF DO PANORAMA DE NICHO
 # -----------------------------------------------------------------------------
 def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
     canvas.saveState()
@@ -158,7 +165,7 @@ def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
     if logo_tour:
         img_logo = Image(logo_tour, width=170, height=60, kind='proportional')
         img_logo.wrapOn(canvas, 170, 60)
-        img_logo.drawOn(canvas, 36, 715)  # Posição X=36 (Margem esquerda)
+        img_logo.drawOn(canvas, 36, 715)
     else:
         canvas.setFont('Helvetica-Bold', 14)
         canvas.setFillColor(colors.HexColor('#0f172a'))
@@ -172,7 +179,7 @@ def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
         fontSize=12,
         leading=15,
         textColor=colors.HexColor('#0f172a'),
-        alignment=1,  # Centralizado
+        alignment=1,
         leftIndent=0,
         firstLineIndent=0
     )
@@ -192,16 +199,15 @@ def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
         ('BOTTOMPADDING', (0,0), (-1,-1), 0),
     ]))
 
-    # Posição Y ajustada para 730 (subiu o texto para centralizar na altura da logo)
     texto_table.wrapOn(canvas, 540, 60)
     texto_table.drawOn(canvas, 36, 730)
 
-    # 3. LINHA DIVISÓRIA HORIZONTAL DO CABEÇALHO (Espessura fina: 0.5)
+    # 3. LINHA DIVISÓRIA HORIZONTAL DO CABEÇALHO (Fina: 0.5)
     canvas.setStrokeColor(colors.HexColor('#cbd5e1'))
     canvas.setLineWidth(0.5)
     canvas.line(36, 706, 576, 706)
     
-    # 4. RODAPÉ FIXO COM LINHA DIVISÓRIA FINA (Espessura fina: 0.5)
+    # 4. RODAPÉ FIXO COM LINHA DIVISÓRIA FINA (Fina: 0.5)
     canvas.setLineWidth(0.5)
     canvas.line(36, 42, 576, 42)
     
@@ -649,7 +655,7 @@ def gerar_csv_excel_formatado(dados_leads):
     return output.getvalue().encode('utf-8')
 
 # -----------------------------------------------------------------------------
-# BARRA LATERAL (IDÊNTICA AO SISTEMA DE DIAGNÓSTICO)
+# BARRA LATERAL
 # -----------------------------------------------------------------------------
 base_leads = carregar_todos_leads_db()
 
