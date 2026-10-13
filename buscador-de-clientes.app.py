@@ -176,7 +176,7 @@ def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
         'HeaderTitleCenterPage',
         parent=styles['Normal'],
         fontName='Helvetica-Bold',
-        fontSize=12,
+        fontSize=13,
         leading=15,
         textColor=colors.HexColor('#0f172a'),
         alignment=1,
@@ -219,8 +219,8 @@ def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
 
     try:
         canvas.linkURL('https://tour360vr.com.br', (110, 15, 205, 33), relative=0)
-        canvas.linkURL('mailto:contato@okamotomidiasvisuais.com.br', (215, 15, 420, 33), relative=0)
-        canvas.linkURL('https://wa.me/5516991332121', (430, 15, 510, 33), relative=0)
+        canvas.linkURL('mailto:contato@okamotomidiasvisuais.com.br', (215, 15, 370, 33), relative=0)
+        canvas.linkURL('https://wa.me/5516991332121', (430, 15, 400, 33), relative=0)
     except Exception:
         pass
         
