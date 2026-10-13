@@ -1117,7 +1117,7 @@ Ações prioritárias para otimização e diferenciação local:
 4. Transformação da Ficha em uma Vitrine Imersiva: Implantação da experiência de navegação 360° integrada ao Google Street View, produção e publicação de imagens de alta resolução focadas nos produtos, serviços e detalhes do espaço e ambiente, além da otimização dos canais de contato direto (WhatsApp e Website oficial)."""
 st.rerun()
 
-    st.markdown("""
+        st.markdown("""
         <div class="sidebar-divider"></div>
         <div style="font-size: 12px; font-weight: 700; color: #f8fafc; margin-bottom: 6px;">📜 Histórico de Propostas</div>
     """, unsafe_allow_html=True)
