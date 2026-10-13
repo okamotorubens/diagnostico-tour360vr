@@ -1,6 +1,5 @@
 import os
 import io
-import json
 import base64
 import requests
 import streamlit as st
@@ -221,8 +220,6 @@ API_KEY_GOOGLE = (
     or ""
 )
 
-ARQUIVO_HISTORICO = "/tmp/historico_propostas_tour360.json"
-
 # -----------------------------------------------------------------------------
 # 3. FUNÇÕES UTILITÁRIAS & LOGOS
 # -----------------------------------------------------------------------------
@@ -291,51 +288,6 @@ def obter_caminho_logo(tipo="okamoto"):
             return temp_logo
     except Exception: pass
     return None
-
-def salvar_no_historico(dados, score, concorrentes=[], planos={}, plano_acao_extra=""):
-    if not dados.get("nome"): return
-    historico = []
-    if os.path.exists(ARQUIVO_HISTORICO):
-        try:
-            with open(ARQUIVO_HISTORICO, 'r', encoding='utf-8') as f:
-                historico = json.load(f)
-        except Exception: historico = []
-    
-    registro = {
-        "data": datetime.now().strftime("%d/%m/%Y %H:%M"),
-        "nome": dados.get("nome"),
-        "contato": dados.get("contato"),
-        "telefone": dados.get("telefone"),
-        "endereco": dados.get("endereco"),
-        "website": dados.get("website"),
-        "nota": dados.get("nota", 0.0),
-        "score": score,
-        "avaliacoes": dados.get("avaliacoes", 0),
-        "tem_tour360": dados.get("tem_tour360", False),
-        "tem_fotos_hd": dados.get("tem_fotos_hd", False),
-        "categorias_completas": dados.get("categorias_completas", False),
-        "horarios_ok": dados.get("horarios_ok", False),
-        "tem_descricao": dados.get("tem_descricao", False),
-        "atributos_ok": dados.get("atributos_ok", False),
-        "resposta_avaliacoes_ok": dados.get("resposta_avaliacoes_ok", False),
-        "foto_reference": dados.get("foto_reference", ""),
-        "concorrentes": concorrentes,
-        "planos": planos,
-        "plano_acao_extra": plano_acao_extra
-    }
-    
-    historico = [h for h in historico if h.get("nome") != registro["nome"]]
-    historico.insert(0, registro)
-    with open(ARQUIVO_HISTORICO, 'w', encoding='utf-8') as f:
-        json.dump(historico, f, ensure_ascii=False, indent=2)
-
-def carregar_historico():
-    if os.path.exists(ARQUIVO_HISTORICO):
-        try:
-            with open(ARQUIVO_HISTORICO, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        except Exception: return []
-    return []
 
 def buscar_detalhes_concorrente_especifico(nome_concorrente, cidade, api_key):
     if not nome_concorrente or not api_key: return None
@@ -409,7 +361,7 @@ if 'unidades_encontradas' not in st.session_state:
     st.session_state['unidades_encontradas'] = []
 
 # -----------------------------------------------------------------------------
-# 5. GERADOR DE PDF INTELIGENTE (PÁGINAS 2 E 3 RESTAURADAS AO PADRÃO ORIGINAL)
+# 5. GERADOR DE PDF INTELIGENTE
 # -----------------------------------------------------------------------------
 class PDFTour360Oficial(FPDF):
     def __init__(self, *args, **kwargs):
@@ -494,7 +446,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
     pdf.set_margins(21, 12, 12)
     pdf.set_auto_page_break(auto=False)
 
-    # PÁGINA 1: CAPA (PÁGINA INTOCADA E PRESERVADA 100%)
+    # PÁGINA 1: CAPA
     if 1 in paginas_selecionadas:
         pdf.add_page()
         caminho_logo = obter_caminho_logo("tour360")
@@ -519,7 +471,6 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         pdf.set_text_color(71, 85, 105)
         pdf.cell(0, 5, conv("Gestão de reputação e imagem online para o segmento no Google Maps"), align='C', ln=True)
 
-        # CAPA - CARD DE DADOS DA EMPRESA
         w_capa, h_capa, x_capa, y_capa = 177.0, 32.0, 21.0, 92.0
         pdf.set_fill_color(248, 250, 252)
         pdf.set_draw_color(203, 213, 225)
@@ -628,17 +579,15 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         pdf.set_x(x_alerta)
         pdf.cell(w_alerta, 4.0, conv(sub_txt_2), align='C', ln=True)
 
-    # PÁGINA 2: AUDITORIA DETALHADA (RESTAURADA AO TAMANHO ORIGINAL)
+    # PÁGINA 2: AUDITORIA DETALHADA
     if 2 in paginas_selecionadas:
         pdf.add_page()
         
-        # Título da Página - Tamanho Original 15pt
         pdf.set_xy(21, 29.0)
         pdf.set_font('Helvetica', 'B', 15)
         pdf.set_text_color(15, 23, 42)
         pdf.cell(177, 7, conv('AUDITORIA DETALHADA DE PONTOS DE BUSCA'), align='C', ln=True)
 
-        # Card da Empresa - Tamanho Original 13pt
         w_ficha, x_ficha, y_ficha, h_ficha = 177, 21.0, 43.0, 9.5
         pdf.set_fill_color(248, 250, 252)
         pdf.set_draw_color(203, 213, 225)
@@ -650,7 +599,6 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         pdf.set_text_color(30, 64, 175)
         pdf.cell(w_ficha, 5.0, conv(f"{dados.get('nome') or 'Empresa Analisada'}"), align='C', ln=True)
 
-        # Cards Superiores - Posição Y e Altura Originais
         y_quadros_topo = 61.0
         w_q1, w_q2 = 86.0, 86.0
         x_q1, x_q2 = 21.0, 112.0
@@ -712,7 +660,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         pdf.set_text_color(100, 116, 139)
         pdf.cell(w_q2, 3.0, conv(f"{dados.get('avaliacoes', 0)} avaliações cadastradas no Google"), align='C', ln=True)
 
-        # 9 ITENS DE AUDITORIA (Com 1 linha extra de respiro referente ao card de nota)
+        # 9 ITENS DE AUDITORIA
         y_start_itens, h_slot = 90.0, 8.5
 
         pct_avaliacoes = min(int((dados.get('avaliacoes', 0) / 50.0) * 100), 100) if dados.get('avaliacoes', 0) > 0 else 10
@@ -776,7 +724,6 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             pdf.set_text_color(71, 85, 105)
             pdf.cell(177, 2.4, conv(f"   Estado: {desc[:58]}  |  Impacto: {impacto[:55]}"), border=0)
 
-        # QUADRO DE ATENÇÃO (Posicionado exatamente 1 linha abaixo do item 9)
         y_atencao = 171.0
         w_atencao = 177.0
         h_atencao = 14.5
@@ -807,7 +754,6 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         pdf.set_text_color(127, 29, 29) if not resp_ok else pdf.set_text_color(22, 101, 52)
         pdf.multi_cell(w_atencao - 12, 2.7, conv(txt_atencao), align='L')
 
-        # TABELA DE CONCORRENTES (1 linha abaixo do quadro de atenção)
         concorrentes_filtrados = [c for c in concorrentes if c.get("nome", "").strip() != ""]
         if concorrentes_filtrados:
             pdf.set_xy(21, 191.0)
@@ -902,7 +848,6 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
                 pdf.cell(w_score, h_row, conv(f"{score_conc} / 100"), border=1, fill=True, align='C')
                 pdf.set_font('Helvetica', '', 8.2)
 
-        # PLANO DE AÇÃO ESTRATÉGICO (1 linha de espaço abaixo da tabela)
         if plano_acao_extra and plano_acao_extra.strip() != "":
             w_extra, x_extra, y_extra, h_box_extra = 177, 21.0, 222.0, 25.0
             pdf.set_fill_color(248, 250, 252)
@@ -920,7 +865,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             pdf.set_text_color(51, 65, 85)
             pdf.multi_cell(w_extra - 10, 2.9, conv(plano_acao_extra), align='L')
 
-    # PÁGINA 3: PROPOSTA COMERCIAL & AÇÕES DO AGENTE (RESTAURADA AO TAMANHO ORIGINAL)
+    # PÁGINA 3: PROPOSTA COMERCIAL & AÇÕES DO AGENTE
     if 3 in paginas_selecionadas:
         pdf.add_page()
         
@@ -1072,7 +1017,6 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         
         desenhar_pilulas_itens(pdf, x3, y_p + 27, planos.get('gestao_itens', ''))
 
-        # AÇÕES DO AGENTE (Com 1 linha de espaço em relação aos cards)
         y_agente = y_p + h_card_pro + 10.0
         w_agente = 177.0
         
@@ -1146,7 +1090,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             y_curr_ag += h_linha_dinamica
             pdf.set_xy(21, y_curr_ag)
 
-    # PÁGINA 4: CONTRATO DE PRESTAÇÃO DE SERVIÇOS (INTOCADA E PRESERVADA 100%)
+    # PÁGINA 4: CONTRATO DE PRESTAÇÃO DE SERVIÇOS
     if 4 in paginas_selecionadas:
         pdf.add_page()
         
@@ -1316,46 +1260,6 @@ with st.sidebar:
         }
         st.session_state['plano_acao_extra'] = TEXTO_PLANO_ACAO_PADRAO
         st.rerun()
-
-    st.markdown("""
-        <div class="sidebar-divider"></div>
-        <div style="font-size: 12px; font-weight: 700; color: #f8fafc; margin-bottom: 6px;">📜 Histórico de Propostas</div>
-    """, unsafe_allow_html=True)
-    
-    lista_hist = carregar_historico()
-    if lista_hist:
-        for idx_h, item in enumerate(lista_hist[:5]):
-            rotulo_btn = f"📂 {item['nome'][:16]} ({item['score']}/100)"
-            if st.button(rotulo_btn, key=f"btn_carregar_hist_{idx_h}", use_container_width=True, type="secondary"):
-                st.session_state['dados'] = {
-                    "nome": item.get("nome", ""),
-                    "contato": item.get("contato", ""),
-                    "endereco": item.get("endereco", ""),
-                    "telefone": item.get("telefone", ""),
-                    "website": item.get("website", ""),
-                    "nota": item.get("nota", 0.0),
-                    "avaliacoes": item.get("avaliacoes", 0),
-                    "tem_tour360": item.get("tem_tour360", False),
-                    "tem_fotos_hd": item.get("tem_fotos_hd", False),
-                    "categorias_completas": item.get("categorias_completas", False),
-                    "horarios_ok": item.get("horarios_ok", False),
-                    "tem_descricao": item.get("tem_descricao", False),
-                    "atributos_ok": item.get("atributos_ok", False),
-                    "resposta_avaliacoes_ok": item.get("resposta_avaliacoes_ok", False),
-                    "foto_reference": item.get("foto_reference", ""),
-                    "categorias_detectadas": []
-                }
-                if item.get("concorrentes"):
-                    st.session_state['concorrentes'] = item.get("concorrentes")
-                if item.get("planos"):
-                    st.session_state['planos'] = item.get("planos")
-                if item.get("plano_acao_extra"):
-                    st.session_state['plano_acao_extra'] = item.get("plano_acao_extra")
-
-                st.session_state['etapa_atual'] = 5
-                st.rerun()
-    else:
-        st.caption("Nenhuma proposta salva ainda.")
 
 # -----------------------------------------------------------------------------
 # 7. BARRA DE ETAPAS CLICÁVEIS
@@ -1604,14 +1508,13 @@ elif etapa_atual == 4:
             st.session_state['etapa_atual'] = 5
             st.rerun()
 
-# ETAPA 5: GERAR PDF, WHATSAPP & HISTÓRICO (MARCAÇÃO INICIAL APENAS PÁG 1 E 2)
+# ETAPA 5: GERAR PDF & WHATSAPP
 elif etapa_atual == 5:
     st.markdown("<div class='dashboard-card'><div class='card-title'>📄 5. EMISSÃO, ABORDAGEM & HISTÓRICO</div>", unsafe_allow_html=True)
     
     st.markdown("#### ⚙️ Selecione as Páginas a Incluir no PDF:")
     c_pag1, c_pag2, c_pag3, c_pag4 = st.columns(4)
     
-    # Padrão original restaurado: Apenas Pág 1 e Pág 2 marcadas ao abrir
     inc_p1 = c_pag1.checkbox("Pág 1 (Capa)", value=True, key="chk_p1")
     inc_p2 = c_pag2.checkbox("Pág 2 (Auditoria/Concorrentes)", value=True, key="chk_p2")
     inc_p3 = c_pag3.checkbox("Pág 3 (Valores e Planos)", value=False, key="chk_p3")
@@ -1661,15 +1564,6 @@ elif etapa_atual == 5:
                 st.session_state.get('plano_acao_extra', ''), 
                 st.session_state.get('concorrentes', []),
                 paginas_selecionadas=paginas_escolhidas
-            )
-
-            score_calc = calcular_score_real(st.session_state['dados'])
-            salvar_no_historico(
-                st.session_state['dados'], 
-                score_calc, 
-                concorrentes=st.session_state.get('concorrentes', []), 
-                planos=st.session_state.get('planos', {}), 
-                plano_acao_extra=st.session_state.get('plano_acao_extra', '')
             )
         except Exception as e:
             st.error(f"Erro ao gerar PDF: {e}")
