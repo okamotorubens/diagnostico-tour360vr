@@ -841,8 +841,7 @@ elif st.session_state.etapa == 2:
                 st.markdown(f'<a href="{URL_SISTEMA_DIAGNOSTICO}" target="_blank" class="btn-redirect">🛠️ Abrir no Diagnóstico Tour360VR</a>', unsafe_allow_html=True)
 
                 if lead['whatsapp']:
-                    msg_wa = f"Olá! Tudo bem?
-Meu nome é Rubens Okamoto, da Okamoto Mídias Visuais e do Tour360VR.
+                    msg_wa = f"Olá! Tudo bem?\nMeu nome é Rubens Okamoto, da Okamoto Mídias Visuais e do Tour360VR.\n
 Estava analisando a presença da {lead['nome']} no Google, e identifiquei 3 pontos onde a visibilidade do espaço de vocês pode ser bastante ampliada em relação aos concorrentes da região.
 Montei um relatório curto de diagnóstico em PDF. Posso te enviar por aqui para você dar uma olhada?."
                     link_wa = f"https://wa.me/55{lead['whatsapp']}?text={urllib.parse.quote(msg_wa)}"
@@ -850,8 +849,7 @@ Montei um relatório curto de diagnóstico em PDF. Posso te enviar por aqui para
 
             with st.expander(f"✉️ **Uso Interno — Scripts de Vendas e Abordagem ({lead['nome']})**"):
                 st.markdown("**1) Abordagem Inicial — WhatsApp**")
-                script_wa = f"Olá! Tudo bem?
-Meu nome é Rubens Okamoto, da Okamoto Mídias Visuais e do Tour360VR.
+                script_wa = f"Olá! Tudo bem?\nMeu nome é Rubens Okamoto, da Okamoto Mídias Visuais e do Tour360VR.\n
 Estava analisando a presença da {lead['nome']} no Google, e identifiquei 3 pontos onde a visibilidade do espaço de vocês pode ser bastante ampliada em relação aos concorrentes da região.
 Montei um relatório curto de diagnóstico em PDF. Posso te enviar por aqui para você dar uma olhada?
                 st.markdown(f'<div class="script-box">{script_wa}</div>', unsafe_allow_html=True)
