@@ -840,7 +840,7 @@ elif st.session_state.etapa == 2:
 
                 st.markdown(f'<a href="{URL_SISTEMA_DIAGNOSTICO}" target="_blank" class="btn-redirect">🛠️ Abrir no Diagnóstico Tour360VR</a>', unsafe_allow_html=True)
 
-                if lead['whatsapp']:
+            if lead['whatsapp']:
                 msg_wa = f"Olá! Tudo bem?
 Meu nome é Rubens Okamoto, da Okamoto Mídias Visuais e do Tour360VR.
 Estava analisando a presença da {lead['nome']} no Google, e identifiquei 3 pontos onde a visibilidade do espaço de vocês pode ser bastante ampliada em relação aos concorrentes da região.
