@@ -841,7 +841,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             pdf.set_text_color(51, 65, 85)
             pdf.multi_cell(w_extra - 10, 3.0, conv(plano_acao_extra), align='L')
 
-    # PÁGINA 3: PROPOSTA COMERCIAL
+    # PÁGINA 3: PROPOSTA COMERCIAL (OTIMIZADA)
     if 3 in paginas_selecionadas:
         pdf.add_page()
         pdf.set_xy(21, 27)
@@ -853,96 +853,108 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         pdf.set_font('Helvetica', 'B', 13)
         pdf.cell(0, 5, conv('PLANOS E INVESTIMENTO'), align='C', ln=True)
 
-        # ALTURA EXPANDIDA PARA 74mm (GARANTE ACOMODAÇÃO DO PLANO PRO)
-        y_p = 58.0
-        h_card_planos = 74.0
+        # LARGURA E ALTURA REAJUSTADAS PARA EVITAR QUEBRAS E ESPAÇO VAZIO
+        y_p = 56.0
+        h_card_planos = 64.0
+        
+        x1 = 21.0
+        w1 = 54.0
+        
+        x2 = 77.0
+        w2 = 69.0
+        
+        x3 = 148.0
+        w3 = 50.0
 
+        # CARD 1: PLANO START
         val_start_limpo = str(planos.get('start_valor', '')).replace("/mês", "").replace("/mes", "").strip()
         pdf.set_fill_color(248, 250, 252)
         pdf.set_draw_color(226, 232, 240)
-        pdf.rounded_rect(21, y_p, 51, h_card_planos, 2, 'FD')
+        pdf.rounded_rect(x1, y_p, w1, h_card_planos, 2, 'FD')
         
-        pdf.set_xy(21, y_p + 4)
-        pdf.set_font('Helvetica', 'B', 14)
-        pdf.set_text_color(15, 23, 42)
-        pdf.cell(51, 5, 'Plano Start', align='C', ln=True)
-        
-        pdf.set_xy(21, y_p + 10)
+        pdf.set_xy(x1, y_p + 3.5)
         pdf.set_font('Helvetica', 'B', 13)
-        pdf.set_text_color(30, 64, 175)
-        pdf.cell(51, 5, conv(f"R$ {val_start_limpo}"), align='C', ln=True)
-        
-        pdf.set_xy(21, y_p + 16)
-        pdf.set_font('Helvetica', 'B', 9.0)
         pdf.set_text_color(15, 23, 42)
-        pdf.cell(51, 4, conv('em até 2x'), align='C', ln=True)
+        pdf.cell(w1, 5, 'Plano Start', align='C', ln=True)
         
-        pdf.set_font('Helvetica', '', 8.0)
+        pdf.set_xy(x1, y_p + 9.0)
+        pdf.set_font('Helvetica', 'B', 12)
+        pdf.set_text_color(30, 64, 175)
+        pdf.cell(w1, 5, conv(f"R$ {val_start_limpo}"), align='C', ln=True)
+        
+        pdf.set_xy(x1, y_p + 14.5)
+        pdf.set_font('Helvetica', 'B', 8.5)
+        pdf.set_text_color(15, 23, 42)
+        pdf.cell(w1, 4, conv('em até 2x'), align='C', ln=True)
+        
+        pdf.set_font('Helvetica', '', 7.8)
         pdf.set_text_color(51, 65, 85)
-        pdf.set_xy(24, y_p + 23)
-        pdf.multi_cell(45, 3.8, conv(planos.get('start_itens', '')), align='L')
+        pdf.set_xy(x1 + 2.5, y_p + 21.0)
+        pdf.multi_cell(w1 - 5, 3.8, conv(planos.get('start_itens', '')), align='L')
 
+        # CARD 2: PLANO PRO (AMPLIADO NA LARGURA PARA NÃO QUEBRAR LINHAS)
         val_pro_limpo = str(planos.get('pro_valor', '')).replace("/mês", "").replace("/mes", "").strip()
         pdf.set_fill_color(240, 249, 255)
         pdf.set_draw_color(30, 64, 175)
         pdf.set_line_width(1.0)
-        pdf.rounded_rect(76, y_p - 2, 67, h_card_planos + 2, 2.5, 'FD')
+        pdf.rounded_rect(x2, y_p - 2, w2, h_card_planos + 2, 2.5, 'FD')
         pdf.set_line_width(0.2)
         
-        pdf.set_xy(76, y_p + 1)
-        pdf.set_font('Helvetica', 'B', 16)
+        pdf.set_xy(x2, y_p + 1.0)
+        pdf.set_font('Helvetica', 'B', 15)
         pdf.set_text_color(15, 23, 42)
-        pdf.cell(67, 5, conv('Plano Pro'), align='C', ln=True)
+        pdf.cell(w2, 5, conv('Plano Pro'), align='C', ln=True)
         
-        pdf.set_xy(76, y_p + 7.0)
-        pdf.set_font('Helvetica', 'B', 9.5)
-        pdf.set_text_color(30, 64, 175)
-        pdf.cell(67, 4, conv('RECOMENDADO'), align='C', ln=True)
-        
-        pdf.set_xy(76, y_p + 12.0)
-        pdf.set_font('Helvetica', 'B', 16)
-        pdf.set_text_color(30, 64, 175)
-        pdf.cell(67, 5, conv(f"R$ {val_pro_limpo}"), align='C', ln=True)
-        
-        pdf.set_xy(76, y_p + 18.0)
+        pdf.set_xy(x2, y_p + 6.5)
         pdf.set_font('Helvetica', 'B', 9.0)
-        pdf.set_text_color(15, 23, 42)
-        pdf.cell(67, 4, conv('em até 3x'), align='C', ln=True)
+        pdf.set_text_color(30, 64, 175)
+        pdf.cell(w2, 4, conv('RECOMENDADO'), align='C', ln=True)
         
-        pdf.set_font('Helvetica', 'B', 8.2)
+        pdf.set_xy(x2, y_p + 11.0)
+        pdf.set_font('Helvetica', 'B', 15)
+        pdf.set_text_color(30, 64, 175)
+        pdf.cell(w2, 5, conv(f"R$ {val_pro_limpo}"), align='C', ln=True)
+        
+        pdf.set_xy(x2, y_p + 16.5)
+        pdf.set_font('Helvetica', 'B', 8.5)
         pdf.set_text_color(15, 23, 42)
-        pdf.set_xy(79, y_p + 24.5)
-        pdf.multi_cell(61, 3.8, conv(planos.get('pro_itens', '')), align='L')
+        pdf.cell(w2, 4, conv('em até 3x'), align='C', ln=True)
+        
+        pdf.set_font('Helvetica', 'B', 8.0)
+        pdf.set_text_color(15, 23, 42)
+        pdf.set_xy(x2 + 2.0, y_p + 22.5)
+        pdf.multi_cell(w2 - 4.0, 3.8, conv(planos.get('pro_itens', '')), align='L')
 
+        # CARD 3: GESTÃO MENSAL
         val_gestao_limpo = str(planos.get('gestao_valor', '')).replace("/mês", "").replace("/mes", "").strip()
         pdf.set_fill_color(248, 250, 252)
         pdf.set_draw_color(226, 232, 240)
-        pdf.rounded_rect(147, y_p, 51, h_card_planos, 2, 'FD')
+        pdf.rounded_rect(x3, y_p, w3, h_card_planos, 2, 'FD')
         
-        pdf.set_xy(147, y_p + 4)
-        pdf.set_font('Helvetica', 'B', 14)
-        pdf.set_text_color(15, 23, 42)
-        pdf.cell(51, 5, conv('Gestão Mensal'), align='C', ln=True)
-        
-        pdf.set_xy(147, y_p + 10)
+        pdf.set_xy(x3, y_p + 3.5)
         pdf.set_font('Helvetica', 'B', 13)
-        pdf.set_text_color(30, 64, 175)
-        pdf.cell(51, 5, conv(f"R$ {val_gestao_limpo}"), align='C', ln=True)
-        
-        pdf.set_xy(147, y_p + 16)
-        pdf.set_font('Helvetica', 'B', 9.0)
         pdf.set_text_color(15, 23, 42)
-        pdf.cell(51, 4, conv('valor mensal'), align='C', ln=True)
+        pdf.cell(w3, 5, conv('Gestão Mensal'), align='C', ln=True)
         
-        pdf.set_font('Helvetica', '', 8.0)
+        pdf.set_xy(x3, y_p + 9.0)
+        pdf.set_font('Helvetica', 'B', 12)
+        pdf.set_text_color(30, 64, 175)
+        pdf.cell(w3, 5, conv(f"R$ {val_gestao_limpo}"), align='C', ln=True)
+        
+        pdf.set_xy(x3, y_p + 14.5)
+        pdf.set_font('Helvetica', 'B', 8.5)
+        pdf.set_text_color(15, 23, 42)
+        pdf.cell(w3, 4, conv('valor mensal'), align='C', ln=True)
+        
+        pdf.set_font('Helvetica', '', 7.8)
         pdf.set_text_color(51, 65, 85)
-        pdf.set_xy(150, y_p + 23)
-        pdf.multi_cell(45, 3.8, conv(planos.get('gestao_itens', '')), align='L')
+        pdf.set_xy(x3 + 2.5, y_p + 21.0)
+        pdf.multi_cell(w3 - 5, 3.8, conv(planos.get('gestao_itens', '')), align='L')
 
-        # QUADRO BENEFÍCIOS REPOSICIONADO PARA Y=145 (evita sobreposição)
+        # QUADRO BENEFÍCIOS REPOSICIONADO PARA EVITAR VAZIOS
         w_info = 177
         x_info = 21.0
-        y_info = 145.0
+        y_info = 132.0
         pdf.set_fill_color(240, 249, 255)
         pdf.set_draw_color(62, 161, 219)
         pdf.set_line_width(0.5)
