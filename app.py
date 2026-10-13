@@ -1122,8 +1122,7 @@ st.markdown("""
         <div class="sidebar-divider"></div>
         <div style="font-size: 12px; font-weight: 700; color: #f8fafc; margin-bottom: 6px;">📜 Histórico de Propostas</div>
     """, unsafe_allow_html=True)
-    
-    lista_hist = carregar_historico()
+        lista_hist = carregar_historico()
     if lista_hist:
         for idx_h, item in enumerate(lista_hist[:5]):
             rotulo_btn = f"📂 {item['nome'][:16]} ({item['score']}/100)"
