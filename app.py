@@ -404,9 +404,9 @@ if 'concorrentes' not in st.session_state:
 
 if 'planos' not in st.session_state:
     st.session_state['planos'] = {
-        "start_valor": "500", "start_itens": "Preenchimento completo do perfil\nDescrição profissional com palavras-chave\nCategorias corretas + secundárias\nPadronização de dados: NAP, horários, serviços\nAtivação de recursos interativos",
-        "pro_valor": "900", "pro_itens": "Preenchimento completo do perfil\nDescrição profissional com palavras-chave\nCategorias corretas + secundárias\nPadronização de dados: NAP, horários, serviços\nAtivação de recursos interativos\nSessão de fotos + Tour Virtual 360°",
-        "gestao_valor": "A combinar", "gestao_itens": "Preenchimento completo do perfil\nDescrição profissional com palavras-chave\nCategorias corretas + secundárias\nPadronização de dados: NAP, horários, serviços\nAtivação de recursos interativos\nAcompanhamento e relatórios mensais"
+        "start_valor": "500,00", "start_itens": "Preenchimento completo do perfil\nDescrição profissional com palavras-chave\nCategorias corretas + secundárias\nPadronização de dados: NAP, horários, serviços",
+        "pro_valor": "1.500,00", "pro_itens": "Preenchimento completo do perfil\nDescrição profissional com palavras-chave\nCategorias corretas + secundárias\nPadronização de dados: NAP, horários, serviços\nSessão de fotos\nTour Virtual 360°\nFotos 360° para Street View",
+        "gestao_valor": "600,00", "gestao_itens": "Postagens semanais\nGestão de avaliações\nAtualização de fotos\nRelatório mensal"
     }
 
 TEXTO_PLANO_ACAO_PADRAO = (
@@ -439,9 +439,21 @@ class PDFTour360Oficial(FPDF):
         caminho_logo = obter_caminho_logo("tour360")
         if caminho_logo:
             try:
-                self.image(caminho_logo, 185, 8.0, 10, 10)
+                self.image(caminho_logo, 21, 8.0, 11, 11)
             except Exception:
                 pass
+            
+        self.set_xy(35, 9.2)
+        self.set_font('Helvetica', 'B', 10.0)
+        self.set_text_color(30, 64, 175)
+        self.cell(163, 4.0, 'Tour360VR', align='L', ln=True)
+        
+        self.set_x(35)
+        self.set_font('Helvetica', 'B', 7.2)
+        self.set_text_color(100, 116, 139)
+        self.cell(163, 3.8, conv('Gestão de Perfil & Diagnóstico do Google Meu Negócio'), align='L', ln=True)
+        self.set_draw_color(226, 232, 240)
+        self.line(21, 21.0, 198, 21.0)
 
     def footer(self):
         self.set_y(-16)
@@ -829,18 +841,22 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             pdf.set_text_color(51, 65, 85)
             pdf.multi_cell(w_extra - 10, 3.0, conv(plano_acao_extra), align='L')
 
-    # PÁGINA 3: PROPOSTA COMERCIAL (ESTILO PINCHECK FIEL)
+    # PÁGINA 3: PROPOSTA COMERCIAL
     if 3 in paginas_selecionadas:
         pdf.add_page()
         
-        # TÍTULO PRINCIPAL ESTILO PINCHECK
-        pdf.set_xy(21, 22)
+        # CABEÇALHO ORIGINAL MANTIDO
+        pdf.set_xy(21, 27)
         pdf.set_font('Helvetica', 'B', 15)
         pdf.set_text_color(15, 23, 42)
-        pdf.cell(177, 7, conv('Planos de ação - 3 opções de investimento'), align='L', ln=True)
+        pdf.cell(177, 7, conv('PROPOSTA COMERCIAL & ESTRUTURAÇÃO ESTRATÉGICA'), align='C', ln=True)
 
-        y_p = 38.0
-        h_card_planos = 102.0
+        pdf.set_y(41.0)
+        pdf.set_font('Helvetica', 'B', 13)
+        pdf.cell(0, 5, conv('PLANOS E INVESTIMENTO'), align='C', ln=True)
+
+        y_p = 54.0
+        h_card_planos = 94.0
         
         w_card = 55.0
         x1 = 21.0
@@ -851,23 +867,23 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             linhas = [l.strip().lstrip('-').strip() for l in texto_itens.split('\n') if l.strip()]
             y_curr = y_top
             for lin in linhas:
-                h_pula = 9.0
+                h_pula = 8.5
                 pdf_obj.set_fill_color(248, 250, 252)
                 pdf_obj.set_draw_color(226, 232, 240)
                 pdf_obj.rounded_rect(x_start + 3, y_curr, w_card - 6, h_pula, 1.5, 'FD')
                 
                 # Bullet circular
                 pdf_obj.set_fill_color(203, 213, 225)
-                pdf_obj.rounded_rect(x_start + 6, y_curr + 3.0, 3.0, 3.0, 1.5, 'F')
+                pdf_obj.rounded_rect(x_start + 6, y_curr + 2.8, 2.8, 2.8, 1.4, 'F')
                 
-                pdf_obj.set_xy(x_start + 11, y_curr + 1.2)
-                pdf_obj.set_font('Helvetica', 'B', 7.2)
+                pdf_obj.set_xy(x_start + 10.5, y_curr + 1.0)
+                pdf_obj.set_font('Helvetica', 'B', 7.0)
                 pdf_obj.set_text_color(51, 65, 85)
-                pdf_obj.multi_cell(w_card - 15, 3.2, conv(lin), align='L')
+                pdf_obj.multi_cell(w_card - 14.5, 3.0, conv(lin), align='L')
                 
-                y_curr += h_pula + 2.0
+                y_curr += h_pula + 1.8
 
-        # --- CARD 1: OPÇÃO 1 (Ficha Otimizada) ---
+        # --- CARD 1: PLANO START (ESTILO PINCHECK COM VALORES E TEXTOS ORIGINAIS) ---
         pdf.set_fill_color(255, 255, 255)
         pdf.set_draw_color(226, 232, 240)
         pdf.rounded_rect(x1, y_p, w_card, h_card_planos, 3.0, 'FD')
@@ -878,34 +894,34 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         pdf.cell(w_card - 8, 3.5, conv('OPÇÃO 1'), ln=True)
         
         pdf.set_x(x1 + 4)
-        pdf.set_font('Helvetica', 'B', 11)
+        pdf.set_font('Helvetica', 'B', 12)
         pdf.set_text_color(15, 23, 42)
-        pdf.cell(w_card - 8, 4.5, conv('Ficha Otimizada'), ln=True)
+        pdf.cell(w_card - 8, 4.5, conv('Plano Start'), ln=True)
         
         pdf.set_x(x1 + 4)
         pdf.set_font('Helvetica', '', 7.5)
         pdf.set_text_color(148, 163, 184)
         pdf.cell(w_card - 8, 3.5, conv('Otimização completa do perfil'), ln=True)
         
-        pdf.set_xy(x1 + 4, y_p + 20)
-        pdf.set_font('Helvetica', 'B', 17)
-        pdf.set_text_color(0, 51, 102)
-        val_s = str(planos.get('start_valor', '')).replace("R$", "").strip()
-        pdf.cell(w_card - 8, 6, conv(val_s), ln=True)
+        pdf.set_xy(x1 + 4, y_p + 19)
+        pdf.set_font('Helvetica', 'B', 15)
+        pdf.set_text_color(30, 64, 175)
+        val_start_limpo = str(planos.get('start_valor', '')).replace("/mês", "").replace("/mes", "").strip()
+        pdf.cell(w_card - 8, 5, conv(f"R$ {val_start_limpo}"), ln=True)
         
         pdf.set_x(x1 + 4)
-        pdf.set_font('Helvetica', '', 7.2)
-        pdf.set_text_color(100, 116, 139)
-        pdf.cell(w_card - 8, 3.5, conv('ou 2x s/juros'), ln=True)
+        pdf.set_font('Helvetica', 'B', 7.5)
+        pdf.set_text_color(15, 23, 42)
+        pdf.cell(w_card - 8, 3.5, conv('em até 2x'), ln=True)
         
-        desenhar_pilulas_itens(pdf, x1, y_p + 34, planos.get('start_itens', ''))
+        desenhar_pilulas_itens(pdf, x1, y_p + 33, planos.get('start_itens', ''))
 
-        # --- CARD 2: OPÇÃO 2 (Ficha + Tour 360° - DESTAQUE PINCHECK) ---
+        # --- CARD 2: PLANO PRO (DESTAQUE PINCHECK COM VALORES E TEXTOS ORIGINAIS) ---
         pdf.set_fill_color(0, 51, 102)
         pdf.set_draw_color(0, 51, 102)
         pdf.rounded_rect(x2, y_p, w_card, h_card_planos, 3.0, 'FD')
         
-        # Badge Recomendado
+        # Badge Laranja Recomendado
         w_badge = 36.0
         x_badge = x2 + (w_card - w_badge) / 2.0
         pdf.set_fill_color(234, 88, 12)
@@ -921,29 +937,29 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         pdf.cell(w_card - 8, 3.5, conv('OPÇÃO 2'), ln=True)
         
         pdf.set_x(x2 + 4)
-        pdf.set_font('Helvetica', 'B', 11)
+        pdf.set_font('Helvetica', 'B', 12)
         pdf.set_text_color(255, 255, 255)
-        pdf.cell(w_card - 8, 4.5, conv('Ficha + Tour 360°'), ln=True)
+        pdf.cell(w_card - 8, 4.5, conv('Plano Pro'), ln=True)
         
         pdf.set_x(x2 + 4)
         pdf.set_font('Helvetica', '', 7.5)
         pdf.set_text_color(203, 213, 225)
         pdf.cell(w_card - 8, 3.5, conv('Otimização + destaque visual'), ln=True)
         
-        pdf.set_xy(x2 + 4, y_p + 20)
-        pdf.set_font('Helvetica', 'B', 17)
+        pdf.set_xy(x2 + 4, y_p + 19)
+        pdf.set_font('Helvetica', 'B', 15)
         pdf.set_text_color(255, 255, 255)
-        val_p = str(planos.get('pro_valor', '')).replace("R$", "").strip()
-        pdf.cell(w_card - 8, 6, conv(val_p), ln=True)
+        val_pro_limpo = str(planos.get('pro_valor', '')).replace("/mês", "").replace("/mes", "").strip()
+        pdf.cell(w_card - 8, 5, conv(f"R$ {val_pro_limpo}"), ln=True)
         
         pdf.set_x(x2 + 4)
-        pdf.set_font('Helvetica', '', 7.2)
+        pdf.set_font('Helvetica', 'B', 7.5)
         pdf.set_text_color(203, 213, 225)
-        pdf.cell(w_card - 8, 3.5, conv('ou 3x s/juros'), ln=True)
+        pdf.cell(w_card - 8, 3.5, conv('em até 3x'), ln=True)
 
-        desenhar_pilulas_itens(pdf, x2, y_p + 34, planos.get('pro_itens', ''))
+        desenhar_pilulas_itens(pdf, x2, y_p + 33, planos.get('pro_itens', ''))
 
-        # --- CARD 3: OPÇÃO 3 (Presença Completa) ---
+        # --- CARD 3: GESTÃO MENSAL (ESTILO PINCHECK COM VALORES E TEXTOS ORIGINAIS) ---
         pdf.set_fill_color(255, 255, 255)
         pdf.set_draw_color(226, 232, 240)
         pdf.rounded_rect(x3, y_p, w_card, h_card_planos, 3.0, 'FD')
@@ -954,56 +970,62 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         pdf.cell(w_card - 8, 3.5, conv('OPÇÃO 3'), ln=True)
         
         pdf.set_x(x3 + 4)
-        pdf.set_font('Helvetica', 'B', 11)
+        pdf.set_font('Helvetica', 'B', 12)
         pdf.set_text_color(15, 23, 42)
-        pdf.cell(w_card - 8, 4.5, conv('Presença Completa'), ln=True)
+        pdf.cell(w_card - 8, 4.5, conv('Gestão Mensal'), ln=True)
         
         pdf.set_x(x3 + 4)
         pdf.set_font('Helvetica', '', 7.5)
         pdf.set_text_color(148, 163, 184)
-        pdf.cell(w_card - 8, 3.5, conv('Otimização + 360° + gestão'), ln=True)
+        pdf.cell(w_card - 8, 3.5, conv('Acompanhamento e relatórios'), ln=True)
         
-        pdf.set_xy(x3 + 4, y_p + 20)
+        pdf.set_xy(x3 + 4, y_p + 19)
         pdf.set_font('Helvetica', 'B', 15)
-        pdf.set_text_color(0, 51, 102)
-        val_g = str(planos.get('gestao_valor', '')).replace("R$", "").strip()
-        pdf.cell(w_card - 8, 6, conv(val_g), ln=True)
+        pdf.set_text_color(30, 64, 175)
+        val_gestao_limpo = str(planos.get('gestao_valor', '')).replace("/mês", "").replace("/mes", "").strip()
+        pdf.cell(w_card - 8, 5, conv(f"R$ {val_gestao_limpo}"), ln=True)
         
-        desenhar_pilulas_itens(pdf, x3, y_p + 34, planos.get('gestao_itens', ''))
+        pdf.set_x(x3 + 4)
+        pdf.set_font('Helvetica', 'B', 7.5)
+        pdf.set_text_color(15, 23, 42)
+        pdf.cell(w_card - 8, 3.5, conv('valor mensal'), ln=True)
+        
+        desenhar_pilulas_itens(pdf, x3, y_p + 33, planos.get('gestao_itens', ''))
 
-        # QUADRO INFERIOR DE FECHAMENTO ESTILO PINCHECK
-        y_cta = y_p + h_card_planos + 8.0
+        # QUADRO INFERIOR: CONTEÚDO ORIGINAL DE BENEFÍCIOS NO LAYOUT NOVO
+        y_cta = y_p + h_card_planos + 6.0
         w_cta = 177.0
-        h_cta = 28.0
+        h_cta = 32.0
         
         pdf.set_fill_color(248, 250, 252)
         pdf.set_draw_color(226, 232, 240)
         pdf.rounded_rect(21, y_cta, w_cta, h_cta, 3.0, 'FD')
         
-        pdf.set_xy(26, y_cta + 4.5)
-        pdf.set_font('Helvetica', 'B', 9.5)
-        pdf.set_text_color(15, 23, 42)
-        pdf.cell(115, 4.5, conv('Pronto para recuperar a confiança do seu perfil?'), ln=True)
+        pdf.set_xy(26, y_cta + 3.5)
+        pdf.set_font('Helvetica', 'B', 9.0)
+        pdf.set_text_color(30, 64, 175)
+        pdf.cell(115, 4.5, conv('BENEFÍCIOS E IMPACTO COMERCIAL DA OTIMIZAÇÃO'), ln=True)
         
         pdf.set_x(26)
-        pdf.set_font('Helvetica', '', 7.5)
-        pdf.set_text_color(100, 116, 139)
-        txt_fechamento = (
-            "Responder às avaliações negativas e consolidar sua presença no Google é o primeiro "
-            "passo. Vamos conversar sobre como transformar esses dados em resultado? Entre em contato pelo WhatsApp."
+        pdf.set_font('Helvetica', '', 7.2)
+        pdf.set_text_color(51, 65, 85)
+        txt_exp = (
+            "- Conversão Imediata: Perfis com Tour 360° e acervo fotográfico geram até 2x mais visitas.\n"
+            "- Domínio de Região: Coloca sua vitrine no Top 3 das pesquisas por proximidade no Google Maps.\n"
+            "- Autoridade de Marca: Elimina a hesitação do cliente e acelera a decisão de compra."
         )
-        pdf.multi_cell(115, 3.5, conv(txt_fechamento), align='L')
+        pdf.multi_cell(115, 3.8, conv(txt_exp), align='L')
 
         # Botão CTA em Azul Marinho
         x_btn_cta = 145.0
-        y_btn_cta = y_cta + 6.0
+        y_btn_cta = y_cta + 7.5
         w_btn_cta = 48.0
-        h_btn_cta = 16.0
+        h_btn_cta = 17.0
         
         pdf.set_fill_color(0, 51, 102)
         pdf.rounded_rect(x_btn_cta, y_btn_cta, w_btn_cta, h_btn_cta, 2.0, 'F')
         
-        pdf.set_xy(x_btn_cta, y_btn_cta + 3.5)
+        pdf.set_xy(x_btn_cta, y_btn_cta + 3.8)
         pdf.set_font('Helvetica', 'B', 8.0)
         pdf.set_text_color(255, 255, 255)
         pdf.cell(w_btn_cta, 4, conv('Falar com a TOUR360VR'), align='C', ln=True)
@@ -1165,9 +1187,9 @@ with st.sidebar:
             {"nome": "", "nota": 0.0, "avaliacoes": 0, "busca_termo": "", "cidade": "", "tem_fotos_hd": "Não", "tem_tour360": "Não", "categorias_ok": "Não", "horarios_ok": "Não", "tem_website": "Não", "tem_descricao": "Não", "atributos_ok": "Não", "respostas_ok": "Não"}
         ]
         st.session_state['planos'] = {
-            "start_valor": "500", "start_itens": "Preenchimento completo do perfil\nDescrição profissional com palavras-chave\nCategorias corretas + secundárias\nPadronização de dados: NAP, horários, serviços\nAtivação de recursos interativos",
-            "pro_valor": "900", "pro_itens": "Preenchimento completo do perfil\nDescrição profissional com palavras-chave\nCategorias corretas + secundárias\nPadronização de dados: NAP, horários, serviços\nAtivação de recursos interativos\nSessão de fotos + Tour Virtual 360°",
-            "gestao_valor": "A combinar", "gestao_itens": "Preenchimento completo do perfil\nDescrição profissional com palavras-chave\nCategorias corretas + secundárias\nPadronização de dados: NAP, horários, serviços\nAtivação de recursos interativos\nAcompanhamento e relatórios mensais"
+            "start_valor": "500,00", "start_itens": "Preenchimento completo do perfil\nDescrição profissional com palavras-chave\nCategorias corretas + secundárias\nPadronização de dados: NAP, horários, serviços",
+            "pro_valor": "1.500,00", "pro_itens": "Preenchimento completo do perfil\nDescrição profissional com palavras-chave\nCategorias corretas + secundárias\nPadronização de dados: NAP, horários, serviços\nSessão de fotos\nTour Virtual 360°\nFotos 360° para Street View",
+            "gestao_valor": "600,00", "gestao_itens": "Postagens semanais\nGestão de avaliações\nAtualização de fotos\nRelatório mensal"
         }
         st.session_state['plano_acao_extra'] = TEXTO_PLANO_ACAO_PADRAO
         st.rerun()
@@ -1435,15 +1457,15 @@ elif etapa_atual == 4:
     
     p1, p2, p3 = st.columns(3)
     with p1:
-        st.markdown("#### 🔹 Opção 1 (Ficha Otimizada)")
+        st.markdown("#### 🔹 Plano Start")
         st.session_state['planos']['start_valor'] = st.text_input("Valor (R$):", value=st.session_state['planos']['start_valor'], key="p_s_v")
         st.session_state['planos']['start_itens'] = st.text_area("Itens:", value=st.session_state['planos']['start_itens'], height=180, key="p_s_i")
     with p2:
-        st.markdown("#### 🔹 Opção 2 (Ficha + Tour 360°)")
+        st.markdown("#### 🔹 Plano Pro")
         st.session_state['planos']['pro_valor'] = st.text_input("Valor (R$):", value=st.session_state['planos']['pro_valor'], key="p_p_v")
         st.session_state['planos']['pro_itens'] = st.text_area("Itens:", value=st.session_state['planos']['pro_itens'], height=180, key="p_p_i")
     with p3:
-        st.markdown("#### 🔹 Opção 3 (Presença Completa)")
+        st.markdown("#### 🔹 Gestão Mensal")
         st.session_state['planos']['gestao_valor'] = st.text_input("Valor (R$):", value=st.session_state['planos']['gestao_valor'], key="p_g_v")
         st.session_state['planos']['gestao_itens'] = st.text_area("Itens:", value=st.session_state['planos']['gestao_itens'], height=180, key="p_g_i")
 
