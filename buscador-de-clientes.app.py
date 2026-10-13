@@ -153,50 +153,56 @@ def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
     canvas.saveState()
     styles = getSampleStyleSheet()
     
+    # 1. LOGO DESENHADA NA ESQUERDA (Tamanho ampliado)
+    logo_tour = "logo_tour_transparente.png" if os.path.exists("logo_tour_transparente.png") else None
+    if logo_tour:
+        img_logo = Image(logo_tour, width=170, height=60, kind='proportional')
+        img_logo.wrapOn(canvas, 170, 60)
+        img_logo.drawOn(canvas, 36, 715)  # Posição X=36 (Margem esquerda)
+    else:
+        canvas.setFont('Helvetica-Bold', 14)
+        canvas.setFillColor(colors.HexColor('#0f172a'))
+        canvas.drawString(36, 735, "TOUR360VR")
+
+    # 2. TEXTO CENTRALIZADO NO MEIO DA PÁGINA (Largura total 540pt)
     header_title_style = ParagraphStyle(
-        'HeaderTitleCenter',
+        'HeaderTitleCenterPage',
         parent=styles['Normal'],
         fontName='Helvetica-Bold',
         fontSize=12,
-        leading=14.5,
+        leading=15,
         textColor=colors.HexColor('#0f172a'),
         alignment=1,  # 1 = Centralizado
         leftIndent=0,
         firstLineIndent=0
     )
-    
-    logo_tour = "logo_tour_transparente.png" if os.path.exists("logo_tour_transparente.png") else None
-    
-    if logo_tour:
-        img_logo = Image(logo_tour, width=180, height=65, kind='proportional')
-    else:
-        img_logo = Paragraph("<b>TOUR360VR</b>", header_title_style)
 
     texto_cabecalho = Paragraph(
         "ESTUDO DE INTELIGÊNCIA DE MERCADO LOCAL<br/>E PRESENÇA DIGITAL NO GOOGLE",
         header_title_style
     )
 
-    header_table = Table([[img_logo, texto_cabecalho]], colWidths=[180, 360])
-    header_table.setStyle(TableStyle([
+    # Tabela de 1 coluna ocupando toda a largura útil da folha (540pt)
+    texto_table = Table([[texto_cabecalho]], colWidths=[540])
+    texto_table.setStyle(TableStyle([
+        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
         ('LEFTPADDING', (0,0), (-1,-1), 0),
         ('RIGHTPADDING', (0,0), (-1,-1), 0),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 0),
         ('TOPPADDING', (0,0), (-1,-1), 0),
-        ('ALIGN', (0,0), (0,0), 'LEFT'),
-        ('ALIGN', (1,0), (1,0), 'CENTER'),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 0),
     ]))
 
-    header_table.wrapOn(canvas, 540, 65)
-    header_table.drawOn(canvas, 36, 712)
+    # Renderiza o texto exatamente no centro horizontal da folha
+    texto_table.wrapOn(canvas, 540, 60)
+    texto_table.drawOn(canvas, 36, 720)
 
-    # Linha divisória horizontal
+    # 3. LINHA DIVISÓRIA HORIZONTAL
     canvas.setStrokeColor(colors.HexColor('#cbd5e1'))
     canvas.setLineWidth(1.5)
-    canvas.line(36, 704, 576, 704)
+    canvas.line(36, 706, 576, 706)
     
-    # RODAPÉ FIXO COM HIPERLINKS
+    # 4. RODAPÉ FIXO COM HIPERLINKS
     canvas.setLineWidth(1)
     canvas.line(36, 42, 576, 42)
     
