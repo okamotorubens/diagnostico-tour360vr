@@ -847,7 +847,10 @@ elif st.session_state.etapa == 2:
 
             with st.expander(f"✉️ **Uso Interno — Scripts de Vendas e Abordagem ({lead['nome']})**"):
                 st.markdown("**1) Abordagem Inicial — WhatsApp**")
-                script_wa = f"Olá! Tudo bem?\nMeu nome é Rubens Okamoto, da Okamoto Mídias Visuais e do Tour360VR.\nEstava analisando a presença da {lead['nome']} no Google, e identifiquei 3 pontos onde a visibilidade do espaço de vocês pode ser bastante ampliada em relação aos concorrentes da região.\nMontei um relatório curto de diagnóstico em PDF. Posso te enviar por aqui para você dar uma olhada?
+                script_wa = script_wa = f"""Olá! Tudo bem?
+Meu nome é Rubens Okamoto, da Okamoto Mídias Visuais e do Tour360VR.
+Estava analisando a presença da {lead['nome']} no Google, e identifiquei 3 pontos onde a visibilidade do espaço de vocês pode ser bastante ampliada em relação aos concorrentes da região.
+Montei um relatório curto de diagnóstico em PDF. Posso te enviar por aqui para você dar uma olhada?"""
                 st.markdown(f'<div class="script-box">{script_wa}</div>', unsafe_allow_html=True)
 
                 st.markdown("**2) Abordagem Inicial — E-mail**")
