@@ -409,7 +409,7 @@ if 'unidades_encontradas' not in st.session_state:
     st.session_state['unidades_encontradas'] = []
 
 # -----------------------------------------------------------------------------
-# 5. GERADOR DE PDF INTELIGENTE (COM AJUSTES SOLICITADOS)
+# 5. GERADOR DE PDF INTELIGENTE (PÁGINAS 2 E 3 RESTAURADAS AO PADRÃO ORIGINAL)
 # -----------------------------------------------------------------------------
 class PDFTour360Oficial(FPDF):
     def __init__(self, *args, **kwargs):
@@ -494,19 +494,17 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
     pdf.set_margins(21, 12, 12)
     pdf.set_auto_page_break(auto=False)
 
-    # PÁGINA 1: CAPA (CENTRALIZAÇÃO VERTICAL & 1 LINHA DE ESPAÇO)
+    # PÁGINA 1: CAPA (PÁGINA INTOCADA E PRESERVADA 100%)
     if 1 in paginas_selecionadas:
         pdf.add_page()
-        
-        # Centralização vertical ajustada do bloco da Capa (A4 = 297mm)
         caminho_logo = obter_caminho_logo("tour360")
         if caminho_logo:
             try:
-                pdf.image(caminho_logo, 90, 20.0, 36, 36)
+                pdf.image(caminho_logo, 90, 15.0, 36, 36)
             except Exception:
                 pass
 
-        pdf.set_y(62)
+        pdf.set_y(60)
         pdf.set_font('Helvetica', 'B', 20)
         pdf.set_text_color(30, 64, 175)
         pdf.cell(0, 8, conv('DIAGNÓSTICO DE PRESENÇA DIGITAL'), align='C', ln=True)
@@ -516,29 +514,26 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         pdf.set_text_color(15, 23, 42)
         pdf.cell(0, 6, conv('GOOGLE MEU NEGÓCIO'), align='C', ln=True)
 
-        pdf.ln(3)
+        pdf.ln(3.5)
         pdf.set_font('Helvetica', '', 10.0)
         pdf.set_text_color(71, 85, 105)
         pdf.cell(0, 5, conv("Gestão de reputação e imagem online para o segmento no Google Maps"), align='C', ln=True)
 
-        # CAPA - CARD DE DADOS DA EMPRESA (1 linha de espaço entre Nome e "Preparado para...")
-        w_capa, h_capa, x_capa, y_capa = 177.0, 32.0, 21.0, 94.0
+        # CAPA - CARD DE DADOS DA EMPRESA
+        w_capa, h_capa, x_capa, y_capa = 177.0, 32.0, 21.0, 92.0
         pdf.set_fill_color(248, 250, 252)
         pdf.set_draw_color(203, 213, 225)
         pdf.set_line_width(0.3)
         pdf.rounded_rect(x_capa, y_capa, w_capa, h_capa, 3.0, 'FD')
 
-        pdf.set_xy(x_capa, y_capa + 3.0)
+        pdf.set_xy(x_capa, y_capa + 2.5)
         
-        # Nome da Empresa
         pdf.set_font('Helvetica', 'B', 14.0)
         pdf.set_text_color(15, 23, 42) 
         pdf.cell(w_capa, 5.0, conv(f"{dados.get('nome') or 'Nome da Empresa'}"), align='C', ln=True)
 
-        # 1 LINHA DE ESPAÇO SOLICITADA
-        pdf.ln(4.5)
+        pdf.ln(3.5) # 1 Linha de espaço exata antes do "Preparado para..."
 
-        # Preparado para...
         pdf.set_font('Helvetica', 'B', 9.5)
         pdf.set_text_color(15, 23, 42)
         pdf.set_x(x_capa)
@@ -553,7 +548,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         pdf.set_x(x_capa)
         pdf.cell(w_capa, 3.8, conv(f"Telefone: {dados.get('telefone') or 'N/I'}   |   {site_txt}"), align='C', ln=True)
 
-        y_foto, h_container, w_container = 134.0, 88.0, 177.0
+        y_foto, h_container, w_container = 132.0, 92.0, 177.0
         foto_renderizada = False
 
         if dados.get("foto_reference") and API_KEY_GOOGLE:
@@ -585,14 +580,14 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             pdf.set_fill_color(248, 250, 252)
             pdf.set_draw_color(203, 213, 225)
             pdf.rounded_rect(x_capa, y_foto, w_container, h_container, 3.0, 'FD')
-            pdf.set_xy(x_capa, y_foto + 38)
+            pdf.set_xy(x_capa, y_foto + 40)
             pdf.set_font('Helvetica', 'B', 11)
             pdf.set_text_color(100, 116, 139)
             pdf.cell(w_container, 6, conv("[ IMAGEM DA FICHA GOOGLE DO CLIENTE ]"), align='C', ln=True)
 
         w_alerta = 177.0
         x_alerta = 21.0
-        y_alerta = 232.0
+        y_alerta = 236.0
         h_alerta = 17.0
         
         qtd_aval = dados.get('avaliacoes', 0)
@@ -633,18 +628,18 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         pdf.set_x(x_alerta)
         pdf.cell(w_alerta, 4.0, conv(sub_txt_2), align='C', ln=True)
 
-    # PÁGINA 2: AUDITORIA DETALHADA (COM TODOS OS ESPAÇAMENTOS SOLICITADOS)
+    # PÁGINA 2: AUDITORIA DETALHADA (RESTAURADA AO TAMANHO ORIGINAL)
     if 2 in paginas_selecionadas:
         pdf.add_page()
         
-        # Título da Página
-        pdf.set_xy(21, 25.0)
+        # Título da Página - Tamanho Original 15pt
+        pdf.set_xy(21, 29.0)
         pdf.set_font('Helvetica', 'B', 15)
         pdf.set_text_color(15, 23, 42)
         pdf.cell(177, 7, conv('AUDITORIA DETALHADA DE PONTOS DE BUSCA'), align='C', ln=True)
 
-        # Card da Empresa
-        w_ficha, x_ficha, y_ficha, h_ficha = 177, 21.0, 36.0, 9.5
+        # Card da Empresa - Tamanho Original 13pt
+        w_ficha, x_ficha, y_ficha, h_ficha = 177, 21.0, 43.0, 9.5
         pdf.set_fill_color(248, 250, 252)
         pdf.set_draw_color(203, 213, 225)
         pdf.set_line_width(0.3)
@@ -655,29 +650,29 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         pdf.set_text_color(30, 64, 175)
         pdf.cell(w_ficha, 5.0, conv(f"{dados.get('nome') or 'Empresa Analisada'}"), align='C', ln=True)
 
-        # Cards Superiores (Score e Nota)
-        y_quadros_topo = 50.0
+        # Cards Superiores - Posição Y e Altura Originais
+        y_quadros_topo = 61.0
         w_q1, w_q2 = 86.0, 86.0
         x_q1, x_q2 = 21.0, 112.0
-        h_q = 21.0
+        h_q = 22.0
 
         # Card 1: Score
         pdf.set_fill_color(255, 255, 255)
         pdf.set_draw_color(226, 232, 240)
         pdf.rounded_rect(x_q1, y_quadros_topo, w_q1, h_q, 3.0, 'FD')
 
-        pdf.set_xy(x_q1, y_quadros_topo + 2.0)
+        pdf.set_xy(x_q1, y_quadros_topo + 2.5)
         pdf.set_font('Helvetica', 'B', 8.0)
         pdf.set_text_color(148, 163, 184)
         pdf.cell(w_q1, 3.2, conv("OTIMIZAÇÃO DO PERFIL"), align='C', ln=True)
 
-        pdf.set_xy(x_q1, y_quadros_topo + 5.2)
-        pdf.set_font('Helvetica', 'B', 17)
+        pdf.set_xy(x_q1, y_quadros_topo + 5.8)
+        pdf.set_font('Helvetica', 'B', 18)
         pdf.set_text_color(15, 23, 42)
         str_score = f"{score} /100"
         pdf.cell(w_q1, 6.0, str_score, align='C')
 
-        y_term = y_quadros_topo + 14.8
+        y_term = y_quadros_topo + 15.8
         w_term = 70.0
         x_term_start = x_q1 + (w_q1 - w_term) / 2.0
         pdf.set_fill_color(241, 245, 249)
@@ -702,23 +697,23 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         pdf.set_draw_color(226, 232, 240)
         pdf.rounded_rect(x_q2, y_quadros_topo, w_q2, h_q, 3.0, 'FD')
 
-        pdf.set_xy(x_q2, y_quadros_topo + 2.0)
+        pdf.set_xy(x_q2, y_quadros_topo + 2.5)
         pdf.set_font('Helvetica', 'B', 8.0)
         pdf.set_text_color(148, 163, 184)
         pdf.cell(w_q2, 3.2, conv("NOTA DOS CLIENTES"), align='C', ln=True)
 
-        pdf.set_xy(x_q2, y_quadros_topo + 5.2)
-        pdf.set_font('Helvetica', 'B', 17)
+        pdf.set_xy(x_q2, y_quadros_topo + 5.8)
+        pdf.set_font('Helvetica', 'B', 18)
         pdf.set_text_color(16, 185, 129)
         pdf.cell(w_q2, 6.0, f"{dados.get('nota', 0.0):.1f} *", align='C')
 
-        pdf.set_xy(x_q2, y_quadros_topo + 12.2)
+        pdf.set_xy(x_q2, y_quadros_topo + 13.0)
         pdf.set_font('Helvetica', '', 7.5)
         pdf.set_text_color(100, 116, 139)
         pdf.cell(w_q2, 3.0, conv(f"{dados.get('avaliacoes', 0)} avaliações cadastradas no Google"), align='C', ln=True)
 
-        # 1 LINHA DE ESPAÇO ENTRE CARDS E ITEM 1 SOLICITADA (y_start passa de 71 para 78)
-        y_start_itens, h_slot = 78.0, 8.2
+        # 9 ITENS DE AUDITORIA (Com 1 linha extra de respiro referente ao card de nota)
+        y_start_itens, h_slot = 90.0, 8.5
 
         pct_avaliacoes = min(int((dados.get('avaliacoes', 0) / 50.0) * 100), 100) if dados.get('avaliacoes', 0) > 0 else 10
         pct_fotos = 100 if dados.get('tem_fotos_hd') else 30
@@ -755,11 +750,11 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             y_curr = y_start_itens + (idx_item * h_slot)
             pdf.set_xy(21, y_curr)
             
-            pdf.set_font('Helvetica', 'B', 9.5)
+            pdf.set_font('Helvetica', 'B', 10.0)
             pdf.set_text_color(30, 41, 59)
             pdf.cell(122, 2.6, conv(titulo), border=0)
             
-            pdf.set_font('Helvetica', 'B', 9.5)
+            pdf.set_font('Helvetica', 'B', 10.0)
             if pct < 40: pdf.set_text_color(239, 68, 68)
             elif pct < 80: pdf.set_text_color(245, 158, 11)
             else: pdf.set_text_color(22, 128, 61)
@@ -776,13 +771,13 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
                 
             pdf.rounded_rect(21, y_bar, max(float(pct) * 1.77, 4.0), 1.1, 0.4, 'F')
 
-            pdf.set_xy(21, y_bar + 1.3)
-            pdf.set_font('Helvetica', '', 8.5)
+            pdf.set_xy(21, y_bar + 1.4)
+            pdf.set_font('Helvetica', '', 8.8)
             pdf.set_text_color(71, 85, 105)
             pdf.cell(177, 2.4, conv(f"   Estado: {desc[:58]}  |  Impacto: {impacto[:55]}"), border=0)
 
-        # 1 LINHA DE ESPAÇO ENTRE ITEM 9 E QUADRO DE ATENÇÃO SOLICITADA (y_atencao passa de 152 para 158)
-        y_atencao = 158.0
+        # QUADRO DE ATENÇÃO (Posicionado exatamente 1 linha abaixo do item 9)
+        y_atencao = 171.0
         w_atencao = 177.0
         h_atencao = 14.5
 
@@ -812,18 +807,16 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         pdf.set_text_color(127, 29, 29) if not resp_ok else pdf.set_text_color(22, 101, 52)
         pdf.multi_cell(w_atencao - 12, 2.7, conv(txt_atencao), align='L')
 
-        # 1 LINHA DE ESPAÇO ENTRE QUADRO DE ATENÇÃO E "ANÁLISE" SOLICITADA (y_analise passa de 176.5 para 180.0)
+        # TABELA DE CONCORRENTES (1 linha abaixo do quadro de atenção)
         concorrentes_filtrados = [c for c in concorrentes if c.get("nome", "").strip() != ""]
-        y_analise = 180.0
-        
         if concorrentes_filtrados:
-            pdf.set_xy(21, y_analise)
+            pdf.set_xy(21, 191.0)
             pdf.set_font('Helvetica', 'B', 8.8)
             pdf.set_text_color(30, 64, 175)
             pdf.cell(0, 3.6, conv("ANÁLISE AUTOMÁTICA DE CONCORRENTES DO SEGMENTO"), border=0)
 
-            w_emp, w_item, w_score, h_row = 53, 11.0, 25.0, 4.2
-            y_table = y_analise + 4.5
+            w_emp, w_item, w_score, h_row = 53, 11.0, 25.0, 4.5
+            y_table = 195.5
             pdf.set_xy(21, y_table)
             pdf.set_fill_color(30, 64, 175)
             pdf.set_text_color(255, 255, 255)
@@ -909,54 +902,48 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
                 pdf.cell(w_score, h_row, conv(f"{score_conc} / 100"), border=1, fill=True, align='C')
                 pdf.set_font('Helvetica', '', 8.2)
 
-            y_fim_tabela = y_r1 + ((len(concorrentes_filtrados) + 1) * h_row)
-        else:
-            y_fim_tabela = y_analise
-
-        # 1 LINHA DE ESPAÇO ENTRE QUADRO DE ANÁLISE E PLANO DE AÇÃO SOLICITADA (y_extra ajustado dinamicamente)
+        # PLANO DE AÇÃO ESTRATÉGICO (1 linha de espaço abaixo da tabela)
         if plano_acao_extra and plano_acao_extra.strip() != "":
-            w_extra, x_extra, h_box_extra = 177, 21.0, 24.0
-            y_extra = y_fim_tabela + 6.0
-            
+            w_extra, x_extra, y_extra, h_box_extra = 177, 21.0, 222.0, 25.0
             pdf.set_fill_color(248, 250, 252)
             pdf.set_draw_color(203, 213, 225)
             pdf.set_line_width(0.3)
             pdf.rounded_rect(x_extra, y_extra, w_extra, h_box_extra, 2.5, 'FD')
             
             pdf.set_xy(x_extra, y_extra + 2.0)
-            pdf.set_font('Helvetica', 'B', 8.8)
+            pdf.set_font('Helvetica', 'B', 9.0)
             pdf.set_text_color(30, 64, 175)
             pdf.cell(w_extra, 3.2, conv("PLANO DE AÇÃO E APONTAMENTOS ESTRATÉGICOS PERSONALIZADOS"), align='C', border=0)
             
-            pdf.set_xy(x_extra + 5, y_extra + 6.0)
-            pdf.set_font('Helvetica', '', 8.0)
+            pdf.set_xy(x_extra + 5, y_extra + 6.2)
+            pdf.set_font('Helvetica', '', 8.2)
             pdf.set_text_color(51, 65, 85)
-            pdf.multi_cell(w_extra - 10, 2.8, conv(plano_acao_extra), align='L')
+            pdf.multi_cell(w_extra - 10, 2.9, conv(plano_acao_extra), align='L')
 
-    # PÁGINA 3: PROPOSTA COMERCIAL & AÇÕES DO AGENTE (COM DIAGRAMAÇÃO MANTIDA E ESPAÇAMENTOS)
+    # PÁGINA 3: PROPOSTA COMERCIAL & AÇÕES DO AGENTE (RESTAURADA AO TAMANHO ORIGINAL)
     if 3 in paginas_selecionadas:
         pdf.add_page()
         
-        pdf.set_xy(21, 25.0)
+        pdf.set_xy(21, 29.0)
         pdf.set_font('Helvetica', 'B', 15)
         pdf.set_text_color(15, 23, 42)
         pdf.cell(177, 7, conv('PROPOSTA COMERCIAL & ESTRUTURAÇÃO ESTRATÉGICA'), align='C', ln=True)
 
-        pdf.set_y(37.0)
-        pdf.set_font('Helvetica', 'B', 11)
+        pdf.set_y(43.0)
+        pdf.set_font('Helvetica', 'B', 12)
         pdf.cell(0, 4, conv('PLANOS E INVESTIMENTO'), align='C', ln=True)
 
-        y_p = 46.0
+        y_p = 55.0
         w_card = 55.0
         x1, x2, x3 = 21.0, 82.0, 143.0
 
-        h_card_outros = 68.0
-        h_card_pro = 92.0
+        h_card_outros = 70.0
+        h_card_pro = 95.0
 
         def desenhar_pilulas_itens(pdf_obj, x_start, y_top, texto_itens):
             linhas = [l.strip().lstrip('-').strip() for l in texto_itens.split('\n') if l.strip()]
             
-            h_item = 7.8
+            h_item = 8.0
             y_curr = y_top
 
             for lin in linhas:
@@ -1085,17 +1072,16 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         
         desenhar_pilulas_itens(pdf, x3, y_p + 27, planos.get('gestao_itens', ''))
 
-        # 1 LINHA DE ESPAÇO ENTRE CARDS E "AÇÕES DO AGENTE" SOLICITADA (y_agente passa de y_p + h_card_pro + 10 para + 8)
-        y_agente = y_p + h_card_pro + 8.0
+        # AÇÕES DO AGENTE (Com 1 linha de espaço em relação aos cards)
+        y_agente = y_p + h_card_pro + 10.0
         w_agente = 177.0
         
         pdf.set_xy(21, y_agente)
-        pdf.set_font('Helvetica', 'B', 9.8)
+        pdf.set_font('Helvetica', 'B', 10.0)
         pdf.set_text_color(15, 23, 42)
         pdf.cell(w_agente, 4.0, conv("AÇÕES DO AGENTE"), ln=True)
 
-        # Espaçamento vertical ajustado para manter a diagramação perfeita do quadro
-        y_tbl_ag = y_agente + 5.0
+        y_tbl_ag = y_agente + 4.5
         
         pdf.set_fill_color(30, 64, 175)
         pdf.set_draw_color(30, 64, 175)
@@ -1103,7 +1089,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         pdf.set_font('Helvetica', 'B', 8.0)
         
         w_c1, w_c2, w_c3, w_c4 = 34.0, 44.0, 44.0, 55.0
-        h_header_ag = 4.5
+        h_header_ag = 4.8
 
         pdf.set_xy(21, y_tbl_ag)
         pdf.cell(w_c1, h_header_ag, conv(" Dimensão"), border=1, fill=True)
@@ -1111,7 +1097,6 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         pdf.cell(w_c3, h_header_ag, conv(" Impacto"), border=1, fill=True)
         pdf.cell(w_c4, h_header_ag, conv(" Ação"), border=1, fill=True, ln=True)
 
-        # Diagramação mantida com alinhamento vertical exato
         acoes_matriz = [
             ("Completude do cadastro", "Nome e endereço preenchidos, mas faltam descrição e fotos claras.", "Perfil incompleto passa sensação de desorganização ao cliente.", "Adicione descrição concisa com palavras-chave e foto de capa HD."),
             ("Nota e avaliações", f"Nota {dados.get('nota', 0.0):.1f} com histórico recente de comentários sem resposta.", "Nota baixa e falta de resposta afastam novos clientes.", "Responda com empatia a CADA avaliação para recuperar a reputação."),
@@ -1124,7 +1109,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             ("Presença local", "Concorrentes locais dominam posições de destaque no mapa.", "Defasagem enorme. Concorrentes captam a maior fatia de tráfego.", "Execute o plano de otimização Pro para liderar o Top 3 da região.")
         ]
 
-        pdf.set_font('Helvetica', '', 7.0)
+        pdf.set_font('Helvetica', '', 7.2)
         y_curr_ag = y_tbl_ag + h_header_ag
 
         for idx_m, (dim, est, imp, acao) in enumerate(acoes_matriz):
@@ -1139,29 +1124,29 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             n_l4 = 1 + (len(acao) // 35)
             
             linhas_max = max(n_l1, n_l2, n_l3, n_l4)
-            h_linha_dinamica = max(6.5, linhas_max * 2.5 + 1.0)
+            h_linha_dinamica = max(7.0, linhas_max * 2.7 + 1.2)
 
             pdf.rect(21, y_curr_ag, w_c1, h_linha_dinamica, 'FD')
             pdf.rect(21 + w_c1, y_curr_ag, w_c2, h_linha_dinamica, 'FD')
             pdf.rect(21 + w_c1 + w_c2, y_curr_ag, w_c3, h_linha_dinamica, 'FD')
             pdf.rect(21 + w_c1 + w_c2 + w_c3, y_curr_ag, w_c4, h_linha_dinamica, 'FD')
 
-            pdf.set_xy(22, y_curr_ag + 0.8)
-            pdf.multi_cell(w_c1 - 2.0, 2.5, conv(dim), border=0, align='L')
+            pdf.set_xy(22, y_curr_ag + 1.0)
+            pdf.multi_cell(w_c1 - 2.0, 2.6, conv(dim), border=0, align='L')
             
-            pdf.set_xy(21 + w_c1 + 1.5, y_curr_ag + 0.8)
-            pdf.multi_cell(w_c2 - 3.0, 2.5, conv(est), border=0, align='L')
+            pdf.set_xy(21 + w_c1 + 1.5, y_curr_ag + 1.0)
+            pdf.multi_cell(w_c2 - 3.0, 2.6, conv(est), border=0, align='L')
             
-            pdf.set_xy(21 + w_c1 + w_c2 + 1.5, y_curr_ag + 0.8)
-            pdf.multi_cell(w_c3 - 3.0, 2.5, conv(imp), border=0, align='L')
+            pdf.set_xy(21 + w_c1 + w_c2 + 1.5, y_curr_ag + 1.0)
+            pdf.multi_cell(w_c3 - 3.0, 2.6, conv(imp), border=0, align='L')
             
-            pdf.set_xy(21 + w_c1 + w_c2 + w_c3 + 1.5, y_curr_ag + 0.8)
-            pdf.multi_cell(w_c4 - 3.0, 2.5, conv(acao), border=0, align='L')
+            pdf.set_xy(21 + w_c1 + w_c2 + w_c3 + 1.5, y_curr_ag + 1.0)
+            pdf.multi_cell(w_c4 - 3.0, 2.6, conv(acao), border=0, align='L')
             
             y_curr_ag += h_linha_dinamica
             pdf.set_xy(21, y_curr_ag)
 
-    # PÁGINA 4: CONTRATO DE PRESTAÇÃO DE SERVIÇOS
+    # PÁGINA 4: CONTRATO DE PRESTAÇÃO DE SERVIÇOS (INTOCADA E PRESERVADA 100%)
     if 4 in paginas_selecionadas:
         pdf.add_page()
         
@@ -1619,16 +1604,18 @@ elif etapa_atual == 4:
             st.session_state['etapa_atual'] = 5
             st.rerun()
 
-# ETAPA 5: GERAR PDF, WHATSAPP & HISTÓRICO (SEM RENDERIZAR "NONE")
+# ETAPA 5: GERAR PDF, WHATSAPP & HISTÓRICO (MARCAÇÃO INICIAL APENAS PÁG 1 E 2)
 elif etapa_atual == 5:
     st.markdown("<div class='dashboard-card'><div class='card-title'>📄 5. EMISSÃO, ABORDAGEM & HISTÓRICO</div>", unsafe_allow_html=True)
     
     st.markdown("#### ⚙️ Selecione as Páginas a Incluir no PDF:")
     c_pag1, c_pag2, c_pag3, c_pag4 = st.columns(4)
+    
+    # Padrão original restaurado: Apenas Pág 1 e Pág 2 marcadas ao abrir
     inc_p1 = c_pag1.checkbox("Pág 1 (Capa)", value=True, key="chk_p1")
     inc_p2 = c_pag2.checkbox("Pág 2 (Auditoria/Concorrentes)", value=True, key="chk_p2")
-    inc_p3 = c_pag3.checkbox("Pág 3 (Valores e Planos)", value=True, key="chk_p3")
-    inc_p4 = c_pag4.checkbox("Pág 4 (Contrato)", value=True, key="chk_p4")
+    inc_p3 = c_pag3.checkbox("Pág 3 (Valores e Planos)", value=False, key="chk_p3")
+    inc_p4 = c_pag4.checkbox("Pág 4 (Contrato)", value=False, key="chk_p4")
 
     paginas_escolhidas = []
     if inc_p1: paginas_escolhidas.append(1)
