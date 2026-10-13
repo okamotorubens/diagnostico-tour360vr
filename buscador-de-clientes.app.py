@@ -866,7 +866,10 @@ Identifiquei 3 pontos críticos que estão impactando a confiança de novos clie
 Temos soluções para transformar a vitrine do seu negócio no Google. Anexo um diagnóstico em PDF com a análise detalhada.
 
 Fico à disposição para conversarmos!
+
 Atenciosamente,
+
+Rubens Okamoto
 TOUR360VR | Okamoto Mídias Visuais
 (16) 99133-2121 | tour360vr.com.br"""
                 st.markdown(f'<div class="script-box">{script_email}</div>', unsafe_allow_html=True)
