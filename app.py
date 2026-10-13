@@ -523,13 +523,11 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         pdf.set_text_color(15, 23, 42)
         pdf.cell(0, 6, conv('GOOGLE MEU NEGÓCIO'), align='C', ln=True)
 
-        # Espaço de altura adicional antes do subtítulo
         pdf.ln(3.5)
         pdf.set_font('Helvetica', '', 10.0)
         pdf.set_text_color(71, 85, 105)
         pdf.cell(0, 5, conv("Gestão de reputação e imagem online para o segmento no Google Maps"), align='C', ln=True)
 
-        # +1 linha de espaço entre "Gestão de Reputação" e o Quadro de Dados da Empresa (y_capa = 90.0)
         w_capa, h_capa, x_capa, y_capa = 177.0, 35.0, 21.0, 90.0
         pdf.set_fill_color(248, 250, 252)
         pdf.set_draw_color(203, 213, 225)
@@ -559,7 +557,6 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         pdf.set_x(x_capa)
         pdf.cell(w_capa, 4.0, conv(f"Telefone: {dados.get('telefone') or 'N/I'}   |   {site_txt}"), align='C', ln=True)
 
-        # +1 linha de espaço entre Quadro da Empresa e Imagem (y_foto = 132.0, h_container = 92.0)
         y_foto, h_container, w_container = 132.0, 92.0, 177.0
         foto_renderizada = False
 
@@ -597,7 +594,6 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             pdf.set_text_color(100, 116, 139)
             pdf.cell(w_container, 6, conv("[ IMAGEM DA FICHA GOOGLE DO CLIENTE ]"), align='C', ln=True)
 
-        # +1 linha de espaço entre a Imagem e o Quadro de Avaliação (y_alerta = 236.0)
         w_alerta = 177.0
         x_alerta = 21.0
         y_alerta = 236.0
@@ -724,7 +720,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         pdf.set_text_color(100, 116, 139)
         pdf.cell(w_q2, 3.0, conv(f"{dados.get('avaliacoes', 0)} avaliações cadastradas no Google"), align='C', ln=True)
 
-        # 9 ITENS DE AUDITORIA (Espaçamento ampliado h_slot = 8.8mm)
+        # 9 ITENS DE AUDITORIA
         pct_avaliacoes = min(int((dados.get('avaliacoes', 0) / 50.0) * 100), 100) if dados.get('avaliacoes', 0) > 0 else 10
         pct_fotos = 100 if dados.get('tem_fotos_hd') else 30
         pct_tour = 100 if dados.get('tem_tour360') else 30
@@ -787,7 +783,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             pdf.set_text_color(71, 85, 105)
             pdf.cell(177, 2.6, conv(f"   Estado: {desc[:58]}  |  Impacto: {impacto[:55]}"), border=0)
 
-        # QUADRO DE ATENÇÃO DINÂMICO (+1 linha de espaço após o item 9 -> y = 168.0)
+        # QUADRO DE ATENÇÃO DINÂMICO
         y_atencao = 168.0
         w_atencao = 177.0
         h_atencao = 15.5
@@ -818,7 +814,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         pdf.set_text_color(127, 29, 29) if not resp_ok else pdf.set_text_color(22, 101, 52)
         pdf.multi_cell(w_atencao - 12, 2.8, conv(txt_atencao), align='L')
 
-        # TABELA DE CONCORRENTES (y = 191.0)
+        # TABELA DE CONCORRENTES
         concorrentes_filtrados = [c for c in concorrentes if c.get("nome", "").strip() != ""]
         if concorrentes_filtrados:
             pdf.set_xy(21, 191.0)
@@ -913,9 +909,9 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
                 pdf.cell(w_score, h_row, conv(f"{score_conc} / 100"), border=1, fill=True, align='C')
                 pdf.set_font('Helvetica', '', 8.5)
 
-        # PLANO DE AÇÃO ESTRATÉGICO
+        # PLANO DE AÇÃO ESTRATÉGICO (+1 linha a mais de espaço -> y_extra = 229.0)
         if plano_acao_extra and plano_acao_extra.strip() != "":
-            w_extra, x_extra, y_extra, h_box_extra = 177, 21.0, 226.0, 27.0
+            w_extra, x_extra, y_extra, h_box_extra = 177, 21.0, 229.0, 27.0
             pdf.set_fill_color(248, 250, 252)
             pdf.set_draw_color(203, 213, 225)
             pdf.set_line_width(0.3)
@@ -1083,24 +1079,24 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         
         desenhar_pilulas_itens(pdf, x3, y_p + 27, planos.get('gestao_itens', ''))
 
-        # AÇÕES DO AGENTE (PÁGINA 3 - TABELA TOTALMENTE RECALCULADA SEM CORTES)
-        y_agente = y_p + h_card_pro + 16.0
+        # AÇÕES DO AGENTE (PÁGINA 3 - SUBIDA DE 1 LINHA E REAJUSTE DE ALTURA)
+        y_agente = y_p + h_card_pro + 12.0
         w_agente = 177.0
         
         pdf.set_xy(21, y_agente)
-        pdf.set_font('Helvetica', 'B', 10.5)
+        pdf.set_font('Helvetica', 'B', 10.0)
         pdf.set_text_color(15, 23, 42)
         pdf.cell(w_agente, 4.0, conv("AÇÕES DO AGENTE"), ln=True)
 
-        y_tbl_ag = y_agente + 5.5
+        y_tbl_ag = y_agente + 5.0
         
         pdf.set_fill_color(30, 64, 175)
         pdf.set_draw_color(30, 64, 175)
         pdf.set_text_color(255, 255, 255)
-        pdf.set_font('Helvetica', 'B', 8.2)
+        pdf.set_font('Helvetica', 'B', 8.0)
         
         w_c1, w_c2, w_c3, w_c4 = 34.0, 44.0, 44.0, 55.0
-        h_header_ag = 5.2
+        h_header_ag = 4.8
 
         pdf.set_xy(21, y_tbl_ag)
         pdf.cell(w_c1, h_header_ag, conv(" Dimensão"), border=1, fill=True)
@@ -1120,8 +1116,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             ("Presença local", "Concorrentes locais dominam posições de destaque no mapa.", "Defasagem enorme. Concorrentes captam a maior fatia de tráfego.", "Execute o plano de otimização Pro para liderar o Top 3 da região.")
         ]
 
-        # Cálculo dinâmico para garantir zero cortes de texto e perfeita altura em cada linha
-        pdf.set_font('Helvetica', '', 7.6)
+        pdf.set_font('Helvetica', '', 7.2)
         
         y_curr_ag = y_tbl_ag + h_header_ag
 
@@ -1131,33 +1126,30 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             pdf.set_draw_color(226, 232, 240)
             pdf.set_text_color(51, 65, 85)
             
-            # Estimativa de linhas por coluna com margem de segurança
-            n_l1 = 1 + (len(dim) // 20)
-            n_l2 = 1 + (len(est) // 26)
-            n_l3 = 1 + (len(imp) // 26)
-            n_l4 = 1 + (len(acao) // 32)
+            n_l1 = 1 + (len(dim) // 22)
+            n_l2 = 1 + (len(est) // 28)
+            n_l3 = 1 + (len(imp) // 28)
+            n_l4 = 1 + (len(acao) // 35)
             
             linhas_max = max(n_l1, n_l2, n_l3, n_l4)
-            h_linha_dinamica = max(8.5, linhas_max * 3.4 + 2.0)
+            h_linha_dinamica = max(7.2, linhas_max * 2.8 + 1.2)
 
-            # Fundo e retângulos zebrados
             pdf.rect(21, y_curr_ag, w_c1, h_linha_dinamica, 'FD')
             pdf.rect(21 + w_c1, y_curr_ag, w_c2, h_linha_dinamica, 'FD')
             pdf.rect(21 + w_c1 + w_c2, y_curr_ag, w_c3, h_linha_dinamica, 'FD')
             pdf.rect(21 + w_c1 + w_c2 + w_c3, y_curr_ag, w_c4, h_linha_dinamica, 'FD')
 
-            # Renderização dos textos adaptativos
-            pdf.set_xy(22, y_curr_ag + 1.5)
-            pdf.multi_cell(w_c1 - 2.0, 3.0, conv(dim), border=0, align='L')
+            pdf.set_xy(22, y_curr_ag + 1.0)
+            pdf.multi_cell(w_c1 - 2.0, 2.7, conv(dim), border=0, align='L')
             
-            pdf.set_xy(21 + w_c1 + 1.5, y_curr_ag + 1.5)
-            pdf.multi_cell(w_c2 - 3.0, 3.0, conv(est), border=0, align='L')
+            pdf.set_xy(21 + w_c1 + 1.5, y_curr_ag + 1.0)
+            pdf.multi_cell(w_c2 - 3.0, 2.7, conv(est), border=0, align='L')
             
-            pdf.set_xy(21 + w_c1 + w_c2 + 1.5, y_curr_ag + 1.5)
-            pdf.multi_cell(w_c3 - 3.0, 3.0, conv(imp), border=0, align='L')
+            pdf.set_xy(21 + w_c1 + w_c2 + 1.5, y_curr_ag + 1.0)
+            pdf.multi_cell(w_c3 - 3.0, 2.7, conv(imp), border=0, align='L')
             
-            pdf.set_xy(21 + w_c1 + w_c2 + w_c3 + 1.5, y_curr_ag + 1.5)
-            pdf.multi_cell(w_c4 - 3.0, 3.0, conv(acao), border=0, align='L')
+            pdf.set_xy(21 + w_c1 + w_c2 + w_c3 + 1.5, y_curr_ag + 1.0)
+            pdf.multi_cell(w_c4 - 3.0, 2.7, conv(acao), border=0, align='L')
             
             y_curr_ag += h_linha_dinamica
             pdf.set_xy(21, y_curr_ag)
