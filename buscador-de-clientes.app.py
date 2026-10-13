@@ -176,7 +176,7 @@ def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
         'HeaderTitleCenterPage',
         parent=styles['Normal'],
         fontName='Helvetica-Bold',
-        fontSize=13,
+        fontSize=14,
         leading=15,
         textColor=colors.HexColor('#0f172a'),
         alignment=1,
