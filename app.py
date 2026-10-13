@@ -1107,7 +1107,7 @@ with st.sidebar:
             "pro_valor": "1.500,00", "pro_itens": "- Tudo do Plano Start\n- Tour Virtual 360°\n- Ensaio Fotográfico\n- Relatório Visual de Entrega",
             "gestao_valor": "600,00", "gestao_itens": "- Postagens semanais\n- Gestão de avaliações\n- Atualização de fotos\n- Relatório mensal"
         }
-        st.session_state['plano_acao_extra'] = """A ficha do Google Meu Negócio é a primeira impressão física e digital que o seu cliente tem da sua empresa na internet. Hoje, mais de 80% dos consumidores pesquisam no Google Maps antes de decidir onde comprar ou contratar um serviço presencial.
+       st.session_state['plano_acao_extra'] = """A ficha do Google Meu Negócio é a primeira impressão física e digital que o seu cliente tem da sua empresa na internet. Hoje, mais de 80% dos consumidores pesquisam no Google Maps antes de decidir onde comprar ou contratar um serviço presencial.
 
 Ações prioritárias para otimização e diferenciação local:
 
@@ -1115,7 +1115,8 @@ Ações prioritárias para otimização e diferenciação local:
 2. Segurança e Posicionamento Orgânico: Fichas atualizadas com frequência sinalizam ao algoritmo do Google que seu negócio está ativo e relevante, melhorando diretamente seu posicionamento nas buscas por proximidade.
 3. Autoridade e Confiança Instantânea: A ausência de fotos profissionais e a falta do Tour Virtual 360° geram dúvida no consumidor, fazendo com que ele escolha o concorrente que transmite mais transparência e estrutura visual.
 4. Transformação da Ficha em uma Vitrine Imersiva: Implantação da experiência de navegação 360° integrada ao Google Street View, produção e publicação de imagens de alta resolução focadas nos produtos, serviços e detalhes do espaço e ambiente, além da otimização dos canais de contato direto (WhatsApp e Website oficial)."""
-st.rerun()
+        lista_hist = carregar_historico()
+        st.rerun()
 
 st.markdown("""
         <div class="sidebar-divider"></div>
