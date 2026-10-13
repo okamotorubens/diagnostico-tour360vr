@@ -1107,7 +1107,7 @@ with st.sidebar:
             "pro_valor": "1.500,00", "pro_itens": "- Tudo do Plano Start\n- Tour Virtual 360°\n- Ensaio Fotográfico\n- Relatório Visual de Entrega",
             "gestao_valor": "600,00", "gestao_itens": "- Postagens semanais\n- Gestão de avaliações\n- Atualização de fotos\n- Relatório mensal"
         }
-       st.session_state['plano_acao_extra'] = """A ficha do Google Meu Negócio é a primeira impressão física e digital que o seu cliente tem da sua empresa na internet. Hoje, mais de 80% dos consumidores pesquisam no Google Maps antes de decidir onde comprar ou contratar um serviço presencial.
+        st.session_state['plano_acao_extra'] = """A ficha do Google Meu Negócio é a primeira impressão física e digital que o seu cliente tem da sua empresa na internet. Hoje, mais de 80% dos consumidores pesquisam no Google Maps antes de decidir onde comprar ou contratar um serviço presencial.
 
 Ações prioritárias para otimização e diferenciação local:
 
