@@ -147,7 +147,7 @@ def limpar_banco_dados():
         st.error(f"Erro ao limpar banco: {str(e)}")
 
 # -----------------------------------------------------------------------------
-# GERADOR DE PDF DO PANORAMA DE NICHO (TEXTO ENCOSTADO NA LOGO)
+# GERADOR DE PDF DO PANORAMA DE NICHO (LOGO AMPLIADA & TÍTULO CENTRALIZADO)
 # -----------------------------------------------------------------------------
 def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
     canvas.saveState()
@@ -160,7 +160,7 @@ def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
         fontSize=12,
         leading=14.5,
         textColor=colors.HexColor('#0f172a'),
-        alignment=1,  # 1 = Centralizado (Center)
+        alignment=1,  # 1 = Centralizado
         leftIndent=0,
         firstLineIndent=0
     )
@@ -168,7 +168,7 @@ def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
     logo_tour = "logo_tour_transparente.png" if os.path.exists("logo_tour_transparente.png") else None
     
     if logo_tour:
-        img_logo = Image(logo_tour, width=140, height=52, kind='proportional')
+        img_logo = Image(logo_tour, width=180, height=65, kind='proportional')
     else:
         img_logo = Paragraph("<b>TOUR360VR</b>", header_title_style)
 
@@ -177,24 +177,24 @@ def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
         header_title_style
     )
 
-    header_table = Table([[img_logo, texto_cabecalho]], colWidths=[140, 400])
+    header_table = Table([[img_logo, texto_cabecalho]], colWidths=[180, 360])
     header_table.setStyle(TableStyle([
-        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'), # Garante alinhamento vertical centralizado
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
         ('LEFTPADDING', (0,0), (-1,-1), 0),
         ('RIGHTPADDING', (0,0), (-1,-1), 0),
         ('BOTTOMPADDING', (0,0), (-1,-1), 0),
         ('TOPPADDING', (0,0), (-1,-1), 0),
         ('ALIGN', (0,0), (0,0), 'LEFT'),
-        ('ALIGN', (1,0), (1,0), 'CENTER'), # Garante alinhamento horizontal centralizado na célula
+        ('ALIGN', (1,0), (1,0), 'CENTER'),
     ]))
 
-    header_table.wrapOn(canvas, 540, 55)
-    header_table.drawOn(canvas, 36, 720)
+    header_table.wrapOn(canvas, 540, 65)
+    header_table.drawOn(canvas, 36, 712)
 
     # Linha divisória horizontal
     canvas.setStrokeColor(colors.HexColor('#cbd5e1'))
     canvas.setLineWidth(1.5)
-    canvas.line(36, 712, 576, 712)
+    canvas.line(36, 704, 576, 704)
     
     # RODAPÉ FIXO COM HIPERLINKS
     canvas.setLineWidth(1)
@@ -360,14 +360,13 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     return buffer
 
 # -----------------------------------------------------------------------------
-# ESTILIZAÇÃO CSS CUSTOMIZADA (TRAVAMENTO RIGOROSO DA SIDEBAR SEM ALÇAS)
+# ESTILIZAÇÃO CSS CUSTOMIZADA (SIDEBAR FIXA SEM SCROLLBAR)
 # -----------------------------------------------------------------------------
 st.markdown("""
     <style>
     .main { background-color: #0e1117; padding-top: 15px !important; }
     .block-container { padding-top: 1rem !important; padding-bottom: 1rem !important; }
     
-    /* BLOQUEIO RIGOROSO DE REDIMENSIONAMENTO E DIVISÓRIAS NA SIDEBAR */
     section[data-testid="stSidebar"] {
         width: 310px !important;
         min-width: 310px !important;
@@ -417,13 +416,11 @@ st.markdown("""
 
     .critical-item { color: #f87171; font-size: 13px; margin-bottom: 6px; font-weight: 500; }
     
-    /* Título da Sidebar em destaque idêntico ao Diagnóstico */
     .sidebar-title {
         text-align: center; font-size: 15px; font-weight: 800; color: #ffffff;
         margin-top: -10px; margin-bottom: 10px; letter-spacing: 0.5px;
     }
 
-    /* Botões com contorno e brilho neon padrão */
     .stButton>button, .btn-redirect {
         background-color: #0f172a !important;
         color: #ffffff !important;
