@@ -404,8 +404,8 @@ if 'concorrentes' not in st.session_state:
 
 if 'planos' not in st.session_state:
     st.session_state['planos'] = {
-        "start_valor": "500,00", "start_itens": "- Correção cadastral\n- Otimização de SEO\n- Ajuste de categorias\n- Inserção de links",
-        "pro_valor": "1.500,00", "pro_itens": "- Tudo do Plano Start\n- Tour Virtual 360°\n- Ensaio Fotográfico\n- Relatório Visual de Entrega",
+        "start_valor": "500,00", "start_itens": "- Preenchimento completo do perfil\n- Descrição profissional com palavras-chave\n- Categorias corretas + secundárias\n- Padronização de dados: NAP, horários, serviços",
+        "pro_valor": "1.500,00", "pro_itens": "- Preenchimento completo do perfil\n- Descrição profissional com palavras-chave\n- Categorias corretas + secundárias\n- Padronização de dados: NAP, horários, serviços\n- Sessão de fotos\n- Tour Virtual 360º\n- Fotos 360º para Street View",
         "gestao_valor": "600,00", "gestao_itens": "- Postagens semanais\n- Gestão de avaliações\n- Atualização de fotos\n- Relatório mensal"
     }
 
@@ -822,23 +822,25 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
                 pdf.cell(w_score, h_row, conv(f"{score_conc} / 100"), border='B', fill=True, align='C')
                 pdf.set_font('Helvetica', '', 8.0)
 
+        # QUADRO PLANO DE AÇÃO (PÁGINA 2) - Com mais espaçamento abaixo do título
         if plano_acao_extra and plano_acao_extra.strip() != "":
-            w_extra, x_extra, y_extra, h_box_extra = 177, 21.0, 203.0, 24.0
+            w_extra, x_extra, y_extra, h_box_extra = 177, 21.0, 203.0, 25.0
             pdf.set_fill_color(240, 249, 255)
             pdf.set_draw_color(62, 161, 219)
             pdf.set_line_width(0.4)
-            pdf.rounded_rect(x_extra, y_extra, w_extra, h_box_extra, 1.8, 'FD')
+            pdf.rounded_rect(x_extra, y_extra, w_extra, h_box_extra, 2.0, 'FD')
             pdf.set_line_width(0.2)
             
-            pdf.set_xy(x_extra, y_extra + 1.8)
-            pdf.set_font('Helvetica', 'B', 7.8)
+            pdf.set_xy(x_extra, y_extra + 2.0)
+            pdf.set_font('Helvetica', 'B', 8.0)
             pdf.set_text_color(30, 64, 175)
-            pdf.cell(w_extra, 3.0, conv("PLANO DE AÇÃO E APONTAMENTOS ESTRATÉGICOS PERSONALIZADOS:"), align='C', border=0)
+            pdf.cell(w_extra, 3.2, conv("PLANO DE AÇÃO E APONTAMENTOS ESTRATÉGICOS PERSONALIZADOS:"), align='C', border=0)
             
-            pdf.set_xy(x_extra + 4, y_extra + 5.2)
+            # Espaçamento aumentado entre o título e a descrição (y_extra + 6.2)
+            pdf.set_xy(x_extra + 5, y_extra + 6.2)
             pdf.set_font('Helvetica', '', 6.8)
             pdf.set_text_color(51, 65, 85)
-            pdf.multi_cell(w_extra - 8, 2.9, conv(plano_acao_extra), align='L')
+            pdf.multi_cell(w_extra - 10, 3.0, conv(plano_acao_extra), align='L')
 
     # PÁGINA 3: PROPOSTA COMERCIAL
     if 3 in paginas_selecionadas:
@@ -935,6 +937,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         pdf.set_xy(150, y_p + 25)
         pdf.multi_cell(45, 4.5, conv(planos.get('gestao_itens', '')), align='L')
 
+        # QUADRO BENEFÍCIOS (PÁGINA 3) - Alinhado à Esquerda ('L') e com recuo de borda
         w_info = 177
         x_info = 21.0
         pdf.set_fill_color(240, 249, 255)
@@ -951,12 +954,13 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         pdf.set_font('Helvetica', '', 8.5)
         pdf.set_text_color(51, 65, 85)
         txt_exp = (
-            "• Conversão Imediata: Perfis com Tour 360° e acervo fotográfico profissional geram até 2x mais interesse de visitação presencial.\n"
-            "• Domínio de Região: A otimização contínua coloca sua vitrine no Top 3 das pesquisas por proximidade no Google Maps.\n"
-            "• Autoridade de Marca: Elimina a hesitação do cliente, transmitindo transparência total e acelerando a decisão de compra."
+            "- Conversão Imediata: Perfis com Tour 360° e acervo fotográfico profissional geram até 2x mais interesse de visitação presencial.\n"
+            "- Domínio de Região: A otimização contínua coloca sua vitrine no Top 3 das pesquisas por proximidade no Google Maps.\n"
+            "- Autoridade de Marca: Elimina a hesitação do cliente, transmitindo transparência total e acelerando a decisão de compra."
         )
-        pdf.set_xy(x_info, 148.5)
-        pdf.multi_cell(w_info, 4.5, conv(txt_exp), align='C')
+        # Margem esquerda de 6mm (x_info + 6) e alinhamento à esquerda ('L')
+        pdf.set_xy(x_info + 6, 148.5)
+        pdf.multi_cell(w_info - 12, 4.8, conv(txt_exp), align='L')
 
     # PÁGINA 4: CONTRATO
     if 4 in paginas_selecionadas:
@@ -1020,7 +1024,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         pdf.set_x(21)
         pdf.set_font('Helvetica', '', 8.5)
         pdf.set_text_color(51, 65, 85)
-        pdf.cell(w_text, 4.8, conv("(   ) Plano Start          (   ) Plano Pro          (   ) Gestão Mensal"), ln=True)
+        pdf.cell(w_text, 4.8, conv("(   ) Plano Start          (   ) Plano Pro          (   ) Gestão Mensal          (   ) Plano de: _____ meses"), ln=True)
         pdf.ln(2.5)
 
         pdf.set_x(21)
