@@ -1363,4 +1363,143 @@ elif etapa_atual == 3:
             st.session_state['etapa_atual'] = 2
             st.rerun()
     with col_btn2:
-        if st.button("Avançar para Planos & Valores ➡️", use_container_width=True, key
+        if st.button("Avançar para Planos & Valores ➡️", use_container_width=True, key="btn_nav_aba3_next", type="secondary"):
+            st.session_state['etapa_atual'] = 4
+            st.rerun()
+
+# ETAPA 4: PLANOS & VALORES COMERCIAIS
+elif etapa_atual == 4:
+    st.markdown("<div class='dashboard-card'><div class='card-title'>📜 4. PLANOS COMERCIAIS & INVESTIMENTO</div>", unsafe_allow_html=True)
+    
+    p1, p2, p3 = st.columns(3)
+    with p1:
+        st.markdown("#### 🔹 Plano Start")
+        st.session_state['planos']['start_valor'] = st.text_input("Valor (R$):", value=st.session_state['planos']['start_valor'], key="p_s_v")
+        st.session_state['planos']['start_itens'] = st.text_area("Itens:", value=st.session_state['planos']['start_itens'], height=140, key="p_s_i")
+    with p2:
+        st.markdown("#### 🔹 Plano Pro")
+        st.session_state['planos']['pro_valor'] = st.text_input("Valor (R$):", value=st.session_state['planos']['pro_valor'], key="p_p_v")
+        st.session_state['planos']['pro_itens'] = st.text_area("Itens:", value=st.session_state['planos']['pro_itens'], height=140, key="p_p_i")
+    with p3:
+        st.markdown("#### 🔹 Gestão Mensal")
+        st.session_state['planos']['gestao_valor'] = st.text_input("Valor (R$):", value=st.session_state['planos']['gestao_valor'], key="p_g_v")
+        st.session_state['planos']['gestao_itens'] = st.text_area("Itens:", value=st.session_state['planos']['gestao_itens'], height=140, key="p_g_i")
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    col_btn1, col_btn2 = st.columns(2)
+    with col_btn1:
+        if st.button("⬅️ Voltar para Plano de Ação", use_container_width=True, key="btn_nav_aba4_back", type="secondary"):
+            st.session_state['etapa_atual'] = 3
+            st.rerun()
+    with col_btn2:
+        if st.button("Avançar para PDF & WhatsApp ➡️", use_container_width=True, key="btn_nav_aba4_next", type="secondary"):
+            st.session_state['etapa_atual'] = 5
+            st.rerun()
+
+# ETAPA 5: GERAR PDF, WHATSAPP & HISTÓRICO
+elif etapa_atual == 5:
+    st.markdown("<div class='dashboard-card'><div class='card-title'>📄 5. EMISSÃO, ABORDAGEM & HISTÓRICO</div>", unsafe_allow_html=True)
+    
+    st.markdown("#### ⚙️ Selecione as Páginas a Incluir no PDF:")
+    c_pag1, c_pag2, c_pag3, c_pag4 = st.columns(4)
+    inc_p1 = c_pag1.checkbox("Pág 1 (Capa)", value=True, key="chk_p1")
+    inc_p2 = c_pag2.checkbox("Pág 2 (Auditoria/Concorrentes)", value=True, key="chk_p2")
+    inc_p3 = c_pag3.checkbox("Pág 3 (Valores e Planos)", value=False, key="chk_p3")
+    inc_p4 = c_pag4.checkbox("Pág 4 (Contrato)", value=False, key="chk_p4")
+
+    paginas_escolhidas = []
+    if inc_p1: paginas_escolhidas.append(1)
+    if inc_p2: paginas_escolhidas.append(2)
+    if inc_p3: paginas_escolhidas.append(3)
+    if inc_p4: paginas_escolhidas.append(4)
+
+    if not paginas_escolhidas:
+        st.warning("Selecione ao menos uma página para gerar o PDF.")
+    else:
+        nome_empresa_formatado = str(st.session_state['dados'].get('nome') or 'Empresa').strip()
+        resp_cliente = str(st.session_state['dados'].get('contato') or 'Responsável').strip()
+        tel_cliente = str(st.session_state['dados'].get('telefone') or '').replace(" ", "").replace("-", "").replace("(", "").replace(")", "")
+        
+        if tel_cliente and not tel_cliente.startswith("55"):
+            tel_cliente = f"55{tel_cliente}"
+
+        texto_padrao_whatsapp = (
+            f"Olá, {resp_cliente}! Tudo bem?\n\n"
+            f"Meu nome é Rubens Okamoto, da Okamoto Mídias Visuais e do Tour360VR.\n\n"
+            f"Estava analisando a presença da {nome_empresa_formatado} no Google Maps e identifiquei 3 pontos onde a visibilidade do espaço de vocês pode ser bastante ampliada em relação aos concorrentes da região.\n\n"
+            f"Montei um relatório curto de diagnóstico em PDF. Posso te enviar por aqui para você dar uma olhada?"
+        )
+
+        st.markdown("<br><b>📝 Mensagem de Abordagem (Editável):</b>", unsafe_allow_html=True)
+        mensagem_editada = st.text_area(
+            "Edite a mensagem antes de abrir o WhatsApp:",
+            value=texto_padrao_whatsapp,
+            height=120,
+            key="area_msg_whatsapp_wizard"
+        )
+
+        msg_encoded = requests.utils.quote(mensagem_editada)
+        link_wa = f"https://wa.me/{tel_cliente}?text={msg_encoded}" if tel_cliente else f"https://wa.me/?text={msg_encoded}"
+
+        col_down1, col_down2 = st.columns(2)
+        
+        try:
+            pdf_bytes = gerar_pdf_oficial(
+                st.session_state['dados'], 
+                st.session_state['planos'], 
+                st.session_state.get('plano_acao_extra', ''), 
+                st.session_state.get('concorrentes', []),
+                paginas_selecionadas=paginas_escolhidas
+            )
+
+            score_calc = calcular_score_real(st.session_state['dados'])
+            salvar_no_historico(
+                st.session_state['dados'], 
+                score_calc, 
+                concorrentes=st.session_state.get('concorrentes', []), 
+                planos=st.session_state.get('planos', {}), 
+                plano_acao_extra=st.session_state.get('plano_acao_extra', '')
+            )
+
+            tipo_doc = "Diagnóstico Preliminar" if len(paginas_escolhidas) <= 2 else "Diagnóstico e Proposta"
+
+            with col_down1:
+                st.download_button(
+                    label=f"📥 Baixar PDF ({len(paginas_escolhidas)} Pág(s))",
+                    data=pdf_bytes,
+                    file_name=f"{tipo_doc} - {nome_empresa_formatado}.pdf",
+                    mime="application/pdf",
+                    use_container_width=True,
+                    key="btn_download_wizard"
+                )
+                
+            with col_down2:
+                st.link_button(
+                    label="📲 Abrir WhatsApp",
+                    url=link_wa,
+                    use_container_width=True
+                )
+
+        except Exception as e:
+            st.error(f"Erro ao processar PDF: {e}")
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    col_nav1, col_nav2 = st.columns([1, 2])
+    with col_nav1:
+        if st.button("⬅️ Voltar para Ajuste de Valores", use_container_width=True, key="btn_nav_aba5_back", type="secondary"):
+            st.session_state['etapa_atual'] = 4
+            st.rerun()
+
+# -----------------------------------------------------------------------------
+# 9. RODAPÉ FIXO
+# -----------------------------------------------------------------------------
+st.markdown("""
+    <div class='custom-footer'>
+        <a href='https://tour360vr.com.br' target='_blank'>tour360vr.com.br</a> | 
+        <a href='mailto:contato@tour360vr.com.br'>contato@tour360vr.com.br</a> | 
+        Whatsapp: (16) 99133-2121 | 
+        <b>Tour360VR - Gestão de Perfil do Google</b>
+    </div>
+""", unsafe_allow_html=True)
