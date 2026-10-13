@@ -1,11 +1,17 @@
 import os
+import re
 import io
 import base64
 import requests
+import smtplib
 import streamlit as st
 from datetime import datetime
 from fpdf import FPDF
 from PIL import Image
+
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.application import MIMEApplication
 
 # -----------------------------------------------------------------------------
 # 1. CARREGAMENTO DO FAVICON DE FORMA SEGURA (VIA PIL/IMAGE)
@@ -213,15 +219,23 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+# -----------------------------------------------------------------------------
+# CREDENCIAIS DO SISTEMA
+# -----------------------------------------------------------------------------
 API_KEY_GOOGLE = (
     st.secrets.get("GOOGLE_API_KEY") 
     or st.secrets.get("GOOGLE_PLACES_API_KEY") 
     or os.environ.get("GOOGLE_API_KEY")
-    or ""
+    or "AIzaSyA8ul_9QICNyqxrHgT-CURIZmd1sikHn5U"
 )
 
+SMTP_SERVER = "smtp.tour360vr.com.br"
+SMTP_PORT_SSL = 465
+SMTP_USER = "contato@tour360vr.com.br"
+SMTP_PASS = "Kakaroto@2026"
+
 # -----------------------------------------------------------------------------
-# 3. FUNÇÕES UTILITÁRIAS & LOGOS
+# 3. FUNÇÕES UTILITÁRIAS, LOGOS, E-MAIL & ZOHO
 # -----------------------------------------------------------------------------
 def conv(texto):
     if not texto: return ""
@@ -317,6 +331,91 @@ def buscar_detalhes_concorrente_especifico(nome_concorrente, cidade, api_key):
             }
     except Exception: pass
     return None
+
+def enviar_lead_zoho_bigin(dados, score):
+    url_bigin = "https://bigin.zoho.com/crm/WebToContactForm"
+    empresa_nome = dados.get("nome", "Empresa Não Informada")
+    responsavel = dados.get("contato", "Responsável")
+    telefone = dados.get("telefone", "")
+    endereco = dados.get("endereco", "")
+
+    nome_identificado = f"1 - {responsavel.strip()}"
+    partes_nome = nome_identificado.split(" ", 1)
+    primeiro_nome = partes_nome[0]
+    sobrenome = partes_nome[1] if len(partes_nome) > 1 else "."
+
+    payload = {
+        'xnQsjsdp': '15d54e8d1dfa724381be9ad892936abd18de3deadc2763d67c0dd5f939138a91',
+        'zc_gad': '',
+        'xmIwtLD': '7bf1ddf18cd4b2e66bc992eae51f7e88125018eba8806dd498fb7e87e015ca5085bf99ead8aa16f7a6ff561d393a37ef',
+        'actionType': 'Q29udGFjdHM=',
+        'rmsg': 'true',
+        'returnURL': 'null',
+        'First Name': primeiro_nome,
+        'Last Name': sobrenome,
+        'Email': 'contato@tour360vr.com.br',
+        'Accounts.Account Name': empresa_nome,
+        'Phone': telefone,
+        'CONTACTCF6': f"{score}/100",
+        'Description': f"📌 ORIGEM: Diagnóstico Interno Tour360VR\nEndereço: {endereco}\nPontuação Google: {score}/100"
+    }
+    try:
+        res = requests.post(url_bigin, data=payload, timeout=8)
+        return res.status_code == 200
+    except Exception as e:
+        print(f"Erro no Bigin: {e}")
+        return False
+
+def enviar_email_admin_com_pdf(dados, score, pdf_bytes):
+    try:
+        empresa_nome = dados.get("nome", "Empresa")
+        responsavel = dados.get("contato", "Responsável")
+        telefone = dados.get("telefone", "N/I")
+        endereco = dados.get("endereco", "N/I")
+
+        server = smtplib.SMTP_SSL(SMTP_SERVER, SMTP_PORT_SSL, timeout=15)
+        server.login(SMTP_USER, SMTP_PASS)
+
+        filename_clean = f"Diagnostico_{re.sub(r'[^a-zA-Z0-9]', '_', empresa_nome)}.pdf"
+
+        msg_admin = MIMEMultipart('mixed')
+        msg_admin['From'] = f"Tour360VR <{SMTP_USER}>"
+        msg_admin['To'] = SMTP_USER
+        msg_admin['Reply-To'] = SMTP_USER
+        msg_admin['Subject'] = f"🚀 DIAGNÓSTICO GERADO: {empresa_nome} (Score: {score}/100)"
+        
+        corpo_admin_html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head><meta charset="utf-8"></head>
+        <body style="font-family: Arial, sans-serif; background-color: #F4F6F9; padding: 15px; margin: 0;">
+            <div style="max-width: 580px; background-color: #FFFFFF; padding: 20px; border-radius: 10px; border-top: 5px solid #1565C0; margin: 0 auto;">
+                <h2 style="color: #111111; margin-top: 0; font-size: 18px;">Novo Relatório Gerado no Sistema!</h2>
+                <hr style="border: 0; border-top: 1px solid #EEEEEE; margin: 12px 0;">
+                <p style="font-size: 14px; margin: 4px 0;"><b>Empresa:</b> {empresa_nome}</p>
+                <p style="font-size: 14px; margin: 4px 0;"><b>Responsável:</b> {responsavel}</p>
+                <p style="font-size: 14px; margin: 4px 0;"><b>Telefone:</b> {telefone}</p>
+                <p style="font-size: 14px; margin: 4px 0;"><b>Endereço:</b> {endereco}</p>
+                <p style="font-size: 14px; margin: 4px 0;"><b>Pontuação:</b> <span style="font-size: 16px; color: #1565C0; font-weight: bold;">{score} / 100</span></p>
+                <br>
+                <p style="font-size: 12px; color: #666666;">O PDF gerado foi anexado a este e-mail e os dados foram salvos no Zoho Bigin.</p>
+            </div>
+        </body>
+        </html>
+        """
+        msg_admin.attach(MIMEText(corpo_admin_html, 'html', 'utf-8'))
+        
+        if pdf_bytes:
+            part_admin = MIMEApplication(pdf_bytes, _subtype="pdf")
+            part_admin.add_header('Content-Disposition', 'attachment', filename=filename_clean)
+            msg_admin.attach(part_admin)
+
+        server.send_message(msg_admin)
+        server.quit()
+
+        return True, "Enviado com sucesso!"
+    except Exception as e:
+        return False, f"Falha no envio do e-mail: {str(e)}"
 
 # -----------------------------------------------------------------------------
 # 4. ESTADOS PERSISTENTES & ETAPAS
@@ -483,7 +582,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         pdf.set_text_color(15, 23, 42) 
         pdf.cell(w_capa, 5.0, conv(f"{dados.get('nome') or 'Nome da Empresa'}"), align='C', ln=True)
 
-        pdf.ln(3.5) # 1 Linha de espaço exata antes do "Preparado para..."
+        pdf.ln(3.5)
 
         pdf.set_font('Helvetica', 'B', 9.5)
         pdf.set_text_color(15, 23, 42)
@@ -604,7 +703,6 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         x_q1, x_q2 = 21.0, 112.0
         h_q = 22.0
 
-        # Card 1: Score
         pdf.set_fill_color(255, 255, 255)
         pdf.set_draw_color(226, 232, 240)
         pdf.rounded_rect(x_q1, y_quadros_topo, w_q1, h_q, 3.0, 'FD')
@@ -640,7 +738,6 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             pdf.set_fill_color(r, g, b)
             pdf.rect(x_term_start + step, y_term, 1.05, 2.8, 'F')
 
-        # Card 2: Nota
         pdf.set_fill_color(255, 255, 255)
         pdf.set_draw_color(226, 232, 240)
         pdf.rounded_rect(x_q2, y_quadros_topo, w_q2, h_q, 3.0, 'FD')
@@ -660,7 +757,6 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         pdf.set_text_color(100, 116, 139)
         pdf.cell(w_q2, 3.0, conv(f"{dados.get('avaliacoes', 0)} avaliações cadastradas no Google"), align='C', ln=True)
 
-        # 9 ITENS DE AUDITORIA
         y_start_itens, h_slot = 90.0, 8.5
 
         pct_avaliacoes = min(int((dados.get('avaliacoes', 0) / 50.0) * 100), 100) if dados.get('avaliacoes', 0) > 0 else 10
@@ -1294,7 +1390,7 @@ with col_e4:
 
 with col_e5:
     type_e5 = "primary" if etapa_atual == 5 else "secondary"
-    if st.button("5. PDF & WhatsApp", use_container_width=True, type=type_e5, key="btn_e5"):
+    if st.button("5. PDF & Ações", use_container_width=True, type=type_e5, key="btn_e5"):
         st.session_state['etapa_atual'] = 5
         st.rerun()
 
@@ -1504,13 +1600,13 @@ elif etapa_atual == 4:
             st.session_state['etapa_atual'] = 3
             st.rerun()
     with col_btn2:
-        if st.button("Avançar para PDF & WhatsApp ➡️", use_container_width=True, key="btn_nav_aba4_next", type="secondary"):
+        if st.button("Avançar para PDF & Ações ➡️", use_container_width=True, key="btn_nav_aba4_next", type="secondary"):
             st.session_state['etapa_atual'] = 5
             st.rerun()
 
-# ETAPA 5: GERAR PDF & WHATSAPP
+# ETAPA 5: GERAR PDF, WHATSAPP, E-MAIL ADMIN & BIGIN
 elif etapa_atual == 5:
-    st.markdown("<div class='dashboard-card'><div class='card-title'>📄 5. EMISSÃO, ABORDAGEM & HISTÓRICO</div>", unsafe_allow_html=True)
+    st.markdown("<div class='dashboard-card'><div class='card-title'>📄 5. EMISSÃO, ABORDAGEM & INTEGRAÇÃO CRM</div>", unsafe_allow_html=True)
     
     st.markdown("#### ⚙️ Selecione as Páginas a Incluir no PDF:")
     c_pag1, c_pag2, c_pag3, c_pag4 = st.columns(4)
@@ -1554,7 +1650,7 @@ elif etapa_atual == 5:
         msg_encoded = requests.utils.quote(mensagem_editada)
         link_wa = f"https://wa.me/{tel_cliente}?text={msg_encoded}" if tel_cliente else f"https://wa.me/?text={msg_encoded}"
 
-        col_down1, col_down2 = st.columns(2)
+        col_down1, col_down2, col_down3 = st.columns(3)
         
         pdf_bytes = None
         try:
@@ -1587,6 +1683,23 @@ elif etapa_atual == 5:
                     url=link_wa,
                     use_container_width=True
                 )
+
+            with col_down3:
+                if st.button("📧 Enviar para Meu E-mail & Bigin", use_container_width=True, type="primary", key="btn_enviar_admin_bigin"):
+                    score_calc = calcular_score_real(st.session_state['dados'])
+                    with st.spinner("Enviando e-mail de notificação e registrando no Bigin..."):
+                        sucesso_email, msg_email = enviar_email_admin_com_pdf(st.session_state['dados'], score_calc, pdf_bytes)
+                        sucesso_bigin = enviar_lead_zoho_bigin(st.session_state['dados'], score_calc)
+
+                    if sucesso_email:
+                        st.success("✅ E-mail com o PDF enviado para contato@tour360vr.com.br!")
+                    else:
+                        st.error(f"❌ Erro no e-mail: {msg_email}")
+
+                    if sucesso_bigin:
+                        st.success("✅ Lead registrado no Zoho Bigin!")
+                    else:
+                        st.warning("⚠️ Não foi possível salvar automaticamente no Bigin.")
 
     st.markdown("</div>", unsafe_allow_html=True)
 
