@@ -405,7 +405,7 @@ if 'concorrentes' not in st.session_state:
 if 'planos' not in st.session_state:
     st.session_state['planos'] = {
         "start_valor": "500,00", "start_itens": "- Preenchimento completo do perfil\n- Descrição profissional com palavras-chave\n- Categorias corretas + secundárias\n- Padronização de dados: NAP, horários, serviços",
-        "pro_valor": "1.500,00", "pro_itens": "- Preenchimento completo do perfil\n- Descrição profissional com palavras-chave\n- Categorias corretas + secundárias\n- Padronização de dados: NAP, horários, serviços\n- Sessão de fotos\n- Tour Virtual 360º\n- Fotos 360º para Street View",
+        "pro_valor": "1.500,00", "pro_itens": "- Preenchimento completo do perfil\n- Descrição profissional com palavras-chave\n- Categorias corretas + secundárias\n- Padronização de dados: NAP, horários, serviços\n- Sessão de fotos\n- Tour Virtual 360°\n- Fotos 360° para Street View",
         "gestao_valor": "600,00", "gestao_itens": "- Postagens semanais\n- Gestão de avaliações\n- Atualização de fotos\n- Relatório mensal"
     }
 
@@ -822,7 +822,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
                 pdf.cell(w_score, h_row, conv(f"{score_conc} / 100"), border='B', fill=True, align='C')
                 pdf.set_font('Helvetica', '', 8.0)
 
-        # QUADRO PLANO DE AÇÃO (PÁGINA 2) - Com mais espaçamento abaixo do título
+        # QUADRO PLANO DE AÇÃO (PÁGINA 2)
         if plano_acao_extra and plano_acao_extra.strip() != "":
             w_extra, x_extra, y_extra, h_box_extra = 177, 21.0, 203.0, 25.0
             pdf.set_fill_color(240, 249, 255)
@@ -836,7 +836,6 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             pdf.set_text_color(30, 64, 175)
             pdf.cell(w_extra, 3.2, conv("PLANO DE AÇÃO E APONTAMENTOS ESTRATÉGICOS PERSONALIZADOS:"), align='C', border=0)
             
-            # Espaçamento aumentado entre o título e a descrição (y_extra + 6.2)
             pdf.set_xy(x_extra + 5, y_extra + 6.2)
             pdf.set_font('Helvetica', '', 6.8)
             pdf.set_text_color(51, 65, 85)
@@ -845,122 +844,125 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
     # PÁGINA 3: PROPOSTA COMERCIAL
     if 3 in paginas_selecionadas:
         pdf.add_page()
-        pdf.set_xy(21, 29)
-        pdf.set_font('Helvetica', 'B', 16)
+        pdf.set_xy(21, 27)
+        pdf.set_font('Helvetica', 'B', 15)
         pdf.set_text_color(15, 23, 42)
-        pdf.cell(177, 8, conv('PROPOSTA COMERCIAL & ESTRUTURAÇÃO ESTRATÉGICA'), align='C', ln=True)
+        pdf.cell(177, 7, conv('PROPOSTA COMERCIAL & ESTRUTURAÇÃO ESTRATÉGICA'), align='C', ln=True)
 
-        pdf.set_y(46.0)
-        pdf.set_font('Helvetica', 'B', 14)
-        pdf.cell(0, 6, conv('PLANOS E INVESTIMENTO'), align='C', ln=True)
+        pdf.set_y(41.0)
+        pdf.set_font('Helvetica', 'B', 13)
+        pdf.cell(0, 5, conv('PLANOS E INVESTIMENTO'), align='C', ln=True)
 
-        y_p = 66.0
+        # ALTURA EXPANDIDA PARA 74mm (GARANTE ACOMODAÇÃO DO PLANO PRO)
+        y_p = 58.0
+        h_card_planos = 74.0
+
         val_start_limpo = str(planos.get('start_valor', '')).replace("/mês", "").replace("/mes", "").strip()
         pdf.set_fill_color(248, 250, 252)
         pdf.set_draw_color(226, 232, 240)
-        pdf.rounded_rect(21, y_p, 51, 60, 2, 'FD')
+        pdf.rounded_rect(21, y_p, 51, h_card_planos, 2, 'FD')
         
         pdf.set_xy(21, y_p + 4)
-        pdf.set_font('Helvetica', 'B', 15)
+        pdf.set_font('Helvetica', 'B', 14)
         pdf.set_text_color(15, 23, 42)
         pdf.cell(51, 5, 'Plano Start', align='C', ln=True)
         
         pdf.set_xy(21, y_p + 10)
-        pdf.set_font('Helvetica', 'B', 14)
+        pdf.set_font('Helvetica', 'B', 13)
         pdf.set_text_color(30, 64, 175)
         pdf.cell(51, 5, conv(f"R$ {val_start_limpo}"), align='C', ln=True)
         
         pdf.set_xy(21, y_p + 16)
-        pdf.set_font('Helvetica', 'B', 9.5)
+        pdf.set_font('Helvetica', 'B', 9.0)
         pdf.set_text_color(15, 23, 42)
         pdf.cell(51, 4, conv('em até 2x'), align='C', ln=True)
         
-        pdf.set_font('Helvetica', '', 8.5)
+        pdf.set_font('Helvetica', '', 8.0)
         pdf.set_text_color(51, 65, 85)
-        pdf.set_xy(24, y_p + 25)
-        pdf.multi_cell(45, 4.5, conv(planos.get('start_itens', '')), align='L')
+        pdf.set_xy(24, y_p + 23)
+        pdf.multi_cell(45, 3.8, conv(planos.get('start_itens', '')), align='L')
 
         val_pro_limpo = str(planos.get('pro_valor', '')).replace("/mês", "").replace("/mes", "").strip()
         pdf.set_fill_color(240, 249, 255)
         pdf.set_draw_color(30, 64, 175)
         pdf.set_line_width(1.0)
-        pdf.rounded_rect(76, y_p - 3, 67, 66, 2.5, 'FD')
+        pdf.rounded_rect(76, y_p - 2, 67, h_card_planos + 2, 2.5, 'FD')
         pdf.set_line_width(0.2)
         
         pdf.set_xy(76, y_p + 1)
-        pdf.set_font('Helvetica', 'B', 17)
+        pdf.set_font('Helvetica', 'B', 16)
         pdf.set_text_color(15, 23, 42)
         pdf.cell(67, 5, conv('Plano Pro'), align='C', ln=True)
         
         pdf.set_xy(76, y_p + 7.0)
-        pdf.set_font('Helvetica', 'B', 10.0)
+        pdf.set_font('Helvetica', 'B', 9.5)
         pdf.set_text_color(30, 64, 175)
         pdf.cell(67, 4, conv('RECOMENDADO'), align='C', ln=True)
         
-        pdf.set_xy(76, y_p + 12.5)
-        pdf.set_font('Helvetica', 'B', 17)
+        pdf.set_xy(76, y_p + 12.0)
+        pdf.set_font('Helvetica', 'B', 16)
         pdf.set_text_color(30, 64, 175)
-        pdf.cell(67, 6, conv(f"R$ {val_pro_limpo}"), align='C', ln=True)
+        pdf.cell(67, 5, conv(f"R$ {val_pro_limpo}"), align='C', ln=True)
         
-        pdf.set_xy(76, y_p + 20.0)
-        pdf.set_font('Helvetica', 'B', 9.5)
+        pdf.set_xy(76, y_p + 18.0)
+        pdf.set_font('Helvetica', 'B', 9.0)
         pdf.set_text_color(15, 23, 42)
         pdf.cell(67, 4, conv('em até 3x'), align='C', ln=True)
         
-        pdf.set_font('Helvetica', 'B', 9.0)
+        pdf.set_font('Helvetica', 'B', 8.2)
         pdf.set_text_color(15, 23, 42)
-        pdf.set_xy(80, y_p + 27.5)
-        pdf.multi_cell(59, 4.5, conv(planos.get('pro_itens', '')), align='L')
+        pdf.set_xy(79, y_p + 24.5)
+        pdf.multi_cell(61, 3.8, conv(planos.get('pro_itens', '')), align='L')
 
         val_gestao_limpo = str(planos.get('gestao_valor', '')).replace("/mês", "").replace("/mes", "").strip()
         pdf.set_fill_color(248, 250, 252)
         pdf.set_draw_color(226, 232, 240)
-        pdf.rounded_rect(147, y_p, 51, 60, 2, 'FD')
+        pdf.rounded_rect(147, y_p, 51, h_card_planos, 2, 'FD')
         
         pdf.set_xy(147, y_p + 4)
-        pdf.set_font('Helvetica', 'B', 15)
+        pdf.set_font('Helvetica', 'B', 14)
         pdf.set_text_color(15, 23, 42)
         pdf.cell(51, 5, conv('Gestão Mensal'), align='C', ln=True)
         
         pdf.set_xy(147, y_p + 10)
-        pdf.set_font('Helvetica', 'B', 14)
+        pdf.set_font('Helvetica', 'B', 13)
         pdf.set_text_color(30, 64, 175)
         pdf.cell(51, 5, conv(f"R$ {val_gestao_limpo}"), align='C', ln=True)
         
         pdf.set_xy(147, y_p + 16)
-        pdf.set_font('Helvetica', 'B', 9.5)
+        pdf.set_font('Helvetica', 'B', 9.0)
         pdf.set_text_color(15, 23, 42)
         pdf.cell(51, 4, conv('valor mensal'), align='C', ln=True)
         
-        pdf.set_font('Helvetica', '', 8.5)
+        pdf.set_font('Helvetica', '', 8.0)
         pdf.set_text_color(51, 65, 85)
-        pdf.set_xy(150, y_p + 25)
-        pdf.multi_cell(45, 4.5, conv(planos.get('gestao_itens', '')), align='L')
+        pdf.set_xy(150, y_p + 23)
+        pdf.multi_cell(45, 3.8, conv(planos.get('gestao_itens', '')), align='L')
 
-        # QUADRO BENEFÍCIOS (PÁGINA 3) - Alinhado à Esquerda ('L') e com recuo de borda
+        # QUADRO BENEFÍCIOS REPOSICIONADO PARA Y=145 (evita sobreposição)
         w_info = 177
         x_info = 21.0
+        y_info = 145.0
         pdf.set_fill_color(240, 249, 255)
         pdf.set_draw_color(62, 161, 219)
         pdf.set_line_width(0.5)
-        pdf.rounded_rect(x_info, 140, w_info, 36, 2.5, 'FD')
+        pdf.rounded_rect(x_info, y_info, w_info, 32, 2.5, 'FD')
         pdf.set_line_width(0.2)
 
-        pdf.set_xy(x_info, 142.5)
-        pdf.set_font('Helvetica', 'B', 10.0)
+        pdf.set_xy(x_info, y_info + 2.5)
+        pdf.set_font('Helvetica', 'B', 9.5)
         pdf.set_text_color(30, 64, 175)
         pdf.cell(w_info, 4, conv('BENEFÍCIOS E IMPACTO COMERCIAL DA OTIMIZAÇÃO'), align='C', ln=True)
 
-        pdf.set_font('Helvetica', '', 8.5)
+        pdf.set_font('Helvetica', '', 8.0)
         pdf.set_text_color(51, 65, 85)
         txt_exp = (
             "- Conversão Imediata: Perfis com Tour 360° e acervo fotográfico profissional geram até 2x mais interesse de visitação presencial.\n"
             "- Domínio de Região: A otimização contínua coloca sua vitrine no Top 3 das pesquisas por proximidade no Google Maps.\n"
             "- Autoridade de Marca: Elimina a hesitação do cliente, transmitindo transparência total e acelerando a decisão de compra."
         )
-        # Margem esquerda de 6mm (x_info + 6) e alinhamento à esquerda ('L')
-        pdf.set_xy(x_info + 6, 148.5)
-        pdf.multi_cell(w_info - 12, 4.8, conv(txt_exp), align='L')
+        pdf.set_xy(x_info + 6, y_info + 8.5)
+        pdf.multi_cell(w_info - 12, 4.2, conv(txt_exp), align='L')
 
     # PÁGINA 4: CONTRATO
     if 4 in paginas_selecionadas:
@@ -1115,8 +1117,8 @@ with st.sidebar:
             {"nome": "", "nota": 0.0, "avaliacoes": 0, "busca_termo": "", "cidade": "", "tem_fotos_hd": "Não", "tem_tour360": "Não", "categorias_ok": "Não", "horarios_ok": "Não", "tem_website": "Não", "tem_descricao": "Não", "atributos_ok": "Não", "respostas_ok": "Não"}
         ]
         st.session_state['planos'] = {
-            "start_valor": "500,00", "start_itens": "- Correção cadastral\n- Otimização de SEO\n- Ajuste de categorias\n- Inserção de links",
-            "pro_valor": "1.500,00", "pro_itens": "- Tudo do Plano Start\n- Tour Virtual 360°\n- Ensaio Fotográfico\n- Relatório Visual de Entrega",
+            "start_valor": "500,00", "start_itens": "- Preenchimento completo do perfil\n- Descrição profissional com palavras-chave\n- Categorias corretas + secundárias\n- Padronização de dados: NAP, horários, serviços",
+            "pro_valor": "1.500,00", "pro_itens": "- Preenchimento completo do perfil\n- Descrição profissional com palavras-chave\n- Categorias corretas + secundárias\n- Padronização de dados: NAP, horários, serviços\n- Sessão de fotos\n- Tour Virtual 360°\n- Fotos 360° para Street View",
             "gestao_valor": "600,00", "gestao_itens": "- Postagens semanais\n- Gestão de avaliações\n- Atualização de fotos\n- Relatório mensal"
         }
         st.session_state['plano_acao_extra'] = TEXTO_PLANO_ACAO_PADRAO
@@ -1387,15 +1389,15 @@ elif etapa_atual == 4:
     with p1:
         st.markdown("#### 🔹 Plano Start")
         st.session_state['planos']['start_valor'] = st.text_input("Valor (R$):", value=st.session_state['planos']['start_valor'], key="p_s_v")
-        st.session_state['planos']['start_itens'] = st.text_area("Itens:", value=st.session_state['planos']['start_itens'], height=140, key="p_s_i")
+        st.session_state['planos']['start_itens'] = st.text_area("Itens:", value=st.session_state['planos']['start_itens'], height=180, key="p_s_i")
     with p2:
         st.markdown("#### 🔹 Plano Pro")
         st.session_state['planos']['pro_valor'] = st.text_input("Valor (R$):", value=st.session_state['planos']['pro_valor'], key="p_p_v")
-        st.session_state['planos']['pro_itens'] = st.text_area("Itens:", value=st.session_state['planos']['pro_itens'], height=140, key="p_p_i")
+        st.session_state['planos']['pro_itens'] = st.text_area("Itens:", value=st.session_state['planos']['pro_itens'], height=180, key="p_p_i")
     with p3:
         st.markdown("#### 🔹 Gestão Mensal")
         st.session_state['planos']['gestao_valor'] = st.text_input("Valor (R$):", value=st.session_state['planos']['gestao_valor'], key="p_g_v")
-        st.session_state['planos']['gestao_itens'] = st.text_area("Itens:", value=st.session_state['planos']['gestao_itens'], height=140, key="p_g_i")
+        st.session_state['planos']['gestao_itens'] = st.text_area("Itens:", value=st.session_state['planos']['gestao_itens'], height=180, key="p_g_i")
 
     st.markdown("</div>", unsafe_allow_html=True)
 
