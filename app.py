@@ -688,12 +688,13 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
     if 2 in paginas_selecionadas:
         _ = pdf.add_page()
         
-        _ = pdf.set_xy(21, 26.0)
+        # Posição Y ajustada exatamente para 29.0 como na Página 3
+        _ = pdf.set_xy(21, 29.0)
         _ = pdf.set_font('Helvetica', 'B', 15)
         _ = pdf.set_text_color(15, 23, 42)
-        _ = pdf.cell(177, 6, conv('AUDITORIA DETALHADA DE PONTOS DE BUSCA'), align='C', ln=True)
+        _ = pdf.cell(177, 7, conv('AUDITORIA DETALHADA DE PONTOS DE BUSCA'), align='C', ln=True)
 
-        w_ficha, x_ficha, y_ficha, h_ficha = 177, 21.0, 35.0, 8.5
+        w_ficha, x_ficha, y_ficha, h_ficha = 177, 21.0, 39.0, 8.5
         _ = pdf.set_fill_color(248, 250, 252)
         _ = pdf.set_draw_color(203, 213, 225)
         _ = pdf.set_line_width(0.3)
@@ -704,7 +705,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         _ = pdf.set_text_color(30, 64, 175)
         _ = pdf.cell(w_ficha, 4.8, conv(f"{dados.get('nome') or 'Empresa Analisada'}"), align='C', ln=True)
 
-        y_quadros_topo = 47.0
+        y_quadros_topo = 51.0
         w_q1, w_q2 = 86.0, 86.0
         x_q1, x_q2 = 21.0, 112.0
         h_q = 20.0
@@ -763,7 +764,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         _ = pdf.set_text_color(100, 116, 139)
         _ = pdf.cell(w_q2, 2.8, conv(f"{dados.get('avaliacoes', 0)} avaliações cadastradas no Google"), align='C', ln=True)
 
-        y_start_itens, h_slot = 72.0, 8.2
+        y_start_itens, h_slot = 76.0, 8.2
 
         pct_avaliacoes = min(int((dados.get('avaliacoes', 0) / 50.0) * 100), 100) if dados.get('avaliacoes', 0) > 0 else 10
         pct_fotos = 100 if dados.get('tem_fotos_hd') else 30
@@ -826,7 +827,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             _ = pdf.set_text_color(71, 85, 105)
             _ = pdf.cell(177, 2.2, conv(f"   Estado: {desc[:58]}  |  Impacto: {impacto[:55]}"), border=0)
 
-        y_atencao = 150.0
+        y_atencao = 154.0
         w_atencao = 177.0
         h_atencao = 14.0
 
@@ -858,13 +859,13 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
 
         concorrentes_filtrados = [c for c in concorrentes if c.get("nome", "").strip() != ""]
         if concorrentes_filtrados:
-            _ = pdf.set_xy(21, 168.0)
+            _ = pdf.set_xy(21, 172.0)
             _ = pdf.set_font('Helvetica', 'B', 8.5)
             _ = pdf.set_text_color(30, 64, 175)
             _ = pdf.cell(0, 3.5, conv("ANÁLISE AUTOMÁTICA DE CONCORRENTES DO SEGMENTO"), border=0)
 
             w_emp, w_item, w_score, h_row = 53, 11.0, 25.0, 4.2
-            y_table = 172.5
+            y_table = 176.5
             _ = pdf.set_xy(21, y_table)
             _ = pdf.set_fill_color(30, 64, 175)
             _ = pdf.set_text_color(255, 255, 255)
@@ -951,7 +952,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
                 _ = pdf.set_font('Helvetica', '', 8.0)
 
         if plano_acao_extra and plano_acao_extra.strip() != "":
-            y_extra_top = 202.0
+            y_extra_top = 206.0
             w_extra, x_extra, h_box_extra = 177, 21.0, 24.0
             _ = pdf.set_fill_color(248, 250, 252)
             _ = pdf.set_draw_color(203, 213, 225)
@@ -988,6 +989,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         h_card_outros = 70.0
         h_card_pro = 95.0
 
+        # Função de desenho de pilulas com alinhamento vertical rigoroso
         def desenhar_pilulas_itens(pdf_obj, x_start, y_top, texto_itens):
             linhas = [l.strip().lstrip('-').strip() for l in texto_itens.split('\n') if l.strip()]
             
@@ -1000,12 +1002,16 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
                 _ = pdf_obj.rounded_rect(x_start + 3, y_curr, w_card - 6, h_item, 1.5, 'FD')
                 
                 _ = pdf_obj.set_fill_color(203, 213, 225)
-                _ = pdf_obj.rounded_rect(x_start + 6, y_curr + 2.5, 2.8, 2.8, 1.4, 'F')
+                _ = pdf_obj.rounded_rect(x_start + 6, y_curr + 2.6, 2.8, 2.8, 1.4, 'F')
                 
-                _ = pdf_obj.set_xy(x_start + 10.0, y_curr + 0.8)
-                _ = pdf_obj.set_font('Helvetica', 'B', 7.8)
+                # Ajustado a posição Y do texto para centralizar verticalmente
+                n_linhas = 1 + (len(lin) // 24)
+                offset_text_y = 1.0 if n_linhas > 1 else 2.5
+                
+                _ = pdf_obj.set_xy(x_start + 10.0, y_curr + offset_text_y)
+                _ = pdf_obj.set_font('Helvetica', 'B', 7.5)
                 _ = pdf_obj.set_text_color(51, 65, 85)
-                _ = pdf_obj.multi_cell(w_card - 14.0, 2.9, conv(lin), align='L')
+                _ = pdf_obj.multi_cell(w_card - 14.0, 2.7, conv(lin), align='L')
                 
                 y_curr += h_item + 1.2
 
@@ -1233,11 +1239,12 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             f"{nome_cli}, representada por {resp_cli}, localizada em {end_cli}, Telefone: {tel_cli}."
         )
 
-        _ = pdf.set_x(21)
-        _ = pdf.set_font('Helvetica', '', 9.5)
-        _ = pdf.set_text_color(51, 65, 85)
-        _ = pdf.multi_cell(w_text, h_line, conv("A CONTRATADA compromete-se a executar os serviços de otimização, reestruturação técnica e/ou produção de Tour Virtual 360° para o perfil do Google da CONTRATANTE."), align='J')
-        _ = pdf.ln(2.5)
+        # Corrigido: Rótulo A CONTRATADA em negrito
+        paragrafo_com_titulo_negrito(
+            pdf,
+            "A CONTRATADA",
+            "compromete-se a executar os serviços de otimização, reestruturação técnica e/ou produção de Tour Virtual 360° para o perfil do Google da CONTRATANTE."
+        )
 
         paragrafo_com_titulo_negrito(
             pdf,
