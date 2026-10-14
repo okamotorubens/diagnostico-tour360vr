@@ -353,7 +353,7 @@ def enviar_lead_zoho_bigin(dados, score):
         'returnURL': 'null',
         'First Name': primeiro_nome,
         'Last Name': sobrenome,
-        'Lead Source': 'Sistema de Diagnostico',
+        'Social Lead ID': 'Sistema de Diagnóstico Tour360VR',
         'Email': 'contato@tour360vr.com.br',
         'Accounts.Account Name': empresa_nome,
         'Phone': telefone,
@@ -999,7 +999,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
                 pdf_obj.set_xy(x_start + 10.0, y_curr + 0.8)
                 pdf_obj.set_font('Helvetica', 'B', 7.8)
                 pdf_obj.set_text_color(51, 65, 85)
-                _ = pdf_obj.multi_cell(w_card - 14.0, 2.9, conv(lin), align='L')
+                pdf_obj.multi_cell(w_card - 14.0, 2.9, conv(lin), align='L')
                 
                 y_curr += h_item + 1.2
 
@@ -1173,16 +1173,16 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             pdf.rect(21 + w_c1 + w_c2 + w_c3, y_curr_ag, w_c4, h_linha_dinamica, 'FD')
 
             pdf.set_xy(22, y_curr_ag + 1.0)
-            _ = pdf.multi_cell(w_c1 - 2.0, 2.6, conv(dim), border=0, align='L')
+            pdf.multi_cell(w_c1 - 2.0, 2.6, conv(dim), border=0, align='L')
             
             pdf.set_xy(21 + w_c1 + 1.5, y_curr_ag + 1.0)
-            _ = pdf.multi_cell(w_c2 - 3.0, 2.6, conv(est), border=0, align='L')
+            pdf.multi_cell(w_c2 - 3.0, 2.6, conv(est), border=0, align='L')
             
             pdf.set_xy(21 + w_c1 + w_c2 + 1.5, y_curr_ag + 1.0)
-            _ = pdf.multi_cell(w_c3 - 3.0, 2.6, conv(imp), border=0, align='L')
+            pdf.multi_cell(w_c3 - 3.0, 2.6, conv(imp), border=0, align='L')
             
             pdf.set_xy(21 + w_c1 + w_c2 + w_c3 + 1.5, y_curr_ag + 1.0)
-            _ = pdf.multi_cell(w_c4 - 3.0, 2.6, conv(acao), border=0, align='L')
+            pdf.multi_cell(w_c4 - 3.0, 2.6, conv(acao), border=0, align='L')
             
             y_curr_ag += h_linha_dinamica
             pdf.set_xy(21, y_curr_ag)
@@ -1208,7 +1208,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             pdf_obj.set_x(21)
             pdf_obj.set_font('Helvetica', '', 9.8)
             pdf_obj.set_text_color(51, 65, 85)
-            _ = pdf_obj.multi_cell(w_text, h_line, conv(texto_md), align='J', markdown=True)
+            pdf_obj.multi_cell(w_text, h_line, conv(texto_md), align='J', markdown=True)
             pdf_obj.ln(espaco_extra)
 
         paragrafo_justificado(
@@ -1669,7 +1669,7 @@ elif etapa_atual == 5:
 
         if pdf_bytes:
             with col_down1:
-                st.download_button(
+                _ = st.download_button(
                     label=f"📥 Baixar PDF ({len(paginas_escolhidas)} Pág(s))",
                     data=pdf_bytes,
                     file_name=f"{tipo_doc} - {nome_empresa_formatado}.pdf",
@@ -1679,7 +1679,7 @@ elif etapa_atual == 5:
                 )
                 
             with col_down2:
-                st.link_button(
+                _ = st.link_button(
                     label="📲 Abrir WhatsApp",
                     url=link_wa,
                     use_container_width=True
