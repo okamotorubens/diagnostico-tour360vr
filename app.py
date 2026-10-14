@@ -339,10 +339,10 @@ def enviar_lead_zoho_bigin(dados, score):
     telefone = dados.get("telefone", "")
     endereco = dados.get("endereco", "")
 
-    nome_identificado = f"1 - {responsavel.strip()}"
+    nome_identificado = f"{responsavel.strip()}"
     partes_nome = nome_identificado.split(" ", 1)
     primeiro_nome = partes_nome[0]
-    sobrenome = partes_nome[1] if len(partes_nome) > 1 else "."
+    sobrenome = (partes_nome[1] + " [Diagnóstico]") if len(partes_nome) > 1 else "[Diagnóstico]"
 
     payload = {
         'xnQsjsdp': '15d54e8d1dfa724381be9ad892936abd18de3deadc2763d67c0dd5f939138a91',
@@ -353,11 +353,12 @@ def enviar_lead_zoho_bigin(dados, score):
         'returnURL': 'null',
         'First Name': primeiro_nome,
         'Last Name': sobrenome,
+        'Lead Source': 'Sistema de Diagnostico',
         'Email': 'contato@tour360vr.com.br',
         'Accounts.Account Name': empresa_nome,
         'Phone': telefone,
         'CONTACTCF6': f"{score}/100",
-        'Description': f"📌 ORIGEM: Diagnóstico Interno Tour360VR\nEndereço: {endereco}\nPontuação Google: {score}/100"
+        'Description': f"⚡ ORIGEM: Sistema de Diagnóstico Tour360VR\n🏢 Empresa: {empresa_nome}\n📍 Endereço: {endereco}\n📊 Pontuação Google: {score}/100"
     }
     try:
         res = requests.post(url_bigin, data=payload, timeout=8)
@@ -545,7 +546,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
     pdf.set_margins(21, 12, 12)
     pdf.set_auto_page_break(auto=False)
 
-    # PÁGINA 1: CAPA (100% PRESERVADA)
+    # PÁGINA 1: CAPA
     if 1 in paginas_selecionadas:
         pdf.add_page()
         caminho_logo = obter_caminho_logo("tour360")
@@ -678,7 +679,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         pdf.set_x(x_alerta)
         pdf.cell(w_alerta, 4.0, conv(sub_txt_2), align='C', ln=True)
 
-    # PÁGINA 2: AUDITORIA DETALHADA (COM ESPAÇAMENTOS RESTAURADOS DE 1 LINHA DE RESPIRO)
+    # PÁGINA 2: AUDITORIA DETALHADA
     if 2 in paginas_selecionadas:
         pdf.add_page()
         
@@ -703,7 +704,6 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         x_q1, x_q2 = 21.0, 112.0
         h_q = 22.0
 
-        # Card 1: Score
         pdf.set_fill_color(255, 255, 255)
         pdf.set_draw_color(226, 232, 240)
         pdf.rounded_rect(x_q1, y_quadros_topo, w_q1, h_q, 3.0, 'FD')
@@ -739,7 +739,6 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             pdf.set_fill_color(r, g, b)
             pdf.rect(x_term_start + step, y_term, 1.05, 2.8, 'F')
 
-        # Card 2: Nota
         pdf.set_fill_color(255, 255, 255)
         pdf.set_draw_color(226, 232, 240)
         pdf.rounded_rect(x_q2, y_quadros_topo, w_q2, h_q, 3.0, 'FD')
@@ -759,7 +758,6 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         pdf.set_text_color(100, 116, 139)
         pdf.cell(w_q2, 3.0, conv(f"{dados.get('avaliacoes', 0)} avaliações cadastradas no Google"), align='C', ln=True)
 
-        # 9 ITENS DE AUDITORIA (Iniciando no Y=90.0 com 1 linha de respiro do topo)
         y_start_itens, h_slot = 90.0, 8.5
 
         pct_avaliacoes = min(int((dados.get('avaliacoes', 0) / 50.0) * 100), 100) if dados.get('avaliacoes', 0) > 0 else 10
@@ -823,7 +821,6 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             pdf.set_text_color(71, 85, 105)
             pdf.cell(177, 2.4, conv(f"   Estado: {desc[:58]}  |  Impacto: {impacto[:55]}"), border=0)
 
-        # QUADRO DE ATENÇÃO (Respiro de 1 linha em relação ao item 9 -> Y=172.0)
         y_atencao = 172.0
         w_atencao = 177.0
         h_atencao = 14.5
@@ -854,7 +851,6 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         pdf.set_text_color(127, 29, 29) if not resp_ok else pdf.set_text_color(22, 101, 52)
         pdf.multi_cell(w_atencao - 12, 2.7, conv(txt_atencao), align='L')
 
-        # TABELA DE CONCORRENTES (Respiro de 1 linha -> Y=193.0)
         concorrentes_filtrados = [c for c in concorrentes if c.get("nome", "").strip() != ""]
         if concorrentes_filtrados:
             pdf.set_xy(21, 193.0)
@@ -949,7 +945,6 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
                 pdf.cell(w_score, h_row, conv(f"{score_conc} / 100"), border=1, fill=True, align='C')
                 pdf.set_font('Helvetica', '', 8.2)
 
-        # PLANO DE AÇÃO E APONTAMENTOS ESTRATÉGICOS (Respiro de 1 linha -> Y=224.0)
         if plano_acao_extra and plano_acao_extra.strip() != "":
             w_extra, x_extra, y_extra, h_box_extra = 177, 21.0, 224.0, 25.0
             pdf.set_fill_color(248, 250, 252)
@@ -967,7 +962,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             pdf.set_text_color(51, 65, 85)
             pdf.multi_cell(w_extra - 10, 2.9, conv(plano_acao_extra), align='L')
 
-    # PÁGINA 3: PROPOSTA COMERCIAL & AÇÕES DO AGENTE (100% PRESERVADA)
+    # PÁGINA 3: PROPOSTA COMERCIAL & AÇÕES DO AGENTE
     if 3 in paginas_selecionadas:
         pdf.add_page()
         
@@ -1192,7 +1187,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             y_curr_ag += h_linha_dinamica
             pdf.set_xy(21, y_curr_ag)
 
-    # PÁGINA 4: CONTRATO DE PRESTAÇÃO DE SERVIÇOS (100% PRESERVADA)
+    # PÁGINA 4: CONTRATO DE PRESTAÇÃO DE SERVIÇOS
     if 4 in paginas_selecionadas:
         pdf.add_page()
         
