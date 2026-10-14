@@ -447,8 +447,8 @@ if 'concorrentes' not in st.session_state:
 if 'planos' not in st.session_state:
     st.session_state['planos'] = {
         "start_valor": "500,00", "start_itens": "Preenchimento completo do perfil\nDescrição profissional com palavras-chave\nCategorias corretas + secundárias\nPadronização de dados: NAP, horários, serviços",
-        "pro_valor": "1.500,00", "pro_itens": "Preenchimento completo do perfil\nDescrição profissional com palavras-chave\nCategorias corretas + secundárias\nPadronização de dados: NAP, horários, serviços\nSessão de fotos\nTour Virtual 360°\nFotos 360° para Street View",
-        "gestao_valor": "600,00", "gestao_itens": "Postagens semanais\nGestão de avaliações\nAtualização de fotos\nRelatório mensal"
+        "pro_valor": "1.500,00", "pro_itens": "Preenchimento completo do perfil\nDescrição profissional com palavras-chave\nCategorias corretas + secundárias\nPadronização de dados: NAP, horários, serviços\nSessão de fotos\nTour Virtual 360°\nFotos 360° para Street View\nIndexação de Fotos & Image SEO AI",
+        "gestao_valor": "600,00", "gestao_itens": "Postagens semanais\nGestão de avaliações\nAtualização de fotos\nRelatório mensal\nOtimização Contínua por IA"
     }
 
 TEXTO_PLANO_ACAO_PADRAO = (
@@ -684,7 +684,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         _ = pdf.set_x(x_alerta)
         _ = pdf.cell(w_alerta, 4.0, conv(sub_txt_2), align='C', ln=True)
 
-    # PÁGINA 2: AUDITORIA DETALHADA
+    # PÁGINA 2: AUDITORIA DETALHADA & ALCANCE DE PROXIMIDADE
     if 2 in paginas_selecionadas:
         _ = pdf.add_page()
         
@@ -763,8 +763,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         _ = pdf.set_text_color(71, 85, 105)
         _ = pdf.cell(w_q2, 2.8, conv(f"{dados.get('avaliacoes', 0)} avaliações cadastradas no Google"), align='C', ln=True)
 
-        # Aumentado o espaçamento entre itens para 9.0mm aproveitando melhor a área vertical
-        y_start_itens, h_slot = 80.0, 9.0
+        y_start_itens, h_slot = 80.0, 8.8
 
         pct_avaliacoes = min(int((dados.get('avaliacoes', 0) / 50.0) * 100), 100) if dados.get('avaliacoes', 0) > 0 else 10
         pct_fotos = 100 if dados.get('tem_fotos_hd') else 30
@@ -822,16 +821,15 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
                 
             _ = pdf.rounded_rect(21, y_bar, max(float(pct) * 1.77, 4.0), 1.1, 0.4, 'F')
 
-            # Respiro garantido sem encostar na barra colorida
             _ = pdf.set_xy(21, y_bar + 2.2)
             _ = pdf.set_font('Helvetica', '', 8.0)
             _ = pdf.set_text_color(71, 85, 105)
             _ = pdf.cell(177, 2.5, conv(f"   Estado: {desc[:58]}  |  Impacto: {impacto[:55]}"), border=0)
 
-        # Adicionada +1 linha de espaçamento antes do quadro de atenção
-        y_atencao = 171.0
+        # NOVO MÓDULO INTEGRADO: SIMULAÇÃO DE ALCANCE POR PROXIMIDADE ("PERTO DE MIM")
+        y_atencao = 169.0
         w_atencao = 177.0
-        h_atencao = 14.0
+        h_atencao = 13.0
 
         resp_ok = dados.get('resposta_avaliacoes_ok', False)
         
@@ -849,26 +847,57 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         _ = pdf.set_fill_color(220, 38, 38) if not resp_ok else pdf.set_fill_color(22, 163, 74)
         _ = pdf.rounded_rect(21, y_atencao, 2.5, h_atencao, 0.8, 'F')
 
-        _ = pdf.set_xy(26, y_atencao + 1.5)
-        _ = pdf.set_font('Helvetica', 'B', 8.5)
+        _ = pdf.set_xy(26, y_atencao + 1.2)
+        _ = pdf.set_font('Helvetica', 'B', 8.2)
         _ = pdf.set_text_color(153, 27, 27) if not resp_ok else pdf.set_text_color(20, 83, 45)
         _ = pdf.cell(w_atencao - 10, 2.8, conv(tit_atencao), ln=True)
 
-        _ = pdf.set_xy(26, y_atencao + 4.5)
-        _ = pdf.set_font('Helvetica', '', 7.3)
+        _ = pdf.set_xy(26, y_atencao + 4.2)
+        _ = pdf.set_font('Helvetica', '', 7.2)
         _ = pdf.set_text_color(127, 29, 29) if not resp_ok else pdf.set_text_color(22, 101, 52)
-        _ = pdf.multi_cell(w_atencao - 12, 2.6, conv(txt_atencao), align='L')
+        _ = pdf.multi_cell(w_atencao - 12, 2.5, conv(txt_atencao), align='L')
 
-        # Dando +1 linha de espaço entre o quadro de atenção e a Análise de Concorrentes
+        # BARRA COMPACTA DE ALCANCE POR PROXIMIDADE
+        y_geo = 184.0
+        _ = pdf.set_xy(21, y_geo)
+        _ = pdf.set_font('Helvetica', 'B', 8.2)
+        _ = pdf.set_text_color(30, 64, 175)
+        _ = pdf.cell(177, 3.2, conv("ALCANCE ESTIMADO EM BUSCAS POR PROXIMIDADE ('PRÓXIMO / PERTO DE MIM')"), border=0, ln=True)
+
+        w_p1 = 57.0
+        _ = pdf.set_fill_color(240, 253, 244)
+        _ = pdf.set_draw_color(187, 247, 208)
+        _ = pdf.rounded_rect(21, y_geo + 3.8, w_p1, 6.5, 1.5, 'FD')
+        _ = pdf.set_xy(23, y_geo + 4.8)
+        _ = pdf.set_font('Helvetica', 'B', 7.0)
+        _ = pdf.set_text_color(22, 101, 52)
+        _ = pdf.cell(w_p1 - 4, 4.5, conv("🟢 Até 1,5 km: Top 3 (Bairro)"), align='C')
+
+        _ = pdf.set_fill_color(254, 252, 232)
+        _ = pdf.set_draw_color(254, 240, 138)
+        _ = pdf.rounded_rect(81, y_geo + 3.8, w_p1, 6.5, 1.5, 'FD')
+        _ = pdf.set_xy(83, y_geo + 4.8)
+        _ = pdf.set_font('Helvetica', 'B', 7.0)
+        _ = pdf.set_text_color(133, 77, 14)
+        _ = pdf.cell(w_p1 - 4, 4.5, conv("🟡 1,5 km a 3 km: Queda de Posição"), align='C')
+
+        _ = pdf.set_fill_color(254, 242, 242)
+        _ = pdf.set_draw_color(254, 202, 202)
+        _ = pdf.rounded_rect(141, y_geo + 3.8, w_p1, 6.5, 1.5, 'FD')
+        _ = pdf.set_xy(143, y_geo + 4.8)
+        _ = pdf.set_font('Helvetica', 'B', 7.0)
+        _ = pdf.set_text_color(153, 27, 27)
+        _ = pdf.cell(w_p1 - 4, 4.5, conv("🔴 3 km a 5+ km: Invisível no Mapa"), align='C')
+
         concorrentes_filtrados = [c for c in concorrentes if c.get("nome", "").strip() != ""]
         if concorrentes_filtrados:
-            _ = pdf.set_xy(21, 191.0)
+            _ = pdf.set_xy(21, 197.0)
             _ = pdf.set_font('Helvetica', 'B', 8.5)
             _ = pdf.set_text_color(30, 64, 175)
             _ = pdf.cell(0, 3.5, conv("ANÁLISE AUTOMÁTICA DE CONCORRENTES DO SEGMENTO"), border=0)
 
             w_emp, w_item, w_score, h_row = 53, 11.0, 25.0, 4.0
-            y_table = 195.5
+            y_table = 201.5
             _ = pdf.set_xy(21, y_table)
             _ = pdf.set_fill_color(30, 64, 175)
             _ = pdf.set_text_color(255, 255, 255)
@@ -955,8 +984,8 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
                 _ = pdf.set_font('Helvetica', '', 8.0)
 
         if plano_acao_extra and plano_acao_extra.strip() != "":
-            y_extra_top = 222.0
-            w_extra, x_extra, h_box_extra = 177, 21.0, 24.0
+            y_extra_top = 224.0
+            w_extra, x_extra, h_box_extra = 177, 21.0, 22.0
             _ = pdf.set_fill_color(248, 250, 252)
             _ = pdf.set_draw_color(203, 213, 225)
             _ = pdf.set_line_width(0.3)
@@ -1159,16 +1188,15 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             ("Consistência NAP", "Telefone cadastrado, website e dados desalinhados nos canais.", "Sem consistência, o Google reduz a relevância nas buscas locais.", "Sincronize telefone, endereço e horários em todas as redes."),
             ("Categorias", "Categorias secundárias ausentes ou muito genéricas.", "Clientes buscam termos específicos e não encontram sua ficha.", "Revise o perfil para incluir categorias específicas do segmento."),
             ("Fotos & Tour 360°", "Apenas fotos estáticas. Nenhum Tour Virtual 360° detectado.", "Clientes não conseguem sentir o ambiente antes da visita.", "Publique o Tour Virtual 360° interativo no Street View do Google."),
+            ("Indexação de Imagens AI", "Fotos estáticas genéricas e sem metadados otimizados.", "O Google ignora imagens sem ALT text e SEO de localização.", "Indexe imagens com IA gerando metadados e ALT text otimizados."),
             ("Horários & Exceções", "Horários gerais preenchidos, sem exceções de feriados.", "Surpreende clientes em feriados, gerando deslocamento em vão.", "Mantenha horários preventivamente precisos no Google."),
             ("Posts / Novidades", "Pouca ou nenhuma publicação recente no perfil.", "Perfil estático passa sinal de pouca atividade comercial.", "Publique 1-2 posts por semana convidando a avaliar e visitar."),
-            ("Recursos interativos", "Sem link direto de reservas ou menu fácil configurado.", "Falta de canais diretos afasta clientes que querem agendar.", "Configure botões de Ligar e WhatsApp com visibilidade imediata."),
             ("Presença local", "Concorrentes locais dominam posições de destaque no mapa.", "Defasagem enorme. Concorrentes captam a maior fatia de tráfego.", "Execute o plano de otimização Pro para liderar o Top 3 da região.")
         ]
 
         _ = pdf.set_font('Helvetica', '', 7.2)
         y_curr_ag = y_tbl_ag + h_header_ag
 
-        # Centralização exata calculando a quebra real de linhas em cada coluna
         for idx_m, (dim, est, imp, acao) in enumerate(acoes_matriz):
             bg_line = (248, 250, 252) if idx_m % 2 == 0 else (255, 255, 255)
             _ = pdf.set_fill_color(*bg_line)
@@ -1188,7 +1216,6 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             _ = pdf.rect(21 + w_c1 + w_c2, y_curr_ag, w_c3, h_linha_dinamica, 'FD')
             _ = pdf.rect(21 + w_c1 + w_c2 + w_c3, y_curr_ag, w_c4, h_linha_dinamica, 'FD')
 
-            # Alinhamento vertical perfeitamente travado
             _ = pdf.set_xy(22, y_curr_ag + max((h_linha_dinamica - (n_l1 * 2.7)) / 2.0, 0.8))
             _ = pdf.multi_cell(w_c1 - 2.0, 2.7, conv(dim), border=0, align='L')
             
@@ -1221,7 +1248,6 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         end_cli = str(dados.get('endereco') or 'Endereço não informado')
         tel_cli = str(dados.get('telefone') or 'N/I')
 
-        # Função de renderização estática do contrato com NEGRITO TRAVADO para cláusulas
         def renderizar_clausula(pdf_obj, titulo_bold, corpo_normal, espaco_extra=2.5):
             pdf_obj.set_x(21)
             pdf_obj.set_font('Helvetica', 'B', 9.5)
@@ -1394,8 +1420,8 @@ with st.sidebar:
         ]
         st.session_state['planos'] = {
             "start_valor": "500,00", "start_itens": "Preenchimento completo do perfil\nDescrição profissional com palavras-chave\nCategorias corretas + secundárias\nPadronização de dados: NAP, horários, serviços",
-            "pro_valor": "1.500,00", "pro_itens": "Preenchimento completo do perfil\nDescrição profissional com palavras-chave\nCategorias corretas + secundárias\nPadronização de dados: NAP, horários, serviços\nSessão de fotos\nTour Virtual 360°\nFotos 360° para Street View",
-            "gestao_valor": "600,00", "gestao_itens": "Postagens semanais\nGestão de avaliações\nAtualização de fotos\nRelatório mensal"
+            "pro_valor": "1.500,00", "pro_itens": "Preenchimento completo do perfil\nDescrição profissional com palavras-chave\nCategorias corretas + secundárias\nPadronização de dados: NAP, horários, serviços\nSessão de fotos\nTour Virtual 360°\nFotos 360° para Street View\nIndexação de Fotos & Image SEO AI",
+            "gestao_valor": "600,00", "gestao_itens": "Postagens semanais\nGestão de avaliações\nAtualização de fotos\nRelatório mensal\nOtimização Contínua por IA"
         }
         st.session_state['plano_acao_extra'] = TEXTO_PLANO_ACAO_PADRAO
         st.rerun()
