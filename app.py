@@ -544,46 +544,26 @@ class PDFTour360Oficial(FPDF):
         k, hp = self.k, self.h
         _ = self._out(f'{x1*k:.2f} {(hp-y1)*k:.2f} {x2*k:.2f} {(hp-y2)*k:.2f} {x3*k:.2f} {(hp-y3)*k:.2f} c')
 
-# FUNÇÃO ULTRA-PROTEGIDA CONTRA ERROS DE TIPO RGB / FLOAT
-# QUADRO DE ATENÇÃO (CORRIGIDO)
-        y_atencao = 166.0
-        w_atencao = 177.0
-        h_atencao = 13.0
 
-        resp_ok = dados.get('resposta_avaliacoes_ok', False)
-        if not resp_ok:
-            tit_atencao = "Avaliações negativas sem resposta do gestor"
-            txt_atencao = "Existem avaliações com críticas diretas recentes no perfil. O Google e potenciais clientes notam quando o proprietário não responde. Isso afeta a confiança e pode empurrar potenciais clientes diretamente para os concorrentes da região."
-            bg_atencao = (254, 242, 242)
-            bd_atencao = (254, 202, 202)
-            bar_atencao = (220, 38, 38)
-            tx_tit_atencao = (153, 27, 27)
-            tx_corpo_atencao = (127, 29, 29)
+# FUNÇÃO UTILITÁRIA DE COR PROTEGIDA
+def set_color_safe(pdf_obj, r, g=None, b=None, fn_type='text'):
+    try:
+        if isinstance(r, (tuple, list)):
+            r_v, g_v, b_v = int(r[0]), int(r[1]), int(r[2])
+        elif g is not None and b is not None:
+            r_v, g_v, b_v = int(r), int(g), int(b)
         else:
-            tit_atencao = "Manutenção ativa da reputação e autoridade no perfil"
-            txt_atencao = "O perfil mantém um bom ritmo de interação, mas a otimização contínua de fotos HD e atualização constante das categorias garante que a empresa continue dominando as primeiras posições do mapa na região."
-            bg_atencao = (240, 253, 244)
-            bd_atencao = (187, 247, 208)
-            bar_atencao = (22, 163, 74)
-            tx_tit_atencao = (20, 83, 45)
-            tx_corpo_atencao = (22, 101, 52)
+            r_v = g_v = b_v = int(r)
+    except Exception:
+        r_v, g_v, b_v = 0, 0, 0
+        
+    if fn_type == 'text':
+        pdf_obj.set_text_color(r_v, g_v, b_v)
+    elif fn_type == 'fill':
+        pdf_obj.set_fill_color(r_v, g_v, b_v)
+    elif fn_type == 'draw':
+        pdf_obj.set_draw_color(r_v, g_v, b_v)
 
-        set_color_safe(pdf, bg_atencao, fn_type='fill')
-        set_color_safe(pdf, bd_atencao, fn_type='draw')
-        _ = pdf.rounded_rect(21, y_atencao, w_atencao, h_atencao, 2.0, 'FD')
-
-        set_color_safe(pdf, bar_atencao, fn_type='fill')
-        _ = pdf.rounded_rect(21, y_atencao, 2.5, h_atencao, 0.8, 'F')
-
-        _ = pdf.set_xy(26, y_atencao + 1.5)
-        _ = pdf.set_font('Helvetica', 'B', 8.5)
-        set_color_safe(pdf, tx_tit_atencao, fn_type='text')
-        _ = pdf.cell(w_atencao - 10, 2.8, conv(tit_atencao), ln=True)
-
-        _ = pdf.set_xy(26, y_atencao + 4.5)
-        _ = pdf.set_font('Helvetica', '', 7.3)
-        set_color_safe(pdf, tx_corpo_atencao, fn_type='text')
-        _ = pdf.multi_cell(w_atencao - 12, 2.6, conv(txt_atencao), align='L')
 
 def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], paginas_selecionadas=[1, 2, 3, 4, 5]):
     score = calcular_score_real(dados)
@@ -872,7 +852,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             set_color_safe(pdf, 71, 85, 105, fn_type='text')
             _ = pdf.cell(177, 2.3, conv(f"   Estado: {desc[:58]}  |  Impacto: {impacto[:55]}"), border=0)
 
-        # QUADRO DE ATENÇÃO
+        # QUADRO DE ATENÇÃO (CORRIGIDO E DENTRO DA PÁGINA 2)
         y_atencao = 166.0
         w_atencao = 177.0
         h_atencao = 13.0
@@ -881,25 +861,35 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         if not resp_ok:
             tit_atencao = "Avaliações negativas sem resposta do gestor"
             txt_atencao = "Existem avaliações com críticas diretas recentes no perfil. O Google e potenciais clientes notam quando o proprietário não responde. Isso afeta a confiança e pode empurrar potenciais clientes diretamente para os concorrentes da região."
+            bg_atencao = (254, 242, 242)
+            bd_atencao = (254, 202, 202)
+            bar_atencao = (220, 38, 38)
+            tx_tit_atencao = (153, 27, 27)
+            tx_corpo_atencao = (127, 29, 29)
         else:
             tit_atencao = "Manutenção ativa da reputação e autoridade no perfil"
             txt_atencao = "O perfil mantém um bom ritmo de interação, mas a otimização contínua de fotos HD e atualização constante das categorias garante que a empresa continue dominando as primeiras posições do mapa na região."
+            bg_atencao = (240, 253, 244)
+            bd_atencao = (187, 247, 208)
+            bar_atencao = (22, 163, 74)
+            tx_tit_atencao = (20, 83, 45)
+            tx_corpo_atencao = (22, 101, 52)
 
-        set_color_safe(pdf, (254, 242, 242) if not resp_ok else (240, 253, 244), fn_type='fill')
-        set_color_safe(pdf, (254, 202, 202) if not resp_ok else (187, 247, 208), fn_type='draw')
+        set_color_safe(pdf, bg_atencao, fn_type='fill')
+        set_color_safe(pdf, bd_atencao, fn_type='draw')
         _ = pdf.rounded_rect(21, y_atencao, w_atencao, h_atencao, 2.0, 'FD')
 
-        set_color_safe(pdf, (220, 38, 38) if not resp_ok else (22, 163, 74), fn_type='fill')
+        set_color_safe(pdf, bar_atencao, fn_type='fill')
         _ = pdf.rounded_rect(21, y_atencao, 2.5, h_atencao, 0.8, 'F')
 
         _ = pdf.set_xy(26, y_atencao + 1.5)
         _ = pdf.set_font('Helvetica', 'B', 8.5)
-        set_color_safe(pdf, (153, 27, 27) if not resp_ok else (20, 83, 45), fn_type='text')
+        set_color_safe(pdf, tx_tit_atencao, fn_type='text')
         _ = pdf.cell(w_atencao - 10, 2.8, conv(tit_atencao), ln=True)
 
         _ = pdf.set_xy(26, y_atencao + 4.5)
         _ = pdf.set_font('Helvetica', '', 7.3)
-        set_color_safe(pdf, (127, 29, 29) if not resp_ok else (22, 101, 52), fn_type='text')
+        set_color_safe(pdf, tx_corpo_atencao, fn_type='text')
         _ = pdf.multi_cell(w_atencao - 12, 2.6, conv(txt_atencao), align='L')
 
         # ANÁLISE AUTOMÁTICA DE CONCORRENTES
