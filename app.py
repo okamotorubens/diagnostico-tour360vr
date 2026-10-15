@@ -301,7 +301,7 @@ def obter_caminho_logo(tipo="okamoto"):
     except Exception: pass
     return None
 
-def obter_imagem_mapa_google(dados, api_key, largura=600, altura=280, zoom=14):
+def obter_imagem_mapa_google(dados, api_key, largura=700, altura=320, zoom=14):
     if not api_key: return None
     lat = dados.get("lat")
     lng = dados.get("lng")
@@ -399,7 +399,7 @@ def enviar_lead_zoho_bigin(dados, score):
         print(f"Erro no Bigin: {e}")
         return False
 
-def enviar_email_admin_com_pdf(dados, score, pdf_bytes):
+def enviar_email_admin_com_pdf(dados, score, pdf_bytes, filename_pdf="Diagnostico.pdf"):
     try:
         empresa_nome = dados.get("nome", "Empresa")
         responsavel = dados.get("contato", "Responsável")
@@ -408,8 +408,6 @@ def enviar_email_admin_com_pdf(dados, score, pdf_bytes):
 
         server = smtplib.SMTP_SSL(SMTP_SERVER, SMTP_PORT_SSL, timeout=15)
         server.login(SMTP_USER, SMTP_PASS)
-
-        filename_clean = f"Diagnostico {empresa_nome}.pdf"
 
         msg_admin = MIMEMultipart('mixed')
         msg_admin['From'] = f"Tour360VR <{SMTP_USER}>"
@@ -440,7 +438,7 @@ def enviar_email_admin_com_pdf(dados, score, pdf_bytes):
         
         if pdf_bytes:
             part_admin = MIMEApplication(pdf_bytes, _subtype="pdf")
-            part_admin.add_header('Content-Disposition', 'attachment', filename=filename_clean)
+            part_admin.add_header('Content-Disposition', 'attachment', filename=filename_pdf)
             msg_admin.attach(part_admin)
 
         server.send_message(msg_admin)
@@ -1038,7 +1036,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             set_color_safe(pdf, 51, 65, 85, fn_type='text')
             _ = pdf.multi_cell(w_extra - 10, 3.4, conv(plano_acao_extra), align='L')
 
-    # PÁGINA 3: MAPEAMENTO GEOGRÁFICO COM MAPA REAL E DADOS DA EMPRESA
+    # PÁGINA 3: MAPEAMENTO GEOGRÁFICO COM MAPA REAL E CARDS DE RAIO AJUSTADOS
     if 3 in paginas_selecionadas:
         _ = pdf.add_page()
         
@@ -1127,11 +1125,11 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         set_color_safe(pdf, 71, 85, 105, fn_type='text')
         _ = pdf.cell(w_box_m, 3.0, conv(f"{dados.get('endereco') or 'Endereço não informado'}"), align='C')
 
-        # CARDS DE RAIO MANTENDO A LEGENDA EXPLICATIVA E COM DESTAQUE MAXIMIZADO NO RESULTADO
+        # CARDS DE RAIO COM TEXTO AJUSTADO PARA NUNCA CORTAR
         cards_raio = [
-            ("RAIO BAIRRO (1.5 km)", "O Bairro concentra as buscas de maior intenção. Estar no Top 3 garante chamadas diárias e clientes na porta.", "Top 3 - Visibilidade Alta", 22, 101, 52, 240, 253, 244, 187, 247, 208),
-            ("RAIO REGIÃO (3.0 km)", "À medida que a distância aumenta, o perfil perde relevância e posições para os concorrentes locais.", "Queda de Posição no Maps", 180, 83, 9, 254, 252, 232, 254, 240, 138),
-            ("RAIO CIDADE (5.0+ km)", "Fora do raio primário, o perfil torna-se praticamente invisível para quem busca por categorias genéricas.", "Invisível nas Buscas", 185, 28, 28, 254, 242, 242, 254, 202, 202)
+            ("RAIO BAIRRO (1.5 km)", "O Bairro concentra buscas diretas. Estar no Top 3 garante ligações e visitas diárias.", "Top 3 - Visibilidade Alta", 22, 101, 52, 240, 253, 244, 187, 247, 208),
+            ("RAIO REGIÃO (3.0 km)", "Conforme a distância aumenta, a ficha perde relevância para concorrentes diretos.", "Queda de Posição no Maps", 180, 83, 9, 254, 252, 232, 254, 240, 138),
+            ("RAIO CIDADE (5.0+ km)", "Fora do raio primário, a empresa fica invisível sem otimização e conteúdo 360°.", "Invisível nas Buscas", 185, 28, 28, 254, 242, 242, 254, 202, 202)
         ]
 
         y_cards_r = y_mapa + h_mapa - 22.0
@@ -1157,12 +1155,12 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             _ = pdf.set_xy(x_c_r + 4.0, y_cards_r + 4.2)
             _ = pdf.set_font('Helvetica', '', 5.8)
             set_color_safe(pdf, 71, 85, 105, fn_type='text')
-            _ = pdf.multi_cell(w_c_r - 5.0, 2.2, conv(r_leg[:85]), align='L')
+            _ = pdf.multi_cell(w_c_r - 5.0, 2.2, conv(r_leg), align='L')
 
-            _ = pdf.set_xy(x_c_r + 4.0, y_cards_r + 12.2)
-            _ = pdf.set_font('Helvetica', 'B', 8.5)
+            _ = pdf.set_xy(x_c_r + 4.0, y_cards_r + 12.5)
+            _ = pdf.set_font('Helvetica', 'B', 8.2)
             set_color_safe(pdf, cr, cg, cb, fn_type='text')
-            _ = pdf.cell(w_c_r - 5.0, 4.5, conv(r_res), align='L')
+            _ = pdf.cell(w_c_r - 5.0, 4.2, conv(r_res), align='L')
 
         # DIAGNÓSTICO DE BUSCAS
         y_termos = 152.0
@@ -1245,7 +1243,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         _ = pdf.set_x(25)
         _ = pdf.cell(169, 3.2, conv(txt_oport_p2), ln=True)
 
-    # PÁGINA 4: PROPOSTA COM ERGONOMIA E ALINHAMENTO VERTICAL PERFEITO NAS PÍLULAS
+    # PÁGINA 4: PROPOSTA COM CENTRALIZAÇÃO VERTICAL PERFEITA NAS PÍLULAS
     if 4 in paginas_selecionadas:
         _ = pdf.add_page()
         
@@ -1278,14 +1276,18 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
                 set_color_safe(pdf_obj, 203, 213, 225, fn_type='fill')
                 _ = pdf_obj.rounded_rect(x_pilula + 2.5, y_curr + 2.2, 2.5, 2.5, 1.2, 'F')
                 
-                # Centralização vertical precisa do texto dentro da pílula (1 ou 2 linhas)
-                n_linhas = 1 if len(lin) <= 22 else 2
-                offset_text_y = 2.1 if n_linhas == 1 else 1.1
+                # Centralização vertical perfeita calculando o tamanho real das linhas
+                pdf_obj.set_font('Helvetica', 'B', 6.8)
+                linhas_quebradas = pdf_obj.multi_cell(w_pilula - 8.0, 2.5, conv(lin), split_only=True)
+                num_l = max(1, len(linhas_quebradas))
                 
-                _ = pdf_obj.set_xy(x_pilula + 6.5, y_curr + offset_text_y)
-                _ = pdf_obj.set_font('Helvetica', 'B', 6.8)
+                line_spacing = 2.4 if num_l > 1 else 2.6
+                tot_h_texto = num_l * line_spacing
+                offset_v = (h_item - tot_h_texto) / 2.0
+                
+                _ = pdf_obj.set_xy(x_pilula + 6.5, y_curr + offset_v)
                 set_color_safe(pdf_obj, 51, 65, 85, fn_type='text')
-                _ = pdf_obj.multi_cell(w_pilula - 8.0, 2.4, conv(lin), align='L')
+                _ = pdf_obj.multi_cell(w_pilula - 8.0, line_spacing, conv(lin), align='L')
                 
                 y_curr += h_item + 1.0
             return y_curr
@@ -1972,6 +1974,12 @@ elif etapa_atual == 5:
         if tel_cliente and not tel_cliente.startswith("55"):
             tel_cliente = f"55{tel_cliente}"
 
+        # Lógica de definição do nome do arquivo PDF conforme páginas selecionadas
+        if len(paginas_escolhidas) <= 3:
+            nome_arquivo_pdf = f"Diagnóstico Preliminar - {nome_empresa_formatado}.pdf"
+        else:
+            nome_arquivo_pdf = f"Diagnóstico e Proposta - {nome_empresa_formatado}.pdf"
+
         texto_padrao_whatsapp = (
             f"Olá, {resp_cliente}! Tudo bem?\n\n"
             f"Meu nome é Rubens Okamoto, da Okamoto Mídias Visuais e do Tour360VR.\n\n"
@@ -2004,14 +2012,12 @@ elif etapa_atual == 5:
         except Exception as e:
             st.error(f"Erro ao gerar PDF: {e}")
 
-        tipo_doc = "Diagnóstico Preliminar" if len(paginas_escolhidas) <= 3 else "Diagnóstico e Proposta"
-
         if pdf_bytes:
             with col_down1:
                 st.download_button(
                     label=f"📥 Baixar PDF ({len(paginas_escolhidas)} Pág(s))",
                     data=pdf_bytes,
-                    file_name=f"{tipo_doc} {nome_empresa_formatado}.pdf",
+                    file_name=nome_arquivo_pdf,
                     mime="application/pdf",
                     use_container_width=True,
                     key="btn_download_wizard"
@@ -2028,7 +2034,7 @@ elif etapa_atual == 5:
                 if st.button("📧 Enviar para Meu E-mail & Bigin", use_container_width=True, type="primary", key="btn_enviar_admin_bigin"):
                     score_calc = calcular_score_real(st.session_state['dados'])
                     with st.spinner("Enviando e-mail de notificação e registrando no Bigin..."):
-                        sucesso_email, msg_email = enviar_email_admin_com_pdf(st.session_state['dados'], score_calc, pdf_bytes)
+                        sucesso_email, msg_email = enviar_email_admin_com_pdf(st.session_state['dados'], score_calc, pdf_bytes, filename_pdf=nome_arquivo_pdf)
                         sucesso_bigin = enviar_lead_zoho_bigin(st.session_state['dados'], score_calc)
 
                     if sucesso_email:
