@@ -434,7 +434,8 @@ if 'dados' not in st.session_state:
         "nome": "", "contato": "", "endereco": "", "telefone": "", "website": "",
         "nota": 0.0, "avaliacoes": 0, "tem_tour360": False, "tem_fotos_hd": False,
         "categorias_completas": False, "horarios_ok": False, "tem_descricao": False,
-        "atributos_ok": False, "resposta_avaliacoes_ok": False, "categorias_detectadas": [], "foto_reference": ""
+        "atributos_ok": False, "resposta_avaliacoes_ok": False, "categorias_detectadas": [], "foto_reference": "",
+        "lat": None, "lng": None
     }
 
 if 'concorrentes' not in st.session_state:
@@ -553,7 +554,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
     _ = pdf.set_margins(21, 12, 12)
     _ = pdf.set_auto_page_break(auto=False)
 
-    # PÁGINA 1: CAPA
+    # PÁGINA 1: CAPA (100% TRAVADA E APROVADA)
     if 1 in paginas_selecionadas:
         _ = pdf.add_page()
         caminho_logo = obter_caminho_logo("tour360")
@@ -686,7 +687,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         _ = pdf.set_x(x_alerta)
         _ = pdf.cell(w_alerta, 4.0, conv(sub_txt_2), align='C', ln=True)
 
-    # PÁGINA 2: AUDITORIA DETALHADA (COM FOLGA E RESPIRO AMPLIO)
+    # PÁGINA 2: AUDITORIA DETALHADA (COM ESPAÇAMENTO ADICIONAL E PLANO DE AÇÃO CENTRALIZADO)
     if 2 in paginas_selecionadas:
         _ = pdf.add_page()
         
@@ -765,7 +766,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         _ = pdf.set_text_color(71, 85, 105)
         _ = pdf.cell(w_q2, 2.8, conv(f"{dados.get('avaliacoes', 0)} avaliações cadastradas no Google"), align='C', ln=True)
 
-        y_start_itens, h_slot = 80.0, 9.2
+        y_start_itens, h_slot = 79.0, 9.0
 
         pct_avaliacoes = min(int((dados.get('avaliacoes', 0) / 50.0) * 100), 100) if dados.get('avaliacoes', 0) > 0 else 10
         pct_fotos = 100 if dados.get('tem_fotos_hd') else 30
@@ -828,10 +829,10 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             _ = pdf.set_text_color(71, 85, 105)
             _ = pdf.cell(177, 2.5, conv(f"   Estado: {desc[:58]}  |  Impacto: {impacto[:55]}"), border=0)
 
-        # Quadro de Atenção espaçado perfeitamente
-        y_atencao = 171.0
+        # Quadro de Atenção
+        y_atencao = 166.0
         w_atencao = 177.0
-        h_atencao = 14.0
+        h_atencao = 13.5
 
         resp_ok = dados.get('resposta_avaliacoes_ok', False)
         if not resp_ok:
@@ -858,16 +859,17 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         _ = pdf.set_text_color(127, 29, 29) if not resp_ok else pdf.set_text_color(22, 101, 52)
         _ = pdf.multi_cell(w_atencao - 12, 2.6, conv(txt_atencao), align='L')
 
-        # Análise Automática de Concorrentes com respiro ideal
+        # +1 LINHA DE ESPAÇO ADICIONADA ANTES DA ANÁLISE AUTOMÁTICA
+        y_tit_conc = 188.0
         concorrentes_filtrados = [c for c in concorrentes if c.get("nome", "").strip() != ""]
         if concorrentes_filtrados:
-            _ = pdf.set_xy(21, 191.0)
+            _ = pdf.set_xy(21, y_tit_conc)
             _ = pdf.set_font('Helvetica', 'B', 8.5)
             _ = pdf.set_text_color(30, 64, 175)
             _ = pdf.cell(0, 3.5, conv("ANÁLISE AUTOMÁTICA DE CONCORRENTES DO SEGMENTO"), border=0)
 
             w_emp, w_item, w_score, h_row = 53, 11.0, 25.0, 4.0
-            y_table = 195.5
+            y_table = y_tit_conc + 4.5
             _ = pdf.set_xy(21, y_table)
             _ = pdf.set_fill_color(30, 64, 175)
             _ = pdf.set_text_color(255, 255, 255)
@@ -953,6 +955,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
                 _ = pdf.cell(w_score, h_row, conv(f"{score_conc} / 100"), border=1, fill=True, align='C')
                 _ = pdf.set_font('Helvetica', '', 8.0)
 
+        # PLANO DE AÇÃO COM TEXTO CENTRALIZADO VERTICALMENTE
         if plano_acao_extra and plano_acao_extra.strip() != "":
             y_extra_top = 222.0
             w_extra, x_extra, h_box_extra = 177, 21.0, 24.0
@@ -961,17 +964,22 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             _ = pdf.set_line_width(0.3)
             _ = pdf.rounded_rect(x_extra, y_extra_top, w_extra, h_box_extra, 2.5, 'FD')
             
-            _ = pdf.set_xy(x_extra, y_extra_top + 1.8)
+            _ = pdf.set_xy(x_extra, y_extra_top + 2.0)
             _ = pdf.set_font('Helvetica', 'B', 8.5)
             _ = pdf.set_text_color(30, 64, 175)
-            _ = pdf.cell(w_extra, 3.0, conv("PLANO DE AÇÃO E APONTAMENTOS ESTRATÉGICOS PERSONALIZADOS"), align='C', border=0)
+            _ = pdf.cell(w_extra, 3.2, conv("PLANO DE AÇÃO E APONTAMENTOS ESTRATÉGICOS PERSONALIZADOS"), align='C', border=0)
             
-            _ = pdf.set_xy(x_extra + 4, y_extra_top + 5.5)
+            linhas_plano = [l for l in plano_acao_extra.split('\n') if l.strip()]
+            num_linhas = len(linhas_plano)
+            altura_bloco_texto = num_linhas * 3.2
+            y_start_texto_centralizado = y_extra_top + 5.5 + max((16.0 - altura_bloco_texto) / 2.0, 0.5)
+
+            _ = pdf.set_xy(x_extra + 4, y_start_texto_centralizado)
             _ = pdf.set_font('Helvetica', '', 7.8)
             _ = pdf.set_text_color(51, 65, 85)
-            _ = pdf.multi_cell(w_extra - 8, 2.8, conv(plano_acao_extra), align='L')
+            _ = pdf.multi_cell(w_extra - 8, 3.2, conv(plano_acao_extra), align='L')
 
-    # NOVA PÁGINA 3: MAPA DE RAIO GEOGRÁFICO E ANÁLISE DE PROXIMIDADE
+    # PÁGINA 3: MAPEAMENTO GEOGRÁFICO DE RAIO COM MAPA REAL & RESPIROS VERTICAIS
     if 3 in paginas_selecionadas:
         _ = pdf.add_page()
         
@@ -980,15 +988,15 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         _ = pdf.set_text_color(15, 23, 42)
         _ = pdf.cell(177, 7, conv('MAPEAMENTO GEOGRÁFICO DE RAIO DE ATRAÇÃO'), align='C', ln=True)
 
-        _ = pdf.set_y(41.0)
-        _ = pdf.set_font('Helvetica', '', 9.0)
+        _ = pdf.set_y(40.0)
+        _ = pdf.set_font('Helvetica', '', 10.0) # AUMENTADO 1 ponto
         _ = pdf.set_text_color(71, 85, 105)
         _ = pdf.cell(177, 4.5, conv("Simulação de visibilidade em buscas locais por proximidade ('próximo a mim')"), align='C', ln=True)
 
-        # BOX CENTRAL DO MAPA VISUAL COM CÍRCULOS DE RAIO
-        y_mapa = 50.0
+        # BOX DO MAPA COM LOCALIZAÇÃO REAL
+        y_mapa = 48.0
         w_mapa = 177.0
-        h_mapa = 110.0
+        h_mapa = 100.0
         x_mapa = 21.0
 
         _ = pdf.set_fill_color(248, 250, 252)
@@ -996,95 +1004,110 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         _ = pdf.set_line_width(0.3)
         _ = pdf.rounded_rect(x_mapa, y_mapa, w_mapa, h_mapa, 3.0, 'FD')
 
-        # Círculos concêntricos simulando o raio de radar geográfico
-        cx, cy = x_mapa + (w_mapa / 2.0), y_mapa + (h_mapa / 2.0) - 4.0
-        
-        # Anel Exterior (5km - Cidade)
-        _ = pdf.set_draw_color(252, 165, 165)
-        _ = pdf.set_fill_color(254, 242, 242)
-        _ = pdf.ellipse(cx - 45, cy - 45, 90, 90, 'FD')
-        
-        # Anel Intermediário (3km - Região)
-        _ = pdf.set_draw_color(253, 224, 71)
-        _ = pdf.set_fill_color(254, 252, 232)
-        _ = pdf.ellipse(cx - 28, cy - 28, 56, 56, 'FD')
+        cx, cy = x_mapa + (w_mapa / 2.0), y_mapa + (h_mapa / 2.0) - 5.0
 
-        # Anel Interior (1.5km - Bairro)
-        _ = pdf.set_draw_color(134, 239, 172)
-        _ = pdf.set_fill_color(220, 252, 231)
-        _ = pdf.ellipse(cx - 14, cy - 14, 28, 28, 'FD')
+        mapa_real_carregado = False
+        lat, lng = dados.get("lat"), dados.get("lng")
 
-        # Ponto Central (Sua Empresa)
-        _ = pdf.set_fill_color(30, 64, 175)
-        _ = pdf.ellipse(cx - 3, cy - 3, 6, 6, 'F')
+        if (not lat or not lng) and API_KEY_GOOGLE and dados.get("endereco"):
+            try:
+                url_geo = f"https://maps.googleapis.com/maps/api/geocode/json?address={requests.utils.quote(dados['endereco'])}&key={API_KEY_GOOGLE}"
+                res_geo = requests.get(url_geo, timeout=3).json()
+                if res_geo.get("status") == "OK" and res_geo.get("results"):
+                    loc = res_geo["results"][0]["geometry"]["location"]
+                    lat, lng = loc["lat"], loc["lng"]
+            except Exception: pass
 
-        # Marcadores de Concorrentes Simulados nas Bordas do Raio
-        _ = pdf.set_fill_color(220, 38, 38)
-        _ = pdf.ellipse(cx + 18, cy - 12, 4.5, 4.5, 'F')
-        _ = pdf.ellipse(cx - 22, cy + 18, 4.5, 4.5, 'F')
-        _ = pdf.ellipse(cx + 34, cy + 22, 4.5, 4.5, 'F')
-        _ = pdf.ellipse(cx - 38, cy - 25, 4.5, 4.5, 'F')
+        if lat and lng and API_KEY_GOOGLE:
+            try:
+                url_static_map = f"https://maps.googleapis.com/maps/api/staticmap?center={lat},{lng}&zoom=14&size=600x320&maptype=roadmap&markers=color:blue%7Clabel:E%7C{lat},{lng}&key={API_KEY_GOOGLE}"
+                resp_m = requests.get(url_static_map, timeout=4)
+                if resp_m.status_code == 200:
+                    img_m = io.BytesIO(resp_m.content)
+                    _ = pdf.image(img_m, x=x_mapa + 2, y=y_mapa + 2, w=w_mapa - 4, h=h_mapa - 22)
+                    mapa_real_carregado = True
+            except Exception: pass
 
-        # Rótulo da Empresa no Mapa
-        _ = pdf.set_xy(cx - 30, cy + 5)
-        _ = pdf.set_font('Helvetica', 'B', 8.0)
+        if not mapa_real_carregado:
+            _ = pdf.set_draw_color(252, 165, 165)
+            _ = pdf.set_fill_color(254, 242, 242)
+            _ = pdf.ellipse(cx - 40, cy - 35, 80, 70, 'FD')
+            
+            _ = pdf.set_draw_color(253, 224, 71)
+            _ = pdf.set_fill_color(254, 252, 232)
+            _ = pdf.ellipse(cx - 25, cy - 22, 50, 44, 'FD')
+
+            _ = pdf.set_draw_color(134, 239, 172)
+            _ = pdf.set_fill_color(220, 252, 231)
+            _ = pdf.ellipse(cx - 12, cy - 10, 24, 20, 'FD')
+
+            _ = pdf.set_fill_color(30, 64, 175)
+            _ = pdf.ellipse(cx - 3, cy - 3, 6, 6, 'F')
+
+        # Nome da empresa sobreposto no mapa
+        _ = pdf.set_fill_color(255, 255, 255)
+        _ = pdf.set_draw_color(30, 64, 175)
+        _ = pdf.rounded_rect(cx - 35, cy + 8, 70, 5.5, 1.2, 'FD')
+        _ = pdf.set_xy(cx - 35, cy + 9.0)
+        _ = pdf.set_font('Helvetica', 'B', 7.8)
         _ = pdf.set_text_color(30, 64, 175)
-        _ = pdf.cell(60, 4, conv(f"📍 {dados.get('nome', 'Sua Empresa')}"), align='C')
+        _ = pdf.cell(70, 3.5, conv(f"Empresa: {dados.get('nome', 'Sua Empresa')[:28]}"), align='C')
 
-        # Legenda do Mapa na parte inferior do box
-        y_leg = y_mapa + h_mapa - 18.0
+        # LEGENDA SEM INTERROGAÇÕES OU EMOJIS INVÁLIDOS
+        y_leg = y_mapa + h_mapa - 16.0
         
         _ = pdf.set_fill_color(220, 252, 231)
         _ = pdf.set_draw_color(134, 239, 172)
-        _ = pdf.rounded_rect(x_mapa + 8, y_leg, 52, 12, 1.5, 'FD')
-        _ = pdf.set_xy(x_mapa + 10, y_leg + 1.8)
+        _ = pdf.rounded_rect(x_mapa + 6, y_leg, 53, 11, 1.5, 'FD')
+        _ = pdf.set_xy(x_mapa + 8, y_leg + 1.5)
         _ = pdf.set_font('Helvetica', 'B', 7.5)
         _ = pdf.set_text_color(22, 101, 52)
-        _ = pdf.cell(48, 3.5, conv("🟢 Raio 1.5 km (Bairro)"), align='C', ln=True)
-        _ = pdf.set_x(x_mapa + 10)
-        _ = pdf.set_font('Helvetica', '', 7.0)
-        _ = pdf.cell(48, 3.5, conv("Top 3 - Visibilidade Forte"), align='C')
+        _ = pdf.cell(49, 3.2, conv("[1.5 km] Raio Bairro"), align='C', ln=True)
+        _ = pdf.set_x(x_mapa + 8)
+        _ = pdf.set_font('Helvetica', '', 6.8)
+        _ = pdf.cell(49, 3.2, conv("Top 3 - Visibilidade Alta"), align='C')
 
         _ = pdf.set_fill_color(254, 252, 232)
         _ = pdf.set_draw_color(253, 224, 71)
-        _ = pdf.rounded_rect(x_mapa + 63, y_leg, 52, 12, 1.5, 'FD')
-        _ = pdf.set_xy(x_mapa + 65, y_leg + 1.8)
+        _ = pdf.rounded_rect(x_mapa + 62, y_leg, 53, 11, 1.5, 'FD')
+        _ = pdf.set_xy(x_mapa + 64, y_leg + 1.5)
         _ = pdf.set_font('Helvetica', 'B', 7.5)
         _ = pdf.set_text_color(133, 77, 14)
-        _ = pdf.cell(48, 3.5, conv("🟡 Raio 3.0 km (Região)"), align='C', ln=True)
-        _ = pdf.set_x(x_mapa + 65)
-        _ = pdf.set_font('Helvetica', '', 7.0)
-        _ = pdf.cell(48, 3.5, conv("Queda rápida de Posição"), align='C')
+        _ = pdf.cell(49, 3.2, conv("[3.0 km] Raio Regiao"), align='C', ln=True)
+        _ = pdf.set_x(x_mapa + 64)
+        _ = pdf.set_font('Helvetica', '', 6.8)
+        _ = pdf.cell(49, 3.2, conv("Queda de Posicao no Maps"), align='C')
 
         _ = pdf.set_fill_color(254, 242, 242)
         _ = pdf.set_draw_color(252, 165, 165)
-        _ = pdf.rounded_rect(x_mapa + 118, y_leg, 51, 12, 1.5, 'FD')
-        _ = pdf.set_xy(x_mapa + 120, y_leg + 1.8)
+        _ = pdf.rounded_rect(x_mapa + 118, y_leg, 53, 11, 1.5, 'FD')
+        _ = pdf.set_xy(x_mapa + 120, y_leg + 1.5)
         _ = pdf.set_font('Helvetica', 'B', 7.5)
         _ = pdf.set_text_color(153, 27, 27)
-        _ = pdf.cell(47, 3.5, conv("🔴 Raio 5.0+ km (Cidade)"), align='C', ln=True)
+        _ = pdf.cell(49, 3.2, conv("[5.0+ km] Raio Cidade"), align='C', ln=True)
         _ = pdf.set_x(x_mapa + 120)
-        _ = pdf.set_font('Helvetica', '', 7.0)
-        _ = pdf.cell(47, 3.5, conv("Invisível no Google Maps"), align='C')
+        _ = pdf.set_font('Helvetica', '', 6.8)
+        _ = pdf.cell(49, 3.2, conv("Invisivel nas Buscas"), align='C')
 
-        # SEÇÃO DE INTENÇÃO DE BUSCAS LOCAIS POR TERMOS
-        y_termos = 166.0
+        # +1 LINHA DE ESPAÇO APÓS O MAPA
+        y_termos = 158.0
         _ = pdf.set_xy(21, y_termos)
         _ = pdf.set_font('Helvetica', 'B', 10.0)
         _ = pdf.set_text_color(15, 23, 42)
         _ = pdf.cell(177, 4.0, conv("DIAGNÓSTICO DE BUSCAS POR INTENÇÃO DE CLIENTES"), ln=True)
 
         termos_busca = [
-            ("Busca por Proximidade ('Lanchonete / Empresa próxima')", "92% dos usuários clicam nos 3 primeiros resultados do mapa ao buscar por proximidade.", "Posição Atual Estimada: #1 (Visível apenas no Bairro)"),
-            ("Busca por Categoria Local ('Serviços em Ribeirão Preto')", "Sem Tour 360° e fotos HD, o Google empurra o perfil para baixo fora do raio imediato.", "Posição Atual Estimada: #12 a #18 (Invisível)"),
-            ("Busca Direta por Marca ou Nome Específico", "Cliente digitando o nome exato encontra a ficha, mas falta a experiência imersiva 360°.", "Posição Atual Estimada: Top 1 (Marca Própria)")
+            ("Busca por Proximidade ('Lanchonete / Empresa proxima')", "92% dos usuarios clicam nos 3 primeiros resultados do mapa ao buscar por proximidade.", "Posicao Atual Estimada: #1 (Visivel apenas no Bairro)"),
+            ("Busca por Categoria Local ('Servicos em Ribeirao Preto')", "Sem Tour 360 e fotos HD, o Google empurra o perfil para baixo fora do raio imediato.", "Posicao Atual Estimada: #12 a #18 (Invisivel)"),
+            ("Busca Direta por Marca ou Nome Especifico", "Cliente digitando o nome exato encontra a ficha, mas falta a experiencia imersiva 360.", "Posicao Atual Estimada: Top 1 (Marca Propria)")
         ]
 
-        y_t_curr = y_termos + 6.0
+        # +1 LINHA DE ESPAÇO ANTES DOS CARDS DEBAIXO
+        y_t_curr = y_termos + 8.0
         for t_tit, t_desc, t_pos in termos_busca:
             _ = pdf.set_fill_color(255, 255, 255)
             _ = pdf.set_draw_color(226, 232, 240)
-            _ = pdf.rounded_rect(21, y_t_curr, 177, 16.0, 2.0, 'FD')
+            _ = pdf.rounded_rect(21, y_t_curr, 177, 15.0, 2.0, 'FD')
 
             _ = pdf.set_xy(24, y_t_curr + 2.0)
             _ = pdf.set_font('Helvetica', 'B', 8.5)
@@ -1092,32 +1115,33 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             _ = pdf.cell(115, 3.5, conv(t_tit), border=0)
 
             _ = pdf.set_font('Helvetica', 'B', 8.0)
-            _ = pdf.set_text_color(220, 38, 38) if "Invisível" in t_pos else pdf.set_text_color(22, 101, 52)
+            _ = pdf.set_text_color(220, 38, 38) if "Invisivel" in t_pos else pdf.set_text_color(22, 101, 52)
             _ = pdf.cell(54, 3.5, conv(t_pos), border=0, align='R', ln=True)
 
-            _ = pdf.set_xy(24, y_t_curr + 6.5)
+            _ = pdf.set_xy(24, y_t_curr + 6.2)
             _ = pdf.set_font('Helvetica', '', 7.8)
             _ = pdf.set_text_color(71, 85, 105)
             _ = pdf.multi_cell(171, 3.2, conv(t_desc))
 
-            y_t_curr += 18.0
+            y_t_curr += 17.5
 
-        # CAIXA DE CONCLUSÃO E IMPACTO
+        # +1 LINHA DE ESPAÇO ANTES DO QUADRO DE OPORTUNIDADES
+        y_oport = 232.0
         _ = pdf.set_fill_color(239, 246, 255)
         _ = pdf.set_draw_color(191, 219, 254)
-        _ = pdf.rounded_rect(21, 226.0, 177, 18.0, 2.0, 'FD')
+        _ = pdf.rounded_rect(21, y_oport, 177, 18.0, 2.0, 'FD')
 
-        _ = pdf.set_xy(25, 228.0)
+        _ = pdf.set_xy(25, y_oport + 2.0)
         _ = pdf.set_font('Helvetica', 'B', 8.5)
         _ = pdf.set_text_color(30, 64, 175)
-        _ = pdf.cell(169, 3.5, conv("💡 Oportunidade de Expansão de Raio com a Reestruturação Pro + Tour 360°"), ln=True)
+        _ = pdf.cell(169, 3.5, conv("Oportunidade de Expansao de Raio com a Reestruturacao Pro + Tour 360"), ln=True)
 
-        _ = pdf.set_xy(25, 232.5)
+        _ = pdf.set_xy(25, y_oport + 6.2)
         _ = pdf.set_font('Helvetica', '', 7.8)
         _ = pdf.set_text_color(51, 65, 85)
-        _ = pdf.multi_cell(169, 3.0, conv("A publicação do Tour Virtual 360° e a otimização de metadados visuais expandem a relevância do perfil no algoritmo do Google. Isso permite captar clientes em um raio de até 5 km a 10 km, dobrando o volume diário de chamadas e rota no GPS."))
+        _ = pdf.multi_cell(169, 3.0, conv("A publicacao do Tour Virtual 360 e a otimizacao de metadados visuais expandem a relevancia do perfil no algoritmo do Google. Isso permite captar clientes em um raio de ate 5 km a 10 km, dobrando o volume diario de chamadas e rotas no GPS."))
 
-    # PÁGINA 4: PROPOSTA COMERCIAL & AÇÕES DO AGENTE (PLANOS TRAVADOS SEM VAZAMENTO)
+    # PÁGINA 4: PROPOSTA COMERCIAL & TABELA DE AÇÕES CENTRALIZADA
     if 4 in paginas_selecionadas:
         _ = pdf.add_page()
         
@@ -1134,8 +1158,9 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         w_card = 55.0
         x1, x2, x3 = 21.0, 82.0, 143.0
 
-        h_card_outros = 68.0
-        h_card_pro = 88.0
+        # AJUSTADO ALTURA DOS CARDS PARA NÃO SOBRAR NEM FALTAR ÁREA
+        h_card_outros = 74.0
+        h_card_pro = 92.0
 
         def desenhar_pilulas_itens(pdf_obj, x_card, y_top, texto_itens):
             linhas = [l.strip().lstrip('-').strip() for l in texto_itens.split('\n') if l.strip()]
@@ -1197,7 +1222,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         
         desenhar_pilulas_itens(pdf, x1, y_p + 25.0, planos.get('start_itens', ''))
 
-        # Card 2: Pro
+        # Card 2: Pro (AZUL ESCURO COM ESPAÇO EXPANDIDO PARA OS ITENS)
         _ = pdf.set_fill_color(0, 51, 102)
         _ = pdf.set_draw_color(0, 51, 102)
         _ = pdf.set_line_width(0.3)
@@ -1274,8 +1299,8 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         
         desenhar_pilulas_itens(pdf, x3, y_p + 25.0, planos.get('gestao_itens', ''))
 
-        # MATRIZ DE AÇÕES DO AGENTE (CENTRALIZAÇÃO VERTICAL ABSOLUTA E ESTÁTICA)
-        y_agente = y_p + h_card_pro + 8.0
+        # MATRIZ DE AÇÕES DO AGENTE (CENTRALIZAÇÃO VERTICAL RIGOROSA EM TODAS AS COLUNAS)
+        y_agente = y_p + h_card_pro + 6.0
         w_agente = 177.0
         
         _ = pdf.set_xy(21, y_agente)
@@ -1320,38 +1345,37 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             _ = pdf.set_draw_color(226, 232, 240)
             _ = pdf.set_text_color(51, 65, 85)
             
-            # Cálculo do número exato de linhas necessárias por coluna
-            n_l1 = max(1, int(len(dim) / 19.0 + 0.95))
-            n_l2 = max(1, int(len(est) / 25.0 + 0.95))
-            n_l3 = max(1, int(len(imp) / 25.0 + 0.95))
-            n_l4 = max(1, int(len(acao) / 32.0 + 0.95))
+            # Cálculo de linhas reais com precisão para centralização no centro da célula
+            n_l1 = max(1, int(len(dim) / 18.0 + 0.95))
+            n_l2 = max(1, int(len(est) / 24.0 + 0.95))
+            n_l3 = max(1, int(len(imp) / 24.0 + 0.95))
+            n_l4 = max(1, int(len(acao) / 30.0 + 0.95))
             
             linhas_max = max(n_l1, n_l2, n_l3, n_l4)
-            h_linha_dinamica = max(7.2, (linhas_max * 2.6) + 1.6)
+            h_linha_dinamica = max(7.5, (linhas_max * 2.8) + 2.0)
 
-            # Desenha os retângulos de fundo primeiro
             _ = pdf.rect(21, y_curr_ag, w_c1, h_linha_dinamica, 'FD')
             _ = pdf.rect(21 + w_c1, y_curr_ag, w_c2, h_linha_dinamica, 'FD')
             _ = pdf.rect(21 + w_c1 + w_c2, y_curr_ag, w_c3, h_linha_dinamica, 'FD')
             _ = pdf.rect(21 + w_c1 + w_c2 + w_c3, y_curr_ag, w_c4, h_linha_dinamica, 'FD')
 
-            # Imprime os textos perfeitamente alinhados e centralizados na altura individualmente
-            _ = pdf.set_xy(22, y_curr_ag + max((h_linha_dinamica - (n_l1 * 2.6)) / 2.0, 0.6))
-            _ = pdf.multi_cell(w_c1 - 2.0, 2.6, conv(dim), border=0, align='L')
+            # Offset Y perfeitamente alinhado no centro vertical da linha
+            _ = pdf.set_xy(22, y_curr_ag + ((h_linha_dinamica - (n_l1 * 2.8)) / 2.0))
+            _ = pdf.multi_cell(w_c1 - 2.0, 2.8, conv(dim), border=0, align='L')
             
-            _ = pdf.set_xy(21 + w_c1 + 1.5, y_curr_ag + max((h_linha_dinamica - (n_l2 * 2.6)) / 2.0, 0.6))
-            _ = pdf.multi_cell(w_c2 - 3.0, 2.6, conv(est), border=0, align='L')
+            _ = pdf.set_xy(21 + w_c1 + 1.5, y_curr_ag + ((h_linha_dinamica - (n_l2 * 2.8)) / 2.0))
+            _ = pdf.multi_cell(w_c2 - 3.0, 2.8, conv(est), border=0, align='L')
             
-            _ = pdf.set_xy(21 + w_c1 + w_c2 + 1.5, y_curr_ag + max((h_linha_dinamica - (n_l3 * 2.6)) / 2.0, 0.6))
-            _ = pdf.multi_cell(w_c3 - 3.0, 2.6, conv(imp), border=0, align='L')
+            _ = pdf.set_xy(21 + w_c1 + w_c2 + 1.5, y_curr_ag + ((h_linha_dinamica - (n_l3 * 2.8)) / 2.0))
+            _ = pdf.multi_cell(w_c3 - 3.0, 2.8, conv(imp), border=0, align='L')
             
-            _ = pdf.set_xy(21 + w_c1 + w_c2 + w_c3 + 1.5, y_curr_ag + max((h_linha_dinamica - (n_l4 * 2.6)) / 2.0, 0.6))
-            _ = pdf.multi_cell(w_c4 - 3.0, 2.6, conv(acao), border=0, align='L')
+            _ = pdf.set_xy(21 + w_c1 + w_c2 + w_c3 + 1.5, y_curr_ag + ((h_linha_dinamica - (n_l4 * 2.8)) / 2.0))
+            _ = pdf.multi_cell(w_c4 - 3.0, 2.8, conv(acao), border=0, align='L')
             
             y_curr_ag += h_linha_dinamica
             _ = pdf.set_xy(21, y_curr_ag)
 
-    # PÁGINA 5: CONTRATO DE PRESTAÇÃO DE SERVIÇOS (COM NEGRITO FORÇADO EM TODAS AS CLÁUSULAS)
+    # PÁGINA 5: CONTRATO (COM ALINHAMENTO JUSTIFICADO ENTRE CONTRATADA E CLÁUSULA QUINTA)
     if 5 in paginas_selecionadas:
         _ = pdf.add_page()
         
@@ -1368,7 +1392,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         end_cli = str(dados.get('endereco') or 'Endereço não informado')
         tel_cli = str(dados.get('telefone') or 'N/I')
 
-        def renderizar_clausula(pdf_obj, titulo_bold, corpo_normal, espaco_extra=2.5):
+        def renderizar_clausula(pdf_obj, titulo_bold, corpo_normal, espaco_extra=2.5, alinhamento='J'):
             pdf_obj.set_x(21)
             pdf_obj.set_font('Helvetica', 'B', 9.5)
             pdf_obj.set_text_color(15, 23, 42)
@@ -1377,7 +1401,6 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             pdf_obj.set_font('Helvetica', '', 9.5)
             pdf_obj.set_text_color(51, 65, 85)
             
-            # Sub-split para garimpar palavras chaves como CONTRATADA e CONTRATANTE dentro do corpo e aplicar negrito estático
             partes = re.split(r'(CONTRATADA|CONTRATANTE)', corpo_normal)
             for p in partes:
                 if p in ['CONTRATADA', 'CONTRATANTE']:
@@ -1448,6 +1471,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             "A presente proposta e condições comerciais possuem validade de 15 (quinze) dias a contar da data de sua emissão."
         )
 
+        # CLÁUSULAS SEXTA E SÉTIMA MANTIDAS NO FORMATO OFICIAL
         _ = pdf.set_x(21)
         _ = pdf.set_font('Helvetica', 'B', 9.5)
         _ = pdf.set_text_color(15, 23, 42)
@@ -1543,7 +1567,8 @@ with st.sidebar:
             "nome": "", "contato": "", "endereco": "", "telefone": "", "website": "",
             "nota": 0.0, "avaliacoes": 0, "tem_tour360": False, "tem_fotos_hd": False,
             "categorias_completas": False, "horarios_ok": False, "tem_descricao": False,
-            "atributos_ok": False, "resposta_avaliacoes_ok": False, "categorias_detectadas": [], "foto_reference": ""
+            "atributos_ok": False, "resposta_avaliacoes_ok": False, "categorias_detectadas": [], "foto_reference": "",
+            "lat": None, "lng": None
         }
         st.session_state['concorrentes'] = [
             {"nome": "", "nota": 0.0, "avaliacoes": 0, "busca_termo": "", "cidade": "", "tem_fotos_hd": "Não", "tem_tour360": "Não", "categorias_ok": "Não", "horarios_ok": "Não", "tem_website": "Não", "tem_descricao": "Não", "atributos_ok": "Não", "respostas_ok": "Não"},
@@ -1641,6 +1666,7 @@ if etapa_atual == 1:
                         
                         photos = res_details.get("photos", u.get("photos", []))
                         types_lista = res_details.get("types", [])
+                        loc_geo = res_details.get("geometry", {}).get("location", {})
                         
                         st.session_state['dados']['nome'] = res_details.get("name") or u.get("name") or nome_input
                         st.session_state['dados']['endereco'] = res_details.get("formatted_address") or u.get("formatted_address") or ""
@@ -1649,6 +1675,9 @@ if etapa_atual == 1:
                         st.session_state['dados']['nota'] = float(res_details.get("rating") or u.get("rating") or 0.0)
                         st.session_state['dados']['avaliacoes'] = int(res_details.get("user_ratings_total") or u.get("user_ratings_total") or 0)
                         st.session_state['dados']['contato'] = "Gerente Responsável"
+                        
+                        st.session_state['dados']['lat'] = loc_geo.get("lat")
+                        st.session_state['dados']['lng'] = loc_geo.get("lng")
                         
                         st.session_state['dados']['tem_fotos_hd'] = len(photos) >= 10
                         st.session_state['dados']['horarios_ok'] = "opening_hours" in res_details
