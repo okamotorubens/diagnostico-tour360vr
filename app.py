@@ -243,9 +243,7 @@ def conv(texto):
                       .replace("•", "- ")\
                       .replace("✓", "[OK] ")\
                       .replace("à", "a")\
-                      .replace("À", "A")\
-                      .replace("º", ".")\
-                      .replace("ª", ".")
+                      .replace("À", "A")
     return limpo.encode('latin-1', 'replace').decode('latin-1')
 
 def carregar_imagem_base64(caminho):
@@ -911,7 +909,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             
             _ = pdf.cell(w_emp, h_row, conv(" Empresa / Concorrente"), border=0, fill=True)
             _ = pdf.cell(w_item, h_row, conv("1.Fotos"), border=0, fill=True, align='C')
-            _ = pdf.cell(w_item, h_row, conv("2.360°"), border=0, fill=True, align='C')
+            _ = pdf.cell(w_item, h_row, conv("2.360"), border=0, fill=True, align='C')
             _ = pdf.cell(w_item, h_row, conv("3.Categ"), border=0, fill=True, align='C')
             _ = pdf.cell(w_item, h_row, conv("4.Horár"), border=0, fill=True, align='C')
             _ = pdf.cell(w_item, h_row, conv("5.Web"), border=0, fill=True, align='C')
@@ -989,7 +987,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
                 _ = pdf.cell(w_score, h_row, conv(f"{score_conc} / 100"), border=1, fill=True, align='C')
                 _ = pdf.set_font('Helvetica', '', 8.0)
 
-        # PLANO DE AÇÃO (AJUSTADO: +1 linha de espaço a mais antes do quadro de "Plano de Ação")
+        # PLANO DE AÇÃO
         if plano_acao_extra and plano_acao_extra.strip() != "":
             y_extra_top = 225.0
             w_extra, x_extra, h_box_extra = 177, 21.0, 25.0
@@ -1013,7 +1011,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             set_color_safe(pdf, 51, 65, 85, fn_type='text')
             _ = pdf.multi_cell(w_extra - 10, 3.4, conv(plano_acao_extra), align='L')
 
-    # PÁGINA 3: MAPEAMENTO GEOGRÁFICO DE RAIO DE ATRAÇÃO
+    # PÁGINA 3: MAPEAMENTO GEOGRÁFICO COM ILUSTRAÇÃO MODERNA E ORDINAIS "º"
     if 3 in paginas_selecionadas:
         _ = pdf.add_page()
         
@@ -1027,9 +1025,10 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         set_color_safe(pdf, 71, 85, 105, fn_type='text')
         _ = pdf.cell(177, 5.0, conv("Simulação de visibilidade em buscas locais por proximidade ('próximo a mim')"), align='C', ln=True)
 
-        y_mapa = 54.0
+        # ILUSTRAÇÃO MODERNA E PROFISSIONAL (Infográfico de Radar Geográfico Infalível)
+        y_mapa = 50.0
         w_mapa = 177.0
-        h_mapa = 88.0
+        h_mapa = 92.0
         x_mapa = 21.0
 
         set_color_safe(pdf, 248, 250, 252, fn_type='fill')
@@ -1037,61 +1036,64 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         _ = pdf.set_line_width(0.3)
         _ = pdf.rounded_rect(x_mapa, y_mapa, w_mapa, h_mapa, 3.0, 'FD')
 
-        mapa_real_carregado = False
-        lat, lng = dados.get("lat"), dados.get("lng")
+        # Fundo infográfico escuro/tecnológico central
+        set_color_safe(pdf, 15, 23, 42, fn_type='fill')
+        _ = pdf.rounded_rect(x_mapa + 2, y_mapa + 2, w_mapa - 4, h_mapa - 18, 2.5, 'F')
 
-        if (not lat or not lng) and API_KEY_GOOGLE and dados.get("endereco"):
-            try:
-                url_geo = f"https://maps.googleapis.com/maps/api/geocode/json?address={requests.utils.quote(dados['endereco'])}&key={API_KEY_GOOGLE}"
-                res_geo = requests.get(url_geo, timeout=3).json()
-                if res_geo.get("status") == "OK" and res_geo.get("results"):
-                    loc = res_geo["results"][0]["geometry"]["location"]
-                    lat, lng = loc["lat"], loc["lng"]
-            except Exception:
-                pass
+        # Anéis concêntricos do Radar
+        cx, cy = x_mapa + (w_mapa / 2.0), y_mapa + ((h_mapa - 18.0) / 2.0)
+        
+        # Anel 3 (Cidade - Vermelho)
+        set_color_safe(pdf, 239, 68, 68, fn_type='draw')
+        _ = pdf.set_line_width(0.4)
+        _ = pdf.circle(cx, cy, 32.0, 'D')
 
-        if lat and lng and API_KEY_GOOGLE:
-            try:
-                headers_m = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
-                url_static_map = f"https://maps.googleapis.com/maps/api/staticmap?center={lat},{lng}&zoom=14&size=650x320&maptype=roadmap&markers=color:red%7Clabel:E%7C{lat},{lng}&key={API_KEY_GOOGLE}"
-                resp_m = requests.get(url_static_map, headers=headers_m, timeout=4)
-                if resp_m.status_code == 200 and len(resp_m.content) > 1000:
-                    img_m = io.BytesIO(resp_m.content)
-                    _ = pdf.image(img_m, x=x_mapa + 1.5, y=y_mapa + 1.5, w=w_mapa - 3.0, h=h_mapa - 16.0)
-                    mapa_real_carregado = True
-            except Exception:
-                pass
+        # Anel 2 (Região - Amarelo)
+        set_color_safe(pdf, 245, 158, 11, fn_type='draw')
+        _ = pdf.circle(cx, cy, 21.0, 'D')
 
-        # GARANTIA VISUAL TOTAL: Se a API falhar, renderiza um layout gráfico estilizado de mapa
-        if not mapa_real_carregado:
-            set_color_safe(pdf, 241, 245, 249, fn_type='fill')
-            _ = pdf.rect(x_mapa + 2, y_mapa + 2, w_mapa - 4, h_mapa - 17, 'F')
-            
-            # Grid simulação de mapa
-            set_color_safe(pdf, 226, 232, 240, fn_type='draw')
-            _ = pdf.set_line_width(0.4)
-            for gx in range(int(x_mapa + 10), int(x_mapa + w_mapa - 10), 18):
-                _ = pdf.line(gx, y_mapa + 4, gx, y_mapa + h_mapa - 18)
-            for gy in range(int(y_mapa + 10), int(y_mapa + h_mapa - 18), 14):
-                _ = pdf.line(x_mapa + 4, gy, x_mapa + w_mapa - 4, gy)
-                
-            # Marcador central estilizado (Pino E)
-            cx, cy = x_mapa + (w_mapa / 2.0), y_mapa + ((h_mapa - 16.0) / 2.0)
-            set_color_safe(pdf, 220, 38, 38, fn_type='fill')
-            _ = pdf.circle(cx, cy, 6.0, 'F')
-            set_color_safe(pdf, 255, 255, 255, fn_type='text')
-            _ = pdf.set_font('Helvetica', 'B', 9)
-            _ = pdf.set_xy(cx - 3, cy - 3)
-            _ = pdf.cell(6, 6, "E", align='C')
+        # Anel 1 (Bairro - Verde)
+        set_color_safe(pdf, 34, 197, 94, fn_type='draw')
+        _ = pdf.circle(cx, cy, 10.0, 'D')
 
-            _ = pdf.set_xy(x_mapa, cy + 8.0)
-            _ = pdf.set_font('Helvetica', 'B', 10.5)
-            set_color_safe(pdf, 30, 64, 175, fn_type='text')
-            _ = pdf.cell(w_mapa, 5.0, conv(f"LOCALIZAÇÃO: {dados.get('nome', 'Sua Empresa')}"), align='C', ln=True)
-            _ = pdf.set_x(x_mapa)
-            _ = pdf.set_font('Helvetica', '', 8.5)
-            set_color_safe(pdf, 71, 85, 105, fn_type='text')
-            _ = pdf.cell(w_mapa, 4.0, conv(f"{dados.get('endereco', 'Endereço cadastrado no perfil do Google')}"), align='C', ln=True)
+        # Marcador Central Empresa (Pino E)
+        set_color_safe(pdf, 30, 64, 175, fn_type='fill')
+        set_color_safe(pdf, 255, 255, 255, fn_type='draw')
+        _ = pdf.circle(cx, cy, 4.5, 'FD')
+        _ = pdf.set_xy(cx - 3, cy - 2.8)
+        _ = pdf.set_font('Helvetica', 'B', 7.5)
+        set_color_safe(pdf, 255, 255, 255, fn_type='text')
+        _ = pdf.cell(6, 5, "E", align='C')
+
+        # Rótulos visuais no mapa
+        _ = pdf.set_xy(cx + 11, cy - 3.0)
+        _ = pdf.set_font('Helvetica', 'B', 6.5)
+        set_color_safe(pdf, 34, 197, 94, fn_type='text')
+        _ = pdf.cell(20, 3, "1.5 km", align='L')
+
+        _ = pdf.set_xy(cx + 22, cy - 3.0)
+        set_color_safe(pdf, 245, 158, 11, fn_type='text')
+        _ = pdf.cell(20, 3, "3.0 km", align='L')
+
+        _ = pdf.set_xy(cx + 33, cy - 3.0)
+        set_color_safe(pdf, 239, 68, 68, fn_type='text')
+        _ = pdf.cell(20, 3, "5.0+ km", align='L')
+
+        # Caixa inferior de endereço estilizada dentro do card
+        y_box_end = y_mapa + h_mapa - 30.0
+        set_color_safe(pdf, 30, 41, 59, fn_type='fill')
+        set_color_safe(pdf, 51, 65, 85, fn_type='draw')
+        _ = pdf.rounded_rect(x_mapa + 10, y_box_end, w_mapa - 20, 10.0, 1.5, 'FD')
+
+        _ = pdf.set_xy(x_mapa + 10, y_box_end + 1.2)
+        _ = pdf.set_font('Helvetica', 'B', 8.5)
+        set_color_safe(pdf, 255, 255, 255, fn_type='text')
+        _ = pdf.cell(w_mapa - 20, 3.8, conv(f"LOCALIZAÇÃO ANALISADA: {dados.get('nome', 'Sua Empresa')}"), align='C', ln=True)
+        
+        _ = pdf.set_x(x_mapa + 10)
+        _ = pdf.set_font('Helvetica', '', 7.5)
+        set_color_safe(pdf, 203, 213, 225, fn_type='text')
+        _ = pdf.cell(w_mapa - 20, 3.2, conv(f"{dados.get('endereco', 'Endereço cadastrado no perfil do Google')}"), align='C', ln=True)
 
         # Legendas do Raio
         y_leg = y_mapa + h_mapa - 13.0
@@ -1136,11 +1138,11 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         set_color_safe(pdf, 15, 23, 42, fn_type='text')
         _ = pdf.cell(177, 4.0, conv("DIAGNÓSTICO DE BUSCAS POR INTENÇÃO DE CLIENTES"), ln=True)
 
-        # AJUSTADO: Notação ordinal proporcional limpa (ex: 1.º com tamanho ajustado)
+        # RESTAURADA A NOTAÇÃO ORDINAL "º" TRADICIONAL
         termos_busca = [
-            ("Busca por Proximidade ('Empresa / Servico proximo')", "92% dos usuarios clicam nos 3 primeiros resultados do mapa ao buscar por proximidade.", "1.º Lugar", 22, 128, 61),
-            ("Busca por Categoria Local ('Servicos na regiao')", "Sem Tour 360 e fotos HD, o Google empurra o perfil para baixo fora do raio imediato.", "12.º a 18.º", 220, 38, 38),
-            ("Busca Direta por Marca ou Nome Específico", "Cliente digitando o nome exato encontra a ficha, mas falta a experiencia imersiva 360.", "1.º Lugar", 30, 64, 175)
+            ("Busca por Proximidade ('Empresa / Servico proximo')", "92% dos usuarios clicam nos 3 primeiros resultados do mapa ao buscar por proximidade.", "1º", 22, 128, 61),
+            ("Busca por Categoria Local ('Servicos na regiao')", "Sem Tour 360 e fotos HD, o Google empurra o perfil para baixo fora do raio imediato.", "12º a 18º", 220, 38, 38),
+            ("Busca Direta por Marca ou Nome Específico", "Cliente digitando o nome exato encontra a ficha, mas falta a experiencia imersiva 360.", "1º", 30, 64, 175)
         ]
 
         y_t_curr = y_termos + 8.5
@@ -1177,10 +1179,12 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             set_color_safe(pdf, 71, 85, 105, fn_type='text')
             _ = pdf.cell(w_quadro_p, 3.0, conv("POSIÇÃO NO RANKING"), align='C', ln=True)
 
-            _ = pdf.set_xy(x_pos_q, y_t_curr + 7.5)
-            _ = pdf.set_font('Helvetica', 'B', 11.5)
+            _ = pdf.set_xy(x_pos_q, y_t_curr + 7.2)
+            _ = pdf.set_font('Helvetica', 'B', 13.0)
             set_color_safe(pdf, cr, cg, cb, fn_type='text')
-            _ = pdf.cell(w_quadro_p, 5.0, conv(str(t_pos)), align='C')
+            # Renderização direta para garantir o símbolo º sem bugs de conversão
+            str_pos_ord = t_pos.encode('latin-1', 'replace').decode('latin-1')
+            _ = pdf.cell(w_quadro_p, 6.0, str_pos_ord, align='C')
 
             y_t_curr += 21.0
 
@@ -1207,7 +1211,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         set_color_safe(pdf, 51, 65, 85, fn_type='text')
         _ = pdf.multi_cell(168, 3.2, conv(txt_oport_corpo), align='L')
 
-    # PÁGINA 4: PROPOSTA COMERCIAL & MATRIZ CENTRALIZADA
+    # PÁGINA 4: PROPOSTA COMERCIAL & MATRIZ COM CENTRALIZAÇÃO VERTICAL EXATA
     if 4 in paginas_selecionadas:
         _ = pdf.add_page()
         
@@ -1370,7 +1374,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         
         desenhar_pilulas_itens(pdf, x3, y_p + 25.0, planos.get('gestao_itens', ''))
 
-        # MATRIZ DE AÇÕES DO AGENTE (AJUSTADO: Centralização vertical de cada célula)
+        # MATRIZ DE AÇÕES DO AGENTE (CENTRALIZAÇÃO VERTICAL DE TEXTOS DE 1, 2 OU 3 LINHAS)
         y_agente = y_p + max(h_card_start, h_card_pro, h_card_gestao) + 11.0
         w_agente = 177.0
         
@@ -1409,6 +1413,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
 
         _ = pdf.set_font('Helvetica', '', 7.2)
         y_curr_ag = y_tbl_ag + h_header_ag
+        line_h = 3.0
 
         for idx_m, (dim, est, imp, acao) in enumerate(acoes_matriz):
             bg_line = (248, 250, 252) if idx_m % 2 == 0 else (255, 255, 255)
@@ -1416,36 +1421,37 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             set_color_safe(pdf, 226, 232, 240, fn_type='draw')
             set_color_safe(pdf, 51, 65, 85, fn_type='text')
             
-            n_l1 = max(1, int(len(dim) / 18.0 + 0.95))
-            n_l2 = max(1, int(len(est) / 24.0 + 0.95))
-            n_l3 = max(1, int(len(imp) / 24.0 + 0.95))
-            n_l4 = max(1, int(len(acao) / 30.0 + 0.95))
+            # Cálculo exato do número de linhas por coluna
+            n1 = max(1, len(pdf.multi_cell(w_c1 - 2.0, line_h, conv(dim), split_only=True)))
+            n2 = max(1, len(pdf.multi_cell(w_c2 - 3.0, line_h, conv(est), split_only=True)))
+            n3 = max(1, len(pdf.multi_cell(w_c3 - 3.0, line_h, conv(imp), split_only=True)))
+            n4 = max(1, len(pdf.multi_cell(w_c4 - 3.0, line_h, conv(acao), split_only=True)))
             
-            linhas_max = max(n_l1, n_l2, n_l3, n_l4)
-            h_linha_dinamica = max(7.2, (linhas_max * 2.8) + 2.0)
+            max_lines = max(n1, n2, n3, n4)
+            cell_height = max(8.0, (max_lines * line_h) + 2.4)
 
-            _ = pdf.rect(21, y_curr_ag, w_c1, h_linha_dinamica, 'FD')
-            _ = pdf.rect(21 + w_c1, y_curr_ag, w_c2, h_linha_dinamica, 'FD')
-            _ = pdf.rect(21 + w_c1 + w_c2, y_curr_ag, w_c3, h_linha_dinamica, 'FD')
-            _ = pdf.rect(21 + w_c1 + w_c2 + w_c3, y_curr_ag, w_c4, h_linha_dinamica, 'FD')
+            _ = pdf.rect(21, y_curr_ag, w_c1, cell_height, 'FD')
+            _ = pdf.rect(21 + w_c1, y_curr_ag, w_c2, cell_height, 'FD')
+            _ = pdf.rect(21 + w_c1 + w_c2, y_curr_ag, w_c3, cell_height, 'FD')
+            _ = pdf.rect(21 + w_c1 + w_c2 + w_c3, y_curr_ag, w_c4, cell_height, 'FD')
 
-            # Cálculo de offset Y centralizado com precisão
-            _ = pdf.set_xy(22, y_curr_ag + ((h_linha_dinamica - (n_l1 * 2.6)) / 2.0))
-            _ = pdf.multi_cell(w_c1 - 2.0, 2.6, conv(dim), border=0, align='L')
+            # Renderização centralizada verticalmente para cada célula individualmente
+            _ = pdf.set_xy(22, y_curr_ag + ((cell_height - (n1 * line_h)) / 2.0))
+            _ = pdf.multi_cell(w_c1 - 2.0, line_h, conv(dim), border=0, align='L')
             
-            _ = pdf.set_xy(21 + w_c1 + 1.5, y_curr_ag + ((h_linha_dinamica - (n_l2 * 2.6)) / 2.0))
-            _ = pdf.multi_cell(w_c2 - 3.0, 2.6, conv(est), border=0, align='L')
+            _ = pdf.set_xy(21 + w_c1 + 1.5, y_curr_ag + ((cell_height - (n2 * line_h)) / 2.0))
+            _ = pdf.multi_cell(w_c2 - 3.0, line_h, conv(est), border=0, align='L')
             
-            _ = pdf.set_xy(21 + w_c1 + w_c2 + 1.5, y_curr_ag + ((h_linha_dinamica - (n_l3 * 2.6)) / 2.0))
-            _ = pdf.multi_cell(w_c3 - 3.0, 2.6, conv(imp), border=0, align='L')
+            _ = pdf.set_xy(21 + w_c1 + w_c2 + 1.5, y_curr_ag + ((cell_height - (n3 * line_h)) / 2.0))
+            _ = pdf.multi_cell(w_c3 - 3.0, line_h, conv(imp), border=0, align='L')
             
-            _ = pdf.set_xy(21 + w_c1 + w_c2 + w_c3 + 1.5, y_curr_ag + ((h_linha_dinamica - (n_l4 * 2.6)) / 2.0))
-            _ = pdf.multi_cell(w_c4 - 3.0, 2.6, conv(acao), border=0, align='L')
+            _ = pdf.set_xy(21 + w_c1 + w_c2 + w_c3 + 1.5, y_curr_ag + ((cell_height - (n4 * line_h)) / 2.0))
+            _ = pdf.multi_cell(w_c4 - 3.0, line_h, conv(acao), border=0, align='L')
             
-            y_curr_ag += h_linha_dinamica
+            y_curr_ag += cell_height
             _ = pdf.set_xy(21, y_curr_ag)
 
-    # PÁGINA 5: CONTRATO COM ALINHAMENTO JUSTIFICADO
+    # PÁGINA 5: CONTRATO COM CORPO ORIGINAL & ESTILO APROVADO
     if 5 in paginas_selecionadas:
         _ = pdf.add_page()
         
@@ -1462,23 +1468,36 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         end_cli = str(dados.get('endereco') or 'Endereço não informado')
         tel_cli = str(dados.get('telefone') or 'N/I')
 
-        # AJUSTADO: Função de renderização de cláusulas com alinhamento JUSTIFICADO
-        def renderizar_clausula_justificada(pdf_obj, titulo_bold, corpo_normal, espaco_extra=2.5):
+        # Função de renderização preservando o formato approved original
+        def renderizar_clausula_original(pdf_obj, titulo_bold, corpo_normal, espaco_extra=2.5):
             pdf_obj.set_x(21)
             pdf_obj.set_font('Helvetica', 'B', 9.5)
             set_color_safe(pdf_obj, 15, 23, 42, fn_type='text')
+            pdf_obj.write(h_line, conv(titulo_bold + " "))
             
-            texto_completo = f"{titulo_bold} {corpo_normal}"
-            pdf_obj.multi_cell(w_text, h_line, conv(texto_completo), align='J')
-            pdf_obj.ln(espaco_extra)
+            pdf_obj.set_font('Helvetica', '', 9.5)
+            set_color_safe(pdf_obj, 51, 65, 85, fn_type='text')
+            
+            partes = re.split(r'(CONTRATADA|CONTRATANTE)', corpo_normal)
+            for p in partes:
+                if p in ['CONTRATADA', 'CONTRATANTE']:
+                    pdf_obj.set_font('Helvetica', 'B', 9.5)
+                    set_color_safe(pdf_obj, 15, 23, 42, fn_type='text')
+                    pdf_obj.write(h_line, conv(p))
+                    pdf_obj.set_font('Helvetica', '', 9.5)
+                    set_color_safe(pdf_obj, 51, 65, 85, fn_type='text')
+                else:
+                    pdf_obj.write(h_line, conv(p))
+            
+            pdf_obj.ln(h_line + espaco_extra)
 
-        renderizar_clausula_justificada(
+        renderizar_clausula_original(
             pdf,
             "CONTRATADA:",
             "Tour360VR, representada por Rubens Okamoto, CNPJ: 04.824.331/0001-05 e Telefone: (16) 99133-2121."
         )
 
-        renderizar_clausula_justificada(
+        renderizar_clausula_original(
             pdf,
             "CONTRATANTE:",
             f"{nome_cli}, representada por {resp_cli}, localizada em {end_cli}, Telefone: {tel_cli}."
@@ -1487,42 +1506,48 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         _ = pdf.set_x(21)
         _ = pdf.set_font('Helvetica', '', 9.5)
         set_color_safe(pdf, 51, 65, 85, fn_type='text')
-        
-        texto_intro = f"A CONTRATADA compromete-se a executar os serviços de otimização, reestruturação técnica e/ou produção de Tour Virtual 360° para o perfil do Google da CONTRATANTE."
-        _ = pdf.multi_cell(w_text, h_line, conv(texto_intro), align='J')
-        _ = pdf.ln(2.5)
+        _ = pdf.write(h_line, conv("A "))
+        _ = pdf.set_font('Helvetica', 'B', 9.5)
+        set_color_safe(pdf, 15, 23, 42, fn_type='text')
+        _ = pdf.write(h_line, conv("CONTRATADA "))
+        _ = pdf.set_font('Helvetica', '', 9.5)
+        set_color_safe(pdf, 51, 65, 85, fn_type='text')
+        _ = pdf.write(h_line, conv("compromete-se a executar os serviços de otimização, reestruturação técnica e/ou produção de Tour Virtual 360° para o perfil do Google da "))
+        _ = pdf.set_font('Helvetica', 'B', 9.5)
+        set_color_safe(pdf, 15, 23, 42, fn_type='text')
+        _ = pdf.write(h_line, conv("CONTRATANTE."))
+        _ = pdf.ln(h_line + 2.5)
 
-        renderizar_clausula_justificada(
+        renderizar_clausula_original(
             pdf,
             "CLÁUSULA PRIMEIRA - DO OBJETO:",
             "Os serviços serão iniciados em até 5 dias úteis após o fornecimento de todos os acessos e informações necessárias à gestão do perfil."
         )
 
-        renderizar_clausula_justificada(
+        renderizar_clausula_original(
             pdf,
             "CLÁUSULA SEGUNDA - DAS OBRIGAÇÕES:",
             "O não pagamento no prazo pactuado sujeitará o presente contrato à incidência de juros moratórios legais e à suspensão temporária dos serviços até a devida regularização."
         )
 
-        renderizar_clausula_justificada(
+        renderizar_clausula_original(
             pdf,
             "CLÁUSULA TERCEIRA - DOS DIREITOS DE USO E PROPRIEDADE:",
             "Os direitos de uso do Tour Virtual 360° e fotos HD serão cedidos em caráter ilimitado à CONTRATANTE para veiculação no Google. A CONTRATADA reserva-se o direito de utilizar o material em seu portfólio de divulgação."
         )
 
-        renderizar_clausula_justificada(
+        renderizar_clausula_original(
             pdf,
             "CLÁUSULA QUARTA - CONFIDENCIALIDADE E LGPD:",
             "As partes comprometem-se a manter sob sigilo absoluto todas as informações operacionais fornecidas, em conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018)."
         )
 
-        renderizar_clausula_justificada(
+        renderizar_clausula_original(
             pdf,
             "CLÁUSULA QUINTA - VALIDADE DA PROPOSTA:",
             "A presente proposta e condições comerciais possuem validade de 15 (quinze) dias a contar da data de sua emissão."
         )
 
-        # MANTIDO SEM JUSTIFICAR: Cláusulas sexta e sétima (campos de seleção)
         _ = pdf.set_x(21)
         _ = pdf.set_font('Helvetica', 'B', 9.5)
         set_color_safe(pdf, 15, 23, 42, fn_type='text')
