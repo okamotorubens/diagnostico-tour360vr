@@ -739,7 +739,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         _ = pdf.set_x(x_alerta)
         _ = pdf.cell(w_alerta, 4.0, conv(sub_txt_2), align='C', ln=True)
 
-    # PÁGINA 2: AUDITORIA (Layout Otimizado & Ajustado)
+    # PÁGINA 2: AUDITORIA (Com espaçamentos otimizados e card proporcional)
     if 2 in paginas_selecionadas:
         _ = pdf.add_page()
         
@@ -818,9 +818,9 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         set_color_safe(pdf, 71, 85, 105, fn_type='text')
         _ = pdf.cell(w_q2, 2.8, conv(f"{dados.get('avaliacoes', 0)} avaliações cadastradas no Google"), align='C', ln=True)
 
-        # REAJUSTE DE ESPAÇAMENTO DOS ITENS DA LISTA DE AUDITORIA
-        y_start_itens = 73.0
-        h_slot = 9.2 # Espaçamento amplo equilibrado para preenchimento harmônico
+        # AJUSTE 1: Espaço adicional (+1 linha) entre os quadros superiores e o Item 1
+        y_start_itens = 78.0 
+        h_slot = 8.8
 
         pct_avaliacoes = min(int((dados.get('avaliacoes', 0) / 50.0) * 100), 100) if dados.get('avaliacoes', 0) > 0 else 10
         pct_fotos = 100 if dados.get('tem_fotos_hd') else 30
@@ -883,8 +883,8 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             set_color_safe(pdf, 71, 85, 105, fn_type='text')
             _ = pdf.cell(177, 2.3, conv(f"   Estado: {desc[:58]}  |  Impacto: {impacto[:55]}"), border=0)
 
-        # QUADRO DE ATENÇÃO
-        y_atencao = y_start_itens + (len(itens) * h_slot) + 3.0
+        # AJUSTE 2: Espaçamento ampliado entre Item 9 e Quadro de Atenção (+4.0mm)
+        y_atencao = y_start_itens + (len(itens) * h_slot) + 4.0
         w_atencao = 177.0
         h_atencao = 13.0
 
@@ -923,8 +923,8 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         set_color_safe(pdf, tx_corpo_atencao, fn_type='text')
         _ = pdf.multi_cell(w_atencao - 12, 2.6, conv(txt_atencao), align='L')
 
-        # TABELA DE CONCORRENTES
-        y_tit_conc = y_atencao + h_atencao + 5.0
+        # AJUSTE 3: Espaçamento ampliado entre Quadro de Atenção e Tabela de Concorrentes (+6.0mm)
+        y_tit_conc = y_atencao + h_atencao + 6.0
         concorrentes_filtrados = [c for c in concorrentes if c.get("nome", "").strip() != ""]
         if concorrentes_filtrados:
             _ = pdf.set_xy(21, y_tit_conc)
@@ -1023,11 +1023,18 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         else:
             y_fim_conc = y_atencao + h_atencao
 
-        # QUADRO DO PLANO DE AÇÃO (ALTURA DINÂMICA ENCAIXADA PERFEITAMENTE)
+        # AJUSTE 4: Espaçamento para o Plano de Ação (+6.0mm) e ALTURA DINÂMICA PROPORCIONAL
         if plano_acao_extra and plano_acao_extra.strip() != "":
-            y_extra_top = y_fim_conc + 5.0
+            y_extra_top = y_fim_conc + 6.0
             w_extra, x_extra = 177, 21.0
-            h_box_extra = 280.0 - y_extra_top # Cálculo dinâmico para preenchimento exato da área útil da página
+
+            # Cálculo do número real de linhas que o texto ocupará para definir a altura exata
+            pdf.set_font('Helvetica', '', 7.6)
+            linhas_texto = pdf.multi_cell(w_extra - 8, 3.4, conv(plano_acao_extra), split_only=True)
+            total_linhas = len(linhas_texto) if linhas_texto else 1
+            
+            # Altura ajustada dinamicamente sem áreas vazias sobrando
+            h_box_extra = max(24.0, (total_linhas * 3.4) + 10.0)
 
             set_color_safe(pdf, 248, 250, 252, fn_type='fill')
             set_color_safe(pdf, 203, 213, 225, fn_type='draw')
