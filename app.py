@@ -600,7 +600,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
     _ = pdf.set_margins(21, 12, 12)
     _ = pdf.set_auto_page_break(auto=False)
 
-    # PÁGINA 1: CAPA (Ajustes exatos de altura do Card de Cliente e da Imagem para restaurar o modelo original)
+    # PÁGINA 1: CAPA (+1 linha de espaço após a logo)
     if 1 in paginas_selecionadas:
         _ = pdf.add_page()
         caminho_logo = obter_caminho_logo("tour360")
@@ -610,7 +610,10 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             except Exception:
                 pass
 
-        _ = pdf.set_y(58)
+        # AJUSTE PÁGINA 1: +1 linha de espaço após o logo
+        _ = pdf.set_y(53.0)
+        _ = pdf.ln(4)
+
         _ = pdf.set_font('Helvetica', 'B', 20)
         set_color_safe(pdf, 30, 64, 175, fn_type='text')
         _ = pdf.cell(0, 8, conv('DIAGNÓSTICO DE PRESENÇA DIGITAL'), align='C', ln=True)
@@ -625,8 +628,8 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         set_color_safe(pdf, 15, 23, 42, fn_type='text')  # Frase em PRETO
         _ = pdf.cell(0, 5, conv("Gestão de reputação e imagem online para o segmento no Google Maps"), align='C', ln=True)
 
-        # CARD CLIENTE RESTAURADO (Com dimensões amplas idênticas ao modelo original da esquerda)
-        w_capa, x_capa, y_capa = 177.0, 21.0, 88.0
+        # CARD CLIENTE
+        w_capa, x_capa, y_capa = 177.0, 21.0, 92.0
         h_capa = 40.0
 
         set_color_safe(pdf, 248, 250, 252, fn_type='fill')
@@ -655,8 +658,8 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         _ = pdf.set_x(x_capa)
         _ = pdf.cell(w_capa, 5.0, conv(f"Telefone: {dados.get('telefone') or 'N/I'}   |   {site_txt}"), align='C', ln=True)
 
-        # IMAGEM PRINCIPAL RESTAURADA (Tamanho e destaque original)
-        y_foto, h_container, w_container = 133.0, 100.0, 177.0
+        # IMAGEM PRINCIPAL
+        y_foto, h_container, w_container = 137.0, 96.0, 177.0
         foto_renderizada = False
 
         if dados.get("foto_reference") and API_KEY_GOOGLE:
@@ -688,7 +691,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             set_color_safe(pdf, 248, 250, 252, fn_type='fill')
             set_color_safe(pdf, 203, 213, 225, fn_type='draw')
             _ = pdf.rounded_rect(x_capa, y_foto, w_container, h_container, 3.0, 'FD')
-            _ = pdf.set_xy(x_capa, y_foto + 42)
+            _ = pdf.set_xy(x_capa, y_foto + 40)
             _ = pdf.set_font('Helvetica', 'B', 11)
             set_color_safe(pdf, 100, 116, 139, fn_type='text')
             _ = pdf.cell(w_container, 6, conv("[ IMAGEM DA FICHA GOOGLE DO CLIENTE ]"), align='C', ln=True)
@@ -737,7 +740,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         _ = pdf.set_x(x_alerta)
         _ = pdf.cell(w_alerta, 4.0, conv(sub_txt_2), align='C', ln=True)
 
-    # PÁGINA 2: AUDITORIA DETALHADA DE PONTOS DE BUSCA (Inalterada)
+    # PÁGINA 2: AUDITORIA (+1 linha de espaço após o item 9)
     if 2 in paginas_selecionadas:
         _ = pdf.add_page()
         
@@ -880,8 +883,8 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             set_color_safe(pdf, 71, 85, 105, fn_type='text')
             _ = pdf.cell(177, 2.3, conv(f"   Estado: {desc[:58]}  |  Impacto: {impacto[:55]}"), border=0)
 
-        # QUADRO DE ATENÇÃO
-        y_atencao = 170.0
+        # AJUSTE PÁGINA 2: +1 linha de espaço após o item 9
+        y_atencao = y_start_itens + (len(itens) * h_slot) + 4.0
         w_atencao = 177.0
         h_atencao = 13.0
 
@@ -921,7 +924,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         _ = pdf.multi_cell(w_atencao - 12, 2.6, conv(txt_atencao), align='L')
 
         # ANÁLISE AUTOMÁTICA DE CONCORRENTES
-        y_tit_conc = 193.0
+        y_tit_conc = y_atencao + h_atencao + 6.0
         concorrentes_filtrados = [c for c in concorrentes if c.get("nome", "").strip() != ""]
         if concorrentes_filtrados:
             _ = pdf.set_xy(21, y_tit_conc)
@@ -1018,7 +1021,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
 
         # PLANO DE AÇÃO
         if plano_acao_extra and plano_acao_extra.strip() != "":
-            y_extra_top = 225.0
+            y_extra_top = 227.0
             w_extra, x_extra, h_box_extra = 177, 21.0, 25.0
             set_color_safe(pdf, 248, 250, 252, fn_type='fill')
             set_color_safe(pdf, 203, 213, 225, fn_type='draw')
@@ -1040,7 +1043,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             set_color_safe(pdf, 51, 65, 85, fn_type='text')
             _ = pdf.multi_cell(w_extra - 10, 3.4, conv(plano_acao_extra), align='L')
 
-    # PÁGINA 3: MAPEAMENTO GEOGRÁFICO COM MAPA REAL E CARDS DE RAIO DINÂMICOS (Inalterada)
+    # PÁGINA 3: MAPEAMENTO GEOGRÁFICO DE RAIO DE ATRAÇÃO (Inalterada)
     if 3 in paginas_selecionadas:
         _ = pdf.add_page()
         
@@ -1271,7 +1274,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         _ = pdf.set_x(25)
         _ = pdf.cell(169, 3.2, conv(txt_oport_p2), ln=True)
 
-    # PÁGINA 4: PROPOSTA COM CORES ESCURECIDAS NOS PLANOS START E GESTÃO (Inalterada)
+    # PÁGINA 4: PROPOSTA COMERCIAL (+1 linha de espaço após "PLANOS E INVESTIMENTO")
     if 4 in paginas_selecionadas:
         _ = pdf.add_page()
         
@@ -1284,7 +1287,8 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         _ = pdf.set_font('Helvetica', 'B', 12)
         _ = pdf.cell(0, 4, conv('PLANOS E INVESTIMENTO'), align='C', ln=True)
 
-        y_p = 54.0
+        # AJUSTE PÁGINA 4: +1 linha de espaço após "PLANOS E INVESTIMENTO"
+        y_p = 58.0
         w_card = 55.0
         x1, x2, x3 = 21.0, 82.0, 143.0
 
@@ -1439,7 +1443,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         desenhar_pilulas_itens(pdf, x3, y_p + 25.0, planos.get('gestao_itens', ''))
 
         # MATRIZ DE AÇÕES DO AGENTE
-        y_agente = y_p + max(h_card_start, h_card_pro, h_card_gestao) + 11.0
+        y_agente = y_p + max(h_card_start, h_card_pro, h_card_gestao) + 8.0
         w_agente = 177.0
         
         _ = pdf.set_xy(21, y_agente)
