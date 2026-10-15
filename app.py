@@ -243,7 +243,9 @@ def conv(texto):
                       .replace("•", "- ")\
                       .replace("✓", "[OK] ")\
                       .replace("à", "a")\
-                      .replace("À", "A")
+                      .replace("À", "A")\
+                      .replace("º", "o")\
+                      .replace("ª", "a")
     return limpo.encode('latin-1', 'replace').decode('latin-1')
 
 def carregar_imagem_base64(caminho):
@@ -787,7 +789,6 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         set_color_safe(pdf, 71, 85, 105, fn_type='text')
         _ = pdf.cell(w_q2, 2.8, conv(f"{dados.get('avaliacoes', 0)} avaliações cadastradas no Google"), align='C', ln=True)
 
-        # AJUSTADO: +1 linha de espaço a mais antes de começar o item 1
         y_start_itens = 85.0
         h_slot = 8.8
 
@@ -823,7 +824,6 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         ]
 
         for idx_item, (titulo, pct, rotulo, desc, impacto) in enumerate(itens):
-            # AJUSTADO: Espaçamento uniforme entre todos os itens 1 a 9
             y_curr = y_start_itens + (idx_item * h_slot)
             _ = pdf.set_xy(21, y_curr)
             
@@ -854,7 +854,6 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             _ = pdf.cell(177, 2.3, conv(f"   Estado: {desc[:58]}  |  Impacto: {impacto[:55]}"), border=0)
 
         # QUADRO DE ATENÇÃO
-        # AJUSTADO: +1 linha de espaço após o item 9 (de 166 para 170)
         y_atencao = 170.0
         w_atencao = 177.0
         h_atencao = 13.0
@@ -895,8 +894,8 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         _ = pdf.multi_cell(w_atencao - 12, 2.6, conv(txt_atencao), align='L')
 
         # ANÁLISE AUTOMÁTICA DE CONCORRENTES
-        # AJUSTADO: +1 linha de espaço a mais após o quadro de atenção (de 185 para 189)
-        y_tit_conc = 189.0
+        # AJUSTADO: +1 linha de espaço a mais após o quadro de atenção (y_tit_conc de 189 para 193)
+        y_tit_conc = 193.0
         concorrentes_filtrados = [c for c in concorrentes if c.get("nome", "").strip() != ""]
         if concorrentes_filtrados:
             _ = pdf.set_xy(21, y_tit_conc)
@@ -992,9 +991,8 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
                 _ = pdf.set_font('Helvetica', '', 8.0)
 
         # PLANO DE AÇÃO
-        # AJUSTADO: +1 linha de espaço a mais após a tabela de análise de concorrentes (de 215 para 219)
         if plano_acao_extra and plano_acao_extra.strip() != "":
-            y_extra_top = 219.0
+            y_extra_top = 221.0
             w_extra, x_extra, h_box_extra = 177, 21.0, 25.0
             set_color_safe(pdf, 248, 250, 252, fn_type='fill')
             set_color_safe(pdf, 203, 213, 225, fn_type='draw')
@@ -1016,7 +1014,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             set_color_safe(pdf, 51, 65, 85, fn_type='text')
             _ = pdf.multi_cell(w_extra - 10, 3.4, conv(plano_acao_extra), align='L')
 
-    # PÁGINA 3: MAPEAMENTO GEOGRÁFICO DE RAIO DE ATRAÇÃO (MAPA E ESPAÇAMENTOS REAJUSTADOS)
+    # PÁGINA 3: MAPEAMENTO GEOGRÁFICO DE RAIO DE ATRAÇÃO
     if 3 in paginas_selecionadas:
         _ = pdf.add_page()
         
@@ -1025,13 +1023,13 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         set_color_safe(pdf, 15, 23, 42, fn_type='text')
         _ = pdf.cell(177, 7, conv('MAPEAMENTO GEOGRÁFICO DE RAIO DE ATRAÇÃO'), align='C', ln=True)
 
-        _ = pdf.set_y(39.5)
-        _ = pdf.set_font('Helvetica', '', 10.0)
+        # AJUSTADO: +1 linha de espaço após "MAPEAMENTO GEOGRÁFICO..." e fonte aumentada para 11.0 (igualando aos títulos)
+        _ = pdf.set_y(41.5)
+        _ = pdf.set_font('Helvetica', 'B', 11.0)
         set_color_safe(pdf, 71, 85, 105, fn_type='text')
-        _ = pdf.cell(177, 4.5, conv("Simulação de visibilidade em buscas locais por proximidade ('próximo a mim')"), align='C', ln=True)
+        _ = pdf.cell(177, 5.0, conv("Simulação de visibilidade em buscas locais por proximidade ('próximo a mim')"), align='C', ln=True)
 
-        # AJUSTADO: +1 linha de espaço após "Simulação de visibilidade" (y_mapa de 48 para 52)
-        y_mapa = 52.0
+        y_mapa = 54.0
         w_mapa = 177.0
         h_mapa = 88.0
         x_mapa = 21.0
@@ -1112,20 +1110,19 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         _ = pdf.cell(49, 3.0, conv("Invisivel nas Buscas"), align='C')
 
         # DIAGNÓSTICO DE BUSCAS POR INTENÇÃO DE CLIENTES
-        # AJUSTADO: +1 linha de espaço após o quadro do mapa (y_termos de 146 para 150)
-        y_termos = 150.0
+        y_termos = 152.0
         _ = pdf.set_xy(21, y_termos)
         _ = pdf.set_font('Helvetica', 'B', 10.0)
         set_color_safe(pdf, 15, 23, 42, fn_type='text')
         _ = pdf.cell(177, 4.0, conv("DIAGNÓSTICO DE BUSCAS POR INTENÇÃO DE CLIENTES"), ln=True)
 
+        # AJUSTADO: Notação ordinal tradicional 'º' em vez de '#'
         termos_busca = [
-            ("Busca por Proximidade ('Empresa / Servico proximo')", "92% dos usuarios clicam nos 3 primeiros resultados do mapa ao buscar por proximidade.", "#1", 22, 128, 61),
-            ("Busca por Categoria Local ('Servicos na regiao')", "Sem Tour 360 e fotos HD, o Google empurra o perfil para baixo fora do raio imediato.", "#12 a #18", 220, 38, 38),
-            ("Busca Direta por Marca ou Nome Específico", "Cliente digitando o nome exato encontra a ficha, mas falta a experiencia imersiva 360.", "Top 1", 30, 64, 175)
+            ("Busca por Proximidade ('Empresa / Servico proximo')", "92% dos usuarios clicam nos 3 primeiros resultados do mapa ao buscar por proximidade.", "1º", 22, 128, 61),
+            ("Busca por Categoria Local ('Servicos na regiao')", "Sem Tour 360 e fotos HD, o Google empurra o perfil para baixo fora do raio imediato.", "12º a 18º", 220, 38, 38),
+            ("Busca Direta por Marca ou Nome Específico", "Cliente digitando o nome exato encontra a ficha, mas falta a experiencia imersiva 360.", "1º", 30, 64, 175)
         ]
 
-        # AJUSTADO: +1 linha de espaço após o título "Diagnóstico de buscas..." (+4mm)
         y_t_curr = y_termos + 8.5
         for t_tit, t_desc, t_pos, cr, cg, cb in termos_busca:
             w_card_b = 118.0
@@ -1167,7 +1164,6 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
 
             y_t_curr += 21.0
 
-        # AJUSTADO: +2 linhas a mais de espaço após o quadro "Busca direta por marca" (+8mm)
         y_oport = y_t_curr + 6.0
         h_oport = 19.0
         set_color_safe(pdf, 239, 246, 255, fn_type='fill')
@@ -1200,11 +1196,12 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         set_color_safe(pdf, 15, 23, 42, fn_type='text')
         _ = pdf.cell(177, 7, conv('PROPOSTA COMERCIAL & ESTRUTURAÇÃO ESTRATÉGICA'), align='C', ln=True)
 
-        _ = pdf.set_y(41.0)
+        # AJUSTADO: +1 linha de espaço após "PROPOSTA COMERCIAL..." (y_set de 41.0 para 45.0)
+        _ = pdf.set_y(45.0)
         _ = pdf.set_font('Helvetica', 'B', 12)
         _ = pdf.cell(0, 4, conv('PLANOS E INVESTIMENTO'), align='C', ln=True)
 
-        y_p = 50.0
+        y_p = 54.0
         w_card = 55.0
         x1, x2, x3 = 21.0, 82.0, 143.0
 
@@ -1355,7 +1352,6 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         desenhar_pilulas_itens(pdf, x3, y_p + 25.0, planos.get('gestao_itens', ''))
 
         # MATRIZ DE AÇÕES DO AGENTE
-        # AJUSTADO: +1 linha de espaço antes de "Ações do agente" (+5mm)
         y_agente = y_p + max(h_card_start, h_card_pro, h_card_gestao) + 11.0
         w_agente = 177.0
         
@@ -1438,7 +1434,6 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         set_color_safe(pdf, 15, 23, 42, fn_type='text')
         _ = pdf.cell(177, 7, conv('CONTRATO DE PRESTAÇÃO DE SERVIÇOS'), align='C', ln=True)
 
-        # AJUSTADO: +1 linha de espaço após "Contrato de prestação de serviços" (y de 42 para 46)
         _ = pdf.set_y(46.0)
         w_text, h_line = 177, 4.8
 
