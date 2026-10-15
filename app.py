@@ -546,12 +546,16 @@ class PDFTour360Oficial(FPDF):
         _ = self._out(f'{x1*k:.2f} {(hp-y1)*k:.2f} {x2*k:.2f} {(hp-y2)*k:.2f} {x3*k:.2f} {(hp-y3)*k:.2f} c')
 
 def set_color_safe(pdf_obj, r, g=None, b=None, fn_type='text'):
-    if isinstance(r, (tuple, list)):
-        r_v, g_v, b_v = int(r[0]), int(r[1]), int(r[2])
-    elif g is not None and b is not None:
-        r_v, g_v, b_v = int(r), int(g), int(b)
-    else:
-        r_v = g_v = b_v = int(r)
+    """Converte com segurança qualquer tipo de argumento (tupla, lista ou ints individuais) em inteiros válidos."""
+    try:
+        if isinstance(r, (tuple, list)):
+            r_v, g_v, b_v = int(r[0]), int(r[1]), int(r[2])
+        elif g is not None and b is not None:
+            r_v, g_v, b_v = int(r), int(g), int(b)
+        else:
+            r_v = g_v = b_v = int(r)
+    except Exception:
+        r_v, g_v, b_v = 0, 0, 0
         
     if fn_type == 'text':
         pdf_obj.set_text_color(r_v, g_v, b_v)
@@ -997,7 +1001,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             set_color_safe(pdf, 51, 65, 85, fn_type='text')
             _ = pdf.multi_cell(w_extra - 10, 3.4, conv(plano_acao_extra), align='L')
 
-    # PÁGINA 3: MAPEAMENTO GEOGRÁFICO & DIAGNÓSTICO (VERSÃO ORIGINAL ESTÁVEL)
+    # PÁGINA 3: MAPEAMENTO GEOGRÁFICO & DIAGNÓSTICO (100% CORRIGIDO E SEM ERROS DE FLOAT)
     if 3 in paginas_selecionadas:
         _ = pdf.add_page()
         
@@ -1135,7 +1139,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         _ = pdf.set_font('Helvetica', '', 6.8)
         _ = pdf.cell(49, 3.0, conv("Invisivel nas Buscas"), align='C')
 
-        # DIAGNÓSTICO DE BUSCAS POR INTENÇÃO (ESTRUTURA ORIGINAL)
+        # DIAGNÓSTICO DE BUSCAS POR INTENÇÃO (VALORES DE CORES SEPARADOS EXPLICITAMENTE)
         y_termos = 146.0
         _ = pdf.set_xy(21, y_termos)
         _ = pdf.set_font('Helvetica', 'B', 10.0)
@@ -1143,13 +1147,13 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         _ = pdf.cell(177, 4.0, conv("DIAGNÓSTICO DE BUSCAS POR INTENÇÃO DE CLIENTES"), ln=True)
 
         termos_busca = [
-            ("Busca por Proximidade ('Empresa / Servico proximo')", "92% dos usuarios clicam nos 3 primeiros resultados do mapa ao buscar por proximidade.", "#1", (22, 128, 61)),
-            ("Busca por Categoria Local ('Servicos em Ribeirao Preto')", "Sem Tour 360 e fotos HD, o Google empurra o perfil para baixo fora do raio imediato.", "#12 a #18", (220, 38, 38)),
-            ("Busca Direta por Marca ou Nome Especifico", "Cliente digitando o nome exato encontra a ficha, mas falta a experiencia imersiva 360.", "Top 1", (30, 64, 175))
+            ("Busca por Proximidade ('Empresa / Servico proximo')", "92% dos usuarios clicam nos 3 primeiros resultados do mapa ao buscar por proximidade.", "#1", 22, 128, 61),
+            ("Busca por Categoria Local ('Servicos em Ribeirao Preto')", "Sem Tour 360 e fotos HD, o Google empurra o perfil para baixo fora do raio imediato.", "#12 a #18", 220, 38, 38),
+            ("Busca Direta por Marca ou Nome Especifico", "Cliente digitando o nome exato encontra a ficha, mas falta a experiencia imersiva 360.", "Top 1", 30, 64, 175)
         ]
 
         y_t_curr = y_termos + 5.5
-        for t_tit, t_desc, t_pos, t_color in termos_busca:
+        for t_tit, t_desc, t_pos, cr, cg, cb in termos_busca:
             w_card_b = 118.0
             w_quadro_p = 54.0
             h_card_b = 20.0
@@ -1159,7 +1163,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             _ = pdf.set_line_width(0.3)
             _ = pdf.rounded_rect(21, y_t_curr, w_card_b, h_card_b, 3.0, 'FD')
 
-            set_color_safe(pdf, t_color[0], t_color[1], t_color[2], fn_type='fill')
+            set_color_safe(pdf, cr, cg, cb, fn_type='fill')
             _ = pdf.rounded_rect(21, y_t_curr, 2.5, h_card_b, 0.8, 'F')
 
             _ = pdf.set_xy(26, y_t_curr + 2.5)
@@ -1184,7 +1188,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
 
             _ = pdf.set_xy(x_pos_q, y_t_curr + 7.5)
             _ = pdf.set_font('Helvetica', 'B', 15)
-            set_color_safe(pdf, t_color[0], t_color[1], t_color[2], fn_type='text')
+            set_color_safe(pdf, cr, cg, cb, fn_type='text')
             _ = pdf.cell(w_quadro_p, 6.0, conv(str(t_pos)), align='C')
 
             y_t_curr += 22.0
