@@ -554,7 +554,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
     _ = pdf.set_margins(21, 12, 12)
     _ = pdf.set_auto_page_break(auto=False)
 
-    # PÁGINA 1: CAPA (100% TRAVADA)
+    # PÁGINA 1: CAPA
     if 1 in paginas_selecionadas:
         _ = pdf.add_page()
         caminho_logo = obter_caminho_logo("tour360")
@@ -687,7 +687,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         _ = pdf.set_x(x_alerta)
         _ = pdf.cell(w_alerta, 4.0, conv(sub_txt_2), align='C', ln=True)
 
-    # PÁGINA 2: AUDITORIA DETALHADA (+1 LINHA ANTES E DEPOIS DO ITEM 1 / +1 LINHA DEPOIS DO QUADRO ATENÇÃO)
+    # PÁGINA 2: AUDITORIA DETALHADA
     if 2 in paginas_selecionadas:
         _ = pdf.add_page()
         
@@ -766,8 +766,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         _ = pdf.set_text_color(71, 85, 105)
         _ = pdf.cell(w_q2, 2.8, conv(f"{dados.get('avaliacoes', 0)} avaliações cadastradas no Google"), align='C', ln=True)
 
-        # ADICIONADA +1 LINHA DE ESPAÇO ANTES E DEPOIS DO ITEM 1
-        y_start_itens = 81.0  # +1 Linha antes do item 1
+        y_start_itens = 81.0
         h_slot = 8.8
 
         pct_avaliacoes = min(int((dados.get('avaliacoes', 0) / 50.0) * 100), 100) if dados.get('avaliacoes', 0) > 0 else 10
@@ -802,7 +801,6 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         ]
 
         for idx_item, (titulo, pct, rotulo, desc, impacto) in enumerate(itens):
-            # +1 linha de espaço depois do item 1 (adicionado gap maior entre idx 0 e idx 1)
             gap_extra = 3.5 if idx_item > 0 else 0.0
             y_curr = y_start_itens + (idx_item * h_slot) + gap_extra
             _ = pdf.set_xy(21, y_curr)
@@ -833,7 +831,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             _ = pdf.set_text_color(71, 85, 105)
             _ = pdf.cell(177, 2.3, conv(f"   Estado: {desc[:58]}  |  Impacto: {impacto[:55]}"), border=0)
 
-        # QUADRO DE ATENÇÃO: COM RESPIROS
+        # QUADRO DE ATENÇÃO
         y_atencao = 166.0
         w_atencao = 177.0
         h_atencao = 13.0
@@ -863,8 +861,8 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         _ = pdf.set_text_color(127, 29, 29) if not resp_ok else pdf.set_text_color(22, 101, 52)
         _ = pdf.multi_cell(w_atencao - 12, 2.6, conv(txt_atencao), align='L')
 
-        # ANÁLISE AUTOMÁTICA DE CONCORRENTES (+1 LINHA DEPOIS DO QUADRO DE ATENÇÃO)
-        y_tit_conc = 185.0  # +1 Linha de espaço depois do quadro de atenção
+        # ANÁLISE AUTOMÁTICA DE CONCORRENTES
+        y_tit_conc = 185.0
         concorrentes_filtrados = [c for c in concorrentes if c.get("nome", "").strip() != ""]
         if concorrentes_filtrados:
             _ = pdf.set_xy(21, y_tit_conc)
@@ -983,7 +981,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             _ = pdf.set_text_color(51, 65, 85)
             _ = pdf.multi_cell(w_extra - 10, 3.4, conv(plano_acao_extra), align='L')
 
-    # PÁGINA 3: MAPEAMENTO GEOGRÁFICO & DIAGNÓSTICO (VISUAL REAL GOOGLE MAPS + QUADROS DE POSIÇÃO GRANDES)
+    # PÁGINA 3: MAPEAMENTO GEOGRÁFICO & DIAGNÓSTICO (CORREÇÃO DE CORES TUPLAS NA PÁGINA 3)
     if 3 in paginas_selecionadas:
         _ = pdf.add_page()
         
@@ -997,13 +995,12 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         _ = pdf.set_text_color(71, 85, 105)
         _ = pdf.cell(177, 4.5, conv("Simulação de visibilidade em buscas locais por proximidade ('próximo a mim')"), align='C', ln=True)
 
-        # REESTRUTURAÇÃO VISUAL FIEL AO GOOGLE MAPS
         y_mapa = 48.0
         w_mapa = 177.0
         h_mapa = 92.0
         x_mapa = 21.0
 
-        # Fundo Oficial do Google Maps (Tom bege-acinzentado #E5E3DF)
+        # Fundo do Google Maps
         _ = pdf.set_fill_color(229, 227, 223)
         _ = pdf.set_draw_color(203, 213, 225)
         _ = pdf.set_line_width(0.3)
@@ -1034,8 +1031,6 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             except Exception: pass
 
         if not mapa_real_carregado:
-            # Renderização Vetorial Fiel ao Layout Urbano do Google Maps
-            # Blocos e Quarteirões Urbanos (#F4F3F0)
             _ = pdf.set_fill_color(244, 243, 240)
             _ = pdf.rect(x_mapa + 5, y_mapa + 5, 40, 25, 'F')
             _ = pdf.rect(x_mapa + 50, y_mapa + 5, 50, 30, 'F')
@@ -1043,7 +1038,6 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             _ = pdf.rect(x_mapa + 5, y_mapa + 35, 35, 30, 'F')
             _ = pdf.rect(x_mapa + 135, y_mapa + 30, 35, 35, 'F')
 
-            # Vias Secundárias Brancas (#FFFFFF)
             _ = pdf.set_draw_color(255, 255, 255)
             _ = pdf.set_line_width(2.5)
             for gx in range(int(x_mapa + 15), int(x_mapa + w_mapa - 10), 22):
@@ -1051,18 +1045,15 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             for gy in range(int(y_mapa + 12), int(y_mapa + h_mapa - 20), 16):
                 _ = pdf.line(x_mapa + 3, gy, x_mapa + w_mapa - 3, gy)
 
-            # Avenidas Primárias Amarelas Google Maps (#FFE082)
             _ = pdf.set_draw_color(255, 224, 130)
             _ = pdf.set_line_width(3.2)
             _ = pdf.line(x_mapa + 3, cy - 6, x_mapa + w_mapa - 3, cy - 6)
             _ = pdf.line(cx + 12, y_mapa + 3, cx + 12, y_mapa + h_mapa - 20)
 
-            # Rio/Canal Azul Claro (#A5BFDD)
             _ = pdf.set_draw_color(165, 191, 221)
             _ = pdf.set_line_width(4.0)
             _ = pdf.line(x_mapa + 3, y_mapa + 12, x_mapa + 45, y_mapa + 50)
 
-            # Anéis Translucidos de Alcance Geográfico
             _ = pdf.set_draw_color(239, 68, 68)
             _ = pdf.set_fill_color(254, 226, 226)
             _ = pdf.ellipse(cx - 36, cy - 28, 72, 56, 'FD')
@@ -1075,14 +1066,13 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             _ = pdf.set_fill_color(220, 252, 231)
             _ = pdf.ellipse(cx - 10, cy - 8, 20, 16, 'FD')
 
-            # Pin de Localização Vermelho Estilo Google Maps
-            _ = pdf.set_fill_color(234, 67, 53)  # Vermelho Google
+            _ = pdf.set_fill_color(234, 67, 53)
             _ = pdf.ellipse(cx - 3.5, cy - 8.0, 7.0, 7.0, 'F')
             _ = pdf.polygon([cx - 3.5, cy - 4.5, cx + 3.5, cy - 4.5, cx, cy], 'F')
             _ = pdf.set_fill_color(255, 255, 255)
             _ = pdf.ellipse(cx - 1.2, cy - 5.7, 2.4, 2.4, 'F')
 
-        # Badge do Nome da Empresa Flutuante
+        # Badge da Empresa
         _ = pdf.set_fill_color(255, 255, 255)
         _ = pdf.set_draw_color(30, 64, 175)
         _ = pdf.set_line_width(0.4)
@@ -1092,7 +1082,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         _ = pdf.set_text_color(30, 64, 175)
         _ = pdf.cell(76, 3.5, conv(f"Empresa: {dados.get('nome', 'Sua Empresa')[:28]}"), align='C')
 
-        # Legendas de Alcance Geográfico
+        # Legendas do Raio
         y_leg = y_mapa + h_mapa - 14.0
         
         _ = pdf.set_fill_color(220, 252, 231)
@@ -1128,7 +1118,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         _ = pdf.set_font('Helvetica', '', 6.8)
         _ = pdf.cell(49, 3.0, conv("Invisivel nas Buscas"), align='C')
 
-        # DIAGNÓSTICO DE BUSCAS COM QUADROS DE POSIÇÃO IDÊNTICOS À PÁGINA 2
+        # DIAGNÓSTICO DE BUSCAS - TUPLAS DE CORES CORRIGIDAS
         y_termos = 146.0
         _ = pdf.set_xy(21, y_termos)
         _ = pdf.set_font('Helvetica', 'B', 10.0)
@@ -1147,7 +1137,6 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             w_quadro_p = 54.0
             h_card_b = 20.0
 
-            # Card Principal de Texto Ampliado
             _ = pdf.set_fill_color(248, 250, 252)
             _ = pdf.set_draw_color(226, 232, 240)
             _ = pdf.set_line_width(0.3)
@@ -1161,13 +1150,11 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             _ = pdf.set_text_color(15, 23, 42)
             _ = pdf.cell(w_card_b - 8, 3.8, conv(t_tit), border=0, ln=True)
 
-            # TEXTOS DOS CARDS AUMENTADOS
             _ = pdf.set_xy(26, y_t_curr + 7.2)
             _ = pdf.set_font('Helvetica', '', 8.5)
             _ = pdf.set_text_color(71, 85, 105)
             _ = pdf.multi_cell(w_card_b - 10, 3.6, conv(t_desc))
 
-            # QUADRO DE POSIÇÃO IDÊNTICO AO "OTIMIZAÇÃO DO PERFIL" DA PÁGINA 2
             x_pos_q = 144.0
             _ = pdf.set_fill_color(255, 255, 255)
             _ = pdf.set_draw_color(226, 232, 240)
@@ -1185,8 +1172,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
 
             y_t_curr += 22.0
 
-        # QUADRO DE OPORTUNIDADES COM +1 LINHA DE ESPAÇO ANTES
-        y_oport = 219.0  # +1 Linha extra de respiro
+        y_oport = 219.0
         h_oport = 20.0
         _ = pdf.set_fill_color(239, 246, 255)
         _ = pdf.set_draw_color(191, 219, 254)
@@ -1209,7 +1195,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         _ = pdf.set_text_color(51, 65, 85)
         _ = pdf.multi_cell(168, 3.2, conv(txt_oport_corpo), align='L')
 
-    # PÁGINA 4: PROPOSTA COMERCIAL (SEM SOBRA VAZIA NOS CARDS START E GESTÃO MENSAL)
+    # PÁGINA 4: PROPOSTA COMERCIAL
     if 4 in paginas_selecionadas:
         _ = pdf.add_page()
         
@@ -1253,17 +1239,15 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
                 y_curr += h_item + 1.0
             return y_curr
 
-        # CALCULAR ALTURAS EXATAS PARA ELIMINAR ÁREA SOBRANDO
         qtd_itens_start = len([l for l in planos.get('start_itens', '').split('\n') if l.strip()])
         qtd_itens_pro = len([l for l in planos.get('pro_itens', '').split('\n') if l.strip()])
         qtd_itens_gestao = len([l for l in planos.get('gestao_itens', '').split('\n') if l.strip()])
 
-        # Alturas dinâmicas enxutas com pouca margem no fundo (padrão Pro)
         h_card_start = 25.0 + (qtd_itens_start * 8.0) + 4.0
         h_card_pro = 25.0 + (qtd_itens_pro * 8.0) + 4.0
         h_card_gestao = 25.0 + (qtd_itens_gestao * 8.0) + 4.0
 
-        # Card 1: Start (Compacto e ajustado)
+        # Card 1: Start
         _ = pdf.set_fill_color(255, 255, 255)
         _ = pdf.set_draw_color(226, 232, 240)
         _ = pdf.set_line_width(0.3)
@@ -1297,7 +1281,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         
         desenhar_pilulas_itens(pdf, x1, y_p + 25.0, planos.get('start_itens', ''))
 
-        # Card 2: Pro (Mais alto)
+        # Card 2: Pro
         _ = pdf.set_fill_color(0, 51, 102)
         _ = pdf.set_draw_color(0, 51, 102)
         _ = pdf.set_line_width(0.3)
@@ -1340,7 +1324,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
 
         desenhar_pilulas_itens(pdf, x2, y_p + 25.0, planos.get('pro_itens', ''))
 
-        # Card 3: Gestão Mensal (Compacto e ajustado)
+        # Card 3: Gestão Mensal
         _ = pdf.set_fill_color(255, 255, 255)
         _ = pdf.set_draw_color(226, 232, 240)
         _ = pdf.set_line_width(0.3)
@@ -1374,7 +1358,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         
         desenhar_pilulas_itens(pdf, x3, y_p + 25.0, planos.get('gestao_itens', ''))
 
-        # MATRIZ DE AÇÕES DO AGENTE (Ajustada logo após o card mais alto)
+        # MATRIZ DE AÇÕES DO AGENTE
         y_agente = y_p + max(h_card_start, h_card_pro, h_card_gestao) + 6.0
         w_agente = 177.0
         
@@ -1448,7 +1432,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             y_curr_ag += h_linha_dinamica
             _ = pdf.set_xy(21, y_curr_ag)
 
-    # PÁGINA 5: CONTRATO (100% TRAVADO)
+    # PÁGINA 5: CONTRATO
     if 5 in paginas_selecionadas:
         _ = pdf.add_page()
         
@@ -1906,7 +1890,7 @@ elif etapa_atual == 4:
             st.session_state['etapa_atual'] = 5
             st.rerun()
 
-# ETAPA 5: GERAR PDF (SELEÇÃO FLEXÍVEL DE ATÉ 5 PÁGINAS)
+# ETAPA 5: GERAR PDF
 elif etapa_atual == 5:
     st.markdown("<div class='dashboard-card'><div class='card-title'>📄 5. EMISSÃO, ABORDAGEM & INTEGRAÇÃO CRM</div>", unsafe_allow_html=True)
     
