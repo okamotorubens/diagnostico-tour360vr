@@ -981,7 +981,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             _ = pdf.set_text_color(51, 65, 85)
             _ = pdf.multi_cell(w_extra - 10, 3.4, conv(plano_acao_extra), align='L')
 
-    # PÁGINA 3: MAPEAMENTO GEOGRÁFICO & DIAGNÓSTICO (CORREÇÃO DE CORES TUPLAS NA PÁGINA 3)
+    # PÁGINA 3: MAPEAMENTO GEOGRÁFICO & DIAGNÓSTICO
     if 3 in paginas_selecionadas:
         _ = pdf.add_page()
         
@@ -1118,7 +1118,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         _ = pdf.set_font('Helvetica', '', 6.8)
         _ = pdf.cell(49, 3.0, conv("Invisivel nas Buscas"), align='C')
 
-        # DIAGNÓSTICO DE BUSCAS - TUPLAS DE CORES CORRIGIDAS
+        # DIAGNÓSTICO DE BUSCAS - CORES EM TUPLAS (RGB) CORRIGIDAS
         y_termos = 146.0
         _ = pdf.set_xy(21, y_termos)
         _ = pdf.set_font('Helvetica', 'B', 10.0)
