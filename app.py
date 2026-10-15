@@ -301,7 +301,7 @@ def obter_caminho_logo(tipo="okamoto"):
     except Exception: pass
     return None
 
-def obter_imagem_mapa_google(dados, api_key, largura=800, altura=400, zoom=14):
+def obter_imagem_mapa_google(dados, api_key, largura=600, altura=280, zoom=14):
     if not api_key: return None
     lat = dados.get("lat")
     lng = dados.get("lng")
@@ -310,7 +310,7 @@ def obter_imagem_mapa_google(dados, api_key, largura=800, altura=400, zoom=14):
     if lat and lng:
         center_param = f"{lat},{lng}"
     elif endereco:
-        center_param = requests.utils.quote(endereco)
+        center_param = requests.utils.quote(str(endereco))
     else:
         return None
 
@@ -318,12 +318,12 @@ def obter_imagem_mapa_google(dados, api_key, largura=800, altura=400, zoom=14):
         f"https://maps.googleapis.com/maps/api/staticmap?"
         f"center={center_param}&zoom={zoom}&size={largura}x{altura}"
         f"&scale=2&maptype=roadmap"
-        f"&markers=color:red%7Clabel:E%7C{center_param}"
+        f"&markers=color:red%7Csize:mid%7C{center_param}"
         f"&key={api_key}"
     )
     
     try:
-        resp = requests.get(url_static_map, timeout=5)
+        resp = requests.get(url_static_map, timeout=6)
         if resp.status_code == 200:
             return io.BytesIO(resp.content)
     except Exception:
@@ -1038,7 +1038,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             set_color_safe(pdf, 51, 65, 85, fn_type='text')
             _ = pdf.multi_cell(w_extra - 10, 3.4, conv(plano_acao_extra), align='L')
 
-    # PÁGINA 3: MAPEAMENTO GEOGRÁFICO COM MAPA REAL DO GOOGLE MAPS
+    # PÁGINA 3: MAPEAMENTO GEOGRÁFICO COM MAPA REAL E DADOS DA EMPRESA
     if 3 in paginas_selecionadas:
         _ = pdf.add_page()
         
@@ -1063,19 +1063,18 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         _ = pdf.set_line_width(0.3)
         _ = pdf.rounded_rect(x_mapa, y_mapa, w_mapa, h_mapa, 3.0, 'FD')
 
-        # Tenta carregar o mapa estático real do Google Maps com ruas e pino da empresa
-        img_mapa_bytes = obter_imagem_mapa_google(dados, API_KEY_GOOGLE, largura=800, altura=310, zoom=14)
+        # Carrega o mapa estático real do Google Maps
+        img_mapa_bytes = obter_imagem_mapa_google(dados, API_KEY_GOOGLE, largura=700, altura=320, zoom=14)
         mapa_renderizado = False
 
         if img_mapa_bytes:
             try:
-                # Desenha o mapa do Google dentro da área reservada
                 _ = pdf.image(img_mapa_bytes, x=x_mapa + 1.5, y=y_mapa + 1.5, w=w_mapa - 3.0, h=h_mapa - 24.0)
                 mapa_renderizado = True
             except Exception:
                 pass
 
-        # Fallback: caso não seja possível carregar a imagem da API, desenha a malha gráfica em radar
+        # Fallback gráfico se a API não retornar
         if not mapa_renderizado:
             set_color_safe(pdf, 241, 245, 249, fn_type='fill')
             _ = pdf.rounded_rect(x_mapa + 2, y_mapa + 2, w_mapa - 4, h_mapa - 24, 2.5, 'F')
@@ -1107,18 +1106,39 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             set_color_safe(pdf, 255, 255, 255, fn_type='text')
             _ = pdf.cell(6, 5, "E", align='C')
 
-        # CARDS DE RAIO DE ATRAÇÃO
+        # DADOS DA EMPRESA RETORNADOS NO QUADRO SOBRE O MAPA
+        w_box_m = 135.0
+        h_box_m = 10.0
+        x_box_m = x_mapa + (w_mapa - w_box_m) / 2.0
+        y_box_m = y_mapa + 4.0
+
+        set_color_safe(pdf, 255, 255, 255, fn_type='fill')
+        set_color_safe(pdf, 203, 213, 225, fn_type='draw')
+        _ = pdf.set_line_width(0.3)
+        _ = pdf.rounded_rect(x_box_m, y_box_m, w_box_m, h_box_m, 2.0, 'FD')
+
+        _ = pdf.set_xy(x_box_m, y_box_m + 1.5)
+        _ = pdf.set_font('Helvetica', 'B', 8.5)
+        set_color_safe(pdf, 15, 23, 42, fn_type='text')
+        _ = pdf.cell(w_box_m, 3.2, conv(f"{dados.get('nome') or 'Empresa Analisada'}"), align='C', ln=True)
+
+        _ = pdf.set_x(x_box_m)
+        _ = pdf.set_font('Helvetica', '', 7.0)
+        set_color_safe(pdf, 71, 85, 105, fn_type='text')
+        _ = pdf.cell(w_box_m, 3.0, conv(f"{dados.get('endereco') or 'Endereço não informado'}"), align='C')
+
+        # CARDS DE RAIO MANTENDO A LEGENDA EXPLICATIVA E COM DESTAQUE MAXIMIZADO NO RESULTADO
         cards_raio = [
-            ("RAIO BAIRRO", "1.5 km", "Top 3 - Visibilidade Alta", 22, 101, 52, 240, 253, 244, 187, 247, 208),
-            ("RAIO REGIÃO", "3.0 km", "Queda de Posição no Maps", 180, 83, 9, 254, 252, 232, 254, 240, 138),
-            ("RAIO CIDADE", "5.0+ km", "Invisível nas Buscas", 185, 28, 28, 254, 242, 242, 254, 202, 202)
+            ("RAIO BAIRRO (1.5 km)", "O Bairro concentra as buscas de maior intenção. Estar no Top 3 garante chamadas diárias e clientes na porta.", "Top 3 - Visibilidade Alta", 22, 101, 52, 240, 253, 244, 187, 247, 208),
+            ("RAIO REGIÃO (3.0 km)", "À medida que a distância aumenta, o perfil perde relevância e posições para os concorrentes locais.", "Queda de Posição no Maps", 180, 83, 9, 254, 252, 232, 254, 240, 138),
+            ("RAIO CIDADE (5.0+ km)", "Fora do raio primário, o perfil torna-se praticamente invisível para quem busca por categorias genéricas.", "Invisível nas Buscas", 185, 28, 28, 254, 242, 242, 254, 202, 202)
         ]
 
         y_cards_r = y_mapa + h_mapa - 22.0
         w_c_r = 56.0
         h_c_r = 18.0
 
-        for idx_r, (r_tit, r_dist, r_sub, cr, cg, cb, bgr, bgg, bgb, bdr, bdg, bdb) in enumerate(cards_raio):
+        for idx_r, (r_tit, r_leg, r_res, cr, cg, cb, bgr, bgg, bgb, bdr, bdg, bdb) in enumerate(cards_raio):
             x_c_r = x_mapa + 3.0 + (idx_r * 58.0)
             
             set_color_safe(pdf, bgr, bgg, bgb, fn_type='fill')
@@ -1129,15 +1149,20 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             set_color_safe(pdf, cr, cg, cb, fn_type='fill')
             _ = pdf.rounded_rect(x_c_r, y_cards_r, 2.5, h_c_r, 0.8, 'F')
 
-            _ = pdf.set_xy(x_c_r + 4.0, y_cards_r + 1.8)
+            _ = pdf.set_xy(x_c_r + 4.0, y_cards_r + 1.2)
             _ = pdf.set_font('Helvetica', 'B', 7.2)
-            set_color_safe(pdf, 71, 85, 105, fn_type='text')
-            _ = pdf.cell(w_c_r - 5.0, 3.0, conv(f"{r_tit} ({r_dist})"), align='L', ln=True)
+            set_color_safe(pdf, 15, 23, 42, fn_type='text')
+            _ = pdf.cell(w_c_r - 5.0, 2.8, conv(r_tit), align='L', ln=True)
 
-            _ = pdf.set_xy(x_c_r + 4.0, y_cards_r + 7.5)
+            _ = pdf.set_xy(x_c_r + 4.0, y_cards_r + 4.2)
+            _ = pdf.set_font('Helvetica', '', 5.8)
+            set_color_safe(pdf, 71, 85, 105, fn_type='text')
+            _ = pdf.multi_cell(w_c_r - 5.0, 2.2, conv(r_leg[:85]), align='L')
+
+            _ = pdf.set_xy(x_c_r + 4.0, y_cards_r + 12.2)
             _ = pdf.set_font('Helvetica', 'B', 8.5)
             set_color_safe(pdf, cr, cg, cb, fn_type='text')
-            _ = pdf.cell(w_c_r - 5.0, 6.0, conv(r_sub), align='L')
+            _ = pdf.cell(w_c_r - 5.0, 4.5, conv(r_res), align='L')
 
         # DIAGNÓSTICO DE BUSCAS
         y_termos = 152.0
@@ -1220,7 +1245,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         _ = pdf.set_x(25)
         _ = pdf.cell(169, 3.2, conv(txt_oport_p2), ln=True)
 
-    # PÁGINA 4: PROPOSTA COMERCIAL & MATRIZ COM CENTRALIZAÇÃO VERTICAL EXATA
+    # PÁGINA 4: PROPOSTA COM ERGONOMIA E ALINHAMENTO VERTICAL PERFEITO NAS PÍLULAS
     if 4 in paginas_selecionadas:
         _ = pdf.add_page()
         
@@ -1253,13 +1278,14 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
                 set_color_safe(pdf_obj, 203, 213, 225, fn_type='fill')
                 _ = pdf_obj.rounded_rect(x_pilula + 2.5, y_curr + 2.2, 2.5, 2.5, 1.2, 'F')
                 
-                n_linhas = 1 + (len(lin) // 25)
-                offset_text_y = 0.8 if n_linhas > 1 else 2.0
+                # Centralização vertical precisa do texto dentro da pílula (1 ou 2 linhas)
+                n_linhas = 1 if len(lin) <= 22 else 2
+                offset_text_y = 2.1 if n_linhas == 1 else 1.1
                 
                 _ = pdf_obj.set_xy(x_pilula + 6.5, y_curr + offset_text_y)
-                _ = pdf_obj.set_font('Helvetica', 'B', 7.0)
+                _ = pdf_obj.set_font('Helvetica', 'B', 6.8)
                 set_color_safe(pdf_obj, 51, 65, 85, fn_type='text')
-                _ = pdf_obj.multi_cell(w_pilula - 8.0, 2.5, conv(lin), align='L')
+                _ = pdf_obj.multi_cell(w_pilula - 8.0, 2.4, conv(lin), align='L')
                 
                 y_curr += h_item + 1.0
             return y_curr
