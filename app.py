@@ -545,7 +545,6 @@ class PDFTour360Oficial(FPDF):
         _ = self._out(f'{x1*k:.2f} {(hp-y1)*k:.2f} {x2*k:.2f} {(hp-y2)*k:.2f} {x3*k:.2f} {(hp-y3)*k:.2f} c')
 
 def set_color_safe(pdf_obj, color_val, fn_type='text'):
-    """Garante que qualquer cor passada seja aplicada com segurança no FPDF."""
     if isinstance(color_val, (tuple, list)) and len(color_val) >= 3:
         r, g, b = int(color_val[0]), int(color_val[1]), int(color_val[2])
     elif isinstance(color_val, (int, float)):
@@ -1134,7 +1133,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         _ = pdf.set_font('Helvetica', '', 6.8)
         _ = pdf.cell(49, 3.0, conv("Invisivel nas Buscas"), align='C')
 
-        # DIAGNÓSTICO DE BUSCAS - TUPLAS DE CORES RGB PROTEGIDAS
+        # DIAGNÓSTICO DE BUSCAS POR INTENÇÃO DE CLIENTES (CORRIGIDO E SEGURA CONTRA TIPO FLOAT/TUPLA)
         y_termos = 146.0
         _ = pdf.set_xy(21, y_termos)
         _ = pdf.set_font('Helvetica', 'B', 10.0)
@@ -1142,13 +1141,33 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         _ = pdf.cell(177, 4.0, conv("DIAGNÓSTICO DE BUSCAS POR INTENÇÃO DE CLIENTES"), ln=True)
 
         termos_busca = [
-            ("Busca por Proximidade ('Empresa / Servico proximo')", "92% dos usuarios clicam nos 3 primeiros resultados do mapa ao buscar por proximidade.", "#1", (22, 128, 61)),
-            ("Busca por Categoria Local ('Servicos em Ribeirao Preto')", "Sem Tour 360 e fotos HD, o Google empurra o perfil para baixo fora do raio imediato.", "#12 a #18", (220, 38, 38)),
-            ("Busca Direta por Marca ou Nome Especifico", "Cliente digitando o nome exato encontra a ficha, mas falta a experiencia imersiva 360.", "Top 1", (30, 64, 175))
+            {
+                "titulo": "Busca por Proximidade ('Empresa / Servico proximo')",
+                "desc": "92% dos usuarios clicam nos 3 primeiros resultados do mapa ao buscar por proximidade.",
+                "pos": "#1",
+                "cor": (22, 128, 61)
+            },
+            {
+                "titulo": "Busca por Categoria Local ('Servicos em Ribeirao Preto')",
+                "desc": "Sem Tour 360 e fotos HD, o Google empurra o perfil para baixo fora do raio imediato.",
+                "pos": "#12 a #18",
+                "cor": (220, 38, 38)
+            },
+            {
+                "titulo": "Busca Direta por Marca ou Nome Especifico",
+                "desc": "Cliente digitando o nome exato encontra a ficha, mas falta a experiencia imersiva 360.",
+                "pos": "Top 1",
+                "cor": (30, 64, 175)
+            }
         ]
 
         y_t_curr = y_termos + 5.5
-        for t_tit, t_desc, t_pos, t_color in termos_busca:
+        for item in termos_busca:
+            t_tit = item["titulo"]
+            t_desc = item["desc"]
+            t_pos = str(item["pos"])
+            t_color = item["cor"]
+
             w_card_b = 118.0
             w_quadro_p = 54.0
             h_card_b = 20.0
