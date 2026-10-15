@@ -600,7 +600,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
     _ = pdf.set_margins(21, 12, 12)
     _ = pdf.set_auto_page_break(auto=False)
 
-    # PÁGINA 1: CAPA (Volta do espaço original entre a Logo e o Título)
+    # PÁGINA 1: CAPA
     if 1 in paginas_selecionadas:
         _ = pdf.add_page()
         caminho_logo = obter_caminho_logo("tour360")
@@ -610,9 +610,8 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             except Exception:
                 pass
 
-        # SOLICITAÇÃO PÁGINA 1: Voltar o espaço entre a Logo e o Título
         _ = pdf.set_y(53.0)
-        _ = pdf.ln(8) # Espaço restaurado entre Logo e Título
+        _ = pdf.ln(8)
 
         _ = pdf.set_font('Helvetica', 'B', 20)
         set_color_safe(pdf, 30, 64, 175, fn_type='text')
@@ -696,7 +695,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             set_color_safe(pdf, 100, 116, 139, fn_type='text')
             _ = pdf.cell(w_container, 6, conv("[ IMAGEM DA FICHA GOOGLE DO CLIENTE ]"), align='C', ln=True)
 
-        # BANNER DE ALERTA INFERIOR (Distanciado da imagem da ficha)
+        # BANNER DE ALERTA INFERIOR
         w_alerta = 177.0
         x_alerta = 21.0
         y_alerta = y_foto + h_container + 6.0
@@ -740,16 +739,16 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         _ = pdf.set_x(x_alerta)
         _ = pdf.cell(w_alerta, 4.0, conv(sub_txt_2), align='C', ln=True)
 
-    # PÁGINA 2: AUDITORIA (Ajustado o espaço após o item 9 e após o quadro de atenção)
+    # PÁGINA 2: AUDITORIA (Restaurada para o layout ideal e proporcional)
     if 2 in paginas_selecionadas:
         _ = pdf.add_page()
         
-        _ = pdf.set_xy(21, 29.0)
+        _ = pdf.set_xy(21, 28.0)
         _ = pdf.set_font('Helvetica', 'B', 15)
         set_color_safe(pdf, 15, 23, 42, fn_type='text')
         _ = pdf.cell(177, 7, conv('AUDITORIA DETALHADA DE PONTOS DE BUSCA'), align='C', ln=True)
 
-        w_ficha, x_ficha, y_ficha, h_ficha = 177, 21.0, 40.0, 8.5
+        w_ficha, x_ficha, y_ficha, h_ficha = 177, 21.0, 38.0, 8.5
         set_color_safe(pdf, 248, 250, 252, fn_type='fill')
         set_color_safe(pdf, 203, 213, 225, fn_type='draw')
         _ = pdf.set_line_width(0.3)
@@ -760,7 +759,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         set_color_safe(pdf, 30, 64, 175, fn_type='text')
         _ = pdf.cell(w_ficha, 4.8, conv(f"{dados.get('nome') or 'Empresa Analisada'}"), align='C', ln=True)
 
-        y_quadros_topo = 51.0
+        y_quadros_topo = 49.0
         w_q1, w_q2 = 86.0, 86.0
         x_q1, x_q2 = 21.0, 112.0
         h_q = 20.0
@@ -819,8 +818,9 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         set_color_safe(pdf, 71, 85, 105, fn_type='text')
         _ = pdf.cell(w_q2, 2.8, conv(f"{dados.get('avaliacoes', 0)} avaliações cadastradas no Google"), align='C', ln=True)
 
-        y_start_itens = 74.0
-        h_slot = 8.0 # Espaçamento otimizado entre itens da lista
+        # REAJUSTE DE ESPAÇAMENTO DOS ITENS DA LISTA (AMPLO)
+        y_start_itens = 73.0
+        h_slot = 9.2 # Espaçamento amplo restaurado para preencher a página proporcionalmente
 
         pct_avaliacoes = min(int((dados.get('avaliacoes', 0) / 50.0) * 100), 100) if dados.get('avaliacoes', 0) > 0 else 10
         pct_fotos = 100 if dados.get('tem_fotos_hd') else 30
@@ -857,34 +857,34 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             y_curr = y_start_itens + (idx_item * h_slot)
             _ = pdf.set_xy(21, y_curr)
             
-            _ = pdf.set_font('Helvetica', 'B', 8.5)
+            _ = pdf.set_font('Helvetica', 'B', 8.8)
             set_color_safe(pdf, 30, 41, 59, fn_type='text')
-            _ = pdf.cell(122, 2.5, conv(titulo), border=0)
+            _ = pdf.cell(122, 2.6, conv(titulo), border=0)
             
-            _ = pdf.set_font('Helvetica', 'B', 8.5)
+            _ = pdf.set_font('Helvetica', 'B', 8.8)
             if pct < 40: set_color_safe(pdf, 239, 68, 68, fn_type='text')
             elif pct < 80: set_color_safe(pdf, 245, 158, 11, fn_type='text')
             else: set_color_safe(pdf, 22, 128, 61, fn_type='text')
                 
-            _ = pdf.cell(55, 2.5, conv(rotulo), border=0, align='R')
+            _ = pdf.cell(55, 2.6, conv(rotulo), border=0, align='R')
 
-            y_bar = y_curr + 3.0
+            y_bar = y_curr + 3.2
             set_color_safe(pdf, 226, 232, 240, fn_type='fill')
-            _ = pdf.rounded_rect(21, y_bar, 177, 1.0, 0.4, 'F')
+            _ = pdf.rounded_rect(21, y_bar, 177, 1.1, 0.4, 'F')
             
             if pct < 40: set_color_safe(pdf, 239, 68, 68, fn_type='fill')
             elif pct < 80: set_color_safe(pdf, 245, 158, 11, fn_type='fill')
             else: set_color_safe(pdf, 22, 128, 61, fn_type='fill')
                 
-            _ = pdf.rounded_rect(21, y_bar, max(float(pct) * 1.77, 4.0), 1.0, 0.4, 'F')
+            _ = pdf.rounded_rect(21, y_bar, max(float(pct) * 1.77, 4.0), 1.1, 0.4, 'F')
 
-            _ = pdf.set_xy(21, y_bar + 1.8)
-            _ = pdf.set_font('Helvetica', '', 7.3)
+            _ = pdf.set_xy(21, y_bar + 2.0)
+            _ = pdf.set_font('Helvetica', '', 7.6)
             set_color_safe(pdf, 71, 85, 105, fn_type='text')
-            _ = pdf.cell(177, 2.2, conv(f"   Estado: {desc[:58]}  |  Impacto: {impacto[:55]}"), border=0)
+            _ = pdf.cell(177, 2.3, conv(f"   Estado: {desc[:58]}  |  Impacto: {impacto[:55]}"), border=0)
 
-        # SOLICITAÇÃO PÁGINA 2: Mais espaço após o item 9 e após o quadro de atenção
-        y_atencao = y_start_itens + (len(itens) * h_slot) + 6.0 # Mais espaço após o Item 9
+        # QUADRO DE ATENÇÃO
+        y_atencao = y_start_itens + (len(itens) * h_slot) + 3.0
         w_atencao = 177.0
         h_atencao = 13.0
 
@@ -923,8 +923,8 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         set_color_safe(pdf, tx_corpo_atencao, fn_type='text')
         _ = pdf.multi_cell(w_atencao - 12, 2.6, conv(txt_atencao), align='L')
 
-        # Mais espaço após o quadro de atenção
-        y_tit_conc = y_atencao + h_atencao + 6.0 
+        # TABELA DE CONCORRENTES
+        y_tit_conc = y_atencao + h_atencao + 5.0
         concorrentes_filtrados = [c for c in concorrentes if c.get("nome", "").strip() != ""]
         if concorrentes_filtrados:
             _ = pdf.set_xy(21, y_tit_conc)
@@ -933,7 +933,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             _ = pdf.cell(0, 3.5, conv("ANÁLISE AUTOMÁTICA DE CONCORRENTES DO SEGMENTO"), border=0)
 
             w_emp, w_item, w_score, h_row = 53, 11.0, 25.0, 3.8
-            y_table = y_tit_conc + 4.0
+            y_table = y_tit_conc + 4.2
             _ = pdf.set_xy(21, y_table)
             set_color_safe(pdf, 30, 64, 175, fn_type='fill')
             set_color_safe(pdf, 255, 255, 255, fn_type='text')
@@ -1023,26 +1023,26 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         else:
             y_fim_conc = y_atencao + h_atencao
 
-        # PLANO DE AÇÃO (Conexão fluida no rodapé)
+        # QUADRO DO PLANO DE AÇÃO (ALTURA ENCAIXADA PERFEITAMENTE NO RODAPÉ)
         if plano_acao_extra and plano_acao_extra.strip() != "":
-            y_extra_top = y_fim_conc + 4.0
+            y_extra_top = y_fim_conc + 5.0
             w_extra, x_extra = 177, 21.0
-            h_box_extra = max(22.0, 275.0 - y_extra_top)
+            h_box_extra = 280.0 - y_extra_top # Ajuste perfeito sem sobra exagerada de espaço em branco
 
             set_color_safe(pdf, 248, 250, 252, fn_type='fill')
             set_color_safe(pdf, 203, 213, 225, fn_type='draw')
             _ = pdf.set_line_width(0.3)
             _ = pdf.rounded_rect(x_extra, y_extra_top, w_extra, h_box_extra, 2.5, 'FD')
             
-            _ = pdf.set_xy(x_extra, y_extra_top + 2.0)
+            _ = pdf.set_xy(x_extra, y_extra_top + 2.5)
             _ = pdf.set_font('Helvetica', 'B', 8.2)
             set_color_safe(pdf, 30, 64, 175, fn_type='text')
             _ = pdf.cell(w_extra, 3.2, conv("PLANO DE AÇÃO E APONTAMENTOS ESTRATÉGICOS PERSONALIZADOS"), align='C', border=0)
             
-            _ = pdf.set_xy(x_extra + 4, y_extra_top + 5.5)
-            _ = pdf.set_font('Helvetica', '', 7.5)
+            _ = pdf.set_xy(x_extra + 4, y_extra_top + 6.8)
+            _ = pdf.set_font('Helvetica', '', 7.6)
             set_color_safe(pdf, 51, 65, 85, fn_type='text')
-            _ = pdf.multi_cell(w_extra - 8, 3.2, conv(plano_acao_extra), align='L')
+            _ = pdf.multi_cell(w_extra - 8, 3.4, conv(plano_acao_extra), align='L')
 
     # PÁGINA 3: MAPEAMENTO GEOGRÁFICO DE RAIO DE ATRAÇÃO (Totalmente travada)
     if 3 in paginas_selecionadas:
@@ -1270,7 +1270,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         _ = pdf.set_x(25)
         _ = pdf.cell(169, 3.2, conv(txt_oport_p2), ln=True)
 
-    # PÁGINA 4: PROPOSTA COMERCIAL (Espaço expandido entre os cards de planos e as ações do agente)
+    # PÁGINA 4: PROPOSTA COMERCIAL (Totalmente travada)
     if 4 in paginas_selecionadas:
         _ = pdf.add_page()
         
@@ -1437,8 +1437,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         
         desenhar_pilulas_itens(pdf, x3, y_p + 25.0, planos.get('gestao_itens', ''))
 
-        # SOLICITAÇÃO PÁGINA 4: Dar mais espaço entre os cards de planos e o de ações do agente
-        y_agente = y_p + max(h_card_start, h_card_pro, h_card_gestao) + 12.0 # Aumentado o espaçamento entre cards e ações
+        y_agente = y_p + max(h_card_start, h_card_pro, h_card_gestao) + 12.0
         w_agente = 177.0
         
         _ = pdf.set_xy(21, y_agente)
