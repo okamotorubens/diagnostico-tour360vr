@@ -739,7 +739,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         _ = pdf.set_x(x_alerta)
         _ = pdf.cell(w_alerta, 4.0, conv(sub_txt_2), align='C', ln=True)
 
-    # PÁGINA 2: AUDITORIA (Restaurada para o layout ideal e proporcional)
+    # PÁGINA 2: AUDITORIA (Layout Otimizado & Ajustado)
     if 2 in paginas_selecionadas:
         _ = pdf.add_page()
         
@@ -818,9 +818,9 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         set_color_safe(pdf, 71, 85, 105, fn_type='text')
         _ = pdf.cell(w_q2, 2.8, conv(f"{dados.get('avaliacoes', 0)} avaliações cadastradas no Google"), align='C', ln=True)
 
-        # REAJUSTE DE ESPAÇAMENTO DOS ITENS DA LISTA (AMPLO)
+        # REAJUSTE DE ESPAÇAMENTO DOS ITENS DA LISTA DE AUDITORIA
         y_start_itens = 73.0
-        h_slot = 9.2 # Espaçamento amplo restaurado para preencher a página proporcionalmente
+        h_slot = 9.2 # Espaçamento amplo equilibrado para preenchimento harmônico
 
         pct_avaliacoes = min(int((dados.get('avaliacoes', 0) / 50.0) * 100), 100) if dados.get('avaliacoes', 0) > 0 else 10
         pct_fotos = 100 if dados.get('tem_fotos_hd') else 30
@@ -1023,11 +1023,11 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         else:
             y_fim_conc = y_atencao + h_atencao
 
-        # QUADRO DO PLANO DE AÇÃO (ALTURA ENCAIXADA PERFEITAMENTE NO RODAPÉ)
+        # QUADRO DO PLANO DE AÇÃO (ALTURA DINÂMICA ENCAIXADA PERFEITAMENTE)
         if plano_acao_extra and plano_acao_extra.strip() != "":
             y_extra_top = y_fim_conc + 5.0
             w_extra, x_extra = 177, 21.0
-            h_box_extra = 280.0 - y_extra_top # Ajuste perfeito sem sobra exagerada de espaço em branco
+            h_box_extra = 280.0 - y_extra_top # Cálculo dinâmico para preenchimento exato da área útil da página
 
             set_color_safe(pdf, 248, 250, 252, fn_type='fill')
             set_color_safe(pdf, 203, 213, 225, fn_type='draw')
@@ -1044,7 +1044,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             set_color_safe(pdf, 51, 65, 85, fn_type='text')
             _ = pdf.multi_cell(w_extra - 8, 3.4, conv(plano_acao_extra), align='L')
 
-    # PÁGINA 3: MAPEAMENTO GEOGRÁFICO DE RAIO DE ATRAÇÃO (Totalmente travada)
+    # PÁGINA 3: MAPEAMENTO GEOGRÁFICO DE RAIO DE ATRAÇÃO
     if 3 in paginas_selecionadas:
         _ = pdf.add_page()
         
@@ -1270,7 +1270,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         _ = pdf.set_x(25)
         _ = pdf.cell(169, 3.2, conv(txt_oport_p2), ln=True)
 
-    # PÁGINA 4: PROPOSTA COMERCIAL (Totalmente travada)
+    # PÁGINA 4: PROPOSTA COMERCIAL
     if 4 in paginas_selecionadas:
         _ = pdf.add_page()
         
@@ -1511,7 +1511,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             y_curr_ag += cell_height
             _ = pdf.set_xy(21, y_curr_ag)
 
-    # PÁGINA 5: CONTRATO (Totalmente travada)
+    # PÁGINA 5: CONTRATO
     if 5 in paginas_selecionadas:
         _ = pdf.add_page()
         
