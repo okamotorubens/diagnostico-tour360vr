@@ -622,38 +622,54 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
 
         _ = pdf.ln(3.5)
         _ = pdf.set_font('Helvetica', '', 10.0)
-        set_color_safe(pdf, 71, 85, 105, fn_type='text')
+        set_color_safe(pdf, 15, 23, 42, fn_type='text')  # TEXTO EM PRETO
         _ = pdf.cell(0, 5, conv("Gestão de reputação e imagem online para o segmento no Google Maps"), align='C', ln=True)
 
-        w_capa, h_capa, x_capa, y_capa = 177.0, 36.0, 21.0, 90.0
+        # LÓGICA DE TRAVA DA FONTE DO NOME DA EMPRESA
+        nome_empresa = dados.get('nome') or 'Nome da Empresa'
+        len_nome = len(nome_empresa)
+
+        if len_nome > 60:
+            font_size_nome = 9.5
+            h_capa = 40.0
+            line_height_nome = 3.8
+        elif len_nome > 38:
+            font_size_nome = 11.0
+            h_capa = 38.0
+            line_height_nome = 4.2
+        else:
+            font_size_nome = 13.5
+            h_capa = 36.0
+            line_height_nome = 5.0
+
+        w_capa, x_capa, y_capa = 177.0, 21.0, 90.0
         set_color_safe(pdf, 248, 250, 252, fn_type='fill')
         set_color_safe(pdf, 203, 213, 225, fn_type='draw')
         _ = pdf.set_line_width(0.3)
         _ = pdf.rounded_rect(x_capa, y_capa, w_capa, h_capa, 3.0, 'FD')
 
-        _ = pdf.set_xy(x_capa, y_capa + 3.0)
-        
-        _ = pdf.set_font('Helvetica', 'B', 14.0)
+        _ = pdf.set_xy(x_capa + 4.0, y_capa + 3.0)
+        _ = pdf.set_font('Helvetica', 'B', font_size_nome)
         set_color_safe(pdf, 15, 23, 42, fn_type='text') 
-        _ = pdf.cell(w_capa, 5.0, conv(f"{dados.get('nome') or 'Nome da Empresa'}"), align='C', ln=True)
+        _ = pdf.multi_cell(w_capa - 8.0, line_height_nome, conv(nome_empresa), align='C')
 
-        _ = pdf.ln(3.0)
+        _ = pdf.ln(1.5)
 
-        _ = pdf.set_font('Helvetica', 'B', 10.5)
+        _ = pdf.set_font('Helvetica', 'B', 10.0)
         set_color_safe(pdf, 15, 23, 42, fn_type='text')
         _ = pdf.set_x(x_capa)
-        _ = pdf.cell(w_capa, 6.0, conv(f"Preparado para: {dados.get('contato') or 'Responsável'}"), align='C', ln=True)
+        _ = pdf.cell(w_capa, 5.0, conv(f"Preparado para: {dados.get('contato') or 'Responsável'}"), align='C', ln=True)
         
-        _ = pdf.set_font('Helvetica', '', 9.8)
+        _ = pdf.set_font('Helvetica', '', 9.2)
         set_color_safe(pdf, 71, 85, 105, fn_type='text')
         _ = pdf.set_x(x_capa)
-        _ = pdf.cell(w_capa, 5.5, conv(f"{dados.get('endereco') or 'Endereço não informado'}"), align='C', ln=True)
+        _ = pdf.cell(w_capa, 4.8, conv(f"{dados.get('endereco') or 'Endereço não informado'}"), align='C', ln=True)
         
         site_txt = dados.get('website') if dados.get('website') else 'N/I'
         _ = pdf.set_x(x_capa)
-        _ = pdf.cell(w_capa, 5.5, conv(f"Telefone: {dados.get('telefone') or 'N/I'}   |   {site_txt}"), align='C', ln=True)
+        _ = pdf.cell(w_capa, 4.8, conv(f"Telefone: {dados.get('telefone') or 'N/I'}   |   {site_txt}"), align='C', ln=True)
 
-        y_foto, h_container, w_container = 132.0, 92.0, 177.0
+        y_foto, h_container, w_container = 134.0, 90.0, 177.0
         foto_renderizada = False
 
         if dados.get("foto_reference") and API_KEY_GOOGLE:
@@ -685,7 +701,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             set_color_safe(pdf, 248, 250, 252, fn_type='fill')
             set_color_safe(pdf, 203, 213, 225, fn_type='draw')
             _ = pdf.rounded_rect(x_capa, y_foto, w_container, h_container, 3.0, 'FD')
-            _ = pdf.set_xy(x_capa, y_foto + 40)
+            _ = pdf.set_xy(x_capa, y_foto + 38)
             _ = pdf.set_font('Helvetica', 'B', 11)
             set_color_safe(pdf, 100, 116, 139, fn_type='text')
             _ = pdf.cell(w_container, 6, conv("[ IMAGEM DA FICHA GOOGLE DO CLIENTE ]"), align='C', ln=True)
@@ -764,7 +780,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
 
         _ = pdf.set_xy(x_q1, y_quadros_topo + 2.0)
         _ = pdf.set_font('Helvetica', 'B', 7.8)
-        set_color_safe(pdf, 71, 85, 105, fn_type='text')
+        set_color_safe(pdf, 15, 23, 42, fn_type='text')  # TEXTO EM PRETO
         _ = pdf.cell(w_q1, 3.0, conv("OTIMIZAÇÃO DO PERFIL"), align='C', ln=True)
 
         _ = pdf.set_xy(x_q1, y_quadros_topo + 5.2)
@@ -799,7 +815,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
 
         _ = pdf.set_xy(x_q2, y_quadros_topo + 2.0)
         _ = pdf.set_font('Helvetica', 'B', 7.8)
-        set_color_safe(pdf, 71, 85, 105, fn_type='text')
+        set_color_safe(pdf, 15, 23, 42, fn_type='text')  # TEXTO EM PRETO
         _ = pdf.cell(w_q2, 3.0, conv("NOTA DOS CLIENTES"), align='C', ln=True)
 
         _ = pdf.set_xy(x_q2, y_quadros_topo + 5.2)
@@ -1036,7 +1052,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             set_color_safe(pdf, 51, 65, 85, fn_type='text')
             _ = pdf.multi_cell(w_extra - 10, 3.4, conv(plano_acao_extra), align='L')
 
-    # PÁGINA 3: MAPEAMENTO GEOGRÁFICO COM MAPA REAL E CARDS DE RAIO AJUSTADOS
+    # PÁGINA 3: MAPEAMENTO GEOGRÁFICO COM MAPA REAL E CARDS DE RAIO DINÂMICOS
     if 3 in paginas_selecionadas:
         _ = pdf.add_page()
         
@@ -1047,7 +1063,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
 
         _ = pdf.set_y(41.5)
         _ = pdf.set_font('Helvetica', 'B', 11.0)
-        set_color_safe(pdf, 71, 85, 105, fn_type='text')
+        set_color_safe(pdf, 15, 23, 42, fn_type='text')  # TEXTO EM PRETO
         _ = pdf.cell(177, 5.0, conv("Simulação de visibilidade em buscas locais por proximidade ('próximo a mim')"), align='C', ln=True)
 
         # CONTAINER DO MAPA REAL
@@ -1072,7 +1088,6 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             except Exception:
                 pass
 
-        # Fallback gráfico se a API não retornar
         if not mapa_renderizado:
             set_color_safe(pdf, 241, 245, 249, fn_type='fill')
             _ = pdf.rounded_rect(x_mapa + 2, y_mapa + 2, w_mapa - 4, h_mapa - 24, 2.5, 'F')
@@ -1125,11 +1140,33 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         set_color_safe(pdf, 71, 85, 105, fn_type='text')
         _ = pdf.cell(w_box_m, 3.0, conv(f"{dados.get('endereco') or 'Endereço não informado'}"), align='C')
 
-        # CARDS DE RAIO COM TEXTO AJUSTADO PARA NUNCA CORTAR
+        # LÓGICA DINÂMICA DE VISIBILIDADE POR SCORE E TOUR 360°
+        tem_tour = dados.get('tem_tour360', False)
+        score_real = calcular_score_real(dados)
+
+        if score_real >= 80 and tem_tour:
+            r_reg_res = "Top 5 - Visibilidade Boa"
+            r_cid_res = "Alcance Regional Ativo"
+            c_reg_color = (22, 101, 52)
+            bg_reg_color = (240, 253, 244)
+            bd_reg_color = (187, 247, 208)
+            c_cid_color = (180, 83, 9)
+            bg_cid_color = (254, 252, 232)
+            bd_cid_color = (254, 240, 138)
+        else:
+            r_reg_res = "Queda de Posição no Maps"
+            r_cid_res = "Invisível nas Buscas"
+            c_reg_color = (180, 83, 9)
+            bg_reg_color = (254, 252, 232)
+            bd_reg_color = (254, 240, 138)
+            c_cid_color = (185, 28, 28)
+            bg_cid_color = (254, 242, 242)
+            bd_cid_color = (254, 202, 202)
+
         cards_raio = [
             ("RAIO BAIRRO (1.5 km)", "O Bairro concentra buscas diretas. Estar no Top 3 garante ligações e visitas diárias.", "Top 3 - Visibilidade Alta", 22, 101, 52, 240, 253, 244, 187, 247, 208),
-            ("RAIO REGIÃO (3.0 km)", "Conforme a distância aumenta, a ficha perde relevância para concorrentes diretos.", "Queda de Posição no Maps", 180, 83, 9, 254, 252, 232, 254, 240, 138),
-            ("RAIO CIDADE (5.0+ km)", "Fora do raio primário, a empresa fica invisível sem otimização e conteúdo 360°.", "Invisível nas Buscas", 185, 28, 28, 254, 242, 242, 254, 202, 202)
+            ("RAIO REGIÃO (3.0 km)", "Conforme a distância aumenta, a ficha perde relevância para concorrentes diretos.", r_reg_res, c_reg_color[0], c_reg_color[1], c_reg_color[2], bg_reg_color[0], bg_reg_color[1], bg_reg_color[2], bd_reg_color[0], bd_reg_color[1], bd_reg_color[2]),
+            ("RAIO CIDADE (5.0+ km)", "Fora do raio primário, a empresa perde destaque sem otimização e conteúdo 360°.", r_cid_res, c_cid_color[0], c_cid_color[1], c_cid_color[2], bg_cid_color[0], bg_cid_color[1], bg_cid_color[2], bd_cid_color[0], bd_cid_color[1], bd_cid_color[2])
         ]
 
         y_cards_r = y_mapa + h_mapa - 22.0
@@ -1154,7 +1191,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
 
             _ = pdf.set_xy(x_c_r + 4.0, y_cards_r + 4.2)
             _ = pdf.set_font('Helvetica', '', 5.8)
-            set_color_safe(pdf, 71, 85, 105, fn_type='text')
+            set_color_safe(pdf, 15, 23, 42, fn_type='text')  # TEXTO DAS DESCRIÇÕES EM PRETO
             _ = pdf.multi_cell(w_c_r - 5.0, 2.2, conv(r_leg), align='L')
 
             _ = pdf.set_xy(x_c_r + 4.0, y_cards_r + 12.5)
@@ -1162,16 +1199,19 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             set_color_safe(pdf, cr, cg, cb, fn_type='text')
             _ = pdf.cell(w_c_r - 5.0, 4.2, conv(r_res), align='L')
 
-        # DIAGNÓSTICO DE BUSCAS
+        # DIAGNÓSTICO DE BUSCAS COM RANKING DINÂMICO
         y_termos = 152.0
         _ = pdf.set_xy(21, y_termos)
         _ = pdf.set_font('Helvetica', 'B', 10.0)
         set_color_safe(pdf, 15, 23, 42, fn_type='text')
         _ = pdf.cell(177, 4.0, conv("DIAGNÓSTICO DE BUSCAS POR INTENÇÃO DE CLIENTES"), ln=True)
 
+        pos_categoria = "1º a 3º Lugar" if (tem_tour and score_real >= 75) else "12º a 18º Lugar"
+        cor_cat = (22, 128, 61) if (tem_tour and score_real >= 75) else (220, 38, 38)
+
         termos_busca = [
             ("Busca por Proximidade ('Empresa / Serviços próximo')", "92% dos usuários clicam nos 3 primeiros resultados do mapa ao buscar por proximidade.", "1º Lugar", 22, 128, 61),
-            ("Busca por Categoria Local ('Serviços na região')", "Sem Tour 360 e fotos HD, o Google empurra o perfil para baixo fora do raio imediato.", "12º a 18º", 220, 38, 38),
+            ("Busca por Categoria Local ('Serviços na região')", "Sem Tour 360 e fotos HD, o Google empurra o perfil para baixo fora do raio imediato.", pos_categoria, cor_cat[0], cor_cat[1], cor_cat[2]),
             ("Busca Direta por Marca ou Nome Específico", "Cliente digitando o nome exato encontra a ficha, mas falta a experiência imersiva 360.", "1º Lugar", 30, 64, 175)
         ]
 
@@ -1219,11 +1259,11 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
 
             y_t_curr += 21.0
 
-        # QUADRO DE OPORTUNIDADES
+        # QUADRO DE OPORTUNIDADES COM FUNDO PADRONIZADO EM AZUL CLARO
         y_oport = y_t_curr + 6.0
         h_oport = 20.0
-        set_color_safe(pdf, 239, 246, 255, fn_type='fill')
-        set_color_safe(pdf, 191, 219, 254, fn_type='draw')
+        set_color_safe(pdf, 248, 250, 252, fn_type='fill')  # AZUL BEM CLARO PADRONIZADO
+        set_color_safe(pdf, 203, 213, 225, fn_type='draw')
         _ = pdf.set_line_width(0.3)
         _ = pdf.rounded_rect(21, y_oport, 177, h_oport, 2.0, 'FD')
 
@@ -1243,7 +1283,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         _ = pdf.set_x(25)
         _ = pdf.cell(169, 3.2, conv(txt_oport_p2), ln=True)
 
-    # PÁGINA 4: PROPOSTA COM CENTRALIZAÇÃO VERTICAL PERFEITA NAS PÍLULAS
+    # PÁGINA 4: PROPOSTA COM CORES ESCURECIDAS NOS PLANOS START E GESTÃO
     if 4 in paginas_selecionadas:
         _ = pdf.add_page()
         
@@ -1276,7 +1316,6 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
                 set_color_safe(pdf_obj, 203, 213, 225, fn_type='fill')
                 _ = pdf_obj.rounded_rect(x_pilula + 2.5, y_curr + 2.2, 2.5, 2.5, 1.2, 'F')
                 
-                # Centralização vertical perfeita calculando o tamanho real das linhas
                 pdf_obj.set_font('Helvetica', 'B', 6.8)
                 linhas_quebradas = pdf_obj.multi_cell(w_pilula - 8.0, 2.5, conv(lin), split_only=True)
                 num_l = max(1, len(linhas_quebradas))
@@ -1300,7 +1339,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         h_card_pro = 25.0 + (qtd_itens_pro * 8.0) + 4.0
         h_card_gestao = 25.0 + (qtd_itens_gestao * 8.0) + 4.0
 
-        # Card 1: Start
+        # Card 1: Start (Texto escurecido)
         set_color_safe(pdf, 255, 255, 255, fn_type='fill')
         set_color_safe(pdf, 226, 232, 240, fn_type='draw')
         _ = pdf.set_line_width(0.3)
@@ -1308,7 +1347,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         
         _ = pdf.set_xy(x1 + 4, y_p + 3.0)
         _ = pdf.set_font('Helvetica', 'B', 7.5)
-        set_color_safe(pdf, 148, 163, 184, fn_type='text')
+        set_color_safe(pdf, 71, 85, 105, fn_type='text')  # CINZA ESCURECIDO
         _ = pdf.cell(w_card - 8, 3.0, conv('OPÇÃO 1'), ln=True)
         
         _ = pdf.set_xy(x1 + 4, y_p + 6.5)
@@ -1318,7 +1357,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         
         _ = pdf.set_xy(x1 + 4, y_p + 10.5)
         _ = pdf.set_font('Helvetica', '', 7.5)
-        set_color_safe(pdf, 148, 163, 184, fn_type='text')
+        set_color_safe(pdf, 71, 85, 105, fn_type='text')  # CINZA ESCURECIDO
         _ = pdf.cell(w_card - 8, 3.0, conv('Otimização completa do perfil'), ln=True)
         
         _ = pdf.set_xy(x1 + 4, y_p + 15.5)
@@ -1377,7 +1416,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
 
         desenhar_pilulas_itens(pdf, x2, y_p + 25.0, planos.get('pro_itens', ''))
 
-        # Card 3: Gestão Mensal
+        # Card 3: Gestão Mensal (Texto escurecido)
         set_color_safe(pdf, 255, 255, 255, fn_type='fill')
         set_color_safe(pdf, 226, 232, 240, fn_type='draw')
         _ = pdf.set_line_width(0.3)
@@ -1385,7 +1424,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         
         _ = pdf.set_xy(x3 + 4, y_p + 3.0)
         _ = pdf.set_font('Helvetica', 'B', 7.5)
-        set_color_safe(pdf, 148, 163, 184, fn_type='text')
+        set_color_safe(pdf, 71, 85, 105, fn_type='text')  # CINZA ESCURECIDO
         _ = pdf.cell(w_card - 8, 3.0, conv('OPÇÃO 3'), ln=True)
         
         _ = pdf.set_xy(x3 + 4, y_p + 6.5)
@@ -1395,7 +1434,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         
         _ = pdf.set_xy(x3 + 4, y_p + 10.5)
         _ = pdf.set_font('Helvetica', '', 7.5)
-        set_color_safe(pdf, 148, 163, 184, fn_type='text')
+        set_color_safe(pdf, 71, 85, 105, fn_type='text')  # CINZA ESCURECIDO
         _ = pdf.cell(w_card - 8, 3.0, conv('Acompanhamento e relatórios'), ln=True)
         
         _ = pdf.set_xy(x3 + 4, y_p + 15.5)
@@ -1974,7 +2013,7 @@ elif etapa_atual == 5:
         if tel_cliente and not tel_cliente.startswith("55"):
             tel_cliente = f"55{tel_cliente}"
 
-        # Lógica de definição do nome do arquivo PDF conforme páginas selecionadas
+        # DEFINIÇÃO DO NOME DO ARQUIVO PDF
         if len(paginas_escolhidas) <= 3:
             nome_arquivo_pdf = f"Diagnóstico Preliminar - {nome_empresa_formatado}.pdf"
         else:
