@@ -852,7 +852,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             set_color_safe(pdf, 71, 85, 105, fn_type='text')
             _ = pdf.cell(177, 2.3, conv(f"   Estado: {desc[:58]}  |  Impacto: {impacto[:55]}"), border=0)
 
-        # QUADRO DE ATENÇÃO (CORRIGIDO E DENTRO DA PÁGINA 2)
+        # QUADRO DE ATENÇÃO
         y_atencao = 166.0
         w_atencao = 177.0
         h_atencao = 13.0
@@ -1012,7 +1012,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             set_color_safe(pdf, 51, 65, 85, fn_type='text')
             _ = pdf.multi_cell(w_extra - 10, 3.4, conv(plano_acao_extra), align='L')
 
-    # PÁGINA 3: MAPEAMENTO GEOGRÁFICO DE RAIO DE ATRAÇÃO
+    # PÁGINA 3: MAPEAMENTO GEOGRÁFICO DE RAIO DE ATRAÇÃO (CORRIGIDA E SIMPLIFICADA)
     if 3 in paginas_selecionadas:
         _ = pdf.add_page()
         
@@ -1031,13 +1031,10 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         h_mapa = 92.0
         x_mapa = 21.0
 
-        # Fundo do Google Maps
-        set_color_safe(pdf, 229, 227, 223, fn_type='fill')
+        set_color_safe(pdf, 248, 250, 252, fn_type='fill')
         set_color_safe(pdf, 203, 213, 225, fn_type='draw')
         _ = pdf.set_line_width(0.3)
         _ = pdf.rounded_rect(x_mapa, y_mapa, w_mapa, h_mapa, 3.0, 'FD')
-
-        cx, cy = x_mapa + (w_mapa / 2.0), y_mapa + (h_mapa / 2.0) - 5.0
 
         mapa_real_carregado = False
         lat, lng = dados.get("lat"), dados.get("lng")
@@ -1049,70 +1046,29 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
                 if res_geo.get("status") == "OK" and res_geo.get("results"):
                     loc = res_geo["results"][0]["geometry"]["location"]
                     lat, lng = loc["lat"], loc["lng"]
-            except Exception: pass
+            except Exception:
+                pass
 
         if lat and lng and API_KEY_GOOGLE:
             try:
-                url_static_map = f"https://maps.googleapis.com/maps/api/staticmap?center={lat},{lng}&zoom=14&size=600x300&maptype=roadmap&style=feature:administrative|element:labels.text.fill|color:0x444444&markers=color:red%7Clabel:E%7C{lat},{lng}&key={API_KEY_GOOGLE}"
+                url_static_map = f"https://maps.googleapis.com/maps/api/staticmap?center={lat},{lng}&zoom=14&size=600x300&maptype=roadmap&markers=color:red%7Clabel:E%7C{lat},{lng}&key={API_KEY_GOOGLE}"
                 resp_m = requests.get(url_static_map, timeout=4)
                 if resp_m.status_code == 200:
                     img_m = io.BytesIO(resp_m.content)
                     _ = pdf.image(img_m, x=x_mapa + 1.5, y=y_mapa + 1.5, w=w_mapa - 3.0, h=h_mapa - 18.0)
                     mapa_real_carregado = True
-            except Exception: pass
+            except Exception:
+                pass
 
         if not mapa_real_carregado:
-            set_color_safe(pdf, 244, 243, 240, fn_type='fill')
-            _ = pdf.rect(x_mapa + 5, y_mapa + 5, 40, 25, 'F')
-            _ = pdf.rect(x_mapa + 50, y_mapa + 5, 50, 30, 'F')
-            _ = pdf.rect(x_mapa + 105, y_mapa + 5, 65, 20, 'F')
-            _ = pdf.rect(x_mapa + 5, y_mapa + 35, 35, 30, 'F')
-            _ = pdf.rect(x_mapa + 135, y_mapa + 30, 35, 35, 'F')
-
-            set_color_safe(pdf, 255, 255, 255, fn_type='draw')
-            _ = pdf.set_line_width(2.5)
-            for gx in range(int(x_mapa + 15), int(x_mapa + w_mapa - 10), 22):
-                _ = pdf.line(gx, y_mapa + 3, gx, y_mapa + h_mapa - 20)
-            for gy in range(int(y_mapa + 12), int(y_mapa + h_mapa - 20), 16):
-                _ = pdf.line(x_mapa + 3, gy, x_mapa + w_mapa - 3, gy)
-
-            set_color_safe(pdf, 255, 224, 130, fn_type='draw')
-            _ = pdf.set_line_width(3.2)
-            _ = pdf.line(x_mapa + 3, cy - 6, x_mapa + w_mapa - 3, cy - 6)
-            _ = pdf.line(cx + 12, y_mapa + 3, cx + 12, y_mapa + h_mapa - 20)
-
-            set_color_safe(pdf, 165, 191, 221, fn_type='draw')
-            _ = pdf.set_line_width(4.0)
-            _ = pdf.line(x_mapa + 3, y_mapa + 12, x_mapa + 45, y_mapa + 50)
-
-            set_color_safe(pdf, 239, 68, 68, fn_type='draw')
-            set_color_safe(pdf, 254, 226, 226, fn_type='fill')
-            _ = pdf.ellipse(cx - 36, cy - 28, 72, 56, 'FD')
-
-            set_color_safe(pdf, 234, 179, 8, fn_type='draw')
-            set_color_safe(pdf, 254, 249, 195, fn_type='fill')
-            _ = pdf.ellipse(cx - 22, cy - 17, 44, 34, 'FD')
-
-            set_color_safe(pdf, 34, 197, 94, fn_type='draw')
-            set_color_safe(pdf, 220, 252, 231, fn_type='fill')
-            _ = pdf.ellipse(cx - 10, cy - 8, 20, 16, 'FD')
-
-            set_color_safe(pdf, 234, 67, 53, fn_type='fill')
-            _ = pdf.ellipse(cx - 3.5, cy - 8.0, 7.0, 7.0, 'F')
-            _ = pdf.polygon([cx - 3.5, cy - 4.5, cx + 3.5, cy - 4.5, cx, cy], 'F')
-            set_color_safe(pdf, 255, 255, 255, fn_type='fill')
-            _ = pdf.ellipse(cx - 1.2, cy - 5.7, 2.4, 2.4, 'F')
-
-        # Badge da Empresa
-        set_color_safe(pdf, 255, 255, 255, fn_type='fill')
-        set_color_safe(pdf, 30, 64, 175, fn_type='draw')
-        _ = pdf.set_line_width(0.4)
-        _ = pdf.rounded_rect(cx - 38, cy + 6, 76, 5.5, 1.2, 'FD')
-        _ = pdf.set_xy(cx - 38, cy + 7.0)
-        _ = pdf.set_font('Helvetica', 'B', 7.8)
-        set_color_safe(pdf, 30, 64, 175, fn_type='text')
-        nome_emp_txt = str(dados.get('nome', 'Sua Empresa'))[:28]
-        _ = pdf.cell(76, 3.5, conv(f"Empresa: {nome_emp_txt}"), align='C')
+            _ = pdf.set_xy(x_mapa, y_mapa + 25.0)
+            _ = pdf.set_font('Helvetica', 'B', 12.0)
+            set_color_safe(pdf, 30, 64, 175, fn_type='text')
+            _ = pdf.cell(w_mapa, 6.0, conv(f"LOCALIZAÇÃO: {dados.get('nome', 'Sua Empresa')}"), align='C', ln=True)
+            _ = pdf.set_x(x_mapa)
+            _ = pdf.set_font('Helvetica', '', 9.5)
+            set_color_safe(pdf, 71, 85, 105, fn_type='text')
+            _ = pdf.cell(w_mapa, 5.0, conv(f"{dados.get('endereco', 'Endereço cadastrado no perfil do Google')}"), align='C', ln=True)
 
         # Legendas do Raio
         y_leg = y_mapa + h_mapa - 14.0
@@ -1150,7 +1106,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         _ = pdf.set_font('Helvetica', '', 6.8)
         _ = pdf.cell(49, 3.0, conv("Invisivel nas Buscas"), align='C')
 
-        # DIAGNÓSTICO DE BUSCAS POR INTENÇÃO DE CLIENTES (RGB DESCOMPACTADO EM INTEIROS)
+        # DIAGNÓSTICO DE BUSCAS POR INTENÇÃO DE CLIENTES
         y_termos = 146.0
         _ = pdf.set_xy(21, y_termos)
         _ = pdf.set_font('Helvetica', 'B', 10.0)
@@ -1159,8 +1115,8 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
 
         termos_busca = [
             ("Busca por Proximidade ('Empresa / Servico proximo')", "92% dos usuarios clicam nos 3 primeiros resultados do mapa ao buscar por proximidade.", "#1", 22, 128, 61),
-            ("Busca por Categoria Local ('Servicos em Ribeirao Preto')", "Sem Tour 360 e fotos HD, o Google empurra o perfil para baixo fora do raio imediato.", "#12 a #18", 220, 38, 38),
-            ("Busca Direta por Marca ou Nome Especifico", "Cliente digitando o nome exato encontra a ficha, mas falta a experiencia imersiva 360.", "Top 1", 30, 64, 175)
+            ("Busca por Categoria Local ('Servicos na regiao')", "Sem Tour 360 e fotos HD, o Google empurra o perfil para baixo fora do raio imediato.", "#12 a #18", 220, 38, 38),
+            ("Busca Direta por Marca ou Nome Específico", "Cliente digitando o nome exato encontra a ficha, mas falta a experiencia imersiva 360.", "Top 1", 30, 64, 175)
         ]
 
         y_t_curr = y_termos + 5.5
@@ -1922,7 +1878,7 @@ elif etapa_atual == 4:
             st.session_state['etapa_atual'] = 5
             st.rerun()
 
-# ETAPA 5: GERAR PDF, WHATSAPP, E-MAIL ADMIN & BIGIN (COM SUPORTE A ATÉ 5 PÁGINAS)
+# ETAPA 5: GERAR PDF, WHATSAPP, E-MAIL ADMIN & BIGIN
 elif etapa_atual == 5:
     st.markdown("<div class='dashboard-card'><div class='card-title'>📄 5. EMISSÃO, ABORDAGEM & INTEGRAÇÃO CRM</div>", unsafe_allow_html=True)
     
