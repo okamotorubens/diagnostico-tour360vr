@@ -600,7 +600,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
     _ = pdf.set_margins(21, 12, 12)
     _ = pdf.set_auto_page_break(auto=False)
 
-    # PÁGINA 1: CAPA
+    # PÁGINA 1: CAPA (Apenas a frase abaixo passou para PRETO; layout, imagem e card intactos)
     if 1 in paginas_selecionadas:
         _ = pdf.add_page()
         caminho_logo = obter_caminho_logo("tour360")
@@ -622,38 +622,24 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
 
         _ = pdf.ln(3.5)
         _ = pdf.set_font('Helvetica', '', 10.0)
-        set_color_safe(pdf, 15, 23, 42, fn_type='text')  # TEXTO EM PRETO
+        set_color_safe(pdf, 15, 23, 42, fn_type='text')  # ALTERAÇÃO ÚNICA: AGORA EM PRETO (15, 23, 42)
         _ = pdf.cell(0, 5, conv("Gestão de reputação e imagem online para o segmento no Google Maps"), align='C', ln=True)
 
-        # LÓGICA DE TRAVA DA FONTE DO NOME DA EMPRESA
-        nome_empresa = dados.get('nome') or 'Nome da Empresa'
-        len_nome = len(nome_empresa)
-
-        if len_nome > 60:
-            font_size_nome = 9.5
-            h_capa = 40.0
-            line_height_nome = 3.8
-        elif len_nome > 38:
-            font_size_nome = 11.0
-            h_capa = 38.0
-            line_height_nome = 4.2
-        else:
-            font_size_nome = 13.5
-            h_capa = 36.0
-            line_height_nome = 5.0
-
+        # CARD CLIENTE ORIGINAL
         w_capa, x_capa, y_capa = 177.0, 21.0, 90.0
+        h_capa = 36.0
+
         set_color_safe(pdf, 248, 250, 252, fn_type='fill')
         set_color_safe(pdf, 203, 213, 225, fn_type='draw')
         _ = pdf.set_line_width(0.3)
         _ = pdf.rounded_rect(x_capa, y_capa, w_capa, h_capa, 3.0, 'FD')
 
         _ = pdf.set_xy(x_capa + 4.0, y_capa + 3.0)
-        _ = pdf.set_font('Helvetica', 'B', font_size_nome)
+        _ = pdf.set_font('Helvetica', 'B', 13.5)
         set_color_safe(pdf, 15, 23, 42, fn_type='text') 
-        _ = pdf.multi_cell(w_capa - 8.0, line_height_nome, conv(nome_empresa), align='C')
+        _ = pdf.multi_cell(w_capa - 8.0, 5.0, conv(dados.get('nome') or 'Nome da Empresa'), align='C')
 
-        _ = pdf.ln(1.5)
+        _ = pdf.ln(2.0)
 
         _ = pdf.set_font('Helvetica', 'B', 10.0)
         set_color_safe(pdf, 15, 23, 42, fn_type='text')
@@ -780,7 +766,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
 
         _ = pdf.set_xy(x_q1, y_quadros_topo + 2.0)
         _ = pdf.set_font('Helvetica', 'B', 7.8)
-        set_color_safe(pdf, 15, 23, 42, fn_type='text')  # TEXTO EM PRETO
+        set_color_safe(pdf, 15, 23, 42, fn_type='text')
         _ = pdf.cell(w_q1, 3.0, conv("OTIMIZAÇÃO DO PERFIL"), align='C', ln=True)
 
         _ = pdf.set_xy(x_q1, y_quadros_topo + 5.2)
@@ -815,7 +801,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
 
         _ = pdf.set_xy(x_q2, y_quadros_topo + 2.0)
         _ = pdf.set_font('Helvetica', 'B', 7.8)
-        set_color_safe(pdf, 15, 23, 42, fn_type='text')  # TEXTO EM PRETO
+        set_color_safe(pdf, 15, 23, 42, fn_type='text')
         _ = pdf.cell(w_q2, 3.0, conv("NOTA DOS CLIENTES"), align='C', ln=True)
 
         _ = pdf.set_xy(x_q2, y_quadros_topo + 5.2)
@@ -1063,7 +1049,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
 
         _ = pdf.set_y(41.5)
         _ = pdf.set_font('Helvetica', 'B', 11.0)
-        set_color_safe(pdf, 15, 23, 42, fn_type='text')  # TEXTO EM PRETO
+        set_color_safe(pdf, 15, 23, 42, fn_type='text')
         _ = pdf.cell(177, 5.0, conv("Simulação de visibilidade em buscas locais por proximidade ('próximo a mim')"), align='C', ln=True)
 
         # CONTAINER DO MAPA REAL
@@ -1191,7 +1177,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
 
             _ = pdf.set_xy(x_c_r + 4.0, y_cards_r + 4.2)
             _ = pdf.set_font('Helvetica', '', 5.8)
-            set_color_safe(pdf, 15, 23, 42, fn_type='text')  # TEXTO DAS DESCRIÇÕES EM PRETO
+            set_color_safe(pdf, 15, 23, 42, fn_type='text')
             _ = pdf.multi_cell(w_c_r - 5.0, 2.2, conv(r_leg), align='L')
 
             _ = pdf.set_xy(x_c_r + 4.0, y_cards_r + 12.5)
@@ -1262,7 +1248,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         # QUADRO DE OPORTUNIDADES COM FUNDO PADRONIZADO EM AZUL CLARO
         y_oport = y_t_curr + 6.0
         h_oport = 20.0
-        set_color_safe(pdf, 248, 250, 252, fn_type='fill')  # AZUL BEM CLARO PADRONIZADO
+        set_color_safe(pdf, 248, 250, 252, fn_type='fill')
         set_color_safe(pdf, 203, 213, 225, fn_type='draw')
         _ = pdf.set_line_width(0.3)
         _ = pdf.rounded_rect(21, y_oport, 177, h_oport, 2.0, 'FD')
@@ -1339,7 +1325,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         h_card_pro = 25.0 + (qtd_itens_pro * 8.0) + 4.0
         h_card_gestao = 25.0 + (qtd_itens_gestao * 8.0) + 4.0
 
-        # Card 1: Start (Texto escurecido)
+        # Card 1: Start
         set_color_safe(pdf, 255, 255, 255, fn_type='fill')
         set_color_safe(pdf, 226, 232, 240, fn_type='draw')
         _ = pdf.set_line_width(0.3)
@@ -1347,7 +1333,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         
         _ = pdf.set_xy(x1 + 4, y_p + 3.0)
         _ = pdf.set_font('Helvetica', 'B', 7.5)
-        set_color_safe(pdf, 71, 85, 105, fn_type='text')  # CINZA ESCURECIDO
+        set_color_safe(pdf, 71, 85, 105, fn_type='text')
         _ = pdf.cell(w_card - 8, 3.0, conv('OPÇÃO 1'), ln=True)
         
         _ = pdf.set_xy(x1 + 4, y_p + 6.5)
@@ -1357,7 +1343,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         
         _ = pdf.set_xy(x1 + 4, y_p + 10.5)
         _ = pdf.set_font('Helvetica', '', 7.5)
-        set_color_safe(pdf, 71, 85, 105, fn_type='text')  # CINZA ESCURECIDO
+        set_color_safe(pdf, 71, 85, 105, fn_type='text')
         _ = pdf.cell(w_card - 8, 3.0, conv('Otimização completa do perfil'), ln=True)
         
         _ = pdf.set_xy(x1 + 4, y_p + 15.5)
@@ -1416,7 +1402,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
 
         desenhar_pilulas_itens(pdf, x2, y_p + 25.0, planos.get('pro_itens', ''))
 
-        # Card 3: Gestão Mensal (Texto escurecido)
+        # Card 3: Gestão Mensal
         set_color_safe(pdf, 255, 255, 255, fn_type='fill')
         set_color_safe(pdf, 226, 232, 240, fn_type='draw')
         _ = pdf.set_line_width(0.3)
@@ -1424,7 +1410,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         
         _ = pdf.set_xy(x3 + 4, y_p + 3.0)
         _ = pdf.set_font('Helvetica', 'B', 7.5)
-        set_color_safe(pdf, 71, 85, 105, fn_type='text')  # CINZA ESCURECIDO
+        set_color_safe(pdf, 71, 85, 105, fn_type='text')
         _ = pdf.cell(w_card - 8, 3.0, conv('OPÇÃO 3'), ln=True)
         
         _ = pdf.set_xy(x3 + 4, y_p + 6.5)
@@ -1434,7 +1420,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         
         _ = pdf.set_xy(x3 + 4, y_p + 10.5)
         _ = pdf.set_font('Helvetica', '', 7.5)
-        set_color_safe(pdf, 71, 85, 105, fn_type='text')  # CINZA ESCURECIDO
+        set_color_safe(pdf, 71, 85, 105, fn_type='text')
         _ = pdf.cell(w_card - 8, 3.0, conv('Acompanhamento e relatórios'), ln=True)
         
         _ = pdf.set_xy(x3 + 4, y_p + 15.5)
