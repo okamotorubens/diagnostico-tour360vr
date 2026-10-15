@@ -600,7 +600,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
     _ = pdf.set_margins(21, 12, 12)
     _ = pdf.set_auto_page_break(auto=False)
 
-    # PÁGINA 1: CAPA (Apenas a frase abaixo passou para PRETO; layout, imagem e card intactos)
+    # PÁGINA 1: CAPA (Ajustes exatos de altura do Card de Cliente e da Imagem para restaurar o modelo original)
     if 1 in paginas_selecionadas:
         _ = pdf.add_page()
         caminho_logo = obter_caminho_logo("tour360")
@@ -610,7 +610,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             except Exception:
                 pass
 
-        _ = pdf.set_y(60)
+        _ = pdf.set_y(58)
         _ = pdf.set_font('Helvetica', 'B', 20)
         set_color_safe(pdf, 30, 64, 175, fn_type='text')
         _ = pdf.cell(0, 8, conv('DIAGNÓSTICO DE PRESENÇA DIGITAL'), align='C', ln=True)
@@ -622,40 +622,41 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
 
         _ = pdf.ln(3.5)
         _ = pdf.set_font('Helvetica', '', 10.0)
-        set_color_safe(pdf, 15, 23, 42, fn_type='text')  # ALTERAÇÃO ÚNICA: AGORA EM PRETO (15, 23, 42)
+        set_color_safe(pdf, 15, 23, 42, fn_type='text')  # Frase em PRETO
         _ = pdf.cell(0, 5, conv("Gestão de reputação e imagem online para o segmento no Google Maps"), align='C', ln=True)
 
-        # CARD CLIENTE ORIGINAL
-        w_capa, x_capa, y_capa = 177.0, 21.0, 90.0
-        h_capa = 36.0
+        # CARD CLIENTE RESTAURADO (Com dimensões amplas idênticas ao modelo original da esquerda)
+        w_capa, x_capa, y_capa = 177.0, 21.0, 88.0
+        h_capa = 40.0
 
         set_color_safe(pdf, 248, 250, 252, fn_type='fill')
         set_color_safe(pdf, 203, 213, 225, fn_type='draw')
         _ = pdf.set_line_width(0.3)
-        _ = pdf.rounded_rect(x_capa, y_capa, w_capa, h_capa, 3.0, 'FD')
+        _ = pdf.rounded_rect(x_capa, y_capa, w_capa, h_capa, 3.5, 'FD')
 
-        _ = pdf.set_xy(x_capa + 4.0, y_capa + 3.0)
-        _ = pdf.set_font('Helvetica', 'B', 13.5)
+        _ = pdf.set_xy(x_capa + 4.0, y_capa + 4.0)
+        _ = pdf.set_font('Helvetica', 'B', 14.0)
         set_color_safe(pdf, 15, 23, 42, fn_type='text') 
-        _ = pdf.multi_cell(w_capa - 8.0, 5.0, conv(dados.get('nome') or 'Nome da Empresa'), align='C')
+        _ = pdf.multi_cell(w_capa - 8.0, 5.5, conv(dados.get('nome') or 'Nome da Empresa'), align='C')
 
-        _ = pdf.ln(2.0)
+        _ = pdf.ln(2.5)
 
-        _ = pdf.set_font('Helvetica', 'B', 10.0)
+        _ = pdf.set_font('Helvetica', 'B', 10.5)
         set_color_safe(pdf, 15, 23, 42, fn_type='text')
         _ = pdf.set_x(x_capa)
-        _ = pdf.cell(w_capa, 5.0, conv(f"Preparado para: {dados.get('contato') or 'Responsável'}"), align='C', ln=True)
+        _ = pdf.cell(w_capa, 5.2, conv(f"Preparado para: {dados.get('contato') or 'Responsável'}"), align='C', ln=True)
         
-        _ = pdf.set_font('Helvetica', '', 9.2)
+        _ = pdf.set_font('Helvetica', '', 9.5)
         set_color_safe(pdf, 71, 85, 105, fn_type='text')
         _ = pdf.set_x(x_capa)
-        _ = pdf.cell(w_capa, 4.8, conv(f"{dados.get('endereco') or 'Endereço não informado'}"), align='C', ln=True)
+        _ = pdf.cell(w_capa, 5.0, conv(f"{dados.get('endereco') or 'Endereço não informado'}"), align='C', ln=True)
         
         site_txt = dados.get('website') if dados.get('website') else 'N/I'
         _ = pdf.set_x(x_capa)
-        _ = pdf.cell(w_capa, 4.8, conv(f"Telefone: {dados.get('telefone') or 'N/I'}   |   {site_txt}"), align='C', ln=True)
+        _ = pdf.cell(w_capa, 5.0, conv(f"Telefone: {dados.get('telefone') or 'N/I'}   |   {site_txt}"), align='C', ln=True)
 
-        y_foto, h_container, w_container = 134.0, 90.0, 177.0
+        # IMAGEM PRINCIPAL RESTAURADA (Tamanho e destaque original)
+        y_foto, h_container, w_container = 133.0, 100.0, 177.0
         foto_renderizada = False
 
         if dados.get("foto_reference") and API_KEY_GOOGLE:
@@ -687,14 +688,15 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             set_color_safe(pdf, 248, 250, 252, fn_type='fill')
             set_color_safe(pdf, 203, 213, 225, fn_type='draw')
             _ = pdf.rounded_rect(x_capa, y_foto, w_container, h_container, 3.0, 'FD')
-            _ = pdf.set_xy(x_capa, y_foto + 38)
+            _ = pdf.set_xy(x_capa, y_foto + 42)
             _ = pdf.set_font('Helvetica', 'B', 11)
             set_color_safe(pdf, 100, 116, 139, fn_type='text')
             _ = pdf.cell(w_container, 6, conv("[ IMAGEM DA FICHA GOOGLE DO CLIENTE ]"), align='C', ln=True)
 
+        # BANNER DE ALERTA INFERIOR
         w_alerta = 177.0
         x_alerta = 21.0
-        y_alerta = 236.0
+        y_alerta = 239.0
         h_alerta = 17.0
         
         qtd_aval = dados.get('avaliacoes', 0)
@@ -735,7 +737,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         _ = pdf.set_x(x_alerta)
         _ = pdf.cell(w_alerta, 4.0, conv(sub_txt_2), align='C', ln=True)
 
-    # PÁGINA 2: AUDITORIA DETALHADA DE PONTOS DE BUSCA
+    # PÁGINA 2: AUDITORIA DETALHADA DE PONTOS DE BUSCA (Inalterada)
     if 2 in paginas_selecionadas:
         _ = pdf.add_page()
         
@@ -1038,7 +1040,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             set_color_safe(pdf, 51, 65, 85, fn_type='text')
             _ = pdf.multi_cell(w_extra - 10, 3.4, conv(plano_acao_extra), align='L')
 
-    # PÁGINA 3: MAPEAMENTO GEOGRÁFICO COM MAPA REAL E CARDS DE RAIO DINÂMICOS
+    # PÁGINA 3: MAPEAMENTO GEOGRÁFICO COM MAPA REAL E CARDS DE RAIO DINÂMICOS (Inalterada)
     if 3 in paginas_selecionadas:
         _ = pdf.add_page()
         
@@ -1269,7 +1271,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         _ = pdf.set_x(25)
         _ = pdf.cell(169, 3.2, conv(txt_oport_p2), ln=True)
 
-    # PÁGINA 4: PROPOSTA COM CORES ESCURECIDAS NOS PLANOS START E GESTÃO
+    # PÁGINA 4: PROPOSTA COM CORES ESCURECIDAS NOS PLANOS START E GESTÃO (Inalterada)
     if 4 in paginas_selecionadas:
         _ = pdf.add_page()
         
@@ -1511,7 +1513,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             y_curr_ag += cell_height
             _ = pdf.set_xy(21, y_curr_ag)
 
-    # PÁGINA 5: CONTRATO COM FORMATO ORIGINAL APROVADO
+    # PÁGINA 5: CONTRATO (Inalterada)
     if 5 in paginas_selecionadas:
         _ = pdf.add_page()
         
