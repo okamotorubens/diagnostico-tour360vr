@@ -2,7 +2,7 @@ import streamlit as st
 import sqlite3
 import pandas as pd
 import os
-from datetime import datetime
+from datetime import datetime, date
 from io import BytesIO
 
 # Importações do ReportLab para PDF
@@ -10,6 +10,13 @@ from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
+
+# Optional: Para IA (Google Gemini)
+try:
+    from google import genai
+    HAS_GEMINI = True
+except ImportError:
+    HAS_GEMINI = False
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(
@@ -229,13 +236,13 @@ st.markdown("""
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     }
 
-    /* CONTAINER CARD DO TÍTULO E BOTÕES SUPERIORES (+1 LINHA DE ESPAÇO ABAIXO) */
+    /* CONTAINER CARD DO TÍTULO E BOTÕES SUPERIORES */
     .top-card-container {
         background-color: #161F30;
         border: 1px solid #2B364A;
         border-radius: 12px;
         padding: 16px 20px 14px 20px !important;
-        margin-bottom: 35px !important; /* AUMENTADO O ESPAÇAMENTO INFERIOR */
+        margin-bottom: 35px !important;
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
     }
 
@@ -372,10 +379,21 @@ if st.session_state["aba_ativa"] == "cadastrar":
             opts_avaliacoes = ["Sim (Com Nota Exibida)", "Não (Sem Avaliações)"]
             opts_respostas = ["100% Respondidas", "Parcialmente", "Nenhuma", "N/A"]
 
+            # Tratamento da Data de Abertura (Dia/Mês/Ano)
+            val_dt_abertura = date.today()
+            if modo_edicao and dados_existentes and dados_existentes[3]:
+                try:
+                    val_dt_abertura = datetime.strptime(dados_existentes[3], "%d/%m/%Y").date()
+                except ValueError:
+                    val_dt_abertura = date.today()
+
             with c_s1:
                 nome_empresa = st.text_input("Nome Comercial da Empresa / Ficha GMB *", value=dados_existentes[1] if modo_edicao else "")
                 responsavel = st.text_input("Nome do Responsável / Contato Interno", value=dados_existentes[2] if modo_edicao else "")
-                data_abertura = st.text_input("Data de Abertura (Mês/Ano)", value=dados_existentes[3] if modo_edicao else "")
+                
+                # CAMPO COM SELETOR / MÁSCARA DIA/MÊS/ANO (DD/MM/AAAA)
+                data_abertura_dt = st.date_input("Data de Abertura (Dia/Mês/Ano)", value=val_dt_abertura, format="DD/MM/YYYY")
+                data_abertura_str = data_abertura_dt.strftime("%d/%m/%Y")
                 
                 idx_reiv = opts_reivindicada.index(dados_existentes[4]) if (modo_edicao and dados_existentes[4] in opts_reivindicada) else 0
                 ficha_reivindicada = st.radio("Status de Reivindicação da Ficha", opts_reivindicada, index=idx_reiv, horizontal=True)
@@ -555,7 +573,7 @@ if st.session_state["aba_ativa"] == "cadastrar":
                         (nome_empresa, responsavel, data_abertura, ficha_reivindicada, status_avaliacoes, qtd_avaliacoes_inicio, nota_media_inicio, status_respostas_avaliacoes, categoria_principal, categorias_secundarias, descricao_empresa, telefone_contato, whatsapp, chat_status, website, instagram, facebook, linkedin, youtube, tiktok, atendimento_local_cliente, endereco_local, area_cobertura, horario_seg, horario_ter, horario_qua, horario_qui, horario_sex, horario_sab, horario_dom, horarios_especiais, outros_horarios, pendencias_checklist, observacoes_tecnicas, data_inicio) 
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ''', (
-                        nome_empresa, responsavel, data_abertura, ficha_reivindicada, status_avaliacoes, qtd_avaliacoes_inicio, nota_media_inicio, status_respostas_avaliacoes, categoria_principal, categorias_secundarias, descricao_empresa, telefone_contato, whatsapp, chat_status, website, instagram, facebook, linkedin, youtube, tiktok, 1 if atendimento_local_cliente else 0, endereco_local, area_cobertura, 
+                        nome_empresa, responsavel, data_abertura_str, ficha_reivindicada, status_avaliacoes, qtd_avaliacoes_inicio, nota_media_inicio, status_respostas_avaliacoes, categoria_principal, categorias_secundarias, descricao_empresa, telefone_contato, whatsapp, chat_status, website, instagram, facebook, linkedin, youtube, tiktok, 1 if atendimento_local_cliente else 0, endereco_local, area_cobertura, 
                         horarios_coletados["Segunda-feira"], horarios_coletados["Terça-feira"], horarios_coletados["Quarta-feira"], horarios_coletados["Quinta-feira"], horarios_coletados["Sexta-feira"], horarios_coletados["Sábado"], horarios_coletados["Domingo"],
                         horarios_especiais, outros_horarios, pendencias_str, observacoes_tecnicas, datetime.today().strftime("%Y-%m-%d")
                     ))
@@ -572,7 +590,7 @@ if st.session_state["aba_ativa"] == "cadastrar":
                     responsavel=?, data_abertura=?, ficha_reivindicada=?, status_avaliacoes=?, qtd_avaliacoes_inicio=?, nota_media_inicio=?, status_respostas_avaliacoes=?, categoria_principal=?, categorias_secundarias=?, descricao_empresa=?, telefone_contato=?, whatsapp=?, chat_status=?, website=?, instagram=?, facebook=?, linkedin=?, youtube=?, tiktok=?, atendimento_local_cliente=?, endereco_local=?, area_cobertura=?, horario_seg=?, horario_ter=?, horario_qua=?, horario_qui=?, horario_sex=?, horario_sab=?, horario_dom=?, horarios_especiais=?, outros_horarios=?, pendencias_checklist=?, observacoes_tecnicas=?
                     WHERE id=?
                 ''', (
-                    responsavel, data_abertura, ficha_reivindicada, status_avaliacoes, qtd_avaliacoes_inicio, nota_media_inicio, status_respostas_avaliacoes, categoria_principal, categorias_secundarias, descricao_empresa, telefone_contato, whatsapp, chat_status, website, instagram, facebook, linkedin, youtube, tiktok, 1 if atendimento_local_cliente else 0, endereco_local, area_cobertura, 
+                    responsavel, data_abertura_str, ficha_reivindicada, status_avaliacoes, qtd_avaliacoes_inicio, nota_media_inicio, status_respostas_avaliacoes, categoria_principal, categorias_secundarias, descricao_empresa, telefone_contato, whatsapp, chat_status, website, instagram, facebook, linkedin, youtube, tiktok, 1 if atendimento_local_cliente else 0, endereco_local, area_cobertura, 
                     horarios_coletados["Segunda-feira"], horarios_coletados["Terça-feira"], horarios_coletados["Quarta-feira"], horarios_coletados["Quinta-feira"], horarios_coletados["Sexta-feira"], horarios_coletados["Sábado"], horarios_coletados["Domingo"],
                     horarios_especiais, outros_horarios, pendencias_str, observacoes_tecnicas, c_id
                 ))
