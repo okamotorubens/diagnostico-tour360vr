@@ -740,10 +740,12 @@ if st.session_state["aba_ativa"] == "cadastrar":
             st.markdown("---")
             descricao_empresa = st.text_area("Descrição Oficial da Empresa (Otimizada para SEO Local & IAs)", value=dados_existentes[15] if (modo_edicao and len(dados_existentes) > 15) else "", height=180)
 
-        # SUB-ABA FINANCEIRA DO CONTRATO
+        # SUB-ABA FINANCEIRA DO CONTRATO - PROPORÇÃO AJUSTADA PARA FICAR EM 1 LINHA
         with sub_tab_financeiro:
             st.markdown("**Dados do Contrato do Cliente (Visível apenas para a Agência):**")
-            col_f1, col_f2, col_f3 = st.columns(3)
+            
+            # Proporções customizadas: menos espaço para números, mais espaço para os radio buttons
+            col_f1, col_f2, col_f3 = st.columns([1.2, 1.2, 2.6])
             
             opts_status_contrato = ["Ativo", "Em Negociação", "Pausado", "Cancelado"]
             val_status = dados_existentes[11] if (modo_edicao and len(dados_existentes) > 11) else "Ativo"
@@ -766,6 +768,7 @@ if st.session_state["aba_ativa"] == "cadastrar":
 
             st.markdown("---")
             link_drive_midias = st.text_input("Link da Pasta de Mídias e Fotos 360° (Google Drive / Photos / Pano2VR)", value=dados_existentes[39] if (modo_edicao and len(dados_existentes) > 39 and dados_existentes[39]) else "")
+                status_contrato = st.radio("Status do Contrato com a Agência", opts_status_contrato, index=idx_st_c, horizontal=True)
 
         # SUB-ABA 3: CONTATO & REDES SOCIAIS
         with sub_tab_contato:
