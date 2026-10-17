@@ -9,10 +9,10 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- CSS PERSONALIZADO (Layout, Tipografia, Neon e Borda Neon nos Cards) ---
+# --- CSS PERSONALIZADO ---
 st.markdown("""
     <style>
-    /* 1. Margens Globais e Remoção de Espaço Superior */
+    /* 1. Margens Globais */
     .block-container {
         padding-top: 1.2rem !important;
         padding-bottom: 1.5rem !important;
@@ -29,10 +29,24 @@ st.markdown("""
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     }
 
-    /* 2. BARRA LATERAL (Sidebar) */
+    /* 2. SIDEBAR E CENTRALIZAÇÃO DAS IMAGENS */
     [data-testid="stSidebar"] {
         background-color: #07090E;
         border-right: 1px solid #1E2640;
+    }
+
+    /* Força alinhamento central em todas as imagens da Sidebar */
+    [data-testid="stSidebar"] [data-testid="stImage"] {
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        width: 100% !important;
+        margin: 0 auto !important;
+    }
+
+    [data-testid="stSidebar"] [data-testid="stImage"] img {
+        margin: 0 auto !important;
+        display: block !important;
     }
 
     .sidebar-text-center {
@@ -51,14 +65,12 @@ st.markdown("""
         margin-bottom: 0.2rem;
     }
     
-    /* Subtítulo Aumentado */
     .subtitle-header {
         color: #94A3B8;
         font-size: 1.18rem !important;
         margin-bottom: 1.6rem;
     }
 
-    /* Títulos das Seções (+1.5 ponto) */
     .neon-section-title {
         color: #00E5FF;
         font-size: 1.45rem !important;
@@ -160,13 +172,20 @@ st.markdown("""
 
 # --- BARRA LATERAL (Sidebar) ---
 with st.sidebar:
-    # 1. Renderização Direta em HTML para Alinhamento Perfeito das Logos no Centro
-    st.markdown("""
-        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; text-align: center;">
-            <img src="https://raw.githubusercontent.com/okamotorubens/diagnostico-tour360vr/principal/logo_tour_transparente.png" style="width: 125px; height: auto; margin-bottom: 12px; display: block;">
-            <img src="https://raw.githubusercontent.com/okamotorubens/diagnostico-tour360vr/principal/logo_okamoto.png" style="width: 160px; height: auto; display: block;">
-        </div>
-    """, unsafe_allow_html=True)
+    # 1. Carregamento dos arquivos locais via st.image() com centralização via CSS
+    caminho_logo_tour = "logo_tour_transparente.png"
+    if os.path.exists(caminho_logo_tour):
+        st.image(caminho_logo_tour, width=130)
+    else:
+        st.markdown("<h3 class='sidebar-text-center' style='color:#FFF; margin:0;'>TOUR360VR</h3>", unsafe_allow_html=True)
+        
+    st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
+    
+    caminho_logo_okamoto = "logo_okamoto.png"
+    if os.path.exists(caminho_logo_okamoto):
+        st.image(caminho_logo_okamoto, width=165)
+    elif os.path.exists("okamoto_preto.png"):
+        st.image("okamoto_preto.png", width=165)
 
     st.markdown("<hr style='margin: 16px 0; border-color: #1E2640; width: 100%;'>", unsafe_allow_html=True)
     
@@ -181,7 +200,7 @@ with st.sidebar:
     
     st.markdown("<hr style='margin: 16px 0; border-color: #1E2640; width: 100%;'>", unsafe_allow_html=True)
     
-    # 3. Rodapé em 2 Linhas
+    # 3. Rodapé
     st.markdown("<div class='sidebar-text-center' style='color: #8A99AD; font-size: 0.75rem; line-height: 1.4;'>Painel Unificado de Operações<br>© Okamoto Mídias Visuais</div>", unsafe_allow_html=True)
 
 # --- CABEÇALHO DA CENTRAL ---
