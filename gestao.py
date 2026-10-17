@@ -25,7 +25,7 @@ import matplotlib.pyplot as plt
 
 # --- CONFIGURAÇÃO DA PÁGINA & FAVICON OFICIAL ---
 FAVICON_TOUR360 = "https://tour360vr.com.br/favicon.ico"
-LOGO_TOUR360_URL = "https://tour360vr.com.br/favicon.ico" # Substitua se tiver uma logo oficial em URL PNG
+LOGO_TOUR360_URL = "https://tour360vr.com.br/favicon.ico"
 
 st.set_page_config(
     page_title="Gestão Mensal & Estratégia | Tour360VR",
@@ -176,19 +176,18 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
     body_style = ParagraphStyle('DocBody', parent=styles['Normal'], fontName='Helvetica', fontSize=8, leading=11, textColor=colors.HexColor('#334155'))
     footer_style = ParagraphStyle('DocFooter', parent=styles['Normal'], fontName='Helvetica', fontSize=8, leading=11, alignment=1, textColor=colors.HexColor('#64748B'))
 
-    # Tentativa de inclusão da logo via URL/Stream
     logo_flowable = Paragraph("🌐 <b>TOUR360VR</b>", title_brand_style)
     try:
         resp_img = requests.get(LOGO_TOUR360_URL, timeout=3)
         if resp_img.status_code == 200:
             img_io = BytesIO(resp_img.content)
-            logo_flowable = RLImage(img_io, width=36, height=36)
+            logo_flowable = RLImage(img_io, width=32, height=32)
     except Exception:
         pass
 
     header_table_data = [
         [
-            Table([[logo_flowable, Paragraph("<b>TOUR360VR</b><br/><font size=7 color='#64748B'>Gestão & SEO Local</font>", title_brand_style)]], colWidths=[40, 200]),
+            Table([[logo_flowable, Paragraph("<b>TOUR360VR</b><br/><font size=7 color='#64748B'>Gestão & SEO Local</font>", title_brand_style)]], colWidths=[36, 200]),
             Paragraph(f"<b>RELATÓRIO DE DESEMPENHO</b><br/><font size=9 color='#2563EB'><b>{nome_empresa}</b></font><br/><font size=8 color='#64748B'>Mês de Referência: {mes_ano}</font>", ParagraphStyle('RHeader', parent=styles['Normal'], alignment=2, fontName='Helvetica'))
         ]
     ]
@@ -227,12 +226,12 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
         story.append(Spacer(1, 6))
 
     story.append(HRFlowable(width="100%", thickness=0.8, color=colors.HexColor('#93C5FD'), spaceAfter=4))
-    story.append(Paragraph("<b>tour360vr.com.br</b> &nbsp;|&nbsp; contato@tour360vr.com.br &nbsp;|&nbsp; <b>Tour360VR</b> - Soluções em Visual Mídia & SEO Local", footer_style))
+    story.append(Paragraph('<a href="https://tour360vr.com.br" color="#2563EB"><b>tour360vr.com.br</b></a> &nbsp;|&nbsp; <a href="mailto:contato@tour360vr.com.br" color="#2563EB">contato@tour360vr.com.br</a> &nbsp;|&nbsp; <a href="https://wa.me/5516991332121" color="#2563EB">WhatsApp: (16) 99133-2121</a> &nbsp;|&nbsp; <b>Tour360VR</b>', footer_style))
     doc.build(story)
     buffer.seek(0)
     return buffer
 
-# --- GERAÇÃO DE CONTRATO EM PDF (PADRÃO RIGOROSO AJUSTADO) ---
+# --- GERAÇÃO DE CONTRATO EM PDF (TEXTO AUMENTADO EM +1 PT, LINKS CLICÁVEIS E ASSINATURAS CENTRALIZADAS) ---
 def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duracao=None):
     buffer = BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=36, leftMargin=36, topMargin=36, bottomMargin=36)
@@ -240,9 +239,12 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     styles = getSampleStyleSheet()
 
     title_brand_style = ParagraphStyle('DocBrandTitle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=14, leading=18, textColor=colors.HexColor('#1E293B'))
-    doc_title_style = ParagraphStyle('DocTitleStyle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=12, leading=15, alignment=1, textColor=colors.HexColor('#1E293B'))
-    body_style = ParagraphStyle('DocBody', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=14, alignment=4, textColor=colors.HexColor('#334155'))
+    doc_title_style = ParagraphStyle('DocTitleStyle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=13, leading=16, alignment=1, textColor=colors.HexColor('#1E293B'))
+    
+    # Texto aumentado em +1pt (de 9pt para 10pt) e entrelinha ajustada para 15pt
+    body_style = ParagraphStyle('DocBody', parent=styles['Normal'], fontName='Helvetica', fontSize=10, leading=15, alignment=4, textColor=colors.HexColor('#334155'))
     footer_style = ParagraphStyle('DocFooter', parent=styles['Normal'], fontName='Helvetica', fontSize=8, leading=11, alignment=1, textColor=colors.HexColor('#64748B'))
+    signature_style = ParagraphStyle('DocSig', parent=styles['Normal'], fontName='Helvetica', fontSize=10, leading=14, alignment=1, textColor=colors.HexColor('#334155'))
 
     # Logo no Cabeçalho
     logo_flowable = Paragraph("🌐 <b>TOUR360VR</b>", title_brand_style)
@@ -250,77 +252,76 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
         resp_img = requests.get(LOGO_TOUR360_URL, timeout=3)
         if resp_img.status_code == 200:
             img_io = BytesIO(resp_img.content)
-            logo_flowable = RLImage(img_io, width=36, height=36)
+            logo_flowable = RLImage(img_io, width=32, height=32)
     except Exception:
         pass
 
     header_table_data = [
         [
-            Table([[logo_flowable, Paragraph("<b>TOUR360VR</b><br/><font size=7 color='#64748B'>Estratégia & Presença Digital</font>", title_brand_style)]], colWidths=[40, 220]),
+            Table([[logo_flowable, Paragraph("<b>TOUR360VR</b><br/><font size=7 color='#64748B'>Estratégia & Presença Digital</font>", title_brand_style)]], colWidths=[36, 220]),
             Paragraph("<b>CONTRATO DE PRESTAÇÃO DE SERVIÇOS</b><br/><font size=8 color='#2563EB'><b>Documento Jurídico Oficial</b></font>", ParagraphStyle('RHeader', parent=styles['Normal'], alignment=2, fontName='Helvetica'))
         ]
     ]
     t_header = Table(header_table_data, colWidths=[260, 260])
     story.append(t_header)
     story.append(Spacer(1, 6))
-    story.append(HRFlowable(width="100%", thickness=0.8, color=colors.HexColor('#93C5FD'), spaceAfter=14))
+    story.append(HRFlowable(width="100%", thickness=0.8, color=colors.HexColor('#93C5FD'), spaceAfter=18))
 
-    # Data por extenso alinhada à direita com espaçamento ampliado antes do título
+    # Data por extenso alinhada à direita
     meses_pt = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"]
     hoje = agora_brasil()
     data_extenso = f"Ribeirão Preto - SP, {hoje.day} de {meses_pt[hoje.month - 1]} de {hoje.year}."
     
-    date_style = ParagraphStyle('DateStyle', parent=styles['Normal'], fontName='Helvetica', fontSize=9, alignment=2, textColor=colors.HexColor('#334155'), spaceAfter=14)
+    date_style = ParagraphStyle('DateStyle', parent=styles['Normal'], fontName='Helvetica', fontSize=10, alignment=2, textColor=colors.HexColor('#334155'), spaceAfter=16)
     story.append(Paragraph(data_extenso, date_style))
 
-    # Título do Contrato com espaçamento ampliado em relação ao texto jurídico
+    # Título do Contrato
     story.append(Paragraph("CONTRATO DE PRESTAÇÃO DE SERVIÇOS", doc_title_style))
-    story.append(Spacer(1, 14))
+    story.append(Spacer(1, 20))
 
     nome_emp = dados_cliente.get("nome_empresa", "Empresa Cliente")
     resp_emp = dados_cliente.get("responsavel", "Responsável")
     end_emp = dados_cliente.get("endereco_local", "Endereço não informado")
-    tel_emp = dados_cliente.get("telefone_contato", "(16) 0000-0000")
+    tel_emp = dados_cliente.get("telefone_contato", "(16) 99133-2121")
 
-    # Descrição ajustada sem menção à palavra "whatsapp" e com formatação correta de duração
     if meses_duracao and "Gestão Mensal" in plano_escolhido:
         detalhe_plano = f"{plano_escolhido} com duração de {meses_duracao} meses, no valor total de R$ {valor_plano:,.2f}"
     else:
         detalhe_plano = f"{plano_escolhido}, no valor total de R$ {valor_plano:,.2f}"
 
     txt_qualificacao = f"""
-    <b>CONTRATADA:</b> <b>Tour360VR</b>, representada por Rubens Okamoto, CNPJ: 04.824.331/0001-05 e Telefone: (16) 99133-2121.<br/><br/>
-    <b>CONTRATANTE:</b> <b>{nome_emp}</b>, representada por {resp_emp}, localizada em {end_emp}, Telefone: {tel_emp}.<br/><br/>
-    A <b>Tour360VR</b> (<b>CONTRATADA</b>) compromete-se a executar os serviços profissionais especializados em otimização, reestruturação técnica, curadoria de pautas e/ou produção de Tour Virtual 360° para o perfil do Google da <b>CONTRATANTE</b>, referentes ao plano contratado <b>{detalhe_plano}</b>.
+    <b>CONTRATADA:</b> <a href="https://tour360vr.com.br" color="#2563EB"><b>Tour360VR</b></a>, representada por Rubens Okamoto, CNPJ: 04.824.331/0001-05 e Telefone: <a href="https://wa.me/5516991332121" color="#2563EB">(16) 99133-2121</a>.<br/><br/>
+    <b>CONTRATANTE:</b> <b>{nome_emp}</b>, representada por {resp_emp}, localizada em {end_emp}, Telefone: <a href="tel:{tel_emp}" color="#2563EB">{tel_emp}</a>.<br/><br/>
+    A <a href="https://tour360vr.com.br" color="#2563EB"><b>Tour360VR</b></a> (<b>CONTRATADA</b>) compromete-se a executar os serviços profissionais especializados em otimização, reestruturação técnica, curadoria de pautas e/ou produção de Tour Virtual 360° para o perfil do Google da <b>CONTRATANTE</b>, referentes ao plano contratado <b>{detalhe_plano}</b>.
     """
     story.append(Paragraph(txt_qualificacao, body_style))
-    story.append(Spacer(1, 12))
+    story.append(Spacer(1, 14))
 
     clausulas = """
     <b>CLÁUSULA PRIMEIRA - DO OBJETO:</b> Os serviços serão iniciados em até 5 dias úteis após a confirmação do acordo e o fornecimento de todos os acessos e informações necessárias à gestão do perfil pela <b>CONTRATANTE</b>.<br/><br/>
-    <b>CLÁUSULA SEGUNDA - DAS OBRIGAÇÕES E PAGAMENTO:</b> O não pagamento no prazo pactuado sujeitará o presente contrato à incidência de juros moratórios legais e à suspensão temporária dos serviços pela <b>Tour360VR</b> até a devida regularização financeira.<br/><br/>
-    <b>CLÁUSULA TERCEIRA - DOS DIREITOS DE USO E PROPRIEDADE:</b> Os direitos de uso do Tour Virtual 360° e fotos em alta definição serão cedidos em caráter ilimitado à <b>CONTRATANTE</b> para veiculação oficial no Google. A <b>Tour360VR</b> reserva-se o direito de utilizar o material gerado em seu portfólio profissional de divulgação.<br/><br/>
+    <b>CLÁUSULA SEGUNDA - DAS OBRIGAÇÕES E PAGAMENTO:</b> O não pagamento no prazo pactuado sujeitará o presente contrato à incidência de juros moratórios legais e à suspensão temporária dos serviços pela <a href="https://tour360vr.com.br" color="#2563EB"><b>Tour360VR</b></a> até a devida regularização financeira.<br/><br/>
+    <b>CLÁUSULA TERCEIRA - DOS DIREITOS DE USO E PROPRIEDADE:</b> Os direitos de uso do Tour Virtual 360° e fotos em alta definição serão cedidos em caráter ilimitado à <b>CONTRATANTE</b> para veiculação oficial no Google. A <a href="https://tour360vr.com.br" color="#2563EB"><b>Tour360VR</b></a> reserva-se o direito de utilizar o material gerado em seu portfólio profissional de divulgação.<br/><br/>
     <b>CLÁUSULA QUARTA - CONFIDENCIALIDADE E LGPD:</b> As partes comprometem-se a manter sob sigilo absoluto todas as informações operacionais fornecidas, em estrita conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018).<br/><br/>
     <b>CLÁUSULA QUINTA - VALIDADE DA PROPOSTA:</b> A presente proposta e condições comerciais possuem validade oficial de 15 (quinze) dias a contar da data de sua emissão.
     """
     story.append(Paragraph(clausulas, body_style))
-    story.append(Spacer(1, 30)) # Espaçamento generoso antes das assinaturas
+    story.append(Spacer(1, 35))
 
-    # Assinaturas limpas sem os termos contratada/contratante junto aos nomes
+    # Assinaturas centralizadas e limpas sem os termos contratada/contratante junto aos nomes
     assinaturas_data = [
         [
-            Paragraph("__________________________________________<br/><b>Rubens Okamoto</b><br/><b>Tour360VR</b>", body_style),
-            Paragraph(f"__________________________________________<br/><b>{resp_emp}</b><br/><b>{nome_emp}</b>", body_style)
+            Paragraph("__________________________________________<br/><b>Rubens Okamoto</b><br/><b>Tour360VR</b>", signature_style),
+            Paragraph(f"__________________________________________<br/><b>{resp_emp}</b><br/><b>{nome_emp}</b>", signature_style)
         ]
     ]
     t_ass = Table(assinaturas_data, colWidths=[260, 260])
     story.append(t_ass)
     
     # Empurrador de rodapé para fixar no fim absoluto da página
-    story.append(Spacer(1, 50))
+    story.append(Spacer(1, 60))
 
     story.append(HRFlowable(width="100%", thickness=0.8, color=colors.HexColor('#93C5FD'), spaceAfter=6))
-    story.append(Paragraph("<b>tour360vr.com.br</b> &nbsp;|&nbsp; contato@tour360vr.com.br &nbsp;|&nbsp; <b>Tour360VR</b> - Soluções em Visual Mídia & SEO Local", footer_style))
+    story.append(Paragraph('<a href="https://tour360vr.com.br" color="#2563EB"><b>tour360vr.com.br</b></a> &nbsp;|&nbsp; <a href="mailto:contato@tour360vr.com.br" color="#2563EB">contato@tour360vr.com.br</a> &nbsp;|&nbsp; <a href="https://wa.me/5516991332121" color="#2563EB">WhatsApp: (16) 99133-2121</a> &nbsp;|&nbsp; <b>Tour360VR</b>', footer_style))
 
     doc.build(story)
     buffer.seek(0)
@@ -387,7 +388,6 @@ if st.session_state["aba_ativa"] == "cadastrar":
             st.session_state.pop("cliente_id_edicao", None)
 
     with st.form("form_cliente_gmb_completo"):
-        # Abas restauradas com todos os campos de configuração, horários e status
         sub_t1, sub_t2, sub_t3, sub_t4, sub_t5, sub_t6 = st.tabs([
             "🏢 Sobre & Ficha", "⏰ Horários & Status", "💵 Contrato & Mídias", "📞 Contato & Redes", "🛠️ Checklist", "📜 Histórico"
         ])
@@ -609,7 +609,7 @@ elif st.session_state["aba_ativa"] == "metricas":
     gerar_botoes_navegacao_rodape()
 
 # ==========================================
-# MÓDULO 4: CURATORIA & PAUTAS INTELIGENTES
+# MÓDULO 4: CURATORIA & PAUTAS INTELIGENTES (Expandido com mais opções)
 # ==========================================
 elif st.session_state["aba_ativa"] == "ia":
     st.subheader("🎯 Curadoria Enterprise & Pautas Editáveis")
@@ -628,14 +628,18 @@ elif st.session_state["aba_ativa"] == "ia":
 
         st.markdown(f"**Banco Amplo de Pautas Inteligentes — Segmento: {cat} ({reg})**")
         
+        # Banco expandido de pautas inteligentes
         pautas_sugeridas = [
             f"Como escolher o melhor serviço de {cat} em {reg}?",
             f"Bastidores da equipe da {emp}: Nosso compromisso com a excelência.",
-            f"Conheça a estrutura imersiva da {emp} em Tour Virtual 360°.",
-            f"Diferenciais técnicos que tornam a {emp} referência na região.",
-            f"Atendimento rápido, orçamentos e facilidades pelo canal de contato da {emp}.",
-            f"Erros comuns ao contratar serviços de {cat} e como evitar.",
-            f"Depoimentos e histórias de sucesso de clientes atendidos pela {emp}."
+            f"Conheça a estrutura imersiva da {emp} através do nosso Tour Virtual 360°.",
+            f"Diferenciais técnicos que tornam a {emp} referência absoluta na região.",
+            f"Atendimento rápido, orçamentos e facilidades pelo canal de atendimento da {emp}.",
+            f"Erros comuns ao contratar serviços de {cat} e como evitar na prática.",
+            f"Depoimentos, casos de sucesso e histórias de clientes atendidos pela {emp}.",
+            f"Por que o atendimento especializado em {cat} faz toda a diferença para você?",
+            f"Novidades, melhorias e atualizações nos serviços prestados pela {emp}.",
+            f"Perguntas frequentes (FAQ): Tire todas as suas dúvidas sobre {cat} com a {emp}."
         ]
 
         st.markdown("### Selecione e Personalize as Pautas do Mês:")
@@ -643,7 +647,7 @@ elif st.session_state["aba_ativa"] == "ia":
         for idx, p_text in enumerate(pautas_sugeridas, 1):
             col_chk, col_txt = st.columns([0.1, 0.9])
             with col_chk:
-                ativo = st.checkbox("", value=(idx <= 5), key=f"chk_pauta_{idx}")
+                ativo = st.checkbox("", value=(idx <= 6), key=f"chk_pauta_{idx}")
             with col_txt:
                 p_editada = st.text_input(f"Pauta {idx}", value=p_text, key=f"txt_pauta_{idx}", label_visibility="collapsed")
             if ativo:
