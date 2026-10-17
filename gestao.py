@@ -740,11 +740,11 @@ if st.session_state["aba_ativa"] == "cadastrar":
             st.markdown("---")
             descricao_empresa = st.text_area("Descrição Oficial da Empresa (Otimizada para SEO Local & IAs)", value=dados_existentes[15] if (modo_edicao and len(dados_existentes) > 15) else "", height=180)
 
-        # SUB-ABA FINANCEIRA DO CONTRATO - PROPORÇÃO AJUSTADA PARA FICAR EM 1 LINHA
+       # SUB-ABA FINANCEIRA DO CONTRATO - LARGURAS AJUSTADAS + KEY ÚNICA
         with sub_tab_financeiro:
             st.markdown("**Dados do Contrato do Cliente (Visível apenas para a Agência):**")
             
-            # Proporções customizadas: menos espaço para números, mais espaço para os radio buttons
+            # Proporções customizadas para caber tudo em 1 linha
             col_f1, col_f2, col_f3 = st.columns([1.2, 1.2, 2.6])
             
             opts_status_contrato = ["Ativo", "Em Negociação", "Pausado", "Cancelado"]
@@ -755,20 +755,32 @@ if st.session_state["aba_ativa"] == "cadastrar":
                 valor_contrato_mensal = st.number_input(
                     "Valor da Mensalidade (R$)",
                     min_value=0.0, step=50.0,
-                    value=float(dados_existentes[9]) if (modo_edicao and len(dados_existentes) > 9 and dados_existentes[9] is not None) else 450.0
+                    value=float(dados_existentes[9]) if (modo_edicao and len(dados_existentes) > 9 and dados_existentes[9] is not None) else 450.0,
+                    key="num_valor_mensalidade_cad"
                 )
             with col_f2:
                 dia_vencimento = st.number_input(
                     "Dia do Vencimento Mensal",
                     min_value=1, max_value=31, step=1,
-                    value=int(dados_existentes[10]) if (modo_edicao and len(dados_existentes) > 10 and dados_existentes[10] is not None) else 10
+                    value=int(dados_existentes[10]) if (modo_edicao and len(dados_existentes) > 10 and dados_existentes[10] is not None) else 10,
+                    key="num_dia_vencimento_cad"
                 )
             with col_f3:
-                status_contrato = st.radio("Status do Contrato com a Agência", opts_status_contrato, index=idx_st_c, horizontal=True)
+                # O parâmetro key="rad_status_contrato_cad" evita o erro de ID duplicado no Streamlit
+                status_contrato = st.radio(
+                    "Status do Contrato com a Agência", 
+                    opts_status_contrato, 
+                    index=idx_st_c, 
+                    horizontal=True,
+                    key="rad_status_contrato_cad"
+                )
 
             st.markdown("---")
-            link_drive_midias = st.text_input("Link da Pasta de Mídias e Fotos 360° (Google Drive / Photos / Pano2VR)", value=dados_existentes[39] if (modo_edicao and len(dados_existentes) > 39 and dados_existentes[39]) else "")
-            status_contrato = st.radio("Status do Contrato com a Agência", opts_status_contrato, index=idx_st_c, horizontal=True)
+            link_drive_midias = st.text_input(
+                "Link da Pasta de Mídias e Fotos 360° (Google Drive / Photos / Pano2VR)", 
+                value=dados_existentes[39] if (modo_edicao and len(dados_existentes) > 39 and dados_existentes[39]) else "",
+                key="txt_link_drive_cad"
+            )
 
         # SUB-ABA 3: CONTATO & REDES SOCIAIS
         with sub_tab_contato:
