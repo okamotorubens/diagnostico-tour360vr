@@ -1,12 +1,17 @@
 import streamlit as st
 import pandas as pd
 import os
+import re
 from datetime import datetime, date
 from io import BytesIO
 import urllib.parse
 import qrcode
 from PIL import Image as PILImage
 from supabase import create_client, Client
+
+# Bibliotecas para Scraping Gratuito
+import requests
+from bs4 import BeautifulSoup
 
 # Importações do ReportLab para PDF
 from reportlab.lib.pagesizes import letter
@@ -53,6 +58,73 @@ def calcular_variacao_pct(atual, anterior):
     if diff > 0:
         return f"+{diff:.1f}%"
     return f"{diff:.1f}%"
+
+# --- SCRAPER GRATUITO PARA AUDITORIA DE FICHA ---
+def auditar_ficha_google(url_maps):
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36"
+    }
+    
+    try:
+        response = requests.get(url_maps, headers=headers, timeout=10)
+        if response.status_code != 200:
+            return None, "Não foi possível carregar a URL fornecida. Verifique o link."
+        
+        html = response.text
+        
+        # Análise Heurística das informações públicas presentes no HTML
+        tem_site = ("http://" in html or "https://" in html) and "website" in html.lower()
+        tem_telefone = bool(re.search(r'\+?55\s?\(?\d{2}\)?\s?\d{4,5}\-?\d{4}', html)) or "phone" in html.lower()
+        tem_avaliacoes = "star" in html.lower() or "comentários" in html.lower() or "reviews" in html.lower()
+        tem_fotos = "photo" in html.lower() or "photos" in html.lower()
+        
+        # Tentar extrair nome comercial do título da página
+        soup = BeautifulSoup(html, 'html.parser')
+        title = soup.title.string if soup.title else "Empresa Auditada"
+        nome_extraido = title.replace("- Google Maps", "").replace("- Busca Google", "").strip()
+
+        # Cálculo da pontuação da ficha (Health Score)
+        pontos = 0
+        pendencias = []
+        oportunidades = []
+
+        if tem_site:
+            pontos += 25
+        else:
+            pendencias.append("❌ Ficha sem Link de Website / Cartão Digital configurado")
+            oportunidades.append("Incluir site ou landing page otimizada com Tour Virtual 360°")
+
+        if tem_telefone:
+            pontos += 25
+        else:
+            pendencias.append("❌ Número de Telefone Comercial / WhatsApp não destacado")
+
+        if tem_avaliacoes:
+            pontos += 25
+        else:
+            pendencias.append("⚠️ Poucas ou nenhuma avaliação visível destacada")
+            oportunidades.append("Implementar estratégia de captação de reviews via QR Code de balcão")
+
+        if tem_fotos:
+            pontos += 25
+        else:
+            pendencias.append("⚠️ Ausência de fotos recentes e Tour Virtual 360° em alta definição")
+            oportunidades.append("Realizar sessão fotográfica profissional + Tour 360° Street View")
+
+        resultado = {
+            "nome": nome_extraido if nome_extraido else "Empresa Selecionada",
+            "score": pontos,
+            "has_site": tem_site,
+            "has_phone": tem_telefone,
+            "has_reviews": tem_avaliacoes,
+            "has_photos": tem_fotos,
+            "pendencias": pendencias,
+            "oportunidades": oportunidades
+        }
+        return resultado, None
+
+    except Exception as e:
+        return None, f"Erro ao analisar o link: {str(e)}"
 
 # --- GERAR QR CODE PERMANENTE E LIMPO ---
 def gerar_qr_code_limpo(url):
@@ -417,13 +489,13 @@ def gerar_pdf_prospeccao_cases(inc_clientes, inc_faturamento, inc_grafico, inc_k
     buffer.seek(0)
     return buffer
 
-# --- CSS PERSONALIZADO ---
+# --- CSS PERSONALIZADO COM PADRONIZAÇÃO DE BOTÕES ---
 st.markdown("""
     <style>
     .block-container {
         padding-top: 1.2rem !important;
         padding-bottom: 2rem !important;
-        max-width: 90% !important;
+        max-width: 94% !important;
     }
     
     header[data-testid="stHeader"] {
@@ -440,8 +512,8 @@ st.markdown("""
         background-color: #161F30;
         border: 1px solid #2B364A;
         border-radius: 12px;
-        padding: 16px 20px 14px 20px !important;
-        margin-bottom: 35px !important;
+        padding: 16px 20px 16px 20px !important;
+        margin-bottom: 25px !important;
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
     }
 
@@ -457,18 +529,28 @@ st.markdown("""
     .sub-title-card {
         color: #8E9BAE;
         font-size: 0.90rem;
-        margin-bottom: 12px !important;
+        margin-bottom: 16px !important;
     }
 
+    /* ESTILIZAÇÃO PADRONIZADA DE TODOS OS BOTÕES DE NAVEGAÇÃO SUPERIOR */
     div[data-testid="stColumn"] button {
         width: 100% !important;
+        min-height: 52px !important;
+        height: 52px !important;
         background-color: #1A2130 !important;
         border: 1.5px solid #455570 !important;
         color: #FFFFFF !important;
         border-radius: 8px !important;
-        padding: 9px 8px !important;
+        padding: 4px 6px !important;
         font-weight: 700 !important;
-        font-size: 0.85rem !important;
+        font-size: 0.80rem !important;
+        line-height: 1.2 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        text-align: center !important;
+        white-space: normal !important;
+        word-wrap: break-word !important;
         transition: all 0.25s ease-in-out !important;
     }
 
@@ -513,10 +595,11 @@ if "aba_ativa" not in st.session_state:
 st.markdown("""
 <div class="top-card-container">
     <h1 class="main-title-card">📈 Gestão Mensal & Estratégia do Perfil | Tour360VR</h1>
-    <p class="sub-title-card">Acompanhamento de perfis no Google Maps, curadoria estratégica de conteúdo e relatórios executivos de ROI.</p>
+    <p class="sub-title-card">Acompanhamento de perfis no Google Maps, auditoria instantânea, curadoria de conteúdo e ROI.</p>
 """, unsafe_allow_html=True)
 
-cols = st.columns([1.1, 1.1, 1.3, 1.1, 1.0, 1.1, 1.1])
+# 8 colunas perfeitamente iguais (largura 1.0)
+cols = st.columns([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
 
 with cols[0]:
     if st.button("⚙️ Ficha Comercial", key="btn_cad", type="primary" if st.session_state["aba_ativa"] == "cadastrar" else "secondary"):
@@ -524,31 +607,36 @@ with cols[0]:
         st.rerun()
 
 with cols[1]:
+    if st.button("🔍 Auditoria Express", key="btn_auditoria", type="primary" if st.session_state["aba_ativa"] == "auditoria" else "secondary"):
+        st.session_state["aba_ativa"] = "auditoria"
+        st.rerun()
+
+with cols[2]:
     if st.button("📋 Métricas & SEO", key="btn_inc", type="primary" if st.session_state["aba_ativa"] == "metricas" else "secondary"):
         st.session_state["aba_ativa"] = "metricas"
         st.rerun()
 
-with cols[2]:
+with cols[3]:
     if st.button("🎯 Curadoria & Pautas", key="btn_ia", type="primary" if st.session_state["aba_ativa"] == "ia" else "secondary"):
         st.session_state["aba_ativa"] = "ia"
         st.rerun()
 
-with cols[3]:
+with cols[4]:
     if st.button("📊 Dashboard ROI", key="btn_dash", type="primary" if st.session_state["aba_ativa"] == "dashboard" else "secondary"):
         st.session_state["aba_ativa"] = "dashboard"
         st.rerun()
 
-with cols[4]:
-    if st.button("🏆 Prospecção", key="btn_cases", type="primary" if st.session_state["aba_ativa"] == "cases" else "secondary"):
+with cols[5]:
+    if st.button("🏆 Prospecção Cases", key="btn_cases", type="primary" if st.session_state["aba_ativa"] == "cases" else "secondary"):
         st.session_state["aba_ativa"] = "cases"
         st.rerun()
 
-with cols[5]:
+with cols[6]:
     if st.button("📄 Relatório PDF", key="btn_pdf", type="primary" if st.session_state["aba_ativa"] == "pdf" else "secondary"):
         st.session_state["aba_ativa"] = "pdf"
         st.rerun()
 
-with cols[6]:
+with cols[7]:
     if st.button("💰 Financeiro MRR", key="btn_fin", type="primary" if st.session_state["aba_ativa"] == "financeiro" else "secondary"):
         st.session_state["aba_ativa"] = "financeiro"
         st.rerun()
@@ -556,9 +644,70 @@ with cols[6]:
 st.markdown("</div>", unsafe_allow_html=True)
 
 # ==========================================
+# MÓDULO NOVO: AUDITORIA EXPRESS DE FICHA GOOGLE
+# ==========================================
+if st.session_state["aba_ativa"] == "auditoria":
+    st.subheader("🔍 Auditoria de Ficha Google em 1 Clique (Diagnóstico de Vendas)")
+    st.caption("Cole o link público do Google Maps da empresa para identificar falhas no perfil e gerar argumentos de vendas instantâneos.")
+
+    url_prospect = st.text_input("Cole aqui a URL do Google Maps da Empresa Prospect:", placeholder="https://maps.google.com/...", key="txt_url_auditoria")
+
+    if st.button("⚡ Executar Varredura da Ficha", key="btn_rodar_auditoria"):
+        if url_prospect:
+            with st.spinner("Analisando presença digital e elementos da ficha no Google..."):
+                resultado, erro = auditar_ficha_google(url_prospect)
+                
+                if erro:
+                    st.error(erro)
+                else:
+                    st.markdown("---")
+                    st.markdown(f"### 🏢 Diagnóstico da Ficha: **{resultado['nome']}**")
+                    
+                    score = resultado['score']
+                    if score >= 75:
+                        st.success(f"🏆 **Pontuação da Ficha (Health Score): {score}%** — Ficha com bom preenchimento inicial.")
+                    elif score >= 50:
+                        st.warning(f"⚠️ **Pontuação da Ficha (Health Score): {score}%** — Presença intermediária com falhas de SEO.")
+                    else:
+                        st.error(f"🚨 **Pontuação da Ficha (Health Score): {score}%** — Ficha crítica, necessita intervenção profissional urgente.")
+
+                    a1, a2, a3, a4 = st.columns(4)
+                    a1.metric("Website Vinculado", "✅ Sim" if resultado['has_site'] else "❌ Ausente")
+                    a2.metric("Telefone / Whats", "✅ Sim" if resultado['has_phone'] else "❌ Ausente")
+                    a3.metric("Avaliações Destacadas", "✅ Sim" if resultado['has_reviews'] else "⚠️ Poucas/Ausente")
+                    a4.metric("Fotos & Tour 360°", "✅ Sim" if resultado['has_photos'] else "⚠️ Ausente/Baixo")
+
+                    st.markdown("---")
+                    col_aud1, col_aud2 = st.columns(2)
+                    
+                    with col_aud1:
+                        st.markdown("### 🚨 Oportunidades & Falhas Identificadas:")
+                        if resultado['pendencias']:
+                            for pend in resultado['pendencias']:
+                                st.write(f"- {pend}")
+                        else:
+                            st.write("- Nenhuma pendência crítica de infraestrutura detectada.")
+
+                    with col_aud2:
+                        st.markdown("### 💡 Argumentos Comerciais da Tour360VR:")
+                        if resultado['oportunidades']:
+                            for op in resultado['oportunidades']:
+                                st.write(f"- {op}")
+                        else:
+                            st.write("- Focar em otimização contínua de Palavras-Chave e Tour Virtual 360° imersivo.")
+
+                    st.markdown("---")
+                    # Mensagem customizada de abordagem via WhatsApp
+                    str_prop = f"Olá! Fiz uma análise rápida da ficha de {resultado['nome']} no Google Maps e identifiquei que existem algumas oportunidades para melhorar seu posicionamento e atrair mais clientes na região. Podemos conversar a respeito?"
+                    url_enc_prop = urllib.parse.quote(str_prop)
+                    st.markdown(f'<a href="https://wa.me/?text={url_enc_prop}" target="_blank" style="text-decoration:none;"><button style="width:100%; background-color:#2563EB; color:white; border:none; padding:12px; border-radius:8px; font-weight:bold; cursor:pointer;">📱 Compartilhar Abordagem de Vendas no WhatsApp</button></a>', unsafe_allow_html=True)
+        else:
+            st.warning("Insira uma URL válida do Google Maps antes de iniciar a varredura.")
+
+# ==========================================
 # MÓDULO 1: CADASTRAR / EDITAR FICHA DO CLIENTE
 # ==========================================
-if st.session_state["aba_ativa"] == "cadastrar":
+elif st.session_state["aba_ativa"] == "cadastrar":
     st.subheader("⚙️ Cadastro e Atualização de Informações Comerciais (GMB)")
     
     df_clientes_existentes = obter_clientes_unicos()
