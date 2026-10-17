@@ -645,18 +645,18 @@ st.markdown("""
     div[data-testid="stSelectbox"], 
     div[data-testid="stDateInput"],
     div[data-testid="stTextArea"] {
-        margin-bottom: 7px !important;
+        margin-bottom: 6px !important;
     }
 
     hr {
         margin-top: 10px !important;
-        margin-bottom: 7px !important;
+        margin-bottom: 3px !important;
         border-color: #2B364A !important;
     }
 
     div[data-baseweb="tab-list"] {
         gap: 8px !important;
-        margin-bottom: 12px !important;
+        margin-bottom: 13px !important;
     }
 
     button[data-baseweb="tab"] {
