@@ -421,7 +421,7 @@ st.markdown("""
     header[data-testid="stHeader"] { display: none !important; }
     .stApp { background-color: #0B0E14; color: #E0E6ED; font-family: 'Inter', -apple-system, sans-serif; }
     
-    /* Card de Topo com o mesmo padrão elegante do Radar */
+    /* Card de Topo com o mesmo padrão elegante do Radar encapsulado */
     .top-card-radar-style { 
         background-color: #161F30; 
         border: 1px solid #2B364A; 
@@ -429,9 +429,23 @@ st.markdown("""
         padding: 20px 24px !important; 
         margin-bottom: 12px !important; 
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); 
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        width: 100%;
     }
-    .main-title-radar { color: #FFFFFF; font-weight: 800; font-size: 1.6rem; margin-top: 0px !important; margin-bottom: 4px !important; }
-    .sub-title-radar { color: #8E9BAE; font-size: 0.9rem; margin-bottom: 0px !important; }
+    .radar-logo-img {
+        width: 75px;
+        height: auto;
+        object-fit: contain;
+    }
+    .radar-text-content {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+    .main-title-radar { color: #FFFFFF; font-weight: 800; font-size: 1.6rem; margin: 0 !important; }
+    .sub-title-radar { color: #8E9BAE; font-size: 0.9rem; margin: 4px 0 0 0 !important; }
     
     div[data-testid="stHorizontalBlock"] { gap: 0.2rem !important; margin-bottom: 10px !important; }
     hr { margin-top: 4px !important; margin-bottom: 4px !important; border-color: #2B364A !important; }
@@ -457,24 +471,26 @@ st.markdown("""
 if "aba_ativa" not in st.session_state:
     st.session_state["aba_ativa"] = "cadastrar"
 
-# --- CARD DE TOPO PADRÃO RADAR (LOGO | NOME DO SISTEMA DENTRO DO CARD) ---
-with st.container():
-    st.markdown('<div class="top-card-radar-style">', unsafe_allow_html=True)
-    
-    col_logo, col_texto = st.columns([1.1, 8.9], vertical_alignment="center")
-    with col_logo:
-        if os.path.exists(LOGO_LOCAL_PATH):
-            img_pil = PILImage.open(LOGO_LOCAL_PATH)
-            st.image(img_pil, width=75)
-        else:
-            st.markdown("🏢")
-    with col_texto:
-        st.markdown("""
+# --- CARD DE TOPO PADRÃO RADAR 100% ENCAPSULADO NO HTML ---
+import base64
+def obter_base64_logo(caminho):
+    if os.path.exists(caminho):
+        with open(caminho, "rb") as f:
+            return base64.b64encode(f.read()).decode("utf-8")
+    return ""
+
+logo_base64 = obter_base64_logo(LOGO_LOCAL_PATH)
+img_tag = f'<img src="data:image/png;base64,{logo_base64}" class="radar-logo-img"/>' if logo_base64 else '🏢'
+
+st.markdown(f"""
+    <div class="top-card-radar-style">
+        {img_tag}
+        <div class="radar-text-content">
             <h1 class="main-title-radar">Gestão Mensal & Estratégia</h1>
             <p class="sub-title-radar">Plataforma corporativa de inteligência de Google Maps, auditoria, curadoria e contratos.</p>
-        """, unsafe_allow_html=True)
-        
-    st.markdown('</div>', unsafe_allow_html=True)
+        </div>
+    </div>
+""", unsafe_allow_html=True)
 
 # 1 LINHA DE ESPAÇO EXATA ENTRE O CARD E OS BOTÕES DAS ETAPAS
 st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
