@@ -12,7 +12,7 @@ st.set_page_config(
 # --- CSS PERSONALIZADO ---
 st.markdown("""
     <style>
-    /* 1. Margens do Topo e Fundo */
+    /* 1. Área Global e Margens Superior/Inferior */
     .block-container {
         padding-top: 1.2rem !important;
         padding-bottom: 1.5rem !important;
@@ -29,21 +29,37 @@ st.markdown("""
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     }
 
-    /* 2. Sidebar e Centralização Absoluta das Imagens */
+    /* 2. FORÇAR CENTRALIZAÇÃO ABSOLUTA NA SIDEBAR */
     [data-testid="stSidebar"] {
         background-color: #07090E;
         border-right: 1px solid #1E2640;
     }
 
+    /* Centraliza todos os blocos de imagem e texto da barra lateral */
+    [data-testid="stSidebar"] [data-testid="stVerticalBlock"] > div {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        text-align: center !important;
+        width: 100% !important;
+    }
+
+    [data-testid="stSidebar"] [data-testid="stImage"] {
+        display: flex !important;
+        justify-content: center !important;
+        width: 100% !important;
+        margin: 0 auto !important;
+    }
+
     [data-testid="stSidebar"] [data-testid="stImage"] img {
-        display: block !important;
-        margin-left: auto !important;
-        margin-right: auto !important;
+        margin: 0 auto !important;
     }
 
     .sidebar-center-text {
         text-align: center !important;
-        width: 100%;
+        width: 100% !important;
+        display: block !important;
     }
 
     /* 3. Títulos da Página */
@@ -76,25 +92,25 @@ st.markdown("""
         margin-top: 2.2rem;
     }
 
-    /* 4. CARD CLICÁVEL (Card Inteiro como Link) */
+    /* 4. CARDS CLICÁVEIS COM BORDA BRANCA E HOVER NEON AZUL */
     .clickable-card {
         display: flex;
         flex-direction: column;
         justify-content: flex-start;
         background: #121824;
-        border: 1px solid #1E2640;
+        border: 1.5px solid #FFFFFF; /* Borda branca padrão */
         border-radius: 10px;
-        padding: 20px 18px;
-        height: 135px !important;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        padding: 20px 18px 22px 18px; /* Respiro aumentado */
+        height: 150px !important; /* +1 linha de espaço interno */
+        box-shadow: 0 0 8px rgba(255, 255, 255, 0.12);
         text-decoration: none !important;
         transition: all 0.3s ease-in-out;
         box-sizing: border-box;
     }
     
     .clickable-card:hover {
-        border-color: #00E5FF;
-        box-shadow: 0 0 16px rgba(0, 229, 255, 0.3);
+        border-color: #00E5FF !important; /* Borda muda para Azul Neon */
+        box-shadow: 0 0 18px #00E5FF, 0 0 28px rgba(0, 229, 255, 0.4) !important; /* Efeito Neon Azul */
         transform: translateY(-3px);
         background: #161F30;
     }
@@ -112,7 +128,7 @@ st.markdown("""
     .clickable-card p {
         color: #94A3B8;
         font-size: 0.84rem;
-        line-height: 1.42;
+        line-height: 1.45;
         margin: 0;
     }
 
@@ -120,7 +136,7 @@ st.markdown("""
         color: #00E5FF !important;
     }
 
-    /* 5. Botões da Sidebar */
+    /* 5. Botões da Navegação Rápida (Sidebar) */
     .sidebar-nav-btn {
         display: block;
         width: 100%;
@@ -140,9 +156,9 @@ st.markdown("""
     }
 
     .sidebar-nav-btn:hover {
-        border-color: #FFFFFF;
-        color: #FFFFFF !important;
-        box-shadow: 0 0 14px #FFFFFF;
+        border-color: #00E5FF !important;
+        color: #00E5FF !important;
+        box-shadow: 0 0 14px #00E5FF;
         background-color: #1A202C;
     }
     </style>
@@ -165,7 +181,7 @@ with st.sidebar:
     elif os.path.exists("okamoto_preto.png"):
         st.image("okamoto_preto.png", width=165)
 
-    st.markdown("<hr style='margin: 14px 0; border-color: #1E2640;'>", unsafe_allow_html=True)
+    st.markdown("<hr style='margin: 14px 0; border-color: #1E2640; width: 100%;'>", unsafe_allow_html=True)
     
     # Navegação Rápida
     st.markdown("<div class='sidebar-center-text'>", unsafe_allow_html=True)
@@ -176,7 +192,7 @@ with st.sidebar:
     st.markdown("<a href='#okamoto-midias-visuais-comercial-precificacao' class='sidebar-nav-btn'>📸 Okamoto Mídias Visuais</a>", unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
     
-    st.markdown("<hr style='margin: 16px 0; border-color: #1E2640;'>", unsafe_allow_html=True)
+    st.markdown("<hr style='margin: 16px 0; border-color: #1E2640; width: 100%;'>", unsafe_allow_html=True)
     
     # Rodapé
     st.markdown("<div class='sidebar-center-text' style='color: #8A99AD; font-size: 0.75rem; line-height: 1.4;'>Painel Unificado de Operações<br>© Okamoto Mídias Visuais</div>", unsafe_allow_html=True)
