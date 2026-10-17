@@ -414,20 +414,20 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     buffer.seek(0)
     return buffer
 
-# --- CSS PERSONALIZADO (PADRÃO ENTERPRISE IDÊNTICO AO RADAR) ---
+# --- CSS PERSONALIZADO (PADRÃO ENTERPRISE IDÊNTICO AO RADAR & BOTÕES REFINADOS) ---
 st.markdown("""
     <style>
     .block-container { padding-top: 1.0rem !important; padding-bottom: 1.5rem !important; max-width: 94% !important; margin: 0 auto !important; }
     header[data-testid="stHeader"] { display: none !important; }
     .stApp { background-color: #0B0E14; color: #E0E6ED; font-family: 'Inter', -apple-system, sans-serif; }
     
-    /* Card de Topo com o mesmo padrão elegante do Radar encapsulado e perfeitamente centralizado */
+    /* Card de Topo Perfeito */
     .top-card-radar-style { 
         background-color: #161F30; 
         border: 1px solid #2B364A; 
         border-radius: 10px; 
         padding: 22px 28px !important; 
-        margin-bottom: 8px !important; 
+        margin-bottom: 6px !important; 
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); 
         display: flex;
         align-items: center;
@@ -449,22 +449,22 @@ st.markdown("""
     .main-title-radar { color: #FFFFFF !important; font-weight: 800; font-size: 1.7rem; margin: 0 !important; }
     .sub-title-radar { color: #8E9BAE; font-size: 0.92rem; margin: 4px 0 0 0 !important; }
     
-    div[data-testid="stHorizontalBlock"] { gap: 0.2rem !important; margin-bottom: 6px !important; }
-    hr { margin-top: 4px !important; margin-bottom: 4px !important; border-color: #2B364A !important; }
+    div[data-testid="stHorizontalBlock"] { gap: 0.15rem !important; margin-bottom: 4px !important; }
+    hr { margin-top: 2px !important; margin-bottom: 4px !important; border-color: #2B364A !important; }
     
+    /* Ajuste refinado dos botões de navegação das abas */
     div[data-testid="stColumn"] button { 
-        width: 100% !important; min-height: 42px !important; height: auto !important; 
-        background-color: #1A2130 !important; border: 1.5px solid #455570 !important; 
-        color: #FFFFFF !important; border-radius: 8px !important; font-weight: 700 !important; font-size: 0.68rem !important; 
+        width: 100% !important; min-height: 38px !important; height: auto !important; 
+        background-color: #161F30 !important; border: 1px solid #2B364A !important; 
+        color: #C5CDD9 !important; border-radius: 6px !important; font-weight: 600 !important; font-size: 0.68rem !important; 
         transition: all 0.2s ease-in-out;
     }
     div[data-testid="stColumn"] button:hover {
-        background-color: #252D42 !important; border-color: #FFFFFF !important; color: #FFFFFF !important;
-        box-shadow: 0 0 12px rgba(255, 255, 255, 0.8), 0 0 4px rgba(255, 255, 255, 0.9) !important;
+        background-color: #1E293B !important; border-color: #455570 !important; color: #FFFFFF !important;
     }
     div[data-testid="stColumn"] button[kind="primary"] {
-        background-color: #252D42 !important; border-color: #FFFFFF !important;
-        box-shadow: 0 0 14px rgba(255, 255, 255, 0.9), 0 0 6px rgba(255, 255, 255, 1) !important;
+        background-color: #1E293B !important; border: 1.5px solid #FFFFFF !important; color: #FFFFFF !important;
+        box-shadow: 0 0 10px rgba(255, 255, 255, 0.4) !important;
     }
     div[data-testid="stForm"] { border-color: #2B364A !important; padding: 16px !important; border-radius: 10px !important; background-color: #131A28 !important; }
     </style>
@@ -473,7 +473,7 @@ st.markdown("""
 if "aba_ativa" not in st.session_state:
     st.session_state["aba_ativa"] = "cadastrar"
 
-# --- CARD DE TOPO PADRÃO RADAR 100% ENCAPSULADO NO HTML (LOGO MAIOR | NOME BRANCO) ---
+# --- CARD DE TOPO PADRÃO RADAR ---
 import base64
 def obter_base64_logo(caminho):
     if os.path.exists(caminho):
@@ -494,8 +494,8 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-# 1 LINHA DE ESPAÇO EXATA E REDUZIDA ENTRE O CARD E OS BOTÕES DAS ETAPAS
-st.markdown("<div style='height: 6px;'></div>", unsafe_allow_html=True)
+# Espaçamento milimetricamente reduzido entre o card e os botões
+st.markdown("<div style='height: 4px;'></div>", unsafe_allow_html=True)
 
 cols = st.columns(8)
 aba_map = [("cadastrar", "⚙️ Ficha"), ("auditoria", "🔍 Auditoria"), ("metricas", "📋 Métricas"), ("ia", "🎯 Curadoria"), ("dashboard", "📊 Dashboard"), ("cases", "🏆 Prospecção"), ("pdf", "📄 Relatório"), ("financeiro", "💰 Financeiro")]
