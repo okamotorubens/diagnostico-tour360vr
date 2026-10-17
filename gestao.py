@@ -25,7 +25,7 @@ import matplotlib.pyplot as plt
 
 # --- CONFIGURAÇÃO DA PÁGINA & CAMINHOS DA LOGO ---
 FAVICON_TOUR360 = "https://tour360vr.com.br/favicon.ico"
-LOGO_TOUR360_PATH = "ativos/logo_tour_transparente.png"
+LOGO_TOUR360_PATH = "assets/logo_tour_transparente.png"
 LOGO_TOUR360_URL = "https://raw.githubusercontent.com/okamotorubens/diagnostico-tour360vr/main/ativos/logo_tour_transparente.png"
 
 st.set_page_config(
