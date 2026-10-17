@@ -94,7 +94,6 @@ if "aprovar" in query_params or st.session_state.get("modo_aprovacao", False):
         </div>
     """, unsafe_allow_html=True)
 
-    # Texto de boas-vindas com 1 linha adicional de espaço antes das pautas
     st.markdown('<div class="welcome-text">Bem-vindo à sua página exclusiva de validação e curadoria de pautas.</div>', unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("### Selecione as Pautas Aprovadas e Informe Ajustes se Necessário:")
@@ -341,7 +340,7 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     story = []
     styles = getSampleStyleSheet()
 
-    doc_title_style = ParagraphStyle('DocTitleStyle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=12, leading=14, alignment=1, textColor=colors.HexColor('#1E293B'))
+    doc_title_style = ParagraphStyle('DocTitleStyle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=15, leading=18, alignment=1, textColor=colors.HexColor('#1E293B'))
     body_style = ParagraphStyle('DocBody', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=12.5, alignment=4, textColor=colors.HexColor('#1E293B'))
     signature_style = ParagraphStyle('DocSig', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=12, alignment=1, textColor=colors.HexColor('#1E293B'))
 
@@ -360,7 +359,6 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     data_extenso = f"Ribeirão Preto - SP, {hoje.day} de {meses_pt[hoje.month - 1]} de {hoje.year}."
     story.append(Paragraph(data_extenso, ParagraphStyle('Date', fontName='Helvetica', fontSize=9, alignment=2, textColor=colors.HexColor('#64748B'))))
     
-    # 1 linha a mais de espaço antes e depois do título "TERMO DE CONTRATAÇÃO DE SERVIÇOS"
     story.append(Spacer(1, 25))
     story.append(Paragraph("TERMO DE CONTRATAÇÃO DE SERVIÇOS", doc_title_style))
     story.append(Spacer(1, 25))
@@ -391,7 +389,6 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     """
     story.append(Paragraph(clausulas, body_style))
     
-    # 1 linha a mais de espaço antes das assinaturas
     story.append(Spacer(1, 50))
 
     t_ass = Table([
@@ -423,11 +420,25 @@ st.markdown("""
     .block-container { padding-top: 1.0rem !important; padding-bottom: 1.5rem !important; max-width: 94% !important; margin: 0 auto !important; }
     header[data-testid="stHeader"] { display: none !important; }
     .stApp { background-color: #0B0E14; color: #E0E6ED; font-family: 'Inter', -apple-system, sans-serif; }
-    .top-card-container { background-color: #161F30; border: 1px solid #2B364A; border-radius: 10px; padding: 12px 18px !important; margin-bottom: 12px !important; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); }
-    .main-title-card { color: #FFFFFF; font-weight: 800; font-size: 1.3rem; margin-top: 0 !important; margin-bottom: 2px !important; }
-    .sub-title-card { color: #8E9BAE; font-size: 0.82rem; margin-bottom: 0px !important; }
-    div[data-testid="stHorizontalBlock"] { gap: 0.2rem !important; margin-bottom: 10px !important; }
     
+    /* Card de Topo com Logo e Título Centralizados */
+    .top-card-container { 
+        background-color: #161F30; 
+        border: 1px solid #2B364A; 
+        border-radius: 12px; 
+        padding: 22px 20px !important; 
+        margin-bottom: 12px !important; 
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); 
+        text-align: center !important;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+    .main-title-card { color: #FFFFFF; font-weight: 800; font-size: 1.5rem; margin-top: 8px !important; margin-bottom: 4px !important; text-align: center !important; }
+    .sub-title-card { color: #8E9BAE; font-size: 0.88rem; margin-bottom: 0px !important; text-align: center !important; }
+    
+    div[data-testid="stHorizontalBlock"] { gap: 0.2rem !important; margin-bottom: 10px !important; }
     hr { margin-top: 4px !important; margin-bottom: 4px !important; border-color: #2B364A !important; }
     
     div[data-testid="stColumn"] button { 
@@ -451,21 +462,22 @@ st.markdown("""
 if "aba_ativa" not in st.session_state:
     st.session_state["aba_ativa"] = "cadastrar"
 
-# --- CARD DE TOPO (LOGO MAIOR | EXCLUÍDO O TEXTO 'Tour360vr') ---
+# --- CARD DE TOPO (LOGO E TÍTULO DENTRO DO CARD, CENTRALIZADOS) ---
 with st.container():
     st.markdown('<div class="top-card-container">', unsafe_allow_html=True)
-    col_logo, col_texto = st.columns([1.1, 8.9], vertical_alignment="center")
-    with col_logo:
-        if os.path.exists(LOGO_LOCAL_PATH):
-            img_pil = PILImage.open(LOGO_LOCAL_PATH)
-            st.image(img_pil, width=78)  # Logo ainda maior no sistema
-        else:
-            st.markdown("🏢")
-    with col_texto:
-        st.markdown("""
-            <h1 class="main-title-card" style="margin: 0;">Gestão Mensal & Estratégia</h1>
-            <p class="sub-title-card" style="margin: 0;">Plataforma corporativa de inteligência de Google Maps, auditoria, curadoria e contratos.</p>
-        """, unsafe_allow_html=True)
+    
+    # Exibição centralizada da logo dentro do card
+    if os.path.exists(LOGO_LOCAL_PATH):
+        img_pil = PILImage.open(LOGO_LOCAL_PATH)
+        col_c1, col_c2, col_c3 = st.columns([4, 2, 4])
+        with col_c2:
+            st.image(img_pil, use_column_width=True)
+    
+    st.markdown("""
+        <h1 class="main-title-card">Gestão Mensal & Estratégia</h1>
+        <p class="sub-title-card">Plataforma corporativa de inteligência de Google Maps, auditoria, curadoria e contratos.</p>
+    """, unsafe_allow_html=True)
+    
     st.markdown('</div>', unsafe_allow_html=True)
 
 # 1 LINHA DE ESPAÇO EXATA ENTRE O CARD E OS BOTÕES DAS ETAPAS
