@@ -9,10 +9,10 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- CSS PERSONALIZADO ---
+# --- CSS PERSONALIZADO (Layout, Tipografia, Neon e Borda Neon nos Cards) ---
 st.markdown("""
     <style>
-    /* 1. Margens Globais */
+    /* 1. Margens Globais e Remoção de Espaço Superior */
     .block-container {
         padding-top: 1.2rem !important;
         padding-bottom: 1.5rem !important;
@@ -29,24 +29,10 @@ st.markdown("""
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     }
 
-    /* 2. SIDEBAR E CENTRALIZAÇÃO DAS LOGOS */
+    /* 2. BARRA LATERAL (Sidebar) */
     [data-testid="stSidebar"] {
         background-color: #07090E;
         border-right: 1px solid #1E2640;
-    }
-
-    /* Força centralização de qualquer elemento nativo de imagem na sidebar */
-    [data-testid="stSidebar"] [data-testid="stImage"] {
-        display: flex !important;
-        justify-content: center !important;
-        align-items: center !important;
-        width: 100% !important;
-        margin: 0 auto !important;
-    }
-
-    [data-testid="stSidebar"] [data-testid="stImage"] img {
-        margin: 0 auto !important;
-        display: block !important;
     }
 
     .sidebar-text-center {
@@ -55,7 +41,7 @@ st.markdown("""
         display: block !important;
     }
 
-    /* 3. TÍTULOS DA PÁGINA COM TAMANHO AUMENTADO */
+    /* 3. TÍTULOS DA PÁGINA PRINCIPAL */
     .neon-main-title {
         color: #FFFFFF;
         text-shadow: 0 0 12px rgba(0, 229, 255, 0.6);
@@ -68,14 +54,14 @@ st.markdown("""
     /* Subtítulo Aumentado */
     .subtitle-header {
         color: #94A3B8;
-        font-size: 1.18rem !important; /* Aumentado */
+        font-size: 1.18rem !important;
         margin-bottom: 1.6rem;
     }
 
-    /* Títulos das Seções Aumentados (+1.5 ponto) */
+    /* Títulos das Seções (+1.5 ponto) */
     .neon-section-title {
         color: #00E5FF;
-        font-size: 1.45rem !important; /* Aumentado */
+        font-size: 1.45rem !important;
         font-weight: 700;
         margin-top: 0.5rem;
         margin-bottom: 1.2rem;
@@ -87,7 +73,7 @@ st.markdown("""
         margin-top: 2.2rem;
     }
 
-    /* 4. CARDS CLICÁVEIS CENTRALIZADOS */
+    /* 4. CARDS CLICÁVEIS COM BORDA BRANCA E HOVER NEON AZUL */
     .clickable-card {
         display: flex;
         flex-direction: column;
@@ -174,24 +160,17 @@ st.markdown("""
 
 # --- BARRA LATERAL (Sidebar) ---
 with st.sidebar:
-    # Logos Centralizadas via st.image + CSS
-    caminho_logo_tour = "logo_tour_transparente.png"
-    if os.path.exists(caminho_logo_tour):
-        st.image(caminho_logo_tour, width=130)
-    else:
-        st.markdown("<h3 class='sidebar-text-center' style='color:#FFF; margin:0;'>TOUR360VR</h3>", unsafe_allow_html=True)
-        
-    st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
-    
-    caminho_logo_okamoto = "logo_okamoto.png"
-    if os.path.exists(caminho_logo_okamoto):
-        st.image(caminho_logo_okamoto, width=165)
-    elif os.path.exists("okamoto_preto.png"):
-        st.image("okamoto_preto.png", width=165)
+    # 1. Renderização Direta em HTML para Alinhamento Perfeito das Logos no Centro
+    st.markdown("""
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; text-align: center;">
+            <img src="https://raw.githubusercontent.com/okamotorubens/diagnostico-tour360vr/principal/logo_tour_transparente.png" style="width: 125px; height: auto; margin-bottom: 12px; display: block;">
+            <img src="https://raw.githubusercontent.com/okamotorubens/diagnostico-tour360vr/principal/logo_okamoto.png" style="width: 160px; height: auto; display: block;">
+        </div>
+    """, unsafe_allow_html=True)
 
     st.markdown("<hr style='margin: 16px 0; border-color: #1E2640; width: 100%;'>", unsafe_allow_html=True)
     
-    # Navegação Rápida Centralizada
+    # 2. Navegação Rápida
     st.markdown("<p class='sidebar-text-center' style='color: #FFFFFF; font-weight: 800; font-size: 0.92rem; letter-spacing: 0.5px; margin-bottom: 12px;'>NAVEGAÇÃO RÁPIDA</p>", unsafe_allow_html=True)
     
     st.markdown("<div class='sidebar-btn-group'>", unsafe_allow_html=True)
@@ -202,7 +181,7 @@ with st.sidebar:
     
     st.markdown("<hr style='margin: 16px 0; border-color: #1E2640; width: 100%;'>", unsafe_allow_html=True)
     
-    # Rodapé
+    # 3. Rodapé em 2 Linhas
     st.markdown("<div class='sidebar-text-center' style='color: #8A99AD; font-size: 0.75rem; line-height: 1.4;'>Painel Unificado de Operações<br>© Okamoto Mídias Visuais</div>", unsafe_allow_html=True)
 
 # --- CABEÇALHO DA CENTRAL ---
