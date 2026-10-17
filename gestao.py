@@ -58,8 +58,8 @@ def gerar_botoes_navegacao_rodape():
     aba_atual = st.session_state.get("aba_ativa", "cadastrar")
     idx_atual = ORDEM_ABAS.index(aba_atual) if aba_atual in ORDEM_ABAS else 0
     
-    # Colunas simétricas para alinhar perfeitamente às margens dos cards
-    col_v, col_centro, col_p = st.columns([2, 4, 2], gap="large")
+    # Proporção exata para alinhar perfeitamente às bordas dos cards
+    col_v, col_centro, col_p = st.columns([1.5, 3.5, 1.5], gap="large")
     
     with col_v:
         if idx_atual > 0:
@@ -525,7 +525,7 @@ def gerar_pdf_prospeccao_cases(inc_clientes, inc_faturamento, inc_grafico, inc_k
     buffer.seek(0)
     return buffer
 
-# --- CSS PERSONALIZADO COM AMPLO RESPIRO NOS CAMPOS E MARGENS ---
+# --- CSS PERSONALIZADO COM AMPLO RESPIRO LATERAL (COLUNAS) E VERTICAL ---
 st.markdown("""
     <style>
     .block-container {
@@ -573,6 +573,12 @@ st.markdown("""
     div[data-testid="stHorizontalBlock"] {
         gap: 0.5rem !important;
         margin-bottom: 25px !important;
+    }
+
+    /* MAIOR ESPAÇAMENTO LATERAL (HORIZONTAL) ENTRE COLUNAS DE CAMPOS */
+    div[data-testid="stHorizontalBlock"] > div[data-testid="stColumn"] {
+        padding-left: 14px !important;
+        padding-right: 14px !important;
     }
 
     div[data-testid="stColumn"] {
@@ -624,7 +630,7 @@ st.markdown("""
         background-color: #131A28 !important;
     }
 
-    /* MAIOR ESPAÇAMENTO ENTRE OS CAMPOS DE PREENCHIMENTO E COLUNAS */
+    /* ESPAÇAMENTO VERTICAL ENTRE OS CAMPOS */
     div[data-testid="stTextInput"], 
     div[data-testid="stNumberInput"], 
     div[data-testid="stSelectbox"], 
