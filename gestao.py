@@ -18,7 +18,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- BANCO DE DADOS (SQLite com Métricas Iniciais de Avaliações) ---
+# --- BANCO DE DADOS (SQLite) ---
 DB_NAME = "gestao_gmb.db"
 
 def init_db():
@@ -112,9 +112,6 @@ def obter_dados_cliente_por_id(cliente_id):
     conn.close()
     return row
 
-# --- LISTA DE HORÁRIOS PRÉ-CONFIGURADOS (Intervalos de 30 min) ---
-HORARIOS_OPCOES = [f"{h:02d}:{m:02d}" for h in range(24) for m in (0, 30)]
-
 # --- FUNÇÃO DE GERAÇÃO DO RELATÓRIO PDF ---
 def gerar_pdf_relatorio(nome_empresa, mes_ano, chamadas, rotas, cliques, visualizacoes, avaliacoes, acoes):
     buffer = BytesIO()
@@ -181,7 +178,7 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, chamadas, rotas, cliques, visuali
     buffer.seek(0)
     return buffer
 
-# --- CSS PERSONALIZADO (BOTÕES NAVEGAÇÃO NORMALISED: NEON BRANCO E SEM ZOOM) ---
+# --- CSS PERSONALIZADO (PADRÃO UNIFICADO IDÊNTICO À SUITE TOUR360VR) ---
 st.markdown("""
     <style>
     .block-container {
@@ -208,39 +205,34 @@ st.markdown("""
         margin-bottom: 1.2rem;
     }
 
-    /* ESTILO PADRÃO DOS BOTÕES SUPERIORES DE NAVEGAÇÃO */
+    /* BOTÕES DE NAVEGAÇÃO - ESTILO UNIFICADO COM OS OUTROS SISTEMAS */
     div[data-testid="stColumn"] button {
         width: 100% !important;
-        background-color: #121824 !important;
-        border: 1.5px solid #FFFFFF !important;
+        background-color: #1A2130 !important;
+        border: 1.5px solid #455570 !important;
         color: #FFFFFF !important;
         border-radius: 8px !important;
         padding: 10px 6px !important;
         font-weight: 700 !important;
         font-size: 0.90rem !important;
-        transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease !important;
-        transform: none !important;
-        box-shadow: 0 0 5px rgba(255, 255, 255, 0.15) !important;
+        transition: all 0.25s ease-in-out !important;
+        box-shadow: none !important;
     }
 
-    /* ESTADO HOVER (PASSAR O MOUSE): NEON BRANCO SEM ZOOM */
+    /* HOVER (PASSAR O MOUSE) */
     div[data-testid="stColumn"] button:hover {
+        background-color: #222C3E !important;
         border-color: #FFFFFF !important;
         color: #FFFFFF !important;
-        background-color: #161F30 !important;
-        box-shadow: 0 0 16px rgba(255, 255, 255, 0.9), 0 0 24px rgba(255, 255, 255, 0.4) !important;
-        transform: none !important;
+        box-shadow: 0 0 12px rgba(255, 255, 255, 0.7) !important;
     }
 
-    /* BOTÃO ATIVO / CLICADO: MANTER NEON BRANCO FIXO */
-    div[data-testid="stColumn"] button[kind="primary"],
-    div[data-testid="stColumn"] button:active,
-    div[data-testid="stColumn"] button:focus {
-        background-color: #161F30 !important;
-        border-color: #FFFFFF !important;
+    /* BOTÃO SELECIONADO / ATIVO (GLOW BRANCO ENVOLVENTE IGUAL AO PRINT DA CONSULTORIA) */
+    div[data-testid="stColumn"] button[kind="primary"] {
+        background-color: #1A2130 !important;
+        border: 2px solid #FFFFFF !important;
         color: #FFFFFF !important;
-        box-shadow: 0 0 16px rgba(255, 255, 255, 0.9) !important;
-        transform: none !important;
+        box-shadow: 0 0 18px rgba(255, 255, 255, 0.95), 0 0 28px rgba(255, 255, 255, 0.5) !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -298,10 +290,10 @@ if st.session_state["aba_ativa"] == "cadastrar":
 
     with st.form("form_cliente_gmb_completo"):
         sub_tab_sobre, sub_tab_contato, sub_tab_local, sub_tab_horario, sub_tab_mais, sub_tab_historico = st.tabs([
-            "🏢 Sobre & Status Ficha", "📞 Contato & Redes", "📍 Local & Áreas", "⏰ Horários Rápidos", "🛠️ Checklist de Pendências", "📜 Histórico de Alterações"
+            "🏢 Sobre & Status Ficha", "📞 Contato & Redes", "📍 Local & Áreas", "⏰ Horários", "🛠️ Checklist de Pendências", "📜 Histórico de Alterações"
         ])
         
-        # SUB-ABA 1: SOBRE & AUDITORIA DA FICHA
+        # SUB-ABA 1: SOBRE & AUDITORIA DA FICHA (REVERTIDO AO FORMATO ANTERIOR)
         with sub_tab_sobre:
             st.markdown("**Identificação Comercial & Auditoria Inicial:**")
             c_s1, c_s2 = st.columns(2)
@@ -328,7 +320,6 @@ if st.session_state["aba_ativa"] == "cadastrar":
                 idx_aval = opts_avaliacoes.index(dados_existentes[5]) if (modo_edicao and dados_existentes[5] in opts_avaliacoes) else 0
                 status_avaliacoes = st.selectbox("Possui Avaliações de Clientes?", opts_avaliacoes, index=idx_aval)
 
-                # CAMPOS DE PONTO DE PARTIDA DAS AVALIAÇÕES (ROI ANCORAGEM)
                 st.markdown("**Métricas das Avaliações no Início da Gestão:**")
                 col_av1, col_av2 = st.columns(2)
                 with col_av1:
@@ -377,54 +368,28 @@ if st.session_state["aba_ativa"] == "cadastrar":
             with c_l2:
                 area_cobertura = st.text_input("Áreas de Cobertura / Atendimento (ex: Ribeirão Preto, Sertãozinho, Brodowski)", value=dados_existentes[23] if (modo_edicao and len(dados_existentes) > 23) else "")
 
-        # SUB-ABA 4: HORÁRIOS RÁPIDOS
+        # SUB-ABA 4: HORÁRIOS DE FUNCIONAMENTO (FORMATO RÁPIDO PREENCHIDO)
         with sub_tab_horario:
-            st.markdown("**Horários de Funcionamento (Clique para selecionar a hora pré-configurada):**")
+            st.markdown("**Horários de Funcionamento por Dia:**")
             
             dias_semana = [
-                ("Segunda-feira", 24, "08:00", "18:00", False),
-                ("Terça-feira", 25, "08:00", "18:00", False),
-                ("Quarta-feira", 26, "08:00", "18:00", False),
-                ("Quinta-feira", 27, "08:00", "18:00", False),
-                ("Sexta-feira", 28, "08:00", "18:00", False),
-                ("Sábado", 29, "08:00", "12:00", False),
-                ("Domingo", 30, "08:00", "12:00", True)
+                ("Segunda-feira", 24, "08:00 - 18:00"),
+                ("Terça-feira", 25, "08:00 - 18:00"),
+                ("Quarta-feira", 26, "08:00 - 18:00"),
+                ("Quinta-feira", 27, "08:00 - 18:00"),
+                ("Sexta-feira", 28, "08:00 - 18:00"),
+                ("Sábado", 29, "08:00 - 12:00"),
+                ("Domingo", 30, "Fechado")
             ]
             
             horarios_coletados = {}
+            col_h1, col_h2 = st.columns(2)
 
-            for dia_nome, idx_db, h_ab_def, h_fe_def, fechado_def in dias_semana:
-                st.markdown(f"**{dia_nome}**")
-                col_h1, col_h2, col_h3 = st.columns([2, 2, 1])
-                
-                is_fechado = fechado_def
-                val_ab = h_ab_def
-                val_fe = h_fe_def
-
-                if modo_edicao and len(dados_existentes) > idx_db and dados_existentes[idx_db]:
-                    txt_h = dados_existentes[idx_db]
-                    if txt_h == "Fechado":
-                        is_fechado = True
-                    elif " - " in txt_h:
-                        is_fechado = False
-                        parts = txt_h.split(" - ")
-                        if len(parts) == 2:
-                            val_ab = parts[0]
-                            val_fe = parts[1]
-
-                with col_h3:
-                    fechado = st.checkbox("Fechado", key=f"chk_fechado_{dia_nome}", value=is_fechado)
-                with col_h1:
-                    idx_ab = HORARIOS_OPCOES.index(val_ab) if val_ab in HORARIOS_OPCOES else HORARIOS_OPCOES.index("08:00")
-                    h_abre_sel = st.selectbox(f"Abertura ({dia_nome})", HORARIOS_OPCOES, index=idx_ab, disabled=fechado, key=f"sel_ab_{dia_nome}")
-                with col_h2:
-                    idx_fe = HORARIOS_OPCOES.index(val_fe) if val_fe in HORARIOS_OPCOES else HORARIOS_OPCOES.index("18:00")
-                    h_fecha_sel = st.selectbox(f"Fechamento ({dia_nome})", HORARIOS_OPCOES, index=idx_fe, disabled=fechado, key=f"sel_fe_{dia_nome}")
-                
-                if fechado:
-                    horarios_coletados[dia_nome] = "Fechado"
-                else:
-                    horarios_coletados[dia_nome] = f"{h_abre_sel} - {h_fecha_sel}"
+            for i, (dia_nome, idx_db, h_padrao) in enumerate(dias_semana):
+                val_carregado = dados_existentes[idx_db] if (modo_edicao and len(dados_existentes) > idx_db and dados_existentes[idx_db]) else h_padrao
+                target_col = col_h1 if i < 4 else col_h2
+                with target_col:
+                    horarios_coletados[dia_nome] = st.text_input(f"{dia_nome}", value=val_carregado, key=f"txt_h_{dia_nome}")
 
             st.markdown("---")
             c_he1, c_he2 = st.columns(2)
