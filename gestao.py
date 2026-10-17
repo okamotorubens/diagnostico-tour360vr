@@ -94,7 +94,9 @@ if "aprovar" in query_params or st.session_state.get("modo_aprovacao", False):
         </div>
     """, unsafe_allow_html=True)
 
+    # Texto de boas-vindas com 1 linha adicional de espaço antes das pautas
     st.markdown('<div class="welcome-text">Bem-vindo à sua página exclusiva de validação e curadoria de pautas.</div>', unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("### Selecione as Pautas Aprovadas e Informe Ajustes se Necessário:")
     
     pautas_exemplo = [
@@ -241,8 +243,7 @@ def gerar_imagem_grafico(df_historico):
 # --- GERAÇÃO DE RELATÓRIO PDF EXECUTIVO ---
 def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dados_inicio, df_historico=None, df_keywords=None):
     buffer = BytesIO()
-    # topMargin reduzido para puxar o cabeçalho mais para cima (25 pontos)
-    doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=40, leftMargin=40, topMargin=25, bottomMargin=65)
+    doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=40, leftMargin=40, topMargin=15, bottomMargin=65)
     story = []
     styles = getSampleStyleSheet()
 
@@ -250,7 +251,7 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
     section_style = ParagraphStyle('DocSection', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=13, textColor=colors.HexColor('#1E293B'))
     body_style = ParagraphStyle('DocBody', parent=styles['Normal'], fontName='Helvetica', fontSize=8, leading=11, textColor=colors.HexColor('#334155'))
     
-    logo_flowable = get_rl_image_pdf(45, 45)
+    logo_flowable = get_rl_image_pdf(55, 55)
 
     header_table_data = [
         [
@@ -258,10 +259,10 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
             Paragraph(f"<b>RELATÓRIO DE DESEMPENHO</b><br/><font size=9 color='#2563EB'><b>{nome_empresa}</b></font><br/><font size=8 color='#64748B'>Mês de Referência: {mes_ano}</font>", ParagraphStyle('RHeader', parent=styles['Normal'], alignment=2, fontName='Helvetica'))
         ]
     ]
-    t_header = Table(header_table_data, colWidths=[50, 482])
+    t_header = Table(header_table_data, colWidths=[60, 472])
     t_header.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'MIDDLE'), ('ALIGN', (0,0), (0,0), 'LEFT')]))
     story.append(t_header)
-    story.append(Spacer(1, 2))  # Espaçamento reduzido para a linha divisória
+    story.append(Spacer(1, 2))
     story.append(HRFlowable(width="100%", thickness=1.0, color=colors.HexColor('#BFDBFE'), spaceAfter=10))
     
     story.append(Paragraph("<b>1. Análise Comparativa de Desempenho e Crescimento:</b>", section_style))
@@ -317,11 +318,11 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
         canvas.saveState()
         canvas.setStrokeColor(colors.HexColor('#BFDBFE'))
         canvas.setLineWidth(1.0)
-        canvas.line(40, 30, letter[0] - 40, 30)  # Linha rebaixada sem cortar
+        canvas.line(40, 30, letter[0] - 40, 30)
         footer_html = '<a href="https://tour360vr.com.br" color="#334155">tour360vr.com.br</a> &nbsp;|&nbsp; <a href="mailto:contato@tour360vr.com.br" color="#334155">contato@tour360vr.com.br</a> &nbsp;|&nbsp; <a href="https://wa.me/5516991332121" color="#334155">WhatsApp: (16) 99133-2121</a>'
         p = Paragraph(footer_html, ParagraphStyle('Footer', fontName='Helvetica', fontSize=8, alignment=1))
         p.wrap(letter[0] - 80, 30)
-        p.drawOn(canvas, 40, 15)  # Texto rebaixado no rodapé
+        p.drawOn(canvas, 40, 15)
         canvas.restoreState()
 
     doc.build(story, onFirstPage=add_footer_relatorio, onLaterPages=add_footer_relatorio)
@@ -331,29 +332,27 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
 # --- GERAÇÃO DE CONTRATO EM PDF ---
 def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duracao=None):
     buffer = BytesIO()
-    # topMargin reduzido (25) e bottomMargin adequado para respiro do rodapé
     doc = SimpleDocTemplate(
         buffer, 
         pagesize=letter, 
-        rightMargin=40, leftMargin=40, topMargin=25, bottomMargin=65,
+        rightMargin=40, leftMargin=40, topMargin=15, bottomMargin=65,
         title=f"Contrato Tour360VR - {dados_cliente.get('nome_empresa', 'Cliente')}"
     )
     story = []
     styles = getSampleStyleSheet()
 
     doc_title_style = ParagraphStyle('DocTitleStyle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=12, leading=14, alignment=1, textColor=colors.HexColor('#1E293B'))
-    # Entrelinhas reduzidas (leading otimizado para 12.5) para compactar o texto do contrato sem agredir a leitura
     body_style = ParagraphStyle('DocBody', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=12.5, alignment=4, textColor=colors.HexColor('#1E293B'))
     signature_style = ParagraphStyle('DocSig', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=12, alignment=1, textColor=colors.HexColor('#1E293B'))
 
-    logo_flowable = get_rl_image_pdf(45, 45)
+    logo_flowable = get_rl_image_pdf(55, 55)
 
     header_table = Table([
         [logo_flowable, Paragraph("<b>CONTRATO DE PRESTAÇÃO DE SERVIÇOS</b><br/><font size=8 color='#2563EB'>Documento Jurídico Oficial | Tour360VR</font>", ParagraphStyle('RH', alignment=2, fontName='Helvetica-Bold', fontSize=11))]
-    ], colWidths=[50, 482])
+    ], colWidths=[60, 472])
     header_table.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'MIDDLE'), ('ALIGN', (0,0), (0,0), 'LEFT'), ('ALIGN', (1,0), (1,0), 'RIGHT')]))
     story.append(header_table)
-    story.append(Spacer(1, 2))  # Reduzido espaço entre cabeçalho e linha
+    story.append(Spacer(1, 2))
     story.append(HRFlowable(width="100%", thickness=1.0, color=colors.HexColor('#BFDBFE'), spaceAfter=10))
 
     meses_pt = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"]
@@ -361,9 +360,10 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     data_extenso = f"Ribeirão Preto - SP, {hoje.day} de {meses_pt[hoje.month - 1]} de {hoje.year}."
     story.append(Paragraph(data_extenso, ParagraphStyle('Date', fontName='Helvetica', fontSize=9, alignment=2, textColor=colors.HexColor('#64748B'))))
     
-    story.append(Spacer(1, 15))
+    # 1 linha a mais de espaço antes e depois do título "TERMO DE CONTRATAÇÃO DE SERVIÇOS"
+    story.append(Spacer(1, 25))
     story.append(Paragraph("TERMO DE CONTRATAÇÃO DE SERVIÇOS", doc_title_style))
-    story.append(Spacer(1, 15))
+    story.append(Spacer(1, 25))
 
     nome_emp = dados_cliente.get("nome_empresa", "Empresa Cliente")
     resp_emp = dados_cliente.get("responsavel", "Responsável")
@@ -390,7 +390,9 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     <b>CLÁUSULA QUINTA - VALIDADE DA PROPOSTA:</b> A presente proposta e condições comerciais possuem validade oficial de 15 (quinze) dias a contar da data de sua emissão.
     """
     story.append(Paragraph(clausulas, body_style))
-    story.append(Spacer(1, 35))
+    
+    # 1 linha a mais de espaço antes das assinaturas
+    story.append(Spacer(1, 50))
 
     t_ass = Table([
         [Paragraph("__________________________________________<br/><b>Rubens Okamoto</b><br/>Tour360VR", signature_style),
@@ -402,12 +404,12 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
         canvas.saveState()
         canvas.setStrokeColor(colors.HexColor('#BFDBFE'))
         canvas.setLineWidth(1.0)
-        canvas.line(40, 30, letter[0] - 40, 30)  # Linha rebaixada perfeitamente
+        canvas.line(40, 30, letter[0] - 40, 30)
         
         footer_html = '<a href="https://tour360vr.com.br" color="#334155">tour360vr.com.br</a> &nbsp;|&nbsp; <a href="mailto:contato@tour360vr.com.br" color="#334155">contato@tour360vr.com.br</a> &nbsp;|&nbsp; <a href="https://wa.me/5516991332121" color="#334155">WhatsApp: (16) 99133-2121</a>'
         p = Paragraph(footer_html, ParagraphStyle('Footer', fontName='Helvetica', fontSize=8, alignment=1))
         p.wrap(letter[0] - 80, 30)
-        p.drawOn(canvas, 40, 15)  # Texto rebaixado no rodapé
+        p.drawOn(canvas, 40, 15)
         
         canvas.restoreState()
 
@@ -449,19 +451,19 @@ st.markdown("""
 if "aba_ativa" not in st.session_state:
     st.session_state["aba_ativa"] = "cadastrar"
 
-# --- CARD DE TOPO (LOGO MAIOR | TÍTULO DO SISTEMA) ---
+# --- CARD DE TOPO (LOGO MAIOR | EXCLUÍDO O TEXTO 'Tour360vr') ---
 with st.container():
     st.markdown('<div class="top-card-container">', unsafe_allow_html=True)
-    col_logo, col_texto = st.columns([0.8, 9.2], vertical_alignment="center")
+    col_logo, col_texto = st.columns([1.1, 8.9], vertical_alignment="center")
     with col_logo:
         if os.path.exists(LOGO_LOCAL_PATH):
             img_pil = PILImage.open(LOGO_LOCAL_PATH)
-            st.image(img_pil, width=60)  # Logo ampliada no sistema
+            st.image(img_pil, width=78)  # Logo ainda maior no sistema
         else:
             st.markdown("🏢")
     with col_texto:
         st.markdown("""
-            <h1 class="main-title-card" style="margin: 0;">Tour360VR | Gestão Mensal & Estratégia</h1>
+            <h1 class="main-title-card" style="margin: 0;">Gestão Mensal & Estratégia</h1>
             <p class="sub-title-card" style="margin: 0;">Plataforma corporativa de inteligência de Google Maps, auditoria, curadoria e contratos.</p>
         """, unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
