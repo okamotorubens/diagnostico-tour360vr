@@ -32,6 +32,9 @@ def init_db():
             nome_empresa TEXT UNIQUE NOT NULL,
             responsavel TEXT,
             data_abertura TEXT,
+            ficha_reivindicada TEXT,
+            status_avaliacoes TEXT,
+            status_respostas_avaliacoes TEXT,
             categoria_principal TEXT,
             categorias_secundarias TEXT,
             descricao_empresa TEXT,
@@ -154,7 +157,7 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, chamadas, rotas, cliques, visuali
     buffer.seek(0)
     return buffer
 
-# --- CSS PERSONALIZADO ---
+# --- CSS PERSONALIZADO (Padrão Neon Branco Unificado) ---
 st.markdown("""
     <style>
     .block-container {
@@ -177,37 +180,37 @@ st.markdown("""
         color: #FFFFFF;
         font-weight: 800;
         font-size: 1.85rem;
-        text-shadow: 0 0 12px rgba(0, 229, 255, 0.6);
+        text-shadow: 0 0 12px rgba(255, 255, 255, 0.6);
         margin-bottom: 1.2rem;
     }
 
-    /* BOTÕES DE NAVEGAÇÃO SUPERIOR DO HUB */
+    /* BOTÕES DE NAVEGAÇÃO COM BORDA BRANCA E NEON BRANCO */
     div[data-testid="stColumn"] > div > div > button {
         width: 100% !important;
         background-color: #121824 !important;
-        border: 1.5px solid #FFFFFF !important;
+        border: 1.8px solid #FFFFFF !important;
         color: #FFFFFF !important;
         border-radius: 8px !important;
         padding: 10px 6px !important;
         font-weight: 700 !important;
         font-size: 0.90rem !important;
         transition: all 0.3s ease-in-out !important;
-        box-shadow: 0 0 5px rgba(255, 255, 255, 0.15) !important;
+        box-shadow: 0 0 6px rgba(255, 255, 255, 0.2) !important;
     }
 
     div[data-testid="stColumn"] > div > div > button:hover {
-        border-color: #00E5FF !important;
-        color: #00E5FF !important;
-        box-shadow: 0 0 16px #00E5FF !important;
-        background-color: #161F30 !important;
+        border-color: #FFFFFF !important;
+        color: #FFFFFF !important;
+        box-shadow: 0 0 16px rgba(255, 255, 255, 0.9), 0 0 24px rgba(255, 255, 255, 0.4) !important;
+        background-color: #1C2433 !important;
         transform: translateY(-2px) !important;
     }
 
     div[data-testid="stColumn"] > div > div > button[kind="primary"] {
-        background-color: #161F30 !important;
-        border-color: #00E5FF !important;
-        color: #00E5FF !important;
-        box-shadow: 0 0 14px #00E5FF !important;
+        background-color: #1C2433 !important;
+        border-color: #FFFFFF !important;
+        color: #FFFFFF !important;
+        box-shadow: 0 0 18px rgba(255, 255, 255, 0.8) !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -251,21 +254,35 @@ if st.session_state["aba_ativa"] == "cadastrar":
     
     with st.form("form_cliente_gmb_completo"):
         sub_tab_sobre, sub_tab_contato, sub_tab_local, sub_tab_horario, sub_tab_mais = st.tabs([
-            "🏢 Sobre", "📞 Contato & Redes", "📍 Local & Áreas", "⏰ Horários por Dia", "🛠️ Checklist de Pendências"
+            "🏢 Sobre & Status Ficha", "📞 Contato & Redes", "📍 Local & Áreas", "⏰ Horários (Abre / Fecha)", "🛠️ Checklist de Pendências"
         ])
         
-        # SUB-ABA 1: SOBRE
+        # SUB-ABA 1: SOBRE & AUDITORIA DA FICHA
         with sub_tab_sobre:
+            st.markdown("**Identificação Comercial & Auditoria de Propriedade:**")
             c_s1, c_s2 = st.columns(2)
             with c_s1:
                 nome_empresa = st.text_input("Nome Comercial da Empresa / Ficha GMB *")
                 responsavel = st.text_input("Nome do Responsável / Contato Interno")
                 data_abertura = st.text_input("Data de Abertura (Mês/Ano)")
+                ficha_reivindicada = st.selectbox(
+                    "Status de Reivindicação da Ficha",
+                    ["Reivindicada & Verificada", "Não Reivindicada / Perfil Aberto", "Em Processo de Verificação"]
+                )
             with c_s2:
                 categoria_principal = st.text_input("Categoria Principal no GMB (ex: Serviço de fotografia)")
                 categorias_secundarias = st.text_input("Categorias Secundárias (separadas por vírgula)")
+                status_avaliacoes = st.selectbox(
+                    "Possui Avaliações de Clientes?",
+                    ["Possui Avaliações (Com Nota Exibida)", "Sem Avaliações Recebidas"]
+                )
+                status_respostas_avaliacoes = st.selectbox(
+                    "Status de Resposta às Avaliações",
+                    ["100% Respondidas", "Parcialmente Respondidas", "Nenhuma Avaliação Respondida", "N/A (Sem Avaliações)"]
+                )
             
-            descricao_empresa = st.text_area("Descrição Oficial da Empresa (Otimizada para SEO Local)", height=100)
+            st.markdown("---")
+            descricao_empresa = st.text_area("Descrição Oficial da Empresa (Otimizada para SEO Local)", height=200, help="Escreva a descrição oficial de até 750 caracteres.")
 
         # SUB-ABA 2: CONTATO & REDES SOCIAIS
         with sub_tab_contato:
@@ -282,7 +299,7 @@ if st.session_state["aba_ativa"] == "cadastrar":
                 youtube = st.text_input("Link do YouTube")
                 tiktok = st.text_input("Link do TikTok")
 
-        # SUB-ABA 3: LOCAL & ÁREAS (Com Checkbox de Atendimento no Local)
+        # SUB-ABA 3: LOCAL & ÁREAS
         with sub_tab_local:
             atendimento_local_cliente = st.checkbox("📍 Atendimento no local do cliente / Prestador de serviço itinerante (Endereço oculto no Google)", value=False)
             st.markdown("---")
@@ -292,19 +309,27 @@ if st.session_state["aba_ativa"] == "cadastrar":
             with c_l2:
                 area_cobertura = st.text_input("Áreas de Cobertura / Atendimento (ex: Ribeirão Preto, Sertãozinho, Brodowski)")
 
-        # SUB-ABA 4: HORÁRIOS DETALHADOS
+        # SUB-ABA 4: HORÁRIOS DETALHADOS (ABRE / FECHA)
         with sub_tab_horario:
-            st.markdown("**Horários de Funcionamento da Ficha:**")
-            col_h1, col_h2 = st.columns(2)
-            with col_h1:
-                horario_seg = st.text_input("Segunda-feira", value="08:00 - 18:00")
-                horario_ter = st.text_input("Terça-feira", value="08:00 - 18:00")
-                horario_qua = st.text_input("Quarta-feira", value="08:00 - 18:00")
-                horario_qui = st.text_input("Quinta-feira", value="08:00 - 18:00")
-            with col_h2:
-                horario_sex = st.text_input("Sexta-feira", value="08:00 - 18:00")
-                horario_sab = st.text_input("Sábado", value="08:00 - 12:00")
-                horario_dom = st.text_input("Domingo", value="Fechado")
+            st.markdown("**Horários de Funcionamento por Dia (Horário de Abertura e Fechamento):**")
+            
+            dias_semana = ["Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado", "Domingo"]
+            horarios_coletados = {}
+
+            for dia in dias_semana:
+                st.markdown(f"**{dia}**")
+                col_h1, col_h2, col_h3 = st.columns([2, 2, 1])
+                with col_h3:
+                    fechado = st.checkbox("Fechado", key=f"chk_fechado_{dia}", value=True if dia == "Domingo" else False)
+                with col_h1:
+                    h_abre = st.time_input(f"Abertura", key=f"abre_{dia}", value=datetime.strptime("08:00", "%H:%M").time(), disabled=fechado)
+                with col_h2:
+                    h_fecha = st.time_input(f"Fechamento", key=f"fecha_{dia}", value=datetime.strptime("18:00", "%H:%M").time(), disabled=fechado)
+                
+                if fechado:
+                    horarios_coletados[dia] = "Fechado"
+                else:
+                    horarios_coletados[dia] = f"{h_abre.strftime('%H:%M')} - {h_fecha.strftime('%H:%M')}"
 
             st.markdown("---")
             c_he1, c_he2 = st.columns(2)
@@ -313,13 +338,13 @@ if st.session_state["aba_ativa"] == "cadastrar":
             with c_he2:
                 outros_horarios = st.text_input("Outros Horários (Almoço, Happy Hour, Delivery)")
 
-        # SUB-ABA 5: CHECKLIST DE PENDÊNCIAS
+        # SUB-ABA 5: CHECKLIST DE PENDÊNCIAS & DIAGNÓSTICO
         with sub_tab_mais:
-            st.markdown("**Selecione as Pendências de Otimização Identificadas no Diagnóstico:**")
+            st.markdown("**Checklist de Otimização Identificadas no Diagnóstico:**")
             
             col_p1, col_p2 = st.columns(2)
             with col_p1:
-                p_fita = st.checkbox("📷 Cadastrar / Atualizar Tour Virtual 360° & Fotos de Alta Qualidade")
+                p_fita = st.checkbox("📷 Cadastrar / Atualizar Tour Virtual 360° & Fotos")
                 p_cat = st.checkbox("🏷️ Otimizar Categoria Principal e Categorias Secundárias")
                 p_desc = st.checkbox("✍️ Reescrever Descrição Comercial com SEO Local")
                 p_redes = st.checkbox("🔗 Vincular Perfis Sociais (Instagram, Facebook, etc.)")
@@ -329,13 +354,13 @@ if st.session_state["aba_ativa"] == "cadastrar":
                 p_aval = st.checkbox("⭐ Gerar Link Curto Direto para Solicitação de Avaliações")
                 p_hor = st.checkbox("⏰ Corrigir / Validar Horários Especiais e de Funcionamento")
 
-            observacoes_tecnicas = st.text_area("Observações Técnicas Adicionais / Diagnóstico Específico", height=90)
+            st.markdown("---")
+            observacoes_tecnicas = st.text_area("Observações Técnicas Adicionais / Diagnóstico Específico", height=180, help="Anote observações completas sobre o estado da ficha do cliente.")
 
         st.markdown("---")
         btn_cadastrar = st.form_submit_button("Salvar Ficha Completa do Cliente")
 
         if btn_cadastrar and nome_empresa:
-            # Consolida o Checklist em texto legível para o Banco de Dados
             checklist_list = []
             if p_fita: checklist_list.append("Fotos/Tour 360°")
             if p_cat: checklist_list.append("Categorias GMB")
@@ -352,10 +377,12 @@ if st.session_state["aba_ativa"] == "cadastrar":
                 c = conn.cursor()
                 c.execute('''
                     INSERT INTO clientes 
-                    (nome_empresa, responsavel, data_abertura, categoria_principal, categorias_secundarias, descricao_empresa, telefone_contato, whatsapp, chat_status, website, instagram, facebook, linkedin, youtube, tiktok, atendimento_local_cliente, endereco_local, area_cobertura, horario_seg, horario_ter, horario_qua, horario_qui, horario_sex, horario_sab, horario_dom, horarios_especiais, outros_horarios, pendencias_checklist, observacoes_tecnicas, data_inicio) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    (nome_empresa, responsavel, data_abertura, ficha_reivindicada, status_avaliacoes, status_respostas_avaliacoes, categoria_principal, categorias_secundarias, descricao_empresa, telefone_contato, whatsapp, chat_status, website, instagram, facebook, linkedin, youtube, tiktok, atendimento_local_cliente, endereco_local, area_cobertura, horario_seg, horario_ter, horario_qua, horario_qui, horario_sex, horario_sab, horario_dom, horarios_especiais, outros_horarios, pendencias_checklist, observacoes_tecnicas, data_inicio) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ''', (
-                    nome_empresa, responsavel, data_abertura, categoria_principal, categorias_secundarias, descricao_empresa, telefone_contato, whatsapp, chat_status, website, instagram, facebook, linkedin, youtube, tiktok, 1 if atendimento_local_cliente else 0, endereco_local, area_cobertura, horario_seg, horario_ter, horario_qua, horario_qui, horario_sex, horario_sab, horario_dom, horarios_especiais, outros_horarios, pendencias_str, observacoes_tecnicas, datetime.today().strftime("%Y-%m-%d")
+                    nome_empresa, responsavel, data_abertura, ficha_reivindicada, status_avaliacoes, status_respostas_avaliacoes, categoria_principal, categorias_secundarias, descricao_empresa, telefone_contato, whatsapp, chat_status, website, instagram, facebook, linkedin, youtube, tiktok, 1 if atendimento_local_cliente else 0, endereco_local, area_cobertura, 
+                    horarios_coletados["Segunda-feira"], horarios_coletados["Terça-feira"], horarios_coletados["Quarta-feira"], horarios_coletados["Quinta-feira"], horarios_coletados["Sexta-feira"], horarios_coletados["Sábado"], horarios_coletados["Domingo"],
+                    horarios_especiais, outros_horarios, pendencias_str, observacoes_tecnicas, datetime.today().strftime("%Y-%m-%d")
                 ))
                 conn.commit()
                 conn.close()
