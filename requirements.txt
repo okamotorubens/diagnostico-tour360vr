@@ -11,3 +11,5 @@ Pillow
 supabase
 matplotlib
 google-genai
+qrcode
+Pillow
