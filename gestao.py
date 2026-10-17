@@ -48,7 +48,7 @@ def get_supabase_client() -> Client:
 
 supabase = get_supabase_client()
 
-# --- TRATAMENTO DE ROTA DE APROVAÇÃO EXTERNA (LINK ÚNICO) ---
+# --- TRATAMENTO DE ROTA DE APROVAÇÃO EXTERNA (DENTRO DO SISTEMA) ---
 query_params = st.query_params
 if "aprovar" in query_params or st.session_state.get("modo_aprovacao", False):
     st.markdown("""
@@ -56,18 +56,17 @@ if "aprovar" in query_params or st.session_state.get("modo_aprovacao", False):
         .aprovacao-container { max-width: 700px; margin: 40px auto; background: #131A28; padding: 30px; border-radius: 12px; border: 1px solid #2B364A; color: #E0E6ED; font-family: 'Inter', sans-serif; text-align: center; }
         .aprovacao-title { color: #FFFFFF; font-size: 1.8rem; font-weight: 800; margin-bottom: 10px; }
         .aprovacao-sub { color: #8E9BAE; font-size: 1rem; margin-bottom: 25px; }
-        .pauta-box { background: #1A2130; padding: 15px; border-radius: 8px; margin-bottom: 12px; text-align: left; border-left: 4px solid #2563EB; }
         </style>
     """, unsafe_allow_html=True)
 
     st.markdown("""
         <div class="aprovacao-container">
-            <div class="aprovacao-title">🌐 Tour360VR | Aprovação de Pautas</div>
+            <div class="aprovacao-title">🌐 Tour360VR | Página de Aprovação de Pautas</div>
             <div class="aprovacao-sub">Planejamento Estratégico de Conteúdo e SEO Local</div>
         </div>
     """, unsafe_allow_html=True)
 
-    st.success("✅ Conectado com sucesso ao sistema de curadoria Tour360VR.")
+    st.success("✅ Bem-vindo à página exclusiva de aprovação de pautas do sistema.")
     st.markdown("### Pautas Estratégicas Propostas para este Mês:")
     
     pautas_exemplo = [
@@ -295,10 +294,18 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
     buffer.seek(0)
     return buffer
 
-# --- GERAÇÃO DE CONTRATO EM PDF (EXATAMENTE COMO SOLICITADO) ---
+# --- GERAÇÃO DE CONTRATO EM PDF ---
 def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duracao=None):
     buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=36, leftMargin=36, topMargin=30, bottomMargin=20)
+    doc = SimpleDocTemplate(
+        buffer, 
+        pagesize=letter, 
+        rightMargin=36, 
+        leftMargin=36, 
+        topMargin=30, 
+        bottomMargin=20,
+        title=f"Contrato Tour360VR - {dados_cliente.get('nome_empresa', 'Cliente')}"
+    )
     story = []
     styles = getSampleStyleSheet()
 
@@ -320,14 +327,13 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
 
     header_table_data = [
         [
-            logo_flowable,
+            Table([[logo_flowable, Paragraph("<b>Tour360VR</b><br/><font size=7 color='#64748B'>Estratégia & Presença Digital</font>", title_brand_style)]], colWidths=[36, 200]),
             Paragraph("<b>CONTRATO DE PRESTAÇÃO DE SERVIÇOS</b><br/><font size=7.5 color='#2563EB'><b>Documento Jurídico Oficial</b></font>", ParagraphStyle('RHeader', parent=styles['Normal'], alignment=2, fontName='Helvetica'))
         ]
     ]
     t_header = Table(header_table_data, colWidths=[260, 260])
     story.append(t_header)
     story.append(Spacer(1, 4))
-    # Linha divisória estritamente em azul claro (#93C5FD)
     story.append(HRFlowable(width="100%", thickness=0.8, color=colors.HexColor('#93C5FD'), spaceAfter=8))
 
     meses_pt = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"]
@@ -337,12 +343,10 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     date_style = ParagraphStyle('DateStyle', parent=styles['Normal'], fontName='Helvetica', fontSize=9.5, alignment=2, textColor=colors.HexColor('#000000'), spaceAfter=0)
     story.append(Paragraph(data_extenso, date_style))
 
-    # +1 linha de espaço entre data e título
-    story.append(Spacer(1, 14))
+    story.append(Spacer(1, 18))
     story.append(Paragraph("CONTRATO DE PRESTAÇÃO DE SERVIÇOS", doc_title_style))
 
-    # +1 linha de espaço entre título e texto do contrato
-    story.append(Spacer(1, 14))
+    story.append(Spacer(1, 18))
 
     nome_emp = dados_cliente.get("nome_empresa", "Empresa Cliente")
     resp_emp = dados_cliente.get("responsavel", "Responsável")
@@ -374,7 +378,6 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     """
     story.append(Paragraph(clausulas, body_style))
     
-    # +2 linhas de espaço antes das assinaturas
     story.append(Spacer(1, 28))
 
     assinaturas_data = [
@@ -386,8 +389,7 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     t_ass = Table(assinaturas_data, colWidths=[260, 260])
     story.append(t_ass)
     
-    # Rodapé fixado perfeitamente na base inferior da página única
-    story.append(Spacer(1, 22))
+    story.append(Spacer(1, 20))
     story.append(HRFlowable(width="100%", thickness=0.8, color=colors.HexColor('#93C5FD'), spaceAfter=4))
     story.append(Paragraph('<a href="https://tour360vr.com.br" color="#000000"><b>tour360vr.com.br</b></a> &nbsp;|&nbsp; <a href="mailto:contato@tour360vr.com.br" color="#000000">contato@tour360vr.com.br</a> &nbsp;|&nbsp; <a href="https://wa.me/5516991332121" color="#000000">WhatsApp: (16) 99133-2121</a>', footer_style))
 
@@ -395,7 +397,7 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     buffer.seek(0)
     return buffer
 
-# --- CSS PERSONALIZADO COM EFEITO NEON BRANCO E ESPAÇAMENTOS REDUZIDOS NAS LINHAS DIVISÓRIAS ---
+# --- CSS PERSONALIZADO ---
 st.markdown("""
     <style>
     .block-container { padding-top: 1.0rem !important; padding-bottom: 1.5rem !important; max-width: 94% !important; margin: 0 auto !important; }
@@ -406,8 +408,7 @@ st.markdown("""
     .sub-title-card { color: #8E9BAE; font-size: 0.88rem; margin-bottom: 0px !important; }
     div[data-testid="stHorizontalBlock"] { gap: 0.2rem !important; margin-bottom: 10px !important; }
     
-    /* Redução de espaçamento antes e depois das linhas divisórias (hr) */
-    hr { margin-top: 6px !important; margin-bottom: 6px !important; border-color: #2B364A !important; }
+    hr { margin-top: 4px !important; margin-bottom: 4px !important; border-color: #2B364A !important; }
     
     div[data-testid="stColumn"] button { 
         width: 100% !important; min-height: 42px !important; height: auto !important; 
@@ -550,12 +551,13 @@ if st.session_state["aba_ativa"] == "cadastrar":
                 horarios_coletados[campo_db] = "Fechado" if fch else f"{ha} - {hf}"
 
         with sub_t3:
-            # Layout corrigido em duas linhas limpas para evitar espremer campos e cortar a tela
-            c1, c2 = st.columns(2, gap="large")
-            with c1:
+            # Layout totalmente reestruturado em colunas dedicadas para garantir leitura perfeita do status sem cortes
+            c_f1, c_f2, c_f3 = st.columns(3, gap="medium")
+            with c_f1:
                 valor_contrato_mensal = st.number_input("Valor da Mensalidade (R$)", min_value=0.0, step=50.0, value=float(dados_existentes.get("valor_contrato_mensal", 450.0)) if (modo_edicao and dados_existentes) else 450.0)
+            with c_f2:
                 dia_vencimento = st.number_input("Dia Vencimento", min_value=1, max_value=31, step=1, value=int(dados_existentes.get("dia_vencimento", 10)) if (modo_edicao and dados_existentes) else 10)
-            with c2:
+            with c_f3:
                 opts_status = ["Ativo", "Em Negociação", "Pausado", "Cancelado"]
                 val_status_atual = dados_existentes.get("status_contrato", "Ativo") if (modo_edicao and dados_existentes) else "Ativo"
                 idx_st = opts_status.index(val_status_atual) if val_status_atual in opts_status else 0
@@ -742,8 +744,8 @@ elif st.session_state["aba_ativa"] == "ia":
                 pautas_selecionadas.append(p_editada)
 
         st.markdown("---")
-        st.markdown("### 🔗 Link Único de Aprovação Externa")
-        # URL limpa apontando para o próprio app com parâmetro de aprovação funcional
+        st.markdown("### 🔗 Link Único de Aprovação Externa (Sistema)")
+        # Link gerado apontando diretamente para a rota interna de aprovação do app
         link_exemplo = f"https://tour360vr.com.br/?aprovar=true&cliente={emp.lower().replace(' ', '-')}"
         st.text_input("Link Único Exclusivo para Envio ao Cliente (Copiável):", value=link_exemplo)
 
