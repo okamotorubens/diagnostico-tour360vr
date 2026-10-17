@@ -18,21 +18,39 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- BANCO DE DADOS (SQLite) ---
+# --- BANCO DE DADOS (SQLite Expandido com Ficha GMB Completa) ---
 DB_NAME = "gestao_gmb.db"
 
 def init_db():
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
+    
+    # Tabela de Clientes Completa
     c.execute('''
         CREATE TABLE IF NOT EXISTS clientes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nome_empresa TEXT NOT NULL,
+            nome_empresa TEXT UNIQUE NOT NULL,
             responsavel TEXT,
+            data_abertura TEXT,
+            categoria_principal TEXT,
+            categorias_secundarias TEXT,
+            descricao_empresa TEXT,
+            telefone_contato TEXT,
             whatsapp TEXT,
+            chat_status TEXT,
+            website TEXT,
+            redes_sociais TEXT,
+            endereco_local TEXT,
+            area_cobertura TEXT,
+            horario_funcionamento TEXT,
+            horarios_especiais TEXT,
+            outros_horarios TEXT,
+            observacoes_tecnicas TEXT,
             data_inicio TEXT
         )
     ''')
+    
+    # Tabela de Métricas Mensais
     c.execute('''
         CREATE TABLE IF NOT EXISTS metricas_mensais (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -52,9 +70,10 @@ def init_db():
 
 init_db()
 
-def obter_clientes():
+# Busca apenas clientes ÚNICOS
+def obter_clientes_unicos():
     conn = sqlite3.connect(DB_NAME)
-    df = pd.read_sql_query("SELECT id, nome_empresa FROM clientes ORDER BY nome_empresa", conn)
+    df = pd.read_sql_query("SELECT DISTINCT id, nome_empresa FROM clientes ORDER BY nome_empresa ASC", conn)
     conn.close()
     return df
 
@@ -124,10 +143,9 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, chamadas, rotas, cliques, visuali
     buffer.seek(0)
     return buffer
 
-# --- ESTILIZAÇÃO CSS (Dark + Borda Branca + Neon) ---
+# --- CSS PERSONALIZADO (Padrão Unificado Neon) ---
 st.markdown("""
     <style>
-    /* Margens e Fundo Global */
     .block-container {
         padding-top: 1.2rem !important;
         padding-bottom: 1.5rem !important;
@@ -152,30 +170,28 @@ st.markdown("""
         margin-bottom: 1.2rem;
     }
 
-    /* ESTILIZAÇÃO DOS BOTÕES DE NAVEGAÇÃO (Cards com Borda Branca e Neon) */
+    /* BOTÕES DE NAVEGAÇÃO SUPERIOR DO HUB */
     div[data-testid="stColumn"] > div > div > button {
         width: 100% !important;
         background-color: #121824 !important;
         border: 1.5px solid #FFFFFF !important;
         color: #FFFFFF !important;
         border-radius: 8px !important;
-        padding: 12px 10px !important;
+        padding: 10px 6px !important;
         font-weight: 700 !important;
-        font-size: 0.92rem !important;
+        font-size: 0.90rem !important;
         transition: all 0.3s ease-in-out !important;
-        box-shadow: 0 0 6px rgba(255, 255, 255, 0.12) !important;
-        margin-bottom: 10px !important;
+        box-shadow: 0 0 5px rgba(255, 255, 255, 0.15) !important;
     }
 
     div[data-testid="stColumn"] > div > div > button:hover {
         border-color: #00E5FF !important;
         color: #00E5FF !important;
-        box-shadow: 0 0 16px #00E5FF, 0 0 24px rgba(0, 229, 255, 0.4) !important;
+        box-shadow: 0 0 16px #00E5FF !important;
         background-color: #161F30 !important;
         transform: translateY(-2px) !important;
     }
 
-    /* Botão Selecionado / Ativo */
     div[data-testid="stColumn"] > div > div > button[kind="primary"] {
         background-color: #161F30 !important;
         border-color: #00E5FF !important;
@@ -188,19 +204,19 @@ st.markdown("""
 # --- CABEÇALHO ---
 st.markdown("<h1 class='main-title'>📈 Gestão Mensal & Performance ROI GMB</h1>", unsafe_allow_html=True)
 
-# --- CONTROLADOR DE NAVEGAÇÃO VIA ESTADO ---
+# --- CONTROLADOR DE NAVEGAÇÃO PRINCIPAL ---
 if "aba_ativa" not in st.session_state:
     st.session_state["aba_ativa"] = "cadastrar"
 
 col_n1, col_n2, col_n3, col_n4 = st.columns(4)
 
 with col_n1:
-    if st.button("⚙️ Cadastrar Clientes", key="btn_cad", type="primary" if st.session_state["aba_ativa"] == "cadastrar" else "secondary"):
+    if st.button("⚙️ Cadastrar Cliente & Ficha", key="btn_cad", type="primary" if st.session_state["aba_ativa"] == "cadastrar" else "secondary"):
         st.session_state["aba_ativa"] = "cadastrar"
         st.rerun()
 
 with col_n2:
-    if st.button("📋 Inserir Métricas", key="btn_inc", type="primary" if st.session_state["aba_ativa"] == "metricas" else "secondary"):
+    if st.button("📋 Inserir Métricas Mensais", key="btn_inc", type="primary" if st.session_state["aba_ativa"] == "metricas" else "secondary"):
         st.session_state["aba_ativa"] = "metricas"
         st.rerun()
 
@@ -210,44 +226,98 @@ with col_n3:
         st.rerun()
 
 with col_n4:
-    if st.button("📄 Relatório PDF", key="btn_pdf", type="primary" if st.session_state["aba_ativa"] == "pdf" else "secondary"):
+    if st.button("📄 Relatório Executivo PDF", key="btn_pdf", type="primary" if st.session_state["aba_ativa"] == "pdf" else "secondary"):
         st.session_state["aba_ativa"] = "pdf"
         st.rerun()
 
-st.markdown("<hr style='margin: 10px 0 20px 0; border-color: #1E2640;'>", unsafe_allow_html=True)
+st.markdown("<hr style='margin: 12px 0 20px 0; border-color: #1E2640;'>", unsafe_allow_html=True)
 
 # ==========================================
-# MÓDULO 1: CADASTRAR CLIENTES
+# MÓDULO 1: CADASTRAR CLIENTE & FICHA COMPLETA (PAINEL GMB)
 # ==========================================
 if st.session_state["aba_ativa"] == "cadastrar":
-    st.subheader("⚙️ Registo de Novo Cliente de Gestão")
-    with st.form("form_cliente"):
-        nome_empresa = st.text_input("Nome da Empresa / Ficha GMB")
-        responsavel = st.text_input("Nome do Responsável")
-        whatsapp = st.text_input("WhatsApp de Contacto")
-        btn_cadastrar = st.form_submit_button("Cadastrar Cliente")
+    st.subheader("⚙️ Cadastro do Cliente & Mapeamento de Informações Comerciais (GMB)")
+    
+    with st.form("form_cliente_gmb_completo"):
+        sub_tab_sobre, sub_tab_contato, sub_tab_local, sub_tab_horario, sub_tab_mais = st.tabs([
+            "🏢 Sobre", "📞 Contato", "📍 Local & Áreas", "⏰ Horários", "🛠️ Mais / Pendências"
+        ])
+        
+        # SUB-ABA 1: SOBRE
+        with sub_tab_sobre:
+            c_s1, c_s2 = st.columns(2)
+            with c_s1:
+                nome_empresa = st.text_input("Nome Comercial da Empresa / Ficha GMB *")
+                responsavel = st.text_input("Nome do Responsável / Contato")
+                data_abertura = st.text_input("Data de Abertura (Mês/Ano)")
+            with c_s2:
+                categoria_principal = st.text_input("Categoria Principal no GMB (ex: Serviço de fotografia)")
+                categorias_secundarias = st.text_input("Categorias Secundárias (ex: Fotógrafo comercial, Produção de Vídeo)")
+            
+            descricao_empresa = st.text_area("Descrição Oficial da Empresa (Otimizada para SEO Local)", height=100)
+
+        # SUB-ABA 2: CONTATO
+        with sub_tab_contato:
+            c_c1, c_c2 = st.columns(2)
+            with c_c1:
+                telefone_contato = st.text_input("Número de Telefone Comercial")
+                whatsapp = st.text_input("WhatsApp para Atendimento")
+                chat_status = st.selectbox("Mensagens / Chat no Perfil", ["Ativado", "Desativado", "Não Configurado"])
+            with c_c2:
+                website = st.text_input("Website / Link Principal")
+                redes_sociais = st.text_input("Perfis das Redes Sociais (Instagram, Facebook, LinkedIn)")
+
+        # SUB-ABA 3: LOCAL & ÁREAS
+        with sub_tab_local:
+            c_l1, c_l2 = st.columns(2)
+            with c_l1:
+                endereco_local = st.text_input("Local da Empresa (Endereço Completo ou 'Ficha Sem Endereço Exibido')")
+            with c_l2:
+                area_cobertura = st.text_input("Áreas de Cobertura / Atendimento (Cidades, Bairros, Regiões)")
+
+        # SUB-ABA 4: HORÁRIOS
+        with sub_tab_horario:
+            c_h1, c_h2 = st.columns(2)
+            with c_h1:
+                horario_funcionamento = st.text_input("Horário Padrão (ex: Segunda a Sexta: 08:00 - 18:00)")
+                horarios_especiais = st.text_input("Horários Especiais / Feriados")
+            with c_h2:
+                outros_horarios = st.text_input("Outros Horários (Almoço, Happy Hour, Drive-thru, Delivery)")
+
+        # SUB-ABA 5: MAIS / PENDÊNCIAS
+        with sub_tab_mais:
+            observacoes_tecnicas = st.text_area("Pendências de Otimização e Observações Técnicas da Ficha", height=100)
+
+        st.markdown("---")
+        btn_cadastrar = st.form_submit_button("Salvar Ficha Completa do Cliente")
 
         if btn_cadastrar and nome_empresa:
-            conn = sqlite3.connect(DB_NAME)
-            c = conn.cursor()
-            c.execute(
-                "INSERT INTO clientes (nome_empresa, responsavel, whatsapp, data_inicio) VALUES (?, ?, ?, ?)",
-                (nome_empresa, responsavel, whatsapp, datetime.today().strftime("%Y-%m-%d"))
-            )
-            conn.commit()
-            conn.close()
-            st.success(f"Cliente '{nome_empresa}' cadastrado com sucesso!")
-            st.rerun()
+            try:
+                conn = sqlite3.connect(DB_NAME)
+                c = conn.cursor()
+                c.execute('''
+                    INSERT INTO clientes 
+                    (nome_empresa, responsavel, data_abertura, categoria_principal, categorias_secundarias, descricao_empresa, telefone_contato, whatsapp, chat_status, website, redes_sociais, endereco_local, area_cobertura, horario_funcionamento, horarios_especiais, outros_horarios, observacoes_tecnicas, data_inicio) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    nome_empresa, responsavel, data_abertura, categoria_principal, categorias_secundarias, descricao_empresa, telefone_contato, whatsapp, chat_status, website, redes_sociais, endereco_local, area_cobertura, horario_funcionamento, horarios_especiais, outros_horarios, observacoes_tecnicas, datetime.today().strftime("%Y-%m-%d")
+                ))
+                conn.commit()
+                conn.close()
+                st.success(f"Ficha comercial de '{nome_empresa}' cadastrada com sucesso!")
+                st.rerun()
+            except sqlite3.IntegrityError:
+                st.error(f"O cliente '{nome_empresa}' já está cadastrado no sistema!")
 
 # ==========================================
-# MÓDULO 2: INSERIR MÉTRICAS
+# MÓDULO 2: INSERIR MÉTRICAS MENSAIS
 # ==========================================
 elif st.session_state["aba_ativa"] == "metricas":
-    st.subheader("📋 Registo de Performance Mensal")
-    df_clientes = obter_clientes()
+    st.subheader("📋 Lançamento de Performance Mensal")
+    df_clientes = obter_clientes_unicos()
     
     if df_clientes.empty:
-        st.warning("Nenhum cliente cadastrado. Registe um cliente primeiro no botão '⚙️ Cadastrar Clientes'.")
+        st.warning("Nenhum cliente cadastrado. Cadastre um cliente na aba '⚙️ Cadastrar Cliente & Ficha'.")
     else:
         with st.form("form_metricas"):
             col_c1, col_c2 = st.columns(2)
@@ -283,14 +353,14 @@ elif st.session_state["aba_ativa"] == "metricas":
                 ''', (cliente_id, mes_referencia, chamadas, rotas, cliques_site, visualizacoes, novas_avaliacoes, resumo_acoes))
                 conn.commit()
                 conn.close()
-                st.success(f"Métricas do mês {mes_referencia} salvas com sucesso para {cliente_sel}!")
+                st.success(f"Métricas salvas para {cliente_sel} no período {mes_referencia}!")
 
 # ==========================================
 # MÓDULO 3: DASHBOARD & ROI
 # ==========================================
 elif st.session_state["aba_ativa"] == "dashboard":
     st.subheader("📊 Análise de Desempenho e ROI")
-    df_clientes = obter_clientes()
+    df_clientes = obter_clientes_unicos()
     
     if df_clientes.empty:
         st.info("Nenhum cliente cadastrado ainda.")
@@ -306,7 +376,7 @@ elif st.session_state["aba_ativa"] == "dashboard":
         conn.close()
 
         if df_metricas.empty:
-            st.info("Ainda não existem métricas registadas para este cliente.")
+            st.info("Ainda não existem métricas registradas para este cliente.")
         else:
             ultimas = df_metricas.iloc[-1]
             m1, m2, m3, m4 = st.columns(4)
@@ -323,10 +393,10 @@ elif st.session_state["aba_ativa"] == "dashboard":
 # ==========================================
 elif st.session_state["aba_ativa"] == "pdf":
     st.subheader("📄 Emitir Relatório Executivo em PDF")
-    df_clientes = obter_clientes()
+    df_clientes = obter_clientes_unicos()
 
     if df_clientes.empty:
-        st.info("Registe um cliente e insira métricas para gerar o relatório.")
+        st.info("Cadastre um cliente e insira métricas para gerar o relatório.")
     else:
         col_r1, col_r2 = st.columns(2)
         with col_r1:
