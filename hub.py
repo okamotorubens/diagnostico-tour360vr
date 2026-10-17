@@ -219,7 +219,7 @@ with col2:
 
 with col3:
     st.markdown("""
-        <a href='https://seu-link-da-gestao.streamlit.app' target='_blank' class='clickable-card'>
+        <a href='https://gestao-mensal-tour360vr.streamlit.app/' target='_blank' class='clickable-card'>
             <div class='card-icon'>📈</div>
             <div class='card-title-text'>Gestão Mensal & ROI</div>
             <p>Acompanhamento recorrente de métricas (chamadas, rotas, WhatsApp) e relatórios executivos.</p>
