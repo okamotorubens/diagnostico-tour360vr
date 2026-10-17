@@ -109,7 +109,7 @@ st.markdown("""
         margin-top: 2.2rem;
     }
 
-    /* 4. CARDS CLICÁVEIS (Layout em Coluna Perfeitamente Centralizado) */
+    /* 4. CARDS CLICÁVEIS (Emojis e Títulos Aumentados) */
     .clickable-card {
         display: flex;
         flex-direction: column;
@@ -119,8 +119,8 @@ st.markdown("""
         background: #121824;
         border: 1.5px solid #FFFFFF;
         border-radius: 10px;
-        padding: 16px 16px 18px 16px;
-        height: 155px !important;
+        padding: 18px 16px 20px 16px;
+        height: 160px !important; /* Altura ajustada para o novo tamanho */
         box-shadow: 0 0 8px rgba(255, 255, 255, 0.12);
         text-decoration: none !important;
         transition: all 0.3s ease-in-out;
@@ -134,17 +134,17 @@ st.markdown("""
         background: #161F30;
     }
 
-    /* Emoji / Ícone no Topo do Card */
+    /* Emoji / Ícone Aumentado */
     .card-icon {
-        font-size: 1.5rem !important;
-        margin-bottom: 4px;
+        font-size: 1.85rem !important;
+        margin-bottom: 6px;
         line-height: 1;
     }
 
-    /* Nome do Sistema 100% Centralizado */
+    /* Nome do Sistema Aumentado */
     .card-title-text {
         color: #FFFFFF !important;
-        font-size: 1.18rem !important;
+        font-size: 1.28rem !important;
         font-weight: 700 !important;
         margin-bottom: 6px !important;
         text-align: center !important;
