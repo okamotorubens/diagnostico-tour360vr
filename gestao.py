@@ -18,7 +18,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- BANCO DE DADOS (SQLite Expandido com Ficha GMB Completa) ---
+# --- BANCO DE DADOS (SQLite Expandido) ---
 DB_NAME = "gestao_gmb.db"
 
 def init_db():
@@ -39,12 +39,24 @@ def init_db():
             whatsapp TEXT,
             chat_status TEXT,
             website TEXT,
-            redes_sociais TEXT,
+            instagram TEXT,
+            facebook TEXT,
+            linkedin TEXT,
+            youtube TEXT,
+            tiktok TEXT,
+            atendimento_local_cliente INTEGER DEFAULT 0,
             endereco_local TEXT,
             area_cobertura TEXT,
-            horario_funcionamento TEXT,
+            horario_seg TEXT,
+            horario_ter TEXT,
+            horario_qua TEXT,
+            horario_qui TEXT,
+            horario_sex TEXT,
+            horario_sab TEXT,
+            horario_dom TEXT,
             horarios_especiais TEXT,
             outros_horarios TEXT,
+            pendencias_checklist TEXT,
             observacoes_tecnicas TEXT,
             data_inicio TEXT
         )
@@ -70,7 +82,6 @@ def init_db():
 
 init_db()
 
-# Busca apenas clientes ÚNICOS
 def obter_clientes_unicos():
     conn = sqlite3.connect(DB_NAME)
     df = pd.read_sql_query("SELECT DISTINCT id, nome_empresa FROM clientes ORDER BY nome_empresa ASC", conn)
@@ -143,7 +154,7 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, chamadas, rotas, cliques, visuali
     buffer.seek(0)
     return buffer
 
-# --- CSS PERSONALIZADO (Padrão Unificado Neon) ---
+# --- CSS PERSONALIZADO ---
 st.markdown("""
     <style>
     .block-container {
@@ -233,14 +244,14 @@ with col_n4:
 st.markdown("<hr style='margin: 12px 0 20px 0; border-color: #1E2640;'>", unsafe_allow_html=True)
 
 # ==========================================
-# MÓDULO 1: CADASTRAR CLIENTE & FICHA COMPLETA (PAINEL GMB)
+# MÓDULO 1: CADASTRAR CLIENTE & FICHA COMPLETA
 # ==========================================
 if st.session_state["aba_ativa"] == "cadastrar":
     st.subheader("⚙️ Cadastro do Cliente & Mapeamento de Informações Comerciais (GMB)")
     
     with st.form("form_cliente_gmb_completo"):
         sub_tab_sobre, sub_tab_contato, sub_tab_local, sub_tab_horario, sub_tab_mais = st.tabs([
-            "🏢 Sobre", "📞 Contato", "📍 Local & Áreas", "⏰ Horários", "🛠️ Mais / Pendências"
+            "🏢 Sobre", "📞 Contato & Redes", "📍 Local & Áreas", "⏰ Horários por Dia", "🛠️ Checklist de Pendências"
         ])
         
         # SUB-ABA 1: SOBRE
@@ -248,59 +259,103 @@ if st.session_state["aba_ativa"] == "cadastrar":
             c_s1, c_s2 = st.columns(2)
             with c_s1:
                 nome_empresa = st.text_input("Nome Comercial da Empresa / Ficha GMB *")
-                responsavel = st.text_input("Nome do Responsável / Contato")
+                responsavel = st.text_input("Nome do Responsável / Contato Interno")
                 data_abertura = st.text_input("Data de Abertura (Mês/Ano)")
             with c_s2:
                 categoria_principal = st.text_input("Categoria Principal no GMB (ex: Serviço de fotografia)")
-                categorias_secundarias = st.text_input("Categorias Secundárias (ex: Fotógrafo comercial, Produção de Vídeo)")
+                categorias_secundarias = st.text_input("Categorias Secundárias (separadas por vírgula)")
             
             descricao_empresa = st.text_area("Descrição Oficial da Empresa (Otimizada para SEO Local)", height=100)
 
-        # SUB-ABA 2: CONTATO
+        # SUB-ABA 2: CONTATO & REDES SOCIAIS
         with sub_tab_contato:
             c_c1, c_c2 = st.columns(2)
             with c_c1:
                 telefone_contato = st.text_input("Número de Telefone Comercial")
                 whatsapp = st.text_input("WhatsApp para Atendimento")
+                website = st.text_input("Website / Link Principal")
                 chat_status = st.selectbox("Mensagens / Chat no Perfil", ["Ativado", "Desativado", "Não Configurado"])
             with c_c2:
-                website = st.text_input("Website / Link Principal")
-                redes_sociais = st.text_input("Perfis das Redes Sociais (Instagram, Facebook, LinkedIn)")
+                instagram = st.text_input("Link do Instagram")
+                facebook = st.text_input("Link do Facebook")
+                linkedin = st.text_input("Link do LinkedIn")
+                youtube = st.text_input("Link do YouTube")
+                tiktok = st.text_input("Link do TikTok")
 
-        # SUB-ABA 3: LOCAL & ÁREAS
+        # SUB-ABA 3: LOCAL & ÁREAS (Com Checkbox de Atendimento no Local)
         with sub_tab_local:
+            atendimento_local_cliente = st.checkbox("📍 Atendimento no local do cliente / Prestador de serviço itinerante (Endereço oculto no Google)", value=False)
+            st.markdown("---")
             c_l1, c_l2 = st.columns(2)
             with c_l1:
-                endereco_local = st.text_input("Local da Empresa (Endereço Completo ou 'Ficha Sem Endereço Exibido')")
+                endereco_local = st.text_input("Endereço Físico Completo (Deixe em branco se for endereço oculto)")
             with c_l2:
-                area_cobertura = st.text_input("Áreas de Cobertura / Atendimento (Cidades, Bairros, Regiões)")
+                area_cobertura = st.text_input("Áreas de Cobertura / Atendimento (ex: Ribeirão Preto, Sertãozinho, Brodowski)")
 
-        # SUB-ABA 4: HORÁRIOS
+        # SUB-ABA 4: HORÁRIOS DETALHADOS
         with sub_tab_horario:
-            c_h1, c_h2 = st.columns(2)
-            with c_h1:
-                horario_funcionamento = st.text_input("Horário Padrão (ex: Segunda a Sexta: 08:00 - 18:00)")
-                horarios_especiais = st.text_input("Horários Especiais / Feriados")
-            with c_h2:
-                outros_horarios = st.text_input("Outros Horários (Almoço, Happy Hour, Drive-thru, Delivery)")
+            st.markdown("**Horários de Funcionamento da Ficha:**")
+            col_h1, col_h2 = st.columns(2)
+            with col_h1:
+                horario_seg = st.text_input("Segunda-feira", value="08:00 - 18:00")
+                horario_ter = st.text_input("Terça-feira", value="08:00 - 18:00")
+                horario_qua = st.text_input("Quarta-feira", value="08:00 - 18:00")
+                horario_qui = st.text_input("Quinta-feira", value="08:00 - 18:00")
+            with col_h2:
+                horario_sex = st.text_input("Sexta-feira", value="08:00 - 18:00")
+                horario_sab = st.text_input("Sábado", value="08:00 - 12:00")
+                horario_dom = st.text_input("Domingo", value="Fechado")
 
-        # SUB-ABA 5: MAIS / PENDÊNCIAS
+            st.markdown("---")
+            c_he1, c_he2 = st.columns(2)
+            with c_he1:
+                horarios_especiais = st.text_input("Horários Especiais / Feriados (ex: 25/12 Fechado)")
+            with c_he2:
+                outros_horarios = st.text_input("Outros Horários (Almoço, Happy Hour, Delivery)")
+
+        # SUB-ABA 5: CHECKLIST DE PENDÊNCIAS
         with sub_tab_mais:
-            observacoes_tecnicas = st.text_area("Pendências de Otimização e Observações Técnicas da Ficha", height=100)
+            st.markdown("**Selecione as Pendências de Otimização Identificadas no Diagnóstico:**")
+            
+            col_p1, col_p2 = st.columns(2)
+            with col_p1:
+                p_fita = st.checkbox("📷 Cadastrar / Atualizar Tour Virtual 360° & Fotos de Alta Qualidade")
+                p_cat = st.checkbox("🏷️ Otimizar Categoria Principal e Categorias Secundárias")
+                p_desc = st.checkbox("✍️ Reescrever Descrição Comercial com SEO Local")
+                p_redes = st.checkbox("🔗 Vincular Perfis Sociais (Instagram, Facebook, etc.)")
+            with col_p2:
+                p_chat = st.checkbox("💬 Ativar e Configurar Chat / Mensagens")
+                p_prod = st.checkbox("🛍️ Cadastrar Produtos e/ou Lista de Serviços")
+                p_aval = st.checkbox("⭐ Gerar Link Curto Direto para Solicitação de Avaliações")
+                p_hor = st.checkbox("⏰ Corrigir / Validar Horários Especiais e de Funcionamento")
+
+            observacoes_tecnicas = st.text_area("Observações Técnicas Adicionais / Diagnóstico Específico", height=90)
 
         st.markdown("---")
         btn_cadastrar = st.form_submit_button("Salvar Ficha Completa do Cliente")
 
         if btn_cadastrar and nome_empresa:
+            # Consolida o Checklist em texto legível para o Banco de Dados
+            checklist_list = []
+            if p_fita: checklist_list.append("Fotos/Tour 360°")
+            if p_cat: checklist_list.append("Categorias GMB")
+            if p_desc: checklist_list.append("Descrição SEO")
+            if p_redes: checklist_list.append("Redes Sociais")
+            if p_chat: checklist_list.append("Chat/Mensagens")
+            if p_prod: checklist_list.append("Produtos/Serviços")
+            if p_aval: checklist_list.append("Link de Avaliações")
+            if p_hor: checklist_list.append("Ajuste de Horários")
+            pendencias_str = ", ".join(checklist_list) if checklist_list else "Nenhuma pendência marcada"
+
             try:
                 conn = sqlite3.connect(DB_NAME)
                 c = conn.cursor()
                 c.execute('''
                     INSERT INTO clientes 
-                    (nome_empresa, responsavel, data_abertura, categoria_principal, categorias_secundarias, descricao_empresa, telefone_contato, whatsapp, chat_status, website, redes_sociais, endereco_local, area_cobertura, horario_funcionamento, horarios_especiais, outros_horarios, observacoes_tecnicas, data_inicio) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    (nome_empresa, responsavel, data_abertura, categoria_principal, categorias_secundarias, descricao_empresa, telefone_contato, whatsapp, chat_status, website, instagram, facebook, linkedin, youtube, tiktok, atendimento_local_cliente, endereco_local, area_cobertura, horario_seg, horario_ter, horario_qua, horario_qui, horario_sex, horario_sab, horario_dom, horarios_especiais, outros_horarios, pendencias_checklist, observacoes_tecnicas, data_inicio) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ''', (
-                    nome_empresa, responsavel, data_abertura, categoria_principal, categorias_secundarias, descricao_empresa, telefone_contato, whatsapp, chat_status, website, redes_sociais, endereco_local, area_cobertura, horario_funcionamento, horarios_especiais, outros_horarios, observacoes_tecnicas, datetime.today().strftime("%Y-%m-%d")
+                    nome_empresa, responsavel, data_abertura, categoria_principal, categorias_secundarias, descricao_empresa, telefone_contato, whatsapp, chat_status, website, instagram, facebook, linkedin, youtube, tiktok, 1 if atendimento_local_cliente else 0, endereco_local, area_cobertura, horario_seg, horario_ter, horario_qua, horario_qui, horario_sex, horario_sab, horario_dom, horarios_especiais, outros_horarios, pendencias_str, observacoes_tecnicas, datetime.today().strftime("%Y-%m-%d")
                 ))
                 conn.commit()
                 conn.close()
