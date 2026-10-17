@@ -414,7 +414,7 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     buffer.seek(0)
     return buffer
 
-# --- CSS PERSONALIZADO (BOTÕES ALINHADOS À ESQUERDA E DESTAQUE NO CLIENTE) ---
+# --- CSS PERSONALIZADO (COM ESPAÇAMENTO / RESPIRO ENTRE OS BOTÕES) ---
 st.markdown("""
     <style>
     .block-container { padding-top: 1.0rem !important; padding-bottom: 1.5rem !important; max-width: 94% !important; margin: 0 auto !important; }
@@ -447,15 +447,16 @@ st.markdown("""
     .main-title-radar { color: #FFFFFF !important; font-weight: 800; font-size: 1.7rem; margin: 0 !important; }
     .sub-title-radar { color: #8E9BAE; font-size: 0.92rem; margin: 4px 0 0 0 !important; }
     
-    div[data-testid="stHorizontalBlock"] { gap: 0.3rem !important; margin-bottom: 6px !important; }
+    /* Respiro e margem entre as colunas dos botões */
+    div[data-testid="stHorizontalBlock"] { gap: 0.6rem !important; margin-bottom: 8px !important; }
     hr { margin-top: 4px !important; margin-bottom: 4px !important; border-color: #2B364A !important; }
     
-    /* Estilização compacta e alinhada à esquerda para os botões de navegação */
+    /* Estilização com respiro lateral e visual profissional */
     div[data-testid="stColumn"] button { 
-        width: auto !important; min-width: 110px !important; min-height: 38px !important; height: auto !important; 
+        width: 100% !important; min-height: 38px !important; height: auto !important; 
         background-color: #161F30 !important; border: 1px solid #2B364A !important; 
         color: #C5CDD9 !important; border-radius: 6px !important; font-weight: 600 !important; font-size: 0.72rem !important; 
-        transition: all 0.2s ease-in-out; padding: 0 12px !important;
+        transition: all 0.2s ease-in-out; padding: 0 8px !important;
     }
     div[data-testid="stColumn"] button:hover {
         background-color: #1E293B !important; border-color: #455570 !important; color: #FFFFFF !important;
@@ -503,11 +504,11 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-# Espaçamento leve entre o card e a barra lateral esquerda de navegação
+# Espaçamento leve entre o card e a barra de navegação
 st.markdown("<div style='height: 4px;'></div>", unsafe_allow_html=True)
 
-# Navegação lado a lado alinhada à esquerda (usando colunas proporcionais justas)
-cols = st.columns([1.1, 1.1, 1.1, 1.1, 1.1, 1.1, 1.1, 1.1, 3.2])
+# Navegação lado a lado alinhada à esquerda com 8 colunas idênticas (distribuídas com respiro)
+cols = st.columns(8)
 aba_map = [
     ("cadastrar", "⚙️ Ficha"), 
     ("auditoria", "🔍 Auditoria"), 
@@ -535,7 +536,7 @@ if st.session_state["aba_ativa"] == "cadastrar":
     modo_edicao = False
     dados_existentes = None
     
-    # Bloco com Destaque Visual Forte para Seleção ou Novo Cadastro
+    # Bloco com Destaque Visual Forte para Seleção ou Novo Cadastro (Card inútil removido!)
     st.markdown('<div class="destaque-cliente-box">', unsafe_allow_html=True)
     st.markdown("### 🗂️ Gerenciamento de Clientes Cadastrados & Novos")
     if not df_clientes.empty:
