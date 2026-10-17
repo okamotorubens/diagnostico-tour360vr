@@ -641,7 +641,7 @@ st.markdown("""
 
     div[data-baseweb="tab-list"] {
         gap: 12px !important;
-        margin-bottom: 22px !important;
+        margin-bottom: 15px !important;
     }
 
     button[data-baseweb="tab"] {
