@@ -40,7 +40,7 @@ st.markdown("""
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     }
 
-    /* 2. SIDEBAR COM ALINHAMENTO SUPERIOR NA LINHA DO TÍTULO */
+    /* 2. SIDEBAR COM LOGOS DESCIDAS 1 LINHA */
     [data-testid="stSidebar"] {
         background-color: #07090E;
         border-right: 1px solid #1E2640;
@@ -49,9 +49,9 @@ st.markdown("""
     [data-testid="stSidebar"] [data-testid="stVerticalBlock"] {
         display: flex !important;
         flex-direction: column !important;
-        justify-content: flex-start !important; /* Alinha ao topo */
+        justify-content: flex-start !important;
         align-items: center !important;
-        padding-top: 5.8rem !important; /* Desce o topo das logos exatamente para a linha do título */
+        padding-top: 6.8rem !important; /* Deslocado 1 linha para baixo */
     }
 
     /* Container das Logos na Sidebar */
@@ -66,16 +66,16 @@ st.markdown("""
         box-sizing: border-box;
     }
 
-    /* Logos com Tamanho Aumentado */
+    /* Logos */
     .sidebar-logo-img-1 {
-        width: 155px !important; /* Aumentado de 135px */
+        width: 155px !important;
         height: auto;
         margin-bottom: 16px;
         display: block;
     }
 
     .sidebar-logo-img-2 {
-        width: 195px !important; /* Aumentado de 170px */
+        width: 195px !important;
         height: auto;
         display: block;
     }
@@ -110,7 +110,7 @@ st.markdown("""
         margin-top: 2.2rem;
     }
 
-    /* 4. CARDS CLICÁVEIS COM BORDA BRANCA E HOVER NEON AZUL */
+    /* 4. CARDS CLICÁVEIS (Nomes dos sistemas e emojis +1 ponto) */
     .clickable-card {
         display: flex;
         flex-direction: column;
@@ -137,7 +137,7 @@ st.markdown("""
 
     .clickable-card h3 {
         color: #FFFFFF !important;
-        font-size: 1.08rem !important;
+        font-size: 1.18rem !important; /* Aumentado +1 ponto */
         font-weight: 700 !important;
         margin: 0 0 8px 0 !important;
         display: flex;
@@ -162,7 +162,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- BARRA LATERAL (Sidebar Posicionada na Linha do Título) ---
+# --- BARRA LATERAL (Sidebar) ---
 with st.sidebar:
     html_logos = "<div class='sidebar-center-container'>"
     
@@ -207,7 +207,7 @@ with col1:
 with col2:
     st.markdown("""
         <a href='https://tour360vr.streamlit.app/' target='_blank' class='clickable-card'>
-            <h3>📊 Diagnóstico & Audit PDF</h3>
+            <h3>📊 Diagnóstico & Auditoria</h3>
             <p>Análise de saúde do perfil local com geração de proposta visual e relatório técnico em PDF.</p>
         </a>
     """, unsafe_allow_html=True)
