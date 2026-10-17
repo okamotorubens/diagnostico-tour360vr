@@ -9,3 +9,5 @@ folium
 streamlit-folium
 Pillow
 supabase
+matplotlib
+google-genai
