@@ -23,9 +23,9 @@ from reportlab.lib import colors
 # Importação do Matplotlib para geração de gráficos no PDF
 import matplotlib.pyplot as plt
 
-# --- CONFIGURAÇÃO DA PÁGINA & LOGO OFICIAL DO GITHUB ---
+# --- CONFIGURAÇÃO DA PÁGINA & CAMINHO EXATO DA LOGO NO GITHUB ---
 FAVICON_TOUR360 = "https://tour360vr.com.br/favicon.ico"
-LOGO_TOUR360_URL = "https://raw.githubusercontent.com/okamotorubens/gestao-mensal-tour360vr/main/ativos/logo_tour_transparente.png"
+LOGO_TOUR360_URL = "https://raw.githubusercontent.com/okamotorubens/diagnostico-tour360vr/main/ativos/logo_tour_transparente.png"
 
 st.set_page_config(
     page_title="Gestão Mensal & Estratégia | Tour360VR",
@@ -307,7 +307,7 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
     buffer.seek(0)
     return buffer
 
-# --- GERAÇÃO DE CONTRATO EM PDF (CORRIGIDO PARA LIMPEZA DE FORMATOS E PADRÃO ENTERPRISE) ---
+# --- GERAÇÃO DE CONTRATO EM PDF ---
 def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duracao=None):
     buffer = BytesIO()
     doc = SimpleDocTemplate(
@@ -450,7 +450,7 @@ st.markdown("""
 if "aba_ativa" not in st.session_state:
     st.session_state["aba_ativa"] = "cadastrar"
 
-# --- CARD DE TOPO CORRIGIDO COM COLUNAS NATIVAS DO STREAMLIT ---
+# --- CARD DE TOPO COM A LOGO APONTADA PARA O DIRETÓRIO CORRETO ---
 with st.container():
     st.markdown('<div class="top-card-container">', unsafe_allow_html=True)
     col_logo, col_texto = st.columns([0.8, 9.2], vertical_alignment="center")
