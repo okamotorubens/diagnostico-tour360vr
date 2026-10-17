@@ -524,7 +524,7 @@ def gerar_pdf_prospeccao_cases(inc_clientes, inc_faturamento, inc_grafico, inc_k
     buffer.seek(0)
     return buffer
 
-# --- CSS PERSONALIZADO (SEM CORTES NOS BOTÕES, ESPAÇAMENTO REDUZIDO E ALINHAMENTO) ---
+# --- CSS PERSONALIZADO (SEM CORTES, QUEBRA FLEXÍVEL E ALINHAMENTO) ---
 st.markdown("""
     <style>
     .block-container {
@@ -570,31 +570,31 @@ st.markdown("""
 
     /* ESPAÇAMENTO ENTRE AS COLUNAS DE BOTÕES SUPERIORES */
     div[data-testid="stHorizontalBlock"] {
-        gap: 0.4rem !important;
+        gap: 0.35rem !important;
         margin-bottom: 12px !important;
     }
 
     div[data-testid="stHorizontalBlock"] > div[data-testid="stColumn"] {
-        padding-left: 6px !important;
-        padding-right: 6px !important;
+        padding-left: 4px !important;
+        padding-right: 4px !important;
     }
 
     div[data-testid="stColumn"] {
         padding: 0px !important;
     }
 
-    /* ESTILIZAÇÃO DOS BOTÕES SUPERIORES (SEM CORTAR TEXTO, QUEBRA FLEXÍVEL) */
+    /* ESTILIZAÇÃO DOS BOTÕES SUPERIORES (SEM CORTES, QUEBRA CONTROLADA) */
     div[data-testid="stColumn"] button {
         width: 100% !important;
-        min-height: 44px !important;
+        min-height: 46px !important;
         height: auto !important;
         background-color: #1A2130 !important;
         border: 1.5px solid #455570 !important;
         color: #FFFFFF !important;
         border-radius: 8px !important;
-        padding: 4px 6px !important;
+        padding: 4px 4px !important;
         font-weight: 700 !important;
-        font-size: 0.74rem !important;
+        font-size: 0.72rem !important;
         line-height: 1.15 !important;
         white-space: normal !important;
         word-wrap: break-word !important;
@@ -605,6 +605,15 @@ st.markdown("""
         justify-content: center !important;
         text-align: center !important;
         transition: all 0.2s ease-in-out !important;
+    }
+
+    /* CORREÇÃO DO ELEMENTO INTERNO DE TEXTO DO STREAMLIT QUE FORÇAVA NOWRAP */
+    div[data-testid="stColumn"] button p, 
+    div[data-testid="stColumn"] button span {
+        white-space: normal !important;
+        word-break: break-word !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
     }
 
     div[data-testid="stColumn"] button:hover {
@@ -636,18 +645,18 @@ st.markdown("""
     div[data-testid="stSelectbox"], 
     div[data-testid="stDateInput"],
     div[data-testid="stTextArea"] {
-        margin-bottom: 8px !important;
+        margin-bottom: 7px !important;
     }
 
     hr {
         margin-top: 10px !important;
-        margin-bottom: 10px !important;
+        margin-bottom: 7px !important;
         border-color: #2B364A !important;
     }
 
     div[data-baseweb="tab-list"] {
         gap: 8px !important;
-        margin-bottom: 14px !important;
+        margin-bottom: 12px !important;
     }
 
     button[data-baseweb="tab"] {
@@ -668,8 +677,8 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# COLUNAS COM LARGURAS PROPORCIONAIS PARA OS BOTÕES SUPERIORES
-cols = st.columns([1.35, 1.25, 1.25, 1.1, 1.3, 1.2, 1.25, 1.35])
+# COLUNAS COM LARGURAS PROPORCIONAIS EQUILIBRADAS PARA OS BOTÕES SUPERIORES
+cols = st.columns([1.3, 1.25, 1.4, 1.15, 1.3, 1.2, 1.25, 1.35])
 
 with cols[0]:
     if st.button("⚙️ Ficha Comercial", key="btn_cad", type="primary" if st.session_state["aba_ativa"] == "cadastrar" else "secondary"):
@@ -682,7 +691,7 @@ with cols[1]:
         st.rerun()
 
 with cols[2]:
-    if st.button("📋 Métricas & SEO ", key="btn_inc", type="primary" if st.session_state["aba_ativa"] == "metricas" else "secondary"):
+    if st.button("📋 Métricas & SEO", key="btn_inc", type="primary" if st.session_state["aba_ativa"] == "metricas" else "secondary"):
         st.session_state["aba_ativa"] = "metricas"
         st.rerun()
 
@@ -1490,7 +1499,7 @@ elif st.session_state["aba_ativa"] == "financeiro":
             label="📊 Baixar Planilha Completa (.CSV / Excel)",
             data=csv_excel,
             file_name=f"Backup_Clientes_Tour360VR_{datetime.now().strftime('%Y_%m_%d')}.csv",
-            mime="text/css",
+            mime="text/csv",
             key="btn_download_excel"
         )
 
