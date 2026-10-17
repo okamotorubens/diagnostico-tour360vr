@@ -26,7 +26,11 @@ import matplotlib.pyplot as plt
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
 FAVICON_TOUR360 = "https://tour360vr.com.br/favicon.ico"
-LOGO_LOCAL_PATH = "ativos/logo_tour_transparente.png"
+
+# Caminhos locais garantidos baseados na estrutura do repositório
+LOGO_LOCAL_PATH = "logo_tour_transparente.png"
+if not os.path.exists(LOGO_LOCAL_PATH) and os.path.exists("assests/logo_tour_transparente.png"):
+    LOGO_LOCAL_PATH = "assests/logo_tour_transparente.png"
 
 st.set_page_config(
     page_title="Gestão Mensal & Estratégia | Tour360VR",
@@ -66,14 +70,22 @@ query_params = st.query_params
 if "aprovar" in query_params or st.session_state.get("modo_aprovacao", False):
     st.markdown("""
         <style>
-        .aprovacao-container { max-width: 750px; margin: 30px auto; background: #131A28; padding: 30px; border-radius: 12px; border: 1px solid #2B364A; color: #E0E6ED; font-family: 'Inter', sans-serif; text-align: center; }
-        .aprovacao-title { color: #FFFFFF; font-size: 1.6rem; font-weight: 800; margin-top: 10px; margin-bottom: 5px; }
-        .aprovacao-sub { color: #8E9BAE; font-size: 0.95rem; margin-bottom: 20px; }
-        .brand-header { font-size: 2rem; font-weight: 900; color: #FFFFFF; text-align: center; margin-top: 20px; letter-spacing: 1px; }
+        .block-container { padding-bottom: 1rem !important; }
+        .aprovacao-container { max-width: 750px; margin: 15px auto 20px auto; background: #131A28; padding: 20px; border-radius: 12px; border: 1px solid #2B364A; color: #E0E6ED; font-family: 'Inter', sans-serif; text-align: center; }
+        .aprovacao-title { color: #FFFFFF; font-size: 1.5rem; font-weight: 800; margin-top: 5px; margin-bottom: 3px; }
+        .aprovacao-sub { color: #8E9BAE; font-size: 0.9rem; margin-bottom: 0px; }
+        .welcome-text { font-size: 1.05rem; font-weight: 600; color: #E0E6ED; text-align: center; margin-bottom: 20px; }
         </style>
     """, unsafe_allow_html=True)
 
-    st.markdown('<div class="brand-header">Tour360VR</div>', unsafe_allow_html=True)
+    # Exibição segura da logo oficial na página de aprovação
+    col_l1, col_l2, col_l3 = st.columns([3, 2, 3])
+    with col_l2:
+        if os.path.exists(LOGO_LOCAL_PATH):
+            img_pil = PILImage.open(LOGO_LOCAL_PATH)
+            st.image(img_pil, use_column_width=True)
+        else:
+            st.markdown("<h2 style='text-align:center; color:#2563EB;'>Tour360VR</h2>", unsafe_allow_html=True)
 
     st.markdown("""
         <div class="aprovacao-container">
@@ -82,7 +94,8 @@ if "aprovar" in query_params or st.session_state.get("modo_aprovacao", False):
         </div>
     """, unsafe_allow_html=True)
 
-    st.success("✅ Bem-vindo à sua página exclusiva de validação e curadoria de pautas.")
+    # Frase limpa sem o card verde de fundo
+    st.markdown('<div class="welcome-text">Bem-vindo à sua página exclusiva de validação e curadoria de pautas.</div>', unsafe_allow_html=True)
     st.markdown("### Selecione as Pautas Aprovadas e Informe Ajustes se Necessário:")
     
     pautas_exemplo = [
@@ -94,9 +107,10 @@ if "aprovar" in query_params or st.session_state.get("modo_aprovacao", False):
         "6. Perguntas frequentes (FAQ): Tire todas as suas dúvidas diretamente conosco."
     ]
 
+    # Itens abrem desmarcados (value=False) conforme solicitado
     pautas_status = {}
     for idx, p in enumerate(pautas_exemplo, 1):
-        pautas_status[p] = st.checkbox(p, value=True, key=f"aprov_pauta_{idx}")
+        pautas_status[p] = st.checkbox(p, value=False, key=f"aprov_pauta_{idx}")
 
     st.markdown("---")
     st.markdown("### 💬 Solicitar Ajustes ou Alterações:")
@@ -104,11 +118,19 @@ if "aprovar" in query_params or st.session_state.get("modo_aprovacao", False):
 
     st.markdown("---")
     
+    # Geração dinâmica da mensagem para o WhatsApp do Rubens
     pautas_aprovadas_txt = "\n".join([k for k, v in pautas_status.items() if v])
-    msg_envio = f"Olá Rubens!\nAvaliei o planejamento de pautas na plataforma da Tour360VR.\n\nPautas Aprovadas:\n{pautas_aprovadas_txt}\n\nAjustes Solicitados:\n{obs_cliente if obs_cliente else 'Nenhum ajuste adicional.'}"
+    msg_envio = f"Olá Rubens!\nAvaliei o planejamento de pautas na plataforma da Tour360VR.\n\nPautas Aprovadas:\n{pautas_aprovadas_txt if pautas_aprovadas_txt else 'Nenhuma pauta marcada diretamente.'}\n\nAjustes Solicitados:\n{obs_cliente if obs_cliente else 'Nenhum ajuste adicional.'}"
     link_wsp_final = f"https://wa.me/5516991332121?text={urllib.parse.quote(msg_envio)}"
 
-    st.link_button("📤 Enviar Aprovação e Ajustes para o WhatsApp do Rubens", url=link_wsp_final, type="primary", use_container_width=True)
+    # Botão em verde do WhatsApp, eliminando sobras abaixo
+    st.markdown(f'''
+        <a href="{link_wsp_final}" target="_blank" style="text-decoration:none;">
+            <div style="width:100%; background-color:#16A34A; color:white; border:none; padding:12px; border-radius:8px; font-weight:bold; text-align:center; cursor:pointer; font-size:1rem; margin-bottom: 0px;">
+                📤 Enviar Aprovação e Ajustes para o WhatsApp do Rubens
+            </div>
+        </a>
+    ''', unsafe_allow_html=True)
         
     st.stop()
 
@@ -761,7 +783,6 @@ elif st.session_state["aba_ativa"] == "ia":
         msg_wsp = urllib.parse.quote(texto_msg_wsp)
 
         if num_limpo:
-            # BOTÃO EM VERDE DO WHATSAPP COM A FRASE EXATA SOLICITADA
             st.markdown(f'''
                 <a href="https://wa.me/55{num_limpo}?text={msg_wsp}" target="_blank" style="text-decoration:none;">
                     <div style="width:100%; background-color:#16A34A; color:white; border:none; padding:12px; border-radius:8px; font-weight:bold; text-align:center; cursor:pointer; font-size:1rem;">
