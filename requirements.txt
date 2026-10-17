@@ -14,4 +14,4 @@ google-genai
 qrcode
 Pillow
 supabase
-BeautifulSoup
+beautifulsoup4
