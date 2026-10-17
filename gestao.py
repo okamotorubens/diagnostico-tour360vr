@@ -174,18 +174,18 @@ def calcular_variacao_pct(atual, anterior):
         return f"+{diff:.1f}%"
     return f"{diff:.1f}%"
 
-# --- GERAR QR CODE PERMANENTE EM MEMÓRIA ---
-def gerar_qr_code_permanente(url):
+# --- GERAR QR CODE PERMANENTE E LIMPO ---
+def gerar_qr_code_limpo(url):
     qr = qrcode.QRCode(
         version=1,
-        error_correction=qrcode.constants.ERROR_CORRECT_H,
-        box_size=10,
+        error_correction=qrcode.constants.ERROR_CORRECT_M,
+        box_size=12,
         border=4,
     )
     qr.add_data(url)
     qr.make(fit=True)
     
-    img_qr = qr.make_image(fill_color="#0B0E14", back_color="#FFFFFF").convert('RGB')
+    img_qr = qr.make_image(fill_color="#000000", back_color="#FFFFFF").convert('RGB')
     
     buffer = BytesIO()
     img_qr.save(buffer, format="PNG")
@@ -626,7 +626,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- CONTROLADOR DE NAVEGAÇÃO SUPERIOR REORGANIZADO ---
+# --- CONTROLADOR DE NAVEGAÇÃO SUPERIOR ---
 if "aba_ativa" not in st.session_state:
     st.session_state["aba_ativa"] = "cadastrar"
 
@@ -636,7 +636,7 @@ st.markdown("""
     <p class="sub-title-card">Acompanhamento de perfis no Google Maps, curadoria estratégica de conteúdo e relatórios executivos de ROI.</p>
 """, unsafe_allow_html=True)
 
-# Proporções customizadas para evitar truncamento do texto "🎯 Curadoria & Pautas"
+# Proporções customizadas para manter o texto "🎯 Curadoria & Pautas" sem truncamento
 cols = st.columns([1.1, 1.1, 1.3, 1.1, 1.0, 1.1, 1.1])
 
 with cols[0]:
@@ -1009,7 +1009,7 @@ elif st.session_state["aba_ativa"] == "metricas":
                 with c3:
                     cliques_site = st.number_input("🌐 Cliques no Site/WhatsApp", min_value=0, step=1, key="num_cliques_m")
                 with c4:
-                    visualizacoes = st.number_input("👁️ Total de Visualizaciones", min_value=0, step=1, key="num_vis_m")
+                    visualizacoes = st.number_input("👁️ Total de Visualizações", min_value=0, step=1, key="num_vis_m")
 
                 col_m1, col_m2 = st.columns(2)
                 with col_m1:
@@ -1030,7 +1030,7 @@ elif st.session_state["aba_ativa"] == "metricas":
                 st.info(f"💰 **Faturamento Estimado Gerado no Mês:** R$ {faturamento_estimado:,.2f}")
 
                 st.markdown("---")
-                resumo_acoes = st.text_area("🛠️ Ações Realizadas no Mês (Otimizações, fotos 360°, curadoria de pautas, etc.)", key="txt_resumo_acoes_m")
+                resumo_acoes = st.text_area("🛠️ Ações Realizadas no Mês (Otimizaciones, fotos 360°, curadoria de pautas, etc.)", key="txt_resumo_acoes_m")
 
                 btn_salvar_metricas = st.form_submit_button("Salvar Métricas do Mês")
 
@@ -1158,17 +1158,17 @@ elif st.session_state["aba_ativa"] == "ia":
                 else:
                     st.info("Cadastre o WhatsApp do cliente para enviar o link direto de aprovação.")
 
-        # SUB-ABA 3: GERADOR DE QR CODE PERMANENTE (NOVO)
+        # SUB-ABA 3: GERADOR DE QR CODE PERMANENTE E LIMPO
         with tab_ia3:
-            st.markdown(f"**Gerador de QR Code Permanente para Plaquinhas de Balcão — {dados_c[1]}:**")
-            st.caption("Este QR Code é dinâmico no design e ESTÁTICO no link, garantindo que NUNCA expire e possa ser impresso em acrílico, adesivos ou balcão.")
+            st.markdown(f"**Gerador de QR Code Permanente (Limpo & Alta Definição) — {dados_c[1]}:**")
+            st.caption("O QR Code gerado abaixo é limpo e estático, garantindo máxima leitura em câmeras de celulares e validade vitalícia para impressão em plaquinhas de acrílico ou balcão.")
 
             url_def_review = dados_c[19] if (dados_c and len(dados_c) > 19 and dados_c[19]) else "https://maps.google.com"
             
-            url_qr = st.text_input("Link Direto de Avaliações / Perfil no Google Maps:", value=url_def_review, key="txt_url_qr_perm")
+            url_qr = st.text_input("Link Direto da Ficha / Página de Avaliação no Google Maps:", value=url_def_review, key="txt_url_qr_perm")
 
             if url_qr:
-                buf_qr = gerar_qr_code_permanente(url_qr)
+                buf_qr = gerar_qr_code_limpo(url_qr)
                 col_q1, col_q2 = st.columns([1, 2])
                 
                 with col_q1:
@@ -1176,14 +1176,14 @@ elif st.session_state["aba_ativa"] == "ia":
                 
                 with col_q2:
                     st.markdown("""
-                    ### 📌 Instruções para Produção da Plaquinha:
-                    1. Este QR Code codifica o link direto público da empresa no Google.
-                    2. **Validade:** Vitalícia / Permanente (nunca expira).
-                    3. **Aplicações:** Placa de acrílico para recepção/balcão, cartões de visita, impressos em comanda e embalagens.
+                    ### 📌 Especificações para Impressão da Plaquinha:
+                    * **Tipo:** QR Code Estático Direto (Nunca Expira).
+                    * **Compatibilidade:** Funciona com qualquer câmera de smartphone Android ou iOS.
+                    * **Formatos Sugeridos:** Placa de acrílico de mesa (10x15cm), adesivos para balcão ou cartões.
                     """)
                     
                     st.download_button(
-                        label="📥 Baixar Imagem do QR Code Alta Resolução (PNG)",
+                        label="📥 Baixar QR Code Limpo Alta Resolução (PNG)",
                         data=buf_qr,
                         file_name=f"QRCode_Google_Review_{dados_c[1].replace(' ', '_')}.png",
                         mime="image/png",
@@ -1208,231 +1208,3 @@ elif st.session_state["aba_ativa"] == "ia":
             """)
 
         with tab_ia5:
-            st.markdown(f"**Direção de Arte & Prompts Fotográficos — {dados_c[1]}:**")
-            st.caption("Prompts visuais estilizados para criação de artes institucionais mantendo a identidade visual da marca:")
-
-            prompt_gerado = f"Professional commercial photography of a modern {cat_nome} establishment named '{dados_c[1]}', located in Brazil. High quality ambient lighting, photorealistic, elegant interior, clean design, 8k resolution --ar 16:9"
-            
-            st.code(prompt_gerado, language="text")
-
-# ==========================================
-# MÓDULO 4: DASHBOARD & ROI
-# ==========================================
-elif st.session_state["aba_ativa"] == "dashboard":
-    st.subheader("📊 Análise de Desempenho e ROI")
-    df_clientes = obter_clientes_unicos()
-    
-    if df_clientes.empty:
-        st.info("Nenhum cliente cadastrado ainda.")
-    else:
-        cliente_dash = st.selectbox("Selecione o Cliente para Visualizar", df_clientes["nome_empresa"].tolist(), key="dash_cliente")
-        cliente_id_dash = int(df_clientes[df_clientes["nome_empresa"] == cliente_dash]["id"].values[0])
-        
-        conn = sqlite3.connect(DB_NAME)
-        df_metricas = pd.read_sql_query(
-            "SELECT mes_ano, chamadas, rotas, cliques_site, visualizacoes, novas_avaliacoes, total_fotos_mes, faturamento_estimado FROM metricas_mensais WHERE cliente_id = ? ORDER BY mes_ano ASC", 
-            conn, params=(cliente_id_dash,)
-        )
-        conn.close()
-
-        if df_metricas.empty:
-            st.info("Ainda não existem métricas registradas para este cliente.")
-        else:
-            ultimas = df_metricas.iloc[-1]
-            m1, m2, m3, m4 = st.columns(4)
-            m1.metric("Chamadas (Último Mês)", ultimas["chamadas"])
-            m2.metric("Rotas (Último Mês)", ultimas["rotas"])
-            m3.metric("Cliques Site/Whats", ultimas["cliques_site"])
-            m4.metric("Faturamento Estimado", f"R$ {ultimas['faturamento_estimado']:,.2f}")
-
-            st.markdown("---")
-            st.line_chart(df_metricas.set_index("mes_ano")[["chamadas", "rotas", "cliques_site"]])
-
-# ==========================================
-# MÓDULO 5: GERADOR DE PDF DE PROSPECÇÃO & CASES DE SUCESSO
-# ==========================================
-elif st.session_state["aba_ativa"] == "cases":
-    st.subheader("🏆 Gerador de Relatório Comercial de Prospecção (Cases & Prova Social)")
-    st.caption("Crie um documento customizado e anônimo para apresentar a novos clientes durante reuniões de vendas.")
-
-    conn = sqlite3.connect(DB_NAME)
-    df_tot_clientes = pd.read_sql_query("SELECT COUNT(*) as qtd FROM clientes", conn)
-    df_tot_fat = pd.read_sql_query("SELECT SUM(faturamento_estimado) as total FROM metricas_mensais", conn)
-    
-    df_agrupado = pd.read_sql_query(
-        "SELECT mes_ano, SUM(chamadas) as chamadas, SUM(rotas) as rotas, SUM(cliques_site) as cliques_site FROM metricas_mensais GROUP BY mes_ano ORDER BY mes_ano ASC", 
-        conn
-    )
-    
-    df_keywords_all = pd.read_sql_query("SELECT palavra_chave, posicao_inicial, posicao_atual FROM ranking_keywords ORDER BY (posicao_inicial - posicao_atual) DESC LIMIT 5", conn)
-    conn.close()
-
-    qtd_c = df_tot_clientes['qtd'].values[0] if not df_tot_clientes.empty else 0
-    fat_c = df_tot_fat['total'].values[0] if (not df_tot_fat.empty and df_tot_fat['total'].values[0] is not None) else 0.0
-
-    st.markdown("**Selecione quais informações deseja incluir no PDF de Apresentação:**")
-    
-    c_p1, c_p2 = st.columns(2)
-    with c_p1:
-        inc_clientes = st.checkbox("Exibir Métrica de Quantidade de Clientes Atendidos", value=True, key="chk_inc_cli_cases")
-        inc_faturamento = st.checkbox("Exibir Valor de Faturamento Estimado Total Gerado", value=True, key="chk_inc_fat_cases")
-    with c_p2:
-        inc_grafico = st.checkbox("Exibir Gráfico de Crescimento Somado da Agência", value=True, key="chk_inc_graf_cases")
-        inc_keywords = st.checkbox("Exibir Tabela de Casos de Sucesso de Ranking SEO", value=True, key="chk_inc_kw_cases")
-
-    st.markdown("---")
-    st.write("Clique no botão abaixo para gerar o PDF personalizado para o seu prospect:")
-
-    pdf_cases_bytes = gerar_pdf_prospeccao_cases(
-        inc_clientes=inc_clientes,
-        inc_faturamento=inc_faturamento,
-        inc_grafico=inc_grafico,
-        inc_keywords=inc_keywords,
-        qtd_clientes=qtd_c,
-        total_fat=fat_c,
-        df_agrupado=df_agrupado if not df_agrupado.empty else None,
-        df_keywords=df_keywords_all if not df_keywords_all.empty else None
-    )
-
-    st.download_button(
-        label="📥 Baixar PDF Comercial de Prospecção (Tour360VR Cases)",
-        data=pdf_cases_bytes,
-        file_name=f"Apresentacao_Cases_Tour360VR_{datetime.now().strftime('%Y_%m')}.pdf",
-        mime="application/pdf",
-        key="btn_pdf_cases"
-    )
-
-# ==========================================
-# MÓDULO 6: RELATÓRIO PDF INDIVIDUAL & DISPARO WHATSAPP
-# ==========================================
-elif st.session_state["aba_ativa"] == "pdf":
-    st.subheader("📄 Emitir Relatório Executivo em PDF & Envio via WhatsApp")
-    df_clientes = obter_clientes_unicos()
-
-    if df_clientes.empty:
-        st.info("Cadastre um cliente e insira métricas para gerar o relatório.")
-    else:
-        col_r1, col_r2 = st.columns(2)
-        with col_r1:
-            cliente_pdf_sel = st.selectbox("Selecione o Cliente", df_clientes["nome_empresa"].tolist(), key="pdf_cliente")
-            cliente_pdf_id = int(df_clientes[df_clientes["nome_empresa"] == cliente_pdf_sel]["id"].values[0])
-
-        dados_cliente = obter_dados_cliente_por_id(cliente_pdf_id)
-        
-        dados_inicio = {
-            'qtd_avaliacoes_inicio': dados_cliente[6] if (dados_cliente and len(dados_cliente) > 6 and dados_cliente[6] is not None) else 0,
-            'nota_media_inicio': dados_cliente[7] if (dados_cliente and len(dados_cliente) > 7 and dados_cliente[7] is not None) else 5.0,
-            'qtd_fotos_inicio': dados_cliente[8] if (dados_cliente and len(dados_cliente) > 8 and dados_cliente[8] is not None) else 0
-        }
-
-        conn = sqlite3.connect(DB_NAME)
-        df_m = pd.read_sql_query(
-            "SELECT * FROM metricas_mensais WHERE cliente_id = ? ORDER BY mes_ano ASC", 
-            conn, params=(cliente_pdf_id,)
-        )
-        df_kw = pd.read_sql_query(
-            "SELECT palavra_chave, posicao_inicial, posicao_atual FROM ranking_keywords WHERE cliente_id = ?",
-            conn, params=(cliente_pdf_id,)
-        )
-        conn.close()
-
-        if df_m.empty:
-            st.warning("Nenhuma métrica encontrada para este cliente.")
-        else:
-            with col_r2:
-                mes_pdf_sel = st.selectbox("Selecione o Mês de Referência", df_m["mes_ano"].tolist()[::-1], key="sel_mes_pdf")
-
-            idx_sel = df_m[df_m["mes_ano"] == mes_pdf_sel].index[0]
-            dados_atual = df_m.iloc[idx_sel].to_dict()
-
-            dados_anterior = None
-            if idx_sel - 1 >= 0:
-                dados_anterior = df_m.iloc[idx_sel - 1].to_dict()
-
-            df_historico_recorte = df_m.iloc[:idx_sel + 1]
-
-            st.markdown("---")
-            st.write(f"**Resumo Selecionado:** {cliente_pdf_sel} - Mês {mes_pdf_sel}")
-
-            pdf_bytes = gerar_pdf_relatorio(
-                nome_empresa=cliente_pdf_sel,
-                mes_ano=mes_pdf_sel,
-                dados_atual=dados_atual,
-                dados_anterior=dados_anterior,
-                dados_inicio=dados_inicio,
-                df_historico=df_historico_recorte,
-                df_keywords=df_kw
-            )
-
-            c_dw1, c_dw2 = st.columns(2)
-            with c_dw1:
-                st.download_button(
-                    label="📥 Baixar Relatório Executivo em PDF (TOUR360VR)",
-                    data=pdf_bytes,
-                    file_name=f"Relatorio_GMB_{cliente_pdf_sel.replace(' ', '_')}_{mes_pdf_sel}.pdf",
-                    mime="application/pdf",
-                    key="btn_download_pdf_exec"
-                )
-
-            with c_dw2:
-                num_wsp = dados_cliente[17] if (dados_cliente and len(dados_cliente) > 17 and dados_cliente[17]) else ""
-                num_limpo = "".join([c for c in num_wsp if c.isdigit()])
-                
-                txt_whats = f"Olá {dados_cliente[2] if dados_cliente[2] else cliente_pdf_sel}, tudo bem? Aqui é o Rubens da Tour360VR! Segue o resumo do relatório de desempenho do seu perfil no Google referente ao mês {mes_pdf_sel}: Tivemos {dados_atual['chamadas']} chamadas diretas e {dados_atual['rotas']} solicitações de rota no GPS. Estou enviando o relatório completo em PDF em anexo."
-                txt_encoded = urllib.parse.quote(txt_whats)
-
-                if num_limpo:
-                    link_wsp = f"https://wa.me/55{num_limpo}?text={txt_encoded}"
-                    st.markdown(f'<a href="{link_wsp}" target="_blank" style="text-decoration:none;"><button style="width:100%; background-color:#16A34A; color:white; border:none; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer;">📱 Enviar Resumo via WhatsApp</button></a>', unsafe_allow_html=True)
-                else:
-                    st.info("Cadastre o WhatsApp no formulário do cliente para ativar o envio rápido.")
-
-# ==========================================
-# MÓDULO 7: GESTÃO FINANCEIRA MRR & BACKUP COMPLETO
-# ==========================================
-elif st.session_state["aba_ativa"] == "financeiro":
-    st.subheader("💰 Gestão Financeira & Backup da Agência (MRR)")
-    st.caption("Painel restrito para controle de mensalidades, faturamento total, exportação de cadastros e backups.")
-
-    conn = sqlite3.connect(DB_NAME)
-    try:
-        df_completo = pd.read_sql_query("SELECT * FROM clientes ORDER BY nome_empresa ASC", conn)
-        df_fin = pd.read_sql_query(
-            "SELECT nome_empresa as 'Cliente', responsavel as 'Responsável', telefone_contato as 'Telefone', valor_contrato_mensal as 'Mensalidade (R$)', dia_vencimento as 'Dia Vencimento', status_contrato as 'Status' FROM clientes WHERE status_contrato = 'Ativo'", 
-            conn
-        )
-    except Exception:
-        df_completo = pd.DataFrame()
-        df_fin = pd.DataFrame()
-    conn.close()
-
-    if df_fin.empty:
-        st.info("Nenhum contrato ativo cadastrado no momento. Cadastre os valores das mensalidades na aba '⚙️ Ficha Comercial'.")
-    else:
-        mrr_total = df_fin['Mensalidade (R$)'].sum()
-        qtd_clientes_ativos = len(df_fin)
-        ticket_medio_agencia = mrr_total / qtd_clientes_ativos if qtd_clientes_ativos > 0 else 0.0
-
-        f1, f2, f3 = st.columns(3)
-        f1.metric("💵 Recorrência Mensal (MRR)", f"R$ {mrr_total:,.2f}")
-        f2.metric("🏢 Clientes Ativos", f"{qtd_clientes_ativos} empresas")
-        f3.metric("🎯 Ticket Médio por Cliente", f"R$ {ticket_medio_agencia:,.2f}")
-
-        st.markdown("---")
-        st.markdown("**Contratos Recorrentes Ativos:**")
-        st.dataframe(df_fin, use_container_width=True)
-
-    if not df_completo.empty:
-        st.markdown("---")
-        st.markdown("### 📥 Backup & Exportação Completa de Cadastros")
-        st.write("Baixe a relação completa de todos os clientes, dados operacionais, horários e contratos.")
-
-        csv_excel = df_completo.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig')
-
-        st.download_button(
-            label="📊 Baixar Planilha Completa (.CSV / Excel)",
-            data=csv_excel,
-            file_name=f"Backup_Clientes_Tour360VR_{datetime.now().strftime('%Y_%m_%d')}.csv",
-            mime="text/csv",
-            key="btn_download_excel"
-        )
