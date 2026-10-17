@@ -22,10 +22,10 @@ from reportlab.lib import colors
 # Importação do Matplotlib para geração de gráficos no PDF
 import matplotlib.pyplot as plt
 
-# --- CONFIGURAÇÃO DA PÁGINA ---
+# --- CONFIGURAÇÃO DA PÁGINA & FAVICON ---
 st.set_page_config(
     page_title="Gestão Mensal & Estratégia | Tour360vr",
-    page_icon="📈",
+    page_icon="🌐",  # Favicon nativo/emoji ou link de imagem do Tour360VR
     layout="wide"
 )
 
@@ -72,18 +72,15 @@ def auditar_ficha_google(url_maps):
         
         html = response.text
         
-        # Análise Heurística das informações públicas presentes no HTML
         tem_site = ("http://" in html or "https://" in html) and "website" in html.lower()
         tem_telefone = bool(re.search(r'\+?55\s?\(?\d{2}\)?\s?\d{4,5}\-?\d{4}', html)) or "phone" in html.lower()
         tem_avaliacoes = "star" in html.lower() or "comentários" in html.lower() or "reviews" in html.lower()
         tem_fotos = "photo" in html.lower() or "photos" in html.lower()
         
-        # Tentar extrair nome comercial do título da página
         soup = BeautifulSoup(html, 'html.parser')
         title = soup.title.string if soup.title else "Empresa Auditada"
         nome_extraido = title.replace("- Google Maps", "").replace("- Busca Google", "").strip()
 
-        # Cálculo da pontuação da ficha (Health Score)
         pontos = 0
         pendencias = []
         oportunidades = []
@@ -473,7 +470,7 @@ def gerar_pdf_prospeccao_cases(inc_clientes, inc_faturamento, inc_grafico, inc_k
             ])
         t_kw = Table(kw_table_data, colWidths=[210, 95, 95, 120])
         t_kw.setStyle(TableStyle([
-            ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#F1F5F9')),
+            ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#F1F5F9')),
             ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#CBD5E1')),
             ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#E2E8F0')),
             ('PADDING', (0,0), (-1,-1), 5),
@@ -489,13 +486,13 @@ def gerar_pdf_prospeccao_cases(inc_clientes, inc_faturamento, inc_grafico, inc_k
     buffer.seek(0)
     return buffer
 
-# --- CSS PERSONALIZADO COM PADRONIZAÇÃO DE BOTÕES ---
+# --- CSS PERSONALIZADO COM BOTÕES PERFEITAMENTE ALINHADOS SEM TRUNCAMENTO ---
 st.markdown("""
     <style>
     .block-container {
         padding-top: 1.2rem !important;
         padding-bottom: 2rem !important;
-        max-width: 94% !important;
+        max-width: 96% !important;
     }
     
     header[data-testid="stHeader"] {
@@ -532,25 +529,31 @@ st.markdown("""
         margin-bottom: 16px !important;
     }
 
-    /* ESTILIZAÇÃO PADRONIZADA DE TODOS OS BOTÕES DE NAVEGAÇÃO SUPERIOR */
+    /* REDUÇÃO DE ESPAÇAMENTO ENTRE AS COLUNAS DO NAVEGADOR */
+    div[data-testid="stHorizontalBlock"] {
+        gap: 0.4rem !important;
+    }
+
+    /* ESTILIZAÇÃO PADRONIZADA DE TODOS OS BOTÕES DE NAVEGAÇÃO SUPERIOR SEM TRUNCAMENTO */
     div[data-testid="stColumn"] button {
         width: 100% !important;
-        min-height: 52px !important;
-        height: 52px !important;
+        min-height: 48px !important;
+        height: 48px !important;
         background-color: #1A2130 !important;
         border: 1.5px solid #455570 !important;
         color: #FFFFFF !important;
         border-radius: 8px !important;
-        padding: 4px 6px !important;
+        padding: 2px 4px !important;
         font-weight: 700 !important;
-        font-size: 0.80rem !important;
-        line-height: 1.2 !important;
+        font-size: 0.81rem !important;
+        line-height: 1.1 !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
         text-align: center !important;
-        white-space: normal !important;
-        word-wrap: break-word !important;
+        white-space: nowrap !important; /* IMPEDE A QUEBRA E TRUNCAMENTO COM TRÊS PONTINHOS */
+        overflow: hidden !important;
+        text-overflow: clip !important;
         transition: all 0.25s ease-in-out !important;
     }
 
@@ -598,7 +601,7 @@ st.markdown("""
     <p class="sub-title-card">Acompanhamento de perfis no Google Maps, auditoria instantânea, curadoria de conteúdo e ROI.</p>
 """, unsafe_allow_html=True)
 
-# 8 colunas perfeitamente iguais (largura 1.0)
+# 8 colunas perfeitamente alinhadas
 cols = st.columns([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
 
 with cols[0]:
@@ -607,7 +610,7 @@ with cols[0]:
         st.rerun()
 
 with cols[1]:
-    if st.button("🔍 Auditoria Express", key="btn_auditoria", type="primary" if st.session_state["aba_ativa"] == "auditoria" else "secondary"):
+    if st.button("🔍 Auditoria Link", key="btn_auditoria", type="primary" if st.session_state["aba_ativa"] == "auditoria" else "secondary"):
         st.session_state["aba_ativa"] = "auditoria"
         st.rerun()
 
@@ -617,7 +620,7 @@ with cols[2]:
         st.rerun()
 
 with cols[3]:
-    if st.button("🎯 Curadoria & Pautas", key="btn_ia", type="primary" if st.session_state["aba_ativa"] == "ia" else "secondary"):
+    if st.button("🎯 Curadoria", key="btn_ia", type="primary" if st.session_state["aba_ativa"] == "ia" else "secondary"):
         st.session_state["aba_ativa"] = "ia"
         st.rerun()
 
@@ -627,7 +630,7 @@ with cols[4]:
         st.rerun()
 
 with cols[5]:
-    if st.button("🏆 Prospecção Cases", key="btn_cases", type="primary" if st.session_state["aba_ativa"] == "cases" else "secondary"):
+    if st.button("🏆 Prospecção", key="btn_cases", type="primary" if st.session_state["aba_ativa"] == "cases" else "secondary"):
         st.session_state["aba_ativa"] = "cases"
         st.rerun()
 
@@ -644,7 +647,7 @@ with cols[7]:
 st.markdown("</div>", unsafe_allow_html=True)
 
 # ==========================================
-# MÓDULO NOVO: AUDITORIA EXPRESS DE FICHA GOOGLE
+# MÓDULO: AUDITORIA EXPRESS DE FICHA GOOGLE
 # ==========================================
 if st.session_state["aba_ativa"] == "auditoria":
     st.subheader("🔍 Auditoria de Ficha Google em 1 Clique (Diagnóstico de Vendas)")
@@ -697,7 +700,6 @@ if st.session_state["aba_ativa"] == "auditoria":
                             st.write("- Focar em otimização contínua de Palavras-Chave e Tour Virtual 360° imersivo.")
 
                     st.markdown("---")
-                    # Mensagem customizada de abordagem via WhatsApp
                     str_prop = f"Olá! Fiz uma análise rápida da ficha de {resultado['nome']} no Google Maps e identifiquei que existem algumas oportunidades para melhorar seu posicionamento e atrair mais clientes na região. Podemos conversar a respeito?"
                     url_enc_prop = urllib.parse.quote(str_prop)
                     st.markdown(f'<a href="https://wa.me/?text={url_enc_prop}" target="_blank" style="text-decoration:none;"><button style="width:100%; background-color:#2563EB; color:white; border:none; padding:12px; border-radius:8px; font-weight:bold; cursor:pointer;">📱 Compartilhar Abordagem de Vendas no WhatsApp</button></a>', unsafe_allow_html=True)
