@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import os
 import re
+import base64
 from datetime import datetime, date
 from io import BytesIO
 import urllib.parse
@@ -23,9 +24,9 @@ from reportlab.lib import colors
 # Importação do Matplotlib para geração de gráficos no PDF
 import matplotlib.pyplot as plt
 
-# --- CONFIGURAÇÃO DA PÁGINA & CAMINHOS DA LOGO ---
+# --- CONFIGURAÇÃO DA PÁGINA & CONSTANTES ---
 FAVICON_TOUR360 = "https://tour360vr.com.br/favicon.ico"
-LOGO_TOUR360_PATH = "assets/logo_tour_transparente.png"
+LOGO_TOUR360_PATH = "ativos/logo_tour_transparente.png"
 LOGO_TOUR360_URL = "https://raw.githubusercontent.com/okamotorubens/diagnostico-tour360vr/main/ativos/logo_tour_transparente.png"
 
 st.set_page_config(
@@ -49,6 +50,28 @@ def get_supabase_client() -> Client:
 
 supabase = get_supabase_client()
 
+# --- FUNÇÃO BLINDADA PARA CARREGAR A LOGO (BASE64 E BYTES) ---
+@st.cache_data
+def carregar_dados_logo():
+    # Tenta carregar do arquivo local primeiro
+    try:
+        if os.path.exists(LOGO_TOUR360_PATH):
+            with open(LOGO_TOUR360_PATH, "rb") as f:
+                return f.read()
+    except Exception:
+        pass
+    # Plano B: Tenta carregar do GitHub
+    try:
+        resp = requests.get(LOGO_TOUR360_URL, timeout=5)
+        if resp.status_code == 200:
+            return resp.content
+    except Exception:
+        pass
+    return None
+
+raw_logo_bytes = carregar_dados_logo()
+b64_logo = base64.b64encode(raw_logo_bytes).decode('utf-8') if raw_logo_bytes else None
+
 # --- TRATAMENTO DE ROTA DE APROVAÇÃO EXTERNA ---
 query_params = st.query_params
 if "aprovar" in query_params or st.session_state.get("modo_aprovacao", False):
@@ -62,12 +85,9 @@ if "aprovar" in query_params or st.session_state.get("modo_aprovacao", False):
 
     col_l1, col_l2, col_l3 = st.columns([3, 2, 3])
     with col_l2:
-        try:
-            if os.path.exists(LOGO_TOUR360_PATH):
-                st.image(LOGO_TOUR360_PATH, width=120)
-            else:
-                st.image(LOGO_TOUR360_URL, width=120)
-        except Exception:
+        if b64_logo:
+            st.markdown(f'<div style="text-align:center;"><img src="data:image/png;base64,{b64_logo}" width="120" /></div>', unsafe_allow_html=True)
+        else:
             st.markdown("<h2 style='text-align:center; color:#2563EB;'>Tour360VR</h2>", unsafe_allow_html=True)
 
     st.markdown("""
@@ -228,7 +248,7 @@ def gerar_imagem_grafico(df_historico):
     img_buf.seek(0)
     return img_buf
 
-# --- GERAÇÃO DE RELATÓRIO PDF EXECUTIVO ---
+# --- GERAÇÃO DE RELATÓRIO PDF EXECUTIVO (PADRÃO RESTAURADO COM LOGO) ---
 def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dados_inicio, df_historico=None, df_keywords=None):
     buffer = BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=36, leftMargin=36, topMargin=36, bottomMargin=36)
@@ -240,34 +260,29 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
     body_style = ParagraphStyle('DocBody', parent=styles['Normal'], fontName='Helvetica', fontSize=8, leading=11, textColor=colors.HexColor('#334155'))
     footer_style = ParagraphStyle('DocFooter', parent=styles['Normal'], fontName='Helvetica', fontSize=8, leading=11, alignment=1, textColor=colors.HexColor('#000000'))
 
-    # Tratamento seguro da imagem no PDF
+    # Processa a logo injetando os bytes diretos
     logo_flowable = Paragraph("<b>Tour360VR</b>", title_brand_style)
-    try:
-        if os.path.exists(LOGO_TOUR360_PATH):
-            logo_flowable = RLImage(LOGO_TOUR360_PATH, width=36, height=36)
-        else:
-            resp_img = requests.get(LOGO_TOUR360_URL, timeout=3)
-            if resp_img.status_code == 200:
-                img_io = BytesIO(resp_img.content)
-                logo_flowable = RLImage(img_io, width=36, height=36)
-    except Exception:
-        pass
+    if raw_logo_bytes:
+        try:
+            img_stream = BytesIO(raw_logo_bytes)
+            logo_flowable = RLImage(img_stream, width=38, height=38)
+        except Exception:
+            pass
 
     header_table_data = [
         [
-            Table([[logo_flowable, Paragraph("<b>Tour360VR</b><br/><font size=7 color='#64748B'>Gestão & SEO Local</font>", title_brand_style)]], colWidths=[40, 200]),
+            Table([[logo_flowable, Paragraph("<b>Tour360VR</b><br/><font size=7 color='#64748B'>Gestão & SEO Local</font>", title_brand_style)]], colWidths=[45, 180]),
             Paragraph(f"<b>RELATÓRIO DE DESEMPENHO</b><br/><font size=9 color='#2563EB'><b>{nome_empresa}</b></font><br/><font size=8 color='#64748B'>Mês de Referência: {mes_ano}</font>", ParagraphStyle('RHeader', parent=styles['Normal'], alignment=2, fontName='Helvetica'))
         ]
     ]
     t_header = Table(header_table_data, colWidths=[260, 260])
-    t_header.setStyle(TableStyle([
-        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-    ]))
+    t_header.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'MIDDLE')]))
     story.append(t_header)
-    story.append(Spacer(1, 4))
-    story.append(HRFlowable(width="100%", thickness=0.8, color=colors.HexColor('#93C5FD'), spaceAfter=4))
+    story.append(Spacer(1, 6))
+    story.append(HRFlowable(width="100%", thickness=0.8, color=colors.HexColor('#93C5FD'), spaceAfter=8))
+    
     story.append(Paragraph("<b>1. Análise Comparativa de Desempenho e Crescimento:</b>", section_style))
-    story.append(Spacer(1, 3))
+    story.append(Spacer(1, 4))
 
     c_chamadas_ant = dados_anterior['chamadas'] if dados_anterior else 0
     c_rotas_ant = dados_anterior['rotas'] if dados_anterior else 0
@@ -284,14 +299,14 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#F1F5F9')),
         ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#CBD5E1')),
         ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#E2E8F0')),
-        ('PADDING', (0,0), (-1,-1), 4),
+        ('PADDING', (0,0), (-1,-1), 5),
         ('ALIGN', (1,0), (-1,-1), 'CENTER'),
     ]))
     story.append(t_comp)
-    story.append(Spacer(1, 6))
+    story.append(Spacer(1, 8))
 
     story.append(Paragraph("<b>2. Monitoramento de Palavras-Chave & Termos de Busca (Google Maps):</b>", section_style))
-    story.append(Spacer(1, 3))
+    story.append(Spacer(1, 4))
     kw_table_data = [
         [Paragraph("<b>Termo / Palavra-Chave de Busca</b>", section_style), Paragraph("<b>Posição Anterior</b>", section_style), Paragraph("<b>Posição Atual</b>", section_style), Paragraph("<b>Impacto / Visibilidade</b>", section_style)],
         [Paragraph("Serviços em Destaque na Região", body_style), Paragraph("12º lugar", body_style), Paragraph("<b>4º lugar</b>", body_style), Paragraph("<b>Alto Tráfego</b>", body_style)],
@@ -303,25 +318,25 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#F1F5F9')),
         ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#CBD5E1')),
         ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#E2E8F0')),
-        ('PADDING', (0,0), (-1,-1), 4),
+        ('PADDING', (0,0), (-1,-1), 5),
         ('ALIGN', (1,0), (-1,-1), 'CENTER'),
     ]))
     story.append(t_kw)
-    story.append(Spacer(1, 6))
+    story.append(Spacer(1, 8))
 
     if df_historico is not None and len(df_historico) > 1:
         story.append(Paragraph("<b>3. Curva de Evolução Histórica:</b>", section_style))
-        story.append(Spacer(1, 3))
+        story.append(Spacer(1, 4))
         story.append(Image(gerar_imagem_grafico(df_historico), width=520, height=130))
-        story.append(Spacer(1, 6))
+        story.append(Spacer(1, 8))
 
-    story.append(HRFlowable(width="100%", thickness=0.8, color=colors.HexColor('#93C5FD'), spaceAfter=4))
+    story.append(HRFlowable(width="100%", thickness=0.8, color=colors.HexColor('#93C5FD'), spaceAfter=6))
     story.append(Paragraph('<a href="https://tour360vr.com.br" color="#000000"><b>tour360vr.com.br</b></a> &nbsp;|&nbsp; <a href="mailto:contato@tour360vr.com.br" color="#000000">contato@tour360vr.com.br</a> &nbsp;|&nbsp; <a href="https://wa.me/5516991332121" color="#000000">WhatsApp: (16) 99133-2121</a>', footer_style))
     doc.build(story)
     buffer.seek(0)
     return buffer
 
-# --- GERAÇÃO DE CONTRATO EM PDF ---
+# --- GERAÇÃO DE CONTRATO EM PDF (PADRÃO RESTAURADO COM LOGO) ---
 def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duracao=None):
     buffer = BytesIO()
     doc = SimpleDocTemplate(
@@ -342,18 +357,13 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     footer_style = ParagraphStyle('DocFooter', parent=styles['Normal'], fontName='Helvetica', fontSize=8, leading=10, alignment=1, textColor=colors.HexColor('#334155'))
     signature_style = ParagraphStyle('DocSig', parent=styles['Normal'], fontName='Helvetica', fontSize=8.5, leading=11, alignment=1, textColor=colors.HexColor('#1E293B'))
 
-    # Tratamento seguro da imagem no PDF
     logo_flowable = Paragraph("<b>Tour360VR</b>", title_brand_style)
-    try:
-        if os.path.exists(LOGO_TOUR360_PATH):
-            logo_flowable = RLImage(LOGO_TOUR360_PATH, width=36, height=36)
-        else:
-            resp_img = requests.get(LOGO_TOUR360_URL, timeout=3)
-            if resp_img.status_code == 200:
-                img_io = BytesIO(resp_img.content)
-                logo_flowable = RLImage(img_io, width=36, height=36)
-    except Exception:
-        pass
+    if raw_logo_bytes:
+        try:
+            img_stream = BytesIO(raw_logo_bytes)
+            logo_flowable = RLImage(img_stream, width=42, height=42)
+        except Exception:
+            pass
 
     header_table_data = [
         [
@@ -362,11 +372,7 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
         ]
     ]
     t_header = Table(header_table_data, colWidths=[200, 340])
-    t_header.setStyle(TableStyle([
-        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-        ('ALIGN', (0,0), (0,0), 'LEFT'),
-        ('ALIGN', (1,0), (1,0), 'RIGHT'),
-    ]))
+    t_header.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'MIDDLE'), ('ALIGN', (1,0), (1,0), 'RIGHT')]))
     story.append(t_header)
     story.append(Spacer(1, 4))
     story.append(HRFlowable(width="100%", thickness=1.0, color=colors.HexColor('#2563EB'), spaceAfter=6))
@@ -377,7 +383,6 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     
     date_style = ParagraphStyle('DateStyle', parent=styles['Normal'], fontName='Helvetica', fontSize=8.5, alignment=2, textColor=colors.HexColor('#334155'), spaceAfter=0)
     story.append(Paragraph(data_extenso, date_style))
-
     story.append(Spacer(1, 8))
     story.append(Paragraph("TERMO DE CONTRATAÇÃO DE SERVIÇOS", doc_title_style))
     story.append(Spacer(1, 8))
@@ -411,7 +416,6 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     <b>CLÁUSULA QUINTA - VALIDADE DA PROPOSTA:</b> A presente proposta e condições comerciais possuem validade oficial de 15 (quinze) dias a contar da data de sua emissão.
     """
     story.append(Paragraph(clausulas, body_style))
-    
     story.append(Spacer(1, 16))
 
     assinaturas_data = [
@@ -438,10 +442,9 @@ st.markdown("""
     header[data-testid="stHeader"] { display: none !important; }
     .stApp { background-color: #0B0E14; color: #E0E6ED; font-family: 'Inter', -apple-system, sans-serif; }
     .top-card-container { background-color: #161F30; border: 1px solid #2B364A; border-radius: 10px; padding: 14px 20px !important; margin-bottom: 12px !important; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); }
-    .main-title-card { color: #FFFFFF; font-weight: 800; font-size: 1.55rem; margin-top: 0 !important; margin-bottom: 3px !important; }
-    .sub-title-card { color: #8E9BAE; font-size: 0.88rem; margin-bottom: 0px !important; }
+    .main-title-card { color: #FFFFFF; font-weight: 800; font-size: 1.55rem; margin: 0 !important; }
+    .sub-title-card { color: #8E9BAE; font-size: 0.88rem; margin: 0 !important; }
     div[data-testid="stHorizontalBlock"] { gap: 0.2rem !important; margin-bottom: 10px !important; }
-    
     hr { margin-top: 4px !important; margin-bottom: 4px !important; border-color: #2B364A !important; }
     
     div[data-testid="stColumn"] button { 
@@ -451,14 +454,11 @@ st.markdown("""
         transition: all 0.2s ease-in-out;
     }
     div[data-testid="stColumn"] button:hover {
-        background-color: #252D42 !important;
-        border-color: #FFFFFF !important;
-        color: #FFFFFF !important;
+        background-color: #252D42 !important; border-color: #FFFFFF !important; color: #FFFFFF !important;
         box-shadow: 0 0 12px rgba(255, 255, 255, 0.8), 0 0 4px rgba(255, 255, 255, 0.9) !important;
     }
     div[data-testid="stColumn"] button[kind="primary"] {
-        background-color: #252D42 !important;
-        border-color: #FFFFFF !important;
+        background-color: #252D42 !important; border-color: #FFFFFF !important;
         box-shadow: 0 0 14px rgba(255, 255, 255, 0.9), 0 0 6px rgba(255, 255, 255, 1) !important;
     }
     div[data-testid="stForm"] { border-color: #2B364A !important; padding: 16px !important; border-radius: 10px !important; background-color: #131A28 !important; }
@@ -468,24 +468,18 @@ st.markdown("""
 if "aba_ativa" not in st.session_state:
     st.session_state["aba_ativa"] = "cadastrar"
 
-# --- CARD DE TOPO COM A LOGO ---
-with st.container():
-    st.markdown('<div class="top-card-container">', unsafe_allow_html=True)
-    col_logo, col_texto = st.columns([0.8, 9.2], vertical_alignment="center")
-    with col_logo:
-        try:
-            if os.path.exists(LOGO_TOUR360_PATH):
-                st.image(LOGO_TOUR360_PATH, width=48)
-            else:
-                st.image(LOGO_TOUR360_URL, width=48)
-        except Exception:
-            st.write("📈")
-    with col_texto:
-        st.markdown("""
-            <h1 class="main-title-card" style="margin: 0;">📈 Gestão Mensal & Estratégia do Perfil</h1>
-            <p class="sub-title-card" style="margin: 0;">Plataforma corporativa de inteligência de Google Maps, auditoria, curadoria e contratos.</p>
-        """, unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+# --- CARD DE TOPO PERFEITO COM IMAGEM BASE64 INJETADA NO HTML ---
+tag_logo = f'<img src="data:image/png;base64,{b64_logo}" width="48" style="border-radius:4px;" />' if b64_logo else '📈'
+
+st.markdown(f"""
+    <div class="top-card-container" style="display: flex; align-items: center; gap: 15px;">
+        {tag_logo}
+        <div>
+            <h1 class="main-title-card" style="line-height: 1.2;">Gestão Mensal & Estratégia do Perfil</h1>
+            <p class="sub-title-card">Plataforma corporativa de inteligência de Google Maps, auditoria, curadoria e contratos.</p>
+        </div>
+    </div>
+""", unsafe_allow_html=True)
 
 cols = st.columns(8)
 aba_map = [("cadastrar", "⚙️ Ficha"), ("auditoria", "🔍 Auditoria"), ("metricas", "📋 Métricas"), ("ia", "🎯 Curadoria"), ("dashboard", "📊 Dashboard"), ("cases", "🏆 Prospecção"), ("pdf", "📄 Relatório"), ("financeiro", "💰 Financeiro")]
