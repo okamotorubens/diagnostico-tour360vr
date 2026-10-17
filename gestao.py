@@ -414,7 +414,7 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     buffer.seek(0)
     return buffer
 
-# --- CSS PERSONALIZADO (COM ESPAÇAMENTO / RESPIRO ENTRE OS BOTÕES) ---
+# --- CSS PERSONALIZADO (BOTÕES LADO A LADO À ESQUERDA + REMOÇÃO TOTAL DA CAIXA AZUL) ---
 st.markdown("""
     <style>
     .block-container { padding-top: 1.0rem !important; padding-bottom: 1.5rem !important; max-width: 94% !important; margin: 0 auto !important; }
@@ -447,22 +447,45 @@ st.markdown("""
     .main-title-radar { color: #FFFFFF !important; font-weight: 800; font-size: 1.7rem; margin: 0 !important; }
     .sub-title-radar { color: #8E9BAE; font-size: 0.92rem; margin: 4px 0 0 0 !important; }
     
-    /* Respiro e margem entre as colunas dos botões */
-    div[data-testid="stHorizontalBlock"] { gap: 0.6rem !important; margin-bottom: 8px !important; }
     hr { margin-top: 4px !important; margin-bottom: 4px !important; border-color: #2B364A !important; }
     
-    /* Estilização com respiro lateral e visual profissional */
-    div[data-testid="stColumn"] button { 
-        width: 100% !important; min-height: 38px !important; height: auto !important; 
-        background-color: #161F30 !important; border: 1px solid #2B364A !important; 
-        color: #C5CDD9 !important; border-radius: 6px !important; font-weight: 600 !important; font-size: 0.72rem !important; 
-        transition: all 0.2s ease-in-out; padding: 0 8px !important;
+    /* REMOÇÃO TOTAL DA BORDA AZUL VAZIA / INÚTIL */
+    div[data-testid="stForm"] > div:first-child { display: none !important; }
+    
+    /* Barra de Navegação Superior Compacta e Alinhada à Esquerda com Respiro Exato */
+    .nav-container-custom {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        justify-content: flex-start;
+        align-items: center;
+        margin-bottom: 12px;
+        margin-top: 4px;
     }
-    div[data-testid="stColumn"] button:hover {
-        background-color: #1E293B !important; border-color: #455570 !important; color: #FFFFFF !important;
+    
+    /* Estilização individual de cada botão da nav bar para ficarem proporcionais e elegantes */
+    .nav-container-custom div.stButton > button {
+        width: auto !important;
+        min-width: 95px !important;
+        height: 38px !important;
+        background-color: #161F30 !important; 
+        border: 1px solid #2B364A !important; 
+        color: #C5CDD9 !important; 
+        border-radius: 6px !important; 
+        font-weight: 600 !important; 
+        font-size: 0.75rem !important; 
+        transition: all 0.2s ease-in-out; 
+        padding: 0 14px !important;
     }
-    div[data-testid="stColumn"] button[kind="primary"] {
-        background-color: #1E293B !important; border: 1.5px solid #FFFFFF !important; color: #FFFFFF !important;
+    .nav-container-custom div.stButton > button:hover {
+        background-color: #1E293B !important; 
+        border-color: #455570 !important; 
+        color: #FFFFFF !important;
+    }
+    .nav-container-custom div.stButton > button[kind="primary"] {
+        background-color: #1E293B !important; 
+        border: 1.5px solid #FFFFFF !important; 
+        color: #FFFFFF !important;
         box-shadow: 0 0 10px rgba(255, 255, 255, 0.4) !important;
     }
 
@@ -504,11 +527,8 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-# Espaçamento leve entre o card e a barra de navegação
-st.markdown("<div style='height: 4px;'></div>", unsafe_allow_html=True)
-
-# Navegação lado a lado alinhada à esquerda com 8 colunas idênticas (distribuídas com respiro)
-cols = st.columns(8)
+# --- MENU DE NAVEGAÇÃO SUPERIOR (LADO A LADO, ALINHADO À ESQUERDA COM RESPIRO) ---
+st.markdown('<div class="nav-container-custom">', unsafe_allow_html=True)
 aba_map = [
     ("cadastrar", "⚙️ Ficha"), 
     ("auditoria", "🔍 Auditoria"), 
@@ -520,11 +540,13 @@ aba_map = [
     ("financeiro", "💰 Financeiro")
 ]
 
+cols_nav = st.columns(len(aba_map))
 for i, (key_aba, label_aba) in enumerate(aba_map):
-    with cols[i]:
+    with cols_nav[i]:
         if st.button(label_aba, key=f"btn_nav_{key_aba}", type="primary" if st.session_state["aba_ativa"] == key_aba else "secondary"):
             st.session_state["aba_ativa"] = key_aba
             st.rerun()
+st.markdown('</div>', unsafe_allow_html=True)
 
 # ==========================================
 # MÓDULO 1: CADASTRAR / EDITAR FICHA DO CLIENTE
@@ -536,7 +558,7 @@ if st.session_state["aba_ativa"] == "cadastrar":
     modo_edicao = False
     dados_existentes = None
     
-    # Bloco com Destaque Visual Forte para Seleção ou Novo Cadastro (Card inútil removido!)
+    # Bloco com Destaque Visual Forte para Seleção ou Novo Cadastro (Card azul inútil totalmente removido)
     st.markdown('<div class="destaque-cliente-box">', unsafe_allow_html=True)
     st.markdown("### 🗂️ Gerenciamento de Clientes Cadastrados & Novos")
     if not df_clientes.empty:
