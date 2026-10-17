@@ -170,7 +170,7 @@ def calcular_variacao_pct(atual, anterior):
         return f"+{diff:.1f}%"
     return f"{diff:.1f}%"
 
-# --- FUNÇÃO PARA GERAR O GRÁFICO EM MEMÓRIA PARA O PDF ---
+# --- GERAR GRÁFICO INDIVIDUAL EM MEMÓRIA ---
 def gerar_imagem_grafico(df_historico):
     fig, ax = plt.subplots(figsize=(6.5, 2.0), dpi=200)
     
@@ -198,12 +198,39 @@ def gerar_imagem_grafico(df_historico):
     img_buf.seek(0)
     return img_buf
 
-# --- FUNÇÃO DE GERAÇÃO DO RELATÓRIO PDF COM RANKING E GRÁFICO ---
+# --- GERAR GRÁFICO CONSOLIDADO DE PROSPECÇÃO ---
+def gerar_imagem_grafico_consolidado(df_agrupado):
+    fig, ax = plt.subplots(figsize=(6.5, 2.2), dpi=200)
+    
+    ax.plot(df_agrupado['mes_ano'], df_agrupado['chamadas'], marker='o', color='#2563EB', linewidth=2.5, label='Total de Chamadas')
+    ax.plot(df_agrupado['mes_ano'], df_agrupado['rotas'], marker='s', color='#16A34A', linewidth=2.5, label='Total de Solicitadas de Rota')
+    ax.plot(df_agrupado['mes_ano'], df_agrupado['cliques_site'], marker='^', color='#0284C7', linewidth=2.5, label='Total de Cliques Site/Whats')
+
+    ax.set_facecolor('#F8FAFC')
+    fig.patch.set_facecolor('#FFFFFF')
+    
+    ax.grid(True, linestyle='--', alpha=0.5, color='#CBD5E1')
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['left'].set_color('#94A3B8')
+    ax.spines['bottom'].set_color('#94A3B8')
+    
+    plt.xticks(fontsize=8, color='#334155', fontweight='bold')
+    plt.yticks(fontsize=8, color='#334155')
+    ax.legend(loc='upper left', fontsize=7, frameon=True, facecolor='#FFFFFF', edgecolor='#CBD5E1')
+    
+    plt.tight_layout()
+    img_buf = BytesIO()
+    plt.savefig(img_buf, format='png', dpi=200, bbox_inches='tight')
+    plt.close(fig)
+    img_buf.seek(0)
+    return img_buf
+
+# --- GERAÇÃO DO RELATÓRIO PDF DO CLIENTE ---
 def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dados_inicio, df_historico=None, df_keywords=None):
     buffer = BytesIO()
     doc = SimpleDocTemplate(
-        buffer,
-        pagesize=letter,
+        buffer, pagesize=letter,
         rightMargin=36, leftMargin=36, topMargin=36, bottomMargin=36
     )
     story = []
@@ -226,7 +253,6 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
         fontName='Helvetica', fontSize=8, leading=11, alignment=1, textColor=colors.HexColor('#64748B')
     )
 
-    # 1. CABEÇALHO TOUR360VR
     header_table_data = [
         [
             Paragraph("<b>TOUR360VR</b><br/><font size=8 color='#64748B'>Gestão e Estratégia de Presença Local GMB</font>", title_brand_style),
@@ -243,7 +269,6 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
 
     story.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor('#3B4866'), spaceAfter=8))
 
-    # 2. TABELA COMPARATIVA DUPLA
     story.append(Paragraph("<b>1. Análise Comparativa de Desempenho e Crescimento:</b>", section_style))
     story.append(Spacer(1, 4))
     
@@ -320,7 +345,6 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
     story.append(t_comp)
     story.append(Spacer(1, 6))
 
-    # 3. TABELA DE RANKING DE PALAVRAS-CHAVE (SEO LOCAL)
     if df_keywords is not None and not df_keywords.empty:
         story.append(Paragraph("<b>2. Posição das Palavras-Chave no Google Maps (SEO Local):</b>", section_style))
         story.append(Spacer(1, 3))
@@ -347,7 +371,6 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
         story.append(t_kw)
         story.append(Spacer(1, 6))
 
-    # 4. GRÁFICO DE EVOLUÇÃO HISTÓRICA
     if df_historico is not None and len(df_historico) > 1:
         story.append(Paragraph("<b>3. Curva de Evolução Histórica (Mês a Mês):</b>", section_style))
         story.append(Spacer(1, 3))
@@ -355,7 +378,6 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
         story.append(Image(img_buf, width=520, height=160))
         story.append(Spacer(1, 6))
 
-    # 5. ROI E ESTIMATIVA FINANCEIRA
     if dados_atual['faturamento_estimado'] > 0:
         story.append(Paragraph("<b>4. Retorno sobre o Investimento Estimado (ROI):</b>", section_style))
         story.append(Spacer(1, 3))
@@ -374,16 +396,123 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
         story.append(t_roi)
         story.append(Spacer(1, 6))
 
-    # 6. AÇÕES EXECUTADAS
     story.append(Paragraph("<b>5. Ações Técnicas & Melhores Práticas Aplicadas no Mês:</b>", section_style))
     story.append(Spacer(1, 3))
     acoes_texto = dados_atual['resumo_acoes'] if dados_atual['resumo_acoes'] else "Otimizações de rotina, monitorização de palavras-chave locais e gestão de reputação da ficha."
     story.append(Paragraph(acoes_texto.replace('\n', '<br/>'), body_style))
     story.append(Spacer(1, 10))
 
-    # 7. RODAPÉ UNIFICADO
     story.append(HRFlowable(width="100%", thickness=0.8, color=colors.HexColor('#CBD5E1'), spaceAfter=6))
     story.append(Paragraph("<b>tour360vr.com.br</b> &nbsp;|&nbsp; contato@tour360vr.com.br &nbsp;|&nbsp; Whatsapp: (16) 99133-2121 &nbsp;|&nbsp; Tour360VR - Gestão de Perfil do Google", footer_style))
+
+    doc.build(story)
+    buffer.seek(0)
+    return buffer
+
+# --- GERAÇÃO DO PDF COMERCIAL DE PROSPECÇÃO / CASES DE SUCESSO ---
+def gerar_pdf_prospeccao_cases(inc_clientes, inc_faturamento, inc_grafico, inc_keywords, qtd_clientes, total_fat, df_agrupado, df_keywords):
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(
+        buffer, pagesize=letter,
+        rightMargin=36, leftMargin=36, topMargin=36, bottomMargin=36
+    )
+    story = []
+    styles = getSampleStyleSheet()
+
+    title_brand_style = ParagraphStyle(
+        'DocBrandTitle', parent=styles['Normal'],
+        fontName='Helvetica-Bold', fontSize=18, leading=22, textColor=colors.HexColor('#1E293B')
+    )
+    section_style = ParagraphStyle(
+        'DocSection', parent=styles['Normal'],
+        fontName='Helvetica-Bold', fontSize=11, leading=14, textColor=colors.HexColor('#1E293B')
+    )
+    body_style = ParagraphStyle(
+        'DocBody', parent=styles['Normal'],
+        fontName='Helvetica', fontSize=9, leading=12, textColor=colors.HexColor('#334155')
+    )
+    footer_style = ParagraphStyle(
+        'DocFooter', parent=styles['Normal'],
+        fontName='Helvetica', fontSize=8, leading=11, alignment=1, textColor=colors.HexColor('#64748B')
+    )
+
+    header_table_data = [
+        [
+            Paragraph("<b>TOUR360VR</b><br/><font size=8 color='#64748B'>Estratégia, Tour 360° & Performance Local Google</font>", title_brand_style),
+            Paragraph("<b>APRESENTAÇÃO DE PERFORMANCE & CASES DE SUCESSO</b><br/><font size=8 color='#2563EB'><b>Mídia & Otimização GMB</b></font>", ParagraphStyle('RHeader', parent=styles['Normal'], alignment=2, fontName='Helvetica'))
+        ]
+    ]
+    t_header = Table(header_table_data, colWidths=[300, 220])
+    story.append(t_header)
+    story.append(Spacer(1, 6))
+
+    story.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor('#2563EB'), spaceAfter=10))
+
+    # RESUMO EXECUTIVO COMERCIAL
+    story.append(Paragraph("<b>1. Resumo Consolidado de Resultados da Agência:</b>", section_style))
+    story.append(Spacer(1, 4))
+
+    txt_resumo = "A Tour360VR desenvolve estratégias personalizadas de posicionamento local, fotogrametria 360° e otimização de fichas no Google Maps para empresas que buscam liderança de mercado em sua região."
+    story.append(Paragraph(txt_resumo, body_style))
+    story.append(Spacer(1, 6))
+
+    cards_data = []
+    if inc_clientes:
+        cards_data.append(Paragraph(f"<b>Empresas Atendidas:</b><br/><font size=12 color='#2563EB'><b>{qtd_clientes} clientes</b></font>", body_style))
+    if inc_faturamento:
+        cards_data.append(Paragraph(f"<b>Faturamento Gerado Est.:</b><br/><font size=12 color='#16A34A'><b>R$ {total_fat:,.2f}</b></font>", body_style))
+
+    if cards_data:
+        t_cards = Table([cards_data], colWidths=[250]*len(cards_data))
+        t_cards.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#F8FAFC')),
+            ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#CBD5E1')),
+            ('PADDING', (0,0), (-1,-1), 8),
+            ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+        ]))
+        story.append(t_cards)
+        story.append(Spacer(1, 10))
+
+    # GRÁFICO CONSOLIDADO DE CRESCIMENTO
+    if inc_grafico and df_agrupado is not None and not df_agrupado.empty:
+        story.append(Paragraph("<b>2. Curva do Volume de Clientes Gerados (Mês a Mês):</b>", section_style))
+        story.append(Spacer(1, 4))
+        story.append(Paragraph("Evolução somada do número de ligações telefónicas, rotas no GPS e mensagens no WhatsApp enviadas para nossos parceiros:", body_style))
+        story.append(Spacer(1, 4))
+        img_buf = gerar_imagem_grafico_consolidado(df_agrupado)
+        story.append(Image(img_buf, width=520, height=170))
+        story.append(Spacer(1, 10))
+
+    # RANKINGS DE BUSCA LOCAL
+    if inc_keywords and df_keywords is not None and not df_keywords.empty:
+        story.append(Paragraph("<b>3. Exemplos Reais de Posicionamento no Topo do Google Maps:</b>", section_style))
+        story.append(Spacer(1, 4))
+        
+        kw_table_data = [[Paragraph("<b>Palavra-Chave / Termo de Busca</b>", section_style), Paragraph("<b>Posição Inicial</b>", section_style), Paragraph("<b>Posição Atual</b>", section_style), Paragraph("<b>Ganho de Posições</b>", section_style)]]
+        for _, row in df_keywords.iterrows():
+            pos_in = row['posicao_inicial']
+            pos_at = row['posicao_atual']
+            ganho = pos_in - pos_at
+            txt_evol = f"<b>+{ganho} posições no Maps</b>" if ganho > 0 else "Liderança Mantida"
+            kw_table_data.append([
+                Paragraph(row['palavra_chave'], body_style),
+                Paragraph(f"{pos_in}º lugar", body_style),
+                Paragraph(f"<b>{pos_at}º lugar</b>", body_style),
+                Paragraph(txt_evol, body_style)
+            ])
+        t_kw = Table(kw_table_data, colWidths=[210, 95, 95, 120])
+        t_kw.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#F1F5F9')),
+            ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#CBD5E1')),
+            ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#E2E8F0')),
+            ('PADDING', (0,0), (-1,-1), 5),
+            ('ALIGN', (1,0), (-1,-1), 'CENTER'),
+        ]))
+        story.append(t_kw)
+        story.append(Spacer(1, 10))
+
+    story.append(HRFlowable(width="100%", thickness=0.8, color=colors.HexColor('#CBD5E1'), spaceAfter=8))
+    story.append(Paragraph("<b>tour360vr.com.br</b> &nbsp;|&nbsp; contato@tour360vr.com.br &nbsp;|&nbsp; Whatsapp: (16) 99133-2121 &nbsp;|&nbsp; Tour360VR - Soluções em Visual Mídia e Presença Local", footer_style))
 
     doc.build(story)
     buffer.seek(0)
@@ -440,7 +569,7 @@ st.markdown("""
         border-radius: 8px !important;
         padding: 9px 8px !important;
         font-weight: 700 !important;
-        font-size: 0.90rem !important;
+        font-size: 0.85rem !important;
         transition: all 0.25s ease-in-out !important;
     }
 
@@ -488,7 +617,7 @@ st.markdown("""
     <p class="sub-title-card">Acompanhamento recorrente, controle de fichas e geração de relatórios estratégicos para clientes.</p>
 """, unsafe_allow_html=True)
 
-col_n1, col_n2, col_n3, col_n4, col_n5, col_n6 = st.columns(6)
+col_n1, col_n2, col_n3, col_n4, col_n5, col_n6, col_n7 = st.columns(7)
 
 with col_n1:
     if st.button("⚙️ Ficha Comercial", key="btn_cad", type="primary" if st.session_state["aba_ativa"] == "cadastrar" else "secondary"):
@@ -511,11 +640,16 @@ with col_n4:
         st.rerun()
 
 with col_n5:
+    if st.button("🏆 Prospecção", key="btn_cases", type="primary" if st.session_state["aba_ativa"] == "cases" else "secondary"):
+        st.session_state["aba_ativa"] = "cases"
+        st.rerun()
+
+with col_n6:
     if st.button("📄 Relatório PDF", key="btn_pdf", type="primary" if st.session_state["aba_ativa"] == "pdf" else "secondary"):
         st.session_state["aba_ativa"] = "pdf"
         st.rerun()
 
-with col_n6:
+with col_n7:
     if st.button("💰 Financeiro MRR", key="btn_fin", type="primary" if st.session_state["aba_ativa"] == "financeiro" else "secondary"):
         st.session_state["aba_ativa"] = "financeiro"
         st.rerun()
@@ -607,7 +741,7 @@ if st.session_state["aba_ativa"] == "cadastrar":
             st.markdown("---")
             descricao_empresa = st.text_area("Descrição Oficial da Empresa (Otimizada para SEO Local)", value=dados_existentes[15] if (modo_edicao and len(dados_existentes) > 15) else "", height=180)
 
-        # SUB-ABA FINANCEIRA DO CONTRATO DO CLIENTE (COM RADIO BUTTONS PADRONIZADOS)
+        # SUB-ABA FINANCEIRA DO CONTRATO
         with sub_tab_financeiro:
             st.markdown("**Dados do Contrato do Cliente (Visível apenas para o Administrador da Agência):**")
             col_f1, col_f2 = st.columns(2)
@@ -629,7 +763,6 @@ if st.session_state["aba_ativa"] == "cadastrar":
             val_status = dados_existentes[11] if (modo_edicao and len(dados_existentes) > 11) else "Ativo"
             idx_st_c = opts_status_contrato.index(val_status) if val_status in opts_status_contrato else 0
             
-            # ALTERADO DE SELECTBOX PARA RADIO BUTTONS HORIZONTAIS
             status_contrato = st.radio("Status do Contrato com a Agência", opts_status_contrato, index=idx_st_c, horizontal=True)
 
         # SUB-ABA 3: CONTATO & REDES SOCIAIS
@@ -859,7 +992,7 @@ elif st.session_state["aba_ativa"] == "metricas":
                 st.info(f"💰 **Faturamento Estimado Gerado no Mês:** R$ {faturamento_estimado:,.2f}")
 
                 st.markdown("---")
-                resumo_acoes = st.text_area("🛠️ Ações Realizadas no Mês (Otimizaciones, fotos 360°, posts, etc.)")
+                resumo_acoes = st.text_area("🛠️ Ações Realizadas no Mês (Otimizações, fotos 360°, posts, etc.)")
 
                 btn_salvar_metricas = st.form_submit_button("Salvar Métricas do Mês")
 
@@ -983,7 +1116,61 @@ elif st.session_state["aba_ativa"] == "dashboard":
             st.line_chart(df_metricas.set_index("mes_ano")[["chamadas", "rotas", "cliques_site"]])
 
 # ==========================================
-# MÓDULO 5: RELATÓRIO PDF COM SELEÇÃO COMPLETA
+# MÓDULO 5: GERADOR DE PDF DE PROSPECÇÃO & CASES DE SUCESSO
+# ==========================================
+elif st.session_state["aba_ativa"] == "cases":
+    st.subheader("🏆 Gerador de Relatório Comercial de Prospecção (Cases & Prova Social)")
+    st.caption("Crie um documento customizado e anônimo para apresentar a novos clientes durante reuniões de vendas.")
+
+    conn = sqlite3.connect(DB_NAME)
+    df_tot_clientes = pd.read_sql_query("SELECT COUNT(*) as qtd FROM clientes", conn)
+    df_tot_fat = pd.read_sql_query("SELECT SUM(faturamento_estimado) as total FROM metricas_mensais", conn)
+    
+    df_agrupado = pd.read_sql_query(
+        "SELECT mes_ano, SUM(chamadas) as chamadas, SUM(rotas) as rotas, SUM(cliques_site) as cliques_site FROM metricas_mensais GROUP BY mes_ano ORDER BY mes_ano ASC", 
+        conn
+    )
+    
+    df_keywords_all = pd.read_sql_query("SELECT palavra_chave, posicao_inicial, posicao_atual FROM ranking_keywords ORDER BY (posicao_inicial - posicao_atual) DESC LIMIT 5", conn)
+    conn.close()
+
+    qtd_c = df_tot_clientes['qtd'].values[0] if not df_tot_clientes.empty else 0
+    fat_c = df_tot_fat['total'].values[0] if (not df_tot_fat.empty and df_tot_fat['total'].values[0] is not None) else 0.0
+
+    st.markdown("**Selecione quais informações deseja incluir no PDF de Apresentação:**")
+    
+    c_p1, c_p2 = st.columns(2)
+    with c_p1:
+        inc_clientes = st.checkbox("Exibir Métrica de Quantidade de Clientes Atendidos", value=True)
+        inc_faturamento = st.checkbox("Exibir Valor de Faturamento Estimado Total Gerado", value=True)
+    with c_p2:
+        inc_grafico = st.checkbox("Exibir Gráfico de Crescimento Somado da Agência", value=True)
+        inc_keywords = st.checkbox("Exibir Tabela de Casos de Sucesso de Ranking SEO", value=True)
+
+    st.markdown("---")
+    st.write("Clique no botão abaixo para gerar o PDF personalizado para o seu prospect:")
+
+    pdf_cases_bytes = gerar_pdf_prospeccao_cases(
+        inc_clientes=inc_clientes,
+        inc_faturamento=inc_faturamento,
+        inc_grafico=inc_grafico,
+        inc_keywords=inc_keywords,
+        qtd_clientes=qtd_c,
+        total_fat=fat_c,
+        df_agrupado=df_agrupado if not df_agrupado.empty else None,
+        df_keywords=df_keywords_all if not df_keywords_all.empty else None
+    )
+
+    st.download_button(
+        label="📥 Baixar PDF Comercial de Prospecção (Tour360VR Cases)",
+        data=pdf_cases_bytes,
+        file_name=f"Apresentacao_Cases_Tour360VR_{datetime.now().strftime('%Y_%m')}.pdf",
+        mime="application/pdf",
+        key="btn_pdf_cases"
+    )
+
+# ==========================================
+# MÓDULO 6: RELATÓRIO PDF INDIVIDUAL
 # ==========================================
 elif st.session_state["aba_ativa"] == "pdf":
     st.subheader("📄 Emitir Relatório Executivo em PDF")
@@ -1052,19 +1239,21 @@ elif st.session_state["aba_ativa"] == "pdf":
             )
 
 # ==========================================
-# MÓDULO 6: GESTÃO FINANCEIRA MRR DA AGÊNCIA (EXCLUSIVO PRIVADO)
+# MÓDULO 7: GESTÃO FINANCEIRA MRR & BACKUP COMPLETO
 # ==========================================
 elif st.session_state["aba_ativa"] == "financeiro":
-    st.subheader("💰 Gestão Financeira & Recorrência da Agência (MRR)")
-    st.caption("Painel restrito para controle de mensalidades, faturamento total e saúde financeira da Tour360VR.")
+    st.subheader("💰 Gestão Financeira & Backup da Agência (MRR)")
+    st.caption("Painel restrito para controle de mensalidades, faturamento total, exportação de cadastros e backups.")
 
     conn = sqlite3.connect(DB_NAME)
     try:
+        df_completo = pd.read_sql_query("SELECT * FROM clientes ORDER BY nome_empresa ASC", conn)
         df_fin = pd.read_sql_query(
-            "SELECT nome_empresa as 'Cliente', valor_contrato_mensal as 'Mensalidade (R$)', dia_vencimento as 'Dia Vencimento', status_contrato as 'Status' FROM clientes WHERE status_contrato = 'Ativo'", 
+            "SELECT nome_empresa as 'Cliente', responsavel as 'Responsável', telefone_contato as 'Telefone', valor_contrato_mensal as 'Mensalidade (R$)', dia_vencimento as 'Dia Vencimento', status_contrato as 'Status' FROM clientes WHERE status_contrato = 'Ativo'", 
             conn
         )
     except Exception:
+        df_completo = pd.DataFrame()
         df_fin = pd.DataFrame()
     conn.close()
 
@@ -1083,3 +1272,19 @@ elif st.session_state["aba_ativa"] == "financeiro":
         st.markdown("---")
         st.markdown("**Contratos Recorrentes Ativos:**")
         st.dataframe(df_fin, use_container_width=True)
+
+    if not df_completo.empty:
+        st.markdown("---")
+        st.markdown("### 📥 Backup & Exportação Completa de Cadastros")
+        st.write("Baixe a relação completa de todos os clientes, dados operacionais, horários e contratos.")
+
+        # Converte para CSV com encoding UTF-8-SIG e separador ';'
+        csv_excel = df_completo.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig')
+
+        st.download_button(
+            label="📊 Baixar Planilha Completa (.CSV / Excel)",
+            data=csv_excel,
+            file_name=f"Backup_Clientes_Tour360VR_{datetime.now().strftime('%Y_%m_%d')}.csv",
+            mime="text/csv",
+            key="btn_download_excel"
+        )
