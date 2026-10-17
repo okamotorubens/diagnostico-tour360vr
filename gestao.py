@@ -636,7 +636,7 @@ st.markdown("""
     div[data-testid="stSelectbox"], 
     div[data-testid="stDateInput"],
     div[data-testid="stTextArea"] {
-        margin-bottom: 14px !important;
+        margin-bottom: 08px !important;
     }
 
     div[data-baseweb="tab-list"] {
