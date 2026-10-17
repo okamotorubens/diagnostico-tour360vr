@@ -115,7 +115,7 @@ def obter_dados_cliente_por_id(cliente_id):
 # --- LISTA DE HORÁRIOS PRÉ-CONFIGURADOS (Intervalos de 30 min) ---
 HORARIOS_OPCOES = [f"{h:02d}:{m:02d}" for h in range(24) for m in (0, 30)]
 
-# --- FUNÇÃO DE GERAÇÃO DO RELATÓRIO EXECUÇÃO PDF (ILUSTRATIVO E COMPARATIVO) ---
+# --- FUNÇÃO DE GERAÇÃO DO RELATÓRIO EXECUÇÃO PDF ---
 def gerar_pdf_relatorio(nome_empresa, mes_ano, chamadas, rotas, cliques, visualizacoes, avaliacoes, acoes, qtd_inicio=0, nota_inicio=5.0):
     buffer = BytesIO()
     doc = SimpleDocTemplate(
@@ -129,11 +129,7 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, chamadas, rotas, cliques, visuali
     # Estilos de Texto
     title_brand_style = ParagraphStyle(
         'DocBrandTitle', parent=styles['Normal'],
-        fontName='Helvetica-Bold', fontSize=18, leading=22, textColor=colors.HexColor('#00E5FF')
-    )
-    title_sub_style = ParagraphStyle(
-        'DocBrandSubtitle', parent=styles['Normal'],
-        fontName='Helvetica', fontSize=10, leading=13, textColor=colors.HexColor('#64748B')
+        fontName='Helvetica-Bold', fontSize=16, leading=20, textColor=colors.HexColor('#1E293B')
     )
     section_style = ParagraphStyle(
         'DocSection', parent=styles['Normal'],
@@ -148,11 +144,11 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, chamadas, rotas, cliques, visuali
         fontName='Helvetica', fontSize=8, leading=11, alignment=1, textColor=colors.HexColor('#64748B')
     )
 
-    # 1. CABEÇALHO COM NOME DA EMPRESA E TÍTULO ALINHADO À ESQUERDA
+    # 1. CABEÇALHO
     header_table_data = [
         [
             Paragraph("<b>OKAMOTO MÍDIAS VISUAIS & TOUR360VR</b><br/><font size=8 color='#64748B'>Gestão e Estratégia de Presença Local GMB</font>", title_brand_style),
-            Paragraph(f"<b>RELATÓRIO DE DESEMPENHO</b><br/><font size=9 color='#00E5FF'><b>{nome_empresa}</b></font><br/><font size=8 color='#64748B'>Mês de Referência: {mes_ano}</font>", ParagraphStyle('RHeader', parent=styles['Normal'], alignment=2, fontName='Helvetica'))
+            Paragraph(f"<b>RELATÓRIO DE DESEMPENHO</b><br/><font size=9 color='#2563EB'><b>{nome_empresa}</b></font><br/><font size=8 color='#64748B'>Mês: {mes_ano}</font>", ParagraphStyle('RHeader', parent=styles['Normal'], alignment=2, fontName='Helvetica'))
         ]
     ]
     t_header = Table(header_table_data, colWidths=[300, 220])
@@ -163,10 +159,10 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, chamadas, rotas, cliques, visuali
     story.append(t_header)
     story.append(Spacer(1, 8))
 
-    # LINHA DIVISÓRIA FINA E ELEGANTE EM AZUL CLARO
-    story.append(HRFlowable(width="100%", thickness=1.5, color=colors.HexColor('#00E5FF'), spaceAfter=15))
+    # LINHA DIVISÓRIA SÓBRIA E FINA (SEM EFEITO NEON)
+    story.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor('#3B4866'), spaceAfter=15))
 
-    # 2. BLOCO INFORMATIVO: ANCORAGEM INICIAL (COMO A FICHA ESTAVA)
+    # 2. BLOCO INFORMATIVO DE ANCORAGEM INICIAL
     story.append(Paragraph("<b>1. Ponto de Partida e Ancoragem Inicial da Ficha:</b>", section_style))
     story.append(Spacer(1, 6))
     
@@ -179,7 +175,7 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, chamadas, rotas, cliques, visuali
     t_ancoragem = Table(ancoragem_data, colWidths=[260, 260])
     t_ancoragem.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#F8FAFC')),
-        ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#E2E8F0')),
+        ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#CBD5E1')),
         ('PADDING', (0,0), (-1,-1), 8),
     ]))
     story.append(t_ancoragem)
@@ -216,21 +212,21 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, chamadas, rotas, cliques, visuali
     story.append(Paragraph(acoes_texto.replace('\n', '<br/>'), body_style))
     story.append(Spacer(1, 25))
 
-    # 5. RODAPÉ COM LINHA DIVISÓRIA E INFORMAÇÕES DO SISTEMA (IGUAL AO DIAGNÓSTICO)
-    story.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor('#CBD5E1'), spaceAfter=8))
+    # 5. RODAPÉ COM LINHA DIVISÓRIA SÓBRIA
+    story.append(HRFlowable(width="100%", thickness=0.8, color=colors.HexColor('#CBD5E1'), spaceAfter=8))
     story.append(Paragraph("<b>tour360vr.com.br</b> &nbsp;|&nbsp; contato@tour360vr.com.br &nbsp;|&nbsp; Whatsapp: (16) 99133-2121 &nbsp;|&nbsp; Tour360VR - Gestão de Perfil do Google", footer_style))
 
     doc.build(story)
     buffer.seek(0)
     return buffer
 
-# --- CSS PERSONALIZADO (PADRÃO UNIFICADO TOUR360VR) ---
+# --- CSS PERSONALIZADO ---
 st.markdown("""
     <style>
     .block-container {
-        padding-top: 1.2rem !important;
-        padding-bottom: 1.5rem !important;
-        max-width: 98% !important;
+        padding-top: 1.5rem !important;
+        padding-bottom: 2rem !important;
+        max-width: 90% !important; /* LARGURA MAIS LARA COM MARGEM E RESPIRO */
     }
     
     header[data-testid="stHeader"] {
@@ -243,25 +239,25 @@ st.markdown("""
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     }
 
-    /* ESPAÇAMENTO DO TÍTULO PRINCIPAL */
+    /* ESPAÇAMENTO E MARGEM DO TÍTULO PRINCIPAL */
     .main-title {
         color: #FFFFFF;
         font-weight: 800;
         font-size: 1.85rem;
         text-shadow: 0 0 12px rgba(255, 255, 255, 0.6);
-        margin-bottom: 2.2rem !important;
+        margin-bottom: 2.5rem !important;
     }
 
-    /* BOTÕES DE NAVEGAÇÃO DO HUB */
+    /* BOTÕES SUPERIORES DE NAVEGAÇÃO COM RESPIRO E MARGEM */
     div[data-testid="stColumn"] button {
         width: 100% !important;
         background-color: #1A2130 !important;
         border: 1.5px solid #455570 !important;
         color: #FFFFFF !important;
         border-radius: 8px !important;
-        padding: 10px 6px !important;
+        padding: 12px 10px !important;
         font-weight: 700 !important;
-        font-size: 0.90rem !important;
+        font-size: 0.92rem !important;
         transition: all 0.25s ease-in-out !important;
         box-shadow: none !important;
     }
@@ -280,16 +276,24 @@ st.markdown("""
         box-shadow: 0 0 18px rgba(255, 255, 255, 0.95), 0 0 28px rgba(255, 255, 255, 0.5) !important;
     }
 
-    /* AJUSTE VISUAL DOS CAMPOS SELECTBOX */
+    /* FORMATAÇÃO DOS CAMPOS DE ENTRADA E SELECTBOX */
     div[data-baseweb="select"] > div {
         background-color: #1A2130 !important;
         border-color: #3B4866 !important;
         color: #FFFFFF !important;
     }
+
+    .dia-destaque {
+        color: #00E5FF;
+        font-weight: 700;
+        font-size: 1.05rem;
+        margin-top: 1rem;
+        margin-bottom: 0.3rem;
+    }
     </style>
 """, unsafe_allow_html=True)
 
-# --- CABEÇALHO COM ESPAÇAMENTO ADICIONAL ---
+# --- CABEÇALHO ---
 st.markdown("<h1 class='main-title'>📈 Gestão Mensal & Performance ROI GMB</h1>", unsafe_allow_html=True)
 
 # --- CONTROLADOR DE NAVEGAÇÃO PRINCIPAL ---
@@ -318,7 +322,7 @@ with col_n4:
         st.session_state["aba_ativa"] = "pdf"
         st.rerun()
 
-st.markdown("<hr style='margin: 18px 0 20px 0; border-color: #1E2640;'>", unsafe_allow_html=True)
+st.markdown("<hr style='margin: 22px 0 25px 0; border-color: #1E2640;'>", unsafe_allow_html=True)
 
 # ==========================================
 # MÓDULO 1: CADASTRAR / EDITAR FICHA DO CLIENTE
@@ -345,7 +349,7 @@ if st.session_state["aba_ativa"] == "cadastrar":
             "🏢 Sobre & Status Ficha", "📞 Contato & Redes", "📍 Local & Áreas", "⏰ Horários Rápidos", "🛠️ Checklist de Pendências", "📜 Histórico de Alterações"
         ])
         
-        # SUB-ABA 1: SOBRE & AUDITORIA DA FICHA (OPÇÕES DROPDOWN LIMPÍSSIMAS)
+        # SUB-ABA 1: SOBRE & AUDITORIA DA FICHA
         with sub_tab_sobre:
             st.markdown("**Identificação Comercial & Auditoria Inicial:**")
             c_s1, c_s2 = st.columns(2)
@@ -420,9 +424,9 @@ if st.session_state["aba_ativa"] == "cadastrar":
             with c_l2:
                 area_cobertura = st.text_input("Áreas de Cobertura / Atendimento (ex: Ribeirão Preto, Sertãozinho, Brodowski)", value=dados_existentes[23] if (modo_edicao and len(dados_existentes) > 23) else "")
 
-        # SUB-ABA 4: HORÁRIOS (COM SELEÇÃO DE 30 EM 30 MIN PRÉ-CONFIGURADOS)
+        # SUB-ABA 4: HORÁRIOS DE FUNCIONAMENTO (RÓTULOS LIMPOS E DIA DESTACADO)
         with sub_tab_horario:
-            st.markdown("**Horários de Funcionamento (Seleção rápida de 30 em 30 minutos):**")
+            st.markdown("**Horários de Funcionamento (Seleção rápida em intervalos de 30 minutos):**")
             
             dias_semana = [
                 ("Segunda-feira", 24, "08:00", "18:00", False),
@@ -437,7 +441,7 @@ if st.session_state["aba_ativa"] == "cadastrar":
             horarios_coletados = {}
 
             for dia_nome, idx_db, h_ab_def, h_fe_def, fechado_def in dias_semana:
-                st.markdown(f"**{dia_nome}**")
+                st.markdown(f"<p class='dia-destaque'>📅 {dia_nome}</p>", unsafe_allow_html=True)
                 col_h1, col_h2, col_h3 = st.columns([2, 2, 1])
                 
                 is_fechado = fechado_def
@@ -459,10 +463,10 @@ if st.session_state["aba_ativa"] == "cadastrar":
                     fechado = st.checkbox("Fechado", key=f"chk_fechado_{dia_nome}", value=is_fechado)
                 with col_h1:
                     idx_ab = HORARIOS_OPCOES.index(val_ab) if val_ab in HORARIOS_OPCOES else HORARIOS_OPCOES.index("08:00")
-                    h_abre_sel = st.selectbox(f"Abertura ({dia_nome})", HORARIOS_OPCOES, index=idx_ab, disabled=fechado, key=f"sel_ab_{dia_nome}")
+                    h_abre_sel = st.selectbox("Abertura", HORARIOS_OPCOES, index=idx_ab, disabled=fechado, key=f"sel_ab_{dia_nome}")
                 with col_h2:
                     idx_fe = HORARIOS_OPCOES.index(val_fe) if val_fe in HORARIOS_OPCOES else HORARIOS_OPCOES.index("18:00")
-                    h_fecha_sel = st.selectbox(f"Fechamento ({dia_nome})", HORARIOS_OPCOES, index=idx_fe, disabled=fechado, key=f"sel_fe_{dia_nome}")
+                    h_fecha_sel = st.selectbox("Fechamento", HORARIOS_OPCOES, index=idx_fe, disabled=fechado, key=f"sel_fe_{dia_nome}")
                 
                 if fechado:
                     horarios_coletados[dia_nome] = "Fechado"
