@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import os
 import re
+import time
 from datetime import datetime, date
 from io import BytesIO
 import urllib.parse
@@ -61,7 +62,7 @@ if "aprovar" in query_params or st.session_state.get("modo_aprovacao", False):
 
     col_l1, col_l2, col_l3 = st.columns([3, 2, 3])
     with col_l2:
-        st.markdown(f'<div style="text-align:center;"><img src="{LOGO_TOUR360_URL}" width="120" style="display:block; margin:auto;" onerror="this.style.display=\'none\'"></div>', unsafe_allow_html=True)
+        st.image(LOGO_TOUR360_URL, use_column_width=True)
 
     st.markdown("""
         <div class="aprovacao-container">
@@ -224,7 +225,7 @@ def gerar_imagem_grafico(df_historico):
 # --- GERAÇÃO DE RELATÓRIO PDF EXECUTIVO ---
 def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dados_inicio, df_historico=None, df_keywords=None):
     buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=36, leftMargin=36, topMargin=36, bottomMargin=50)
+    doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=50)
     story = []
     styles = getSampleStyleSheet()
 
@@ -236,23 +237,24 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
     try:
         resp = requests.get(LOGO_TOUR360_URL, timeout=5)
         if resp.status_code == 200:
-            logo_flowable = RLImage(BytesIO(resp.content), width=36, height=36)
+            logo_flowable = RLImage(BytesIO(resp.content), width=45, height=45, kind='proportional')
     except Exception:
         pass
 
     header_table_data = [
         [
-            Table([[logo_flowable, Paragraph("<b>Tour360VR</b><br/><font size=7 color='#64748B'>Gestão & SEO Local</font>", title_brand_style)]], colWidths=[40, 200]),
+            Table([[logo_flowable, Paragraph("<b>Tour360VR</b><br/><font size=7 color='#64748B'>Gestão & SEO Local</font>", title_brand_style)]], colWidths=[55, 180]),
             Paragraph(f"<b>RELATÓRIO DE DESEMPENHO</b><br/><font size=9 color='#2563EB'><b>{nome_empresa}</b></font><br/><font size=8 color='#64748B'>Mês de Referência: {mes_ano}</font>", ParagraphStyle('RHeader', parent=styles['Normal'], alignment=2, fontName='Helvetica'))
         ]
     ]
-    t_header = Table(header_table_data, colWidths=[260, 260])
+    t_header = Table(header_table_data, colWidths=[266, 266])
     t_header.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'MIDDLE')]))
     story.append(t_header)
     story.append(Spacer(1, 4))
-    story.append(HRFlowable(width="100%", thickness=0.8, color=colors.HexColor('#93C5FD'), spaceAfter=4))
+    story.append(HRFlowable(width="100%", thickness=1.0, color=colors.HexColor('#BFDBFE'), spaceAfter=15))
+    
     story.append(Paragraph("<b>1. Análise Comparativa de Desempenho e Crescimento:</b>", section_style))
-    story.append(Spacer(1, 3))
+    story.append(Spacer(1, 10))
 
     c_chamadas_ant = dados_anterior['chamadas'] if dados_anterior else 0
     c_rotas_ant = dados_anterior['rotas'] if dados_anterior else 0
@@ -269,14 +271,14 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#F1F5F9')),
         ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#CBD5E1')),
         ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#E2E8F0')),
-        ('PADDING', (0,0), (-1,-1), 4),
+        ('PADDING', (0,0), (-1,-1), 6),
         ('ALIGN', (1,0), (-1,-1), 'CENTER'),
     ]))
     story.append(t_comp)
-    story.append(Spacer(1, 6))
+    story.append(Spacer(1, 15))
 
     story.append(Paragraph("<b>2. Monitoramento de Palavras-Chave & Termos de Busca (Google Maps):</b>", section_style))
-    story.append(Spacer(1, 3))
+    story.append(Spacer(1, 10))
     kw_table_data = [
         [Paragraph("<b>Termo / Palavra-Chave de Busca</b>", section_style), Paragraph("<b>Posição Anterior</b>", section_style), Paragraph("<b>Posição Atual</b>", section_style), Paragraph("<b>Impacto / Visibilidade</b>", section_style)],
         [Paragraph("Serviços em Destaque na Região", body_style), Paragraph("12º lugar", body_style), Paragraph("<b>4º lugar</b>", body_style), Paragraph("<b>Alto Tráfego</b>", body_style)],
@@ -288,26 +290,27 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#F1F5F9')),
         ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#CBD5E1')),
         ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#E2E8F0')),
-        ('PADDING', (0,0), (-1,-1), 4),
+        ('PADDING', (0,0), (-1,-1), 6),
         ('ALIGN', (1,0), (-1,-1), 'CENTER'),
     ]))
     story.append(t_kw)
-    story.append(Spacer(1, 6))
+    story.append(Spacer(1, 15))
 
     if df_historico is not None and len(df_historico) > 1:
         story.append(Paragraph("<b>3. Curva de Evolução Histórica:</b>", section_style))
-        story.append(Spacer(1, 3))
+        story.append(Spacer(1, 10))
         story.append(Image(gerar_imagem_grafico(df_historico), width=520, height=130))
-        story.append(Spacer(1, 6))
+        story.append(Spacer(1, 15))
 
     def add_footer_relatorio(canvas, doc):
         canvas.saveState()
-        canvas.setStrokeColor(colors.HexColor('#93C5FD'))
-        canvas.setLineWidth(0.8)
-        canvas.line(36, 40, letter[0] - 36, 40)
-        canvas.setFont('Helvetica', 8)
-        canvas.setFillColor(colors.HexColor('#000000'))
-        canvas.drawCentredString(letter[0] / 2.0, 25, "tour360vr.com.br  |  contato@tour360vr.com.br  |  WhatsApp: (16) 99133-2121")
+        canvas.setStrokeColor(colors.HexColor('#BFDBFE'))
+        canvas.setLineWidth(1.0)
+        canvas.line(40, 50, letter[0] - 40, 50)
+        footer_html = '<a href="https://tour360vr.com.br" color="#334155">tour360vr.com.br</a> &nbsp;|&nbsp; <a href="mailto:contato@tour360vr.com.br" color="#334155">contato@tour360vr.com.br</a> &nbsp;|&nbsp; <a href="https://wa.me/5516991332121" color="#334155">WhatsApp: (16) 99133-2121</a>'
+        p = Paragraph(footer_html, ParagraphStyle('Footer', fontName='Helvetica', fontSize=8, alignment=1))
+        p.wrap(letter[0] - 80, 50)
+        p.drawOn(canvas, 40, 35)
         canvas.restoreState()
 
     doc.build(story, onFirstPage=add_footer_relatorio, onLaterPages=add_footer_relatorio)
@@ -320,7 +323,7 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     doc = SimpleDocTemplate(
         buffer, 
         pagesize=letter, 
-        rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=50,
+        rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=60,
         title=f"Contrato Tour360VR - {dados_cliente.get('nome_empresa', 'Cliente')}"
     )
     story = []
@@ -332,33 +335,33 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     body_style = ParagraphStyle('DocBody', parent=styles['Normal'], fontName='Helvetica', fontSize=9.5, leading=14, alignment=4, textColor=colors.HexColor('#1E293B'))
     signature_style = ParagraphStyle('DocSig', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=12, alignment=1, textColor=colors.HexColor('#1E293B'))
 
-    # Logo via internet diretamente no PDF
+    # Logo no PDF com proporção corrigida
     logo_flowable = Paragraph("<b>Tour360VR</b>", title_brand_style)
     try:
         resp = requests.get(LOGO_TOUR360_URL, timeout=5)
         if resp.status_code == 200:
-            logo_flowable = RLImage(BytesIO(resp.content), width=45, height=45)
+            logo_flowable = RLImage(BytesIO(resp.content), width=50, height=50, kind='proportional')
     except Exception:
         pass
 
-    # Cabeçalho
+    # Cabeçalho Ajustado (Coluna da logo alargada para evitar esmagamento)
     header_table = Table([
         [logo_flowable, Paragraph("<b>CONTRATO DE PRESTAÇÃO DE SERVIÇOS</b><br/><font size=8 color='#2563EB'>Documento Jurídico Oficial | Tour360VR</font>", ParagraphStyle('RH', alignment=2, fontName='Helvetica-Bold', fontSize=11))]
-    ], colWidths=[60, 380])
+    ], colWidths=[65, 467])
     header_table.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'MIDDLE'), ('ALIGN', (1,0), (1,0), 'RIGHT')]))
     story.append(header_table)
     story.append(Spacer(1, 10))
-    story.append(HRFlowable(width="100%", thickness=1.2, color=colors.HexColor('#2563EB'), spaceAfter=15))
+    story.append(HRFlowable(width="100%", thickness=1.0, color=colors.HexColor('#BFDBFE'), spaceAfter=15))
 
     # Data
     meses_pt = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"]
     hoje = agora_brasil()
     data_extenso = f"Ribeirão Preto - SP, {hoje.day} de {meses_pt[hoje.month - 1]} de {hoje.year}."
     story.append(Paragraph(data_extenso, ParagraphStyle('Date', fontName='Helvetica', fontSize=9, alignment=2, textColor=colors.HexColor('#64748B'))))
-    story.append(Spacer(1, 20))
-
+    
+    story.append(Spacer(1, 30)) # Espaçamento extra (1 linha) adicionado
     story.append(Paragraph("TERMO DE CONTRATAÇÃO DE SERVIÇOS", doc_title_style))
-    story.append(Spacer(1, 15))
+    story.append(Spacer(1, 25)) # Espaçamento extra (1 linha) adicionado
 
     nome_emp = dados_cliente.get("nome_empresa", "Empresa Cliente")
     resp_emp = dados_cliente.get("responsavel", "Responsável")
@@ -375,7 +378,7 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     A Tour360VR (<b>CONTRATADA</b>) compromete-se a executar os serviços profissionais especializados em otimização, reestruturação técnica, curadoria de pautas e produção de Tour Virtual 360 para o perfil do Google da <b>CONTRATANTE</b>, referentes ao plano contratado <b>{detalhe_plano}</b>.
     """
     story.append(Paragraph(txt_qualificacao, body_style))
-    story.append(Spacer(1, 12))
+    story.append(Spacer(1, 15))
 
     clausulas = """
     <b>CLÁUSULA PRIMEIRA - DO OBJETO:</b> Os serviços serão iniciados em até 5 dias úteis após a confirmação do acordo e o fornecimento de todos os acessos e informações necessárias à gestão do perfil pela CONTRATANTE.<br/><br/>
@@ -385,7 +388,7 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     <b>CLÁUSULA QUINTA - VALIDADE DA PROPOSTA:</b> A presente proposta e condições comerciais possuem validade oficial de 15 (quinze) dias a contar da data de sua emissão.
     """
     story.append(Paragraph(clausulas, body_style))
-    story.append(Spacer(1, 40))
+    story.append(Spacer(1, 55)) # Espaçamento extra (1 linha) adicionado antes das assinaturas
 
     # Assinaturas
     t_ass = Table([
@@ -394,15 +397,19 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     ], colWidths=[240, 240])
     story.append(t_ass)
 
-    # Função para fixar o rodapé no fundo da página
+    # Função para fixar o rodapé no fundo da página com links e linha azul claro
     def add_footer(canvas, doc):
         canvas.saveState()
-        canvas.setStrokeColor(colors.HexColor('#2563EB'))
-        canvas.setLineWidth(0.8)
-        canvas.line(40, 40, letter[0] - 40, 40)
-        canvas.setFont('Helvetica', 8)
-        canvas.setFillColor(colors.HexColor('#334155'))
-        canvas.drawCentredString(letter[0] / 2.0, 25, "tour360vr.com.br  |  contato@tour360vr.com.br  |  WhatsApp: (16) 99133-2121")
+        canvas.setStrokeColor(colors.HexColor('#BFDBFE'))
+        canvas.setLineWidth(1.0)
+        canvas.line(40, 50, letter[0] - 40, 50)
+        
+        # Parágrafo desenhado sobre o canvas suporta links clicáveis nativamente
+        footer_html = '<a href="https://tour360vr.com.br" color="#334155">tour360vr.com.br</a> &nbsp;|&nbsp; <a href="mailto:contato@tour360vr.com.br" color="#334155">contato@tour360vr.com.br</a> &nbsp;|&nbsp; <a href="https://wa.me/5516991332121" color="#334155">WhatsApp: (16) 99133-2121</a>'
+        p = Paragraph(footer_html, ParagraphStyle('Footer', fontName='Helvetica', fontSize=8, alignment=1))
+        p.wrap(letter[0] - 80, 50)
+        p.drawOn(canvas, 40, 35)
+        
         canvas.restoreState()
 
     doc.build(story, onFirstPage=add_footer, onLaterPages=add_footer)
@@ -443,16 +450,18 @@ st.markdown("""
 if "aba_ativa" not in st.session_state:
     st.session_state["aba_ativa"] = "cadastrar"
 
-# --- CARD DE TOPO PERFEITO COM IMAGEM BLINDADA ---
-st.markdown(f"""
-    <div class="top-card-container" style="display: flex; align-items: center; gap: 15px;">
-        <img src="{LOGO_TOUR360_URL}" width="48" style="border-radius:4px; display:block;" onerror="this.style.display='none'">
-        <div>
-            <h1 class="main-title-card" style="line-height: 1.2;">Gestão Mensal & Estratégia do Perfil</h1>
-            <p class="sub-title-card">Plataforma corporativa de inteligência de Google Maps, auditoria, curadoria e contratos.</p>
-        </div>
-    </div>
-""", unsafe_allow_html=True)
+# --- CARD DE TOPO PERFEITO COM IMAGEM NATIVA DO STREAMLIT ---
+with st.container():
+    st.markdown('<div class="top-card-container">', unsafe_allow_html=True)
+    col_logo, col_texto = st.columns([0.6, 9.4], vertical_alignment="center")
+    with col_logo:
+        st.image(LOGO_TOUR360_URL, width=50)
+    with col_texto:
+        st.markdown("""
+            <h1 class="main-title-card" style="margin: 0;">📈 Gestão Mensal & Estratégia do Perfil</h1>
+            <p class="sub-title-card" style="margin: 0;">Plataforma corporativa de inteligência de Google Maps, auditoria, curadoria e contratos.</p>
+        """, unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
 cols = st.columns(8)
 aba_map = [("cadastrar", "⚙️ Ficha"), ("auditoria", "🔍 Auditoria"), ("metricas", "📋 Métricas"), ("ia", "🎯 Curadoria"), ("dashboard", "📊 Dashboard"), ("cases", "🏆 Prospecção"), ("pdf", "📄 Relatório"), ("financeiro", "💰 Financeiro")]
@@ -652,12 +661,18 @@ if st.session_state["aba_ativa"] == "cadastrar":
                     if res_ins.data:
                         novo_id = res_ins.data[0]["id"]
                         supabase.table("historico_ficha").insert({"cliente_id": novo_id, "data_alteracao": data_hora_sp, "descricao_alteracao": "Cadastro Inicial"}).execute()
-                        st.success(f"Ficha de '{nome_empresa}' cadastrada com sucesso!")
+                        msg_container = st.empty()
+                        msg_container.success(f"Ficha de '{nome_empresa}' cadastrada com sucesso!")
+                        time.sleep(3)
+                        msg_container.empty()
                         st.rerun()
                 else:
                     supabase.table("clientes").update(payload).eq("id", c_id).execute()
                     supabase.table("historico_ficha").insert({"cliente_id": c_id, "data_alteracao": data_hora_sp, "descricao_alteracao": "Atualização Cadastral"}).execute()
-                    st.success(f"Ficha comercial de '{nome_empresa}' atualizada com sucesso!")
+                    msg_container = st.empty()
+                    msg_container.success(f"Ficha comercial de '{nome_empresa}' atualizada com sucesso!")
+                    time.sleep(3)
+                    msg_container.empty()
                     st.rerun()
             except Exception as e:
                 st.error(f"Erro ao salvar: {str(e)}")
@@ -704,7 +719,11 @@ elif st.session_state["aba_ativa"] == "metricas":
             st.info(f"Faturamento Estimado Gerado: R$ {fat:,.2f}")
             if st.form_submit_button("Salvar Métricas"):
                 supabase.table("metricas_mensais").insert({"cliente_id": c_id, "mes_ano": mes_ref, "chamadas": chamadas, "rotas": rotas, "cliques_site": cliques, "ticket_medio": tm, "taxa_conversao": tc, "faturamento_estimado": fat}).execute()
-                st.success("Métricas salvas!")
+                msg_container = st.empty()
+                msg_container.success("Métricas salvas!")
+                time.sleep(3)
+                msg_container.empty()
+                st.rerun()
     gerar_botoes_navegacao_rodape()
 
 # ==========================================
