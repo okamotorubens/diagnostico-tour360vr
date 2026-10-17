@@ -28,7 +28,7 @@ def init_db():
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
     
-    # Tabela Principal de Clientes (Adicionado valor_contrato_mensal)
+    # 1. Tabela Principal de Clientes
     c.execute('''
         CREATE TABLE IF NOT EXISTS clientes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -74,7 +74,20 @@ def init_db():
         )
     ''')
 
-    # Tabela de Histórico / Auditoria
+    # Atualização Automática para Bancos de Dados Existentes
+    colunas_novas = [
+        ("valor_contrato_mensal", "REAL DEFAULT 0.0"),
+        ("dia_vencimento", "INTEGER DEFAULT 10"),
+        ("status_contrato", "TEXT DEFAULT 'Ativo'")
+    ]
+    
+    for nome_coluna, tipo_coluna in colunas_novas:
+        try:
+            c.execute(f"ALTER TABLE clientes ADD COLUMN {nome_coluna} {tipo_coluna}")
+        except sqlite3.OperationalError:
+            pass # A coluna já existe no banco
+
+    # 2. Tabela de Histórico de Alterações
     c.execute('''
         CREATE TABLE IF NOT EXISTS historico_ficha (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -85,7 +98,7 @@ def init_db():
         )
     ''')
     
-    # Tabela de Métricas Mensais
+    # 3. Tabela de Métricas Mensais
     c.execute('''
         CREATE TABLE IF NOT EXISTS metricas_mensais (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -105,7 +118,7 @@ def init_db():
         )
     ''')
 
-    # Tabela de Palavras-Chave e Ranking
+    # 4. Tabela de Palavras-Chave e Ranking SEO
     c.execute('''
         CREATE TABLE IF NOT EXISTS ranking_keywords (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -118,7 +131,7 @@ def init_db():
         )
     ''')
 
-    # Tabela de Publicações e Posts GMB
+    # 5. Tabela de Publicações e Posts GMB
     c.execute('''
         CREATE TABLE IF NOT EXISTS posts_gmb (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1043,10 +1056,13 @@ elif st.session_state["aba_ativa"] == "financeiro":
     st.caption("Painel restrito para controle de mensalidades, faturamento total e saúde financeira da Tour360VR.")
 
     conn = sqlite3.connect(DB_NAME)
-    df_fin = pd.read_sql_query(
-        "SELECT nome_empresa as 'Cliente', valor_contrato_mensal as 'Mensalidade (R$)', dia_vencimento as 'Dia Vencimento', status_contrato as 'Status' FROM clientes WHERE status_contrato = 'Ativo'", 
-        conn
-    )
+    try:
+        df_fin = pd.read_sql_query(
+            "SELECT nome_empresa as 'Cliente', valor_contrato_mensal as 'Mensalidade (R$)', dia_vencimento as 'Dia Vencimento', status_contrato as 'Status' FROM clientes WHERE status_contrato = 'Ativo'", 
+            conn
+        )
+    except Exception:
+        df_fin = pd.DataFrame()
     conn.close()
 
     if df_fin.empty:
