@@ -217,7 +217,7 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, chamadas, rotas, cliques, visuali
 st.markdown("""
     <style>
     .block-container {
-        padding-top: 1.5rem !important;
+        padding-top: 1.2rem !important;
         padding-bottom: 2rem !important;
         max-width: 90% !important;
     }
@@ -232,29 +232,29 @@ st.markdown("""
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     }
 
-    /* CONTAINER CARD DO TÍTULO E BOTÕES SUPERIORES */
+    /* CONTAINER CARD DO TÍTULO E BOTÕES SUPERIORES (AJUSTADO E COMPACTO) */
     .top-card-container {
         background-color: #161F30;
         border: 1px solid #2B364A;
         border-radius: 12px;
-        padding: 20px 24px 22px 24px;
-        margin-bottom: 25px;
+        padding: 16px 20px 14px 20px !important;
+        margin-bottom: 15px !important;
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
     }
 
     .main-title-card {
         color: #FFFFFF;
         font-weight: 800;
-        font-size: 1.85rem;
+        font-size: 1.80rem;
         margin-top: 0 !important;
-        margin-bottom: 6px !important;
+        margin-bottom: 4px !important;
         text-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
     }
 
     .sub-title-card {
         color: #8E9BAE;
-        font-size: 0.92rem;
-        margin-bottom: 18px;
+        font-size: 0.90rem;
+        margin-bottom: 12px !important;
     }
 
     /* BOTÕES DE NAVEGAÇÃO */
@@ -264,7 +264,7 @@ st.markdown("""
         border: 1.5px solid #455570 !important;
         color: #FFFFFF !important;
         border-radius: 8px !important;
-        padding: 10px 8px !important;
+        padding: 9px 8px !important;
         font-weight: 700 !important;
         font-size: 0.90rem !important;
         transition: all 0.25s ease-in-out !important;
@@ -300,13 +300,13 @@ st.markdown("""
         color: #00E5FF;
         font-weight: 700;
         font-size: 1.05rem;
-        margin-top: 1rem;
-        margin-bottom: 0.3rem;
+        margin-top: 0.8rem;
+        margin-bottom: 0.2rem;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# --- CONTROLADOR DE NAVEGAÇÃO PRINCIPAL EM CARD (IGUAL AO RADAR) ---
+# --- CONTROLADOR DE NAVEGAÇÃO PRINCIPAL EM CARD COMPACTO ---
 if "aba_ativa" not in st.session_state:
     st.session_state["aba_ativa"] = "cadastrar"
 
@@ -365,7 +365,7 @@ if st.session_state["aba_ativa"] == "cadastrar":
             "🏢 Sobre & Status Ficha", "📞 Contato & Redes", "📍 Local & Áreas", "⏰ Horários Rápidos", "🛠️ Checklist de Pendências", "📜 Histórico de Alterações"
         ])
         
-        # SUB-ABA 1: SOBRE & AUDITORIA DA FICHA (OPÇÕES VISÍVEIS DIRETAS EM RADIO)
+        # SUB-ABA 1: SOBRE & AUDITORIA DA FICHA
         with sub_tab_sobre:
             st.markdown("**Identificação Comercial & Auditoria Inicial:**")
             c_s1, c_s2 = st.columns(2)
@@ -440,9 +440,9 @@ if st.session_state["aba_ativa"] == "cadastrar":
             with c_l2:
                 area_cobertura = st.text_input("Áreas de Cobertura / Atendimento (ex: Ribeirão Preto, Sertãozinho, Brodowski)", value=dados_existentes[23] if (modo_edicao and len(dados_existentes) > 23) else "")
 
-        # SUB-ABA 4: HORÁRIOS DE FUNCIONAMENTO (RÓTULOS LIMPOS)
+        # SUB-ABA 4: HORÁRIOS DE FUNCIONAMENTO (PRÉ-CONFIGURADOS E VISÍVEIS DIRETA: 08:00 E 18:00)
         with sub_tab_horario:
-            st.markdown("**Horários de Funcionamento (Seleção rápida em intervalos de 30 minutos):**")
+            st.markdown("**Horários de Funcionamento (Pré-configurados com seleção de 30 em 30 min):**")
             
             dias_semana = [
                 ("Segunda-feira", 24, "08:00", "18:00", False),
