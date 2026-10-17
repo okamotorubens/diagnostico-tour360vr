@@ -12,7 +12,7 @@ st.set_page_config(
 # --- CSS PERSONALIZADO ---
 st.markdown("""
     <style>
-    /* 1. Área Global e Margens Superior/Inferior */
+    /* 1. Margens Globais */
     .block-container {
         padding-top: 1.2rem !important;
         padding-bottom: 1.5rem !important;
@@ -29,40 +29,30 @@ st.markdown("""
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     }
 
-    /* 2. FORÇAR CENTRALIZAÇÃO ABSOLUTA NA SIDEBAR */
+    /* 2. SIDEBAR E CENTRALIZAÇÃO */
     [data-testid="stSidebar"] {
         background-color: #07090E;
         border-right: 1px solid #1E2640;
     }
 
-    /* Centraliza todos os blocos de imagem e texto da barra lateral */
-    [data-testid="stSidebar"] [data-testid="stVerticalBlock"] > div {
-        display: flex !important;
-        flex-direction: column !important;
-        align-items: center !important;
-        justify-content: center !important;
-        text-align: center !important;
-        width: 100% !important;
+    .sidebar-content-wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        width: 100%;
     }
 
-    [data-testid="stSidebar"] [data-testid="stImage"] {
-        display: flex !important;
-        justify-content: center !important;
-        width: 100% !important;
-        margin: 0 auto !important;
-    }
-
-    [data-testid="stSidebar"] [data-testid="stImage"] img {
-        margin: 0 auto !important;
-    }
-
-    .sidebar-center-text {
-        text-align: center !important;
-        width: 100% !important;
+    /* Logos em HTML para forçar centralização perfeita */
+    .sidebar-logo-img {
         display: block !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+        height: auto;
     }
 
-    /* 3. Títulos da Página */
+    /* 3. TÍTULOS DA PÁGINA */
     .neon-main-title {
         color: #FFFFFF;
         text-shadow: 0 0 12px rgba(0, 229, 255, 0.6);
@@ -78,9 +68,10 @@ st.markdown("""
         margin-bottom: 1.5rem;
     }
 
+    /* Títulos das Seções (+1 Ponto) */
     .neon-section-title {
         color: #00E5FF;
-        font-size: 1.2rem;
+        font-size: 1.3rem !important; /* Aumentado 1 ponto */
         font-weight: 700;
         margin-top: 0.5rem;
         margin-bottom: 1.2rem;
@@ -92,16 +83,18 @@ st.markdown("""
         margin-top: 2.2rem;
     }
 
-    /* 4. CARDS CLICÁVEIS COM BORDA BRANCA E HOVER NEON AZUL */
+    /* 4. CARDS CLICÁVEIS CENTRALIZADOS */
     .clickable-card {
         display: flex;
         flex-direction: column;
         justify-content: flex-start;
+        align-items: center;
+        text-align: center !important; /* Centraliza títulos, emojis e descrições */
         background: #121824;
-        border: 1.5px solid #FFFFFF; /* Borda branca padrão */
+        border: 1.5px solid #FFFFFF;
         border-radius: 10px;
-        padding: 20px 18px 22px 18px; /* Respiro aumentado */
-        height: 150px !important; /* +1 linha de espaço interno */
+        padding: 20px 18px 22px 18px;
+        height: 150px !important;
         box-shadow: 0 0 8px rgba(255, 255, 255, 0.12);
         text-decoration: none !important;
         transition: all 0.3s ease-in-out;
@@ -109,8 +102,8 @@ st.markdown("""
     }
     
     .clickable-card:hover {
-        border-color: #00E5FF !important; /* Borda muda para Azul Neon */
-        box-shadow: 0 0 18px #00E5FF, 0 0 28px rgba(0, 229, 255, 0.4) !important; /* Efeito Neon Azul */
+        border-color: #00E5FF !important;
+        box-shadow: 0 0 18px #00E5FF, 0 0 28px rgba(0, 229, 255, 0.4) !important;
         transform: translateY(-3px);
         background: #161F30;
     }
@@ -122,7 +115,10 @@ st.markdown("""
         margin: 0 0 8px 0 !important;
         display: flex;
         align-items: center;
+        justify-content: center;
         gap: 8px;
+        width: 100%;
+        text-align: center !important;
     }
 
     .clickable-card p {
@@ -130,16 +126,24 @@ st.markdown("""
         font-size: 0.84rem;
         line-height: 1.45;
         margin: 0;
+        text-align: center !important;
     }
 
     .clickable-card:hover h3 {
         color: #00E5FF !important;
     }
 
-    /* 5. Botões da Navegação Rápida (Sidebar) */
+    /* 5. BOTÕES DA SIDEBAR COM LARGURA RIGOROSAMENTE IGUAL */
+    .sidebar-btn-group {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+    }
+
     .sidebar-nav-btn {
         display: block;
-        width: 100%;
+        width: 90% !important; /* Garante exatamente a mesma largura para ambos */
         text-align: center;
         border: 1.5px solid #FFFFFF;
         background-color: #0E1117;
@@ -147,7 +151,7 @@ st.markdown("""
         border-radius: 6px;
         font-weight: 700;
         font-size: 0.85rem;
-        padding: 8px 6px;
+        padding: 9px 6px;
         text-decoration: none !important;
         transition: all 0.3s ease-in-out;
         box-shadow: 0 0 5px rgba(255, 255, 255, 0.15);
@@ -166,36 +170,48 @@ st.markdown("""
 
 # --- BARRA LATERAL (Sidebar) ---
 with st.sidebar:
-    # Logos Centralizadas
+    st.markdown("<div class='sidebar-content-wrapper'>", unsafe_allow_html=True)
+    
+    # Logos Centralizadas via HTML
     caminho_logo_tour = "logo_tour_transparente.png"
     if os.path.exists(caminho_logo_tour):
-        st.image(caminho_logo_tour, width=130)
+        st.markdown(f"<img src='app/static/{caminho_logo_tour}' class='sidebar-logo-img' style='width: 130px;'>", unsafe_allow_html=True)
     else:
-        st.markdown("<h3 class='sidebar-center-text' style='color:#FFF; margin:0;'>TOUR360VR</h3>", unsafe_allow_html=True)
+        # Fallback de imagem direta se a pasta estática não estiver mapeada
+        try:
+            st.image(caminho_logo_tour, width=130)
+        except:
+            st.markdown("<h3 style='color:#FFF; margin:0;'>TOUR360VR</h3>", unsafe_allow_html=True)
         
-    st.markdown("<div style='margin-top: 8px;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
     
     caminho_logo_okamoto = "logo_okamoto.png"
     if os.path.exists(caminho_logo_okamoto):
-        st.image(caminho_logo_okamoto, width=165)
-    elif os.path.exists("okamoto_preto.png"):
-        st.image("okamoto_preto.png", width=165)
+        st.markdown(f"<img src='app/static/{caminho_logo_okamoto}' class='sidebar-logo-img' style='width: 165px;'>", unsafe_allow_html=True)
+    else:
+        try:
+            st.image(caminho_logo_okamoto, width=165)
+        except:
+            pass
+
+    st.markdown("</div>", unsafe_allow_html=True)
 
     st.markdown("<hr style='margin: 14px 0; border-color: #1E2640; width: 100%;'>", unsafe_allow_html=True)
     
-    # Navegação Rápida
-    st.markdown("<div class='sidebar-center-text'>", unsafe_allow_html=True)
-    st.markdown("<p style='color: #FFFFFF; font-weight: 800; font-size: 0.9rem; letter-spacing: 0.5px; margin-bottom: 10px;'>NAVEGAÇÃO RÁPIDA</p>", unsafe_allow_html=True)
+    # Navegação Rápida com Botões de Largura Igual
+    st.markdown("<div class='sidebar-content-wrapper'>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #FFFFFF; font-weight: 800; font-size: 0.9rem; letter-spacing: 0.5px; margin-bottom: 12px;'>NAVEGAÇÃO RÁPIDA</p>", unsafe_allow_html=True)
     
+    st.markdown("<div class='sidebar-btn-group'>", unsafe_allow_html=True)
     st.markdown("<a href='#tour360vr-prospeccao-diagnostico-gestao' class='sidebar-nav-btn'>🌐 Tour360vr</a>", unsafe_allow_html=True)
     st.markdown("<div style='margin-top: 8px;'></div>", unsafe_allow_html=True)
     st.markdown("<a href='#okamoto-midias-visuais-comercial-precificacao' class='sidebar-nav-btn'>📸 Okamoto Mídias Visuais</a>", unsafe_allow_html=True)
-    st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown("</div></div>", unsafe_allow_html=True)
     
     st.markdown("<hr style='margin: 16px 0; border-color: #1E2640; width: 100%;'>", unsafe_allow_html=True)
     
     # Rodapé
-    st.markdown("<div class='sidebar-center-text' style='color: #8A99AD; font-size: 0.75rem; line-height: 1.4;'>Painel Unificado de Operações<br>© Okamoto Mídias Visuais</div>", unsafe_allow_html=True)
+    st.markdown("<div class='sidebar-content-wrapper' style='color: #8A99AD; font-size: 0.75rem; line-height: 1.4;'>Painel Unificado de Operações<br>© Okamoto Mídias Visuais</div>", unsafe_allow_html=True)
 
 # --- CABEÇALHO DA CENTRAL ---
 st.markdown("<h1 class='neon-main-title'>Central de Sistemas e Operações</h1>", unsafe_allow_html=True)
@@ -232,7 +248,7 @@ with col3:
         </a>
     """, unsafe_allow_html=True)
 
-# Espaçamento entre os dois blocos
+# Espaçamento entre os blocos
 st.markdown("<div class='section-divider-space'></div>", unsafe_allow_html=True)
 
 # ==========================================
