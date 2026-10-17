@@ -58,7 +58,7 @@ def gerar_botoes_navegacao_rodape():
     aba_atual = st.session_state.get("aba_ativa", "cadastrar")
     idx_atual = ORDEM_ABAS.index(aba_atual) if aba_atual in ORDEM_ABAS else 0
     
-    col_v, col_centro, col_p = st.columns([1.5, 3.5, 1.5], gap="large")
+    col_v, col_p = st.columns([6, 2], gap="small")
     
     with col_v:
         if idx_atual > 0:
@@ -72,7 +72,7 @@ def gerar_botoes_navegacao_rodape():
         if idx_atual < len(ORDEM_ABAS) - 1:
             aba_proxima = ORDEM_ABAS[idx_atual + 1]
             nome_prox = NOMES_ABAS[aba_proxima]
-            if st.button(f"Próximo ({nome_prox}) ➡️", key=f"btn_rodape_next_{aba_atual}"):
+            if st.button(f"Próximo ({nome_prox}) ➡️", key=f"btn_rodape_next_{aba_atual}", use_container_width=True):
                 st.session_state["aba_ativa"] = aba_proxima
                 st.rerun()
 
@@ -276,7 +276,7 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
     story.append(t_header)
     story.append(Spacer(1, 4))
 
-    story.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor('#3B4866'), spaceAfter=6))
+    story.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor('#3B4866'), spaceAfter=4))
 
     story.append(Paragraph("<b>1. Análise Comparativa de Desempenho e Crescimento:</b>", section_style))
     story.append(Spacer(1, 3))
@@ -348,7 +348,7 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#F1F5F9')),
         ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#CBD5E1')),
         ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#E2E8F0')),
-        ('PADDING', (0,0), (-1,-1), 4),
+        ('PADDING', (0,0), (-1,-1), 3),
         ('ALIGN', (1,0), (-1,-1), 'CENTER'),
     ]))
     story.append(t_comp)
@@ -374,7 +374,7 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
             ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#F1F5F9')),
             ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#CBD5E1')),
             ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#E2E8F0')),
-            ('PADDING', (0,0), (-1,-1), 4),
+            ('PADDING', (0,0), (-1,-1), 3),
             ('ALIGN', (1,0), (-1,-1), 'CENTER'),
         ]))
         story.append(t_kw)
@@ -384,7 +384,7 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
         story.append(Paragraph("<b>3. Curva de Evolução Histórica (Mês a Mês):</b>", section_style))
         story.append(Spacer(1, 3))
         img_buf = gerar_imagem_grafico(df_historico)
-        story.append(Image(img_buf, width=520, height=160))
+        story.append(Image(img_buf, width=520, height=150))
         story.append(Spacer(1, 4))
 
     if dados_atual['faturamento_estimado'] > 0:
@@ -400,7 +400,7 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
         t_roi.setStyle(TableStyle([
             ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#F8FAFC')),
             ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#CBD5E1')),
-            ('PADDING', (0,0), (-1,-1), 4),
+            ('PADDING', (0,0), (-1,-1), 3),
         ]))
         story.append(t_roi)
         story.append(Spacer(1, 4))
@@ -409,7 +409,7 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
     story.append(Spacer(1, 3))
     acoes_texto = dados_atual['resumo_acoes'] if dados_atual['resumo_acoes'] else "Otimizações de rotina, monitorização de palavras-chave locais e gestão de reputação da ficha."
     story.append(Paragraph(acoes_texto.replace('\n', '<br/>'), body_style))
-    story.append(Spacer(1, 6))
+    story.append(Spacer(1, 5))
 
     story.append(HRFlowable(width="100%", thickness=0.8, color=colors.HexColor('#CBD5E1'), spaceAfter=4))
     story.append(Paragraph("<b>tour360vr.com.br</b> &nbsp;|&nbsp; contato@tour360vr.com.br &nbsp;|&nbsp; Whatsapp: (16) 99133-2121 &nbsp;|&nbsp; Tour360VR - Gestão de Perfil do Google & Presença Local", footer_style))
@@ -455,7 +455,7 @@ def gerar_pdf_prospeccao_cases(inc_clientes, inc_faturamento, inc_grafico, inc_k
     story.append(t_header)
     story.append(Spacer(1, 4))
 
-    story.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor('#2563EB'), spaceAfter=6))
+    story.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor('#2563EB'), spaceAfter=5))
 
     story.append(Paragraph("<b>1. Resumo Consolidado de Resultados da Agência:</b>", section_style))
     story.append(Spacer(1, 3))
@@ -475,11 +475,11 @@ def gerar_pdf_prospeccao_cases(inc_clientes, inc_faturamento, inc_grafico, inc_k
         t_cards.setStyle(TableStyle([
             ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#F8FAFC')),
             ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#CBD5E1')),
-            ('PADDING', (0,0), (-1,-1), 8),
+            ('PADDING', (0,0), (-1,-1), 6),
             ('ALIGN', (0,0), (-1,-1), 'CENTER'),
         ]))
         story.append(t_cards)
-        story.append(Spacer(1, 6))
+        story.append(Spacer(1, 5))
 
     if inc_grafico and df_agrupado is not None and not df_agrupado.empty:
         story.append(Paragraph("<b>2. Curva do Volume de Clientes Gerados (Mês a Mês):</b>", section_style))
@@ -487,8 +487,8 @@ def gerar_pdf_prospeccao_cases(inc_clientes, inc_faturamento, inc_grafico, inc_k
         story.append(Paragraph("Evolução somada do número de ligações telefónicas, rotas no GPS e mensagens no WhatsApp enviadas para nossos parceiros:", body_style))
         story.append(Spacer(1, 3))
         img_buf = gerar_imagem_grafico_consolidado(df_agrupado)
-        story.append(Image(img_buf, width=520, height=170))
-        story.append(Spacer(1, 6))
+        story.append(Image(img_buf, width=520, height=160))
+        story.append(Spacer(1, 5))
 
     if inc_keywords and df_keywords is not None and not df_keywords.empty:
         story.append(Paragraph("<b>3. Exemplos Reais de Posicionamento no Topo do Google Maps:</b>", section_style))
@@ -511,11 +511,11 @@ def gerar_pdf_prospeccao_cases(inc_clientes, inc_faturamento, inc_grafico, inc_k
             ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#F1F5F9')),
             ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#CBD5E1')),
             ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#E2E8F0')),
-            ('PADDING', (0,0), (-1,-1), 5),
+            ('PADDING', (0,0), (-1,-1), 4),
             ('ALIGN', (1,0), (-1,-1), 'CENTER'),
         ]))
         story.append(t_kw)
-        story.append(Spacer(1, 6))
+        story.append(Spacer(1, 5))
 
     story.append(HRFlowable(width="100%", thickness=0.8, color=colors.HexColor('#CBD5E1'), spaceAfter=4))
     story.append(Paragraph("<b>tour360vr.com.br</b> &nbsp;|&nbsp; contato@tour360vr.com.br &nbsp;|&nbsp; Whatsapp: (16) 99133-2121 &nbsp;|&nbsp; Tour360VR - Soluções em Visual Mídia & SEO Local", footer_style))
@@ -524,12 +524,12 @@ def gerar_pdf_prospeccao_cases(inc_clientes, inc_faturamento, inc_grafico, inc_k
     buffer.seek(0)
     return buffer
 
-# --- CSS PERSONALIZADO (SEM CORTAR TEXTO, COMPACTO E LINHAS REDUZIDAS) ---
+# --- CSS PERSONALIZADO (SEM CORTES NOS BOTÕES, ESPAÇAMENTO REDUZIDO E ALINHAMENTO) ---
 st.markdown("""
     <style>
     .block-container {
-        padding-top: 1.2rem !important;
-        padding-bottom: 2.0rem !important;
+        padding-top: 1.0rem !important;
+        padding-bottom: 1.5rem !important;
         max-width: 90% !important;
         margin: 0 auto !important;
     }
@@ -547,123 +547,112 @@ st.markdown("""
     .top-card-container {
         background-color: #161F30;
         border: 1px solid #2B364A;
-        border-radius: 12px;
-        padding: 16px 22px !important;
-        margin-bottom: 16px !important;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+        border-radius: 10px;
+        padding: 14px 20px !important;
+        margin-bottom: 12px !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     }
 
     .main-title-card {
         color: #FFFFFF;
         font-weight: 800;
-        font-size: 1.65rem;
+        font-size: 1.55rem;
         margin-top: 0 !important;
-        margin-bottom: 4px !important;
-        text-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
+        margin-bottom: 3px !important;
+        text-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
     }
 
     .sub-title-card {
         color: #8E9BAE;
-        font-size: 0.90rem;
+        font-size: 0.88rem;
         margin-bottom: 0px !important;
     }
 
     /* ESPAÇAMENTO ENTRE AS COLUNAS DE BOTÕES SUPERIORES */
     div[data-testid="stHorizontalBlock"] {
-        gap: 0.5rem !important;
-        margin-bottom: 16px !important;
+        gap: 0.4rem !important;
+        margin-bottom: 12px !important;
     }
 
-    /* ESPAÇAMENTO LATERAL (HORIZONTAL) ENTRE COLUNAS DE CAMPOS */
     div[data-testid="stHorizontalBlock"] > div[data-testid="stColumn"] {
-        padding-left: 10px !important;
-        padding-right: 10px !important;
+        padding-left: 6px !important;
+        padding-right: 6px !important;
     }
 
     div[data-testid="stColumn"] {
         padding: 0px !important;
     }
 
-    /* ESTILIZAÇÃO DOS BOTÕES SUPERIORES (SEM CORTAR TEXTO) */
+    /* ESTILIZAÇÃO DOS BOTÕES SUPERIORES (SEM CORTAR TEXTO, QUEBRA FLEXÍVEL) */
     div[data-testid="stColumn"] button {
         width: 100% !important;
         min-height: 44px !important;
-        height: 44px !important;
+        height: auto !important;
         background-color: #1A2130 !important;
         border: 1.5px solid #455570 !important;
         color: #FFFFFF !important;
         border-radius: 8px !important;
-        padding: 2px 6px !important;
+        padding: 4px 6px !important;
         font-weight: 700 !important;
-        font-size: 0.76rem !important;
-        line-height: 1.1 !important;
+        font-size: 0.74rem !important;
+        line-height: 1.15 !important;
+        white-space: normal !important;
+        word-wrap: break-word !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
         text-align: center !important;
-        white-space: normal !important;
-        word-wrap: break-word !important;
-        transition: all 0.25s ease-in-out !important;
+        transition: all 0.2s ease-in-out !important;
     }
 
     div[data-testid="stColumn"] button:hover {
         background-color: #222C3E !important;
         border-color: #FFFFFF !important;
         color: #FFFFFF !important;
-        box-shadow: 0 0 14px rgba(255, 255, 255, 0.75) !important;
+        box-shadow: 0 0 12px rgba(255, 255, 255, 0.6) !important;
     }
 
     div[data-testid="stColumn"] button[kind="primary"] {
         background-color: #1A2130 !important;
         border: 2px solid #FFFFFF !important;
         color: #FFFFFF !important;
-        box-shadow: 0 0 20px rgba(255, 255, 255, 0.95) !important;
+        box-shadow: 0 0 16px rgba(255, 255, 255, 0.9) !important;
     }
 
     /* FORMULÁRIOS E CAIXAS */
     div[data-testid="stForm"] {
         border-color: #2B364A !important;
-        padding: 20px !important;
-        border-radius: 12px !important;
-        margin-top: 10px !important;
+        padding: 16px !important;
+        border-radius: 10px !important;
+        margin-top: 8px !important;
         background-color: #131A28 !important;
     }
 
-    /* ESPAÇAMENTO VERTICAL REDUZIDO ENTRE OS ITENS */
+    /* REDUÇÃO DE ESPAÇAMENTO VERTICAL ENTRE CAMPOS E LINHAS */
     div[data-testid="stTextInput"], 
     div[data-testid="stNumberInput"], 
     div[data-testid="stSelectbox"], 
     div[data-testid="stDateInput"],
     div[data-testid="stTextArea"] {
-        margin-bottom: 12px !important;
+        margin-bottom: 8px !important;
+    }
+
+    hr {
+        margin-top: 10px !important;
+        margin-bottom: 10px !important;
+        border-color: #2B364A !important;
     }
 
     div[data-baseweb="tab-list"] {
-        gap: 10px !important;
-        margin-bottom: 18px !important;
+        gap: 8px !important;
+        margin-bottom: 14px !important;
     }
 
     button[data-baseweb="tab"] {
-        padding: 6px 14px !important;
-        font-size: 0.88rem !important;
-    }
-
-    .dia-linha-container {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        background-color: #1A2130;
-        border: 1px solid #2B364A;
-        padding: 8px 14px;
-        border-radius: 8px;
-        margin-bottom: 8px;
-    }
-    
-    .dia-nome-label {
-        font-weight: 700;
-        color: #FFFFFF;
-        font-size: 0.95rem;
-        min-width: 120px;
+        padding: 5px 12px !important;
+        font-size: 0.85rem !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -679,7 +668,7 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# COLUNAS COM LARGURAS PROPORCIONAIS
+# COLUNAS COM LARGURAS PROPORCIONAIS PARA OS BOTÕES SUPERIORES
 cols = st.columns([1.35, 1.25, 1.25, 1.1, 1.3, 1.2, 1.25, 1.35])
 
 with cols[0]:
@@ -749,7 +738,7 @@ if st.session_state["aba_ativa"] == "cadastrar":
         
         with sub_tab_sobre:
             st.markdown("**Identificação Comercial & Auditoria Inicial:**")
-            st.markdown("<div style='margin-bottom: 8px;'></div>", unsafe_allow_html=True)
+            st.markdown("<div style='margin-bottom: 6px;'></div>", unsafe_allow_html=True)
             c_s1, c_s2 = st.columns(2, gap="large")
 
             opts_reivindicada = ["Reivindicada & Verificada", "Não Reivindicada", "Em Processo"]
@@ -796,11 +785,11 @@ if st.session_state["aba_ativa"] == "cadastrar":
                     qtd_fotos_inicio = st.number_input("Qtd. Fotos Iniciais", min_value=0, step=1, value=int(dados_existentes.get("qtd_fotos_inicio", 0)) if modo_edicao else 0, key="num_fotos_ini_cad")
             
             st.markdown("---")
-            descricao_empresa = st.text_area("Descrição Oficial da Empresa", value=dados_existentes.get("descricao_empresa", "") if modo_edicao else "", height=150, key="txt_desc_empresa_cad")
+            descricao_empresa = st.text_area("Descrição Oficial da Empresa", value=dados_existentes.get("descricao_empresa", "") if modo_edicao else "", height=120, key="txt_desc_empresa_cad")
 
         with sub_tab_financeiro:
             st.markdown("**Dados do Contrato do Cliente:**")
-            st.markdown("<div style='margin-bottom: 8px;'></div>", unsafe_allow_html=True)
+            st.markdown("<div style='margin-bottom: 6px;'></div>", unsafe_allow_html=True)
             col_f1, col_f2, col_f3 = st.columns([1.2, 1.2, 2.6], gap="medium")
             
             opts_status_contrato = ["Ativo", "Em Negociação", "Pausado", "Cancelado"]
@@ -873,10 +862,9 @@ if st.session_state["aba_ativa"] == "cadastrar":
                         if len(parts) == 2:
                             val_ab, val_fe = parts[0], parts[1]
 
-                # Linha única em colunas para cada dia
                 col_d, col_a, col_f, col_c = st.columns([2.2, 2.2, 2.2, 1.4], gap="small")
                 with col_d:
-                    st.markdown(f"<div style='padding-top:8px; font-weight:700; color:#FFFFFF;'>📅 {dia_nome}</div>", unsafe_allow_html=True)
+                    st.markdown(f"<div style='padding-top:6px; font-weight:700; color:#FFFFFF;'>📅 {dia_nome}</div>", unsafe_allow_html=True)
                 with col_a:
                     h_abre_sel = st.text_input(f"Abertura {dia_nome}", value=val_ab, label_visibility="collapsed", disabled=is_fechado, key=f"txt_ab_{dia_nome}")
                 with col_f:
@@ -910,7 +898,7 @@ if st.session_state["aba_ativa"] == "cadastrar":
                 p_hor = st.checkbox("⏰ Validar Horários de Funcionamento", value="Ajuste de Horários" in pendencias_salvas, key="chk_p8_cad")
 
             st.markdown("---")
-            observacoes_tecnicas = st.text_area("Observações Técnicas Adicionais", value=dados_existentes.get("observacoes_tecnicas", "") if modo_edicao else "", height=150, key="txt_obs_tec_cad")
+            observacoes_tecnicas = st.text_area("Observações Técnicas Adicionais", value=dados_existentes.get("observacoes_tecnicas", "") if modo_edicao else "", height=120, key="txt_obs_tec_cad")
 
         with sub_tab_historico:
             if not modo_edicao:
@@ -1062,7 +1050,7 @@ elif st.session_state["aba_ativa"] == "auditoria":
                     st.markdown("---")
                     str_prop = f"Olá! Fiz uma análise rápida da ficha de {resultado['nome']} no Google Maps e identifiquei que existem algumas oportunidades para melhorar seu posicionamento e atrair mais clientes na região. Podemos conversar a respeito?"
                     url_enc_prop = urllib.parse.quote(str_prop)
-                    st.markdown(f'<a href="https://wa.me/?text={url_enc_prop}" target="_blank" style="text-decoration:none;"><button style="width:100%; background-color:#2563EB; color:white; border:none; padding:12px; border-radius:8px; font-weight:bold; cursor:pointer;">📱 Compartilhar Abordagem de Vendas no WhatsApp</button></a>', unsafe_allow_html=True)
+                    st.markdown(f'<a href="https://wa.me/?text={url_enc_prop}" target="_blank" style="text-decoration:none;"><button style="width:100%; background-color:#2563EB; color:white; border:none; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer;">📱 Compartilhar Abordagem de Vendas no WhatsApp</button></a>', unsafe_allow_html=True)
         else:
             st.warning("Insira uma URL válida do Google Maps antes de iniciar a varredura.")
 
@@ -1502,7 +1490,7 @@ elif st.session_state["aba_ativa"] == "financeiro":
             label="📊 Baixar Planilha Completa (.CSV / Excel)",
             data=csv_excel,
             file_name=f"Backup_Clientes_Tour360VR_{datetime.now().strftime('%Y_%m_%d')}.csv",
-            mime="text/csv",
+            mime="text/css",
             key="btn_download_excel"
         )
 
