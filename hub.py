@@ -29,49 +29,53 @@ st.markdown("""
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     }
 
-    /* 2. SIDEBAR E CENTRALIZAÇÃO */
+    /* 2. SIDEBAR E CENTRALIZAÇÃO DAS LOGOS */
     [data-testid="stSidebar"] {
         background-color: #07090E;
         border-right: 1px solid #1E2640;
     }
 
-    .sidebar-content-wrapper {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-        width: 100%;
+    /* Força centralização de qualquer elemento nativo de imagem na sidebar */
+    [data-testid="stSidebar"] [data-testid="stImage"] {
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        width: 100% !important;
+        margin: 0 auto !important;
     }
 
-    /* Logos em HTML para forçar centralização perfeita */
-    .sidebar-logo-img {
+    [data-testid="stSidebar"] [data-testid="stImage"] img {
+        margin: 0 auto !important;
         display: block !important;
-        margin-left: auto !important;
-        margin-right: auto !important;
-        height: auto;
     }
 
-    /* 3. TÍTULOS DA PÁGINA */
+    .sidebar-text-center {
+        text-align: center !important;
+        width: 100% !important;
+        display: block !important;
+    }
+
+    /* 3. TÍTULOS DA PÁGINA COM TAMANHO AUMENTADO */
     .neon-main-title {
         color: #FFFFFF;
         text-shadow: 0 0 12px rgba(0, 229, 255, 0.6);
         font-weight: 800;
-        font-size: 1.8rem;
+        font-size: 1.85rem;
         margin-top: 0rem;
         margin-bottom: 0.2rem;
     }
     
+    /* Subtítulo Aumentado */
     .subtitle-header {
         color: #94A3B8;
-        font-size: 1.05rem;
-        margin-bottom: 1.5rem;
+        font-size: 1.18rem !important; /* Aumentado */
+        margin-bottom: 1.6rem;
     }
 
-    /* Títulos das Seções (+1 Ponto) */
+    /* Títulos das Seções Aumentados (+1.5 ponto) */
     .neon-section-title {
         color: #00E5FF;
-        font-size: 1.3rem !important; /* Aumentado 1 ponto */
+        font-size: 1.45rem !important; /* Aumentado */
         font-weight: 700;
         margin-top: 0.5rem;
         margin-bottom: 1.2rem;
@@ -89,7 +93,7 @@ st.markdown("""
         flex-direction: column;
         justify-content: flex-start;
         align-items: center;
-        text-align: center !important; /* Centraliza títulos, emojis e descrições */
+        text-align: center !important;
         background: #121824;
         border: 1.5px solid #FFFFFF;
         border-radius: 10px;
@@ -133,7 +137,7 @@ st.markdown("""
         color: #00E5FF !important;
     }
 
-    /* 5. BOTÕES DA SIDEBAR COM LARGURA RIGOROSAMENTE IGUAL */
+    /* 5. BOTÕES DA SIDEBAR CENTRALIZADOS E PADRONIZADOS */
     .sidebar-btn-group {
         display: flex;
         flex-direction: column;
@@ -143,7 +147,7 @@ st.markdown("""
 
     .sidebar-nav-btn {
         display: block;
-        width: 90% !important; /* Garante exatamente a mesma largura para ambos */
+        width: 90% !important;
         text-align: center;
         border: 1.5px solid #FFFFFF;
         background-color: #0E1117;
@@ -170,48 +174,36 @@ st.markdown("""
 
 # --- BARRA LATERAL (Sidebar) ---
 with st.sidebar:
-    st.markdown("<div class='sidebar-content-wrapper'>", unsafe_allow_html=True)
-    
-    # Logos Centralizadas via HTML
+    # Logos Centralizadas via st.image + CSS
     caminho_logo_tour = "logo_tour_transparente.png"
     if os.path.exists(caminho_logo_tour):
-        st.markdown(f"<img src='app/static/{caminho_logo_tour}' class='sidebar-logo-img' style='width: 130px;'>", unsafe_allow_html=True)
+        st.image(caminho_logo_tour, width=130)
     else:
-        # Fallback de imagem direta se a pasta estática não estiver mapeada
-        try:
-            st.image(caminho_logo_tour, width=130)
-        except:
-            st.markdown("<h3 style='color:#FFF; margin:0;'>TOUR360VR</h3>", unsafe_allow_html=True)
+        st.markdown("<h3 class='sidebar-text-center' style='color:#FFF; margin:0;'>TOUR360VR</h3>", unsafe_allow_html=True)
         
     st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
     
     caminho_logo_okamoto = "logo_okamoto.png"
     if os.path.exists(caminho_logo_okamoto):
-        st.markdown(f"<img src='app/static/{caminho_logo_okamoto}' class='sidebar-logo-img' style='width: 165px;'>", unsafe_allow_html=True)
-    else:
-        try:
-            st.image(caminho_logo_okamoto, width=165)
-        except:
-            pass
+        st.image(caminho_logo_okamoto, width=165)
+    elif os.path.exists("okamoto_preto.png"):
+        st.image("okamoto_preto.png", width=165)
 
-    st.markdown("</div>", unsafe_allow_html=True)
-
-    st.markdown("<hr style='margin: 14px 0; border-color: #1E2640; width: 100%;'>", unsafe_allow_html=True)
+    st.markdown("<hr style='margin: 16px 0; border-color: #1E2640; width: 100%;'>", unsafe_allow_html=True)
     
-    # Navegação Rápida com Botões de Largura Igual
-    st.markdown("<div class='sidebar-content-wrapper'>", unsafe_allow_html=True)
-    st.markdown("<p style='color: #FFFFFF; font-weight: 800; font-size: 0.9rem; letter-spacing: 0.5px; margin-bottom: 12px;'>NAVEGAÇÃO RÁPIDA</p>", unsafe_allow_html=True)
+    # Navegação Rápida Centralizada
+    st.markdown("<p class='sidebar-text-center' style='color: #FFFFFF; font-weight: 800; font-size: 0.92rem; letter-spacing: 0.5px; margin-bottom: 12px;'>NAVEGAÇÃO RÁPIDA</p>", unsafe_allow_html=True)
     
     st.markdown("<div class='sidebar-btn-group'>", unsafe_allow_html=True)
     st.markdown("<a href='#tour360vr-prospeccao-diagnostico-gestao' class='sidebar-nav-btn'>🌐 Tour360vr</a>", unsafe_allow_html=True)
     st.markdown("<div style='margin-top: 8px;'></div>", unsafe_allow_html=True)
     st.markdown("<a href='#okamoto-midias-visuais-comercial-precificacao' class='sidebar-nav-btn'>📸 Okamoto Mídias Visuais</a>", unsafe_allow_html=True)
-    st.markdown("</div></div>", unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
     
     st.markdown("<hr style='margin: 16px 0; border-color: #1E2640; width: 100%;'>", unsafe_allow_html=True)
     
     # Rodapé
-    st.markdown("<div class='sidebar-content-wrapper' style='color: #8A99AD; font-size: 0.75rem; line-height: 1.4;'>Painel Unificado de Operações<br>© Okamoto Mídias Visuais</div>", unsafe_allow_html=True)
+    st.markdown("<div class='sidebar-text-center' style='color: #8A99AD; font-size: 0.75rem; line-height: 1.4;'>Painel Unificado de Operações<br>© Okamoto Mídias Visuais</div>", unsafe_allow_html=True)
 
 # --- CABEÇALHO DA CENTRAL ---
 st.markdown("<h1 class='neon-main-title'>Central de Sistemas e Operações</h1>", unsafe_allow_html=True)
