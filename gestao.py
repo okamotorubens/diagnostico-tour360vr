@@ -48,6 +48,51 @@ def get_supabase_client() -> Client:
 
 supabase = get_supabase_client()
 
+# --- TRATAMENTO DE ROTA DE APROVAÇÃO EXTERNA (LINK ÚNICO) ---
+query_params = st.query_params
+if "aprovar" in query_params or st.session_state.get("modo_aprovacao", False):
+    st.markdown("""
+        <style>
+        .aprovacao-container { max-width: 700px; margin: 40px auto; background: #131A28; padding: 30px; border-radius: 12px; border: 1px solid #2B364A; color: #E0E6ED; font-family: 'Inter', sans-serif; text-align: center; }
+        .aprovacao-title { color: #FFFFFF; font-size: 1.8rem; font-weight: 800; margin-bottom: 10px; }
+        .aprovacao-sub { color: #8E9BAE; font-size: 1rem; margin-bottom: 25px; }
+        .pauta-box { background: #1A2130; padding: 15px; border-radius: 8px; margin-bottom: 12px; text-align: left; border-left: 4px solid #2563EB; }
+        </style>
+    """, unsafe_allow_html=True)
+
+    st.markdown("""
+        <div class="aprovacao-container">
+            <div class="aprovacao-title">🌐 Tour360VR | Aprovação de Pautas</div>
+            <div class="aprovacao-sub">Planejamento Estratégico de Conteúdo e SEO Local</div>
+        </div>
+    """, unsafe_allow_html=True)
+
+    st.success("✅ Conectado com sucesso ao sistema de curadoria Tour360VR.")
+    st.markdown("### Pautas Estratégicas Propostas para este Mês:")
+    
+    pautas_exemplo = [
+        "1. Como escolher o melhor serviço especializado na região com garantia de qualidade.",
+        "2. Bastidores da nossa equipe: Nosso compromisso absoluto com a excelência.",
+        "3. Conheça nossa estrutura imersiva através do Tour Virtual 360° no Google Maps.",
+        "4. Diferenciais técnicos que tornam nosso atendimento referência local.",
+        "5. Atendimento rápido, orçamentos e facilidades pelo canal oficial de atendimento.",
+        "6. Perguntas frequentes (FAQ): Tire todas as suas dúvidas diretamente conosco."
+    ]
+
+    for p in pautas_exemplo:
+        st.markdown(f"- {p}")
+
+    st.markdown("---")
+    col_ap1, col_ap2 = st.columns(2)
+    with col_ap1:
+        if st.button("✅ Aprovar Planejamento do Mês", use_container_width=True):
+            st.balloons()
+            st.success("Planejamento aprovado com sucesso! Obrigado pela parceria.")
+    with col_ap2:
+        if st.button("💬 Solicitar Ajustes via WhatsApp", use_container_width=True):
+            st.markdown('<meta http-equiv="refresh" content="0;url=https://wa.me/5516991332121?text=Olá%20Rubens!%20Gostaria%20de%20solicitar%20alguns%20ajustes%20no%20planejamento%20de%20pautas.">', unsafe_allow_html=True)
+    st.stop()
+
 # --- NAVEGAÇÃO SEQUENCIAL DAS ABAS ---
 ORDEM_ABAS = ["cadastrar", "auditoria", "metricas", "ia", "dashboard", "cases", "pdf", "financeiro"]
 NOMES_ABAS = {
@@ -178,7 +223,7 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
 
     logo_flowable = Paragraph("🌐 <b>Tour360VR</b>", title_brand_style)
     try:
-        resp_img = requests.get(logo_tour_transparente.png, timeout=3)
+        resp_img = requests.get(LOGO_TOUR360_URL, timeout=3)
         if resp_img.status_code == 200:
             img_io = BytesIO(resp_img.content)
             logo_flowable = RLImage(img_io, width=32, height=32)
@@ -250,7 +295,7 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
     buffer.seek(0)
     return buffer
 
-# --- GERAÇÃO DE CONTRATO EM PDF (EXATAMENTE CONFORME SOLICITADO) ---
+# --- GERAÇÃO DE CONTRATO EM PDF (EXATAMENTE COMO SOLICITADO) ---
 def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duracao=None):
     buffer = BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=36, leftMargin=36, topMargin=30, bottomMargin=20)
@@ -260,12 +305,10 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     title_brand_style = ParagraphStyle('DocBrandTitle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=14, leading=18, textColor=colors.HexColor('#000000'))
     doc_title_style = ParagraphStyle('DocTitleStyle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, leading=14, alignment=1, textColor=colors.HexColor('#000000'))
     
-    # Texto do contrato com espaçamento entre linhas reduzido conforme solicitado
-    body_style = ParagraphStyle('DocBody', parent=styles['Normal'], fontName='Helvetica', fontSize=9.5, leading=13.5, alignment=4, textColor=colors.HexColor('#000000'))
+    body_style = ParagraphStyle('DocBody', parent=styles['Normal'], fontName='Helvetica', fontSize=9.5, leading=13.0, alignment=4, textColor=colors.HexColor('#000000'))
     footer_style = ParagraphStyle('DocFooter', parent=styles['Normal'], fontName='Helvetica', fontSize=8, leading=11, alignment=1, textColor=colors.HexColor('#000000'))
     signature_style = ParagraphStyle('DocSig', parent=styles['Normal'], fontName='Helvetica', fontSize=9.5, leading=13, alignment=1, textColor=colors.HexColor('#000000'))
 
-    # Logo no cabeçalho
     logo_flowable = Paragraph("🌐 <b>Tour360VR</b>", title_brand_style)
     try:
         resp_img = requests.get(LOGO_TOUR360_URL, timeout=3)
@@ -277,17 +320,16 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
 
     header_table_data = [
         [
-            Table([[logo_flowable, Paragraph("<b>Tour360VR</b><br/><font size=7 color='#64748B'>Estratégia & Presença Digital</font>", title_brand_style)]], colWidths=[36, 200]),
+            logo_flowable,
             Paragraph("<b>CONTRATO DE PRESTAÇÃO DE SERVIÇOS</b><br/><font size=7.5 color='#2563EB'><b>Documento Jurídico Oficial</b></font>", ParagraphStyle('RHeader', parent=styles['Normal'], alignment=2, fontName='Helvetica'))
         ]
     ]
     t_header = Table(header_table_data, colWidths=[260, 260])
     story.append(t_header)
     story.append(Spacer(1, 4))
-    # Linha divisória estritamente em AZUL CLARO (#93C5FD)
+    # Linha divisória estritamente em azul claro (#93C5FD)
     story.append(HRFlowable(width="100%", thickness=0.8, color=colors.HexColor('#93C5FD'), spaceAfter=8))
 
-    # Data por extenso alinhada à direita
     meses_pt = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"]
     hoje = agora_brasil()
     data_extenso = f"Ribeirão Preto - SP, {hoje.day} de {meses_pt[hoje.month - 1]} de {hoje.year}."
@@ -295,11 +337,11 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     date_style = ParagraphStyle('DateStyle', parent=styles['Normal'], fontName='Helvetica', fontSize=9.5, alignment=2, textColor=colors.HexColor('#000000'), spaceAfter=0)
     story.append(Paragraph(data_extenso, date_style))
 
-    # MAIS 1 LINHA DE ESPAÇO ENTRE A DATA E O TÍTULO
+    # +1 linha de espaço entre data e título
     story.append(Spacer(1, 14))
     story.append(Paragraph("CONTRATO DE PRESTAÇÃO DE SERVIÇOS", doc_title_style))
 
-    # MAIS 1 LINHA DE ESPAÇO ENTRE O TÍTULO E O TEXTO DO CONTRATO
+    # +1 linha de espaço entre título e texto do contrato
     story.append(Spacer(1, 14))
 
     nome_emp = dados_cliente.get("nome_empresa", "Empresa Cliente")
@@ -321,7 +363,7 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     A <a href="https://tour360vr.com.br" color="#000000"><b>Tour360VR</b></a> (<b>CONTRATADA</b>) compromete-se a executar os serviços profissionais especializados em otimização, reestruturação técnica, curadoria de pautas e/ou produção de Tour Virtual 360° para o perfil do Google da <b>CONTRATANTE</b>, referentes ao plano contratado <b>{detalhe_plano}</b>.
     """
     story.append(Paragraph(txt_qualificacao, body_style))
-    story.append(Spacer(1, 8))
+    story.append(Spacer(1, 6))
 
     clausulas = """
     <b>CLÁUSULA PRIMEIRA - DO OBJETO:</b> Os serviços serão iniciados em até 5 dias úteis após a confirmação do acordo e o fornecimento de todos os acessos e informações necessárias à gestão do perfil pela <b>CONTRATANTE</b>.<br/><br/>
@@ -332,10 +374,9 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     """
     story.append(Paragraph(clausulas, body_style))
     
-    # MAIS 2 LINHAS DE ESPAÇO ANTES DAS ASSINATURAS
+    # +2 linhas de espaço antes das assinaturas
     story.append(Spacer(1, 28))
 
-    # Assinaturas centralizadas
     assinaturas_data = [
         [
             Paragraph("__________________________________________<br/><b>Rubens Okamoto</b><br/><b>Tour360VR</b>", signature_style),
@@ -345,8 +386,8 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     t_ass = Table(assinaturas_data, colWidths=[260, 260])
     story.append(t_ass)
     
-    # Rodapé fixado perfeitamente no final da página (como rodapé deve ficar)
-    story.append(Spacer(1, 20))
+    # Rodapé fixado perfeitamente na base inferior da página única
+    story.append(Spacer(1, 22))
     story.append(HRFlowable(width="100%", thickness=0.8, color=colors.HexColor('#93C5FD'), spaceAfter=4))
     story.append(Paragraph('<a href="https://tour360vr.com.br" color="#000000"><b>tour360vr.com.br</b></a> &nbsp;|&nbsp; <a href="mailto:contato@tour360vr.com.br" color="#000000">contato@tour360vr.com.br</a> &nbsp;|&nbsp; <a href="https://wa.me/5516991332121" color="#000000">WhatsApp: (16) 99133-2121</a>', footer_style))
 
@@ -354,7 +395,7 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     buffer.seek(0)
     return buffer
 
-# --- CSS PERSONALIZADO COM EFEITO NEON BRANCO ---
+# --- CSS PERSONALIZADO COM EFEITO NEON BRANCO E ESPAÇAMENTOS REDUZIDOS NAS LINHAS DIVISÓRIAS ---
 st.markdown("""
     <style>
     .block-container { padding-top: 1.0rem !important; padding-bottom: 1.5rem !important; max-width: 94% !important; margin: 0 auto !important; }
@@ -364,6 +405,9 @@ st.markdown("""
     .main-title-card { color: #FFFFFF; font-weight: 800; font-size: 1.55rem; margin-top: 0 !important; margin-bottom: 3px !important; }
     .sub-title-card { color: #8E9BAE; font-size: 0.88rem; margin-bottom: 0px !important; }
     div[data-testid="stHorizontalBlock"] { gap: 0.2rem !important; margin-bottom: 10px !important; }
+    
+    /* Redução de espaçamento antes e depois das linhas divisórias (hr) */
+    hr { margin-top: 6px !important; margin-bottom: 6px !important; border-color: #2B364A !important; }
     
     div[data-testid="stColumn"] button { 
         width: 100% !important; min-height: 42px !important; height: auto !important; 
@@ -506,12 +550,12 @@ if st.session_state["aba_ativa"] == "cadastrar":
                 horarios_coletados[campo_db] = "Fechado" if fch else f"{ha} - {hf}"
 
         with sub_t3:
-            c1, c2, c3 = st.columns(3, gap="medium")
+            # Layout corrigido em duas linhas limpas para evitar espremer campos e cortar a tela
+            c1, c2 = st.columns(2, gap="large")
             with c1:
                 valor_contrato_mensal = st.number_input("Valor da Mensalidade (R$)", min_value=0.0, step=50.0, value=float(dados_existentes.get("valor_contrato_mensal", 450.0)) if (modo_edicao and dados_existentes) else 450.0)
-            with c2:
                 dia_vencimento = st.number_input("Dia Vencimento", min_value=1, max_value=31, step=1, value=int(dados_existentes.get("dia_vencimento", 10)) if (modo_edicao and dados_existentes) else 10)
-            with c3:
+            with c2:
                 opts_status = ["Ativo", "Em Negociação", "Pausado", "Cancelado"]
                 val_status_atual = dados_existentes.get("status_contrato", "Ativo") if (modo_edicao and dados_existentes) else "Ativo"
                 idx_st = opts_status.index(val_status_atual) if val_status_atual in opts_status else 0
@@ -699,13 +743,14 @@ elif st.session_state["aba_ativa"] == "ia":
 
         st.markdown("---")
         st.markdown("### 🔗 Link Único de Aprovação Externa")
-        link_exemplo = f"https://tour360vr.com.br/aprovar/{emp.lower().replace(' ', '-')}"
+        # URL limpa apontando para o próprio app com parâmetro de aprovação funcional
+        link_exemplo = f"https://tour360vr.com.br/?aprovar=true&cliente={emp.lower().replace(' ', '-')}"
         st.text_input("Link Único Exclusivo para Envio ao Cliente (Copiável):", value=link_exemplo)
 
         num_wsp = dados_c.get("whatsapp", "")
         num_limpo = "".join([c for c in str(num_wsp) if c.isdigit()])
         
-        # Mensagem ajustada exatamente conforme solicitado com quebras de linha corretas
+        # Mensagem formatada exatamente com as quebras de linha solicitadas
         texto_msg_wsp = f"Olá {resp_cliente}!\nAqui é o Rubens da Tour360VR.\nSegue o link com o planejamento de pautas estratégicas para sua aprovação este mês: {link_exemplo}"
         msg_wsp = urllib.parse.quote(texto_msg_wsp)
 
