@@ -7,9 +7,13 @@ from io import BytesIO
 
 # Importações do ReportLab para PDF
 from reportlab.lib.pagesizes import letter
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable, Image
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
+
+# Importação do Matplotlib para geração de gráficos no PDF
+import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(
@@ -125,8 +129,37 @@ def calcular_variacao_pct(atual, anterior):
         return f"+{diff:.1f}%"
     return f"{diff:.1f}%"
 
-# --- FUNÇÃO DE GERAÇÃO DO RELATÓRIO PDF COM DUPOLA COMPARAÇÃO (MÊS ANTERIOR E INÍCIO) ---
-def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dados_inicio):
+# --- FUNÇÃO PARA GERAR O GRÁFICO EM MEMÓRIA PARA O PDF ---
+def gerar_imagem_grafico(df_historico):
+    fig, ax = plt.subplots(figsize=(6.5, 2.2), dpi=200)
+    
+    # Cores corporativas elegantes
+    ax.plot(df_historico['mes_ano'], df_historico['chamadas'], marker='o', color='#2563EB', linewidth=2, label='Chamadas (Ligações)')
+    ax.plot(df_historico['mes_ano'], df_historico['rotas'], marker='s', color='#16A34A', linewidth=2, label='Solicitações de Rota')
+    ax.plot(df_historico['mes_ano'], df_historico['cliques_site'], marker='^', color='#0284C7', linewidth=2, label='Cliques Site/Whats')
+
+    ax.set_facecolor('#F8FAFC')
+    fig.patch.set_facecolor('#FFFFFF')
+    
+    ax.grid(True, linestyle='--', alpha=0.5, color='#CBD5E1')
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['left'].set_color('#94A3B8')
+    ax.spines['bottom'].set_color('#94A3B8')
+    
+    plt.xticks(fontsize=8, color='#334155', fontweight='bold')
+    plt.yticks(fontsize=8, color='#334155')
+    ax.legend(loc='upper left', fontsize=7, frameon=True, facecolor='#FFFFFF', edgecolor='#CBD5E1')
+    
+    plt.tight_layout()
+    img_buf = BytesIO()
+    plt.savefig(img_buf, format='png', dpi=200, bbox_inches='tight')
+    plt.close(fig)
+    img_buf.seek(0)
+    return img_buf
+
+# --- FUNÇÃO DE GERAÇÃO DO RELATÓRIO PDF COM GRÁFICO IMPRESSO ---
+def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dados_inicio, df_historico=None):
     buffer = BytesIO()
     doc = SimpleDocTemplate(
         buffer,
@@ -170,7 +203,7 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
 
     story.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor('#3B4866'), spaceAfter=10))
 
-    # 2. TABELA COMPARATIVA DUPLA (INÍCIO vs. MÊS ANTERIOR vs. MÊS ATUAL)
+    # 2. TABELA COMPARATIVA DUPLA
     story.append(Paragraph("<b>1. Análise Comparativa de Desempenho e Crescimento:</b>", section_style))
     story.append(Spacer(1, 4))
     
@@ -241,19 +274,27 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#F1F5F9')),
         ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#CBD5E1')),
         ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#E2E8F0')),
-        ('PADDING', (0,0), (-1,-1), 5),
+        ('PADDING', (0,0), (-1,-1), 4),
         ('ALIGN', (1,0), (-1,-1), 'CENTER'),
     ]))
     story.append(t_comp)
-    story.append(Spacer(1, 10))
+    story.append(Spacer(1, 8))
 
-    # 3. ROI E ESTIMATIVA FINANCEIRA
+    # 3. GRÁFICO DE EVOLUÇÃO HISTÓRICA DENTRO DO PDF
+    if df_historico is not None and len(df_historico) > 1:
+        story.append(Paragraph("<b>2. Curva de Evolução Histórica (Mês a Mês):</b>", section_style))
+        story.append(Spacer(1, 4))
+        img_buf = gerar_imagem_grafico(df_historico)
+        story.append(Image(img_buf, width=520, height=176))
+        story.append(Spacer(1, 8))
+
+    # 4. ROI E ESTIMATIVA FINANCEIRA
     if dados_atual['faturamento_estimado'] > 0:
-        story.append(Paragraph("<b>2. Retorno sobre o Investimento Estimado (ROI):</b>", section_style))
+        story.append(Paragraph("<b>3. Retorno sobre o Investimento Estimado (ROI):</b>", section_style))
         story.append(Spacer(1, 4))
         roi_data = [
             [
-                Paragraph(f"💰 <b>Faturamento Estimado Gerado no Mês:</b> R$ {dados_atual['faturamento_estimado']:,.2f}", ParagraphStyle('GreenROI', parent=body_style, fontSize=9.5, textColor=colors.HexColor('#16A34A'))),
+                Paragraph(f"💰 <b>Faturamento Estimado Gerado no Mês:</b> R$ {dados_atual['faturamento_estimado']:,.2f}", ParagraphStyle('GreenROI', parent=body_style, fontSize=9, textColor=colors.HexColor('#16A34A'))),
                 Paragraph("<b>Calculado via:</b> Conversões Directas x Ticket Médio", body_style)
             ]
         ]
@@ -261,19 +302,19 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
         t_roi.setStyle(TableStyle([
             ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#F8FAFC')),
             ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#CBD5E1')),
-            ('PADDING', (0,0), (-1,-1), 6),
+            ('PADDING', (0,0), (-1,-1), 5),
         ]))
         story.append(t_roi)
-        story.append(Spacer(1, 10))
+        story.append(Spacer(1, 8))
 
-    # 4. AÇÕES EXECUTADAS
-    story.append(Paragraph("<b>3. Ações Técnicas & Melhores Práticas Aplicadas no Mês:</b>", section_style))
+    # 5. AÇÕES EXECUTADAS
+    story.append(Paragraph("<b>4. Ações Técnicas & Melhores Práticas Aplicadas no Mês:</b>", section_style))
     story.append(Spacer(1, 4))
     acoes_texto = dados_atual['resumo_acoes'] if dados_atual['resumo_acoes'] else "Otimizações de rotina, monitorização de palavras-chave locais e gestão de reputação da ficha."
     story.append(Paragraph(acoes_texto.replace('\n', '<br/>'), body_style))
-    story.append(Spacer(1, 15))
+    story.append(Spacer(1, 12))
 
-    # 5. RODAPÉ UNIFICADO
+    # 6. RODAPÉ UNIFICADO
     story.append(HRFlowable(width="100%", thickness=0.8, color=colors.HexColor('#CBD5E1'), spaceAfter=8))
     story.append(Paragraph("<b>tour360vr.com.br</b> &nbsp;|&nbsp; contato@tour360vr.com.br &nbsp;|&nbsp; Whatsapp: (16) 99133-2121 &nbsp;|&nbsp; Tour360VR - Gestão de Perfil do Google", footer_style))
 
@@ -814,7 +855,7 @@ elif st.session_state["aba_ativa"] == "dashboard":
             st.line_chart(df_metricas.set_index("mes_ano")[["chamadas", "rotas", "cliques_site"]])
 
 # ==========================================
-# MÓDULO 5: RELATÓRIO PDF COM DUPOLA COMPARAÇÃO AUTOMÁTICA
+# MÓDULO 5: RELATÓRIO PDF COM GRÁFICO AUTOMÁTICO
 # ==========================================
 elif st.session_state["aba_ativa"] == "pdf":
     st.subheader("📄 Emitir Relatório Executivo em PDF")
@@ -838,7 +879,7 @@ elif st.session_state["aba_ativa"] == "pdf":
 
         conn = sqlite3.connect(DB_NAME)
         df_m = pd.read_sql_query(
-            "SELECT * FROM metricas_mensais WHERE cliente_id = ? ORDER BY mes_ano DESC", 
+            "SELECT * FROM metricas_mensais WHERE cliente_id = ? ORDER BY mes_ano ASC", 
             conn, params=(cliente_pdf_id,)
         )
         conn.close()
@@ -847,14 +888,16 @@ elif st.session_state["aba_ativa"] == "pdf":
             st.warning("Nenhuma métrica encontrada para este cliente.")
         else:
             with col_r2:
-                mes_pdf_sel = st.selectbox("Selecione o Mês de Referência", df_m["mes_ano"].tolist())
+                mes_pdf_sel = st.selectbox("Selecione o Mês de Referência", df_m["mes_ano"].tolist()[::-1])
 
             idx_sel = df_m[df_m["mes_ano"] == mes_pdf_sel].index[0]
             dados_atual = df_m.iloc[idx_sel].to_dict()
 
             dados_anterior = None
-            if idx_sel + 1 < len(df_m):
-                dados_anterior = df_m.iloc[idx_sel + 1].to_dict()
+            if idx_sel - 1 >= 0:
+                dados_anterior = df_m.iloc[idx_sel - 1].to_dict()
+
+            df_historico_recorte = df_m.iloc[:idx_sel + 1]
 
             st.markdown("---")
             st.write(f"**Resumo Selecionado:** {cliente_pdf_sel} - Mês {mes_pdf_sel}")
@@ -864,11 +907,12 @@ elif st.session_state["aba_ativa"] == "pdf":
                 mes_ano=mes_pdf_sel,
                 dados_atual=dados_atual,
                 dados_anterior=dados_anterior,
-                dados_inicio=dados_inicio
+                dados_inicio=dados_inicio,
+                df_historico=df_historico_recorte
             )
 
             st.download_button(
-                label="📥 Baixar Relatório Executivo em PDF (Marca TOUR360VR)",
+                label="📥 Baixar Relatório Executivo em PDF com Gráfico (TOUR360VR)",
                 data=pdf_bytes,
                 file_name=f"Relatorio_GMB_{cliente_pdf_sel.replace(' ', '_')}_{mes_pdf_sel}.pdf",
                 mime="application/pdf"
