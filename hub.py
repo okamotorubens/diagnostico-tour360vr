@@ -149,7 +149,7 @@ with col1:
         </div>
     """, unsafe_allow_html=True)
     # Coloque aqui o link do seu app do Buscador de Clientes
-    st.link_button("Abrir Radar", "https://seu-link-do-buscador.streamlit.app")
+    st.link_button("Abrir Radar", "https://radar-comercial-tour360vr.streamlit.app/")
 
 with col2:
     st.markdown("""
@@ -159,7 +159,7 @@ with col2:
         </div>
     """, unsafe_allow_html=True)
     # Coloque aqui o link do seu app de Diagnóstico
-    st.link_button("Abrir Diagnóstico", "https://seu-link-do-diagnostico.streamlit.app")
+    st.link_button("Abrir Diagnóstico", "https://tour360vr.streamlit.app/")
 
 with col3:
     st.markdown("""
@@ -188,7 +188,7 @@ with col4:
         </div>
     """, unsafe_allow_html=True)
     # Coloque aqui o link do seu app de Propostas/Custos
-    st.link_button("Abrir Propostas", "https://seu-link-de-propostas.streamlit.app")
+    st.link_button("Abrir Propostas", "https://okamoto-proposta-comercial.streamlit.app/")
 
 with col5:
     st.markdown("""
