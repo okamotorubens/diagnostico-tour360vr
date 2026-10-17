@@ -257,7 +257,7 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
 
     header_table_data = [
         [
-            Paragraph("🌐 <b>TOUR360VR</b><br/><font size=8 color='#64748B'>Gestão, SEO Local & Presença em IAs</font>", title_brand_style),
+            Paragraph("🌐 <b>TOUR360VR</b><br/><font size=8 color='#64748B'>Gestão, SEO Local & Presença Estratégica</font>", title_brand_style),
             Paragraph(f"<b>RELATÓRIO DE DESEMPENHO</b><br/><font size=9 color='#2563EB'><b>{nome_empresa}</b></font><br/><font size=8 color='#64748B'>Mês de Referência: {mes_ano}</font>", ParagraphStyle('RHeader', parent=styles['Normal'], alignment=2, fontName='Helvetica'))
         ]
     ]
@@ -398,7 +398,7 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
         story.append(t_roi)
         story.append(Spacer(1, 6))
 
-    story.append(Paragraph("<b>5. Ações Técnicas & Melhores Práticas Aplicadas (SEO/GEO):</b>", section_style))
+    story.append(Paragraph("<b>5. Ações Técnicas & Melhores Práticas Aplicadas:</b>", section_style))
     story.append(Spacer(1, 3))
     acoes_texto = dados_atual['resumo_acoes'] if dados_atual['resumo_acoes'] else "Otimizações de rotina, monitorização de palavras-chave locais e gestão de reputação da ficha."
     story.append(Paragraph(acoes_texto.replace('\n', '<br/>'), body_style))
@@ -440,8 +440,8 @@ def gerar_pdf_prospeccao_cases(inc_clientes, inc_faturamento, inc_grafico, inc_k
 
     header_table_data = [
         [
-            Paragraph("🌐 <b>TOUR360VR</b><br/><font size=8 color='#64748B'>Estratégia, Tour 360°, SEO Local & GEO (AEO/IAs)</font>", title_brand_style),
-            Paragraph("<b>APRESENTAÇÃO DE PERFORMANCE & CASES DE SUCESSO</b><br/><font size=8 color='#2563EB'><b>Mídia & Otimização GMB/IAs</b></font>", ParagraphStyle('RHeader', parent=styles['Normal'], alignment=2, fontName='Helvetica'))
+            Paragraph("🌐 <b>TOUR360VR</b><br/><font size=8 color='#64748B'>Estratégia, Tour 360°, SEO Local & Presença Digital</font>", title_brand_style),
+            Paragraph("<b>APRESENTAÇÃO DE PERFORMANCE & CASES DE SUCESSO</b><br/><font size=8 color='#2563EB'><b>Mídia & Otimização GMB</b></font>", ParagraphStyle('RHeader', parent=styles['Normal'], alignment=2, fontName='Helvetica'))
         ]
     ]
     t_header = Table(header_table_data, colWidths=[300, 220])
@@ -453,7 +453,7 @@ def gerar_pdf_prospeccao_cases(inc_clientes, inc_faturamento, inc_grafico, inc_k
     story.append(Paragraph("<b>1. Resumo Consolidado de Resultados da Agência:</b>", section_style))
     story.append(Spacer(1, 4))
 
-    txt_resumo = "A Tour360VR desenvolve estratégias personalizadas de posicionamento local, fotogrametria 360°, otimização de fichas no Google Maps e citabilidade em IAs (ChatGPT, Gemini e Copilot) para empresas que buscam liderança de mercado em sua região."
+    txt_resumo = "A Tour360VR desenvolve estratégias personalizadas de posicionamento local, fotogrametria 360°, otimização de fichas no Google Maps e citabilidade para empresas que buscam liderança de mercado em sua região."
     story.append(Paragraph(txt_resumo, body_style))
     story.append(Spacer(1, 6))
 
@@ -511,7 +511,7 @@ def gerar_pdf_prospeccao_cases(inc_clientes, inc_faturamento, inc_grafico, inc_k
         story.append(Spacer(1, 10))
 
     story.append(HRFlowable(width="100%", thickness=0.8, color=colors.HexColor('#CBD5E1'), spaceAfter=8))
-    story.append(Paragraph("<b>tour360vr.com.br</b> &nbsp;|&nbsp; contato@tour360vr.com.br &nbsp;|&nbsp; Whatsapp: (16) 99133-2121 &nbsp;|&nbsp; Tour360VR - Soluções em Visual Mídia, SEO & GEO Local", footer_style))
+    story.append(Paragraph("<b>tour360vr.com.br</b> &nbsp;|&nbsp; contato@tour360vr.com.br &nbsp;|&nbsp; Whatsapp: (16) 99133-2121 &nbsp;|&nbsp; Tour360VR - Soluções em Visual Mídia & SEO Local", footer_style))
 
     doc.build(story)
     buffer.seek(0)
@@ -612,8 +612,8 @@ if "aba_ativa" not in st.session_state:
 
 st.markdown("""
 <div class="top-card-container">
-    <h1 class="main-title-card">📈 Gestão Mensal, SEO & GEO (IAs) | Tour360VR</h1>
-    <p class="sub-title-card">Acompanhamento de perfis no Google Maps, posicionamento em IAs (ChatGPT/Gemini) e relatórios de ROI.</p>
+    <h1 class="main-title-card">📈 Gestão Mensal & Estratégia do Perfil | Tour360VR</h1>
+    <p class="sub-title-card">Acompanhamento de perfis no Google Maps, curadoria estratégica de conteúdo e relatórios executivos de ROI.</p>
 """, unsafe_allow_html=True)
 
 col_n1, col_n2, col_n3, col_n4, col_n5, col_n6, col_n7 = st.columns(7)
@@ -629,7 +629,7 @@ with col_n2:
         st.rerun()
 
 with col_n3:
-    if st.button("💬 Assistente IA", key="btn_ia", type="primary" if st.session_state["aba_ativa"] == "ia" else "secondary"):
+    if st.button("🎯 Curadoria & Pautas", key="btn_ia", type="primary" if st.session_state["aba_ativa"] == "ia" else "secondary"):
         st.session_state["aba_ativa"] = "ia"
         st.rerun()
 
@@ -667,7 +667,7 @@ if st.session_state["aba_ativa"] == "cadastrar":
     
     if not df_clientes_existentes.empty:
         opcoes_clientes = ["➕ Cadastrar Novo Cliente"] + df_clientes_existentes["nome_empresa"].tolist()
-        cliente_selecionado_menu = st.selectbox("Selecione para Cadastrar ou Editar um Cliente Existente:", opcoes_clientes)
+        cliente_selecionado_menu = st.selectbox("Selecione para Cadastrar ou Editar um Cliente Existente:", opcoes_clientes, key="sel_cliente_menu_cad")
         
         if cliente_selecionado_menu != "➕ Cadastrar Novo Cliente":
             modo_edicao = True
@@ -697,24 +697,24 @@ if st.session_state["aba_ativa"] == "cadastrar":
                     val_dt_abertura = date.today()
 
             with c_s1:
-                nome_empresa = st.text_input("Nome Comercial da Empresa / Ficha GMB *", value=dados_existentes[1] if modo_edicao else "")
-                responsavel = st.text_input("Nome do Responsável / Contato Interno", value=dados_existentes[2] if modo_edicao else "")
+                nome_empresa = st.text_input("Nome Comercial da Empresa / Ficha GMB *", value=dados_existentes[1] if modo_edicao else "", key="txt_nome_empresa_cad")
+                responsavel = st.text_input("Nome do Responsável / Contato Interno", value=dados_existentes[2] if modo_edicao else "", key="txt_responsavel_cad")
                 
-                data_abertura_dt = st.date_input("Data de Abertura (Dia/Mês/Ano)", value=val_dt_abertura, format="DD/MM/YYYY")
+                data_abertura_dt = st.date_input("Data de Abertura (Dia/Mês/Ano)", value=val_dt_abertura, format="DD/MM/YYYY", key="dt_abertura_cad")
                 data_abertura_str = data_abertura_dt.strftime("%d/%m/%Y")
                 
                 idx_reiv = opts_reivindicada.index(dados_existentes[4]) if (modo_edicao and dados_existentes[4] in opts_reivindicada) else 0
-                ficha_reivindicada = st.radio("Status de Reivindicação da Ficha", opts_reivindicada, index=idx_reiv, horizontal=True)
+                ficha_reivindicada = st.radio("Status de Reivindicação da Ficha", opts_reivindicada, index=idx_reiv, horizontal=True, key="rad_reivindicada_cad")
                 
                 idx_resp = opts_respostas.index(dados_existentes[12]) if (modo_edicao and len(dados_existentes) > 12 and dados_existentes[12] in opts_respostas) else 0
-                status_respostas_avaliacoes = st.radio("Status de Resposta às Avaliações", opts_respostas, index=idx_resp, horizontal=True)
+                status_respostas_avaliacoes = st.radio("Status de Resposta às Avaliações", opts_respostas, index=idx_resp, horizontal=True, key="rad_respostas_cad")
 
             with c_s2:
-                categoria_principal = st.text_input("Categoria Principal no GMB (ex: Serviço de fotografia)", value=dados_existentes[13] if (modo_edicao and len(dados_existentes) > 13) else "")
-                categorias_secundarias = st.text_input("Categorias Secundárias (separadas por vírgula)", value=dados_existentes[14] if (modo_edicao and len(dados_existentes) > 14) else "")
+                categoria_principal = st.text_input("Categoria Principal no GMB (ex: Serviço de fotografia)", value=dados_existentes[13] if (modo_edicao and len(dados_existentes) > 13) else "", key="txt_cat_princ_cad")
+                categorias_secundarias = st.text_input("Categorias Secundárias (separadas por vírgula)", value=dados_existentes[14] if (modo_edicao and len(dados_existentes) > 14) else "", key="txt_cat_sec_cad")
                 
                 idx_aval = opts_avaliacoes.index(dados_existentes[5]) if (modo_edicao and dados_existentes[5] in opts_avaliacoes) else 0
-                status_avaliacoes = st.radio("Possui Avaliações de Clientes?", opts_avaliacoes, index=idx_aval, horizontal=True)
+                status_avaliacoes = st.radio("Possui Avaliações de Clientes?", opts_avaliacoes, index=idx_aval, horizontal=True, key="rad_avaliacoes_cad")
 
                 st.markdown("**Métricas no Início da Gestão:**")
                 col_av1, col_av2, col_av3 = st.columns(3)
@@ -722,29 +722,30 @@ if st.session_state["aba_ativa"] == "cadastrar":
                     qtd_avaliacoes_inicio = st.number_input(
                         "Avaliações Iniciais",
                         min_value=0, step=1,
-                        value=int(dados_existentes[6]) if (modo_edicao and len(dados_existentes) > 6 and dados_existentes[6] is not None) else 0
+                        value=int(dados_existentes[6]) if (modo_edicao and len(dados_existentes) > 6 and dados_existentes[6] is not None) else 0,
+                        key="num_aval_ini_cad"
                     )
                 with col_av2:
                     nota_media_inicio = st.number_input(
                         "Nota Média Inicial",
                         min_value=0.0, max_value=5.0, step=0.1,
-                        value=float(dados_existentes[7]) if (modo_edicao and len(dados_existentes) > 7 and dados_existentes[7] is not None) else 5.0
+                        value=float(dados_existentes[7]) if (modo_edicao and len(dados_existentes) > 7 and dados_existentes[7] is not None) else 5.0,
+                        key="num_nota_ini_cad"
                     )
                 with col_av3:
                     qtd_fotos_inicio = st.number_input(
                         "Qtd. Fotos Iniciais",
                         min_value=0, step=1,
-                        value=int(dados_existentes[8]) if (modo_edicao and len(dados_existentes) > 8 and dados_existentes[8] is not None) else 0
+                        value=int(dados_existentes[8]) if (modo_edicao and len(dados_existentes) > 8 and dados_existentes[8] is not None) else 0,
+                        key="num_fotos_ini_cad"
                     )
             
             st.markdown("---")
-            descricao_empresa = st.text_area("Descrição Oficial da Empresa (Otimizada para SEO Local & IAs)", value=dados_existentes[15] if (modo_edicao and len(dados_existentes) > 15) else "", height=180)
+            descricao_empresa = st.text_area("Descrição Oficial da Empresa (Otimizada para SEO Local)", value=dados_existentes[15] if (modo_edicao and len(dados_existentes) > 15) else "", height=180, key="txt_desc_empresa_cad")
 
-       # SUB-ABA FINANCEIRA DO CONTRATO - LARGURAS AJUSTADAS + KEY ÚNICA
+        # SUB-ABA FINANCEIRA DO CONTRATO
         with sub_tab_financeiro:
             st.markdown("**Dados do Contrato do Cliente (Visível apenas para a Agência):**")
-            
-            # Proporções customizadas para caber tudo em 1 linha
             col_f1, col_f2, col_f3 = st.columns([1.2, 1.2, 2.6])
             
             opts_status_contrato = ["Ativo", "Em Negociação", "Pausado", "Cancelado"]
@@ -766,7 +767,6 @@ if st.session_state["aba_ativa"] == "cadastrar":
                     key="num_dia_vencimento_cad"
                 )
             with col_f3:
-                # O parâmetro key="rad_status_contrato_cad" evita o erro de ID duplicado no Streamlit
                 status_contrato = st.radio(
                     "Status do Contrato com a Agência", 
                     opts_status_contrato, 
@@ -787,30 +787,30 @@ if st.session_state["aba_ativa"] == "cadastrar":
             opts_chat = ["Ativado", "Desativado", "Não Configurado"]
             c_c1, c_c2 = st.columns(2)
             with c_c1:
-                telefone_contato = st.text_input("Número de Telefone Comercial", value=dados_existentes[16] if (modo_edicao and len(dados_existentes) > 16) else "")
-                whatsapp = st.text_input("WhatsApp para Atendimento", value=dados_existentes[17] if (modo_edicao and len(dados_existentes) > 17) else "")
-                website = st.text_input("Website / Link Principal", value=dados_existentes[19] if (modo_edicao and len(dados_existentes) > 19) else "")
+                telefone_contato = st.text_input("Número de Telefone Comercial", value=dados_existentes[16] if (modo_edicao and len(dados_existentes) > 16) else "", key="txt_tel_cad")
+                whatsapp = st.text_input("WhatsApp para Atendimento", value=dados_existentes[17] if (modo_edicao and len(dados_existentes) > 17) else "", key="txt_wsp_cad")
+                website = st.text_input("Website / Link Principal", value=dados_existentes[19] if (modo_edicao and len(dados_existentes) > 19) else "", key="txt_web_cad")
                 
                 chat_val = dados_existentes[18] if (modo_edicao and len(dados_existentes) > 18) else "Ativado"
                 idx_chat = opts_chat.index(chat_val) if chat_val in opts_chat else 0
-                chat_status = st.radio("Mensagens / Chat no Perfil", opts_chat, index=idx_chat, horizontal=True)
+                chat_status = st.radio("Mensagens / Chat no Perfil", opts_chat, index=idx_chat, horizontal=True, key="rad_chat_cad")
             with c_c2:
-                instagram = st.text_input("Link do Instagram", value=dados_existentes[20] if (modo_edicao and len(dados_existentes) > 20) else "")
-                facebook = st.text_input("Link do Facebook", value=dados_existentes[21] if (modo_edicao and len(dados_existentes) > 21) else "")
-                linkedin = st.text_input("Link do LinkedIn", value=dados_existentes[22] if (modo_edicao and len(dados_existentes) > 22) else "")
-                youtube = st.text_input("Link do YouTube", value=dados_existentes[23] if (modo_edicao and len(dados_existentes) > 23) else "")
-                tiktok = st.text_input("Link do TikTok", value=dados_existentes[24] if (modo_edicao and len(dados_existentes) > 24) else "")
+                instagram = st.text_input("Link do Instagram", value=dados_existentes[20] if (modo_edicao and len(dados_existentes) > 20) else "", key="txt_ig_cad")
+                facebook = st.text_input("Link do Facebook", value=dados_existentes[21] if (modo_edicao and len(dados_existentes) > 21) else "", key="txt_fb_cad")
+                linkedin = st.text_input("Link do LinkedIn", value=dados_existentes[22] if (modo_edicao and len(dados_existentes) > 22) else "", key="txt_li_cad")
+                youtube = st.text_input("Link do YouTube", value=dados_existentes[23] if (modo_edicao and len(dados_existentes) > 23) else "", key="txt_yt_cad")
+                tiktok = st.text_input("Link do TikTok", value=dados_existentes[24] if (modo_edicao and len(dados_existentes) > 24) else "", key="txt_tk_cad")
 
         # SUB-ABA 4: LOCAL & ÁREAS
         with sub_tab_local:
             atend_val = bool(dados_existentes[25]) if (modo_edicao and len(dados_existentes) > 25) else False
-            atendimento_local_cliente = st.checkbox("📍 Atendimento no local do cliente / Prestador de serviço itinerante (Endereço oculto no Google)", value=atend_val)
+            atendimento_local_cliente = st.checkbox("📍 Atendimento no local do cliente / Prestador de serviço itinerante (Endereço oculto no Google)", value=atend_val, key="chk_atend_local_cad")
             st.markdown("---")
             c_l1, c_l2 = st.columns(2)
             with c_l1:
-                endereco_local = st.text_input("Endereço Físico Completo", value=dados_existentes[26] if (modo_edicao and len(dados_existentes) > 26) else "")
+                endereco_local = st.text_input("Endereço Físico Completo", value=dados_existentes[26] if (modo_edicao and len(dados_existentes) > 26) else "", key="txt_end_cad")
             with c_l2:
-                area_cobertura = st.text_input("Áreas de Cobertura / Atendimento (ex: Ribeirão Preto, Sertãozinho, Brodowski)", value=dados_existentes[27] if (modo_edicao and len(dados_existentes) > 27) else "")
+                area_cobertura = st.text_input("Áreas de Cobertura / Atendimento (ex: Ribeirão Preto, Sertãozinho, Brodowski)", value=dados_existentes[27] if (modo_edicao and len(dados_existentes) > 27) else "", key="txt_area_cad")
 
         # SUB-ABA 5: HORÁRIOS DE FUNCIONAMENTO
         with sub_tab_horario:
@@ -862,9 +862,9 @@ if st.session_state["aba_ativa"] == "cadastrar":
             st.markdown("---")
             c_he1, c_he2 = st.columns(2)
             with c_he1:
-                horarios_especiais = st.text_input("Horários Especiais / Feriados (ex: 25/12 Fechado)", value=dados_existentes[35] if (modo_edicao and len(dados_existentes) > 35) else "")
+                horarios_especiais = st.text_input("Horários Especiais / Feriados (ex: 25/12 Fechado)", value=dados_existentes[35] if (modo_edicao and len(dados_existentes) > 35) else "", key="txt_hor_esp_cad")
             with c_he2:
-                outros_horarios = st.text_input("Outros Horários (Almoço, Happy Hour, Delivery)", value=dados_existentes[36] if (modo_edicao and len(dados_existentes) > 36) else "")
+                outros_horarios = st.text_input("Outros Horários (Almoço, Happy Hour, Delivery)", value=dados_existentes[36] if (modo_edicao and len(dados_existentes) > 36) else "", key="txt_outros_hor_cad")
 
         # SUB-ABA 6: CHECKLIST DE PENDÊNCIAS
         with sub_tab_mais:
@@ -873,18 +873,18 @@ if st.session_state["aba_ativa"] == "cadastrar":
 
             col_p1, col_p2 = st.columns(2)
             with col_p1:
-                p_fita = st.checkbox("📷 Cadastrar / Atualizar Tour Virtual 360° & Fotos", value="Fotos/Tour 360°" in pendencias_salvas)
-                p_cat = st.checkbox("🏷️ Otimizar Categoria Principal e Categorias Secundárias", value="Categorias GMB" in pendencias_salvas)
-                p_desc = st.checkbox("✍️ Reescrever Descrição Comercial com SEO Local & GEO", value="Descrição SEO" in pendencias_salvas)
-                p_redes = st.checkbox("🔗 Vincular Perfis Sociais (Instagram, Facebook, etc.)", value="Redes Sociais" in pendencias_salvas)
+                p_fita = st.checkbox("📷 Cadastrar / Atualizar Tour Virtual 360° & Fotos", value="Fotos/Tour 360°" in pendencias_salvas, key="chk_p1_cad")
+                p_cat = st.checkbox("🏷️ Otimizar Categoria Principal e Categorias Secundárias", value="Categorias GMB" in pendencias_salvas, key="chk_p2_cad")
+                p_desc = st.checkbox("✍️ Reescrever Descrição Comercial com SEO Local", value="Descrição SEO" in pendencias_salvas, key="chk_p3_cad")
+                p_redes = st.checkbox("🔗 Vincular Perfis Sociais (Instagram, Facebook, etc.)", value="Redes Sociais" in pendencias_salvas, key="chk_p4_cad")
             with col_p2:
-                p_chat = st.checkbox("💬 Ativar e Configurar Chat / Mensagens", value="Chat/Mensagens" in pendencias_salvas)
-                p_prod = st.checkbox("🛍️ Cadastrar Produtos e/ou Lista de Serviços", value="Produtos/Serviços" in pendencias_salvas)
-                p_aval = st.checkbox("⭐ Gerar Link Curto Direto para Solicitação de Avaliações", value="Link de Avaliações" in pendencias_salvas)
-                p_hor = st.checkbox("⏰ Corrigir / Validar Horários Especiais e de Funcionamento", value="Ajuste de Horários" in pendencias_salvas)
+                p_chat = st.checkbox("💬 Ativar e Configurar Chat / Mensagens", value="Chat/Mensagens" in pendencias_salvas, key="chk_p5_cad")
+                p_prod = st.checkbox("🛍️ Cadastrar Produtos e/ou Lista de Serviços", value="Produtos/Serviços" in pendencias_salvas, key="chk_p6_cad")
+                p_aval = st.checkbox("⭐ Gerar Link Curto Direto para Solicitação de Avaliações", value="Link de Avaliações" in pendencias_salvas, key="chk_p7_cad")
+                p_hor = st.checkbox("⏰ Corrigir / Validar Horários Especiais e de Funcionamento", value="Ajuste de Horários" in pendencias_salvas, key="chk_p8_cad")
 
             st.markdown("---")
-            observacoes_tecnicas = st.text_area("Observações Técnicas Adicionais / Diagnóstico Específico", value=dados_existentes[38] if (modo_edicao and len(dados_existentes) > 38) else "", height=180)
+            observacoes_tecnicas = st.text_area("Observações Técnicas Adicionais / Diagnóstico Específico", value=dados_existentes[38] if (modo_edicao and len(dados_existentes) > 38) else "", height=180, key="txt_obs_tec_cad")
 
         # SUB-ABA 7: HISTÓRICO DE AUDITORIA
         with sub_tab_historico:
@@ -969,47 +969,47 @@ elif st.session_state["aba_ativa"] == "metricas":
     if df_clientes.empty:
         st.warning("Nenhum cliente cadastrado. Cadastre um cliente na aba '⚙️ Ficha Comercial'.")
     else:
-        cliente_sel = st.selectbox("Selecione o Cliente para Lançamento", df_clientes["nome_empresa"].tolist())
+        cliente_sel = st.selectbox("Selecione o Cliente para Lançamento", df_clientes["nome_empresa"].tolist(), key="sel_cli_metricas")
         cliente_id = int(df_clientes[df_clientes["nome_empresa"] == cliente_sel]["id"].values[0])
 
         tab_m1, tab_m2 = st.tabs(["📊 Métricas Mensais & ROI", "🎯 Posição de Palavras-Chave (SEO Local)"])
 
         with tab_m1:
             with st.form("form_metricas"):
-                mes_referencia = st.date_input("Mês de Referência", value=datetime.today()).strftime("%Y-%m")
+                mes_referencia = st.date_input("Mês de Referência", value=datetime.today(), key="dt_ref_metricas").strftime("%Y-%m")
 
                 st.markdown("---")
                 st.markdown("**1. KPIs do Período (Extraídos da Ficha Google):**")
                 c1, c2, c3, c4 = st.columns(4)
                 with c1:
-                    chamadas = st.number_input("📞 Chamadas Telefónicas", min_value=0, step=1)
+                    chamadas = st.number_input("📞 Chamadas Telefónicas", min_value=0, step=1, key="num_chamadas_m")
                 with c2:
-                    rotas = st.number_input("🗺️ Solicitações de Rota", min_value=0, step=1)
+                    rotas = st.number_input("🗺️ Solicitações de Rota", min_value=0, step=1, key="num_rotas_m")
                 with c3:
-                    cliques_site = st.number_input("🌐 Cliques no Site/WhatsApp", min_value=0, step=1)
+                    cliques_site = st.number_input("🌐 Cliques no Site/WhatsApp", min_value=0, step=1, key="num_cliques_m")
                 with c4:
-                    visualizacoes = st.number_input("👁️ Total de Visualizações", min_value=0, step=1)
+                    visualizacoes = st.number_input("👁️ Total de Visualizações", min_value=0, step=1, key="num_vis_m")
 
                 col_m1, col_m2 = st.columns(2)
                 with col_m1:
-                    novas_avaliacoes = st.number_input("⭐ Novas Avaliações Recebidas no Mês", min_value=0, step=1)
+                    novas_avaliacoes = st.number_input("⭐ Novas Avaliações Recebidas no Mês", min_value=0, step=1, key="num_novas_aval_m")
                 with col_m2:
-                    total_fotos_mes = st.number_input("📷 Total de Fotos Publicadas na Ficha (Até este Mês)", min_value=0, step=1)
+                    total_fotos_mes = st.number_input("📷 Total de Fotos Publicadas na Ficha (Até este Mês)", min_value=0, step=1, key="num_tot_fotos_m")
 
                 st.markdown("---")
                 st.markdown("**2. Calculadora de ROI e Faturamento Estimado (Opcional):**")
                 col_r1, col_r2 = st.columns(2)
                 with col_r1:
-                    ticket_medio = st.number_input("Ticket Médio do Cliente (R$) [Padrão R$ 150]", min_value=0.0, value=150.0, step=10.0)
+                    ticket_medio = st.number_input("Ticket Médio do Cliente (R$) [Padrão R$ 150]", min_value=0.0, value=150.0, step=10.0, key="num_tm_m")
                 with col_r2:
-                    taxa_conversao = st.number_input("Taxa de Conversão Estimada (%) [Padrão 10%]", min_value=1.0, max_value=100.0, value=10.0, step=1.0) / 100.0
+                    taxa_conversao = st.number_input("Taxa de Conversão Estimada (%) [Padrão 10%]", min_value=1.0, max_value=100.0, value=10.0, step=1.0, key="num_tc_m") / 100.0
 
                 conversoes_totais = chamadas + rotas + cliques_site
                 faturamento_estimado = conversoes_totais * taxa_conversao * ticket_medio
                 st.info(f"💰 **Faturamento Estimado Gerado no Mês:** R$ {faturamento_estimado:,.2f}")
 
                 st.markdown("---")
-                resumo_acoes = st.text_area("🛠️ Ações Realizadas no Mês (Otimizações, fotos 360°, posts, inclusão de FAQ para IAs, etc.)")
+                resumo_acoes = st.text_area("🛠️ Ações Realizadas no Mês (Otimizações, fotos 360°, curadoria de pautas, etc.)", key="txt_resumo_acoes_m")
 
                 btn_salvar_metricas = st.form_submit_button("Salvar Métricas do Mês")
 
@@ -1037,11 +1037,11 @@ elif st.session_state["aba_ativa"] == "metricas":
             with st.form("form_add_keyword"):
                 col_k1, col_k2, col_k3 = st.columns(3)
                 with col_k1:
-                    kw_texto = st.text_input("Nova Palavra-Chave (ex: Fotógrafo em Ribeirão Preto)")
+                    kw_texto = st.text_input("Nova Palavra-Chave (ex: Fotógrafo em Ribeirão Preto)", key="txt_kw_add")
                 with col_k2:
-                    kw_pos_in = st.number_input("Posição Inicial no Maps", min_value=1, value=10)
+                    kw_pos_in = st.number_input("Posição Inicial no Maps", min_value=1, value=10, key="num_kw_ini")
                 with col_k3:
-                    kw_pos_at = st.number_input("Posição Atual no Maps", min_value=1, value=3)
+                    kw_pos_at = st.number_input("Posição Atual no Maps", min_value=1, value=3, key="num_kw_at")
                 
                 btn_kw = st.form_submit_button("Cadastrar / Atualizar Termo de Busca")
 
@@ -1056,16 +1056,16 @@ elif st.session_state["aba_ativa"] == "metricas":
                     st.rerun()
 
 # ==========================================
-# MÓDULO 3: ASSISTENTE DE CONTEÚDO, SEO & GEO (NOVO)
+# MÓDULO 3: CURATORIA E PAUTAS ESTRATÉGICAS
 # ==========================================
 elif st.session_state["aba_ativa"] == "ia":
-    st.subheader("💬 Assistente de Conteúdo, SEO Local & GEO (IAs Inteligentes)")
+    st.subheader("🎯 Curadoria Estratégica, Planejamento & Pautas de Presença Digital")
     df_clientes = obter_clientes_unicos()
 
     if df_clientes.empty:
-        st.info("Cadastre um cliente para usar a inteligência artificial.")
+        st.info("Cadastre um cliente na aba '⚙️ Ficha Comercial' para liberar este módulo.")
     else:
-        cliente_ia_sel = st.selectbox("Selecione o Cliente para Planejamento de Conteúdo & GEO", df_clientes["nome_empresa"].tolist())
+        cliente_ia_sel = st.selectbox("Selecione o Cliente para Curadoria de Conteúdo:", df_clientes["nome_empresa"].tolist(), key="sel_cli_curadoria")
         cliente_ia_id = int(df_clientes[df_clientes["nome_empresa"] == cliente_ia_sel]["id"].values[0])
         dados_c = obter_dados_cliente_por_id(cliente_ia_id)
 
@@ -1074,74 +1074,90 @@ elif st.session_state["aba_ativa"] == "ia":
 
         tab_ia1, tab_ia2, tab_ia3, tab_ia4 = st.tabs([
             "✍️ Respostas de Avaliações", 
-            "📅 Cronograma SEO & GEO", 
-            "❓ Gerador FAQ / AEO (IAs)", 
-            "🎨 Prompts Visuais"
+            "📅 Cronograma Mensal & Pautas", 
+            "❓ Perguntas Frequentes (FAQ)", 
+            "🎨 Direção de Arte Visuais"
         ])
 
         with tab_ia1:
-            st.markdown("**Gerador de Respostas Profissionais para Avaliações de Clientes:**")
-            avaliacao_recebida = st.text_area("Cole aqui o comentário deixado pelo cliente no Google Maps:")
+            st.markdown("**Gestão de Reputação & Respostas Profissionais para Avaliações:**")
+            avaliacao_recebida = st.text_area("Cole aqui a avaliação deixada pelo cliente no Google Maps:", key="txt_aval_recebida")
             
-            if st.button("✨ Gerar 3 Opções de Resposta Otimizadas com SEO"):
+            if st.button("✨ Gerar Opções de Resposta Consultivas", key="btn_gerar_resp_aval"):
                 if avaliacao_recebida:
-                    st.success("Opções geradas com sucesso! Copie a que melhor se adapta:")
+                    st.success("Opções estruturadas prontas para uso:")
                     st.markdown(f"""
                     **Opção 1 (Agradecida & Curta):**  
-                    > *"Olá! Muito obrigado pela sua avaliação e preferência na {dados_c[1]}. É um prazer oferecer a melhor experiência em {cat_nome} aqui na região. Conte sempre conosco!"*
+                    > *"Olá! Muito obrigado pela avaliação e preferência na {dados_c[1]}. É um prazer oferecer a melhor experiência em {cat_nome} na nossa região. Conte sempre conosco!"*
 
-                    **Opção 2 (Foco em SEO Local):**  
-                    > *"Ficamos muito felizes com o seu feedback de 5 estrelas! Na {dados_c[1]}, nos dedicamos diariamente para ser referência em {cat_nome} em {cid_nome}. Esperamos sua próxima visita!"*
+                    **Opção 2 (Foco em SEO & Posicionamento Local):**  
+                    > *"Ficamos muito felizes com o seu feedback! Na {dados_c[1]}, nos dedicamos diariamente para ser referência em {cat_nome} em {cid_nome}. Esperamos sua próxima visita!"*
 
-                    **Opção 3 (Institucional & Engajadora):**  
-                    > *"Agradecemos imensamente por compartilhar sua opinião positiva! Sua satisfação é nossa maior motivação. Um abraço de toda a equipe da {dados_c[1]}!"*
+                    **Opção 3 (Institucional & Relacionamento):**  
+                    > *"Agradecemos por compartilhar sua experiência positiva! Sua satisfação é nossa prioridade. Um abraço de toda a equipe da {dados_c[1]}!"*
                     """)
                 else:
-                    st.warning("Cole o texto da avaliação antes de gerar as respostas.")
+                    st.warning("Cole o texto da avaliação antes de gerar as opções.")
 
         with tab_ia2:
-            st.markdown(f"**Cronograma Editorial Mensal Baseado em Intenção de Busca (SEO/GEO) — {dados_c[1]}:**")
-            st.caption(f"Segmento: {cat_nome} | Região: {cid_nome}")
+            st.markdown(f"**Cronograma de Atração Local e Pautas Estratégicas — {dados_c[1]}:**")
+            st.caption(f"Segmento Comercial: {cat_nome} | Região de Atendimento: {cid_nome}")
 
-            st.markdown("""
-            **Sugestão de Pautas Mapeadas no Google e nas IAs para Aprovação do Cliente:**
-            - 🟢 **Pauta 1 (Educativo / Auto-complete):** *"Como escolher o melhor serviço de {cat_nome} em {cid_nome}?"*
-            - 🔵 **Pauta 2 (Diferencial & Tour 360°):** *"Por dentro da {dados_c[1]}: Conheça nossa estrutura com o Tour Virtual 360° no Google Maps."*
-            - 🟠 **Pauta 3 (Dúvida Frequente de Decisão):** *"Qual o valor médio e como solicitar um orçamento rápido na {dados_c[1]}?"*
-            """)
+            st.markdown("### 📌 Pautas Recomendadas pela Curadoria Técnica:")
+            st.checkbox(f"Pauta 1 (Intenção de Busca): 'Como escolher o melhor serviço de {cat_nome} em {cid_nome}?'", value=True, key="chk_p1_cron")
+            st.checkbox(f"Pauta 2 (Diferencial & Estrutura 360°): 'Conheça o espaço da {dados_c[1]} em Tour Virtual 360°'", value=True, key="chk_p2_cron")
+            st.checkbox(f"Pauta 3 (Atendimento Direto): 'Atendimento rápido e orçamentos pelo WhatsApp da {dados_c[1]}'", value=True, key="chk_p3_cron")
 
-            st.checkbox("Aprovar Pauta 1 (Auto-complete)", value=True)
-            st.checkbox("Aprovar Pauta 2 (Estrutura/Tour 360°)", value=True)
-            st.checkbox("Aprovar Pauta 3 (Conversão Direta)", value=True)
+            st.markdown("---")
+            st.markdown("### ✍️ Oportunidades & Sugestões Personalizadas do Rubens (Okamoto Mídias Visuais):")
+            st.caption("Insira pautas exclusivas ou ações de oportunidade identificadas diretamente no negócio do cliente:")
 
-            if st.button("🚀 Gerar Posts e Prompts de Imagem Aprovados"):
-                st.success("Textos completos e prompts de imagem gerados com sucesso!")
+            sug_1 = st.text_input("Sugestão Personalizada 1:", value=f"Ação Especial de Destaque: Bastidores do atendimento na {dados_c[1]}", key="txt_sug_pers_1")
+            sug_2 = st.text_input("Sugestão Personalizada 2:", value=f"Diferencial Técnico em {cat_nome} exclusivo na região de {cid_nome}", key="txt_sug_pers_2")
+            sug_3 = st.text_input("Sugestão Personalizada 3:", value="Apresentação de fotos em alta resolução da equipe e estrutura", key="txt_sug_pers_3")
+
+            st.markdown("---")
+            
+            c_act1, c_act2 = st.columns(2)
+            with c_act1:
+                if st.button("🚀 Confirmar Cronograma Estratégico", key="btn_confirmar_crono"):
+                    st.success("Cronograma aprovado e arquivado para publicação!")
+
+            with c_act2:
+                num_wsp_c = dados_c[17] if (dados_c and len(dados_c) > 17 and dados_c[17]) else ""
+                num_limpo_c = "".join([c for c in num_wsp_c if c.isdigit()])
+                
+                msg_pautas_wsp = f"Olá {dados_c[2] if dados_c[2] else dados_c[1]}, tudo bem? Aqui é o Rubens da Okamoto Mídias Visuais / Tour360VR! Montei o planejamento de pautas estratégicas do seu perfil para este mês, focado em atrair novos clientes na região. Por favor, confira as ideias propostas e me avise se aprova!"
+                msg_enc_pautas = urllib.parse.quote(msg_pautas_wsp)
+
+                if num_limpo_c:
+                    link_wsp_pautas = f"https://wa.me/55{num_limpo_c}?text={msg_enc_pautas}"
+                    st.markdown(f'<a href="{link_wsp_pautas}" target="_blank" style="text-decoration:none;"><button style="width:100%; background-color:#16A34A; color:white; border:none; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer;">📱 Enviar Pautas para Aprovação via WhatsApp</button></a>', unsafe_allow_html=True)
+                else:
+                    st.info("Cadastre o WhatsApp do cliente para enviar o link direto de aprovação.")
 
         with tab_ia3:
-            st.markdown(f"**Gerador de FAQ/AEO (Answer Engine Optimization) para IAs:**")
-            st.caption("Gere pares de Perguntas e Respostas Frequentes para serem publicadas no Google e no site do cliente. Isso garante que o ChatGPT, Gemini e Copilot recomendem a empresa!")
+            st.markdown(f"**Estruturação de Perguntas Frequentes (FAQ Estratégico) — {dados_c[1]}:**")
+            st.caption("Crie perguntas e respostas institucionais para alimentar o Perfil do Google e o site do cliente.")
 
             st.markdown(f"""
-            ### 🤖 Estrutura de Respostas Recomendadas pelas IAs:
+            ### 📋 Pares de Perguntas e Respostas Institucionais:
 
-            **1. Pergunta:** *Qual é a empresa mais recomendada para {cat_nome} em {cid_nome}?*  
-            > **Resposta Sugerida:** A **{dados_c[1]}** é uma das principais referências em {cat_nome} na região de {cid_nome}. Localizada em {dados_c[26] if (dados_c and len(dados_c)>26 and dados_c[26]) else cid_nome}, atende com alta avaliação dos clientes e infraestrutura completa.
+            **1. Pergunta:** *Qual é a localização e horário de funcionamento da {dados_c[1]}?*  
+            > **Resposta:** A **{dados_c[1]}** está localizada em {dados_c[26] if (dados_c and len(dados_c)>26 and dados_c[26]) else cid_nome}. Nosso horário de atendimento é de Segunda a Sexta das 08h às 18h.
 
-            **2. Pergunta:** *Como entrar em contato e solicitar orçamento na {dados_c[1]}?*  
-            > **Resposta Sugerida:** O atendimento oficial da **{dados_c[1]}** pode ser feito pelo WhatsApp no número **{dados_c[17] if (dados_c and len(dados_c)>17 and dados_c[17]) else dados_c[16]}** ou pelo site oficial.
+            **2. Pergunta:** *Quais serviços são oferecidos pela {dados_c[1]}?*  
+            > **Resposta:** Somos especializados em **{cat_nome}**, oferecendo soluções personalizadas para clientes em {cid_nome} com foco em qualidade e excelência.
 
-            **3. Pergunta:** *A {dados_c[1]} possui tour virtual ou fotos atualizadas do local?*  
-            > **Resposta Sugerida:** Sim, a **{dados_c[1]}** conta com fotos oficiais e Tour Virtual 360° integrado ao Google Maps, permitindo explorar as instalações antes da visita.
+            **3. Pergunta:** *É possível fazer um Tour Virtual 360° ou ver fotos do local?*  
+            > **Resposta:** Sim! O perfil oficial da **{dados_c[1]}** no Google conta com fotos atualizadas e Tour Virtual 360° interativo para você explorar nosso espaço antes da sua visita.
             """)
 
-            if st.button("📋 Copiar Bloco de FAQ Otimizado para GEO"):
-                st.info("Texto copiado para a área de transferência do sistema!")
-
         with tab_ia4:
-            st.markdown(f"**Gerador de Prompts de Imagem Customizados para a Marca ({dados_c[1]}):**")
-            st.write("Copie o prompt estilizado abaixo e cole no Midjourney, ChatGPT (DALL-E) ou Leonardo AI para gerar fotos ultra-realistas com a identidade do cliente:")
+            st.markdown(f"**Direção de Arte & Prompts Fotográficos — {dados_c[1]}:**")
+            st.caption("Prompts visuais estilizados para criação de artes institucionais mantendo a identidade visual da marca:")
 
-            prompt_gerado = f"Professional photograph of a modern {cat_nome} establishment named '{dados_c[1]}', located in Brazil. High quality lighting, photorealistic, clean interior, welcoming atmosphere, commercial media photography style 8k --ar 16:9"
+            prompt_gerado = f"Professional commercial photography of a modern {cat_nome} establishment named '{dados_c[1]}', located in Brazil. High quality ambient lighting, photorealistic, elegant interior, clean design, 8k resolution --ar 16:9"
             
             st.code(prompt_gerado, language="text")
 
@@ -1204,11 +1220,11 @@ elif st.session_state["aba_ativa"] == "cases":
     
     c_p1, c_p2 = st.columns(2)
     with c_p1:
-        inc_clientes = st.checkbox("Exibir Métrica de Quantidade de Clientes Atendidos", value=True)
-        inc_faturamento = st.checkbox("Exibir Valor de Faturamento Estimado Total Gerado", value=True)
+        inc_clientes = st.checkbox("Exibir Métrica de Quantidade de Clientes Atendidos", value=True, key="chk_inc_cli_cases")
+        inc_faturamento = st.checkbox("Exibir Valor de Faturamento Estimado Total Gerado", value=True, key="chk_inc_fat_cases")
     with c_p2:
-        inc_grafico = st.checkbox("Exibir Gráfico de Crescimento Somado da Agência", value=True)
-        inc_keywords = st.checkbox("Exibir Tabela de Casos de Sucesso de Ranking SEO", value=True)
+        inc_grafico = st.checkbox("Exibir Gráfico de Crescimento Somado da Agência", value=True, key="chk_inc_graf_cases")
+        inc_keywords = st.checkbox("Exibir Tabela de Casos de Sucesso de Ranking SEO", value=True, key="chk_inc_kw_cases")
 
     st.markdown("---")
     st.write("Clique no botão abaixo para gerar o PDF personalizado para o seu prospect:")
@@ -1270,7 +1286,7 @@ elif st.session_state["aba_ativa"] == "pdf":
             st.warning("Nenhuma métrica encontrada para este cliente.")
         else:
             with col_r2:
-                mes_pdf_sel = st.selectbox("Selecione o Mês de Referência", df_m["mes_ano"].tolist()[::-1])
+                mes_pdf_sel = st.selectbox("Selecione o Mês de Referência", df_m["mes_ano"].tolist()[::-1], key="sel_mes_pdf")
 
             idx_sel = df_m[df_m["mes_ano"] == mes_pdf_sel].index[0]
             dados_atual = df_m.iloc[idx_sel].to_dict()
@@ -1300,7 +1316,8 @@ elif st.session_state["aba_ativa"] == "pdf":
                     label="📥 Baixar Relatório Executivo em PDF (TOUR360VR)",
                     data=pdf_bytes,
                     file_name=f"Relatorio_GMB_{cliente_pdf_sel.replace(' ', '_')}_{mes_pdf_sel}.pdf",
-                    mime="application/pdf"
+                    mime="application/pdf",
+                    key="btn_download_pdf_exec"
                 )
 
             with c_dw2:
