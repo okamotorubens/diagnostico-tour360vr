@@ -112,9 +112,6 @@ def obter_dados_cliente_por_id(cliente_id):
     conn.close()
     return row
 
-# --- LISTA DE HORÁRIOS PRÉ-CONFIGURADOS (Intervalos de 30 min) ---
-HORARIOS_OPCOES = [f"{h:02d}:{m:02d}" for h in range(24) for m in (0, 30)]
-
 # --- FUNÇÃO DE GERAÇÃO DO RELATÓRIO PDF ---
 def gerar_pdf_relatorio(nome_empresa, mes_ano, chamadas, rotas, cliques, visualizacoes, avaliacoes, acoes, qtd_inicio=0, nota_inicio=5.0):
     buffer = BytesIO()
@@ -232,7 +229,7 @@ st.markdown("""
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     }
 
-    /* CONTAINER CARD DO TÍTULO E BOTÕES SUPERIORES (AJUSTADO E COMPACTO) */
+    /* CONTAINER CARD DO TÍTULO E BOTÕES SUPERIORES */
     .top-card-container {
         background-color: #161F30;
         border: 1px solid #2B364A;
@@ -440,9 +437,9 @@ if st.session_state["aba_ativa"] == "cadastrar":
             with c_l2:
                 area_cobertura = st.text_input("Áreas de Cobertura / Atendimento (ex: Ribeirão Preto, Sertãozinho, Brodowski)", value=dados_existentes[23] if (modo_edicao and len(dados_existentes) > 23) else "")
 
-        # SUB-ABA 4: HORÁRIOS DE FUNCIONAMENTO (PRÉ-CONFIGURADOS E VISÍVEIS DIRETA: 08:00 E 18:00)
+        # SUB-ABA 4: HORÁRIOS DE FUNCIONAMENTO (100% VISÍVEIS DE PRIMEIRA EM TEXT INPUT SEM SETAS)
         with sub_tab_horario:
-            st.markdown("**Horários de Funcionamento (Pré-configurados com seleção de 30 em 30 min):**")
+            st.markdown("**Horários de Funcionamento (Valores padrão 08:00 e 18:00 editáveis diretamente):**")
             
             dias_semana = [
                 ("Segunda-feira", 24, "08:00", "18:00", False),
@@ -478,11 +475,9 @@ if st.session_state["aba_ativa"] == "cadastrar":
                 with col_h3:
                     fechado = st.checkbox("Fechado", key=f"chk_fechado_{dia_nome}", value=is_fechado)
                 with col_h1:
-                    idx_ab = HORARIOS_OPCOES.index(val_ab) if val_ab in HORARIOS_OPCOES else HORARIOS_OPCOES.index("08:00")
-                    h_abre_sel = st.selectbox("Abertura", HORARIOS_OPCOES, index=idx_ab, disabled=fechado, key=f"sel_ab_{dia_nome}")
+                    h_abre_sel = st.text_input("Abertura", value=val_ab, disabled=fechado, key=f"txt_ab_{dia_nome}")
                 with col_h2:
-                    idx_fe = HORARIOS_OPCOES.index(val_fe) if val_fe in HORARIOS_OPCOES else HORARIOS_OPCOES.index("18:00")
-                    h_fecha_sel = st.selectbox("Fechamento", HORARIOS_OPCOES, index=idx_fe, disabled=fechado, key=f"sel_fe_{dia_nome}")
+                    h_fecha_sel = st.text_input("Fechamento", value=val_fe, disabled=fechado, key=f"txt_fe_{dia_nome}")
                 
                 if fechado:
                     horarios_coletados[dia_nome] = "Fechado"
