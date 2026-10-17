@@ -9,13 +9,13 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- CSS PERSONALIZADO (Ajustes de Layout, Centralização e Embutimento) ---
+# --- CSS PERSONALIZADO (Ajustes Finares de Espaçamento e Respiro) ---
 st.markdown("""
     <style>
-    /* 1. Remoção de espaçamento superior e barra de rolagem */
+    /* 1. Área superior e margens da página */
     .block-container {
-        padding-top: 0.5rem !important;
-        padding-bottom: 0rem !important;
+        padding-top: 1.2rem !important;
+        padding-bottom: 1.5rem !important;
         max-width: 98% !important;
     }
     
@@ -36,12 +36,16 @@ st.markdown("""
         border-right: 1px solid #1E2640;
     }
 
-    /* Centralização na Sidebar */
-    .sidebar-center {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
+    /* Centralização Absoluta das Imagens na Sidebar */
+    [data-testid="stSidebar"] [data-testid="stImage"] {
+        display: flex !important;
+        justify-content: center !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+    }
+
+    .sidebar-center-text {
+        text-align: center !important;
         width: 100%;
     }
 
@@ -50,39 +54,44 @@ st.markdown("""
         color: #FFFFFF;
         text-shadow: 0 0 12px rgba(0, 229, 255, 0.6);
         font-weight: 800;
-        font-size: 1.75rem;
+        font-size: 1.8rem;
         margin-top: 0rem;
-        margin-bottom: 0.1rem;
+        margin-bottom: 0.2rem;
     }
     
-    /* Subtítulo da Página Principal (+1 Ponto) */
+    /* Subtítulo (+1 ponto) */
     .subtitle-header {
         color: #94A3B8;
         font-size: 1.05rem;
-        margin-bottom: 0.8rem;
+        margin-bottom: 1.5rem; /* Respiro entre o subtítulo e a primeira seção */
     }
 
-    /* Títulos das Seções */
+    /* Títulos das Seções com Espaçamento Adequado */
     .neon-section-title {
         color: #00E5FF;
-        font-size: 1.15rem;
+        font-size: 1.2rem;
         font-weight: 700;
-        margin-top: 0.6rem;
-        margin-bottom: 0.5rem;
+        margin-top: 0.5rem;
+        margin-bottom: 1.2rem; /* Espaço entre a linha/título e os cards */
         border-bottom: 1px solid rgba(0, 229, 255, 0.25);
-        padding-bottom: 0.25rem;
+        padding-bottom: 0.5rem;
     }
 
-    /* 2. CARD UNIFICADO (Descrição + Botão Embutido) */
+    /* Espaçador entre o bloco Tour360vr e a seção da Okamoto */
+    .section-divider-space {
+        margin-top: 2.2rem;
+    }
+
+    /* 2. CARDS COM ALTURA E RESPIRO ADEQUADOS */
     .system-card-full {
         background: #121824;
         border: 1px solid #1E2640;
         border-radius: 10px;
-        padding: 14px;
+        padding: 18px 16px 16px 16px; /* Respiro interno superior e inferior */
         display: flex;
         flex-direction: column;
-        justify-content: space-between;
-        height: 145px !important; /* Altura exata e fixa */
+        justify-content: space-between; /* Mantém o título no topo e o botão na base */
+        height: 175px !important; /* Altura ideal sem espremer */
         box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         transition: all 0.3s ease-in-out;
         box-sizing: border-box;
@@ -96,31 +105,31 @@ st.markdown("""
 
     .system-card-full h3 {
         color: #FFFFFF !important;
-        font-size: 1.0rem !important;
+        font-size: 1.05rem !important;
         font-weight: 700 !important;
-        margin: 0 0 4px 0 !important;
+        margin: 0 0 8px 0 !important;
     }
 
     .system-card-full p {
         color: #94A3B8;
-        font-size: 0.80rem;
-        line-height: 1.3;
+        font-size: 0.82rem;
+        line-height: 1.4;
         margin: 0;
     }
 
-    /* Botão de Ação EMBUTIDO DENTRO DO CARD */
+    /* Botão Embutido com Margem de Respiro na Parte Inferior */
     .card-action-btn {
         display: block;
-        width: 80%;
-        margin: 8px auto 0 auto;
+        width: 82%;
+        margin: 12px auto 0 auto;
         text-align: center;
         border: 1.5px solid #FFFFFF;
         background-color: #0E1117;
         color: #FFFFFF !important;
         border-radius: 6px;
         font-weight: 700;
-        font-size: 0.82rem;
-        padding: 6px 10px;
+        font-size: 0.84rem;
+        padding: 7px 10px;
         text-decoration: none !important;
         transition: all 0.3s ease-in-out;
         box-shadow: 0 0 6px rgba(255, 255, 255, 0.15);
@@ -134,7 +143,7 @@ st.markdown("""
         background-color: #07090E;
     }
 
-    /* 3. BOTÕES DA SIDEBAR (Identicos, Mesma Largura, Linha Única) */
+    /* 3. BOTÕES DA SIDEBAR (Centralizados e Identicos) */
     .sidebar-nav-btn {
         display: block;
         width: 100%;
@@ -144,14 +153,12 @@ st.markdown("""
         color: #FFFFFF !important;
         border-radius: 6px;
         font-weight: 700;
-        font-size: 0.82rem;
+        font-size: 0.85rem;
         padding: 8px 6px;
         text-decoration: none !important;
         transition: all 0.3s ease-in-out;
         box-shadow: 0 0 5px rgba(255, 255, 255, 0.15);
         white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
         box-sizing: border-box;
     }
 
@@ -167,41 +174,35 @@ st.markdown("""
 # --- BARRA LATERAL (Sidebar) ---
 with st.sidebar:
     # Logos Centralizadas
-    st.markdown("<div class='sidebar-center'>", unsafe_allow_html=True)
-    
     caminho_logo_tour = "logo_tour_transparente.png"
     if os.path.exists(caminho_logo_tour):
         st.image(caminho_logo_tour, width=130)
     else:
-        st.markdown("<h3 style='color:#FFF; margin:0;'>TOUR360VR</h3>", unsafe_allow_html=True)
+        st.markdown("<h3 class='sidebar-center-text' style='color:#FFF; margin:0;'>TOUR360VR</h3>", unsafe_allow_html=True)
         
-    st.markdown("<div style='margin-top: 6px;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='margin-top: 8px;'></div>", unsafe_allow_html=True)
     
     caminho_logo_okamoto = "logo_okamoto.png"
     if os.path.exists(caminho_logo_okamoto):
-        st.image(caminho_logo_okamoto, width=170)
+        st.image(caminho_logo_okamoto, width=165)
     elif os.path.exists("okamoto_preto.png"):
-        st.image("okamoto_preto.png", width=170)
+        st.image("okamoto_preto.png", width=165)
 
-    st.markdown("</div>", unsafe_allow_html=True)
-
-    st.markdown("<hr style='margin: 10px 0; border-color: #1E2640;'>", unsafe_allow_html=True)
+    st.markdown("<hr style='margin: 14px 0; border-color: #1E2640;'>", unsafe_allow_html=True)
     
     # Navegação Rápida Centralizada
-    st.markdown("<div class='sidebar-center'>", unsafe_allow_html=True)
-    st.markdown("<p style='color: #FFFFFF; font-weight: 800; font-size: 0.9rem; letter-spacing: 0.5px; margin-bottom: 8px;'>NAVEGAÇÃO RÁPIDA</p>", unsafe_allow_html=True)
+    st.markdown("<div class='sidebar-center-text'>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #FFFFFF; font-weight: 800; font-size: 0.9rem; letter-spacing: 0.5px; margin-bottom: 10px;'>NAVEGAÇÃO RÁPIDA</p>", unsafe_allow_html=True)
     
-    # Botões em Linha Única
     st.markdown("<a href='#tour360vr-prospeccao-diagnostico-gestao' class='sidebar-nav-btn'>🌐 Tour360vr</a>", unsafe_allow_html=True)
-    st.markdown("<div style='margin-top: 6px;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='margin-top: 8px;'></div>", unsafe_allow_html=True)
     st.markdown("<a href='#okamoto-midias-visuais-comercial-precificacao' class='sidebar-nav-btn'>📸 Okamoto Mídias Visuais</a>", unsafe_allow_html=True)
-    
     st.markdown("</div>", unsafe_allow_html=True)
     
-    st.markdown("<hr style='margin: 12px 0; border-color: #1E2640;'>", unsafe_allow_html=True)
+    st.markdown("<hr style='margin: 16px 0; border-color: #1E2640;'>", unsafe_allow_html=True)
     
     # Rodapé Dividido em 2 Linhas
-    st.markdown("<div class='sidebar-center' style='color: #8A99AD; font-size: 0.75rem; line-height: 1.35;'>Painel Unificado de Operações<br>© Okamoto Mídias Visuais</div>", unsafe_allow_html=True)
+    st.markdown("<div class='sidebar-center-text' style='color: #8A99AD; font-size: 0.75rem; line-height: 1.4;'>Painel Unificado de Operações<br>© Okamoto Mídias Visuais</div>", unsafe_allow_html=True)
 
 # --- CABEÇALHO DA CENTRAL ---
 st.markdown("<h1 class='neon-main-title'>Central de Sistemas e Operações</h1>", unsafe_allow_html=True)
@@ -246,6 +247,9 @@ with col3:
             <a href='https://seu-link-da-gestao.streamlit.app' target='_blank' class='card-action-btn'>Abrir Gestão Mensal</a>
         </div>
     """, unsafe_allow_html=True)
+
+# Espaçamento entre os dois blocos principais
+st.markdown("<div class='section-divider-space'></div>", unsafe_allow_html=True)
 
 # ==========================================
 # SEÇÃO 2: OKAMOTO MÍDIAS VISUAIS
