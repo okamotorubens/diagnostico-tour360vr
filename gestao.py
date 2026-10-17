@@ -325,7 +325,6 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     except Exception:
         pass
 
-    # Cabeçalho redesenhado para evitar quebra da logo e texto empilhado
     header_table_data = [
         [
             logo_flowable,
@@ -398,7 +397,7 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     t_ass = Table(assinaturas_data, colWidths=[260, 260])
     story.append(t_ass)
     
-    # Rodapé fixado perfeitamente na base inferior da folha única
+    # Rodapé fixado na base inferior da folha única
     story.append(Spacer(1, 15))
     story.append(HRFlowable(width="100%", thickness=0.8, color=colors.HexColor('#93C5FD'), spaceAfter=4))
     story.append(Paragraph('<a href="https://tour360vr.com.br" color="#000000"><b>tour360vr.com.br</b></a> &nbsp;|&nbsp; <a href="mailto:contato@tour360vr.com.br" color="#000000">contato@tour360vr.com.br</a> &nbsp;|&nbsp; <a href="https://wa.me/5516991332121" color="#000000">WhatsApp: (16) 99133-2121</a>', footer_style))
@@ -752,7 +751,7 @@ elif st.session_state["aba_ativa"] == "ia":
 
         st.markdown("---")
         st.markdown("### 🔗 Link Único de Aprovação Externa (Sistema)")
-        link_exemplo = f"https://tour360vr.com.br/?aprovar=true&cliente={emp.lower().replace(' ', '-')}"
+        link_exemplo = f"https://gestao-mensal-tour360vr.streamlit.app/?aprovar=true&cliente={emp.lower().replace(' ', '-')}"
         st.text_input("Link Único Exclusivo para Envio ao Cliente (Copiável):", value=link_exemplo)
 
         num_wsp = dados_c.get("whatsapp", "")
