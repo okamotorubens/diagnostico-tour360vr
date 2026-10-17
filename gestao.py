@@ -488,13 +488,13 @@ def gerar_pdf_prospeccao_cases(inc_clientes, inc_faturamento, inc_grafico, inc_k
     buffer.seek(0)
     return buffer
 
-# --- CSS PERSONALIZADO COM BOTÕES DE BORDAS BRANCAS E EFEITO NEON ---
+# --- CSS PERSONALIZADO COM MAIOR ESPAÇAMENTO E RESPIRO VISUAL ---
 st.markdown("""
     <style>
     .block-container {
-        padding-top: 1.2rem !important;
-        padding-bottom: 2rem !important;
-        max-width: 98% !important;
+        padding-top: 1.5rem !important;
+        padding-bottom: 2.5rem !important;
+        max-width: 95% !important;
     }
     
     header[data-testid="stHeader"] {
@@ -511,48 +511,49 @@ st.markdown("""
         background-color: #161F30;
         border: 1px solid #2B364A;
         border-radius: 12px;
-        padding: 16px 20px 16px 20px !important;
-        margin-bottom: 20px !important;
+        padding: 20px 24px !important;
+        margin-bottom: 28px !important;
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
     }
 
     .main-title-card {
         color: #FFFFFF;
         font-weight: 800;
-        font-size: 1.80rem;
+        font-size: 1.85rem;
         margin-top: 0 !important;
-        margin-bottom: 4px !important;
+        margin-bottom: 6px !important;
         text-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
     }
 
     .sub-title-card {
         color: #8E9BAE;
-        font-size: 0.90rem;
+        font-size: 0.92rem;
         margin-bottom: 0px !important;
     }
 
-    /* REDUÇÃO DE ESPAÇAMENTO ENTRE BOTÕES E COMPACTAÇÃO AUTOMÁTICA */
+    /* ESPAÇAMENTO AMPLIADO ENTRE OS BOTÕES DO MENU SUPERIOR */
     div[data-testid="stHorizontalBlock"] {
-        gap: 0.35rem !important;
+        gap: 0.8rem !important;
+        margin-bottom: 25px !important;
     }
 
     div[data-testid="stColumn"] {
-        padding: 0px !important;
+        padding: 0px 2px !important;
     }
 
-    /* BOTÕES COM BORDA BRANCA E BRILHO NEON NO ATIVO */
+    /* ESTILIZAÇÃO DOS BOTÕES COM MAIS ESPAÇO E RESPIRO */
     div[data-testid="stColumn"] button {
         width: 100% !important;
-        min-height: 46px !important;
-        height: 46px !important;
+        min-height: 48px !important;
+        height: 48px !important;
         background-color: #1A2130 !important;
         border: 1.5px solid #455570 !important;
         color: #FFFFFF !important;
         border-radius: 8px !important;
-        padding: 2px 4px !important;
+        padding: 4px 10px !important;
         font-weight: 700 !important;
-        font-size: 0.81rem !important;
-        line-height: 1.1 !important;
+        font-size: 0.82rem !important;
+        line-height: 1.2 !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
@@ -565,33 +566,51 @@ st.markdown("""
         background-color: #222C3E !important;
         border-color: #FFFFFF !important;
         color: #FFFFFF !important;
-        box-shadow: 0 0 12px rgba(255, 255, 255, 0.7) !important;
+        box-shadow: 0 0 14px rgba(255, 255, 255, 0.75) !important;
     }
 
-    /* BOTÃO SELECIONADO (EFEITO NEON ATIVO) */
+    /* BOTÃO SELECIONADO (NEON DESTACADO COM MARGEM LIMPA) */
     div[data-testid="stColumn"] button[kind="primary"] {
         background-color: #1A2130 !important;
         border: 2px solid #FFFFFF !important;
         color: #FFFFFF !important;
-        box-shadow: 0 0 18px rgba(255, 255, 255, 0.95) !important;
+        box-shadow: 0 0 20px rgba(255, 255, 255, 0.95) !important;
     }
 
-    div[role="radiogroup"] {
-        display: flex !important;
-        flex-direction: row !important;
-        gap: 15px !important;
-        background-color: #161F30 !important;
-        padding: 8px 12px !important;
-        border-radius: 8px !important;
-        border: 1px solid #2B364A !important;
+    /* ESPAÇAMENTO ENTRE CAMPOS DE PREENCHIMENTO E FORMULÁRIOS */
+    div[data-testid="stForm"] {
+        border-color: #2B364A !important;
+        padding: 24px !important;
+        border-radius: 12px !important;
+        margin-top: 15px !important;
+    }
+
+    /* RESPIRO ENTRE OS CAMPOS DE TEXTO E SELEÇÃO */
+    div[data-testid="stTextInput"], 
+    div[data-testid="stNumberInput"], 
+    div[data-testid="stSelectbox"], 
+    div[data-testid="stDateInput"],
+    div[data-testid="stTextArea"] {
+        margin-bottom: 16px !important;
+    }
+
+    /* ESPAÇAMENTO ENTRE AS ABAS INTERNAS (ST.TABS) */
+    div[data-baseweb="tab-list"] {
+        gap: 12px !important;
+        margin-bottom: 22px !important;
+    }
+
+    button[data-baseweb="tab"] {
+        padding: 8px 16px !important;
+        font-size: 0.90rem !important;
     }
 
     .dia-destaque {
         color: #FFFFFF !important;
         font-weight: 700;
         font-size: 1.05rem;
-        margin-top: 0.8rem;
-        margin-bottom: 0.2rem;
+        margin-top: 1.2rem;
+        margin-bottom: 0.4rem;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -607,7 +626,7 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# 8 colunas perfeitamente distribuídas
+# 8 colunas perfeitamente distribuídas com maior espaçamento lateral
 cols = st.columns([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
 
 with cols[0]:
@@ -677,7 +696,8 @@ if st.session_state["aba_ativa"] == "cadastrar":
         
         with sub_tab_sobre:
             st.markdown("**Identificação Comercial & Auditoria Inicial:**")
-            c_s1, c_s2 = st.columns(2)
+            st.markdown("<div style='margin-bottom: 12px;'></div>", unsafe_allow_html=True)
+            c_s1, c_s2 = st.columns(2, gap="large")
 
             opts_reivindicada = ["Reivindicada & Verificada", "Não Reivindicada", "Em Processo"]
             opts_avaliacoes = ["Sim (Com Nota Exibida)", "Não (Sem Avaliações)"]
@@ -714,7 +734,7 @@ if st.session_state["aba_ativa"] == "cadastrar":
                 status_avaliacoes = st.radio("Possui Avaliações de Clientes?", opts_avaliacoes, index=idx_aval, horizontal=True, key="rad_avaliacoes_cad")
 
                 st.markdown("**Métricas no Início da Gestão:**")
-                col_av1, col_av2, col_av3 = st.columns(3)
+                col_av1, col_av2, col_av3 = st.columns(3, gap="medium")
                 with col_av1:
                     qtd_avaliacoes_inicio = st.number_input("Avaliações Iniciais", min_value=0, step=1, value=int(dados_existentes.get("qtd_avaliacoes_inicio", 0)) if modo_edicao else 0, key="num_aval_ini_cad")
                 with col_av2:
@@ -727,7 +747,8 @@ if st.session_state["aba_ativa"] == "cadastrar":
 
         with sub_tab_financeiro:
             st.markdown("**Dados do Contrato do Cliente:**")
-            col_f1, col_f2, col_f3 = st.columns([1.2, 1.2, 2.6])
+            st.markdown("<div style='margin-bottom: 12px;'></div>", unsafe_allow_html=True)
+            col_f1, col_f2, col_f3 = st.columns([1.2, 1.2, 2.6], gap="medium")
             
             opts_status_contrato = ["Ativo", "Em Negociação", "Pausado", "Cancelado"]
             val_status = dados_existentes.get("status_contrato", "Ativo") if modo_edicao else "Ativo"
@@ -745,7 +766,7 @@ if st.session_state["aba_ativa"] == "cadastrar":
 
         with sub_tab_contato:
             opts_chat = ["Ativado", "Desativado", "Não Configurado"]
-            c_c1, c_c2 = st.columns(2)
+            c_c1, c_c2 = st.columns(2, gap="large")
             with c_c1:
                 telefone_contato = st.text_input("Número de Telefone Comercial", value=dados_existentes.get("telefone_contato", "") if modo_edicao else "", key="txt_tel_cad")
                 whatsapp = st.text_input("WhatsApp para Atendimento", value=dados_existentes.get("whatsapp", "") if modo_edicao else "", key="txt_wsp_cad")
@@ -765,7 +786,7 @@ if st.session_state["aba_ativa"] == "cadastrar":
             atend_val = bool(dados_existentes.get("atendimento_local_cliente", 0)) if modo_edicao else False
             atendimento_local_cliente = st.checkbox("📍 Atendimento no local do cliente", value=atend_val, key="chk_atend_local_cad")
             st.markdown("---")
-            c_l1, c_l2 = st.columns(2)
+            c_l1, c_l2 = st.columns(2, gap="large")
             with c_l1:
                 endereco_local = st.text_input("Endereço Físico Completo", value=dados_existentes.get("endereco_local", "") if modo_edicao else "", key="txt_end_cad")
             with c_l2:
@@ -786,7 +807,7 @@ if st.session_state["aba_ativa"] == "cadastrar":
             horarios_coletados = {}
             for dia_nome, campo_db, h_ab_def, h_fe_def, fechado_def in dias_semana:
                 st.markdown(f"<p class='dia-destaque'>📅 {dia_nome}</p>", unsafe_allow_html=True)
-                col_h1, col_h2, col_h3 = st.columns([2, 2, 1])
+                col_h1, col_h2, col_h3 = st.columns([2, 2, 1], gap="medium")
                 
                 is_fechado = fechado_def
                 val_ab = h_ab_def
@@ -812,7 +833,7 @@ if st.session_state["aba_ativa"] == "cadastrar":
                 horarios_coletados[campo_db] = "Fechado" if fechado else f"{h_abre_sel} - {h_fecha_sel}"
 
             st.markdown("---")
-            c_he1, c_he2 = st.columns(2)
+            c_he1, c_he2 = st.columns(2, gap="large")
             with c_he1:
                 horarios_especiais = st.text_input("Horários Especiais", value=dados_existentes.get("horarios_especiais", "") if modo_edicao else "", key="txt_hor_esp_cad")
             with c_he2:
@@ -822,7 +843,7 @@ if st.session_state["aba_ativa"] == "cadastrar":
             st.markdown("**Checklist de Otimização Identificadas no Diagnóstico:**")
             pendencias_salvas = dados_existentes.get("pendencias_checklist", "") if modo_edicao else ""
 
-            col_p1, col_p2 = st.columns(2)
+            col_p1, col_p2 = st.columns(2, gap="large")
             with col_p1:
                 p_fita = st.checkbox("📷 Cadastrar / Atualizar Tour Virtual 360° & Fotos", value="Fotos/Tour 360°" in pendencias_salvas, key="chk_p1_cad")
                 p_cat = st.checkbox("🏷️ Otimizar Categoria Principal e Categorias Secundárias", value="Categorias GMB" in pendencias_salvas, key="chk_p2_cad")
@@ -957,14 +978,14 @@ elif st.session_state["aba_ativa"] == "auditoria":
                     else:
                         st.error(f"🚨 **Pontuação da Ficha (Health Score): {score}%** — Ficha crítica, necessita intervenção profissional urgente.")
 
-                    a1, a2, a3, a4 = st.columns(4)
+                    a1, a2, a3, a4 = st.columns(4, gap="medium")
                     a1.metric("Website Vinculado", "✅ Sim" if resultado['has_site'] else "❌ Ausente")
                     a2.metric("Telefone / Whats", "✅ Sim" if resultado['has_phone'] else "❌ Ausente")
                     a3.metric("Avaliações Destacadas", "✅ Sim" if resultado['has_reviews'] else "⚠️ Poucas/Ausente")
                     a4.metric("Fotos & Tour 360°", "✅ Sim" if resultado['has_photos'] else "⚠️ Ausente/Baixo")
 
                     st.markdown("---")
-                    col_aud1, col_aud2 = st.columns(2)
+                    col_aud1, col_aud2 = st.columns(2, gap="large")
                     
                     with col_aud1:
                         st.markdown("### 🚨 Oportunidades & Falhas Identificadas:")
@@ -1010,7 +1031,7 @@ elif st.session_state["aba_ativa"] == "metricas":
 
                 st.markdown("---")
                 st.markdown("**1. KPIs do Período (Extraídos da Ficha Google):**")
-                c1, c2, c3, c4 = st.columns(4)
+                c1, c2, c3, c4 = st.columns(4, gap="medium")
                 with c1:
                     chamadas = st.number_input("📞 Chamadas Telefónicas", min_value=0, step=1, key="num_chamadas_m")
                 with c2:
@@ -1020,7 +1041,7 @@ elif st.session_state["aba_ativa"] == "metricas":
                 with c4:
                     visualizacoes = st.number_input("👁️ Total de Visualizações", min_value=0, step=1, key="num_vis_m")
 
-                col_m1, col_m2 = st.columns(2)
+                col_m1, col_m2 = st.columns(2, gap="large")
                 with col_m1:
                     novas_avaliacoes = st.number_input("⭐ Novas Avaliações Recebidas no Mês", min_value=0, step=1, key="num_novas_aval_m")
                 with col_m2:
@@ -1028,7 +1049,7 @@ elif st.session_state["aba_ativa"] == "metricas":
 
                 st.markdown("---")
                 st.markdown("**2. Calculadora de ROI e Faturamento Estimado:**")
-                col_r1, col_r2 = st.columns(2)
+                col_r1, col_r2 = st.columns(2, gap="large")
                 with col_r1:
                     ticket_medio = st.number_input("Ticket Médio do Cliente (R$)", min_value=0.0, value=150.0, step=10.0, key="num_tm_m")
                 with col_r2:
@@ -1069,7 +1090,7 @@ elif st.session_state["aba_ativa"] == "metricas":
                 st.dataframe(df_kw, use_container_width=True)
 
             with st.form("form_add_keyword"):
-                col_k1, col_k2, col_k3 = st.columns(3)
+                col_k1, col_k2, col_k3 = st.columns(3, gap="medium")
                 with col_k1:
                     kw_texto = st.text_input("Nova Palavra-Chave", key="txt_kw_add")
                 with col_k2:
@@ -1152,7 +1173,7 @@ elif st.session_state["aba_ativa"] == "ia":
             sug_3 = st.text_input("Sugestão Personalizada 3:", value="Apresentação de fotos em alta resolução da equipe e estrutura", key="txt_sug_pers_3")
 
             st.markdown("---")
-            c_act1, c_act2 = st.columns(2)
+            c_act1, c_act2 = st.columns(2, gap="large")
             with c_act1:
                 if st.button("🚀 Confirmar Cronograma Estratégico", key="btn_confirmar_crono"):
                     st.success("Cronograma aprovado!")
@@ -1178,7 +1199,7 @@ elif st.session_state["aba_ativa"] == "ia":
 
             if url_qr:
                 buf_qr = gerar_qr_code_limpo(url_qr)
-                col_q1, col_q2 = st.columns([1, 2])
+                col_q1, col_q2 = st.columns([1, 2], gap="large")
                 with col_q1:
                     st.image(buf_qr, caption=f"QR Code Oficial — {emp_nome}", width=220)
                 with col_q2:
@@ -1233,7 +1254,7 @@ elif st.session_state["aba_ativa"] == "dashboard":
         if res_m.data:
             df_metricas = pd.DataFrame(res_m.data)
             ultimas = df_metricas.iloc[-1]
-            m1, m2, m3, m4 = st.columns(4)
+            m1, m2, m3, m4 = st.columns(4, gap="medium")
             m1.metric("Chamadas (Último Mês)", ultimas["chamadas"])
             m2.metric("Rotas (Último Mês)", ultimas["rotas"])
             m3.metric("Cliques Site/Whats", ultimas["cliques_site"])
@@ -1266,7 +1287,7 @@ elif st.session_state["aba_ativa"] == "cases":
     df_keywords_all = pd.DataFrame(res_kw.data) if res_kw.data else None
 
     st.markdown("**Selecione quais informações deseja incluir no PDF:**")
-    c_p1, c_p2 = st.columns(2)
+    c_p1, c_p2 = st.columns(2, gap="large")
     with c_p1:
         inc_clientes = st.checkbox("Exibir Quantidade de Clientes Atendidos", value=True, key="chk_inc_cli_cases")
         inc_faturamento = st.checkbox("Exibir Faturamento Estimado Total Gerado", value=True, key="chk_inc_fat_cases")
@@ -1305,7 +1326,7 @@ elif st.session_state["aba_ativa"] == "pdf":
     if df_clientes.empty:
         st.info("Cadastre um cliente e insira métricas para gerar o relatório.")
     else:
-        col_r1, col_r2 = st.columns(2)
+        col_r1, col_r2 = st.columns(2, gap="large")
         with col_r1:
             cliente_pdf_sel = st.selectbox("Selecione o Cliente", df_clientes["nome_empresa"].tolist(), key="pdf_cliente")
             cliente_pdf_id = int(df_clientes[df_clientes["nome_empresa"] == cliente_pdf_sel]["id"].values[0])
@@ -1352,7 +1373,7 @@ elif st.session_state["aba_ativa"] == "pdf":
                 df_keywords=df_kw
             )
 
-            c_dw1, c_dw2 = st.columns(2)
+            c_dw1, c_dw2 = st.columns(2, gap="large")
             with c_dw1:
                 st.download_button(
                     label="📥 Baixar Relatório Executivo em PDF (TOUR360VR)",
@@ -1396,7 +1417,7 @@ elif st.session_state["aba_ativa"] == "financeiro":
         qtd_clientes_ativos = len(df_fin)
         ticket_medio_agencia = mrr_total / qtd_clientes_ativos if qtd_clientes_ativos > 0 else 0.0
 
-        f1, f2, f3 = st.columns(3)
+        f1, f2, f3 = st.columns(3, gap="large")
         f1.metric("💵 Recorrência Mensal (MRR)", f"R$ {mrr_total:,.2f}")
         f2.metric("🏢 Clientes Ativos", f"{qtd_clientes_ativos} empresas")
         f3.metric("🎯 Ticket Médio por Cliente", f"R$ {ticket_medio_agencia:,.2f}")
