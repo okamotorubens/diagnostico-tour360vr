@@ -5,6 +5,8 @@ import os
 from datetime import datetime, date
 from io import BytesIO
 import urllib.parse
+import qrcode
+from PIL import Image as PILImage
 
 # Importações do ReportLab para PDF
 from reportlab.lib.pagesizes import letter
@@ -17,7 +19,7 @@ import matplotlib.pyplot as plt
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(
-    page_title="Gestão Mensal & ROI | Tour360vr",
+    page_title="Gestão Mensal & Estratégia | Tour360vr",
     page_icon="📈",
     layout="wide"
 )
@@ -172,6 +174,24 @@ def calcular_variacao_pct(atual, anterior):
         return f"+{diff:.1f}%"
     return f"{diff:.1f}%"
 
+# --- GERAR QR CODE PERMANENTE EM MEMÓRIA ---
+def gerar_qr_code_permanente(url):
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_H,
+        box_size=10,
+        border=4,
+    )
+    qr.add_data(url)
+    qr.make(fit=True)
+    
+    img_qr = qr.make_image(fill_color="#0B0E14", back_color="#FFFFFF").convert('RGB')
+    
+    buffer = BytesIO()
+    img_qr.save(buffer, format="PNG")
+    buffer.seek(0)
+    return buffer
+
 # --- GERAR GRÁFICO INDIVIDUAL EM MEMÓRIA ---
 def gerar_imagem_grafico(df_historico):
     fig, ax = plt.subplots(figsize=(6.5, 2.0), dpi=200)
@@ -228,7 +248,7 @@ def gerar_imagem_grafico_consolidado(df_agrupado):
     img_buf.seek(0)
     return img_buf
 
-# --- GERAÇÃO DO RELATÓRIO PDF DO CLIENTE COM LOGO TOUR360VR À ESQUERDA ---
+# --- GERAÇÃO DO RELATÓRIO PDF DO CLIENTE ---
 def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dados_inicio, df_historico=None, df_keywords=None):
     buffer = BytesIO()
     doc = SimpleDocTemplate(
@@ -411,7 +431,7 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
     buffer.seek(0)
     return buffer
 
-# --- GERAÇÃO DO PDF COMERCIAL DE PROSPECÇÃO COM LOGO À ESQUERDA ---
+# --- GERAÇÃO DO PDF COMERCIAL DE PROSPECÇÃO ---
 def gerar_pdf_prospeccao_cases(inc_clientes, inc_faturamento, inc_grafico, inc_keywords, qtd_clientes, total_fat, df_agrupado, df_keywords):
     buffer = BytesIO()
     doc = SimpleDocTemplate(
@@ -606,7 +626,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- CONTROLADOR DE NAVEGAÇÃO ---
+# --- CONTROLADOR DE NAVEGAÇÃO SUPERIOR REORGANIZADO ---
 if "aba_ativa" not in st.session_state:
     st.session_state["aba_ativa"] = "cadastrar"
 
@@ -616,39 +636,40 @@ st.markdown("""
     <p class="sub-title-card">Acompanhamento de perfis no Google Maps, curadoria estratégica de conteúdo e relatórios executivos de ROI.</p>
 """, unsafe_allow_html=True)
 
-col_n1, col_n2, col_n3, col_n4, col_n5, col_n6, col_n7 = st.columns(7)
+# Proporções customizadas para evitar truncamento do texto "🎯 Curadoria & Pautas"
+cols = st.columns([1.1, 1.1, 1.3, 1.1, 1.0, 1.1, 1.1])
 
-with col_n1:
+with cols[0]:
     if st.button("⚙️ Ficha Comercial", key="btn_cad", type="primary" if st.session_state["aba_ativa"] == "cadastrar" else "secondary"):
         st.session_state["aba_ativa"] = "cadastrar"
         st.rerun()
 
-with col_n2:
+with cols[1]:
     if st.button("📋 Métricas & SEO", key="btn_inc", type="primary" if st.session_state["aba_ativa"] == "metricas" else "secondary"):
         st.session_state["aba_ativa"] = "metricas"
         st.rerun()
 
-with col_n3:
+with cols[2]:
     if st.button("🎯 Curadoria & Pautas", key="btn_ia", type="primary" if st.session_state["aba_ativa"] == "ia" else "secondary"):
         st.session_state["aba_ativa"] = "ia"
         st.rerun()
 
-with col_n4:
+with cols[3]:
     if st.button("📊 Dashboard ROI", key="btn_dash", type="primary" if st.session_state["aba_ativa"] == "dashboard" else "secondary"):
         st.session_state["aba_ativa"] = "dashboard"
         st.rerun()
 
-with col_n5:
+with cols[4]:
     if st.button("🏆 Prospecção", key="btn_cases", type="primary" if st.session_state["aba_ativa"] == "cases" else "secondary"):
         st.session_state["aba_ativa"] = "cases"
         st.rerun()
 
-with col_n6:
+with cols[5]:
     if st.button("📄 Relatório PDF", key="btn_pdf", type="primary" if st.session_state["aba_ativa"] == "pdf" else "secondary"):
         st.session_state["aba_ativa"] = "pdf"
         st.rerun()
 
-with col_n7:
+with cols[6]:
     if st.button("💰 Financeiro MRR", key="btn_fin", type="primary" if st.session_state["aba_ativa"] == "financeiro" else "secondary"):
         st.session_state["aba_ativa"] = "financeiro"
         st.rerun()
@@ -988,7 +1009,7 @@ elif st.session_state["aba_ativa"] == "metricas":
                 with c3:
                     cliques_site = st.number_input("🌐 Cliques no Site/WhatsApp", min_value=0, step=1, key="num_cliques_m")
                 with c4:
-                    visualizacoes = st.number_input("👁️ Total de Visualizações", min_value=0, step=1, key="num_vis_m")
+                    visualizacoes = st.number_input("👁️ Total de Visualizaciones", min_value=0, step=1, key="num_vis_m")
 
                 col_m1, col_m2 = st.columns(2)
                 with col_m1:
@@ -1056,10 +1077,10 @@ elif st.session_state["aba_ativa"] == "metricas":
                     st.rerun()
 
 # ==========================================
-# MÓDULO 3: CURATORIA E PAUTAS ESTRATÉGICAS
+# MÓDULO 3: CURATORIA, PAUTAS E QR CODE PERMANENTE
 # ==========================================
 elif st.session_state["aba_ativa"] == "ia":
-    st.subheader("🎯 Curadoria Estratégica, Planejamento & Pautas de Presença Digital")
+    st.subheader("🎯 Curadoria Estratégica, QR Code Permanente & Pautas Digitais")
     df_clientes = obter_clientes_unicos()
 
     if df_clientes.empty:
@@ -1072,9 +1093,10 @@ elif st.session_state["aba_ativa"] == "ia":
         cat_nome = dados_c[13] if (dados_c and len(dados_c) > 13 and dados_c[13]) else "serviços especializados"
         cid_nome = dados_c[27] if (dados_c and len(dados_c) > 27 and dados_c[27]) else "região local"
 
-        tab_ia1, tab_ia2, tab_ia3, tab_ia4 = st.tabs([
+        tab_ia1, tab_ia2, tab_ia3, tab_ia4, tab_ia5 = st.tabs([
             "✍️ Respostas de Avaliações", 
             "📅 Cronograma Mensal & Pautas", 
+            "📱 QR Code Permanente (Balcão)", 
             "❓ Perguntas Frequentes (FAQ)", 
             "🎨 Direção de Arte Visuais"
         ])
@@ -1136,7 +1158,39 @@ elif st.session_state["aba_ativa"] == "ia":
                 else:
                     st.info("Cadastre o WhatsApp do cliente para enviar o link direto de aprovação.")
 
+        # SUB-ABA 3: GERADOR DE QR CODE PERMANENTE (NOVO)
         with tab_ia3:
+            st.markdown(f"**Gerador de QR Code Permanente para Plaquinhas de Balcão — {dados_c[1]}:**")
+            st.caption("Este QR Code é dinâmico no design e ESTÁTICO no link, garantindo que NUNCA expire e possa ser impresso em acrílico, adesivos ou balcão.")
+
+            url_def_review = dados_c[19] if (dados_c and len(dados_c) > 19 and dados_c[19]) else "https://maps.google.com"
+            
+            url_qr = st.text_input("Link Direto de Avaliações / Perfil no Google Maps:", value=url_def_review, key="txt_url_qr_perm")
+
+            if url_qr:
+                buf_qr = gerar_qr_code_permanente(url_qr)
+                col_q1, col_q2 = st.columns([1, 2])
+                
+                with col_q1:
+                    st.image(buf_qr, caption=f"QR Code Oficial — {dados_c[1]}", width=220)
+                
+                with col_q2:
+                    st.markdown("""
+                    ### 📌 Instruções para Produção da Plaquinha:
+                    1. Este QR Code codifica o link direto público da empresa no Google.
+                    2. **Validade:** Vitalícia / Permanente (nunca expira).
+                    3. **Aplicações:** Placa de acrílico para recepção/balcão, cartões de visita, impressos em comanda e embalagens.
+                    """)
+                    
+                    st.download_button(
+                        label="📥 Baixar Imagem do QR Code Alta Resolução (PNG)",
+                        data=buf_qr,
+                        file_name=f"QRCode_Google_Review_{dados_c[1].replace(' ', '_')}.png",
+                        mime="image/png",
+                        key="btn_dl_qr_png"
+                    )
+
+        with tab_ia4:
             st.markdown(f"**Estruturação de Perguntas Frequentes (FAQ Estratégico) — {dados_c[1]}:**")
             st.caption("Crie perguntas e respostas institucionais para alimentar o Perfil do Google e o site do cliente.")
 
@@ -1153,7 +1207,7 @@ elif st.session_state["aba_ativa"] == "ia":
             > **Resposta:** Sim! O perfil oficial da **{dados_c[1]}** no Google conta com fotos atualizadas e Tour Virtual 360° interativo para você explorar nosso espaço antes da sua visita.
             """)
 
-        with tab_ia4:
+        with tab_ia5:
             st.markdown(f"**Direção de Arte & Prompts Fotográficos — {dados_c[1]}:**")
             st.caption("Prompts visuais estilizados para criação de artes institucionais mantendo a identidade visual da marca:")
 
