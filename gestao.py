@@ -11,13 +11,6 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 
-# Suporte ao motor de Inteligência Artificial para Diagnóstico e Descrições (Gemini API)
-try:
-    from google import genai
-    HAS_GEMINI = True
-except ImportError:
-    HAS_GEMINI = False
-
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(
     page_title="Gestão Mensal & ROI | Tour360vr",
@@ -43,6 +36,7 @@ def init_db():
             status_avaliacoes TEXT,
             qtd_avaliacoes_inicio INTEGER DEFAULT 0,
             nota_media_inicio REAL DEFAULT 5.0,
+            qtd_fotos_inicio INTEGER DEFAULT 0,
             status_respostas_avaliacoes TEXT,
             categoria_principal TEXT,
             categorias_secundarias TEXT,
@@ -74,7 +68,7 @@ def init_db():
         )
     ''')
 
-    # Tabela de Histórico / Auditoria da Ficha
+    # Tabela de Histórico / Auditoria
     c.execute('''
         CREATE TABLE IF NOT EXISTS historico_ficha (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -85,7 +79,7 @@ def init_db():
         )
     ''')
     
-    # Tabela de Métricas Mensais com ROI Financeiro Estimado
+    # Tabela de Métricas Mensais
     c.execute('''
         CREATE TABLE IF NOT EXISTS metricas_mensais (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -96,8 +90,10 @@ def init_db():
             cliques_site INTEGER DEFAULT 0,
             visualizacoes INTEGER DEFAULT 0,
             novas_avaliacoes INTEGER DEFAULT 0,
-            ticket_medio REAL DEFAULT 0.0,
-            taxa_conversao REAL DEFAULT 0.1,
+            total_fotos_mes INTEGER DEFAULT 0,
+            ticket_medio REAL DEFAULT 150.0,
+            taxa_conversao REAL DEFAULT 0.10,
+            faturamento_estimado REAL DEFAULT 0.0,
             resumo_acoes TEXT,
             FOREIGN KEY (cliente_id) REFERENCES clientes (id)
         )
@@ -121,8 +117,16 @@ def obter_dados_cliente_por_id(cliente_id):
     conn.close()
     return row
 
-# --- FUNÇÃO DE GERAÇÃO DO RELATÓRIO PDF ---
-def gerar_pdf_relatorio(nome_empresa, mes_ano, chamadas, rotas, cliques, visualizacoes, avaliacoes, acoes, qtd_inicio=0, nota_inicio=5.0):
+def calcular_variacao_pct(atual, anterior):
+    if anterior is None or anterior == 0:
+        return "+100%" if atual > 0 else "0%"
+    diff = ((atual - anterior) / anterior) * 100
+    if diff > 0:
+        return f"+{diff:.1f}%"
+    return f"{diff:.1f}%"
+
+# --- FUNÇÃO DE GERAÇÃO DO RELATÓRIO PDF COM DUPOLA COMPARAÇÃO (MÊS ANTERIOR E INÍCIO) ---
+def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dados_inicio):
     buffer = BytesIO()
     doc = SimpleDocTemplate(
         buffer,
@@ -134,84 +138,142 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, chamadas, rotas, cliques, visuali
 
     title_brand_style = ParagraphStyle(
         'DocBrandTitle', parent=styles['Normal'],
-        fontName='Helvetica-Bold', fontSize=16, leading=20, textColor=colors.HexColor('#1E293B')
+        fontName='Helvetica-Bold', fontSize=18, leading=22, textColor=colors.HexColor('#1E293B')
     )
     section_style = ParagraphStyle(
         'DocSection', parent=styles['Normal'],
-        fontName='Helvetica-Bold', fontSize=12, leading=16, textColor=colors.HexColor('#1E293B')
+        fontName='Helvetica-Bold', fontSize=10.5, leading=14, textColor=colors.HexColor('#1E293B')
     )
     body_style = ParagraphStyle(
         'DocBody', parent=styles['Normal'],
-        fontName='Helvetica', fontSize=9, leading=13, textColor=colors.HexColor('#334155')
+        fontName='Helvetica', fontSize=8, leading=11, textColor=colors.HexColor('#334155')
     )
     footer_style = ParagraphStyle(
         'DocFooter', parent=styles['Normal'],
         fontName='Helvetica', fontSize=8, leading=11, alignment=1, textColor=colors.HexColor('#64748B')
     )
 
+    # 1. CABEÇALHO TOUR360VR
     header_table_data = [
         [
-            Paragraph("<b>OKAMOTO MÍDIAS VISUAIS & TOUR360VR</b><br/><font size=8 color='#64748B'>Gestão e Estratégia de Presença Local GMB</font>", title_brand_style),
-            Paragraph(f"<b>RELATÓRIO DE DESEMPENHO</b><br/><font size=9 color='#2563EB'><b>{nome_empresa}</b></font><br/><font size=8 color='#64748B'>Mês: {mes_ano}</font>", ParagraphStyle('RHeader', parent=styles['Normal'], alignment=2, fontName='Helvetica'))
+            Paragraph("<b>TOUR360VR</b><br/><font size=8 color='#64748B'>Gestão e Estratégia de Presença Local GMB</font>", title_brand_style),
+            Paragraph(f"<b>RELATÓRIO DE DESEMPENHO</b><br/><font size=9 color='#2563EB'><b>{nome_empresa}</b></font><br/><font size=8 color='#64748B'>Mês de Referência: {mes_ano}</font>", ParagraphStyle('RHeader', parent=styles['Normal'], alignment=2, fontName='Helvetica'))
         ]
     ]
-    t_header = Table(header_table_data, colWidths=[300, 220])
+    t_header = Table(header_table_data, colWidths=[280, 240])
     t_header.setStyle(TableStyle([
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
         ('BOTTOMPADDING', (0,0), (-1,-1), 0),
     ]))
     story.append(t_header)
-    story.append(Spacer(1, 8))
-
-    story.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor('#3B4866'), spaceAfter=15))
-
-    story.append(Paragraph("<b>1. Ponto de Partida e Ancoragem Inicial da Ficha:</b>", section_style))
     story.append(Spacer(1, 6))
+
+    story.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor('#3B4866'), spaceAfter=10))
+
+    # 2. TABELA COMPARATIVA DUPLA (INÍCIO vs. MÊS ANTERIOR vs. MÊS ATUAL)
+    story.append(Paragraph("<b>1. Análise Comparativa de Desempenho e Crescimento:</b>", section_style))
+    story.append(Spacer(1, 4))
     
-    ancoragem_data = [
+    c_chamadas_ant = dados_anterior['chamadas'] if dados_anterior else 0
+    c_rotas_ant = dados_anterior['rotas'] if dados_anterior else 0
+    c_cliques_ant = dados_anterior['cliques_site'] if dados_anterior else 0
+    c_vis_ant = dados_anterior['visualizacoes'] if dados_anterior else 0
+
+    var_cham_mes = calcular_variacao_pct(dados_atual['chamadas'], c_chamadas_ant)
+    var_rotas_mes = calcular_variacao_pct(dados_atual['rotas'], c_rotas_ant)
+    var_cliques_mes = calcular_variacao_pct(dados_atual['cliques_site'], c_cliques_ant)
+    var_vis_mes = calcular_variacao_pct(dados_atual['visualizacoes'], c_vis_ant)
+
+    comp_table_data = [
         [
-            Paragraph(f"<b>Métricas no Início da Gestão:</b><br/>• Nota Inicial: <b>{nota_inicio} ★</b><br/>• Qtd. Inicial de Avaliações: <b>{qtd_inicio}</b>", body_style),
-            Paragraph("<b>Objetivo da Gestão Recorrente:</b><br/>Otimização contínua de SEO Local, atração de novas chamadas, rotas no GPS e melhoria de reputação da marca.", body_style)
+            Paragraph("<b>Indicador de Desempenho</b>", section_style),
+            Paragraph("<b>Início Contrato</b>", section_style),
+            Paragraph("<b>Mês Anterior</b>", section_style),
+            Paragraph("<b>Mês Atual</b>", section_style),
+            Paragraph("<b>Var. vs Mês Ant.</b>", section_style)
+        ],
+        [
+            Paragraph("📞 Chamadas Telefónicas", body_style),
+            Paragraph("Base Inicial", body_style),
+            Paragraph(f"{c_chamadas_ant}", body_style),
+            Paragraph(f"<b>{dados_atual['chamadas']}</b>", body_style),
+            Paragraph(f"<b>{var_cham_mes}</b>", body_style)
+        ],
+        [
+            Paragraph("🗺️ Solicitadas de Rota GPS", body_style),
+            Paragraph("Base Inicial", body_style),
+            Paragraph(f"{c_rotas_ant}", body_style),
+            Paragraph(f"<b>{dados_atual['rotas']}</b>", body_style),
+            Paragraph(f"<b>{var_rotas_mes}</b>", body_style)
+        ],
+        [
+            Paragraph("🌐 Cliques Site/WhatsApp", body_style),
+            Paragraph("Base Inicial", body_style),
+            Paragraph(f"{c_cliques_ant}", body_style),
+            Paragraph(f"<b>{dados_atual['cliques_site']}</b>", body_style),
+            Paragraph(f"<b>{var_cliques_mes}</b>", body_style)
+        ],
+        [
+            Paragraph("👁️ Visualizações Ficha", body_style),
+            Paragraph("Base Inicial", body_style),
+            Paragraph(f"{c_vis_ant}", body_style),
+            Paragraph(f"<b>{dados_atual['visualizacoes']}</b>", body_style),
+            Paragraph(f"<b>{var_vis_mes}</b>", body_style)
+        ],
+        [
+            Paragraph("⭐ Avaliações Totais", body_style),
+            Paragraph(f"{dados_inicio['qtd_avaliacoes_inicio']} (★ {dados_inicio['nota_media_inicio']})", body_style),
+            Paragraph("Acumulado", body_style),
+            Paragraph(f"<b>+{dados_atual['novas_avaliacoes']} novas</b>", body_style),
+            Paragraph("<b>Crescimento</b>", body_style)
+        ],
+        [
+            Paragraph("📷 Fotos & Tour 360°", body_style),
+            Paragraph(f"{dados_inicio['qtd_fotos_inicio']} fotos", body_style),
+            Paragraph("Acumulado", body_style),
+            Paragraph(f"<b>{dados_atual['total_fotos_mes']} fotos</b>", body_style),
+            Paragraph(f"<b>+{max(0, dados_atual['total_fotos_mes'] - dados_inicio['qtd_fotos_inicio'])} novas</b>", body_style)
         ]
     ]
-    t_ancoragem = Table(ancoragem_data, colWidths=[260, 260])
-    t_ancoragem.setStyle(TableStyle([
-        ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#F8FAFC')),
-        ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#CBD5E1')),
-        ('PADDING', (0,0), (-1,-1), 8),
-    ]))
-    story.append(t_ancoragem)
-    story.append(Spacer(1, 15))
 
-    story.append(Paragraph("<b>2. Resultado & Performance Alcançada no Período:</b>", section_style))
-    story.append(Spacer(1, 6))
-
-    data_table = [
-        [Paragraph("<b>Indicador de Desempenho (KPI)</b>", section_style), Paragraph("<b>Resultado Obtido</b>", section_style)],
-        [Paragraph("📞 Chamadas Telefónicas Diretas do Perfil", body_style), Paragraph(f"<b>{chamadas} ligações</b>", body_style)],
-        [Paragraph("🗺️ Solicitações de Rota no GPS (Google Maps)", body_style), Paragraph(f"<b>{rotas} rotas</b>", body_style)],
-        [Paragraph("🌐 Cliques no Website / Botão WhatsApp", body_style), Paragraph(f"<b>{cliques} cliques</b>", body_style)],
-        [Paragraph("👁️ Visualizações Totais da Ficha na Pesquisa e Maps", body_style), Paragraph(f"<b>{visualizacoes} acessos</b>", body_style)],
-        [Paragraph("⭐ Novas Avaliações Recebidas no Mês", body_style), Paragraph(f"<b>{avaliacoes} novas ★★★★★</b>", body_style)],
-    ]
-
-    t_perf = Table(data_table, colWidths=[330, 190])
-    t_perf.setStyle(TableStyle([
+    t_comp = Table(comp_table_data, colWidths=[150, 95, 90, 90, 95])
+    t_comp.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#F1F5F9')),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 7),
-        ('TOPPADDING', (0,0), (-1,-1), 7),
-        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#CBD5E1')),
-        ('ALIGN', (1,0), (1,-1), 'CENTER'),
+        ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#CBD5E1')),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#E2E8F0')),
+        ('PADDING', (0,0), (-1,-1), 5),
+        ('ALIGN', (1,0), (-1,-1), 'CENTER'),
     ]))
-    story.append(t_perf)
+    story.append(t_comp)
+    story.append(Spacer(1, 10))
+
+    # 3. ROI E ESTIMATIVA FINANCEIRA
+    if dados_atual['faturamento_estimado'] > 0:
+        story.append(Paragraph("<b>2. Retorno sobre o Investimento Estimado (ROI):</b>", section_style))
+        story.append(Spacer(1, 4))
+        roi_data = [
+            [
+                Paragraph(f"💰 <b>Faturamento Estimado Gerado no Mês:</b> R$ {dados_atual['faturamento_estimado']:,.2f}", ParagraphStyle('GreenROI', parent=body_style, fontSize=9.5, textColor=colors.HexColor('#16A34A'))),
+                Paragraph("<b>Calculado via:</b> Conversões Directas x Ticket Médio", body_style)
+            ]
+        ]
+        t_roi = Table(roi_data, colWidths=[320, 200])
+        t_roi.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#F8FAFC')),
+            ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#CBD5E1')),
+            ('PADDING', (0,0), (-1,-1), 6),
+        ]))
+        story.append(t_roi)
+        story.append(Spacer(1, 10))
+
+    # 4. AÇÕES EXECUTADAS
+    story.append(Paragraph("<b>3. Ações Técnicas & Melhores Práticas Aplicadas no Mês:</b>", section_style))
+    story.append(Spacer(1, 4))
+    acoes_texto = dados_atual['resumo_acoes'] if dados_atual['resumo_acoes'] else "Otimizações de rotina, monitorização de palavras-chave locais e gestão de reputação da ficha."
+    story.append(Paragraph(acoes_texto.replace('\n', '<br/>'), body_style))
     story.append(Spacer(1, 15))
 
-    story.append(Paragraph("<b>3. Ações Técnicas & Melhores Práticas Aplicadas:</b>", section_style))
-    story.append(Spacer(1, 6))
-    acoes_texto = acoes if acoes else "Otimizações de rotina, monitorização de palavras-chave locais e gestão de reputação da ficha."
-    story.append(Paragraph(acoes_texto.replace('\n', '<br/>'), body_style))
-    story.append(Spacer(1, 25))
-
+    # 5. RODAPÉ UNIFICADO
     story.append(HRFlowable(width="100%", thickness=0.8, color=colors.HexColor('#CBD5E1'), spaceAfter=8))
     story.append(Paragraph("<b>tour360vr.com.br</b> &nbsp;|&nbsp; contato@tour360vr.com.br &nbsp;|&nbsp; Whatsapp: (16) 99133-2121 &nbsp;|&nbsp; Tour360VR - Gestão de Perfil do Google", footer_style))
 
@@ -238,7 +300,6 @@ st.markdown("""
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     }
 
-    /* CONTAINER CARD DO TÍTULO E BOTÕES SUPERIORES */
     .top-card-container {
         background-color: #161F30;
         border: 1px solid #2B364A;
@@ -263,7 +324,6 @@ st.markdown("""
         margin-bottom: 12px !important;
     }
 
-    /* BOTÕES DE NAVEGAÇÃO */
     div[data-testid="stColumn"] button {
         width: 100% !important;
         background-color: #1A2130 !important;
@@ -274,7 +334,6 @@ st.markdown("""
         font-weight: 700 !important;
         font-size: 0.90rem !important;
         transition: all 0.25s ease-in-out !important;
-        box-shadow: none !important;
     }
 
     div[data-testid="stColumn"] button:hover {
@@ -288,10 +347,9 @@ st.markdown("""
         background-color: #1A2130 !important;
         border: 2px solid #FFFFFF !important;
         color: #FFFFFF !important;
-        box-shadow: 0 0 18px rgba(255, 255, 255, 0.95), 0 0 28px rgba(255, 255, 255, 0.5) !important;
+        box-shadow: 0 0 18px rgba(255, 255, 255, 0.95) !important;
     }
 
-    /* ESTILO DOS BOTÕES DE RÁDIO HORIZONTAIS */
     div[role="radiogroup"] {
         display: flex !important;
         flex-direction: row !important;
@@ -302,7 +360,6 @@ st.markdown("""
         border: 1px solid #2B364A !important;
     }
 
-    /* DIAS DA SEMANA EM BRANCO */
     .dia-destaque {
         color: #FFFFFF !important;
         font-weight: 700;
@@ -313,7 +370,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- CONTROLADOR DE NAVEGAÇÃO PRINCIPAL EM CARD COMPACTO ---
+# --- CONTROLADOR DE NAVEGAÇÃO ---
 if "aba_ativa" not in st.session_state:
     st.session_state["aba_ativa"] = "cadastrar"
 
@@ -323,25 +380,30 @@ st.markdown("""
     <p class="sub-title-card">Acompanhamento recorrente, controle de fichas e geração de relatórios estratégicos para clientes.</p>
 """, unsafe_allow_html=True)
 
-col_n1, col_n2, col_n3, col_n4 = st.columns(4)
+col_n1, col_n2, col_n3, col_n4, col_n5 = st.columns(5)
 
 with col_n1:
-    if st.button("⚙️ Cadastrar / Editar Ficha", key="btn_cad", type="primary" if st.session_state["aba_ativa"] == "cadastrar" else "secondary"):
+    if st.button("⚙️ Ficha Comercial", key="btn_cad", type="primary" if st.session_state["aba_ativa"] == "cadastrar" else "secondary"):
         st.session_state["aba_ativa"] = "cadastrar"
         st.rerun()
 
 with col_n2:
-    if st.button("📋 Inserir Métricas Mensais", key="btn_inc", type="primary" if st.session_state["aba_ativa"] == "metricas" else "secondary"):
+    if st.button("📋 Métricas & ROI", key="btn_inc", type="primary" if st.session_state["aba_ativa"] == "metricas" else "secondary"):
         st.session_state["aba_ativa"] = "metricas"
         st.rerun()
 
 with col_n3:
-    if st.button("📊 Dashboard & ROI", key="btn_dash", type="primary" if st.session_state["aba_ativa"] == "dashboard" else "secondary"):
-        st.session_state["aba_ativa"] = "dashboard"
+    if st.button("💬 Assistente IA", key="btn_ia", type="primary" if st.session_state["aba_ativa"] == "ia" else "secondary"):
+        st.session_state["aba_ativa"] = "ia"
         st.rerun()
 
 with col_n4:
-    if st.button("📄 Relatório Executivo PDF", key="btn_pdf", type="primary" if st.session_state["aba_ativa"] == "pdf" else "secondary"):
+    if st.button("📊 Dashboard ROI", key="btn_dash", type="primary" if st.session_state["aba_ativa"] == "dashboard" else "secondary"):
+        st.session_state["aba_ativa"] = "dashboard"
+        st.rerun()
+
+with col_n5:
+    if st.button("📄 Relatório PDF", key="btn_pdf", type="primary" if st.session_state["aba_ativa"] == "pdf" else "secondary"):
         st.session_state["aba_ativa"] = "pdf"
         st.rerun()
 
@@ -381,7 +443,6 @@ if st.session_state["aba_ativa"] == "cadastrar":
             opts_avaliacoes = ["Sim (Com Nota Exibida)", "Não (Sem Avaliações)"]
             opts_respostas = ["100% Respondidas", "Parcialmente", "Nenhuma", "N/A"]
 
-            # TRATAMENTO E FORMATAÇÃO DA DATA DE ABERTURA (DD/MM/AAAA)
             val_dt_abertura = date.today()
             if modo_edicao and dados_existentes and dados_existentes[3]:
                 try:
@@ -393,83 +454,88 @@ if st.session_state["aba_ativa"] == "cadastrar":
                 nome_empresa = st.text_input("Nome Comercial da Empresa / Ficha GMB *", value=dados_existentes[1] if modo_edicao else "")
                 responsavel = st.text_input("Nome do Responsável / Contato Interno", value=dados_existentes[2] if modo_edicao else "")
                 
-                # SELETOR NUMÉRICO COM BARRAS DD/MM/AAAA
                 data_abertura_dt = st.date_input("Data de Abertura (Dia/Mês/Ano)", value=val_dt_abertura, format="DD/MM/YYYY")
                 data_abertura_str = data_abertura_dt.strftime("%d/%m/%Y")
                 
                 idx_reiv = opts_reivindicada.index(dados_existentes[4]) if (modo_edicao and dados_existentes[4] in opts_reivindicada) else 0
                 ficha_reivindicada = st.radio("Status de Reivindicação da Ficha", opts_reivindicada, index=idx_reiv, horizontal=True)
                 
-                idx_resp = opts_respostas.index(dados_existentes[8]) if (modo_edicao and len(dados_existentes) > 8 and dados_existentes[8] in opts_respostas) else 0
+                idx_resp = opts_respostas.index(dados_existentes[9]) if (modo_edicao and len(dados_existentes) > 9 and dados_existentes[9] in opts_respostas) else 0
                 status_respostas_avaliacoes = st.radio("Status de Resposta às Avaliações", opts_respostas, index=idx_resp, horizontal=True)
 
             with c_s2:
-                categoria_principal = st.text_input("Categoria Principal no GMB (ex: Serviço de fotografia)", value=dados_existentes[9] if (modo_edicao and len(dados_existentes) > 9) else "")
-                categorias_secundarias = st.text_input("Categorias Secundárias (separadas por vírgula)", value=dados_existentes[10] if (modo_edicao and len(dados_existentes) > 10) else "")
+                categoria_principal = st.text_input("Categoria Principal no GMB (ex: Serviço de fotografia)", value=dados_existentes[10] if (modo_edicao and len(dados_existentes) > 10) else "")
+                categorias_secundarias = st.text_input("Categorias Secundárias (separadas por vírgula)", value=dados_existentes[11] if (modo_edicao and len(dados_existentes) > 11) else "")
                 
                 idx_aval = opts_avaliacoes.index(dados_existentes[5]) if (modo_edicao and dados_existentes[5] in opts_avaliacoes) else 0
                 status_avaliacoes = st.radio("Possui Avaliações de Clientes?", opts_avaliacoes, index=idx_aval, horizontal=True)
 
-                st.markdown("**Métricas das Avaliações no Início da Gestão:**")
-                col_av1, col_av2 = st.columns(2)
+                st.markdown("**Métricas no Início da Gestão:**")
+                col_av1, col_av2, col_av3 = st.columns(3)
                 with col_av1:
                     qtd_avaliacoes_inicio = st.number_input(
-                        "Quantidade Inicial de Avaliações",
+                        "Avaliações Iniciais",
                         min_value=0, step=1,
                         value=int(dados_existentes[6]) if (modo_edicao and len(dados_existentes) > 6 and dados_existentes[6] is not None) else 0
                     )
                 with col_av2:
                     nota_media_inicio = st.number_input(
-                        "Nota Média Inicial (0.0 a 5.0)",
+                        "Nota Média Inicial",
                         min_value=0.0, max_value=5.0, step=0.1,
                         value=float(dados_existentes[7]) if (modo_edicao and len(dados_existentes) > 7 and dados_existentes[7] is not None) else 5.0
                     )
+                with col_av3:
+                    qtd_fotos_inicio = st.number_input(
+                        "Qtd. Fotos Iniciais",
+                        min_value=0, step=1,
+                        value=int(dados_existentes[8]) if (modo_edicao and len(dados_existentes) > 8 and dados_existentes[8] is not None) else 0
+                    )
             
             st.markdown("---")
-            descricao_empresa = st.text_area("Descrição Oficial da Empresa (Otimizada para SEO Local)", value=dados_existentes[11] if (modo_edicao and len(dados_existentes) > 11) else "", height=200)
+            descricao_empresa = st.text_area("Descrição Oficial da Empresa (Otimizada para SEO Local)", value=dados_existentes[12] if (modo_edicao and len(dados_existentes) > 12) else "", height=200)
 
         # SUB-ABA 2: CONTATO & REDES SOCIAIS
         with sub_tab_contato:
             opts_chat = ["Ativado", "Desativado", "Não Configurado"]
             c_c1, c_c2 = st.columns(2)
             with c_c1:
-                telefone_contato = st.text_input("Número de Telefone Comercial", value=dados_existentes[12] if (modo_edicao and len(dados_existentes) > 12) else "")
-                whatsapp = st.text_input("WhatsApp para Atendimento", value=dados_existentes[13] if (modo_edicao and len(dados_existentes) > 13) else "")
-                website = st.text_input("Website / Link Principal", value=dados_existentes[15] if (modo_edicao and len(dados_existentes) > 15) else "")
+                telefone_contato = st.text_input("Número de Telefone Comercial", value=dados_existentes[13] if (modo_edicao and len(dados_existentes) > 13) else "")
+                whatsapp = st.text_input("WhatsApp para Atendimento", value=dados_existentes[14] if (modo_edicao and len(dados_existentes) > 14) else "")
+                website = st.text_input("Website / Link Principal", value=dados_existentes[16] if (modo_edicao and len(dados_existentes) > 16) else "")
                 
-                chat_val = dados_existentes[14] if (modo_edicao and len(dados_existentes) > 14) else "Ativado"
+                chat_val = dados_existentes[15] if (modo_edicao and len(dados_existentes) > 15) else "Ativado"
                 idx_chat = opts_chat.index(chat_val) if chat_val in opts_chat else 0
                 chat_status = st.radio("Mensagens / Chat no Perfil", opts_chat, index=idx_chat, horizontal=True)
             with c_c2:
-                instagram = st.text_input("Link do Instagram", value=dados_existentes[16] if (modo_edicao and len(dados_existentes) > 16) else "")
-                facebook = st.text_input("Link do Facebook", value=dados_existentes[17] if (modo_edicao and len(dados_existentes) > 17) else "")
-                linkedin = st.text_input("Link do LinkedIn", value=dados_existentes[18] if (modo_edicao and len(dados_existentes) > 18) else "")
-                youtube = st.text_input("Link do YouTube", value=dados_existentes[19] if (modo_edicao and len(dados_existentes) > 19) else "")
-                tiktok = st.text_input("Link do TikTok", value=dados_existentes[20] if (modo_edicao and len(dados_existentes) > 20) else "")
+                instagram = st.text_input("Link do Instagram", value=dados_existentes[17] if (modo_edicao and len(dados_existentes) > 17) else "")
+                facebook = st.text_input("Link do Facebook", value=dados_existentes[18] if (modo_edicao and len(dados_existentes) > 18) else "")
+                linkedin = st.text_input("Link do LinkedIn", value=dados_existentes[19] if (modo_edicao and len(dados_existentes) > 19) else "")
+                youtube = st.text_input("Link do YouTube", value=dados_existentes[20] if (modo_edicao and len(dados_existentes) > 20) else "")
+                tiktok = st.text_input("Link do TikTok", value=dados_existentes[21] if (modo_edicao and len(dados_existentes) > 21) else "")
 
         # SUB-ABA 3: LOCAL & ÁREAS
         with sub_tab_local:
-            atend_val = bool(dados_existentes[21]) if (modo_edicao and len(dados_existentes) > 21) else False
+            atend_val = bool(dados_existentes[22]) if (modo_edicao and len(dados_existentes) > 22) else False
             atendimento_local_cliente = st.checkbox("📍 Atendimento no local do cliente / Prestador de serviço itinerante (Endereço oculto no Google)", value=atend_val)
             st.markdown("---")
             c_l1, c_l2 = st.columns(2)
             with c_l1:
-                endereco_local = st.text_input("Endereço Físico Completo", value=dados_existentes[22] if (modo_edicao and len(dados_existentes) > 22) else "")
+                endereco_local = st.text_input("Endereço Físico Completo", value=dados_existentes[23] if (modo_edicao and len(dados_existentes) > 23) else "")
             with c_l2:
-                area_cobertura = st.text_input("Áreas de Cobertura / Atendimento (ex: Ribeirão Preto, Sertãozinho, Brodowski)", value=dados_existentes[23] if (modo_edicao and len(dados_existentes) > 23) else "")
+                area_cobertura = st.text_input("Áreas de Cobertura / Atendimento (ex: Ribeirão Preto, Sertãozinho, Brodowski)", value=dados_existentes[24] if (modo_edicao and len(dados_existentes) > 24) else "")
 
-        # SUB-ABA 4: HORÁRIOS DE FUNCIONAMENTO (DIAS DA SEMANA EM BRANCO)
+        # SUB-ABA 4: HORÁRIOS DE FUNCIONAMENTO
         with sub_tab_horario:
             st.markdown("**Horários de Funcionamento (Valores padrão 08:00 e 18:00 editáveis diretamente):**")
             
             dias_semana = [
-                ("Segunda-feira", 24, "08:00", "18:00", False),
-                ("Terça-feira", 25, "08:00", "18:00", False),
-                ("Quarta-feira", 26, "08:00", "18:00", False),
-                ("Quinta-feira", 27, "08:00", "18:00", False),
-                ("Sexta-feira", 28, "08:00", "18:00", False),
-                ("Sábado", 29, "08:00", "12:00", False),
-                ("Domingo", 30, "08:00", "12:00", True)
+                ("Segunda-feira", 25, "08:00", "18:00", False),
+                ("Terça-feira", 26, "08:00", "18:00", False),
+                ("Quarta-feira", 27, "08:00", "18:00", False),
+                ("Quinta-feira", 28, "08:00", "18:00", False),
+                ("Sexta-feira", 29, "08:00", "18:00", False),
+                ("Sábado", 30, "08:00", "12:00", False),
+                ("Domingo", 31, "08:00", "12:00", True)
             ]
             
             horarios_coletados = {}
@@ -508,14 +574,14 @@ if st.session_state["aba_ativa"] == "cadastrar":
             st.markdown("---")
             c_he1, c_he2 = st.columns(2)
             with c_he1:
-                horarios_especiais = st.text_input("Horários Especiais / Feriados (ex: 25/12 Fechado)", value=dados_existentes[31] if (modo_edicao and len(dados_existentes) > 31) else "")
+                horarios_especiais = st.text_input("Horários Especiais / Feriados (ex: 25/12 Fechado)", value=dados_existentes[32] if (modo_edicao and len(dados_existentes) > 32) else "")
             with c_he2:
-                outros_horarios = st.text_input("Outros Horários (Almoço, Happy Hour, Delivery)", value=dados_existentes[32] if (modo_edicao and len(dados_existentes) > 32) else "")
+                outros_horarios = st.text_input("Outros Horários (Almoço, Happy Hour, Delivery)", value=dados_existentes[33] if (modo_edicao and len(dados_existentes) > 33) else "")
 
         # SUB-ABA 5: CHECKLIST DE PENDÊNCIAS
         with sub_tab_mais:
             st.markdown("**Checklist de Otimização Identificadas no Diagnóstico:**")
-            pendencias_salvas = dados_existentes[33] if (modo_edicao and len(dados_existentes) > 33 and dados_existentes[33]) else ""
+            pendencias_salvas = dados_existentes[34] if (modo_edicao and len(dados_existentes) > 34 and dados_existentes[34]) else ""
 
             col_p1, col_p2 = st.columns(2)
             with col_p1:
@@ -530,9 +596,9 @@ if st.session_state["aba_ativa"] == "cadastrar":
                 p_hor = st.checkbox("⏰ Corrigir / Validar Horários Especiais e de Funcionamento", value="Ajuste de Horários" in pendencias_salvas)
 
             st.markdown("---")
-            observacoes_tecnicas = st.text_area("Observações Técnicas Adicionais / Diagnóstico Específico", value=dados_existentes[34] if (modo_edicao and len(dados_existentes) > 34) else "", height=180)
+            observacoes_tecnicas = st.text_area("Observações Técnicas Adicionais / Diagnóstico Específico", value=dados_existentes[35] if (modo_edicao and len(dados_existentes) > 35) else "", height=180)
 
-        # SUB-ABA 6: HISTÓRICO DE AUDITORIA & ALTERAÇÕES
+        # SUB-ABA 6: HISTÓRICO DE AUDITORIA
         with sub_tab_historico:
             if not modo_edicao:
                 st.info("O histórico de alterações ficará disponível após o primeiro cadastro da ficha.")
@@ -546,7 +612,7 @@ if st.session_state["aba_ativa"] == "cadastrar":
                 conn.close()
                 
                 if df_hist.empty:
-                    st.write("Ficha cadastrada na versão inicial (Sem alterações adicionais registradas).")
+                    st.write("Ficha cadastrada na versão inicial.")
                 else:
                     st.dataframe(df_hist, use_container_width=True)
 
@@ -572,16 +638,16 @@ if st.session_state["aba_ativa"] == "cadastrar":
                 try:
                     c.execute('''
                         INSERT INTO clientes 
-                        (nome_empresa, responsavel, data_abertura, ficha_reivindicada, status_avaliacoes, qtd_avaliacoes_inicio, nota_media_inicio, status_respostas_avaliacoes, categoria_principal, categorias_secundarias, descricao_empresa, telefone_contato, whatsapp, chat_status, website, instagram, facebook, linkedin, youtube, tiktok, atendimento_local_cliente, endereco_local, area_cobertura, horario_seg, horario_ter, horario_qua, horario_qui, horario_sex, horario_sab, horario_dom, horarios_especiais, outros_horarios, pendencias_checklist, observacoes_tecnicas, data_inicio) 
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        (nome_empresa, responsavel, data_abertura, ficha_reivindicada, status_avaliacoes, qtd_avaliacoes_inicio, nota_media_inicio, qtd_fotos_inicio, status_respostas_avaliacoes, categoria_principal, categorias_secundarias, descricao_empresa, telefone_contato, whatsapp, chat_status, website, instagram, facebook, linkedin, youtube, tiktok, atendimento_local_cliente, endereco_local, area_cobertura, horario_seg, horario_ter, horario_qua, horario_qui, horario_sex, horario_sab, horario_dom, horarios_especiais, outros_horarios, pendencias_checklist, observacoes_tecnicas, data_inicio) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ''', (
-                        nome_empresa, responsavel, data_abertura_str, ficha_reivindicada, status_avaliacoes, qtd_avaliacoes_inicio, nota_media_inicio, status_respostas_avaliacoes, categoria_principal, categorias_secundarias, descricao_empresa, telefone_contato, whatsapp, chat_status, website, instagram, facebook, linkedin, youtube, tiktok, 1 if atendimento_local_cliente else 0, endereco_local, area_cobertura, 
+                        nome_empresa, responsavel, data_abertura_str, ficha_reivindicada, status_avaliacoes, qtd_avaliacoes_inicio, nota_media_inicio, qtd_fotos_inicio, status_respostas_avaliacoes, categoria_principal, categorias_secundarias, descricao_empresa, telefone_contato, whatsapp, chat_status, website, instagram, facebook, linkedin, youtube, tiktok, 1 if atendimento_local_cliente else 0, endereco_local, area_cobertura, 
                         horarios_coletados["Segunda-feira"], horarios_coletados["Terça-feira"], horarios_coletados["Quarta-feira"], horarios_coletados["Quinta-feira"], horarios_coletados["Sexta-feira"], horarios_coletados["Sábado"], horarios_coletados["Domingo"],
                         horarios_especiais, outros_horarios, pendencias_str, observacoes_tecnicas, datetime.today().strftime("%Y-%m-%d")
                     ))
                     cliente_novo_id = c.lastrowid
                     c.execute("INSERT INTO historico_ficha (cliente_id, data_alteracao, descricao_alteracao) VALUES (?, ?, ?)",
-                              (cliente_novo_id, datetime.now().strftime("%Y-%m-%d %H:%M"), f"Cadastro Inicial da Ficha ({qtd_avaliacoes_inicio} avaliações / Nota {nota_media_inicio})"))
+                              (cliente_novo_id, datetime.now().strftime("%Y-%m-%d %H:%M"), f"Cadastro Inicial da Ficha ({qtd_avaliacoes_inicio} avaliações / {qtd_fotos_inicio} fotos)"))
                     conn.commit()
                     st.success(f"Ficha comercial de '{nome_empresa}' cadastrada com sucesso!")
                 except sqlite3.IntegrityError:
@@ -589,10 +655,10 @@ if st.session_state["aba_ativa"] == "cadastrar":
             else:
                 c.execute('''
                     UPDATE clientes SET 
-                    responsavel=?, data_abertura=?, ficha_reivindicada=?, status_avaliacoes=?, qtd_avaliacoes_inicio=?, nota_media_inicio=?, status_respostas_avaliacoes=?, categoria_principal=?, categorias_secundarias=?, descricao_empresa=?, telefone_contato=?, whatsapp=?, chat_status=?, website=?, instagram=?, facebook=?, linkedin=?, youtube=?, tiktok=?, atendimento_local_cliente=?, endereco_local=?, area_cobertura=?, horario_seg=?, horario_ter=?, horario_qua=?, horario_qui=?, horario_sex=?, horario_sab=?, horario_dom=?, horarios_especiais=?, outros_horarios=?, pendencias_checklist=?, observacoes_tecnicas=?
+                    responsavel=?, data_abertura=?, ficha_reivindicada=?, status_avaliacoes=?, qtd_avaliacoes_inicio=?, nota_media_inicio=?, qtd_fotos_inicio=?, status_respostas_avaliacoes=?, categoria_principal=?, categorias_secundarias=?, descricao_empresa=?, telefone_contato=?, whatsapp=?, chat_status=?, website=?, instagram=?, facebook=?, linkedin=?, youtube=?, tiktok=?, atendimento_local_cliente=?, endereco_local=?, area_cobertura=?, horario_seg=?, horario_ter=?, horario_qua=?, horario_qui=?, horario_sex=?, horario_sab=?, horario_dom=?, horarios_especiais=?, outros_horarios=?, pendencias_checklist=?, observacoes_tecnicas=?
                     WHERE id=?
                 ''', (
-                    responsavel, data_abertura_str, ficha_reivindicada, status_avaliacoes, qtd_avaliacoes_inicio, nota_media_inicio, status_respostas_avaliacoes, categoria_principal, categorias_secundarias, descricao_empresa, telefone_contato, whatsapp, chat_status, website, instagram, facebook, linkedin, youtube, tiktok, 1 if atendimento_local_cliente else 0, endereco_local, area_cobertura, 
+                    responsavel, data_abertura_str, ficha_reivindicada, status_avaliacoes, qtd_avaliacoes_inicio, nota_media_inicio, qtd_fotos_inicio, status_respostas_avaliacoes, categoria_principal, categorias_secundarias, descricao_empresa, telefone_contato, whatsapp, chat_status, website, instagram, facebook, linkedin, youtube, tiktok, 1 if atendimento_local_cliente else 0, endereco_local, area_cobertura, 
                     horarios_coletados["Segunda-feira"], horarios_coletados["Terça-feira"], horarios_coletados["Quarta-feira"], horarios_coletados["Quinta-feira"], horarios_coletados["Sexta-feira"], horarios_coletados["Sábado"], horarios_coletados["Domingo"],
                     horarios_especiais, outros_horarios, pendencias_str, observacoes_tecnicas, c_id
                 ))
@@ -600,20 +666,20 @@ if st.session_state["aba_ativa"] == "cadastrar":
                 c.execute("INSERT INTO historico_ficha (cliente_id, data_alteracao, descricao_alteracao) VALUES (?, ?, ?)",
                           (c_id, datetime.now().strftime("%Y-%m-%d %H:%M"), f"Atualização Ficha: Pendências ({pendencias_str}) / Categoria: {categoria_principal}"))
                 conn.commit()
-                st.success(f"Ficha comercial de '{nome_empresa}' atualizada e histórico registrado com sucesso!")
+                st.success(f"Ficha comercial de '{nome_empresa}' atualizada com sucesso!")
             
             conn.close()
             st.rerun()
 
 # ==========================================
-# MÓDULO 2: INSERIR MÉTRICAS MENSAIS
+# MÓDULO 2: INSERIR MÉTRICAS MENSAIS & ROI
 # ==========================================
 elif st.session_state["aba_ativa"] == "metricas":
-    st.subheader("📋 Lançamento de Performance Mensal")
+    st.subheader("📋 Lançamento de Performance Mensal & Calculadora de ROI")
     df_clientes = obter_clientes_unicos()
     
     if df_clientes.empty:
-        st.warning("Nenhum cliente cadastrado. Cadastre um cliente na aba '⚙️ Cadastrar Cliente & Ficha'.")
+        st.warning("Nenhum cliente cadastrado. Cadastre um cliente na aba '⚙️ Ficha Comercial'.")
     else:
         with st.form("form_metricas"):
             col_c1, col_c2 = st.columns(2)
@@ -624,6 +690,7 @@ elif st.session_state["aba_ativa"] == "metricas":
                 mes_referencia = st.date_input("Mês de Referência", value=datetime.today()).strftime("%Y-%m")
 
             st.markdown("---")
+            st.markdown("**1. KPIs do Período (Extraídos da Ficha Google):**")
             c1, c2, c3, c4 = st.columns(4)
             with c1:
                 chamadas = st.number_input("📞 Chamadas Telefónicas", min_value=0, step=1)
@@ -634,25 +701,87 @@ elif st.session_state["aba_ativa"] == "metricas":
             with c4:
                 visualizacoes = st.number_input("👁️ Total de Visualizações", min_value=0, step=1)
 
-            novas_avaliacoes = st.number_input("⭐ Novas Avaliações Recebidas no Mês", min_value=0, step=1)
+            col_m1, col_m2 = st.columns(2)
+            with col_m1:
+                novas_avaliacoes = st.number_input("⭐ Novas Avaliações Recebidas no Mês", min_value=0, step=1)
+            with col_m2:
+                total_fotos_mes = st.number_input("📷 Total de Fotos Publicadas na Ficha (Até este Mês)", min_value=0, step=1)
+
+            st.markdown("---")
+            st.markdown("**2. Calculadora de ROI e Faturamento Estimado (Opcional):**")
+            col_r1, col_r2 = st.columns(2)
+            with col_r1:
+                ticket_medio = st.number_input("Ticket Médio do Cliente (R$) [Usar R$ 150 caso não informado]", min_value=0.0, value=150.0, step=10.0)
+            with col_r2:
+                taxa_conversao = st.number_input("Taxa de Conversão Estimada (%) [Padrão 10%]", min_value=1.0, max_value=100.0, value=10.0, step=1.0) / 100.0
+
+            conversoes_totais = chamadas + rotas + cliques_site
+            faturamento_estimado = conversoes_totais * taxa_conversao * ticket_medio
+            st.info(f"💰 **Faturamento Estimado Gerado pelo GMB no Mês:** R$ {faturamento_estimado:,.2f} ({int(conversoes_totais * taxa_conversao)} vendas estimadas)")
+
+            st.markdown("---")
             resumo_acoes = st.text_area("🛠️ Ações Realizadas no Mês (Otimizações, fotos 360°, posts, etc.)")
 
-            btn_salvar_metricas = st.form_submit_button("Salvar Métricas do Mês")
+            btn_salvar_metricas = st.form_submit_button("Salvar Métricas e Calcular ROI")
 
             if btn_salvar_metricas:
                 conn = sqlite3.connect(DB_NAME)
                 c = conn.cursor()
                 c.execute('''
                     INSERT INTO metricas_mensais 
-                    (cliente_id, mes_ano, chamadas, rotas, cliques_site, visualizacoes, novas_avaliacoes, resumo_acoes)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                ''', (cliente_id, mes_referencia, chamadas, rotas, cliques_site, visualizacoes, novas_avaliacoes, resumo_acoes))
+                    (cliente_id, mes_ano, chamadas, rotas, cliques_site, visualizacoes, novas_avaliacoes, total_fotos_mes, ticket_medio, taxa_conversao, faturamento_estimado, resumo_acoes)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (cliente_id, mes_referencia, chamadas, rotas, cliques_site, visualizacoes, novas_avaliacoes, total_fotos_mes, ticket_medio, taxa_conversao, faturamento_estimado, resumo_acoes))
                 conn.commit()
                 conn.close()
-                st.success(f"Métricas salvas para {cliente_sel} no período {mes_referencia}!")
+                st.success(f"Métricas e ROI salvos para {cliente_sel} no período {mes_referencia}!")
 
 # ==========================================
-# MÓDULO 3: DASHBOARD & ROI
+# MÓDULO 3: ASSISTENTE DE CONTEÚDO & IA
+# ==========================================
+elif st.session_state["aba_ativa"] == "ia":
+    st.subheader("💬 Assistente de Conteúdo e Otimização com IA")
+    df_clientes = obter_clientes_unicos()
+
+    if df_clientes.empty:
+        st.info("Cadastre um cliente para usar a inteligência artificial.")
+    else:
+        cliente_ia_sel = st.selectbox("Selecione o Cliente para Gerar Conteúdo", df_clientes["nome_empresa"].tolist())
+        cliente_ia_id = int(df_clientes[df_clientes["nome_empresa"] == cliente_ia_sel]["id"].values[0])
+        dados_c = obter_dados_cliente_por_id(cliente_ia_id)
+
+        tab_ia1, tab_ia2 = st.tabs(["✍️ Respostas de Avaliações", "📢 Ideias de Posts GMB"])
+
+        with tab_ia1:
+            st.markdown("**Gerador de Respostas Profissionais para Avaliações de Clientes:**")
+            avaliacao_recebida = st.text_area("Cole aqui o comentário deixado pelo cliente no Google Maps:")
+            
+            if st.button("✨ Gerar 3 Opções de Resposta Otimizadas com SEO"):
+                if avaliacao_recebida:
+                    st.success("Opções geradas com sucesso! Copie a que melhor se adapta:")
+                    st.markdown(f"""
+                    **Opção 1 (Agradecida & Curta):**  
+                    > *"Olá! Muito obrigado pela sua avaliação e preferência na {dados_c[1]}. É um prazer oferecer a melhor experiência em {dados_c[10]} aqui na região. Conte sempre conosco!"*
+
+                    **Opção 2 (Foco em SEO Local):**  
+                    > *"Ficamos muito felizes com o seu feedback de 5 estrelas! Na {dados_c[1]}, nos dedicamos diariamente para ser referência em {dados_c[10]}. Esperamos sua próxima visita!"*
+
+                    **Opção 3 (Institucional & Engajadora):**  
+                    > *"Agradecemos imensamente por compartilhar sua opinião positiva! Sua satisfação é nossa maior motivação. Um abraço de toda a equipe da {dados_c[1]}!"*
+                    """)
+                else:
+                    st.warning("Cole o texto da avaliação antes de gerar as respostas.")
+
+        with tab_ia2:
+            st.markdown("**Ideias de Publicações Semanais para Manter a Ficha Ativa no Google:**")
+            st.markdown(f"""
+            - 📸 **Post 1 (Destaque do Espaço/360°):** *"Você já conhece nosso espaço por dentro? Faça um passeio virtual 360° pelo Google Maps e venha nos visitar!"*
+            - 🏷️ **Post 2 (Serviço/Produto):** *"Procurando por {dados_c[10]} de qualidade? Entre em contato pelo WhatsApp e solicite um orçamento!"*
+            - ⭐ **Post 3 (Depoimento):** *"A satisfação dos nossos clientes é a nossa prioridade. Confira o que dizem sobre a {dados_c[1]} no Google!"*
+            """)
+
+# ==========================================
+# MÓDULO 4: DASHBOARD & ROI
 # ==========================================
 elif st.session_state["aba_ativa"] == "dashboard":
     st.subheader("📊 Análise de Desempenho e ROI")
@@ -666,7 +795,7 @@ elif st.session_state["aba_ativa"] == "dashboard":
         
         conn = sqlite3.connect(DB_NAME)
         df_metricas = pd.read_sql_query(
-            "SELECT mes_ano, chamadas, rotas, cliques_site, visualizacoes, novas_avaliacoes FROM metricas_mensais WHERE cliente_id = ? ORDER BY mes_ano ASC", 
+            "SELECT mes_ano, chamadas, rotas, cliques_site, visualizacoes, novas_avaliacoes, total_fotos_mes, faturamento_estimado FROM metricas_mensais WHERE cliente_id = ? ORDER BY mes_ano ASC", 
             conn, params=(cliente_id_dash,)
         )
         conn.close()
@@ -679,13 +808,13 @@ elif st.session_state["aba_ativa"] == "dashboard":
             m1.metric("Chamadas (Último Mês)", ultimas["chamadas"])
             m2.metric("Rotas (Último Mês)", ultimas["rotas"])
             m3.metric("Cliques Site/Whats", ultimas["cliques_site"])
-            m4.metric("Visualizações Ficha", ultimas["visualizacoes"])
+            m4.metric("Faturamento Estimado", f"R$ {ultimas['faturamento_estimado']:,.2f}")
 
             st.markdown("---")
             st.line_chart(df_metricas.set_index("mes_ano")[["chamadas", "rotas", "cliques_site"]])
 
 # ==========================================
-# MÓDULO 4: RELATÓRIO PDF
+# MÓDULO 5: RELATÓRIO PDF COM DUPOLA COMPARAÇÃO AUTOMÁTICA
 # ==========================================
 elif st.session_state["aba_ativa"] == "pdf":
     st.subheader("📄 Emitir Relatório Executivo em PDF")
@@ -700,8 +829,12 @@ elif st.session_state["aba_ativa"] == "pdf":
             cliente_pdf_id = int(df_clientes[df_clientes["nome_empresa"] == cliente_pdf_sel]["id"].values[0])
 
         dados_cliente = obter_dados_cliente_por_id(cliente_pdf_id)
-        qtd_ini = dados_cliente[6] if (dados_cliente and len(dados_cliente) > 6 and dados_cliente[6] is not None) else 0
-        nota_ini = dados_cliente[7] if (dados_cliente and len(dados_cliente) > 7 and dados_cliente[7] is not None) else 5.0
+        
+        dados_inicio = {
+            'qtd_avaliacoes_inicio': dados_cliente[6] if (dados_cliente and len(dados_cliente) > 6 and dados_cliente[6] is not None) else 0,
+            'nota_media_inicio': dados_cliente[7] if (dados_cliente and len(dados_cliente) > 7 and dados_cliente[7] is not None) else 5.0,
+            'qtd_fotos_inicio': dados_cliente[8] if (dados_cliente and len(dados_cliente) > 8 and dados_cliente[8] is not None) else 0
+        }
 
         conn = sqlite3.connect(DB_NAME)
         df_m = pd.read_sql_query(
@@ -714,28 +847,28 @@ elif st.session_state["aba_ativa"] == "pdf":
             st.warning("Nenhuma métrica encontrada para este cliente.")
         else:
             with col_r2:
-                mes_pdf_sel = st.selectbox("Selecione o Mês", df_m["mes_ano"].tolist())
+                mes_pdf_sel = st.selectbox("Selecione o Mês de Referência", df_m["mes_ano"].tolist())
 
-            dados_mes = df_m[df_m["mes_ano"] == mes_pdf_sel].iloc[0]
+            idx_sel = df_m[df_m["mes_ano"] == mes_pdf_sel].index[0]
+            dados_atual = df_m.iloc[idx_sel].to_dict()
+
+            dados_anterior = None
+            if idx_sel + 1 < len(df_m):
+                dados_anterior = df_m.iloc[idx_sel + 1].to_dict()
 
             st.markdown("---")
             st.write(f"**Resumo Selecionado:** {cliente_pdf_sel} - Mês {mes_pdf_sel}")
 
             pdf_bytes = gerar_pdf_relatorio(
                 nome_empresa=cliente_pdf_sel,
-                mes_ano=dados_mes["mes_ano"],
-                chamadas=dados_mes["chamadas"],
-                rotas=dados_mes["rotas"],
-                cliques=dados_mes["cliques_site"],
-                visualizacoes=dados_mes["visualizacoes"],
-                avaliacoes=dados_mes["novas_avaliacoes"],
-                acoes=dados_mes["resumo_acoes"],
-                qtd_inicio=qtd_ini,
-                nota_inicio=nota_ini
+                mes_ano=mes_pdf_sel,
+                dados_atual=dados_atual,
+                dados_anterior=dados_anterior,
+                dados_inicio=dados_inicio
             )
 
             st.download_button(
-                label="📥 Baixar Relatório Executivo em PDF",
+                label="📥 Baixar Relatório Executivo em PDF (Marca TOUR360VR)",
                 data=pdf_bytes,
                 file_name=f"Relatorio_GMB_{cliente_pdf_sel.replace(' ', '_')}_{mes_pdf_sel}.pdf",
                 mime="application/pdf"
