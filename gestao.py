@@ -524,13 +524,14 @@ def gerar_pdf_prospeccao_cases(inc_clientes, inc_faturamento, inc_grafico, inc_k
     buffer.seek(0)
     return buffer
 
-# --- CSS PERSONALIZADO ---
+# --- CSS PERSONALIZADO (COM MARGEM LATERAIS E RESPIRO NOS CARDS) ---
 st.markdown("""
     <style>
     .block-container {
-        padding-top: 1.5rem !important;
-        padding-bottom: 2.5rem !important;
-        max-width: 96% !important;
+        padding-top: 1.8rem !important;
+        padding-bottom: 2.8rem !important;
+        max-width: 90% !important; /* MARGEM LATERAL EQUILIBRADA DE 90% */
+        margin: 0 auto !important;
     }
     
     header[data-testid="stHeader"] {
@@ -547,7 +548,7 @@ st.markdown("""
         background-color: #161F30;
         border: 1px solid #2B364A;
         border-radius: 12px;
-        padding: 20px 24px !important;
+        padding: 22px 28px !important;
         margin-bottom: 24px !important;
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
     }
@@ -567,9 +568,9 @@ st.markdown("""
         margin-bottom: 0px !important;
     }
 
-    /* ESPAÇAMENTO ENTRE AS COLUNAS DE BOTÕES */
+    /* ESPAÇAMENTO ENTRE AS COLUNAS DE BOTÕES SUPERIORES */
     div[data-testid="stHorizontalBlock"] {
-        gap: 0.4rem !important;
+        gap: 0.5rem !important;
         margin-bottom: 25px !important;
     }
 
@@ -577,7 +578,7 @@ st.markdown("""
         padding: 0px !important;
     }
 
-    /* ESTILIZAÇÃO DOS BOTÕES COM AJUSTE DE FONTE E NO-WRAP COMPLETO */
+    /* ESTILIZAÇÃO DOS BOTÕES SUPERIORES */
     div[data-testid="stColumn"] button {
         width: 100% !important;
         min-height: 46px !important;
@@ -586,9 +587,9 @@ st.markdown("""
         border: 1.5px solid #455570 !important;
         color: #FFFFFF !important;
         border-radius: 8px !important;
-        padding: 2px 4px !important;
+        padding: 2px 6px !important;
         font-weight: 700 !important;
-        font-size: 0.78rem !important;
+        font-size: 0.80rem !important;
         line-height: 1.1 !important;
         display: flex !important;
         align-items: center !important;
@@ -613,12 +614,13 @@ st.markdown("""
         box-shadow: 0 0 20px rgba(255, 255, 255, 0.95) !important;
     }
 
-    /* FORMULÁRIOS E CAMPOS COM MAIS RESPIRO */
+    /* FORMULÁRIOS E CAIXAS COM RESPIRO E ESPAÇAMENTO INTERNO */
     div[data-testid="stForm"] {
         border-color: #2B364A !important;
-        padding: 24px !important;
+        padding: 28px !important;
         border-radius: 12px !important;
-        margin-top: 15px !important;
+        margin-top: 18px !important;
+        background-color: #131A28 !important;
     }
 
     div[data-testid="stTextInput"], 
@@ -626,12 +628,12 @@ st.markdown("""
     div[data-testid="stSelectbox"], 
     div[data-testid="stDateInput"],
     div[data-testid="stTextArea"] {
-        margin-bottom: 16px !important;
+        margin-bottom: 18px !important;
     }
 
     div[data-baseweb="tab-list"] {
         gap: 12px !important;
-        margin-bottom: 22px !important;
+        margin-bottom: 24px !important;
     }
 
     button[data-baseweb="tab"] {
@@ -660,7 +662,7 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# COLUNAS COM LARGURAS PROPORCIONAIS AO TAMANHO DO TEXTO DE CADA BOTÃO
+# COLUNAS COM LARGURAS PROPORCIONAIS
 cols = st.columns([1.35, 1.25, 1.25, 1.1, 1.3, 1.2, 1.25, 1.35])
 
 with cols[0]:
