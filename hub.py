@@ -110,7 +110,7 @@ st.markdown("""
         margin-top: 2.2rem;
     }
 
-    /* 4. CARDS CLICÁVEIS (Nomes dos sistemas e emojis +1 ponto extra) */
+    /* 4. CARDS CLICÁVEIS (Títulos e Emojis 100% Centralizados) */
     .clickable-card {
         display: flex;
         flex-direction: column;
@@ -135,16 +135,17 @@ st.markdown("""
         background: #161F30;
     }
 
+    /* Alinhamento Forçado ao Centro para Emojis e Nomes dos Sistemas */
     .clickable-card h3 {
         color: #FFFFFF !important;
-        font-size: 1.28rem !important; /* Aumentado +1 ponto adicional */
+        font-size: 1.28rem !important;
         font-weight: 700 !important;
         margin: 0 0 8px 0 !important;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important; /* Força o alinhamento horizontal ao centro */
         gap: 8px;
-        width: 100%;
+        width: 100% !important;
         text-align: center !important;
     }
 
