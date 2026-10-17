@@ -768,7 +768,7 @@ if st.session_state["aba_ativa"] == "cadastrar":
 
             st.markdown("---")
             link_drive_midias = st.text_input("Link da Pasta de Mídias e Fotos 360° (Google Drive / Photos / Pano2VR)", value=dados_existentes[39] if (modo_edicao and len(dados_existentes) > 39 and dados_existentes[39]) else "")
-                status_contrato = st.radio("Status do Contrato com a Agência", opts_status_contrato, index=idx_st_c, horizontal=True)
+            status_contrato = st.radio("Status do Contrato com a Agência", opts_status_contrato, index=idx_st_c, horizontal=True)
 
         # SUB-ABA 3: CONTATO & REDES SOCIAIS
         with sub_tab_contato:
