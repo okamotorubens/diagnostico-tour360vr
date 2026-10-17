@@ -682,7 +682,7 @@ with cols[1]:
         st.rerun()
 
 with cols[2]:
-    if st.button("📋 Métricas", key="btn_inc", type="primary" if st.session_state["aba_ativa"] == "metricas" else "secondary"):
+    if st.button("📋 Métricas & SEO ", key="btn_inc", type="primary" if st.session_state["aba_ativa"] == "metricas" else "secondary"):
         st.session_state["aba_ativa"] = "metricas"
         st.rerun()
 
