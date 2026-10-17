@@ -40,7 +40,7 @@ st.markdown("""
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     }
 
-    /* 2. SIDEBAR COM LOGOS DESCIDAS 1 LINHA */
+    /* 2. SIDEBAR COM LOGOS DESCIDAS */
     [data-testid="stSidebar"] {
         background-color: #07090E;
         border-right: 1px solid #1E2640;
@@ -51,7 +51,7 @@ st.markdown("""
         flex-direction: column !important;
         justify-content: flex-start !important;
         align-items: center !important;
-        padding-top: 6.8rem !important; /* Deslocado 1 linha para baixo */
+        padding-top: 6.8rem !important;
     }
 
     /* Container das Logos na Sidebar */
@@ -110,7 +110,7 @@ st.markdown("""
         margin-top: 2.2rem;
     }
 
-    /* 4. CARDS CLICÁVEIS (Nomes dos sistemas e emojis +1 ponto) */
+    /* 4. CARDS CLICÁVEIS (Nomes dos sistemas e emojis +1 ponto extra) */
     .clickable-card {
         display: flex;
         flex-direction: column;
@@ -137,7 +137,7 @@ st.markdown("""
 
     .clickable-card h3 {
         color: #FFFFFF !important;
-        font-size: 1.18rem !important; /* Aumentado +1 ponto */
+        font-size: 1.28rem !important; /* Aumentado +1 ponto adicional */
         font-weight: 700 !important;
         margin: 0 0 8px 0 !important;
         display: flex;
