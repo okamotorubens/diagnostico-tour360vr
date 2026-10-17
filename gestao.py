@@ -115,8 +115,8 @@ def obter_dados_cliente_por_id(cliente_id):
 # --- LISTA DE HORÁRIOS PRÉ-CONFIGURADOS (Intervalos de 30 min) ---
 HORARIOS_OPCOES = [f"{h:02d}:{m:02d}" for h in range(24) for m in (0, 30)]
 
-# --- FUNÇÃO DE GERAÇÃO DO RELATÓRIO PDF ---
-def gerar_pdf_relatorio(nome_empresa, mes_ano, chamadas, rotas, cliques, visualizacoes, avaliacoes, acoes):
+# --- FUNÇÃO DE GERAÇÃO DO RELATÓRIO EXECUÇÃO PDF (ILUSTRATIVO E COMPARATIVO) ---
+def gerar_pdf_relatorio(nome_empresa, mes_ano, chamadas, rotas, cliques, visualizacoes, avaliacoes, acoes, qtd_inicio=0, nota_inicio=5.0):
     buffer = BytesIO()
     doc = SimpleDocTemplate(
         buffer,
@@ -126,56 +126,99 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, chamadas, rotas, cliques, visuali
     story = []
     styles = getSampleStyleSheet()
 
-    title_style = ParagraphStyle(
-        'DocTitle', parent=styles['Normal'],
-        fontName='Helvetica-Bold', fontSize=20, leading=24, textColor=colors.HexColor('#00E5FF')
+    # Estilos de Texto
+    title_brand_style = ParagraphStyle(
+        'DocBrandTitle', parent=styles['Normal'],
+        fontName='Helvetica-Bold', fontSize=18, leading=22, textColor=colors.HexColor('#00E5FF')
     )
-    subtitle_style = ParagraphStyle(
-        'DocSubtitle', parent=styles['Normal'],
-        fontName='Helvetica', fontSize=10, leading=14, textColor=colors.HexColor('#94A3B8')
+    title_sub_style = ParagraphStyle(
+        'DocBrandSubtitle', parent=styles['Normal'],
+        fontName='Helvetica', fontSize=10, leading=13, textColor=colors.HexColor('#64748B')
     )
     section_style = ParagraphStyle(
         'DocSection', parent=styles['Normal'],
-        fontName='Helvetica-Bold', fontSize=12, leading=16, textColor=colors.HexColor('#1E2640')
+        fontName='Helvetica-Bold', fontSize=12, leading=16, textColor=colors.HexColor('#1E293B')
     )
     body_style = ParagraphStyle(
         'DocBody', parent=styles['Normal'],
         fontName='Helvetica', fontSize=9, leading=13, textColor=colors.HexColor('#334155')
     )
+    footer_style = ParagraphStyle(
+        'DocFooter', parent=styles['Normal'],
+        fontName='Helvetica', fontSize=8, leading=11, alignment=1, textColor=colors.HexColor('#64748B')
+    )
 
-    story.append(Paragraph("<b>TOUR360VR — GESTÃO MENSAL GMB</b>", title_style))
-    story.append(Paragraph(f"Relatório Executivo de Performance | <b>{nome_empresa}</b> — Mês: <b>{mes_ano}</b>", subtitle_style))
-    story.append(Spacer(1, 10))
+    # 1. CABEÇALHO COM NOME DA EMPRESA E TÍTULO ALINHADO À ESQUERDA
+    header_table_data = [
+        [
+            Paragraph("<b>OKAMOTO MÍDIAS VISUAIS & TOUR360VR</b><br/><font size=8 color='#64748B'>Gestão e Estratégia de Presença Local GMB</font>", title_brand_style),
+            Paragraph(f"<b>RELATÓRIO DE DESEMPENHO</b><br/><font size=9 color='#00E5FF'><b>{nome_empresa}</b></font><br/><font size=8 color='#64748B'>Mês de Referência: {mes_ano}</font>", ParagraphStyle('RHeader', parent=styles['Normal'], alignment=2, fontName='Helvetica'))
+        ]
+    ]
+    t_header = Table(header_table_data, colWidths=[300, 220])
+    t_header.setStyle(TableStyle([
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+    ]))
+    story.append(t_header)
+    story.append(Spacer(1, 8))
+
+    # LINHA DIVISÓRIA FINA E ELEGANTE EM AZUL CLARO
     story.append(HRFlowable(width="100%", thickness=1.5, color=colors.HexColor('#00E5FF'), spaceAfter=15))
 
+    # 2. BLOCO INFORMATIVO: ANCORAGEM INICIAL (COMO A FICHA ESTAVA)
+    story.append(Paragraph("<b>1. Ponto de Partida e Ancoragem Inicial da Ficha:</b>", section_style))
+    story.append(Spacer(1, 6))
+    
+    ancoragem_data = [
+        [
+            Paragraph(f"<b>Métricas no Início da Gestão:</b><br/>• Nota Inicial: <b>{nota_inicio} ★</b><br/>• Qtd. Inicial de Avaliações: <b>{qtd_inicio}</b>", body_style),
+            Paragraph("<b>Objetivo da Gestão Recorrente:</b><br/>Otimização contínua de SEO Local, atração de novas chamadas, rotas no GPS e melhoria de reputação da marca.", body_style)
+        ]
+    ]
+    t_ancoragem = Table(ancoragem_data, colWidths=[260, 260])
+    t_ancoragem.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#F8FAFC')),
+        ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#E2E8F0')),
+        ('PADDING', (0,0), (-1,-1), 8),
+    ]))
+    story.append(t_ancoragem)
+    story.append(Spacer(1, 15))
+
+    # 3. TABELA ILUSTRATIVA DE RESULTADOS DO MÊS
+    story.append(Paragraph("<b>2. Resultado & Performance Alcançada no Período:</b>", section_style))
+    story.append(Spacer(1, 6))
+
     data_table = [
-        [Paragraph("<b>Indicador de Desempenho</b>", section_style), Paragraph("<b>Resultado do Mês</b>", section_style)],
-        [Paragraph("📞 Chamadas Telefónicas Diretas", body_style), Paragraph(f"<b>{chamadas}</b>", body_style)],
-        [Paragraph("🗺️ Solicitações de Rota (GPS)", body_style), Paragraph(f"<b>{rotas}</b>", body_style)],
-        [Paragraph("🌐 Cliques no Website / WhatsApp", body_style), Paragraph(f"<b>{cliques}</b>", body_style)],
-        [Paragraph("👁️ Visualizações Totais da Ficha", body_style), Paragraph(f"<b>{visualizacoes}</b>", body_style)],
-        [Paragraph("⭐ Novas Avaliações Recebidas", body_style), Paragraph(f"<b>{avaliacoes} ★★★★★</b>", body_style)],
+        [Paragraph("<b>Indicador de Desempenho (KPI)</b>", section_style), Paragraph("<b>Resultado Obtido</b>", section_style)],
+        [Paragraph("📞 Chamadas Telefónicas Diretas do Perfil", body_style), Paragraph(f"<b>{chamadas} ligações</b>", body_style)],
+        [Paragraph("🗺️ Solicitações de Rota no GPS (Google Maps)", body_style), Paragraph(f"<b>{rotas} rotas</b>", body_style)],
+        [Paragraph("🌐 Cliques no Website / Botão WhatsApp", body_style), Paragraph(f"<b>{cliques} cliques</b>", body_style)],
+        [Paragraph("👁️ Visualizações Totais da Ficha na Pesquisa e Maps", body_style), Paragraph(f"<b>{visualizacoes} acessos</b>", body_style)],
+        [Paragraph("⭐ Novas Avaliações Recebidas no Mês", body_style), Paragraph(f"<b>{avaliacoes} novas ★★★★★</b>", body_style)],
     ]
 
-    t = Table(data_table, colWidths=[320, 200])
-    t.setStyle(TableStyle([
+    t_perf = Table(data_table, colWidths=[330, 190])
+    t_perf.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#F1F5F9')),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 8),
-        ('TOPPADDING', (0,0), (-1,-1), 8),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 7),
+        ('TOPPADDING', (0,0), (-1,-1), 7),
         ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#CBD5E1')),
         ('ALIGN', (1,0), (1,-1), 'CENTER'),
     ]))
-    story.append(t)
+    story.append(t_perf)
     story.append(Spacer(1, 15))
 
-    story.append(Paragraph("<b>Ações e Otimizações Executadas no Período:</b>", section_style))
+    # 4. AÇÕES E OTIMIZAÇÕES EXECUTADAS
+    story.append(Paragraph("<b>3. Ações Técnicas & Melhores Práticas Aplicadas:</b>", section_style))
     story.append(Spacer(1, 6))
-    acoes_texto = acoes if acoes else "Otimizações de rotina e monitorização contínua do perfil."
+    acoes_texto = acoes if acoes else "Otimizações de rotina, monitorização de palavras-chave locais e gestão de reputação da ficha."
     story.append(Paragraph(acoes_texto.replace('\n', '<br/>'), body_style))
-    story.append(Spacer(1, 20))
+    story.append(Spacer(1, 25))
 
-    story.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor('#94A3B8'), spaceAfter=10))
-    story.append(Paragraph("<b>Okamoto Mídias Visuais & Tour360vr</b> — Gestão e Estratégia de Presença Local", subtitle_style))
+    # 5. RODAPÉ COM LINHA DIVISÓRIA E INFORMAÇÕES DO SISTEMA (IGUAL AO DIAGNÓSTICO)
+    story.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor('#CBD5E1'), spaceAfter=8))
+    story.append(Paragraph("<b>tour360vr.com.br</b> &nbsp;|&nbsp; contato@tour360vr.com.br &nbsp;|&nbsp; Whatsapp: (16) 99133-2121 &nbsp;|&nbsp; Tour360VR - Gestão de Perfil do Google", footer_style))
 
     doc.build(story)
     buffer.seek(0)
@@ -302,7 +345,7 @@ if st.session_state["aba_ativa"] == "cadastrar":
             "🏢 Sobre & Status Ficha", "📞 Contato & Redes", "📍 Local & Áreas", "⏰ Horários Rápidos", "🛠️ Checklist de Pendências", "📜 Histórico de Alterações"
         ])
         
-        # SUB-ABA 1: SOBRE & AUDITORIA DA FICHA (OPÇÕES DROPDOWN LIMPISSIMAS)
+        # SUB-ABA 1: SOBRE & AUDITORIA DA FICHA (OPÇÕES DROPDOWN LIMPÍSSIMAS)
         with sub_tab_sobre:
             st.markdown("**Identificação Comercial & Auditoria Inicial:**")
             c_s1, c_s2 = st.columns(2)
@@ -620,6 +663,10 @@ elif st.session_state["aba_ativa"] == "pdf":
             cliente_pdf_sel = st.selectbox("Selecione o Cliente", df_clientes["nome_empresa"].tolist(), key="pdf_cliente")
             cliente_pdf_id = int(df_clientes[df_clientes["nome_empresa"] == cliente_pdf_sel]["id"].values[0])
 
+        dados_cliente = obter_dados_cliente_por_id(cliente_pdf_id)
+        qtd_ini = dados_cliente[6] if (dados_cliente and len(dados_cliente) > 6 and dados_cliente[6] is not None) else 0
+        nota_ini = dados_cliente[7] if (dados_cliente and len(dados_cliente) > 7 and dados_cliente[7] is not None) else 5.0
+
         conn = sqlite3.connect(DB_NAME)
         df_m = pd.read_sql_query(
             "SELECT * FROM metricas_mensais WHERE cliente_id = ? ORDER BY mes_ano DESC", 
@@ -646,7 +693,9 @@ elif st.session_state["aba_ativa"] == "pdf":
                 cliques=dados_mes["cliques_site"],
                 visualizacoes=dados_mes["visualizacoes"],
                 avaliacoes=dados_mes["novas_avaliacoes"],
-                acoes=dados_mes["resumo_acoes"]
+                acoes=dados_mes["resumo_acoes"],
+                qtd_inicio=qtd_ini,
+                nota_inicio=nota_ini
             )
 
             st.download_button(
