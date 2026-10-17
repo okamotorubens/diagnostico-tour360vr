@@ -69,7 +69,7 @@ if "aprovar" in query_params or st.session_state.get("modo_aprovacao", False):
         .aprovacao-container { max-width: 750px; margin: 30px auto; background: #131A28; padding: 30px; border-radius: 12px; border: 1px solid #2B364A; color: #E0E6ED; font-family: 'Inter', sans-serif; text-align: center; }
         .aprovacao-title { color: #FFFFFF; font-size: 1.6rem; font-weight: 800; margin-top: 10px; margin-bottom: 5px; }
         .aprovacao-sub { color: #8E9BAE; font-size: 0.95rem; margin-bottom: 20px; }
-        .brand-header { font-size: 2rem; font-weight: 900; color: #2563EB; text-align: center; margin-top: 20px; letter-spacing: 1px; }
+        .brand-header { font-size: 2rem; font-weight: 900; color: #FFFFFF; text-align: center; margin-top: 20px; letter-spacing: 1px; }
         </style>
     """, unsafe_allow_html=True)
 
@@ -104,7 +104,6 @@ if "aprovar" in query_params or st.session_state.get("modo_aprovacao", False):
 
     st.markdown("---")
     
-    # Geração dinâmica da mensagem para o WhatsApp do Rubens
     pautas_aprovadas_txt = "\n".join([k for k, v in pautas_status.items() if v])
     msg_envio = f"Olá Rubens!\nAvaliei o planejamento de pautas na plataforma da Tour360VR.\n\nPautas Aprovadas:\n{pautas_aprovadas_txt}\n\nAjustes Solicitados:\n{obs_cliente if obs_cliente else 'Nenhum ajuste adicional.'}"
     link_wsp_final = f"https://wa.me/5516991332121?text={urllib.parse.quote(msg_envio)}"
@@ -428,14 +427,17 @@ st.markdown("""
 if "aba_ativa" not in st.session_state:
     st.session_state["aba_ativa"] = "cadastrar"
 
-# --- CARD DE TOPO LIMPO (SEM LOGO QUEBRADA) ---
+# --- CARD DE TOPO (TÍTULO EM BRANCO PURO) ---
 with st.container():
     st.markdown("""
         <div class="top-card-container">
-            <h1 class="main-title-card" style="margin: 0; color: #2563EB;">Tour360VR | Gestão Mensal & Estratégia</h1>
+            <h1 class="main-title-card" style="margin: 0; color: #FFFFFF;">Tour360VR | Gestão Mensal & Estratégia</h1>
             <p class="sub-title-card" style="margin: 0;">Plataforma corporativa de inteligência de Google Maps, auditoria, curadoria e contratos.</p>
         </div>
     """, unsafe_allow_html=True)
+
+# 1 LINHA DE ESPAÇO EXATA ENTRE O CARD E OS BOTÕES DAS ETAPAS
+st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
 
 cols = st.columns(8)
 aba_map = [("cadastrar", "⚙️ Ficha"), ("auditoria", "🔍 Auditoria"), ("metricas", "📋 Métricas"), ("ia", "🎯 Curadoria"), ("dashboard", "📊 Dashboard"), ("cases", "🏆 Prospecção"), ("pdf", "📄 Relatório"), ("financeiro", "💰 Financeiro")]
@@ -759,7 +761,14 @@ elif st.session_state["aba_ativa"] == "ia":
         msg_wsp = urllib.parse.quote(texto_msg_wsp)
 
         if num_limpo:
-            st.link_button("📱 Abrir WhatsApp do Cliente", url=f"https://wa.me/55{num_limpo}?text={msg_wsp}", type="primary", use_container_width=True)
+            # BOTÃO EM VERDE DO WHATSAPP COM A FRASE EXATA SOLICITADA
+            st.markdown(f'''
+                <a href="https://wa.me/55{num_limpo}?text={msg_wsp}" target="_blank" style="text-decoration:none;">
+                    <div style="width:100%; background-color:#16A34A; color:white; border:none; padding:12px; border-radius:8px; font-weight:bold; text-align:center; cursor:pointer; font-size:1rem;">
+                        Enviar para o Whatsapp do cliente
+                    </div>
+                </a>
+            ''', unsafe_allow_html=True)
         else:
             st.warning("Cadastre o WhatsApp do cliente na aba 'Ficha Comercial' para habilitar o botão de envio direto.")
 
