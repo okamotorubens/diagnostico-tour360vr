@@ -307,7 +307,7 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
     buffer.seek(0)
     return buffer
 
-# --- GERAÇÃO DE CONTRATO EM PDF (REESTRUTURADO COM PADRÃO ENTERPRISE PROFISSIONAL) ---
+# --- GERAÇÃO DE CONTRATO EM PDF (CORRIGIDO PARA LIMPEZA DE FORMATOS E PADRÃO ENTERPRISE) ---
 def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duracao=None):
     buffer = BytesIO()
     doc = SimpleDocTemplate(
@@ -315,22 +315,22 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
         pagesize=letter, 
         rightMargin=36, 
         leftMargin=36, 
-        topMargin=25, 
-        bottomMargin=12,
+        topMargin=22, 
+        bottomMargin=10,
         title=f"Contrato Tour360VR - {dados_cliente.get('nome_empresa', 'Cliente')}"
     )
     story = []
     styles = getSampleStyleSheet()
 
-    # Estilos padronizados e refinados para o Contrato
+    # Estilos profissionais rigorosamente limpos (sem tags markdown em string simples)
     title_brand_style = ParagraphStyle('DocBrandTitle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=12, leading=15, textColor=colors.HexColor('#000000'))
     doc_title_style = ParagraphStyle('DocTitleStyle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, leading=14, alignment=1, textColor=colors.HexColor('#1E293B'))
     body_style = ParagraphStyle('DocBody', parent=styles['Normal'], fontName='Helvetica', fontSize=8.5, leading=11.5, alignment=4, textColor=colors.HexColor('#1E293B'))
     footer_style = ParagraphStyle('DocFooter', parent=styles['Normal'], fontName='Helvetica', fontSize=8, leading=10, alignment=1, textColor=colors.HexColor('#334155'))
     signature_style = ParagraphStyle('DocSig', parent=styles['Normal'], fontName='Helvetica', fontSize=8.5, leading=11, alignment=1, textColor=colors.HexColor('#1E293B'))
 
-    # Carregamento robusto da logo oficial
-    logo_flowable = Paragraph("🌐 <b>Tour360VR</b>", title_brand_style)
+    # Carregamento seguro da logo oficial do GitHub
+    logo_flowable = Paragraph("<b>Tour360VR</b>", title_brand_style)
     try:
         resp_img = requests.get(LOGO_TOUR360_URL, timeout=3)
         if resp_img.status_code == 200:
@@ -339,7 +339,7 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     except Exception:
         pass
 
-    # Cabeçalho corporativo unificado com tabela limpa
+    # Cabeçalho corporativo oficial
     header_table_data = [
         [
             logo_flowable,
@@ -354,9 +354,9 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     ]))
     story.append(t_header)
     story.append(Spacer(1, 4))
-    story.append(HRFlowable(width="100%", thickness=1.0, color=colors.HexColor('#2563EB'), spaceAfter=8))
+    story.append(HRFlowable(width="100%", thickness=1.0, color=colors.HexColor('#2563EB'), spaceAfter=6))
 
-    # Data por extenso formatada
+    # Data por extenso
     meses_pt = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"]
     hoje = agora_brasil()
     data_extenso = f"Ribeirão Preto - SP, {hoje.day} de {meses_pt[hoje.month - 1]} de {hoje.year}."
@@ -364,12 +364,12 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     date_style = ParagraphStyle('DateStyle', parent=styles['Normal'], fontName='Helvetica', fontSize=8.5, alignment=2, textColor=colors.HexColor('#334155'), spaceAfter=0)
     story.append(Paragraph(data_extenso, date_style))
 
-    # Espaçamento rigoroso e elegante antes do Título do Contrato
-    story.append(Spacer(1, 10))
+    # Espaçamento e título centralizado
+    story.append(Spacer(1, 8))
     story.append(Paragraph("TERMO DE CONTRATAÇÃO DE SERVIÇOS", doc_title_style))
 
-    # Espaçamento rigoroso entre título e o corpo do texto
-    story.append(Spacer(1, 10))
+    # Espaçamento ideal antes do texto do contrato
+    story.append(Spacer(1, 8))
 
     nome_emp = dados_cliente.get("nome_empresa", "Empresa Cliente")
     resp_emp = dados_cliente.get("responsavel", "Responsável")
@@ -385,24 +385,24 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
         detalhe_plano = f"{plano_escolhido}, no valor total de R$ {valor_plano:,.2f}"
 
     txt_qualificacao = f"""
-    <b>CONTRATADA:</b> <a href="https://tour360vr.com.br" color="#000000"><b>Tour360VR</b></a>, representada por Rubens Okamoto, CNPJ: 04.824.331/0001-05 e Telefone: <a href="https://wa.me/5516991332121" color="#000000">(16) 99133-2121</a>.<br/><br/>
-    <b>CONTRATANTE:</b> <b>{nome_emp}</b>, {responsavel_str}, {localizacao_str}, Telefone: <a href="tel:{tel_emp}" color="#000000">{tel_emp}</a>.<br/><br/>
-    A <a href="https://tour360vr.com.br" color="#000000"><b>Tour360VR</b></a> (<b>CONTRATADA</b>) compromete-se a executar os serviços profissionais especializados em otimização, reestruturação técnica, curadoria de pautas e/ou produção de Tour Virtual 360° para o perfil do Google da <b>CONTRATANTE</b>, referentes ao plano contratado <b>{detalhe_plano}</b>.
+    <b>CONTRATADA:</b> Tour360VR, representada por Rubens Okamoto, CNPJ: 04.824.331/0001-05 e Telefone: (16) 99133-2121.<br/><br/>
+    <b>CONTRATANTE:</b> <b>{nome_emp}</b>, {responsavel_str}, {localizacao_str}, Telefone: {tel_emp}.<br/><br/>
+    A Tour360VR (<b>CONTRATADA</b>) compromete-se a executar os serviços profissionais especializados em otimização, reestruturação técnica, curadoria de pautas e produção de Tour Virtual 360 para o perfil do Google da <b>CONTRATANTE</b>, referentes ao plano contratado <b>{detalhe_plano}</b>.
     """
     story.append(Paragraph(txt_qualificacao, body_style))
-    story.append(Spacer(1, 6))
+    story.append(Spacer(1, 4))
 
     clausulas = """
-    <b>CLÁUSULA PRIMEIRA - DO OBJETO:</b> Os serviços serão iniciados em até 5 dias úteis após a confirmação do acordo e o fornecimento de todos os acessos e informações necessárias à gestão do perfil pela <b>CONTRATANTE</b>.<br/><br/>
-    <b>CLÁUSULA SEGUNDA - DAS OBRIGAÇÕES E PAGAMENTO:</b> O não pagamento no prazo pactuado sujeitará o presente contrato à incidência de juros moratórios legais e à suspensão temporária dos serviços pela <a href="https://tour360vr.com.br" color="#000000"><b>Tour360VR</b></a> até a devida regularização financeira.<br/><br/>
-    <b>CLÁUSULA TERCEIRA - DOS DIREITOS DE USO E PROPRIEDADE:</b> Os direitos de uso do Tour Virtual 360° e fotos em alta definição serão cedidos em caráter ilimitado à <b>CONTRATANTE</b> para veiculação oficial no Google. A <a href="https://tour360vr.com.br" color="#000000"><b>Tour360VR</b></a> reserva-se o direito de utilizar o material gerado em seu portfólio profissional de divulgação.<br/><br/>
+    <b>CLÁUSULA PRIMEIRA - DO OBJETO:</b> Os serviços serão iniciados em até 5 dias úteis após a confirmação do acordo e o fornecimento de todos os acessos e informações necessárias à gestão do perfil pela CONTRATANTE.<br/><br/>
+    <b>CLÁUSULA SEGUNDA - DAS OBRIGAÇÕES E PAGAMENTO:</b> O não pagamento no prazo pactuado sujeitará o presente contrato à incidência de juros moratórios legais e à suspensão temporária dos serviços pela Tour360VR até a devida regularização financeira.<br/><br/>
+    <b>CLÁUSULA TERCEIRA - DOS DIREITOS DE USO E PROPRIEDADE:</b> Os direitos de uso do Tour Virtual 360 e fotos em alta definição serão cedidos em caráter ilimitado à CONTRATANTE para veiculação oficial no Google. A Tour360VR reserva-se o direito de utilizar o material gerado em seu portfólio profissional de divulgação.<br/><br/>
     <b>CLÁUSULA QUARTA - CONFIDENCIALIDADE E LGPD:</b> As partes comprometem-se a manter sob sigilo absoluto todas as informações operacionais fornecidas, em estrita conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018).<br/><br/>
     <b>CLÁUSULA QUINTA - VALIDADE DA PROPOSTA:</b> A presente proposta e condições comerciais possuem validade oficial de 15 (quinze) dias a contar da data de sua emissão.
     """
     story.append(Paragraph(clausulas, body_style))
     
-    # Espaçamento generoso e formal antes das assinaturas
-    story.append(Spacer(1, 22))
+    # Espaçamento formal antes das assinaturas
+    story.append(Spacer(1, 16))
 
     assinaturas_data = [
         [
@@ -413,9 +413,9 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     t_ass = Table(assinaturas_data, colWidths=[260, 260])
     story.append(t_ass)
     
-    # Rodapé ancorado rigorosamente quase no fim da página única
-    story.append(Spacer(1, 10))
-    story.append(HRFlowable(width="100%", thickness=0.8, color=colors.HexColor('#2563EB'), spaceAfter=3))
+    # Rodapé ancorado exatamente na base inferior da folha única
+    story.append(Spacer(1, 8))
+    story.append(HRFlowable(width="100%", thickness=0.8, color=colors.HexColor('#2563EB'), spaceAfter=2))
     story.append(Paragraph('<a href="https://tour360vr.com.br" color="#000000"><b>tour360vr.com.br</b></a> &nbsp;|&nbsp; <a href="mailto:contato@tour360vr.com.br" color="#000000">contato@tour360vr.com.br</a> &nbsp;|&nbsp; <a href="https://wa.me/5516991332121" color="#000000">WhatsApp: (16) 99133-2121</a>', footer_style))
 
     doc.build(story)
