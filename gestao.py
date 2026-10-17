@@ -450,18 +450,18 @@ st.markdown("""
 if "aba_ativa" not in st.session_state:
     st.session_state["aba_ativa"] = "cadastrar"
 
-# --- CARD DE TOPO ATUALIZADO COM A LOGO DO TOUR360VR ---
-st.markdown(f"""
-<div class="top-card-container">
-    <div style="display: flex; align-items: center; gap: 15px;">
-        <img src="{LOGO_TOUR360_URL}" width="45" style="border-radius: 4px;" />
-        <div>
+# --- CARD DE TOPO CORRIGIDO COM COLUNAS NATIVAS DO STREAMLIT ---
+with st.container():
+    st.markdown('<div class="top-card-container">', unsafe_allow_html=True)
+    col_logo, col_texto = st.columns([0.8, 9.2], vertical_alignment="center")
+    with col_logo:
+        st.image(LOGO_TOUR360_URL, width=50)
+    with col_texto:
+        st.markdown("""
             <h1 class="main-title-card" style="margin: 0;">📈 Gestão Mensal & Estratégia do Perfil</h1>
-            <p class="sub-title-card">Plataforma corporativa de inteligência de Google Maps, auditoria, curadoria e contratos.</p>
-        </div>
-    </div>
-</div>
-""", unsafe_allow_html=True)
+            <p class="sub-title-card" style="margin: 0;">Plataforma corporativa de inteligência de Google Maps, auditoria, curadoria e contratos.</p>
+        """, unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
 cols = st.columns(8)
 aba_map = [("cadastrar", "⚙️ Ficha"), ("auditoria", "🔍 Auditoria"), ("metricas", "📋 Métricas"), ("ia", "🎯 Curadoria"), ("dashboard", "📊 Dashboard"), ("cases", "🏆 Prospecção"), ("pdf", "📄 Relatório"), ("financeiro", "💰 Financeiro")]
