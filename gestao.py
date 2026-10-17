@@ -85,7 +85,7 @@ def init_db():
         try:
             c.execute(f"ALTER TABLE clientes ADD COLUMN {nome_coluna} {tipo_coluna}")
         except sqlite3.OperationalError:
-            pass # A coluna já existe no banco
+            pass
 
     # 2. Tabela de Histórico de Alterações
     c.execute('''
@@ -607,10 +607,10 @@ if st.session_state["aba_ativa"] == "cadastrar":
             st.markdown("---")
             descricao_empresa = st.text_area("Descrição Oficial da Empresa (Otimizada para SEO Local)", value=dados_existentes[15] if (modo_edicao and len(dados_existentes) > 15) else "", height=180)
 
-        # SUB-ABA FINANCEIRA DO CONTRATO DO CLIENTE
+        # SUB-ABA FINANCEIRA DO CONTRATO DO CLIENTE (COM RADIO BUTTONS PADRONIZADOS)
         with sub_tab_financeiro:
             st.markdown("**Dados do Contrato do Cliente (Visível apenas para o Administrador da Agência):**")
-            col_f1, col_f2, col_f3 = st.columns(3)
+            col_f1, col_f2 = st.columns(2)
             with col_f1:
                 valor_contrato_mensal = st.number_input(
                     "Valor da Mensalidade do Cliente (R$)",
@@ -623,11 +623,14 @@ if st.session_state["aba_ativa"] == "cadastrar":
                     min_value=1, max_value=31, step=1,
                     value=int(dados_existentes[10]) if (modo_edicao and len(dados_existentes) > 10 and dados_existentes[10] is not None) else 10
                 )
-            with col_f3:
-                opts_status_contrato = ["Ativo", "Em Negociação", "Pausado", "Cancelado"]
-                val_status = dados_existentes[11] if (modo_edicao and len(dados_existentes) > 11) else "Ativo"
-                idx_st_c = opts_status_contrato.index(val_status) if val_status in opts_status_contrato else 0
-                status_contrato = st.selectbox("Status do Contrato", opts_status_contrato, index=idx_st_c)
+
+            st.markdown("---")
+            opts_status_contrato = ["Ativo", "Em Negociação", "Pausado", "Cancelado"]
+            val_status = dados_existentes[11] if (modo_edicao and len(dados_existentes) > 11) else "Ativo"
+            idx_st_c = opts_status_contrato.index(val_status) if val_status in opts_status_contrato else 0
+            
+            # ALTERADO DE SELECTBOX PARA RADIO BUTTONS HORIZONTAIS
+            status_contrato = st.radio("Status do Contrato com a Agência", opts_status_contrato, index=idx_st_c, horizontal=True)
 
         # SUB-ABA 3: CONTATO & REDES SOCIAIS
         with sub_tab_contato:
@@ -856,7 +859,7 @@ elif st.session_state["aba_ativa"] == "metricas":
                 st.info(f"💰 **Faturamento Estimado Gerado no Mês:** R$ {faturamento_estimado:,.2f}")
 
                 st.markdown("---")
-                resumo_acoes = st.text_area("🛠️ Ações Realizadas no Mês (Otimizações, fotos 360°, posts, etc.)")
+                resumo_acoes = st.text_area("🛠️ Ações Realizadas no Mês (Otimizaciones, fotos 360°, posts, etc.)")
 
                 btn_salvar_metricas = st.form_submit_button("Salvar Métricas do Mês")
 
