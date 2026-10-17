@@ -18,29 +18,29 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- BANCO DE DADOS (SQLite Expandido) ---
+# --- BANCO DE DADOS (SQLite com Histórico de Versões) ---
 DB_NAME = "gestao_gmb.db"
 
 def init_db():
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
     
-    # Tabela de Clientes Completa
+    # Tabela Principal de Clientes
     c.execute('''
         CREATE TABLE IF NOT EXISTS clientes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             nome_empresa TEXT UNIQUE NOT NULL,
             responsavel TEXT,
             data_abertura TEXT,
-            ficha_reivindicada INTEGER DEFAULT 1,
-            possui_avaliacoes INTEGER DEFAULT 1,
-            avaliacoes_respondidas INTEGER DEFAULT 1,
+            ficha_reivindicada TEXT,
+            status_avaliacoes TEXT,
+            status_respostas_avaliacoes TEXT,
             categoria_principal TEXT,
             categorias_secundarias TEXT,
             descricao_empresa TEXT,
             telefone_contato TEXT,
             whatsapp TEXT,
-            chat_status INTEGER DEFAULT 1,
+            chat_status TEXT,
             website TEXT,
             instagram TEXT,
             facebook TEXT,
@@ -62,6 +62,17 @@ def init_db():
             pendencias_checklist TEXT,
             observacoes_tecnicas TEXT,
             data_inicio TEXT
+        )
+    ''')
+
+    # Tabela de Histórico / Auditoria da Ficha (Versões Anterior x Atual)
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS historico_ficha (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            cliente_id INTEGER,
+            data_alteracao TEXT,
+            descricao_alteracao TEXT,
+            FOREIGN KEY (cliente_id) REFERENCES clientes (id)
         )
     ''')
     
@@ -98,6 +109,9 @@ def obter_dados_cliente_por_id(cliente_id):
     row = c.fetchone()
     conn.close()
     return row
+
+# --- LISTA DE HORÁRIOS PRÉ-CONFIGURADOS (Intervalos de 30 min) ---
+HORARIOS_OPCOES = [f"{h:02d}:{m:02d}" for h in range(24) for m in (0, 30)]
 
 # --- FUNÇÃO DE GERAÇÃO DO RELATÓRIO PDF ---
 def gerar_pdf_relatorio(nome_empresa, mes_ano, chamadas, rotas, cliques, visualizacoes, avaliacoes, acoes):
@@ -165,7 +179,7 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, chamadas, rotas, cliques, visuali
     buffer.seek(0)
     return buffer
 
-# --- CSS PERSONALIZADO (Idêntico ao Hub Central) ---
+# --- CSS PERSONALIZADO (Padrão Neon Branco Unificado) ---
 st.markdown("""
     <style>
     .block-container {
@@ -188,11 +202,11 @@ st.markdown("""
         color: #FFFFFF;
         font-weight: 800;
         font-size: 1.85rem;
-        text-shadow: 0 0 12px rgba(0, 229, 255, 0.6);
+        text-shadow: 0 0 12px rgba(255, 255, 255, 0.6);
         margin-bottom: 1.2rem;
     }
 
-    /* BOTÕES DA BARRA DE NAVEGAÇÃO - PADRÃO DO HUB (BORDA BRANCA + HOVER CIANO NEON) */
+    /* BOTÕES DA BARRA DE NAVEGAÇÃO - PADRÃO DO HUB */
     div[data-testid="stColumn"] > div > div > button {
         width: 100% !important;
         background: #121824 !important;
@@ -233,7 +247,7 @@ if "aba_ativa" not in st.session_state:
 col_n1, col_n2, col_n3, col_n4 = st.columns(4)
 
 with col_n1:
-    if st.button("⚙️ Cadastrar Cliente & Ficha", key="btn_cad", type="primary" if st.session_state["aba_ativa"] == "cadastrar" else "secondary"):
+    if st.button("⚙️ Cadastrar / Editar Ficha", key="btn_cad", type="primary" if st.session_state["aba_ativa"] == "cadastrar" else "secondary"):
         st.session_state["aba_ativa"] = "cadastrar"
         st.rerun()
 
@@ -261,7 +275,6 @@ if st.session_state["aba_ativa"] == "cadastrar":
     st.subheader("⚙️ Cadastro e Atualização de Informações Comerciais (GMB)")
     
     df_clientes_existentes = obter_clientes_unicos()
-    
     modo_edicao = False
     dados_existentes = None
     
@@ -273,41 +286,54 @@ if st.session_state["aba_ativa"] == "cadastrar":
             modo_edicao = True
             c_id = int(df_clientes_existentes[df_clientes_existentes["nome_empresa"] == cliente_selecionado_menu]["id"].values[0])
             dados_existentes = obter_dados_cliente_por_id(c_id)
-            st.info(f"Modo de Edição Ativo: Alterando os dados de **{cliente_selecionado_menu}**.")
+            st.info(f"Modo de Edição Ativo: Alterando a Ficha de **{cliente_selecionado_menu}**.")
 
     with st.form("form_cliente_gmb_completo"):
-        sub_tab_sobre, sub_tab_contato, sub_tab_local, sub_tab_horario, sub_tab_mais = st.tabs([
-            "🏢 Sobre & Status Ficha", "📞 Contato & Redes", "📍 Local & Áreas", "⏰ Horários (Abre / Fecha)", "🛠️ Checklist de Pendências"
+        sub_tab_sobre, sub_tab_contato, sub_tab_local, sub_tab_horario, sub_tab_mais, sub_tab_historico = st.tabs([
+            "🏢 Sobre & Status Ficha", "📞 Contato & Redes", "📍 Local & Áreas", "⏰ Horários Rápidos", "🛠️ Checklist de Pendências", "📜 Histórico de Alterações"
         ])
         
-        # SUB-ABA 1: SOBRE & AUDITORIA DA FICHA
+        # SUB-ABA 1: SOBRE & AUDITORIA DA FICHA (SELEÇÕES LIMPAS RESTAURADAS)
         with sub_tab_sobre:
-            st.markdown("**Identificação Comercial & Auditoria de Propriedade (Checkboxes):**")
+            st.markdown("**Identificação Comercial & Auditoria de Propriedade:**")
             c_s1, c_s2 = st.columns(2)
+            
+            opts_reivindicada = ["Reivindicada & Verificada", "Não Reivindicada / Perfil Aberto", "Em Processo de Verificação"]
+            opts_avaliacoes = ["Possui Avaliações (Com Nota Exibida)", "Sem Avaliações Recebidas"]
+            opts_respostas = ["100% Respondidas", "Parcialmente Respondidas", "Nenhuma Avaliação Respondida", "N/A (Sem Avaliações)"]
+
             with c_s1:
                 nome_empresa = st.text_input("Nome Comercial da Empresa / Ficha GMB *", value=dados_existentes[1] if modo_edicao else "")
                 responsavel = st.text_input("Nome do Responsável / Contato Interno", value=dados_existentes[2] if modo_edicao else "")
                 data_abertura = st.text_input("Data de Abertura (Mês/Ano)", value=dados_existentes[3] if modo_edicao else "")
                 
-                chk_reivindicada = st.checkbox("☑️ Ficha Reivindicada & Verificada", value=bool(dados_existentes[4]) if modo_edicao else True)
+                idx_reiv = opts_reivindicada.index(dados_existentes[4]) if (modo_edicao and dados_existentes[4] in opts_reivindicada) else 0
+                ficha_reivindicada = st.selectbox("Status de Reivindicação da Ficha", opts_reivindicada, index=idx_reiv)
+            
             with c_s2:
                 categoria_principal = st.text_input("Categoria Principal no GMB (ex: Serviço de fotografia)", value=dados_existentes[7] if modo_edicao else "")
                 categorias_secundarias = st.text_input("Categorias Secundárias (separadas por vírgula)", value=dados_existentes[8] if modo_edicao else "")
                 
-                chk_avaliacoes = st.checkbox("⭐ Possui Avaliações de Clientes Exibidas", value=bool(dados_existentes[5]) if modo_edicao else True)
-                chk_respondidas = st.checkbox("💬 Avaliações Recebidas estão 100% Respondidas", value=bool(dados_existentes[6]) if modo_edicao else True)
+                idx_aval = opts_avaliacoes.index(dados_existentes[5]) if (modo_edicao and dados_existentes[5] in opts_avaliacoes) else 0
+                status_avaliacoes = st.selectbox("Possui Avaliações de Clientes?", opts_avaliacoes, index=idx_aval)
+                
+                idx_resp = opts_respostas.index(dados_existentes[6]) if (modo_edicao and dados_existentes[6] in opts_respostas) else 0
+                status_respostas_avaliacoes = st.selectbox("Status de Resposta às Avaliações", opts_respostas, index=idx_resp)
             
             st.markdown("---")
             descricao_empresa = st.text_area("Descrição Oficial da Empresa (Otimizada para SEO Local)", value=dados_existentes[9] if modo_edicao else "", height=200)
 
         # SUB-ABA 2: CONTATO & REDES SOCIAIS
         with sub_tab_contato:
+            opts_chat = ["Ativado", "Desativado", "Não Configurado"]
             c_c1, c_c2 = st.columns(2)
             with c_c1:
                 telefone_contato = st.text_input("Número de Telefone Comercial", value=dados_existentes[10] if modo_edicao else "")
                 whatsapp = st.text_input("WhatsApp para Atendimento", value=dados_existentes[11] if modo_edicao else "")
                 website = st.text_input("Website / Link Principal", value=dados_existentes[13] if modo_edicao else "")
-                chk_chat = st.checkbox("💬 Chat / Mensagens Ativadas na Ficha", value=bool(dados_existentes[12]) if modo_edicao else True)
+                
+                idx_chat = opts_chat.index(dados_existentes[12]) if (modo_edicao and dados_existentes[12] in opts_chat) else 0
+                chat_status = st.selectbox("Mensagens / Chat no Perfil", opts_chat, index=idx_chat)
             with c_c2:
                 instagram = st.text_input("Link do Instagram", value=dados_existentes[14] if modo_edicao else "")
                 facebook = st.text_input("Link do Facebook", value=dados_existentes[15] if modo_edicao else "")
@@ -325,9 +351,9 @@ if st.session_state["aba_ativa"] == "cadastrar":
             with c_l2:
                 area_cobertura = st.text_input("Áreas de Cobertura / Atendimento (ex: Ribeirão Preto, Sertãozinho, Brodowski)", value=dados_existentes[21] if modo_edicao else "")
 
-        # SUB-ABA 4: HORÁRIOS DETALHADOS (PRÉ-DEFINIDOS)
+        # SUB-ABA 4: HORÁRIOS RÁPIDOS (SELEÇÃO PRÉ-CONFIGURADA POR DROPDOWN)
         with sub_tab_horario:
-            st.markdown("**Horários de Funcionamento (Pré-definidos com opção de ajuste):**")
+            st.markdown("**Horários de Funcionamento (Clique para selecionar a hora pré-configurada):**")
             
             dias_semana = [
                 ("Segunda-feira", 22, "08:00", "18:00", False),
@@ -336,7 +362,7 @@ if st.session_state["aba_ativa"] == "cadastrar":
                 ("Quinta-feira", 25, "08:00", "18:00", False),
                 ("Sexta-feira", 26, "08:00", "18:00", False),
                 ("Sábado", 27, "08:00", "12:00", False),
-                ("Domingo", 28, "08:00", "12:00", True) # Domingo pré-definido como fechado
+                ("Domingo", 28, "08:00", "12:00", True)
             ]
             
             horarios_coletados = {}
@@ -346,22 +372,33 @@ if st.session_state["aba_ativa"] == "cadastrar":
                 col_h1, col_h2, col_h3 = st.columns([2, 2, 1])
                 
                 is_fechado = fechado_def
-                if modo_edicao and dados_existentes[idx_db] == "Fechado":
-                    is_fechado = True
-                elif modo_edicao and dados_existentes[idx_db] != "Fechado":
-                    is_fechado = False
+                val_ab = h_ab_def
+                val_fe = h_fe_def
+
+                if modo_edicao and dados_existentes[idx_db]:
+                    txt_h = dados_existentes[idx_db]
+                    if txt_h == "Fechado":
+                        is_fechado = True
+                    elif " - " in txt_h:
+                        is_fechado = False
+                        parts = txt_h.split(" - ")
+                        if len(parts) == 2:
+                            val_ab = parts[0]
+                            val_fe = parts[1]
 
                 with col_h3:
                     fechado = st.checkbox("Fechado", key=f"chk_fechado_{dia_nome}", value=is_fechado)
                 with col_h1:
-                    h_abre = st.time_input(f"Abertura", key=f"abre_{dia_nome}", value=datetime.strptime(h_ab_def, "%H:%M").time(), disabled=fechado)
+                    idx_ab = HORARIOS_OPCOES.index(val_ab) if val_ab in HORARIOS_OPCOES else HORARIOS_OPCOES.index("08:00")
+                    h_abre_sel = st.selectbox(f"Abertura ({dia_nome})", HORARIOS_OPCOES, index=idx_ab, disabled=fechado, key=f"sel_ab_{dia_nome}")
                 with col_h2:
-                    h_fecha = st.time_input(f"Fechamento", key=f"fecha_{dia_nome}", value=datetime.strptime(h_fe_def, "%H:%M").time(), disabled=fechado)
+                    idx_fe = HORARIOS_OPCOES.index(val_fe) if val_fe in HORARIOS_OPCOES else HORARIOS_OPCOES.index("18:00")
+                    h_fecha_sel = st.selectbox(f"Fechamento ({dia_nome})", HORARIOS_OPCOES, index=idx_fe, disabled=fechado, key=f"sel_fe_{dia_nome}")
                 
                 if fechado:
                     horarios_coletados[dia_nome] = "Fechado"
                 else:
-                    horarios_coletados[dia_nome] = f"{h_abre.strftime('%H:%M')} - {h_fecha.strftime('%H:%M')}"
+                    horarios_coletados[dia_nome] = f"{h_abre_sel} - {h_fecha_sel}"
 
             st.markdown("---")
             c_he1, c_he2 = st.columns(2)
@@ -370,10 +407,9 @@ if st.session_state["aba_ativa"] == "cadastrar":
             with c_he2:
                 outros_horarios = st.text_input("Outros Horários (Almoço, Happy Hour, Delivery)", value=dados_existentes[30] if modo_edicao else "")
 
-        # SUB-ABA 5: CHECKLIST DE PENDÊNCIAS & DIAGNÓSTICO
+        # SUB-ABA 5: CHECKLIST DE PENDÊNCIAS
         with sub_tab_mais:
             st.markdown("**Checklist de Otimização Identificadas no Diagnóstico:**")
-            
             pendencias_salvas = dados_existentes[31] if (modo_edicao and dados_existentes[31]) else ""
 
             col_p1, col_p2 = st.columns(2)
@@ -391,8 +427,26 @@ if st.session_state["aba_ativa"] == "cadastrar":
             st.markdown("---")
             observacoes_tecnicas = st.text_area("Observações Técnicas Adicionais / Diagnóstico Específico", value=dados_existentes[32] if modo_edicao else "", height=180)
 
+        # SUB-ABA 6: HISTÓRICO DE AUDITORIA & ALTERAÇÕES
+        with sub_tab_historico:
+            if not modo_edicao:
+                st.info("O histórico de alterações ficará disponível após o primeiro cadastro da ficha.")
+            else:
+                st.markdown(f"**Histórico de Registros e Otimizações Realizadas — {cliente_selecionado_menu}:**")
+                conn = sqlite3.connect(DB_NAME)
+                df_hist = pd.read_sql_query(
+                    "SELECT data_alteracao as 'Data', descricao_alteracao as 'Alteração Realizada / Registro' FROM historico_ficha WHERE cliente_id = ? ORDER BY id DESC", 
+                    conn, params=(c_id,)
+                )
+                conn.close()
+                
+                if df_hist.empty:
+                    st.write("Ficha cadastrada na versão inicial (Sem alterações adicionais registradas).")
+                else:
+                    st.dataframe(df_hist, use_container_width=True)
+
         st.markdown("---")
-        btn_salvar = st.form_submit_button("Salvar Ficha do Cliente" if not modo_edicao else "Atualizar Ficha do Cliente")
+        btn_salvar = st.form_submit_button("Salvar Nova Ficha" if not modo_edicao else "Atualizar Ficha e Gravar Histórico")
 
         if btn_salvar and nome_empresa:
             checklist_list = []
@@ -413,13 +467,16 @@ if st.session_state["aba_ativa"] == "cadastrar":
                 try:
                     c.execute('''
                         INSERT INTO clientes 
-                        (nome_empresa, responsavel, data_abertura, ficha_reivindicada, possui_avaliacoes, avaliacoes_respondidas, categoria_principal, categorias_secundarias, descricao_empresa, telefone_contato, whatsapp, chat_status, website, instagram, facebook, linkedin, youtube, tiktok, atendimento_local_cliente, endereco_local, area_cobertura, horario_seg, horario_ter, horario_qua, horario_qui, horario_sex, horario_sab, horario_dom, horarios_especiais, outros_horarios, pendencias_checklist, observacoes_tecnicas, data_inicio) 
+                        (nome_empresa, responsavel, data_abertura, ficha_reivindicada, status_avaliacoes, status_respostas_avaliacoes, categoria_principal, categorias_secundarias, descricao_empresa, telefone_contato, whatsapp, chat_status, website, instagram, facebook, linkedin, youtube, tiktok, atendimento_local_cliente, endereco_local, area_cobertura, horario_seg, horario_ter, horario_qua, horario_qui, horario_sex, horario_sab, horario_dom, horarios_especiais, outros_horarios, pendencias_checklist, observacoes_tecnicas, data_inicio) 
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ''', (
-                        nome_empresa, responsavel, data_abertura, 1 if chk_reivindicada else 0, 1 if chk_avaliacoes else 0, 1 if chk_respondidas else 0, categoria_principal, categorias_secundarias, descricao_empresa, telefone_contato, whatsapp, 1 if chk_chat else 0, website, instagram, facebook, linkedin, youtube, tiktok, 1 if atendimento_local_cliente else 0, endereco_local, area_cobertura, 
+                        nome_empresa, responsavel, data_abertura, ficha_reivindicada, status_avaliacoes, status_respostas_avaliacoes, categoria_principal, categorias_secundarias, descricao_empresa, telefone_contato, whatsapp, chat_status, website, instagram, facebook, linkedin, youtube, tiktok, 1 if atendimento_local_cliente else 0, endereco_local, area_cobertura, 
                         horarios_coletados["Segunda-feira"], horarios_coletados["Terça-feira"], horarios_coletados["Quarta-feira"], horarios_coletados["Quinta-feira"], horarios_coletados["Sexta-feira"], horarios_coletados["Sábado"], horarios_coletados["Domingo"],
                         horarios_especiais, outros_horarios, pendencias_str, observacoes_tecnicas, datetime.today().strftime("%Y-%m-%d")
                     ))
+                    cliente_novo_id = c.lastrowid
+                    c.execute("INSERT INTO historico_ficha (cliente_id, data_alteracao, descricao_alteracao) VALUES (?, ?, ?)",
+                              (cliente_novo_id, datetime.now().strftime("%Y-%m-%d %H:%M"), "Cadastro Inicial da Ficha do Cliente (Versão 1.0)"))
                     conn.commit()
                     st.success(f"Ficha comercial de '{nome_empresa}' cadastrada com sucesso!")
                 except sqlite3.IntegrityError:
@@ -427,15 +484,19 @@ if st.session_state["aba_ativa"] == "cadastrar":
             else:
                 c.execute('''
                     UPDATE clientes SET 
-                    responsavel=?, data_abertura=?, ficha_reivindicada=?, possui_avaliacoes=?, avaliacoes_respondidas=?, categoria_principal=?, categorias_secundarias=?, descricao_empresa=?, telefone_contato=?, whatsapp=?, chat_status=?, website=?, instagram=?, facebook=?, linkedin=?, youtube=?, tiktok=?, atendimento_local_cliente=?, endereco_local=?, area_cobertura=?, horario_seg=?, horario_ter=?, horario_qua=?, horario_qui=?, horario_sex=?, horario_sab=?, horario_dom=?, horarios_especiais=?, outros_horarios=?, pendencias_checklist=?, observacoes_tecnicas=?
+                    responsavel=?, data_abertura=?, ficha_reivindicada=?, status_avaliacoes=?, status_respostas_avaliacoes=?, categoria_principal=?, categorias_secundarias=?, descricao_empresa=?, telefone_contato=?, whatsapp=?, chat_status=?, website=?, instagram=?, facebook=?, linkedin=?, youtube=?, tiktok=?, atendimento_local_cliente=?, endereco_local=?, area_cobertura=?, horario_seg=?, horario_ter=?, horario_qua=?, horario_qui=?, horario_sex=?, horario_sab=?, horario_dom=?, horarios_especiais=?, outros_horarios=?, pendencias_checklist=?, observacoes_tecnicas=?
                     WHERE id=?
                 ''', (
-                    responsavel, data_abertura, 1 if chk_reivindicada else 0, 1 if chk_avaliacoes else 0, 1 if chk_respondidas else 0, categoria_principal, categorias_secundarias, descricao_empresa, telefone_contato, whatsapp, 1 if chk_chat else 0, website, instagram, facebook, linkedin, youtube, tiktok, 1 if atendimento_local_cliente else 0, endereco_local, area_cobertura, 
+                    responsavel, data_abertura, ficha_reivindicada, status_avaliacoes, status_respostas_avaliacoes, categoria_principal, categorias_secundarias, descricao_empresa, telefone_contato, whatsapp, chat_status, website, instagram, facebook, linkedin, youtube, tiktok, 1 if atendimento_local_cliente else 0, endereco_local, area_cobertura, 
                     horarios_coletados["Segunda-feira"], horarios_coletados["Terça-feira"], horarios_coletados["Quarta-feira"], horarios_coletados["Quinta-feira"], horarios_coletados["Sexta-feira"], horarios_coletados["Sábado"], horarios_coletados["Domingo"],
                     horarios_especiais, outros_horarios, pendencias_str, observacoes_tecnicas, c_id
                 ))
+                
+                # Registra a atualização no histórico de alterações da ficha
+                c.execute("INSERT INTO historico_ficha (cliente_id, data_alteracao, descricao_alteracao) VALUES (?, ?, ?)",
+                          (c_id, datetime.now().strftime("%Y-%m-%d %H:%M"), f"Atualização Ficha: Pendências ({pendencias_str}) / Categoria: {categoria_principal}"))
                 conn.commit()
-                st.success(f"Ficha comercial de '{nome_empresa}' atualizada com sucesso!")
+                st.success(f"Ficha comercial de '{nome_empresa}' atualizada e histórico registrado com sucesso!")
             
             conn.close()
             st.rerun()
