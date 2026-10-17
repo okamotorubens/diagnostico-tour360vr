@@ -58,7 +58,8 @@ def gerar_botoes_navegacao_rodape():
     aba_atual = st.session_state.get("aba_ativa", "cadastrar")
     idx_atual = ORDEM_ABAS.index(aba_atual) if aba_atual in ORDEM_ABAS else 0
     
-    col_v, col_m, col_p = st.columns([1.5, 3, 1.5], gap="large")
+    # Colunas simétricas para alinhar perfeitamente às margens dos cards
+    col_v, col_centro, col_p = st.columns([2, 4, 2], gap="large")
     
     with col_v:
         if idx_atual > 0:
@@ -72,7 +73,7 @@ def gerar_botoes_navegacao_rodape():
         if idx_atual < len(ORDEM_ABAS) - 1:
             aba_proxima = ORDEM_ABAS[idx_atual + 1]
             nome_prox = NOMES_ABAS[aba_proxima]
-            if st.button(f"Próximo: {nome_prox} ➡️", key=f"btn_rodape_next_{aba_atual}"):
+            if st.button(f"Próximo ({nome_prox}) ➡️", key=f"btn_rodape_next_{aba_atual}"):
                 st.session_state["aba_ativa"] = aba_proxima
                 st.rerun()
 
@@ -371,7 +372,7 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
             ])
         t_kw = Table(kw_table_data, colWidths=[200, 100, 100, 120])
         t_kw.setStyle(TableStyle([
-            ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#F1F5F9')),
+            ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#F1F5F9')),
             ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#CBD5E1')),
             ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#E2E8F0')),
             ('PADDING', (0,0), (-1,-1), 4),
@@ -524,13 +525,13 @@ def gerar_pdf_prospeccao_cases(inc_clientes, inc_faturamento, inc_grafico, inc_k
     buffer.seek(0)
     return buffer
 
-# --- CSS PERSONALIZADO (COM MARGEM LATERAIS E RESPIRO NOS CARDS) ---
+# --- CSS PERSONALIZADO COM AMPLO RESPIRO NOS CAMPOS E MARGENS ---
 st.markdown("""
     <style>
     .block-container {
         padding-top: 1.8rem !important;
         padding-bottom: 2.8rem !important;
-        max-width: 90% !important; /* MARGEM LATERAL EQUILIBRADA DE 90% */
+        max-width: 90% !important;
         margin: 0 auto !important;
     }
     
@@ -614,26 +615,27 @@ st.markdown("""
         box-shadow: 0 0 20px rgba(255, 255, 255, 0.95) !important;
     }
 
-    /* FORMULÁRIOS E CAIXAS COM RESPIRO E ESPAÇAMENTO INTERNO */
+    /* FORMULÁRIOS E CAIXAS COM AMPLO RESPIRO */
     div[data-testid="stForm"] {
         border-color: #2B364A !important;
-        padding: 28px !important;
+        padding: 32px !important;
         border-radius: 12px !important;
         margin-top: 18px !important;
         background-color: #131A28 !important;
     }
 
+    /* MAIOR ESPAÇAMENTO ENTRE OS CAMPOS DE PREENCHIMENTO E COLUNAS */
     div[data-testid="stTextInput"], 
     div[data-testid="stNumberInput"], 
     div[data-testid="stSelectbox"], 
     div[data-testid="stDateInput"],
     div[data-testid="stTextArea"] {
-        margin-bottom: 18px !important;
+        margin-bottom: 24px !important;
     }
 
     div[data-baseweb="tab-list"] {
         gap: 12px !important;
-        margin-bottom: 24px !important;
+        margin-bottom: 28px !important;
     }
 
     button[data-baseweb="tab"] {
@@ -645,8 +647,8 @@ st.markdown("""
         color: #FFFFFF !important;
         font-weight: 700;
         font-size: 1.05rem;
-        margin-top: 1.2rem;
-        margin-bottom: 0.4rem;
+        margin-top: 1.4rem;
+        margin-bottom: 0.6rem;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -732,7 +734,7 @@ if st.session_state["aba_ativa"] == "cadastrar":
         
         with sub_tab_sobre:
             st.markdown("**Identificação Comercial & Auditoria Inicial:**")
-            st.markdown("<div style='margin-bottom: 12px;'></div>", unsafe_allow_html=True)
+            st.markdown("<div style='margin-bottom: 16px;'></div>", unsafe_allow_html=True)
             c_s1, c_s2 = st.columns(2, gap="large")
 
             opts_reivindicada = ["Reivindicada & Verificada", "Não Reivindicada", "Em Processo"]
@@ -783,7 +785,7 @@ if st.session_state["aba_ativa"] == "cadastrar":
 
         with sub_tab_financeiro:
             st.markdown("**Dados do Contrato do Cliente:**")
-            st.markdown("<div style='margin-bottom: 12px;'></div>", unsafe_allow_html=True)
+            st.markdown("<div style='margin-bottom: 16px;'></div>", unsafe_allow_html=True)
             col_f1, col_f2, col_f3 = st.columns([1.2, 1.2, 2.6], gap="medium")
             
             opts_status_contrato = ["Ativo", "Em Negociação", "Pausado", "Cancelado"]
