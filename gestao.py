@@ -22,10 +22,12 @@ from reportlab.lib import colors
 # Importação do Matplotlib para geração de gráficos no PDF
 import matplotlib.pyplot as plt
 
-# --- CONFIGURAÇÃO DA PÁGINA & FAVICON ---
+# --- FAVICON DA TOUR360VR & CONFIGURAÇÃO DA PÁGINA ---
+FAVICON_TOUR360 = "https://tour360vr.com.br/favicon.ico"
+
 st.set_page_config(
     page_title="Gestão Mensal & Estratégia | Tour360VR",
-    page_icon="🌐",
+    page_icon=FAVICON_TOUR360,
     layout="wide"
 )
 
@@ -486,13 +488,13 @@ def gerar_pdf_prospeccao_cases(inc_clientes, inc_faturamento, inc_grafico, inc_k
     buffer.seek(0)
     return buffer
 
-# --- CSS PERSONALIZADO COM ABAS NATIVAS E DESIGN ELEGANTE ---
+# --- CSS PERSONALIZADO COM BOTÕES DE BORDAS BRANCAS E EFEITO NEON ---
 st.markdown("""
     <style>
     .block-container {
         padding-top: 1.2rem !important;
         padding-bottom: 2rem !important;
-        max-width: 95% !important;
+        max-width: 98% !important;
     }
     
     header[data-testid="stHeader"] {
@@ -510,7 +512,7 @@ st.markdown("""
         border: 1px solid #2B364A;
         border-radius: 12px;
         padding: 16px 20px 16px 20px !important;
-        margin-bottom: 15px !important;
+        margin-bottom: 20px !important;
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
     }
 
@@ -529,38 +531,59 @@ st.markdown("""
         margin-bottom: 0px !important;
     }
 
-    /* ESTILIZAÇÃO DAS ABAS NATIVAS (ST.TABS) */
-    div[data-baseweb="tab-list"] {
-        gap: 8px !important;
-        background-color: #111723 !important;
-        padding: 6px 10px !important;
-        border-radius: 10px !important;
-        border: 1px solid #2B364A !important;
-        margin-bottom: 20px !important;
+    /* REDUÇÃO DE ESPAÇAMENTO ENTRE BOTÕES E COMPACTAÇÃO AUTOMÁTICA */
+    div[data-testid="stHorizontalBlock"] {
+        gap: 0.35rem !important;
     }
 
-    button[data-baseweb="tab"] {
-        height: 44px !important;
-        background-color: transparent !important;
-        border: none !important;
-        color: #94A3B8 !important;
-        font-weight: 600 !important;
-        font-size: 0.88rem !important;
-        border-radius: 6px !important;
-        padding: 0px 14px !important;
-        transition: all 0.2s ease-in-out !important;
+    div[data-testid="stColumn"] {
+        padding: 0px !important;
     }
 
-    button[data-baseweb="tab"]:hover {
+    /* BOTÕES COM BORDA BRANCA E BRILHO NEON NO ATIVO */
+    div[data-testid="stColumn"] button {
+        width: 100% !important;
+        min-height: 46px !important;
+        height: 46px !important;
+        background-color: #1A2130 !important;
+        border: 1.5px solid #455570 !important;
         color: #FFFFFF !important;
-        background-color: #1E293B !important;
-    }
-
-    button[aria-selected="true"] {
-        background-color: #1E293B !important;
-        color: #FFFFFF !important;
+        border-radius: 8px !important;
+        padding: 2px 4px !important;
         font-weight: 700 !important;
-        border-bottom: 3px solid #3B82F6 !important;
+        font-size: 0.81rem !important;
+        line-height: 1.1 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        text-align: center !important;
+        white-space: nowrap !important;
+        transition: all 0.25s ease-in-out !important;
+    }
+
+    div[data-testid="stColumn"] button:hover {
+        background-color: #222C3E !important;
+        border-color: #FFFFFF !important;
+        color: #FFFFFF !important;
+        box-shadow: 0 0 12px rgba(255, 255, 255, 0.7) !important;
+    }
+
+    /* BOTÃO SELECIONADO (EFEITO NEON ATIVO) */
+    div[data-testid="stColumn"] button[kind="primary"] {
+        background-color: #1A2130 !important;
+        border: 2px solid #FFFFFF !important;
+        color: #FFFFFF !important;
+        box-shadow: 0 0 18px rgba(255, 255, 255, 0.95) !important;
+    }
+
+    div[role="radiogroup"] {
+        display: flex !important;
+        flex-direction: row !important;
+        gap: 15px !important;
+        background-color: #161F30 !important;
+        padding: 8px 12px !important;
+        border-radius: 8px !important;
+        border: 1px solid #2B364A !important;
     }
 
     .dia-destaque {
@@ -573,7 +596,10 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- CABEÇALHO DA APLICAÇÃO ---
+# --- CONTROLADOR DE NAVEGAÇÃO SUPERIOR ---
+if "aba_ativa" not in st.session_state:
+    st.session_state["aba_ativa"] = "cadastrar"
+
 st.markdown("""
 <div class="top-card-container">
     <h1 class="main-title-card">📈 Gestão Mensal & Estratégia do Perfil | Tour360VR</h1>
@@ -581,22 +607,53 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# --- CONTROLADOR DE NAVEGAÇÃO NATIVO VIA ABAS (ST.TABS) ---
-tab_cad, tab_aud, tab_met, tab_cur, tab_dash, tab_prosp, tab_pdf, tab_fin = st.tabs([
-    "⚙️ Ficha Comercial",
-    "🔍 Auditoria Link",
-    "📋 Métricas & SEO",
-    "🎯 Curadoria",
-    "📊 Dashboard ROI",
-    "🏆 Prospecção",
-    "📄 Relatório PDF",
-    "💰 Financeiro MRR"
-])
+# 8 colunas perfeitamente distribuídas
+cols = st.columns([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
+
+with cols[0]:
+    if st.button("⚙️ Ficha Comercial", key="btn_cad", type="primary" if st.session_state["aba_ativa"] == "cadastrar" else "secondary"):
+        st.session_state["aba_ativa"] = "cadastrar"
+        st.rerun()
+
+with cols[1]:
+    if st.button("🔍 Auditoria Link", key="btn_auditoria", type="primary" if st.session_state["aba_ativa"] == "auditoria" else "secondary"):
+        st.session_state["aba_ativa"] = "auditoria"
+        st.rerun()
+
+with cols[2]:
+    if st.button("📋 Métricas & SEO", key="btn_inc", type="primary" if st.session_state["aba_ativa"] == "metricas" else "secondary"):
+        st.session_state["aba_ativa"] = "metricas"
+        st.rerun()
+
+with cols[3]:
+    if st.button("🎯 Curadoria", key="btn_ia", type="primary" if st.session_state["aba_ativa"] == "ia" else "secondary"):
+        st.session_state["aba_ativa"] = "ia"
+        st.rerun()
+
+with cols[4]:
+    if st.button("📊 Dashboard ROI", key="btn_dash", type="primary" if st.session_state["aba_ativa"] == "dashboard" else "secondary"):
+        st.session_state["aba_ativa"] = "dashboard"
+        st.rerun()
+
+with cols[5]:
+    if st.button("🏆 Prospecção", key="btn_cases", type="primary" if st.session_state["aba_ativa"] == "cases" else "secondary"):
+        st.session_state["aba_ativa"] = "cases"
+        st.rerun()
+
+with cols[6]:
+    if st.button("📄 Relatório PDF", key="btn_pdf", type="primary" if st.session_state["aba_ativa"] == "pdf" else "secondary"):
+        st.session_state["aba_ativa"] = "pdf"
+        st.rerun()
+
+with cols[7]:
+    if st.button("💰 Financeiro MRR", key="btn_fin", type="primary" if st.session_state["aba_ativa"] == "financeiro" else "secondary"):
+        st.session_state["aba_ativa"] = "financeiro"
+        st.rerun()
 
 # ==========================================
-# ABA 1: CADASTRAR / EDITAR FICHA DO CLIENTE
+# MÓDULO 1: CADASTRAR / EDITAR FICHA DO CLIENTE
 # ==========================================
-with tab_cad:
+if st.session_state["aba_ativa"] == "cadastrar":
     st.subheader("⚙️ Cadastro e Atualização de Informações Comerciais (GMB)")
     
     df_clientes_existentes = obter_clientes_unicos()
@@ -778,7 +835,7 @@ with tab_cad:
                 p_hor = st.checkbox("⏰ Validar Horários de Funcionamento", value="Ajuste de Horários" in pendencias_salvas, key="chk_p8_cad")
 
             st.markdown("---")
-            observacoes_tecnicas = st.text_area("Observações Técnicas Adicional", value=dados_existentes.get("observacoes_tecnicas", "") if modo_edicao else "", height=180, key="txt_obs_tec_cad")
+            observacoes_tecnicas = st.text_area("Observações Técnicas Adicionais", value=dados_existentes.get("observacoes_tecnicas", "") if modo_edicao else "", height=180, key="txt_obs_tec_cad")
 
         with sub_tab_historico:
             if not modo_edicao:
@@ -873,9 +930,9 @@ with tab_cad:
             st.rerun()
 
 # ==========================================
-# ABA 2: AUDITORIA EXPRESS DE FICHA GOOGLE
+# MÓDULO 2: AUDITORIA EXPRESS DE FICHA GOOGLE
 # ==========================================
-with tab_aud:
+elif st.session_state["aba_ativa"] == "auditoria":
     st.subheader("🔍 Auditoria de Ficha Google em 1 Clique (Diagnóstico de Vendas)")
     st.caption("Cole o link público do Google Maps da empresa para identificar falhas no perfil e gerar argumentos de vendas instantâneos.")
 
@@ -933,9 +990,9 @@ with tab_aud:
             st.warning("Insira uma URL válida do Google Maps antes de iniciar a varredura.")
 
 # ==========================================
-# ABA 3: INSERIR MÉTRICAS MENSAIS, RANKING SEO & ROI
+# MÓDULO 3: INSERIR MÉTRICAS MENSAIS, RANKING SEO & ROI
 # ==========================================
-with tab_met:
+elif st.session_state["aba_ativa"] == "metricas":
     st.subheader("📋 Métricas Mensais, SEO Local & ROI")
     df_clientes = obter_clientes_unicos()
     
@@ -945,9 +1002,9 @@ with tab_met:
         cliente_sel = st.selectbox("Selecione o Cliente para Lançamento", df_clientes["nome_empresa"].tolist(), key="sel_cli_metricas")
         cliente_id = int(df_clientes[df_clientes["nome_empresa"] == cliente_sel]["id"].values[0])
 
-        sub_tab_m1, sub_tab_m2 = st.tabs(["📊 Métricas Mensais & ROI", "🎯 Posição de Palavras-Chave (SEO Local)"])
+        tab_m1, tab_m2 = st.tabs(["📊 Métricas Mensais & ROI", "🎯 Posição de Palavras-Chave (SEO Local)"])
 
-        with sub_tab_m1:
+        with tab_m1:
             with st.form("form_metricas"):
                 mes_referencia = st.date_input("Mês de Referência", value=datetime.today(), key="dt_ref_metricas").strftime("%Y-%m")
 
@@ -1003,7 +1060,7 @@ with tab_met:
                     }).execute()
                     st.success(f"Métricas salvas para {cliente_sel} no período {mes_referencia}!")
 
-        with sub_tab_m2:
+        with tab_m2:
             st.markdown("**Monitoramento de Palavras-Chave no Google Maps (Ranking SEO Local):**")
             res_kw = supabase.table("ranking_keywords").select("id, palavra_chave, posicao_inicial, posicao_atual").eq("cliente_id", cliente_id).execute()
             if res_kw.data:
@@ -1034,9 +1091,9 @@ with tab_met:
                     st.rerun()
 
 # ==========================================
-# ABA 4: CURATORIA, PAUTAS E QR CODE PERMANENTE
+# MÓDULO 4: CURATORIA, PAUTAS E QR CODE PERMANENTE
 # ==========================================
-with tab_cur:
+elif st.session_state["aba_ativa"] == "ia":
     st.subheader("🎯 Curadoria Estratégica, QR Code Permanente & Pautas Digitais")
     df_clientes = obter_clientes_unicos()
 
@@ -1051,7 +1108,7 @@ with tab_cur:
         cid_nome = dados_c.get("area_cobertura", "região local")
         emp_nome = dados_c.get("nome_empresa", "Empresa")
 
-        sub_tab_ia1, sub_tab_ia2, sub_tab_ia3, sub_tab_ia4, sub_tab_ia5 = st.tabs([
+        tab_ia1, tab_ia2, tab_ia3, tab_ia4, tab_ia5 = st.tabs([
             "✍️ Respostas de Avaliações", 
             "📅 Cronograma Mensal & Pautas", 
             "📱 QR Code Permanente (Balcão)", 
@@ -1059,7 +1116,7 @@ with tab_cur:
             "🎨 Direção de Arte Visuais"
         ])
 
-        with sub_tab_ia1:
+        with tab_ia1:
             st.markdown("**Gestão de Reputação & Respostas Profissionais para Avaliações:**")
             avaliacao_recebida = st.text_area("Cole aqui a avaliação deixada pelo cliente no Google Maps:", key="txt_aval_recebida")
             
@@ -1079,7 +1136,7 @@ with tab_cur:
                 else:
                     st.warning("Cole o texto da avaliação antes de gerar as opções.")
 
-        with sub_tab_ia2:
+        with tab_ia2:
             st.markdown(f"**Cronograma de Atração Local e Pautas Estratégicas — {emp_nome}:**")
             st.caption(f"Segmento Comercial: {cat_nome} | Região de Atendimento: {cid_nome}")
 
@@ -1114,7 +1171,7 @@ with tab_cur:
                 else:
                     st.info("Cadastre o WhatsApp do cliente para enviar o link direto de aprovação.")
 
-        with sub_tab_ia3:
+        with tab_ia3:
             st.markdown(f"**Gerador de QR Code Permanente (Limpo & Alta Definição) — {emp_nome}:**")
             url_def_review = dados_c.get("website", "https://maps.google.com")
             url_qr = st.text_input("Link Direto da Ficha / Página de Avaliação no Google Maps:", value=url_def_review, key="txt_url_qr_perm")
@@ -1139,7 +1196,7 @@ with tab_cur:
                         key="btn_dl_qr_png"
                     )
 
-        with sub_tab_ia4:
+        with tab_ia4:
             st.markdown(f"**Estruturação de Perguntas Frequentes (FAQ Estratégico) — {emp_nome}:**")
             st.markdown(f"""
             ### 📋 Pares de Perguntas e Respostas Institucionais:
@@ -1154,15 +1211,15 @@ with tab_cur:
             > **Resposta:** Sim! O perfil oficial da **{emp_nome}** no Google conta com fotos atualizadas e Tour Virtual 360° interativo.
             """)
 
-        with sub_tab_ia5:
+        with tab_ia5:
             st.markdown(f"**Direção de Arte & Prompts Fotográficos — {emp_nome}:**")
             prompt_gerado = f"Professional commercial photography of a modern {cat_nome} establishment named '{emp_nome}', located in Brazil. High quality ambient lighting, photorealistic, elegant interior, clean design, 8k resolution --ar 16:9"
             st.code(prompt_gerado, language="text")
 
 # ==========================================
-# ABA 5: DASHBOARD & ROI
+# MÓDULO 5: DASHBOARD & ROI
 # ==========================================
-with tab_dash:
+elif st.session_state["aba_ativa"] == "dashboard":
     st.subheader("📊 Análise de Desempenho e ROI")
     df_clientes = obter_clientes_unicos()
     
@@ -1188,9 +1245,9 @@ with tab_dash:
             st.info("Ainda não existem métricas registradas para este cliente.")
 
 # ==========================================
-# ABA 6: GERADOR DE PDF DE PROSPECÇÃO & CASES
+# MÓDULO 6: GERADOR DE PDF DE PROSPECÇÃO & CASES
 # ==========================================
-with tab_prosp:
+elif st.session_state["aba_ativa"] == "cases":
     st.subheader("🏆 Gerador de Relatório Comercial de Prospecção (Cases & Prova Social)")
     
     res_c_count = supabase.table("clientes").select("id", count="exact").execute()
@@ -1239,9 +1296,9 @@ with tab_prosp:
     )
 
 # ==========================================
-# ABA 7: RELATÓRIO PDF INDIVIDUAL & WHATSAPP
+# MÓDULO 7: RELATÓRIO PDF INDIVIDUAL & WHATSAPP
 # ==========================================
-with tab_pdf:
+elif st.session_state["aba_ativa"] == "pdf":
     st.subheader("📄 Emitir Relatório Executivo em PDF & Envio via WhatsApp")
     df_clientes = obter_clientes_unicos()
 
@@ -1320,9 +1377,9 @@ with tab_pdf:
                     st.info("Cadastre o WhatsApp no formulário do cliente para ativar o envio rápido.")
 
 # ==========================================
-# ABA 8: GESTÃO FINANCEIRA MRR & BACKUP COMPLETO
+# MÓDULO 8: GESTÃO FINANCEIRA MRR & BACKUP COMPLETO
 # ==========================================
-with tab_fin:
+elif st.session_state["aba_ativa"] == "financeiro":
     st.subheader("💰 Gestão Financeira & Backup da Agência (MRR)")
     st.caption("Painel restrito para controle de mensalidades e faturamento do Supabase.")
 
@@ -1330,7 +1387,7 @@ with tab_fin:
     df_completo = pd.DataFrame(res_cli.data) if res_cli.data else pd.DataFrame()
 
     if df_completo.empty:
-        st.info("Nenum contrato cadastrado no momento.")
+        st.info("Nenhum contrato cadastrado no momento.")
     else:
         df_fin = df_completo[df_completo["status_contrato"] == "Ativo"][["nome_empresa", "responsavel", "telefone_contato", "valor_contrato_mensal", "dia_vencimento", "status_contrato"]]
         df_fin.columns = ["Cliente", "Responsável", "Telefone", "Mensalidade (R$)", "Dia Vencimento", "Status"]
