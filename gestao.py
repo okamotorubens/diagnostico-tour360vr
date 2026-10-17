@@ -274,12 +274,12 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
         ('BOTTOMPADDING', (0,0), (-1,-1), 0),
     ]))
     story.append(t_header)
-    story.append(Spacer(1, 6))
+    story.append(Spacer(1, 4))
 
-    story.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor('#3B4866'), spaceAfter=8))
+    story.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor('#3B4866'), spaceAfter=6))
 
     story.append(Paragraph("<b>1. Análise Comparativa de Desempenho e Crescimento:</b>", section_style))
-    story.append(Spacer(1, 4))
+    story.append(Spacer(1, 3))
     
     c_chamadas_ant = dados_anterior['chamadas'] if dados_anterior else 0
     c_rotas_ant = dados_anterior['rotas'] if dados_anterior else 0
@@ -352,7 +352,7 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
         ('ALIGN', (1,0), (-1,-1), 'CENTER'),
     ]))
     story.append(t_comp)
-    story.append(Spacer(1, 6))
+    story.append(Spacer(1, 4))
 
     if df_keywords is not None and not df_keywords.empty:
         story.append(Paragraph("<b>2. Posição das Palavras-Chave no Google Maps (SEO Local):</b>", section_style))
@@ -371,21 +371,21 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
             ])
         t_kw = Table(kw_table_data, colWidths=[200, 100, 100, 120])
         t_kw.setStyle(TableStyle([
-            ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#F1F5F9')),
+            ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#F1F5F9')),
             ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#CBD5E1')),
             ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#E2E8F0')),
             ('PADDING', (0,0), (-1,-1), 4),
             ('ALIGN', (1,0), (-1,-1), 'CENTER'),
         ]))
         story.append(t_kw)
-        story.append(Spacer(1, 6))
+        story.append(Spacer(1, 4))
 
     if df_historico is not None and len(df_historico) > 1:
         story.append(Paragraph("<b>3. Curva de Evolução Histórica (Mês a Mês):</b>", section_style))
         story.append(Spacer(1, 3))
         img_buf = gerar_imagem_grafico(df_historico)
         story.append(Image(img_buf, width=520, height=160))
-        story.append(Spacer(1, 6))
+        story.append(Spacer(1, 4))
 
     if dados_atual['faturamento_estimado'] > 0:
         story.append(Paragraph("<b>4. Retorno sobre o Investimento Estimado (ROI):</b>", section_style))
@@ -403,15 +403,15 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
             ('PADDING', (0,0), (-1,-1), 4),
         ]))
         story.append(t_roi)
-        story.append(Spacer(1, 6))
+        story.append(Spacer(1, 4))
 
     story.append(Paragraph("<b>5. Ações Técnicas & Melhores Práticas Aplicadas:</b>", section_style))
     story.append(Spacer(1, 3))
     acoes_texto = dados_atual['resumo_acoes'] if dados_atual['resumo_acoes'] else "Otimizações de rotina, monitorização de palavras-chave locais e gestão de reputação da ficha."
     story.append(Paragraph(acoes_texto.replace('\n', '<br/>'), body_style))
-    story.append(Spacer(1, 10))
+    story.append(Spacer(1, 6))
 
-    story.append(HRFlowable(width="100%", thickness=0.8, color=colors.HexColor('#CBD5E1'), spaceAfter=6))
+    story.append(HRFlowable(width="100%", thickness=0.8, color=colors.HexColor('#CBD5E1'), spaceAfter=4))
     story.append(Paragraph("<b>tour360vr.com.br</b> &nbsp;|&nbsp; contato@tour360vr.com.br &nbsp;|&nbsp; Whatsapp: (16) 99133-2121 &nbsp;|&nbsp; Tour360VR - Gestão de Perfil do Google & Presença Local", footer_style))
 
     doc.build(story)
@@ -453,16 +453,16 @@ def gerar_pdf_prospeccao_cases(inc_clientes, inc_faturamento, inc_grafico, inc_k
     ]
     t_header = Table(header_table_data, colWidths=[300, 220])
     story.append(t_header)
-    story.append(Spacer(1, 6))
+    story.append(Spacer(1, 4))
 
-    story.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor('#2563EB'), spaceAfter=10))
+    story.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor('#2563EB'), spaceAfter=6))
 
     story.append(Paragraph("<b>1. Resumo Consolidado de Resultados da Agência:</b>", section_style))
-    story.append(Spacer(1, 4))
+    story.append(Spacer(1, 3))
 
     txt_resumo = "A Tour360VR desenvolve estratégias personalizadas de posicionamento local, fotogrametria 360°, otimização de fichas no Google Maps e citabilidade para empresas que buscam liderança de mercado em sua região."
     story.append(Paragraph(txt_resumo, body_style))
-    story.append(Spacer(1, 6))
+    story.append(Spacer(1, 4))
 
     cards_data = []
     if inc_clientes:
@@ -479,20 +479,20 @@ def gerar_pdf_prospeccao_cases(inc_clientes, inc_faturamento, inc_grafico, inc_k
             ('ALIGN', (0,0), (-1,-1), 'CENTER'),
         ]))
         story.append(t_cards)
-        story.append(Spacer(1, 10))
+        story.append(Spacer(1, 6))
 
     if inc_grafico and df_agrupado is not None and not df_agrupado.empty:
         story.append(Paragraph("<b>2. Curva do Volume de Clientes Gerados (Mês a Mês):</b>", section_style))
-        story.append(Spacer(1, 4))
+        story.append(Spacer(1, 3))
         story.append(Paragraph("Evolução somada do número de ligações telefónicas, rotas no GPS e mensagens no WhatsApp enviadas para nossos parceiros:", body_style))
-        story.append(Spacer(1, 4))
+        story.append(Spacer(1, 3))
         img_buf = gerar_imagem_grafico_consolidado(df_agrupado)
         story.append(Image(img_buf, width=520, height=170))
-        story.append(Spacer(1, 10))
+        story.append(Spacer(1, 6))
 
     if inc_keywords and df_keywords is not None and not df_keywords.empty:
         story.append(Paragraph("<b>3. Exemplos Reais de Posicionamento no Topo do Google Maps:</b>", section_style))
-        story.append(Spacer(1, 4))
+        story.append(Spacer(1, 3))
         
         kw_table_data = [[Paragraph("<b>Palavra-Chave / Termo de Busca</b>", section_style), Paragraph("<b>Posição Inicial</b>", section_style), Paragraph("<b>Posição Atual</b>", section_style), Paragraph("<b>Ganho de Posições</b>", section_style)]]
         for _, row in df_keywords.iterrows():
@@ -515,21 +515,21 @@ def gerar_pdf_prospeccao_cases(inc_clientes, inc_faturamento, inc_grafico, inc_k
             ('ALIGN', (1,0), (-1,-1), 'CENTER'),
         ]))
         story.append(t_kw)
-        story.append(Spacer(1, 10))
+        story.append(Spacer(1, 6))
 
-    story.append(HRFlowable(width="100%", thickness=0.8, color=colors.HexColor('#CBD5E1'), spaceAfter=8))
+    story.append(HRFlowable(width="100%", thickness=0.8, color=colors.HexColor('#CBD5E1'), spaceAfter=4))
     story.append(Paragraph("<b>tour360vr.com.br</b> &nbsp;|&nbsp; contato@tour360vr.com.br &nbsp;|&nbsp; Whatsapp: (16) 99133-2121 &nbsp;|&nbsp; Tour360VR - Soluções em Visual Mídia & SEO Local", footer_style))
 
     doc.build(story)
     buffer.seek(0)
     return buffer
 
-# --- CSS PERSONALIZADO (BOTÕES SEM CORTES, ESPAÇAMENTO ORIGINAL E RESPIRO LATERAL NAS COLUNAS) ---
+# --- CSS PERSONALIZADO (SEM CORTAR TEXTO, COMPACTO E LINHAS REDUZIDAS) ---
 st.markdown("""
     <style>
     .block-container {
-        padding-top: 1.8rem !important;
-        padding-bottom: 2.8rem !important;
+        padding-top: 1.2rem !important;
+        padding-bottom: 2.0rem !important;
         max-width: 90% !important;
         margin: 0 auto !important;
     }
@@ -548,54 +548,54 @@ st.markdown("""
         background-color: #161F30;
         border: 1px solid #2B364A;
         border-radius: 12px;
-        padding: 22px 28px !important;
-        margin-bottom: 24px !important;
+        padding: 16px 22px !important;
+        margin-bottom: 16px !important;
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
     }
 
     .main-title-card {
         color: #FFFFFF;
         font-weight: 800;
-        font-size: 1.85rem;
+        font-size: 1.65rem;
         margin-top: 0 !important;
-        margin-bottom: 6px !important;
+        margin-bottom: 4px !important;
         text-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
     }
 
     .sub-title-card {
         color: #8E9BAE;
-        font-size: 0.92rem;
+        font-size: 0.90rem;
         margin-bottom: 0px !important;
     }
 
     /* ESPAÇAMENTO ENTRE AS COLUNAS DE BOTÕES SUPERIORES */
     div[data-testid="stHorizontalBlock"] {
         gap: 0.5rem !important;
-        margin-bottom: 25px !important;
+        margin-bottom: 16px !important;
     }
 
-    /* MAIOR ESPAÇAMENTO LATERAL (HORIZONTAL) ENTRE COLUNAS DE CAMPOS */
+    /* ESPAÇAMENTO LATERAL (HORIZONTAL) ENTRE COLUNAS DE CAMPOS */
     div[data-testid="stHorizontalBlock"] > div[data-testid="stColumn"] {
-        padding-left: 14px !important;
-        padding-right: 14px !important;
+        padding-left: 10px !important;
+        padding-right: 10px !important;
     }
 
     div[data-testid="stColumn"] {
         padding: 0px !important;
     }
 
-    /* ESTILIZAÇÃO DOS BOTÕES SUPERIORES (SEM CORTAR TEXTO, LARGURA AUTOMÁTICA) */
+    /* ESTILIZAÇÃO DOS BOTÕES SUPERIORES (SEM CORTAR TEXTO) */
     div[data-testid="stColumn"] button {
         width: 100% !important;
-        min-height: 46px !important;
-        height: 46px !important;
+        min-height: 44px !important;
+        height: 44px !important;
         background-color: #1A2130 !important;
         border: 1.5px solid #455570 !important;
         color: #FFFFFF !important;
         border-radius: 8px !important;
-        padding: 2px 8px !important;
+        padding: 2px 6px !important;
         font-weight: 700 !important;
-        font-size: 0.78rem !important;
+        font-size: 0.76rem !important;
         line-height: 1.1 !important;
         display: flex !important;
         align-items: center !important;
@@ -613,7 +613,6 @@ st.markdown("""
         box-shadow: 0 0 14px rgba(255, 255, 255, 0.75) !important;
     }
 
-    /* BOTÃO SELECIONADO (EFEITO NEON BRANCO) */
     div[data-testid="stColumn"] button[kind="primary"] {
         background-color: #1A2130 !important;
         border: 2px solid #FFFFFF !important;
@@ -624,37 +623,47 @@ st.markdown("""
     /* FORMULÁRIOS E CAIXAS */
     div[data-testid="stForm"] {
         border-color: #2B364A !important;
-        padding: 24px !important;
+        padding: 20px !important;
         border-radius: 12px !important;
-        margin-top: 15px !important;
+        margin-top: 10px !important;
         background-color: #131A28 !important;
     }
 
-    /* ESPAÇAMENTO VERTICAL ORIGINAL ENTRE OS CAMPOS */
+    /* ESPAÇAMENTO VERTICAL REDUZIDO ENTRE OS ITENS */
     div[data-testid="stTextInput"], 
     div[data-testid="stNumberInput"], 
     div[data-testid="stSelectbox"], 
     div[data-testid="stDateInput"],
     div[data-testid="stTextArea"] {
-        margin-bottom: 03px !important;
+        margin-bottom: 12px !important;
     }
 
     div[data-baseweb="tab-list"] {
-        gap: 12px !important;
-        margin-bottom: 15px !important;
+        gap: 10px !important;
+        margin-bottom: 18px !important;
     }
 
     button[data-baseweb="tab"] {
-        padding: 8px 16px !important;
-        font-size: 0.90rem !important;
+        padding: 6px 14px !important;
+        font-size: 0.88rem !important;
     }
 
-    .dia-destaque {
-        color: #FFFFFF !important;
+    .dia-linha-container {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background-color: #1A2130;
+        border: 1px solid #2B364A;
+        padding: 8px 14px;
+        border-radius: 8px;
+        margin-bottom: 8px;
+    }
+    
+    .dia-nome-label {
         font-weight: 700;
-        font-size: 1.05rem;
-        margin-top: 1.2rem;
-        margin-bottom: 0.4rem;
+        color: #FFFFFF;
+        font-size: 0.95rem;
+        min-width: 120px;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -740,7 +749,7 @@ if st.session_state["aba_ativa"] == "cadastrar":
         
         with sub_tab_sobre:
             st.markdown("**Identificação Comercial & Auditoria Inicial:**")
-            st.markdown("<div style='margin-bottom: 12px;'></div>", unsafe_allow_html=True)
+            st.markdown("<div style='margin-bottom: 8px;'></div>", unsafe_allow_html=True)
             c_s1, c_s2 = st.columns(2, gap="large")
 
             opts_reivindicada = ["Reivindicada & Verificada", "Não Reivindicada", "Em Processo"]
@@ -787,11 +796,11 @@ if st.session_state["aba_ativa"] == "cadastrar":
                     qtd_fotos_inicio = st.number_input("Qtd. Fotos Iniciais", min_value=0, step=1, value=int(dados_existentes.get("qtd_fotos_inicio", 0)) if modo_edicao else 0, key="num_fotos_ini_cad")
             
             st.markdown("---")
-            descricao_empresa = st.text_area("Descrição Oficial da Empresa", value=dados_existentes.get("descricao_empresa", "") if modo_edicao else "", height=180, key="txt_desc_empresa_cad")
+            descricao_empresa = st.text_area("Descrição Oficial da Empresa", value=dados_existentes.get("descricao_empresa", "") if modo_edicao else "", height=150, key="txt_desc_empresa_cad")
 
         with sub_tab_financeiro:
             st.markdown("**Dados do Contrato do Cliente:**")
-            st.markdown("<div style='margin-bottom: 12px;'></div>", unsafe_allow_html=True)
+            st.markdown("<div style='margin-bottom: 8px;'></div>", unsafe_allow_html=True)
             col_f1, col_f2, col_f3 = st.columns([1.2, 1.2, 2.6], gap="medium")
             
             opts_status_contrato = ["Ativo", "Em Negociação", "Pausado", "Cancelado"]
@@ -837,7 +846,7 @@ if st.session_state["aba_ativa"] == "cadastrar":
                 area_cobertura = st.text_input("Áreas de Cobertura", value=dados_existentes.get("area_cobertura", "") if modo_edicao else "", key="txt_area_cad")
 
         with sub_tab_horario:
-            st.markdown("**Horários de Funcionamento:**")
+            st.markdown("**Horários de Funcionamento (Cada dia em 1 única linha):**")
             dias_semana = [
                 ("Segunda-feira", "horario_seg", "08:00", "18:00", False),
                 ("Terça-feira", "horario_ter", "08:00", "18:00", False),
@@ -850,9 +859,6 @@ if st.session_state["aba_ativa"] == "cadastrar":
             
             horarios_coletados = {}
             for dia_nome, campo_db, h_ab_def, h_fe_def, fechado_def in dias_semana:
-                st.markdown(f"<p class='dia-destaque'>📅 {dia_nome}</p>", unsafe_allow_html=True)
-                col_h1, col_h2, col_h3 = st.columns([2, 2, 1], gap="medium")
-                
                 is_fechado = fechado_def
                 val_ab = h_ab_def
                 val_fe = h_fe_def
@@ -867,12 +873,16 @@ if st.session_state["aba_ativa"] == "cadastrar":
                         if len(parts) == 2:
                             val_ab, val_fe = parts[0], parts[1]
 
-                with col_h3:
+                # Linha única em colunas para cada dia
+                col_d, col_a, col_f, col_c = st.columns([2.2, 2.2, 2.2, 1.4], gap="small")
+                with col_d:
+                    st.markdown(f"<div style='padding-top:8px; font-weight:700; color:#FFFFFF;'>📅 {dia_nome}</div>", unsafe_allow_html=True)
+                with col_a:
+                    h_abre_sel = st.text_input(f"Abertura {dia_nome}", value=val_ab, label_visibility="collapsed", disabled=is_fechado, key=f"txt_ab_{dia_nome}")
+                with col_f:
+                    h_fecha_sel = st.text_input(f"Fecha {dia_nome}", value=val_fe, label_visibility="collapsed", disabled=is_fechado, key=f"txt_fe_{dia_nome}")
+                with col_c:
                     fechado = st.checkbox("Fechado", key=f"chk_fechado_{dia_nome}", value=is_fechado)
-                with col_h1:
-                    h_abre_sel = st.text_input("Abertura", value=val_ab, disabled=fechado, key=f"txt_ab_{dia_nome}")
-                with col_h2:
-                    h_fecha_sel = st.text_input("Fechamento", value=val_fe, disabled=fechado, key=f"txt_fe_{dia_nome}")
                 
                 horarios_coletados[campo_db] = "Fechado" if fechado else f"{h_abre_sel} - {h_fecha_sel}"
 
@@ -900,7 +910,7 @@ if st.session_state["aba_ativa"] == "cadastrar":
                 p_hor = st.checkbox("⏰ Validar Horários de Funcionamento", value="Ajuste de Horários" in pendencias_salvas, key="chk_p8_cad")
 
             st.markdown("---")
-            observacoes_tecnicas = st.text_area("Observações Técnicas Adicionais", value=dados_existentes.get("observacoes_tecnicas", "") if modo_edicao else "", height=180, key="txt_obs_tec_cad")
+            observacoes_tecnicas = st.text_area("Observações Técnicas Adicionais", value=dados_existentes.get("observacoes_tecnicas", "") if modo_edicao else "", height=150, key="txt_obs_tec_cad")
 
         with sub_tab_historico:
             if not modo_edicao:
