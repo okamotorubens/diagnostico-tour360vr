@@ -322,14 +322,12 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     story = []
     styles = getSampleStyleSheet()
 
-    # Estilos profissionais rigorosamente limpos (sem tags markdown em string simples)
     title_brand_style = ParagraphStyle('DocBrandTitle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=12, leading=15, textColor=colors.HexColor('#000000'))
     doc_title_style = ParagraphStyle('DocTitleStyle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, leading=14, alignment=1, textColor=colors.HexColor('#1E293B'))
     body_style = ParagraphStyle('DocBody', parent=styles['Normal'], fontName='Helvetica', fontSize=8.5, leading=11.5, alignment=4, textColor=colors.HexColor('#1E293B'))
     footer_style = ParagraphStyle('DocFooter', parent=styles['Normal'], fontName='Helvetica', fontSize=8, leading=10, alignment=1, textColor=colors.HexColor('#334155'))
     signature_style = ParagraphStyle('DocSig', parent=styles['Normal'], fontName='Helvetica', fontSize=8.5, leading=11, alignment=1, textColor=colors.HexColor('#1E293B'))
 
-    # Carregamento seguro da logo oficial do GitHub
     logo_flowable = Paragraph("<b>Tour360VR</b>", title_brand_style)
     try:
         resp_img = requests.get(LOGO_TOUR360_URL, timeout=3)
@@ -339,7 +337,6 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     except Exception:
         pass
 
-    # Cabeçalho corporativo oficial
     header_table_data = [
         [
             logo_flowable,
@@ -356,7 +353,6 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     story.append(Spacer(1, 4))
     story.append(HRFlowable(width="100%", thickness=1.0, color=colors.HexColor('#2563EB'), spaceAfter=6))
 
-    # Data por extenso
     meses_pt = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"]
     hoje = agora_brasil()
     data_extenso = f"Ribeirão Preto - SP, {hoje.day} de {meses_pt[hoje.month - 1]} de {hoje.year}."
@@ -364,11 +360,8 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     date_style = ParagraphStyle('DateStyle', parent=styles['Normal'], fontName='Helvetica', fontSize=8.5, alignment=2, textColor=colors.HexColor('#334155'), spaceAfter=0)
     story.append(Paragraph(data_extenso, date_style))
 
-    # Espaçamento e título centralizado
     story.append(Spacer(1, 8))
     story.append(Paragraph("TERMO DE CONTRATAÇÃO DE SERVIÇOS", doc_title_style))
-
-    # Espaçamento ideal antes do texto do contrato
     story.append(Spacer(1, 8))
 
     nome_emp = dados_cliente.get("nome_empresa", "Empresa Cliente")
@@ -401,7 +394,6 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     """
     story.append(Paragraph(clausulas, body_style))
     
-    # Espaçamento formal antes das assinaturas
     story.append(Spacer(1, 16))
 
     assinaturas_data = [
@@ -413,7 +405,6 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     t_ass = Table(assinaturas_data, colWidths=[260, 260])
     story.append(t_ass)
     
-    # Rodapé ancorado exatamente na base inferior da folha única
     story.append(Spacer(1, 8))
     story.append(HRFlowable(width="100%", thickness=0.8, color=colors.HexColor('#2563EB'), spaceAfter=2))
     story.append(Paragraph('<a href="https://tour360vr.com.br" color="#000000"><b>tour360vr.com.br</b></a> &nbsp;|&nbsp; <a href="mailto:contato@tour360vr.com.br" color="#000000">contato@tour360vr.com.br</a> &nbsp;|&nbsp; <a href="https://wa.me/5516991332121" color="#000000">WhatsApp: (16) 99133-2121</a>', footer_style))
@@ -459,10 +450,16 @@ st.markdown("""
 if "aba_ativa" not in st.session_state:
     st.session_state["aba_ativa"] = "cadastrar"
 
-st.markdown("""
+# --- CARD DE TOPO ATUALIZADO COM A LOGO DO TOUR360VR ---
+st.markdown(f"""
 <div class="top-card-container">
-    <h1 class="main-title-card">📈 Gestão Mensal & Estratégia do Perfil | Tour360VR</h1>
-    <p class="sub-title-card">Plataforma corporativa de inteligência de Google Maps, auditoria, curadoria e contratos.</p>
+    <div style="display: flex; align-items: center; gap: 15px;">
+        <img src="{LOGO_TOUR360_URL}" width="45" style="border-radius: 4px;" />
+        <div>
+            <h1 class="main-title-card" style="margin: 0;">📈 Gestão Mensal & Estratégia do Perfil</h1>
+            <p class="sub-title-card">Plataforma corporativa de inteligência de Google Maps, auditoria, curadoria e contratos.</p>
+        </div>
+    </div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -576,7 +573,6 @@ if st.session_state["aba_ativa"] == "cadastrar":
                 horarios_coletados[campo_db] = "Fechado" if fch else f"{ha} - {hf}"
 
         with sub_t3:
-            # Layout corrigido e isolado para largura total e legibilidade sem cortes no status
             valor_contrato_mensal = st.number_input("Valor da Mensalidade (R$)", min_value=0.0, step=50.0, value=float(dados_existentes.get("valor_contrato_mensal", 450.0)) if (modo_edicao and dados_existentes) else 450.0)
             dia_vencimento = st.number_input("Dia Vencimento", min_value=1, max_value=31, step=1, value=int(dados_existentes.get("dia_vencimento", 10)) if (modo_edicao and dados_existentes) else 10)
             
