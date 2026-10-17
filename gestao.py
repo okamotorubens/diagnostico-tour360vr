@@ -40,6 +40,27 @@ FUSO_BR = pytz.timezone('America/Sao_Paulo')
 def agora_brasil():
     return datetime.now(FUSO_BR)
 
+# --- FUNÇÃO BLINDADA PARA OBTER LOGO (INTERFACE E PDF) ---
+def get_logo_path_or_url():
+    local_path = "ativos/logo_tour_transparente.png"
+    if os.path.exists(local_path):
+        return local_path
+    return LOGO_TOUR360_URL
+
+def get_rl_image(width, height):
+    local_path = "ativos/logo_tour_transparente.png"
+    if os.path.exists(local_path):
+        return RLImage(local_path, width=width, height=height, kind='proportional')
+    else:
+        try:
+            resp = requests.get(LOGO_TOUR360_URL, timeout=5)
+            if resp.status_code == 200:
+                return RLImage(BytesIO(resp.content), width=width, height=height, kind='proportional')
+        except Exception:
+            pass
+    styles = getSampleStyleSheet()
+    return Paragraph("<b>Tour360VR</b>", ParagraphStyle('Fallback', parent=styles['Normal'], fontName='Helvetica-Bold'))
+
 # --- CONEXÃO COM SUPABASE ---
 @st.cache_resource
 def get_supabase_client() -> Client:
@@ -62,7 +83,7 @@ if "aprovar" in query_params or st.session_state.get("modo_aprovacao", False):
 
     col_l1, col_l2, col_l3 = st.columns([3, 2, 3])
     with col_l2:
-        st.image(LOGO_TOUR360_URL, use_column_width=True)
+        st.image(get_logo_path_or_url(), width=150)
 
     st.markdown("""
         <div class="aprovacao-container">
@@ -92,18 +113,22 @@ if "aprovar" in query_params or st.session_state.get("modo_aprovacao", False):
     obs_cliente = st.text_area("Tem alguma observação ou alteração para esta pauta? Digite aqui:", placeholder="Ex: Gostaria de alterar o foco da pauta 2 para...", height=100)
 
     st.markdown("---")
+    
+    # Geração dinâmica da mensagem baseada no que o cliente selecionou e digitou
+    pautas_aprovadas_txt = "\n".join([k for k, v in pautas_status.items() if v])
+    msg_envio = f"Olá Rubens!\nAvaliei o planejamento de pautas na plataforma da Tour360VR.\n\nPautas Aprovadas:\n{pautas_aprovadas_txt}\n\nAjustes Solicitados:\n{obs_cliente if obs_cliente else 'Nenhum ajuste adicional.'}"
+    link_wsp_final = f"https://wa.me/5516991332121?text={urllib.parse.quote(msg_envio)}"
+
     col_ap1, col_ap2 = st.columns(2)
     with col_ap1:
-        if st.button("✅ Confirmar Aprovação das Pautas", use_container_width=True):
+        if st.button("✅ Confirmar Aprovação Interna das Pautas", use_container_width=True):
             st.balloons()
-            st.success("Planejamento aprovado e registrado com sucesso! Obrigado pela parceria.")
+            st.success("Planejamento validado! Envie os ajustes ao Rubens clicando no botão verde ao lado.")
+            
     with col_ap2:
-        if st.button("📤 Enviar Ajustes para o Rubens (WhatsApp)", use_container_width=True):
-            pautas_aprovadas_txt = "\n".join([k for k, v in pautas_status.items() if v])
-            msg_envio = f"Olá Rubens!\nAvaliei o planejamento de pautas na plataforma da Tour360VR.\n\nPautas Aprovadas:\n{pautas_aprovadas_txt}\n\nAjustes Solicitados:\n{obs_cliente if obs_cliente else 'Nenhum ajuste adicional.'}"
-            link_wsp_final = f"https://wa.me/5516991332121?text={urllib.parse.quote(msg_envio)}"
-            st.markdown(f'<meta http-equiv="refresh" content="0;url={link_wsp_final}">', unsafe_allow_html=True)
-            st.success("Redirecionando para o WhatsApp do Rubens com seus ajustes...")
+        # Botão nativo do Streamlit para redirecionamento seguro sem bloquear a aba
+        st.link_button("📤 Enviar Aprovação para o WhatsApp", url=link_wsp_final, type="primary", use_container_width=True)
+        
     st.stop()
 
 # --- NAVEGAÇÃO SEQUENCIAL DAS ABAS ---
@@ -192,16 +217,6 @@ def auditar_ficha_google(url_maps):
     except Exception as e:
         return None, f"Erro ao analisar o link: {str(e)}"
 
-def gerar_qr_code_limpo(url):
-    qr = qrcode.QRCode(version=1, error_correction=qrcode.constants.ERROR_CORRECT_M, box_size=12, border=4)
-    qr.add_data(url)
-    qr.make(fit=True)
-    img_qr = qr.make_image(fill_color="#000000", back_color="#FFFFFF").convert('RGB')
-    buffer = BytesIO()
-    img_qr.save(buffer, format="PNG")
-    buffer.seek(0)
-    return buffer
-
 def gerar_imagem_grafico(df_historico):
     fig, ax = plt.subplots(figsize=(6.5, 2.0), dpi=200)
     ax.plot(df_historico['mes_ano'], df_historico['chamadas'], marker='o', color='#2563EB', linewidth=2, label='Chamadas')
@@ -225,7 +240,7 @@ def gerar_imagem_grafico(df_historico):
 # --- GERAÇÃO DE RELATÓRIO PDF EXECUTIVO ---
 def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dados_inicio, df_historico=None, df_keywords=None):
     buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=50)
+    doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=70)
     story = []
     styles = getSampleStyleSheet()
 
@@ -233,13 +248,7 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
     section_style = ParagraphStyle('DocSection', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=13, textColor=colors.HexColor('#1E293B'))
     body_style = ParagraphStyle('DocBody', parent=styles['Normal'], fontName='Helvetica', fontSize=8, leading=11, textColor=colors.HexColor('#334155'))
     
-    logo_flowable = Paragraph("<b>Tour360VR</b>", title_brand_style)
-    try:
-        resp = requests.get(LOGO_TOUR360_URL, timeout=5)
-        if resp.status_code == 200:
-            logo_flowable = RLImage(BytesIO(resp.content), width=45, height=45, kind='proportional')
-    except Exception:
-        pass
+    logo_flowable = get_rl_image(50, 50)
 
     header_table_data = [
         [
@@ -306,24 +315,24 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
         canvas.saveState()
         canvas.setStrokeColor(colors.HexColor('#BFDBFE'))
         canvas.setLineWidth(1.0)
-        canvas.line(40, 50, letter[0] - 40, 50)
+        canvas.line(40, 35, letter[0] - 40, 35) # Rebaixado 1 linha
         footer_html = '<a href="https://tour360vr.com.br" color="#334155">tour360vr.com.br</a> &nbsp;|&nbsp; <a href="mailto:contato@tour360vr.com.br" color="#334155">contato@tour360vr.com.br</a> &nbsp;|&nbsp; <a href="https://wa.me/5516991332121" color="#334155">WhatsApp: (16) 99133-2121</a>'
         p = Paragraph(footer_html, ParagraphStyle('Footer', fontName='Helvetica', fontSize=8, alignment=1))
-        p.wrap(letter[0] - 80, 50)
-        p.drawOn(canvas, 40, 35)
+        p.wrap(letter[0] - 80, 35)
+        p.drawOn(canvas, 40, 20) # Rebaixado 1 linha
         canvas.restoreState()
 
     doc.build(story, onFirstPage=add_footer_relatorio, onLaterPages=add_footer_relatorio)
     buffer.seek(0)
     return buffer
 
-# --- GERAÇÃO DE CONTRATO EM PDF (CORRIGIDO) ---
+# --- GERAÇÃO DE CONTRATO EM PDF ---
 def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duracao=None):
     buffer = BytesIO()
     doc = SimpleDocTemplate(
         buffer, 
         pagesize=letter, 
-        rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=60,
+        rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=70, # Aumentada margem inferior
         title=f"Contrato Tour360VR - {dados_cliente.get('nome_empresa', 'Cliente')}"
     )
     story = []
@@ -335,16 +344,10 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     body_style = ParagraphStyle('DocBody', parent=styles['Normal'], fontName='Helvetica', fontSize=9.5, leading=14, alignment=4, textColor=colors.HexColor('#1E293B'))
     signature_style = ParagraphStyle('DocSig', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=12, alignment=1, textColor=colors.HexColor('#1E293B'))
 
-    # Logo no PDF com proporção corrigida
-    logo_flowable = Paragraph("<b>Tour360VR</b>", title_brand_style)
-    try:
-        resp = requests.get(LOGO_TOUR360_URL, timeout=5)
-        if resp.status_code == 200:
-            logo_flowable = RLImage(BytesIO(resp.content), width=50, height=50, kind='proportional')
-    except Exception:
-        pass
+    # Logo via helper robusto
+    logo_flowable = get_rl_image(50, 50)
 
-    # Cabeçalho Ajustado (Coluna da logo alargada para evitar esmagamento)
+    # Cabeçalho Ajustado
     header_table = Table([
         [logo_flowable, Paragraph("<b>CONTRATO DE PRESTAÇÃO DE SERVIÇOS</b><br/><font size=8 color='#2563EB'>Documento Jurídico Oficial | Tour360VR</font>", ParagraphStyle('RH', alignment=2, fontName='Helvetica-Bold', fontSize=11))]
     ], colWidths=[65, 467])
@@ -359,9 +362,9 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     data_extenso = f"Ribeirão Preto - SP, {hoje.day} de {meses_pt[hoje.month - 1]} de {hoje.year}."
     story.append(Paragraph(data_extenso, ParagraphStyle('Date', fontName='Helvetica', fontSize=9, alignment=2, textColor=colors.HexColor('#64748B'))))
     
-    story.append(Spacer(1, 30)) # Espaçamento extra (1 linha) adicionado
+    story.append(Spacer(1, 30))
     story.append(Paragraph("TERMO DE CONTRATAÇÃO DE SERVIÇOS", doc_title_style))
-    story.append(Spacer(1, 25)) # Espaçamento extra (1 linha) adicionado
+    story.append(Spacer(1, 25))
 
     nome_emp = dados_cliente.get("nome_empresa", "Empresa Cliente")
     resp_emp = dados_cliente.get("responsavel", "Responsável")
@@ -372,23 +375,24 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     else:
         detalhe_plano = f"{plano_escolhido}, no valor total de R$ {valor_plano:,.2f}"
 
+    # Textos com as palavras chaves em negrito <b> explícito
     txt_qualificacao = f"""
-    <b>CONTRATADA:</b> Tour360VR, representada por Rubens Okamoto, CNPJ: 04.824.331/0001-05 e Telefone: (16) 99133-2121.<br/><br/>
+    <b>CONTRATADA:</b> <b>Tour360VR</b>, representada por Rubens Okamoto, CNPJ: 04.824.331/0001-05 e Telefone: (16) 99133-2121.<br/><br/>
     <b>CONTRATANTE:</b> <b>{nome_emp}</b>, representada por {resp_emp}, Telefone: {tel_emp}.<br/><br/>
-    A Tour360VR (<b>CONTRATADA</b>) compromete-se a executar os serviços profissionais especializados em otimização, reestruturação técnica, curadoria de pautas e produção de Tour Virtual 360 para o perfil do Google da <b>CONTRATANTE</b>, referentes ao plano contratado <b>{detalhe_plano}</b>.
+    A <b>Tour360VR</b> (<b>CONTRATADA</b>) compromete-se a executar os serviços profissionais especializados em otimização, reestruturação técnica, curadoria de pautas e produção de Tour Virtual 360 para o perfil do Google da <b>CONTRATANTE</b>, referentes ao plano contratado <b>{detalhe_plano}</b>.
     """
     story.append(Paragraph(txt_qualificacao, body_style))
     story.append(Spacer(1, 15))
 
     clausulas = """
-    <b>CLÁUSULA PRIMEIRA - DO OBJETO:</b> Os serviços serão iniciados em até 5 dias úteis após a confirmação do acordo e o fornecimento de todos os acessos e informações necessárias à gestão do perfil pela CONTRATANTE.<br/><br/>
-    <b>CLÁUSULA SEGUNDA - DAS OBRIGAÇÕES E PAGAMENTO:</b> O não pagamento no prazo pactuado sujeitará o presente contrato à incidência de juros moratórios legais e à suspensão temporária dos serviços pela Tour360VR até a devida regularização financeira.<br/><br/>
-    <b>CLÁUSULA TERCEIRA - DOS DIREITOS DE USO E PROPRIEDADE:</b> Os direitos de uso do Tour Virtual 360 e fotos em alta definição serão cedidos em caráter ilimitado à CONTRATANTE para veiculação oficial no Google. A Tour360VR reserva-se o direito de utilizar o material gerado em seu portfólio profissional de divulgação.<br/><br/>
+    <b>CLÁUSULA PRIMEIRA - DO OBJETO:</b> Os serviços serão iniciados em até 5 dias úteis após a confirmação do acordo e o fornecimento de todos os acessos e informações necessárias à gestão do perfil pela <b>CONTRATANTE</b>.<br/><br/>
+    <b>CLÁUSULA SEGUNDA - DAS OBRIGAÇÕES E PAGAMENTO:</b> O não pagamento no prazo pactuado sujeitará o presente contrato à incidência de juros moratórios legais e à suspensão temporária dos serviços pela <b>Tour360VR</b> até a devida regularização financeira.<br/><br/>
+    <b>CLÁUSULA TERCEIRA - DOS DIREITOS DE USO E PROPRIEDADE:</b> Os direitos de uso do Tour Virtual 360 e fotos em alta definição serão cedidos em caráter ilimitado à <b>CONTRATANTE</b> para veiculação oficial no Google. A <b>Tour360VR</b> reserva-se o direito de utilizar o material gerado em seu portfólio profissional de divulgação.<br/><br/>
     <b>CLÁUSULA QUARTA - CONFIDENCIALIDADE E LGPD:</b> As partes comprometem-se a manter sob sigilo absoluto todas as informações operacionais fornecidas, em estrita conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018).<br/><br/>
     <b>CLÁUSULA QUINTA - VALIDADE DA PROPOSTA:</b> A presente proposta e condições comerciais possuem validade oficial de 15 (quinze) dias a contar da data de sua emissão.
     """
     story.append(Paragraph(clausulas, body_style))
-    story.append(Spacer(1, 55)) # Espaçamento extra (1 linha) adicionado antes das assinaturas
+    story.append(Spacer(1, 55))
 
     # Assinaturas
     t_ass = Table([
@@ -397,18 +401,17 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     ], colWidths=[240, 240])
     story.append(t_ass)
 
-    # Função para fixar o rodapé no fundo da página com links e linha azul claro
+    # Função para fixar o rodapé no fundo da página (Rebaixado)
     def add_footer(canvas, doc):
         canvas.saveState()
         canvas.setStrokeColor(colors.HexColor('#BFDBFE'))
         canvas.setLineWidth(1.0)
-        canvas.line(40, 50, letter[0] - 40, 50)
+        canvas.line(40, 35, letter[0] - 40, 35) # Linha rebaixada em 15 pontos
         
-        # Parágrafo desenhado sobre o canvas suporta links clicáveis nativamente
         footer_html = '<a href="https://tour360vr.com.br" color="#334155">tour360vr.com.br</a> &nbsp;|&nbsp; <a href="mailto:contato@tour360vr.com.br" color="#334155">contato@tour360vr.com.br</a> &nbsp;|&nbsp; <a href="https://wa.me/5516991332121" color="#334155">WhatsApp: (16) 99133-2121</a>'
         p = Paragraph(footer_html, ParagraphStyle('Footer', fontName='Helvetica', fontSize=8, alignment=1))
-        p.wrap(letter[0] - 80, 50)
-        p.drawOn(canvas, 40, 35)
+        p.wrap(letter[0] - 80, 35)
+        p.drawOn(canvas, 40, 20) # Texto rebaixado
         
         canvas.restoreState()
 
@@ -450,12 +453,12 @@ st.markdown("""
 if "aba_ativa" not in st.session_state:
     st.session_state["aba_ativa"] = "cadastrar"
 
-# --- CARD DE TOPO PERFEITO COM IMAGEM NATIVA DO STREAMLIT ---
+# --- CARD DE TOPO ---
 with st.container():
     st.markdown('<div class="top-card-container">', unsafe_allow_html=True)
     col_logo, col_texto = st.columns([0.6, 9.4], vertical_alignment="center")
     with col_logo:
-        st.image(LOGO_TOUR360_URL, width=50)
+        st.image(get_logo_path_or_url(), width=50)
     with col_texto:
         st.markdown("""
             <h1 class="main-title-card" style="margin: 0;">📈 Gestão Mensal & Estratégia do Perfil</h1>
@@ -772,9 +775,13 @@ elif st.session_state["aba_ativa"] == "ia":
                 pautas_selecionadas.append(p_editada)
 
         st.markdown("---")
-        st.markdown("### 🔗 Link Único de Aprovação Externa (Sistema)")
+        st.markdown("### 🔗 Link Único de Aprovação Externa (Copie e envie ao cliente)")
         link_exemplo = f"https://gestao-mensal-tour360vr.streamlit.app/?aprovar=true&cliente={emp.lower().replace(' ', '-')}"
-        st.text_input("Link Único Exclusivo para Envio ao Cliente (Copiável):", value=link_exemplo)
+        
+        # Componente nativo do Streamlit que já traz o botão "Copiar" no canto
+        st.code(link_exemplo, language=None)
+
+        st.markdown("<br>", unsafe_allow_html=True)
 
         num_wsp = dados_c.get("whatsapp", "")
         num_limpo = "".join([c for c in str(num_wsp) if c.isdigit()])
@@ -783,9 +790,9 @@ elif st.session_state["aba_ativa"] == "ia":
         msg_wsp = urllib.parse.quote(texto_msg_wsp)
 
         if num_limpo:
-            st.markdown(f'<a href="https://wa.me/55{num_limpo}?text={msg_wsp}" target="_blank" style="text-decoration:none;"><button style="width:100%; background-color:#16A34A; color:white; border:none; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer;">📱 Enviar Link de Aprovação via WhatsApp</button></a>', unsafe_allow_html=True)
+            st.link_button("📱 Abrir WhatsApp do Cliente", url=f"https://wa.me/55{num_limpo}?text={msg_wsp}", type="primary", use_container_width=True)
         else:
-            st.warning("Cadastre o WhatsApp do cliente na aba 'Ficha Comercial' para habilitar o botão de envio.")
+            st.warning("Cadastre o WhatsApp do cliente na aba 'Ficha Comercial' para habilitar o botão de envio direto.")
 
     gerar_botoes_navegacao_rodape()
 
