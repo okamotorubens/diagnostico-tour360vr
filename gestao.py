@@ -23,8 +23,9 @@ from reportlab.lib import colors
 # Importação do Matplotlib para geração de gráficos no PDF
 import matplotlib.pyplot as plt
 
-# --- CONFIGURAÇÃO DA PÁGINA & CAMINHO DA LOGO NO GITHUB ---
+# --- CONFIGURAÇÃO DA PÁGINA & CAMINHO LOCAL DA LOGO ---
 FAVICON_TOUR360 = "https://tour360vr.com.br/favicon.ico"
+LOGO_TOUR360_PATH = "ativos/logo_tour_transparente.png"
 LOGO_TOUR360_URL = "https://raw.githubusercontent.com/okamotorubens/diagnostico-tour360vr/main/ativos/logo_tour_transparente.png"
 
 st.set_page_config(
@@ -61,7 +62,10 @@ if "aprovar" in query_params or st.session_state.get("modo_aprovacao", False):
 
     col_l1, col_l2, col_l3 = st.columns([3, 2, 3])
     with col_l2:
-        st.image(LOGO_TOUR360_URL, width=120)
+        if os.path.exists(LOGO_TOUR360_PATH):
+            st.image(LOGO_TOUR360_PATH, width=120)
+        else:
+            st.image(LOGO_TOUR360_URL, width=120)
 
     st.markdown("""
         <div class="aprovacao-container">
@@ -235,10 +239,13 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
 
     logo_flowable = Paragraph("🌐 <b>Tour360VR</b>", title_brand_style)
     try:
-        resp_img = requests.get(LOGO_TOUR360_URL, timeout=3)
-        if resp_img.status_code == 200:
-            img_io = BytesIO(resp_img.content)
-            logo_flowable = RLImage(img_io, width=32, height=32)
+        if os.path.exists(LOGO_TOUR360_PATH):
+            logo_flowable = RLImage(LOGO_TOUR360_PATH, width=32, height=32)
+        else:
+            resp_img = requests.get(LOGO_TOUR360_URL, timeout=3)
+            if resp_img.status_code == 200:
+                img_io = BytesIO(resp_img.content)
+                logo_flowable = RLImage(img_io, width=32, height=32)
     except Exception:
         pass
 
@@ -330,10 +337,13 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
 
     logo_flowable = Paragraph("<b>Tour360VR</b>", title_brand_style)
     try:
-        resp_img = requests.get(LOGO_TOUR360_URL, timeout=3)
-        if resp_img.status_code == 200:
-            img_io = BytesIO(resp_img.content)
-            logo_flowable = RLImage(img_io, width=36, height=36)
+        if os.path.exists(LOGO_TOUR360_PATH):
+            logo_flowable = RLImage(LOGO_TOUR360_PATH, width=36, height=36)
+        else:
+            resp_img = requests.get(LOGO_TOUR360_URL, timeout=3)
+            if resp_img.status_code == 200:
+                img_io = BytesIO(resp_img.content)
+                logo_flowable = RLImage(img_io, width=36, height=36)
     except Exception:
         pass
 
@@ -450,21 +460,22 @@ st.markdown("""
 if "aba_ativa" not in st.session_state:
     st.session_state["aba_ativa"] = "cadastrar"
 
-# --- CARD DE TOPO COM COLUNAS NATIVAS E CARREGAMENTO SEGURO DA LOGO ---
+# --- CARD DE TOPO COM LEITURA LOCAL DO ARQUIVO ---
 with st.container():
     st.markdown('<div class="top-card-container">', unsafe_allow_html=True)
     col_logo, col_texto = st.columns([0.8, 9.2], vertical_alignment="center")
     with col_logo:
-        try:
-            # Baixa a imagem diretamente e renderiza de forma 100% segura pelo Streamlit
-            response_logo = requests.get(LOGO_TOUR360_URL, timeout=5)
-            if response_logo.status_code == 200:
-                img_bytes = BytesIO(response_logo.content)
-                st.image(img_bytes, width=48)
-            else:
+        if os.path.exists(LOGO_TOUR360_PATH):
+            st.image(LOGO_TOUR360_PATH, width=48)
+        else:
+            try:
+                response_logo = requests.get(LOGO_TOUR360_URL, timeout=5)
+                if response_logo.status_code == 200:
+                    st.image(BytesIO(response_logo.content), width=48)
+                else:
+                    st.write("📈")
+            except Exception:
                 st.write("📈")
-        except Exception:
-            st.write("📈")
     with col_texto:
         st.markdown("""
             <h1 class="main-title-card" style="margin: 0;">📈 Gestão Mensal & Estratégia do Perfil</h1>
