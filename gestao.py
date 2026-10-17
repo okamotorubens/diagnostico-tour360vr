@@ -40,6 +40,42 @@ def get_supabase_client() -> Client:
 
 supabase = get_supabase_client()
 
+# --- NAVEGAÇÃO SEQUENCIAL DAS ABAS ---
+ORDEM_ABAS = ["cadastrar", "auditoria", "metricas", "ia", "dashboard", "cases", "pdf", "financeiro"]
+NOMES_ABAS = {
+    "cadastrar": "⚙️ Ficha Comercial",
+    "auditoria": "🔍 Auditoria Link",
+    "metricas": "📋 Métricas & SEO",
+    "ia": "🎯 Curadoria",
+    "dashboard": "📊 Dashboard ROI",
+    "cases": "🏆 Prospecção",
+    "pdf": "📄 Relatório PDF",
+    "financeiro": "💰 Financeiro MRR"
+}
+
+def gerar_botoes_navegacao_rodape():
+    st.markdown("---")
+    aba_atual = st.session_state.get("aba_ativa", "cadastrar")
+    idx_atual = ORDEM_ABAS.index(aba_atual) if aba_atual in ORDEM_ABAS else 0
+    
+    col_v, col_m, col_p = st.columns([1.5, 3, 1.5], gap="large")
+    
+    with col_v:
+        if idx_atual > 0:
+            aba_anterior = ORDEM_ABAS[idx_atual - 1]
+            nome_ant = NOMES_ABAS[aba_anterior]
+            if st.button(f"⬅️ Voltar ({nome_ant})", key=f"btn_rodape_prev_{aba_atual}"):
+                st.session_state["aba_ativa"] = aba_anterior
+                st.rerun()
+                
+    with col_p:
+        if idx_atual < len(ORDEM_ABAS) - 1:
+            aba_proxima = ORDEM_ABAS[idx_atual + 1]
+            nome_prox = NOMES_ABAS[aba_proxima]
+            if st.button(f"Próximo: {nome_prox} ➡️", key=f"btn_rodape_next_{aba_atual}"):
+                st.session_state["aba_ativa"] = aba_proxima
+                st.rerun()
+
 # --- FUNÇÕES AUXILIARES DE BANCO DE DADOS ---
 def obter_clientes_unicos():
     res = supabase.table("clientes").select("id, nome_empresa").order("nome_empresa").execute()
@@ -335,7 +371,7 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
             ])
         t_kw = Table(kw_table_data, colWidths=[200, 100, 100, 120])
         t_kw.setStyle(TableStyle([
-            ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#F1F5F9')),
+            ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#F1F5F9')),
             ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#CBD5E1')),
             ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#E2E8F0')),
             ('PADDING', (0,0), (-1,-1), 4),
@@ -488,13 +524,13 @@ def gerar_pdf_prospeccao_cases(inc_clientes, inc_faturamento, inc_grafico, inc_k
     buffer.seek(0)
     return buffer
 
-# --- CSS PERSONALIZADO COM MAIOR ESPAÇAMENTO E RESPIRO VISUAL ---
+# --- CSS PERSONALIZADO ---
 st.markdown("""
     <style>
     .block-container {
         padding-top: 1.5rem !important;
         padding-bottom: 2.5rem !important;
-        max-width: 95% !important;
+        max-width: 96% !important;
     }
     
     header[data-testid="stHeader"] {
@@ -512,7 +548,7 @@ st.markdown("""
         border: 1px solid #2B364A;
         border-radius: 12px;
         padding: 20px 24px !important;
-        margin-bottom: 28px !important;
+        margin-bottom: 24px !important;
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
     }
 
@@ -531,29 +567,29 @@ st.markdown("""
         margin-bottom: 0px !important;
     }
 
-    /* ESPAÇAMENTO AMPLIADO ENTRE OS BOTÕES DO MENU SUPERIOR */
+    /* ESPAÇAMENTO ENTRE AS COLUNAS DE BOTÕES */
     div[data-testid="stHorizontalBlock"] {
-        gap: 0.8rem !important;
+        gap: 0.4rem !important;
         margin-bottom: 25px !important;
     }
 
     div[data-testid="stColumn"] {
-        padding: 0px 2px !important;
+        padding: 0px !important;
     }
 
-    /* ESTILIZAÇÃO DOS BOTÕES COM MAIS ESPAÇO E RESPIRO */
+    /* ESTILIZAÇÃO DOS BOTÕES COM AJUSTE DE FONTE E NO-WRAP COMPLETO */
     div[data-testid="stColumn"] button {
         width: 100% !important;
-        min-height: 48px !important;
-        height: 48px !important;
+        min-height: 46px !important;
+        height: 46px !important;
         background-color: #1A2130 !important;
         border: 1.5px solid #455570 !important;
         color: #FFFFFF !important;
         border-radius: 8px !important;
-        padding: 4px 10px !important;
+        padding: 2px 4px !important;
         font-weight: 700 !important;
-        font-size: 0.82rem !important;
-        line-height: 1.2 !important;
+        font-size: 0.78rem !important;
+        line-height: 1.1 !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
@@ -569,7 +605,7 @@ st.markdown("""
         box-shadow: 0 0 14px rgba(255, 255, 255, 0.75) !important;
     }
 
-    /* BOTÃO SELECIONADO (NEON DESTACADO COM MARGEM LIMPA) */
+    /* BOTÃO SELECIONADO (EFEITO NEON BRANCO) */
     div[data-testid="stColumn"] button[kind="primary"] {
         background-color: #1A2130 !important;
         border: 2px solid #FFFFFF !important;
@@ -577,7 +613,7 @@ st.markdown("""
         box-shadow: 0 0 20px rgba(255, 255, 255, 0.95) !important;
     }
 
-    /* ESPAÇAMENTO ENTRE CAMPOS DE PREENCHIMENTO E FORMULÁRIOS */
+    /* FORMULÁRIOS E CAMPOS COM MAIS RESPIRO */
     div[data-testid="stForm"] {
         border-color: #2B364A !important;
         padding: 24px !important;
@@ -585,7 +621,6 @@ st.markdown("""
         margin-top: 15px !important;
     }
 
-    /* RESPIRO ENTRE OS CAMPOS DE TEXTO E SELEÇÃO */
     div[data-testid="stTextInput"], 
     div[data-testid="stNumberInput"], 
     div[data-testid="stSelectbox"], 
@@ -594,7 +629,6 @@ st.markdown("""
         margin-bottom: 16px !important;
     }
 
-    /* ESPAÇAMENTO ENTRE AS ABAS INTERNAS (ST.TABS) */
     div[data-baseweb="tab-list"] {
         gap: 12px !important;
         margin-bottom: 22px !important;
@@ -626,8 +660,8 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# 8 colunas perfeitamente distribuídas com maior espaçamento lateral
-cols = st.columns([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
+# COLUNAS COM LARGURAS PROPORCIONAIS AO TAMANHO DO TEXTO DE CADA BOTÃO
+cols = st.columns([1.35, 1.25, 1.25, 1.1, 1.3, 1.2, 1.25, 1.35])
 
 with cols[0]:
     if st.button("⚙️ Ficha Comercial", key="btn_cad", type="primary" if st.session_state["aba_ativa"] == "cadastrar" else "secondary"):
@@ -950,6 +984,8 @@ if st.session_state["aba_ativa"] == "cadastrar":
             
             st.rerun()
 
+    gerar_botoes_navegacao_rodape()
+
 # ==========================================
 # MÓDULO 2: AUDITORIA EXPRESS DE FICHA GOOGLE
 # ==========================================
@@ -1009,6 +1045,8 @@ elif st.session_state["aba_ativa"] == "auditoria":
                     st.markdown(f'<a href="https://wa.me/?text={url_enc_prop}" target="_blank" style="text-decoration:none;"><button style="width:100%; background-color:#2563EB; color:white; border:none; padding:12px; border-radius:8px; font-weight:bold; cursor:pointer;">📱 Compartilhar Abordagem de Vendas no WhatsApp</button></a>', unsafe_allow_html=True)
         else:
             st.warning("Insira uma URL válida do Google Maps antes de iniciar a varredura.")
+
+    gerar_botoes_navegacao_rodape()
 
 # ==========================================
 # MÓDULO 3: INSERIR MÉTRICAS MENSAIS, RANKING SEO & ROI
@@ -1110,6 +1148,8 @@ elif st.session_state["aba_ativa"] == "metricas":
                     }).execute()
                     st.success(f"Palavra-chave '{kw_texto}' registrada no ranking!")
                     st.rerun()
+
+    gerar_botoes_navegacao_rodape()
 
 # ==========================================
 # MÓDULO 4: CURATORIA, PAUTAS E QR CODE PERMANENTE
@@ -1237,6 +1277,8 @@ elif st.session_state["aba_ativa"] == "ia":
             prompt_gerado = f"Professional commercial photography of a modern {cat_nome} establishment named '{emp_nome}', located in Brazil. High quality ambient lighting, photorealistic, elegant interior, clean design, 8k resolution --ar 16:9"
             st.code(prompt_gerado, language="text")
 
+    gerar_botoes_navegacao_rodape()
+
 # ==========================================
 # MÓDULO 5: DASHBOARD & ROI
 # ==========================================
@@ -1264,6 +1306,8 @@ elif st.session_state["aba_ativa"] == "dashboard":
             st.line_chart(df_metricas.set_index("mes_ano")[["chamadas", "rotas", "cliques_site"]])
         else:
             st.info("Ainda não existem métricas registradas para este cliente.")
+
+    gerar_botoes_navegacao_rodape()
 
 # ==========================================
 # MÓDULO 6: GERADOR DE PDF DE PROSPECÇÃO & CASES
@@ -1315,6 +1359,8 @@ elif st.session_state["aba_ativa"] == "cases":
         mime="application/pdf",
         key="btn_pdf_cases"
     )
+
+    gerar_botoes_navegacao_rodape()
 
 # ==========================================
 # MÓDULO 7: RELATÓRIO PDF INDIVIDUAL & WHATSAPP
@@ -1397,6 +1443,8 @@ elif st.session_state["aba_ativa"] == "pdf":
                 else:
                     st.info("Cadastre o WhatsApp no formulário do cliente para ativar o envio rápido.")
 
+    gerar_botoes_navegacao_rodape()
+
 # ==========================================
 # MÓDULO 8: GESTÃO FINANCEIRA MRR & BACKUP COMPLETO
 # ==========================================
@@ -1437,3 +1485,5 @@ elif st.session_state["aba_ativa"] == "financeiro":
             mime="text/csv",
             key="btn_download_excel"
         )
+
+    gerar_botoes_navegacao_rodape()
