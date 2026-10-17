@@ -40,18 +40,18 @@ st.markdown("""
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     }
 
-    /* 2. SIDEBAR E CENTRALIZAÇÃO VERTICAL E HORIZONTAL ABSOLUTA */
+    /* 2. SIDEBAR COM ALINHAMENTO SUPERIOR NA LINHA DO TÍTULO */
     [data-testid="stSidebar"] {
         background-color: #07090E;
         border-right: 1px solid #1E2640;
     }
 
     [data-testid="stSidebar"] [data-testid="stVerticalBlock"] {
-        height: 100vh !important;
         display: flex !important;
         flex-direction: column !important;
-        justify-content: center !important;
+        justify-content: flex-start !important; /* Alinha ao topo */
         align-items: center !important;
+        padding-top: 5.8rem !important; /* Desce o topo das logos exatamente para a linha do título */
     }
 
     /* Container das Logos na Sidebar */
@@ -61,21 +61,21 @@ st.markdown("""
         align-items: center;
         justify-content: center;
         width: 100%;
-        height: 100%;
         text-align: center;
-        padding: 20px 10px;
+        padding: 0 10px;
         box-sizing: border-box;
     }
 
+    /* Logos com Tamanho Aumentado */
     .sidebar-logo-img-1 {
-        width: 135px;
+        width: 155px !important; /* Aumentado de 135px */
         height: auto;
-        margin-bottom: 18px;
+        margin-bottom: 16px;
         display: block;
     }
 
     .sidebar-logo-img-2 {
-        width: 170px;
+        width: 195px !important; /* Aumentado de 170px */
         height: auto;
         display: block;
     }
@@ -162,7 +162,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- BARRA LATERAL (Sidebar Simplificada & Centralizada) ---
+# --- BARRA LATERAL (Sidebar Posicionada na Linha do Título) ---
 with st.sidebar:
     html_logos = "<div class='sidebar-center-container'>"
     
@@ -175,7 +175,7 @@ with st.sidebar:
         html_logos += f"<img src='data:image/png;base64,{logo_okamoto_b64}' class='sidebar-logo-img-2'>"
         
     html_logos += """
-        <div style='margin-top: 25px; border-top: 1px solid #1E2640; width: 80%; padding-top: 15px;'>
+        <div style='margin-top: 25px; border-top: 1px solid #1E2640; width: 85%; padding-top: 15px;'>
             <p style='color: #8A99AD; font-size: 0.75rem; line-height: 1.4; margin:0;'>
                 Painel Unificado de Operações<br>© Okamoto Mídias Visuais
             </p>
