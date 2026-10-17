@@ -421,21 +421,22 @@ st.markdown("""
     header[data-testid="stHeader"] { display: none !important; }
     .stApp { background-color: #0B0E14; color: #E0E6ED; font-family: 'Inter', -apple-system, sans-serif; }
     
-    /* Card de Topo com o mesmo padrão elegante do Radar encapsulado */
+    /* Card de Topo com o mesmo padrão elegante do Radar encapsulado e perfeitamente centralizado */
     .top-card-radar-style { 
         background-color: #161F30; 
         border: 1px solid #2B364A; 
         border-radius: 10px; 
-        padding: 20px 24px !important; 
-        margin-bottom: 12px !important; 
+        padding: 22px 28px !important; 
+        margin-bottom: 8px !important; 
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); 
         display: flex;
         align-items: center;
-        gap: 20px;
+        justify-content: center;
+        gap: 24px;
         width: 100%;
     }
     .radar-logo-img {
-        width: 75px;
+        width: 90px;
         height: auto;
         object-fit: contain;
     }
@@ -443,11 +444,12 @@ st.markdown("""
         display: flex;
         flex-direction: column;
         justify-content: center;
+        text-align: left;
     }
-    .main-title-radar { color: #FFFFFF; font-weight: 800; font-size: 1.6rem; margin: 0 !important; }
-    .sub-title-radar { color: #8E9BAE; font-size: 0.9rem; margin: 4px 0 0 0 !important; }
+    .main-title-radar { color: #FFFFFF !important; font-weight: 800; font-size: 1.7rem; margin: 0 !important; }
+    .sub-title-radar { color: #8E9BAE; font-size: 0.92rem; margin: 4px 0 0 0 !important; }
     
-    div[data-testid="stHorizontalBlock"] { gap: 0.2rem !important; margin-bottom: 10px !important; }
+    div[data-testid="stHorizontalBlock"] { gap: 0.2rem !important; margin-bottom: 6px !important; }
     hr { margin-top: 4px !important; margin-bottom: 4px !important; border-color: #2B364A !important; }
     
     div[data-testid="stColumn"] button { 
@@ -471,7 +473,7 @@ st.markdown("""
 if "aba_ativa" not in st.session_state:
     st.session_state["aba_ativa"] = "cadastrar"
 
-# --- CARD DE TOPO PADRÃO RADAR 100% ENCAPSULADO NO HTML ---
+# --- CARD DE TOPO PADRÃO RADAR 100% ENCAPSULADO NO HTML (LOGO MAIOR | NOME BRANCO) ---
 import base64
 def obter_base64_logo(caminho):
     if os.path.exists(caminho):
@@ -492,8 +494,8 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-# 1 LINHA DE ESPAÇO EXATA ENTRE O CARD E OS BOTÕES DAS ETAPAS
-st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
+# 1 LINHA DE ESPAÇO EXATA E REDUZIDA ENTRE O CARD E OS BOTÕES DAS ETAPAS
+st.markdown("<div style='height: 6px;'></div>", unsafe_allow_html=True)
 
 cols = st.columns(8)
 aba_map = [("cadastrar", "⚙️ Ficha"), ("auditoria", "🔍 Auditoria"), ("metricas", "📋 Métricas"), ("ia", "🎯 Curadoria"), ("dashboard", "📊 Dashboard"), ("cases", "🏆 Prospecção"), ("pdf", "📄 Relatório"), ("financeiro", "💰 Financeiro")]
