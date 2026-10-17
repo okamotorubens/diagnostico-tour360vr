@@ -115,7 +115,7 @@ def obter_dados_cliente_por_id(cliente_id):
 # --- LISTA DE HORÁRIOS PRÉ-CONFIGURADOS (Intervalos de 30 min) ---
 HORARIOS_OPCOES = [f"{h:02d}:{m:02d}" for h in range(24) for m in (0, 30)]
 
-# --- FUNÇÃO DE GERAÇÃO DO RELATÓRIO EXECUÇÃO PDF ---
+# --- FUNÇÃO DE GERAÇÃO DO RELATÓRIO PDF ---
 def gerar_pdf_relatorio(nome_empresa, mes_ano, chamadas, rotas, cliques, visualizacoes, avaliacoes, acoes, qtd_inicio=0, nota_inicio=5.0):
     buffer = BytesIO()
     doc = SimpleDocTemplate(
@@ -126,7 +126,6 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, chamadas, rotas, cliques, visuali
     story = []
     styles = getSampleStyleSheet()
 
-    # Estilos de Texto
     title_brand_style = ParagraphStyle(
         'DocBrandTitle', parent=styles['Normal'],
         fontName='Helvetica-Bold', fontSize=16, leading=20, textColor=colors.HexColor('#1E293B')
@@ -144,7 +143,6 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, chamadas, rotas, cliques, visuali
         fontName='Helvetica', fontSize=8, leading=11, alignment=1, textColor=colors.HexColor('#64748B')
     )
 
-    # 1. CABEÇALHO
     header_table_data = [
         [
             Paragraph("<b>OKAMOTO MÍDIAS VISUAIS & TOUR360VR</b><br/><font size=8 color='#64748B'>Gestão e Estratégia de Presença Local GMB</font>", title_brand_style),
@@ -159,10 +157,8 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, chamadas, rotas, cliques, visuali
     story.append(t_header)
     story.append(Spacer(1, 8))
 
-    # LINHA DIVISÓRIA SÓBRIA E FINA (SEM EFEITO NEON)
     story.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor('#3B4866'), spaceAfter=15))
 
-    # 2. BLOCO INFORMATIVO DE ANCORAGEM INICIAL
     story.append(Paragraph("<b>1. Ponto de Partida e Ancoragem Inicial da Ficha:</b>", section_style))
     story.append(Spacer(1, 6))
     
@@ -181,7 +177,6 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, chamadas, rotas, cliques, visuali
     story.append(t_ancoragem)
     story.append(Spacer(1, 15))
 
-    # 3. TABELA ILUSTRATIVA DE RESULTADOS DO MÊS
     story.append(Paragraph("<b>2. Resultado & Performance Alcançada no Período:</b>", section_style))
     story.append(Spacer(1, 6))
 
@@ -205,14 +200,12 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, chamadas, rotas, cliques, visuali
     story.append(t_perf)
     story.append(Spacer(1, 15))
 
-    # 4. AÇÕES E OTIMIZAÇÕES EXECUTADAS
     story.append(Paragraph("<b>3. Ações Técnicas & Melhores Práticas Aplicadas:</b>", section_style))
     story.append(Spacer(1, 6))
     acoes_texto = acoes if acoes else "Otimizações de rotina, monitorização de palavras-chave locais e gestão de reputação da ficha."
     story.append(Paragraph(acoes_texto.replace('\n', '<br/>'), body_style))
     story.append(Spacer(1, 25))
 
-    # 5. RODAPÉ COM LINHA DIVISÓRIA SÓBRIA
     story.append(HRFlowable(width="100%", thickness=0.8, color=colors.HexColor('#CBD5E1'), spaceAfter=8))
     story.append(Paragraph("<b>tour360vr.com.br</b> &nbsp;|&nbsp; contato@tour360vr.com.br &nbsp;|&nbsp; Whatsapp: (16) 99133-2121 &nbsp;|&nbsp; Tour360VR - Gestão de Perfil do Google", footer_style))
 
@@ -226,7 +219,7 @@ st.markdown("""
     .block-container {
         padding-top: 1.5rem !important;
         padding-bottom: 2rem !important;
-        max-width: 90% !important; /* LARGURA MAIS LARA COM MARGEM E RESPIRO */
+        max-width: 90% !important;
     }
     
     header[data-testid="stHeader"] {
@@ -239,25 +232,41 @@ st.markdown("""
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     }
 
-    /* ESPAÇAMENTO E MARGEM DO TÍTULO PRINCIPAL */
-    .main-title {
+    /* CONTAINER CARD DO TÍTULO E BOTÕES SUPERIORES */
+    .top-card-container {
+        background-color: #161F30;
+        border: 1px solid #2B364A;
+        border-radius: 12px;
+        padding: 20px 24px 22px 24px;
+        margin-bottom: 25px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+    }
+
+    .main-title-card {
         color: #FFFFFF;
         font-weight: 800;
         font-size: 1.85rem;
-        text-shadow: 0 0 12px rgba(255, 255, 255, 0.6);
-        margin-bottom: 2.5rem !important;
+        margin-top: 0 !important;
+        margin-bottom: 6px !important;
+        text-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
     }
 
-    /* BOTÕES SUPERIORES DE NAVEGAÇÃO COM RESPIRO E MARGEM */
+    .sub-title-card {
+        color: #8E9BAE;
+        font-size: 0.92rem;
+        margin-bottom: 18px;
+    }
+
+    /* BOTÕES DE NAVEGAÇÃO */
     div[data-testid="stColumn"] button {
         width: 100% !important;
         background-color: #1A2130 !important;
         border: 1.5px solid #455570 !important;
         color: #FFFFFF !important;
         border-radius: 8px !important;
-        padding: 12px 10px !important;
+        padding: 10px 8px !important;
         font-weight: 700 !important;
-        font-size: 0.92rem !important;
+        font-size: 0.90rem !important;
         transition: all 0.25s ease-in-out !important;
         box-shadow: none !important;
     }
@@ -276,11 +285,15 @@ st.markdown("""
         box-shadow: 0 0 18px rgba(255, 255, 255, 0.95), 0 0 28px rgba(255, 255, 255, 0.5) !important;
     }
 
-    /* FORMATAÇÃO DOS CAMPOS DE ENTRADA E SELECTBOX */
-    div[data-baseweb="select"] > div {
-        background-color: #1A2130 !important;
-        border-color: #3B4866 !important;
-        color: #FFFFFF !important;
+    /* ESTILO DOS BOTÕES DE RÁDIO HORIZONTAIS */
+    div[role="radiogroup"] {
+        display: flex !important;
+        flex-direction: row !important;
+        gap: 15px !important;
+        background-color: #161F30 !important;
+        padding: 8px 12px !important;
+        border-radius: 8px !important;
+        border: 1px solid #2B364A !important;
     }
 
     .dia-destaque {
@@ -293,12 +306,15 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- CABEÇALHO ---
-st.markdown("<h1 class='main-title'>📈 Gestão Mensal & Performance ROI GMB</h1>", unsafe_allow_html=True)
-
-# --- CONTROLADOR DE NAVEGAÇÃO PRINCIPAL ---
+# --- CONTROLADOR DE NAVEGAÇÃO PRINCIPAL EM CARD (IGUAL AO RADAR) ---
 if "aba_ativa" not in st.session_state:
     st.session_state["aba_ativa"] = "cadastrar"
+
+st.markdown("""
+<div class="top-card-container">
+    <h1 class="main-title-card">📈 Gestão Mensal & Performance ROI GMB</h1>
+    <p class="sub-title-card">Acompanhamento recorrente, controle de fichas e geração de relatórios estratégicos para clientes.</p>
+""", unsafe_allow_html=True)
 
 col_n1, col_n2, col_n3, col_n4 = st.columns(4)
 
@@ -322,7 +338,7 @@ with col_n4:
         st.session_state["aba_ativa"] = "pdf"
         st.rerun()
 
-st.markdown("<hr style='margin: 22px 0 25px 0; border-color: #1E2640;'>", unsafe_allow_html=True)
+st.markdown("</div>", unsafe_allow_html=True)
 
 # ==========================================
 # MÓDULO 1: CADASTRAR / EDITAR FICHA DO CLIENTE
@@ -349,14 +365,14 @@ if st.session_state["aba_ativa"] == "cadastrar":
             "🏢 Sobre & Status Ficha", "📞 Contato & Redes", "📍 Local & Áreas", "⏰ Horários Rápidos", "🛠️ Checklist de Pendências", "📜 Histórico de Alterações"
         ])
         
-        # SUB-ABA 1: SOBRE & AUDITORIA DA FICHA
+        # SUB-ABA 1: SOBRE & AUDITORIA DA FICHA (OPÇÕES VISÍVEIS DIRETAS EM RADIO)
         with sub_tab_sobre:
             st.markdown("**Identificação Comercial & Auditoria Inicial:**")
             c_s1, c_s2 = st.columns(2)
 
-            opts_reivindicada = ["Reivindicada & Verificada", "Não Reivindicada / Perfil Aberto", "Em Processo de Verificação"]
-            opts_avaliacoes = ["Possui Avaliações (Com Nota Exibida)", "Sem Avaliações Recebidas"]
-            opts_respostas = ["100% Respondidas", "Parcialmente Respondidas", "Nenhuma Avaliação Respondida", "N/A (Sem Avaliações)"]
+            opts_reivindicada = ["Reivindicada & Verificada", "Não Reivindicada", "Em Processo"]
+            opts_avaliacoes = ["Sim (Com Nota Exibida)", "Não (Sem Avaliações)"]
+            opts_respostas = ["100% Respondidas", "Parcialmente", "Nenhuma", "N/A"]
 
             with c_s1:
                 nome_empresa = st.text_input("Nome Comercial da Empresa / Ficha GMB *", value=dados_existentes[1] if modo_edicao else "")
@@ -364,17 +380,17 @@ if st.session_state["aba_ativa"] == "cadastrar":
                 data_abertura = st.text_input("Data de Abertura (Mês/Ano)", value=dados_existentes[3] if modo_edicao else "")
                 
                 idx_reiv = opts_reivindicada.index(dados_existentes[4]) if (modo_edicao and dados_existentes[4] in opts_reivindicada) else 0
-                ficha_reivindicada = st.selectbox("Status de Reivindicação da Ficha", opts_reivindicada, index=idx_reiv)
+                ficha_reivindicada = st.radio("Status de Reivindicação da Ficha", opts_reivindicada, index=idx_reiv, horizontal=True)
                 
                 idx_resp = opts_respostas.index(dados_existentes[8]) if (modo_edicao and len(dados_existentes) > 8 and dados_existentes[8] in opts_respostas) else 0
-                status_respostas_avaliacoes = st.selectbox("Status de Resposta às Avaliações", opts_respostas, index=idx_resp)
+                status_respostas_avaliacoes = st.radio("Status de Resposta às Avaliações", opts_respostas, index=idx_resp, horizontal=True)
 
             with c_s2:
                 categoria_principal = st.text_input("Categoria Principal no GMB (ex: Serviço de fotografia)", value=dados_existentes[9] if (modo_edicao and len(dados_existentes) > 9) else "")
                 categorias_secundarias = st.text_input("Categorias Secundárias (separadas por vírgula)", value=dados_existentes[10] if (modo_edicao and len(dados_existentes) > 10) else "")
                 
                 idx_aval = opts_avaliacoes.index(dados_existentes[5]) if (modo_edicao and dados_existentes[5] in opts_avaliacoes) else 0
-                status_avaliacoes = st.selectbox("Possui Avaliações de Clientes?", opts_avaliacoes, index=idx_aval)
+                status_avaliacoes = st.radio("Possui Avaliações de Clientes?", opts_avaliacoes, index=idx_aval, horizontal=True)
 
                 st.markdown("**Métricas das Avaliações no Início da Gestão:**")
                 col_av1, col_av2 = st.columns(2)
@@ -405,7 +421,7 @@ if st.session_state["aba_ativa"] == "cadastrar":
                 
                 chat_val = dados_existentes[14] if (modo_edicao and len(dados_existentes) > 14) else "Ativado"
                 idx_chat = opts_chat.index(chat_val) if chat_val in opts_chat else 0
-                chat_status = st.selectbox("Mensagens / Chat no Perfil", opts_chat, index=idx_chat)
+                chat_status = st.radio("Mensagens / Chat no Perfil", opts_chat, index=idx_chat, horizontal=True)
             with c_c2:
                 instagram = st.text_input("Link do Instagram", value=dados_existentes[16] if (modo_edicao and len(dados_existentes) > 16) else "")
                 facebook = st.text_input("Link do Facebook", value=dados_existentes[17] if (modo_edicao and len(dados_existentes) > 17) else "")
@@ -424,7 +440,7 @@ if st.session_state["aba_ativa"] == "cadastrar":
             with c_l2:
                 area_cobertura = st.text_input("Áreas de Cobertura / Atendimento (ex: Ribeirão Preto, Sertãozinho, Brodowski)", value=dados_existentes[23] if (modo_edicao and len(dados_existentes) > 23) else "")
 
-        # SUB-ABA 4: HORÁRIOS DE FUNCIONAMENTO (RÓTULOS LIMPOS E DIA DESTACADO)
+        # SUB-ABA 4: HORÁRIOS DE FUNCIONAMENTO (RÓTULOS LIMPOS)
         with sub_tab_horario:
             st.markdown("**Horários de Funcionamento (Seleção rápida em intervalos de 30 minutos):**")
             
