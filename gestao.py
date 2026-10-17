@@ -23,9 +23,9 @@ from reportlab.lib import colors
 # Importação do Matplotlib para geração de gráficos no PDF
 import matplotlib.pyplot as plt
 
-# --- CONFIGURAÇÃO DA PÁGINA & FAVICON OFICIAL ---
+# --- CONFIGURAÇÃO DA PÁGINA & LOGO OFICIAL DO GITHUB ---
 FAVICON_TOUR360 = "https://tour360vr.com.br/favicon.ico"
-LOGO_TOUR360_URL = "https://tour360vr.com.br/favicon.ico"
+LOGO_TOUR360_URL = "https://raw.githubusercontent.com/okamotorubens/gestao-mensal-tour360vr/main/ativos/logo_tour_transparente.png"
 
 st.set_page_config(
     page_title="Gestão Mensal & Estratégia | Tour360VR",
@@ -48,26 +48,30 @@ def get_supabase_client() -> Client:
 
 supabase = get_supabase_client()
 
-# --- TRATAMENTO DE ROTA DE APROVAÇÃO EXTERNA (DENTRO DO SISTEMA) ---
+# --- TRATAMENTO DE ROTA DE APROVAÇÃO EXTERNA (COM LOGO E SELEÇÃO DE PAUTAS) ---
 query_params = st.query_params
 if "aprovar" in query_params or st.session_state.get("modo_aprovacao", False):
     st.markdown("""
         <style>
-        .aprovacao-container { max-width: 700px; margin: 40px auto; background: #131A28; padding: 30px; border-radius: 12px; border: 1px solid #2B364A; color: #E0E6ED; font-family: 'Inter', sans-serif; text-align: center; }
-        .aprovacao-title { color: #FFFFFF; font-size: 1.8rem; font-weight: 800; margin-bottom: 10px; }
-        .aprovacao-sub { color: #8E9BAE; font-size: 1rem; margin-bottom: 25px; }
+        .aprovacao-container { max-width: 750px; margin: 30px auto; background: #131A28; padding: 30px; border-radius: 12px; border: 1px solid #2B364A; color: #E0E6ED; font-family: 'Inter', sans-serif; text-align: center; }
+        .aprovacao-title { color: #FFFFFF; font-size: 1.6rem; font-weight: 800; margin-top: 10px; margin-bottom: 5px; }
+        .aprovacao-sub { color: #8E9BAE; font-size: 0.95rem; margin-bottom: 20px; }
         </style>
     """, unsafe_allow_html=True)
 
+    col_l1, col_l2, col_l3 = st.columns([3, 2, 3])
+    with col_l2:
+        st.image(LOGO_TOUR360_URL, width=120)
+
     st.markdown("""
         <div class="aprovacao-container">
-            <div class="aprovacao-title">🌐 Tour360VR | Página de Aprovação de Pautas</div>
+            <div class="aprovacao-title">Tour360VR | Página de Aprovação de Pautas</div>
             <div class="aprovacao-sub">Planejamento Estratégico de Conteúdo e SEO Local</div>
         </div>
     """, unsafe_allow_html=True)
 
-    st.success("✅ Bem-vindo à página exclusiva de aprovação de pautas do sistema.")
-    st.markdown("### Pautas Estratégicas Propostas para este Mês:")
+    st.success("✅ Bem-vindo à sua página exclusiva de validação e curadoria de pautas.")
+    st.markdown("### Selecione as Pautas Aprovadas e Informe Ajustes se Necessário:")
     
     pautas_exemplo = [
         "1. Como escolher o melhor serviço especializado na região com garantia de qualidade.",
@@ -78,18 +82,27 @@ if "aprovar" in query_params or st.session_state.get("modo_aprovacao", False):
         "6. Perguntas frequentes (FAQ): Tire todas as suas dúvidas diretamente conosco."
     ]
 
-    for p in pautas_exemplo:
-        st.markdown(f"- {p}")
+    pautas_status = {}
+    for idx, p in enumerate(pautas_exemplo, 1):
+        pautas_status[p] = st.checkbox(p, value=True, key=f"aprov_pauta_{idx}")
+
+    st.markdown("---")
+    st.markdown("### 💬 Solicitar Ajustes ou Alterações:")
+    obs_cliente = st.text_area("Tem alguma observação ou alteração para esta pauta? Digite aqui:", placeholder="Ex: Gostaria de alterar o foco da pauta 2 para...", height=100)
 
     st.markdown("---")
     col_ap1, col_ap2 = st.columns(2)
     with col_ap1:
-        if st.button("✅ Aprovar Planejamento do Mês", use_container_width=True):
+        if st.button("✅ Confirmar Aprovação das Pautas", use_container_width=True):
             st.balloons()
-            st.success("Planejamento aprovado com sucesso! Obrigado pela parceria.")
+            st.success("Planejamento aprovado e registrado com sucesso! Obrigado pela parceria.")
     with col_ap2:
-        if st.button("💬 Solicitar Ajustes via WhatsApp", use_container_width=True):
-            st.markdown('<meta http-equiv="refresh" content="0;url=https://wa.me/5516991332121?text=Olá%20Rubens!%20Gostaria%20de%20solicitar%20alguns%20ajustes%20no%20planejamento%20de%20pautas.">', unsafe_allow_html=True)
+        if st.button("📤 Enviar Ajustes para o Rubens (WhatsApp)", use_container_width=True):
+            pautas_aprovadas_txt = "\n".join([k for k, v in pautas_status.items() if v])
+            msg_envio = f"Olá Rubens!\nAvaliei o planejamento de pautas na plataforma da Tour360VR.\n\nPautas Aprovadas:\n{pautas_aprovadas_txt}\n\nAjustes Solicitados:\n{obs_cliente if obs_cliente else 'Nenhum ajuste adicional.'}"
+            link_wsp_final = f"https://wa.me/5516991332121?text={urllib.parse.quote(msg_envio)}"
+            st.markdown(f'<meta http-equiv="refresh" content="0;url={link_wsp_final}">', unsafe_allow_html=True)
+            st.success("Redirecionando para o WhatsApp do Rubens com seus ajustes...")
     st.stop()
 
 # --- NAVEGAÇÃO SEQUENCIAL DAS ABAS ---
@@ -294,7 +307,7 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
     buffer.seek(0)
     return buffer
 
-# --- GERAÇÃO DE CONTRATO EM PDF (AJUSTADO E PERFEITO) ---
+# --- GERAÇÃO DE CONTRATO EM PDF (COM LOGO REAL DO GITHUB, ESPAÇAMENTOS E RODAPÉ NO FIM) ---
 def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duracao=None):
     buffer = BytesIO()
     doc = SimpleDocTemplate(
@@ -302,18 +315,18 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
         pagesize=letter, 
         rightMargin=36, 
         leftMargin=36, 
-        topMargin=30, 
-        bottomMargin=20,
+        topMargin=25, 
+        bottomMargin=15,
         title=f"Contrato Tour360VR - {dados_cliente.get('nome_empresa', 'Cliente')}"
     )
     story = []
     styles = getSampleStyleSheet()
 
-    title_brand_style = ParagraphStyle('DocBrandTitle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=13, leading=16, textColor=colors.HexColor('#000000'))
+    title_brand_style = ParagraphStyle('DocBrandTitle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=12, leading=15, textColor=colors.HexColor('#000000'))
     doc_title_style = ParagraphStyle('DocTitleStyle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, leading=14, alignment=1, textColor=colors.HexColor('#000000'))
     
-    body_style = ParagraphStyle('DocBody', parent=styles['Normal'], fontName='Helvetica', fontSize=9.0, leading=12.5, alignment=4, textColor=colors.HexColor('#000000'))
-    footer_style = ParagraphStyle('DocFooter', parent=styles['Normal'], fontName='Helvetica', fontSize=8, leading=11, alignment=1, textColor=colors.HexColor('#000000'))
+    body_style = ParagraphStyle('DocBody', parent=styles['Normal'], fontName='Helvetica', fontSize=9.0, leading=12.0, alignment=4, textColor=colors.HexColor('#000000'))
+    footer_style = ParagraphStyle('DocFooter', parent=styles['Normal'], fontName='Helvetica', fontSize=8, leading=10, alignment=1, textColor=colors.HexColor('#000000'))
     signature_style = ParagraphStyle('DocSig', parent=styles['Normal'], fontName='Helvetica', fontSize=9.0, leading=12, alignment=1, textColor=colors.HexColor('#000000'))
 
     logo_flowable = Paragraph("🌐 <b>Tour360VR</b>", title_brand_style)
@@ -325,6 +338,7 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     except Exception:
         pass
 
+    # Cabeçalho perfeitamente alinhado com a logo real do GitHub
     header_table_data = [
         [
             logo_flowable,
@@ -339,7 +353,7 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     ]))
     story.append(t_header)
     story.append(Spacer(1, 4))
-    story.append(HRFlowable(width="100%", thickness=0.8, color=colors.HexColor('#93C5FD'), spaceAfter=8))
+    story.append(HRFlowable(width="100%", thickness=0.8, color=colors.HexColor('#93C5FD'), spaceAfter=6))
 
     meses_pt = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"]
     hoje = agora_brasil()
@@ -348,12 +362,12 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     date_style = ParagraphStyle('DateStyle', parent=styles['Normal'], fontName='Helvetica', fontSize=9.0, alignment=2, textColor=colors.HexColor('#000000'), spaceAfter=0)
     story.append(Paragraph(data_extenso, date_style))
 
-    # +1 linha extra rigorosa entre data e título
-    story.append(Spacer(1, 16))
+    # +1 linha de espaço rigorosa entre data e título
+    story.append(Spacer(1, 14))
     story.append(Paragraph("CONTRATO DE PRESTAÇÃO DE SERVIÇOS", doc_title_style))
 
-    # +1 linha extra rigorosa entre título e texto
-    story.append(Spacer(1, 16))
+    # +1 linha de espaço rigorosa entre título e o texto do contrato
+    story.append(Spacer(1, 14))
 
     nome_emp = dados_cliente.get("nome_empresa", "Empresa Cliente")
     resp_emp = dados_cliente.get("responsavel", "Responsável")
@@ -385,8 +399,8 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     """
     story.append(Paragraph(clausulas, body_style))
     
-    # +2 linhas de espaço antes das assinaturas
-    story.append(Spacer(1, 24))
+    # Mais espaço antes das assinaturas conforme solicitado
+    story.append(Spacer(1, 28))
 
     assinaturas_data = [
         [
@@ -397,9 +411,9 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     t_ass = Table(assinaturas_data, colWidths=[260, 260])
     story.append(t_ass)
     
-    # Rodapé fixado na base inferior da folha única
-    story.append(Spacer(1, 15))
-    story.append(HRFlowable(width="100%", thickness=0.8, color=colors.HexColor('#93C5FD'), spaceAfter=4))
+    # Rodapé fixado quase no final da página única
+    story.append(Spacer(1, 12))
+    story.append(HRFlowable(width="100%", thickness=0.8, color=colors.HexColor('#93C5FD'), spaceAfter=3))
     story.append(Paragraph('<a href="https://tour360vr.com.br" color="#000000"><b>tour360vr.com.br</b></a> &nbsp;|&nbsp; <a href="mailto:contato@tour360vr.com.br" color="#000000">contato@tour360vr.com.br</a> &nbsp;|&nbsp; <a href="https://wa.me/5516991332121" color="#000000">WhatsApp: (16) 99133-2121</a>', footer_style))
 
     doc.build(story)
@@ -560,7 +574,7 @@ if st.session_state["aba_ativa"] == "cadastrar":
                 horarios_coletados[campo_db] = "Fechado" if fch else f"{ha} - {hf}"
 
         with sub_t3:
-            # Layout totalmente limpo e separado em blocos verticais individuais para leitura perfeita e sem cortes no status
+            # Layout corrigido e isolado para largura total e legibilidade sem cortes no status
             valor_contrato_mensal = st.number_input("Valor da Mensalidade (R$)", min_value=0.0, step=50.0, value=float(dados_existentes.get("valor_contrato_mensal", 450.0)) if (modo_edicao and dados_existentes) else 450.0)
             dia_vencimento = st.number_input("Dia Vencimento", min_value=1, max_value=31, step=1, value=int(dados_existentes.get("dia_vencimento", 10)) if (modo_edicao and dados_existentes) else 10)
             
