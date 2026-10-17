@@ -40,7 +40,7 @@ st.markdown("""
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     }
 
-    /* 2. SIDEBAR COM LOGOS DESCIDAS */
+    /* 2. SIDEBAR COM LOGOS */
     [data-testid="stSidebar"] {
         background-color: #07090E;
         border-right: 1px solid #1E2640;
@@ -66,7 +66,6 @@ st.markdown("""
         box-sizing: border-box;
     }
 
-    /* Logos */
     .sidebar-logo-img-1 {
         width: 155px !important;
         height: auto;
@@ -110,7 +109,7 @@ st.markdown("""
         margin-top: 2.2rem;
     }
 
-    /* 4. CARDS CLICÁVEIS */
+    /* 4. CARDS CLICÁVEIS (Layout em Coluna Perfeitamente Centralizado) */
     .clickable-card {
         display: flex;
         flex-direction: column;
@@ -120,8 +119,8 @@ st.markdown("""
         background: #121824;
         border: 1.5px solid #FFFFFF;
         border-radius: 10px;
-        padding: 20px 18px 22px 18px;
-        height: 150px !important;
+        padding: 16px 16px 18px 16px;
+        height: 155px !important;
         box-shadow: 0 0 8px rgba(255, 255, 255, 0.12);
         text-decoration: none !important;
         transition: all 0.3s ease-in-out;
@@ -135,24 +134,27 @@ st.markdown("""
         background: #161F30;
     }
 
-    /* Estilo do Título Interno do Card */
+    /* Emoji / Ícone no Topo do Card */
+    .card-icon {
+        font-size: 1.5rem !important;
+        margin-bottom: 4px;
+        line-height: 1;
+    }
+
+    /* Nome do Sistema 100% Centralizado */
     .card-title-text {
         color: #FFFFFF !important;
-        font-size: 1.28rem !important;
+        font-size: 1.18rem !important;
         font-weight: 700 !important;
-        margin-bottom: 8px !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        gap: 8px;
-        width: 100% !important;
+        margin-bottom: 6px !important;
         text-align: center !important;
+        width: 100% !important;
     }
 
     .clickable-card p {
         color: #94A3B8;
-        font-size: 0.84rem;
-        line-height: 1.45;
+        font-size: 0.83rem;
+        line-height: 1.4;
         margin: 0;
         text-align: center !important;
     }
@@ -200,7 +202,8 @@ col1, col2, col3 = st.columns(3)
 with col1:
     st.markdown("""
         <a href='https://radar-comercial-tour360vr.streamlit.app/' target='_blank' class='clickable-card'>
-            <div class='card-title-text'>📡 Radar de Prospecção</div>
+            <div class='card-icon'>📡</div>
+            <div class='card-title-text'>Radar de Prospecção</div>
             <p>Mapeamento de campo e varredura de fichas do Google Meu Negócio (Buscador de Clientes).</p>
         </a>
     """, unsafe_allow_html=True)
@@ -208,7 +211,8 @@ with col1:
 with col2:
     st.markdown("""
         <a href='https://tour360vr.streamlit.app/' target='_blank' class='clickable-card'>
-            <div class='card-title-text'>📊 Diagnóstico & Auditoria</div>
+            <div class='card-icon'>📊</div>
+            <div class='card-title-text'>Diagnóstico & Auditoria</div>
             <p>Análise de saúde do perfil local com geração de proposta visual e relatório técnico em PDF.</p>
         </a>
     """, unsafe_allow_html=True)
@@ -216,7 +220,8 @@ with col2:
 with col3:
     st.markdown("""
         <a href='https://seu-link-da-gestao.streamlit.app' target='_blank' class='clickable-card'>
-            <div class='card-title-text'>📈 Gestão Mensal & ROI</div>
+            <div class='card-icon'>📈</div>
+            <div class='card-title-text'>Gestão Mensal & ROI</div>
             <p>Acompanhamento recorrente de métricas (chamadas, rotas, WhatsApp) e relatórios executivos.</p>
         </a>
     """, unsafe_allow_html=True)
@@ -234,7 +239,8 @@ col4, col5, col_vazia = st.columns([1, 1, 1])
 with col4:
     st.markdown("""
         <a href='https://okamoto-proposta-comercial.streamlit.app/' target='_blank' class='clickable-card'>
-            <div class='card-title-text'>💼 Propostas & Custos</div>
+            <div class='card-icon'>💼</div>
+            <div class='card-title-text'>Propostas & Custos</div>
             <p>Elaboração de propostas comerciais e orçamentos de logística e produção visual.</p>
         </a>
     """, unsafe_allow_html=True)
@@ -242,7 +248,8 @@ with col4:
 with col5:
     st.markdown("""
         <a href='https://seu-link-de-custos.streamlit.app' target='_blank' class='clickable-card'>
-            <div class='card-title-text'>🧮 Custos & Logística</div>
+            <div class='card-icon'>🧮</div>
+            <div class='card-title-text'>Custos & Logística</div>
             <p>Cálculo de custos operacionais e logística de transporte para atendimentos e produções.</p>
         </a>
     """, unsafe_allow_html=True)
