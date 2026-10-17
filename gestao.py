@@ -991,6 +991,7 @@ if st.session_state["aba_ativa"] == "cadastrar":
                             "descricao_alteracao": f"Cadastro Inicial da Ficha (Mensalidade R$ {valor_contrato_mensal:.2f})"
                         }).execute()
                         st.success(f"Ficha comercial de '{nome_empresa}' cadastrada com sucesso no Supabase!")
+                        st.rerun()
                 else:
                     supabase.table("clientes").update(payload).eq("id", c_id).execute()
                     supabase.table("historico_ficha").insert({
@@ -999,10 +1000,13 @@ if st.session_state["aba_ativa"] == "cadastrar":
                         "descricao_alteracao": f"Atualização Ficha e Contrato (Mensalidade: R$ {valor_contrato_mensal:.2f})"
                     }).execute()
                     st.success(f"Ficha comercial de '{nome_empresa}' atualizada no Supabase!")
-                
-                st.rerun()
+                    st.rerun()
             except Exception as e:
-                st.error(f"Erro ao salvar no Supabase: {str(e)}. Verifique se todas as colunas existem na tabela 'clientes'.")
+                err_msg = str(e)
+                if "23505" in err_msg or "unique constraint" in err_msg:
+                    st.error(f"Erro: Já existe um cliente cadastrado com o nome '{nome_empresa}'. Selecione-o no menu superior para editá-lo ou utilize um nome único.")
+                else:
+                    st.error(f"Erro ao salvar no Supabase: {err_msg}")
 
     gerar_botoes_navegacao_rodape()
 
@@ -1185,8 +1189,8 @@ elif st.session_state["aba_ativa"] == "ia":
         cliente_ia_id = int(df_clientes[df_clientes["nome_empresa"] == cliente_ia_sel]["id"].values[0])
         dados_c = obter_dados_cliente_por_id(cliente_ia_id)
 
-        cat_nome = dados_c.get("categoria_principal", "serviços especializados")
-        cid_nome = dados_c.get("area_cobertura", "região local")
+        cat_nome = dados_c.get("categoria_principal") if dados_c.get("categoria_principal") else "serviços especializados"
+        cid_nome = dados_c.get("area_cobertura") if dados_c.get("area_cobertura") else "região local"
         emp_nome = dados_c.get("nome_empresa", "Empresa")
 
         tab_ia1, tab_ia2, tab_ia3, tab_ia4, tab_ia5 = st.tabs([
