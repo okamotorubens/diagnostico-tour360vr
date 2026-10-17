@@ -11,7 +11,7 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 
-# Optional: Para IA (Google Gemini)
+# Suporte ao motor de Inteligência Artificial para Diagnóstico e Descrições (Gemini API)
 try:
     from google import genai
     HAS_GEMINI = True
@@ -85,7 +85,7 @@ def init_db():
         )
     ''')
     
-    # Tabela de Métricas Mensais
+    # Tabela de Métricas Mensais com ROI Financeiro Estimado
     c.execute('''
         CREATE TABLE IF NOT EXISTS metricas_mensais (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -96,6 +96,8 @@ def init_db():
             cliques_site INTEGER DEFAULT 0,
             visualizacoes INTEGER DEFAULT 0,
             novas_avaliacoes INTEGER DEFAULT 0,
+            ticket_medio REAL DEFAULT 0.0,
+            taxa_conversao REAL DEFAULT 0.1,
             resumo_acoes TEXT,
             FOREIGN KEY (cliente_id) REFERENCES clientes (id)
         )
@@ -379,7 +381,7 @@ if st.session_state["aba_ativa"] == "cadastrar":
             opts_avaliacoes = ["Sim (Com Nota Exibida)", "Não (Sem Avaliações)"]
             opts_respostas = ["100% Respondidas", "Parcialmente", "Nenhuma", "N/A"]
 
-            # Tratamento da Data de Abertura (Dia/Mês/Ano)
+            # TRATAMENTO E FORMATAÇÃO DA DATA DE ABERTURA (DD/MM/AAAA)
             val_dt_abertura = date.today()
             if modo_edicao and dados_existentes and dados_existentes[3]:
                 try:
@@ -391,7 +393,7 @@ if st.session_state["aba_ativa"] == "cadastrar":
                 nome_empresa = st.text_input("Nome Comercial da Empresa / Ficha GMB *", value=dados_existentes[1] if modo_edicao else "")
                 responsavel = st.text_input("Nome do Responsável / Contato Interno", value=dados_existentes[2] if modo_edicao else "")
                 
-                # CAMPO COM SELETOR / MÁSCARA DIA/MÊS/ANO (DD/MM/AAAA)
+                # SELETOR NUMÉRICO COM BARRAS DD/MM/AAAA
                 data_abertura_dt = st.date_input("Data de Abertura (Dia/Mês/Ano)", value=val_dt_abertura, format="DD/MM/YYYY")
                 data_abertura_str = data_abertura_dt.strftime("%d/%m/%Y")
                 
