@@ -181,7 +181,7 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, chamadas, rotas, cliques, visuali
     buffer.seek(0)
     return buffer
 
-# --- CSS PERSONALIZADO (PADRÃO UNIFICADO HUB CENTRAL) ---
+# --- CSS PERSONALIZADO (BOTÕES NAVEGAÇÃO NORMALISED: NEON BRANCO E SEM ZOOM) ---
 st.markdown("""
     <style>
     .block-container {
@@ -204,11 +204,11 @@ st.markdown("""
         color: #FFFFFF;
         font-weight: 800;
         font-size: 1.85rem;
-        text-shadow: 0 0 12px rgba(0, 229, 255, 0.6);
+        text-shadow: 0 0 12px rgba(255, 255, 255, 0.6);
         margin-bottom: 1.2rem;
     }
 
-    /* ESTILIZAÇÃO COMPLETA DOS BOTÕES DE NAVEGAÇÃO DO HUB */
+    /* ESTILO PADRÃO DOS BOTÕES SUPERIORES DE NAVEGAÇÃO */
     div[data-testid="stColumn"] button {
         width: 100% !important;
         background-color: #121824 !important;
@@ -218,27 +218,29 @@ st.markdown("""
         padding: 10px 6px !important;
         font-weight: 700 !important;
         font-size: 0.90rem !important;
-        transition: all 0.3s ease-in-out !important;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease !important;
+        transform: none !important;
         box-shadow: 0 0 5px rgba(255, 255, 255, 0.15) !important;
     }
 
-    /* ESTADO HOVER (AO PASSAR O MOUSE) */
+    /* ESTADO HOVER (PASSAR O MOUSE): NEON BRANCO SEM ZOOM */
     div[data-testid="stColumn"] button:hover {
-        border-color: #00E5FF !important;
-        color: #00E5FF !important;
-        box-shadow: 0 0 16px #00E5FF, 0 0 24px rgba(0, 229, 255, 0.4) !important;
+        border-color: #FFFFFF !important;
+        color: #FFFFFF !important;
         background-color: #161F30 !important;
-        transform: translateY(-2px) !important;
+        box-shadow: 0 0 16px rgba(255, 255, 255, 0.9), 0 0 24px rgba(255, 255, 255, 0.4) !important;
+        transform: none !important;
     }
 
-    /* BOTÃO ATIVO / SELECIONADO */
+    /* BOTÃO ATIVO / CLICADO: MANTER NEON BRANCO FIXO */
     div[data-testid="stColumn"] button[kind="primary"],
     div[data-testid="stColumn"] button:active,
     div[data-testid="stColumn"] button:focus {
         background-color: #161F30 !important;
-        border-color: #00E5FF !important;
-        color: #00E5FF !important;
-        box-shadow: 0 0 16px #00E5FF !important;
+        border-color: #FFFFFF !important;
+        color: #FFFFFF !important;
+        box-shadow: 0 0 16px rgba(255, 255, 255, 0.9) !important;
+        transform: none !important;
     }
     </style>
 """, unsafe_allow_html=True)
