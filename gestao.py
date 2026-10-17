@@ -645,12 +645,12 @@ st.markdown("""
     div[data-testid="stSelectbox"], 
     div[data-testid="stDateInput"],
     div[data-testid="stTextArea"] {
-        margin-bottom: 6px !important;
+        margin-bottom: 8px !important;
     }
 
     hr {
         margin-top: 10px !important;
-        margin-bottom: 3px !important;
+        margin-bottom: 10px !important;
         border-color: #2B364A !important;
     }
 
@@ -979,27 +979,30 @@ if st.session_state["aba_ativa"] == "cadastrar":
                 "link_drive_midias": link_drive_midias
             }
 
-            if not modo_edicao:
-                payload["data_inicio"] = datetime.today().strftime("%Y-%m-%d")
-                res_ins = supabase.table("clientes").insert(payload).execute()
-                if res_ins.data:
-                    novo_id = res_ins.data[0]["id"]
+            try:
+                if not modo_edicao:
+                    payload["data_inicio"] = datetime.today().strftime("%Y-%m-%d")
+                    res_ins = supabase.table("clientes").insert(payload).execute()
+                    if res_ins.data:
+                        novo_id = res_ins.data[0]["id"]
+                        supabase.table("historico_ficha").insert({
+                            "cliente_id": novo_id,
+                            "data_alteracao": datetime.now().strftime("%Y-%m-%d %H:%M"),
+                            "descricao_alteracao": f"Cadastro Inicial da Ficha (Mensalidade R$ {valor_contrato_mensal:.2f})"
+                        }).execute()
+                        st.success(f"Ficha comercial de '{nome_empresa}' cadastrada com sucesso no Supabase!")
+                else:
+                    supabase.table("clientes").update(payload).eq("id", c_id).execute()
                     supabase.table("historico_ficha").insert({
-                        "cliente_id": novo_id,
+                        "cliente_id": c_id,
                         "data_alteracao": datetime.now().strftime("%Y-%m-%d %H:%M"),
-                        "descricao_alteracao": f"Cadastro Inicial da Ficha (Mensalidade R$ {valor_contrato_mensal:.2f})"
+                        "descricao_alteracao": f"Atualização Ficha e Contrato (Mensalidade: R$ {valor_contrato_mensal:.2f})"
                     }).execute()
-                    st.success(f"Ficha comercial de '{nome_empresa}' cadastrada com sucesso no Supabase!")
-            else:
-                supabase.table("clientes").update(payload).eq("id", c_id).execute()
-                supabase.table("historico_ficha").insert({
-                    "cliente_id": c_id,
-                    "data_alteracao": datetime.now().strftime("%Y-%m-%d %H:%M"),
-                    "descricao_alteracao": f"Atualização Ficha e Contrato (Mensalidade: R$ {valor_contrato_mensal:.2f})"
-                }).execute()
-                st.success(f"Ficha comercial de '{nome_empresa}' atualizada no Supabase!")
-            
-            st.rerun()
+                    st.success(f"Ficha comercial de '{nome_empresa}' atualizada no Supabase!")
+                
+                st.rerun()
+            except Exception as e:
+                st.error(f"Erro ao salvar no Supabase: {str(e)}. Verifique se todas as colunas existem na tabela 'clientes'.")
 
     gerar_botoes_navegacao_rodape()
 
