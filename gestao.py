@@ -1,5 +1,4 @@
 import streamlit as st
-import sqlite3
 import pandas as pd
 import os
 from datetime import datetime, date
@@ -7,6 +6,7 @@ from io import BytesIO
 import urllib.parse
 import qrcode
 from PIL import Image as PILImage
+from supabase import create_client, Client
 
 # Importações do ReportLab para PDF
 from reportlab.lib.pagesizes import letter
@@ -24,147 +24,27 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- BANCO DE DADOS (SQLite) ---
-DB_NAME = "gestao_gmb.db"
+# --- CONEXÃO COM SUPABASE ---
+@st.cache_resource
+def get_supabase_client() -> Client:
+    url = st.secrets["SUPABASE_URL"]
+    key = st.secrets["SUPABASE_KEY"]
+    return create_client(url, key)
 
-def init_db():
-    conn = sqlite3.connect(DB_NAME)
-    c = conn.cursor()
-    
-    # 1. Tabela Principal de Clientes
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS clientes (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nome_empresa TEXT UNIQUE NOT NULL,
-            responsavel TEXT,
-            data_abertura TEXT,
-            ficha_reivindicada TEXT,
-            status_avaliacoes TEXT,
-            qtd_avaliacoes_inicio INTEGER DEFAULT 0,
-            nota_media_inicio REAL DEFAULT 5.0,
-            qtd_fotos_inicio INTEGER DEFAULT 0,
-            valor_contrato_mensal REAL DEFAULT 0.0,
-            dia_vencimento INTEGER DEFAULT 10,
-            status_contrato TEXT DEFAULT 'Ativo',
-            status_respostas_avaliacoes TEXT,
-            categoria_principal TEXT,
-            categorias_secundarias TEXT,
-            descricao_empresa TEXT,
-            telefone_contato TEXT,
-            whatsapp TEXT,
-            chat_status TEXT,
-            website TEXT,
-            instagram TEXT,
-            facebook TEXT,
-            linkedin TEXT,
-            youtube TEXT,
-            tiktok TEXT,
-            atendimento_local_cliente INTEGER DEFAULT 0,
-            endereco_local TEXT,
-            area_cobertura TEXT,
-            horario_seg TEXT,
-            horario_ter TEXT,
-            horario_qua TEXT,
-            horario_qui TEXT,
-            horario_sex TEXT,
-            horario_sab TEXT,
-            horario_dom TEXT,
-            horarios_especiais TEXT,
-            outros_horarios TEXT,
-            pendencias_checklist TEXT,
-            observacoes_tecnicas TEXT,
-            link_drive_midias TEXT,
-            data_inicio TEXT
-        )
-    ''')
+supabase = get_supabase_client()
 
-    colunas_novas = [
-        ("valor_contrato_mensal", "REAL DEFAULT 0.0"),
-        ("dia_vencimento", "INTEGER DEFAULT 10"),
-        ("status_contrato", "TEXT DEFAULT 'Ativo'"),
-        ("link_drive_midias", "TEXT")
-    ]
-    
-    for nome_coluna, tipo_coluna in colunas_novas:
-        try:
-            c.execute(f"ALTER TABLE clientes ADD COLUMN {nome_coluna} {tipo_coluna}")
-        except sqlite3.OperationalError:
-            pass
-
-    # 2. Tabela de Histórico de Alterações
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS historico_ficha (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            cliente_id INTEGER,
-            data_alteracao TEXT,
-            descricao_alteracao TEXT,
-            FOREIGN KEY (cliente_id) REFERENCES clientes (id)
-        )
-    ''')
-    
-    # 3. Tabela de Métricas Mensais
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS metricas_mensais (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            cliente_id INTEGER,
-            mes_ano TEXT NOT NULL,
-            chamadas INTEGER DEFAULT 0,
-            rotas INTEGER DEFAULT 0,
-            cliques_site INTEGER DEFAULT 0,
-            visualizacoes INTEGER DEFAULT 0,
-            novas_avaliacoes INTEGER DEFAULT 0,
-            total_fotos_mes INTEGER DEFAULT 0,
-            ticket_medio REAL DEFAULT 150.0,
-            taxa_conversao REAL DEFAULT 0.10,
-            faturamento_estimado REAL DEFAULT 0.0,
-            resumo_acoes TEXT,
-            FOREIGN KEY (cliente_id) REFERENCES clientes (id)
-        )
-    ''')
-
-    # 4. Tabela de Palavras-Chave e Ranking SEO
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS ranking_keywords (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            cliente_id INTEGER,
-            palavra_chave TEXT NOT NULL,
-            posicao_inicial INTEGER DEFAULT 0,
-            posicao_atual INTEGER DEFAULT 0,
-            data_atualizacao TEXT,
-            FOREIGN KEY (cliente_id) REFERENCES clientes (id)
-        )
-    ''')
-
-    # 5. Tabela de Publicações e Posts GMB
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS posts_gmb (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            cliente_id INTEGER,
-            data_post TEXT,
-            tipo_post TEXT,
-            titulo TEXT,
-            status TEXT DEFAULT 'Concluído',
-            FOREIGN KEY (cliente_id) REFERENCES clientes (id)
-        )
-    ''')
-    conn.commit()
-    conn.close()
-
-init_db()
-
+# --- FUNÇÕES AUXILIARES DE BANCO DE DADOS ---
 def obter_clientes_unicos():
-    conn = sqlite3.connect(DB_NAME)
-    df = pd.read_sql_query("SELECT DISTINCT id, nome_empresa FROM clientes ORDER BY nome_empresa ASC", conn)
-    conn.close()
-    return df
+    res = supabase.table("clientes").select("id, nome_empresa").order("nome_empresa").execute()
+    if res.data:
+        return pd.DataFrame(res.data)
+    return pd.DataFrame(columns=["id", "nome_empresa"])
 
 def obter_dados_cliente_por_id(cliente_id):
-    conn = sqlite3.connect(DB_NAME)
-    c = conn.cursor()
-    c.execute("SELECT * FROM clientes WHERE id = ?", (cliente_id,))
-    row = c.fetchone()
-    conn.close()
-    return row
+    res = supabase.table("clientes").select("*").eq("id", cliente_id).execute()
+    if res.data:
+        return res.data[0]
+    return None
 
 def calcular_variacao_pct(atual, anterior):
     if anterior is None or anterior == 0:
@@ -636,7 +516,6 @@ st.markdown("""
     <p class="sub-title-card">Acompanhamento de perfis no Google Maps, curadoria estratégica de conteúdo e relatórios executivos de ROI.</p>
 """, unsafe_allow_html=True)
 
-# Proporções customizadas para manter o texto "🎯 Curadoria & Pautas" sem truncamento
 cols = st.columns([1.1, 1.1, 1.3, 1.1, 1.0, 1.1, 1.1])
 
 with cols[0]:
@@ -701,7 +580,6 @@ if st.session_state["aba_ativa"] == "cadastrar":
             "🏢 Sobre & Status Ficha", "💵 Valor Contrato", "📞 Contato & Redes", "📍 Local & Áreas", "⏰ Horários Rápidos", "🛠️ Checklist", "📜 Histórico"
         ])
         
-        # SUB-ABA 1: SOBRE & AUDITORIA DA FICHA
         with sub_tab_sobre:
             st.markdown("**Identificação Comercial & Auditoria Inicial:**")
             c_s1, c_s2 = st.columns(2)
@@ -711,145 +589,107 @@ if st.session_state["aba_ativa"] == "cadastrar":
             opts_respostas = ["100% Respondidas", "Parcialmente", "Nenhuma", "N/A"]
 
             val_dt_abertura = date.today()
-            if modo_edicao and dados_existentes and dados_existentes[3]:
+            if modo_edicao and dados_existentes and dados_existentes.get("data_abertura"):
                 try:
-                    val_dt_abertura = datetime.strptime(dados_existentes[3], "%d/%m/%Y").date()
+                    val_dt_abertura = datetime.strptime(dados_existentes["data_abertura"], "%d/%m/%Y").date()
                 except ValueError:
                     val_dt_abertura = date.today()
 
             with c_s1:
-                nome_empresa = st.text_input("Nome Comercial da Empresa / Ficha GMB *", value=dados_existentes[1] if modo_edicao else "", key="txt_nome_empresa_cad")
-                responsavel = st.text_input("Nome do Responsável / Contato Interno", value=dados_existentes[2] if modo_edicao else "", key="txt_responsavel_cad")
+                nome_empresa = st.text_input("Nome Comercial da Empresa / Ficha GMB *", value=dados_existentes["nome_empresa"] if modo_edicao else "", key="txt_nome_empresa_cad")
+                responsavel = st.text_input("Nome do Responsável / Contato Interno", value=dados_existentes.get("responsavel", "") if modo_edicao else "", key="txt_responsavel_cad")
                 
                 data_abertura_dt = st.date_input("Data de Abertura (Dia/Mês/Ano)", value=val_dt_abertura, format="DD/MM/YYYY", key="dt_abertura_cad")
                 data_abertura_str = data_abertura_dt.strftime("%d/%m/%Y")
                 
-                idx_reiv = opts_reivindicada.index(dados_existentes[4]) if (modo_edicao and dados_existentes[4] in opts_reivindicada) else 0
+                v_reiv = dados_existentes.get("ficha_reivindicada", "") if modo_edicao else ""
+                idx_reiv = opts_reivindicada.index(v_reiv) if v_reiv in opts_reivindicada else 0
                 ficha_reivindicada = st.radio("Status de Reivindicação da Ficha", opts_reivindicada, index=idx_reiv, horizontal=True, key="rad_reivindicada_cad")
                 
-                idx_resp = opts_respostas.index(dados_existentes[12]) if (modo_edicao and len(dados_existentes) > 12 and dados_existentes[12] in opts_respostas) else 0
+                v_resp = dados_existentes.get("status_respostas_avaliacoes", "") if modo_edicao else ""
+                idx_resp = opts_respostas.index(v_resp) if v_resp in opts_respostas else 0
                 status_respostas_avaliacoes = st.radio("Status de Resposta às Avaliações", opts_respostas, index=idx_resp, horizontal=True, key="rad_respostas_cad")
 
             with c_s2:
-                categoria_principal = st.text_input("Categoria Principal no GMB (ex: Serviço de fotografia)", value=dados_existentes[13] if (modo_edicao and len(dados_existentes) > 13) else "", key="txt_cat_princ_cad")
-                categorias_secundarias = st.text_input("Categorias Secundárias (separadas por vírgula)", value=dados_existentes[14] if (modo_edicao and len(dados_existentes) > 14) else "", key="txt_cat_sec_cad")
+                categoria_principal = st.text_input("Categoria Principal no GMB", value=dados_existentes.get("categoria_principal", "") if modo_edicao else "", key="txt_cat_princ_cad")
+                categorias_secundarias = st.text_input("Categorias Secundárias", value=dados_existentes.get("categorias_secundarias", "") if modo_edicao else "", key="txt_cat_sec_cad")
                 
-                idx_aval = opts_avaliacoes.index(dados_existentes[5]) if (modo_edicao and dados_existentes[5] in opts_avaliacoes) else 0
+                v_aval = dados_existentes.get("status_avaliacoes", "") if modo_edicao else ""
+                idx_aval = opts_avaliacoes.index(v_aval) if v_aval in opts_avaliacoes else 0
                 status_avaliacoes = st.radio("Possui Avaliações de Clientes?", opts_avaliacoes, index=idx_aval, horizontal=True, key="rad_avaliacoes_cad")
 
                 st.markdown("**Métricas no Início da Gestão:**")
                 col_av1, col_av2, col_av3 = st.columns(3)
                 with col_av1:
-                    qtd_avaliacoes_inicio = st.number_input(
-                        "Avaliações Iniciais",
-                        min_value=0, step=1,
-                        value=int(dados_existentes[6]) if (modo_edicao and len(dados_existentes) > 6 and dados_existentes[6] is not None) else 0,
-                        key="num_aval_ini_cad"
-                    )
+                    qtd_avaliacoes_inicio = st.number_input("Avaliações Iniciais", min_value=0, step=1, value=int(dados_existentes.get("qtd_avaliacoes_inicio", 0)) if modo_edicao else 0, key="num_aval_ini_cad")
                 with col_av2:
-                    nota_media_inicio = st.number_input(
-                        "Nota Média Inicial",
-                        min_value=0.0, max_value=5.0, step=0.1,
-                        value=float(dados_existentes[7]) if (modo_edicao and len(dados_existentes) > 7 and dados_existentes[7] is not None) else 5.0,
-                        key="num_nota_ini_cad"
-                    )
+                    nota_media_inicio = st.number_input("Nota Média Inicial", min_value=0.0, max_value=5.0, step=0.1, value=float(dados_existentes.get("nota_media_inicio", 5.0)) if modo_edicao else 5.0, key="num_nota_ini_cad")
                 with col_av3:
-                    qtd_fotos_inicio = st.number_input(
-                        "Qtd. Fotos Iniciais",
-                        min_value=0, step=1,
-                        value=int(dados_existentes[8]) if (modo_edicao and len(dados_existentes) > 8 and dados_existentes[8] is not None) else 0,
-                        key="num_fotos_ini_cad"
-                    )
+                    qtd_fotos_inicio = st.number_input("Qtd. Fotos Iniciais", min_value=0, step=1, value=int(dados_existentes.get("qtd_fotos_inicio", 0)) if modo_edicao else 0, key="num_fotos_ini_cad")
             
             st.markdown("---")
-            descricao_empresa = st.text_area("Descrição Oficial da Empresa (Otimizada para SEO Local)", value=dados_existentes[15] if (modo_edicao and len(dados_existentes) > 15) else "", height=180, key="txt_desc_empresa_cad")
+            descricao_empresa = st.text_area("Descrição Oficial da Empresa", value=dados_existentes.get("descricao_empresa", "") if modo_edicao else "", height=180, key="txt_desc_empresa_cad")
 
-        # SUB-ABA FINANCEIRA DO CONTRATO
         with sub_tab_financeiro:
-            st.markdown("**Dados do Contrato do Cliente (Visível apenas para a Agência):**")
+            st.markdown("**Dados do Contrato do Cliente:**")
             col_f1, col_f2, col_f3 = st.columns([1.2, 1.2, 2.6])
             
             opts_status_contrato = ["Ativo", "Em Negociação", "Pausado", "Cancelado"]
-            val_status = dados_existentes[11] if (modo_edicao and len(dados_existentes) > 11) else "Ativo"
+            val_status = dados_existentes.get("status_contrato", "Ativo") if modo_edicao else "Ativo"
             idx_st_c = opts_status_contrato.index(val_status) if val_status in opts_status_contrato else 0
 
             with col_f1:
-                valor_contrato_mensal = st.number_input(
-                    "Valor da Mensalidade (R$)",
-                    min_value=0.0, step=50.0,
-                    value=float(dados_existentes[9]) if (modo_edicao and len(dados_existentes) > 9 and dados_existentes[9] is not None) else 450.0,
-                    key="num_valor_mensalidade_cad"
-                )
+                valor_contrato_mensal = st.number_input("Valor da Mensalidade (R$)", min_value=0.0, step=50.0, value=float(dados_existentes.get("valor_contrato_mensal", 450.0)) if modo_edicao else 450.0, key="num_valor_mensalidade_cad")
             with col_f2:
-                dia_vencimento = st.number_input(
-                    "Dia do Vencimento Mensal",
-                    min_value=1, max_value=31, step=1,
-                    value=int(dados_existentes[10]) if (modo_edicao and len(dados_existentes) > 10 and dados_existentes[10] is not None) else 10,
-                    key="num_dia_vencimento_cad"
-                )
+                dia_vencimento = st.number_input("Dia do Vencimento Mensal", min_value=1, max_value=31, step=1, value=int(dados_existentes.get("dia_vencimento", 10)) if modo_edicao else 10, key="num_dia_vencimento_cad")
             with col_f3:
-                status_contrato = st.radio(
-                    "Status do Contrato com a Agência", 
-                    opts_status_contrato, 
-                    index=idx_st_c, 
-                    horizontal=True,
-                    key="rad_status_contrato_cad"
-                )
+                status_contrato = st.radio("Status do Contrato com a Agência", opts_status_contrato, index=idx_st_c, horizontal=True, key="rad_status_contrato_cad")
 
             st.markdown("---")
-            link_drive_midias = st.text_input(
-                "Link da Pasta de Mídias e Fotos 360° (Google Drive / Photos / Pano2VR)", 
-                value=dados_existentes[39] if (modo_edicao and len(dados_existentes) > 39 and dados_existentes[39]) else "",
-                key="txt_link_drive_cad"
-            )
+            link_drive_midias = st.text_input("Link da Pasta de Mídias e Fotos 360°", value=dados_existentes.get("link_drive_midias", "") if modo_edicao else "", key="txt_link_drive_cad")
 
-        # SUB-ABA 3: CONTATO & REDES SOCIAIS
         with sub_tab_contato:
             opts_chat = ["Ativado", "Desativado", "Não Configurado"]
             c_c1, c_c2 = st.columns(2)
             with c_c1:
-                telefone_contato = st.text_input("Número de Telefone Comercial", value=dados_existentes[16] if (modo_edicao and len(dados_existentes) > 16) else "", key="txt_tel_cad")
-                whatsapp = st.text_input("WhatsApp para Atendimento", value=dados_existentes[17] if (modo_edicao and len(dados_existentes) > 17) else "", key="txt_wsp_cad")
-                website = st.text_input("Website / Link Principal", value=dados_existentes[19] if (modo_edicao and len(dados_existentes) > 19) else "", key="txt_web_cad")
+                telefone_contato = st.text_input("Número de Telefone Comercial", value=dados_existentes.get("telefone_contato", "") if modo_edicao else "", key="txt_tel_cad")
+                whatsapp = st.text_input("WhatsApp para Atendimento", value=dados_existentes.get("whatsapp", "") if modo_edicao else "", key="txt_wsp_cad")
+                website = st.text_input("Website / Link Principal", value=dados_existentes.get("website", "") if modo_edicao else "", key="txt_web_cad")
                 
-                chat_val = dados_existentes[18] if (modo_edicao and len(dados_existentes) > 18) else "Ativado"
+                chat_val = dados_existentes.get("chat_status", "Ativado") if modo_edicao else "Ativado"
                 idx_chat = opts_chat.index(chat_val) if chat_val in opts_chat else 0
                 chat_status = st.radio("Mensagens / Chat no Perfil", opts_chat, index=idx_chat, horizontal=True, key="rad_chat_cad")
             with c_c2:
-                instagram = st.text_input("Link do Instagram", value=dados_existentes[20] if (modo_edicao and len(dados_existentes) > 20) else "", key="txt_ig_cad")
-                facebook = st.text_input("Link do Facebook", value=dados_existentes[21] if (modo_edicao and len(dados_existentes) > 21) else "", key="txt_fb_cad")
-                linkedin = st.text_input("Link do LinkedIn", value=dados_existentes[22] if (modo_edicao and len(dados_existentes) > 22) else "", key="txt_li_cad")
-                youtube = st.text_input("Link do YouTube", value=dados_existentes[23] if (modo_edicao and len(dados_existentes) > 23) else "", key="txt_yt_cad")
-                tiktok = st.text_input("Link do TikTok", value=dados_existentes[24] if (modo_edicao and len(dados_existentes) > 24) else "", key="txt_tk_cad")
+                instagram = st.text_input("Link do Instagram", value=dados_existentes.get("instagram", "") if modo_edicao else "", key="txt_ig_cad")
+                facebook = st.text_input("Link do Facebook", value=dados_existentes.get("facebook", "") if modo_edicao else "", key="txt_fb_cad")
+                linkedin = st.text_input("Link do LinkedIn", value=dados_existentes.get("linkedin", "") if modo_edicao else "", key="txt_li_cad")
+                youtube = st.text_input("Link do YouTube", value=dados_existentes.get("youtube", "") if modo_edicao else "", key="txt_yt_cad")
+                tiktok = st.text_input("Link do TikTok", value=dados_existentes.get("tiktok", "") if modo_edicao else "", key="txt_tk_cad")
 
-        # SUB-ABA 4: LOCAL & ÁREAS
         with sub_tab_local:
-            atend_val = bool(dados_existentes[25]) if (modo_edicao and len(dados_existentes) > 25) else False
-            atendimento_local_cliente = st.checkbox("📍 Atendimento no local do cliente / Prestador de serviço itinerante (Endereço oculto no Google)", value=atend_val, key="chk_atend_local_cad")
+            atend_val = bool(dados_existentes.get("atendimento_local_cliente", 0)) if modo_edicao else False
+            atendimento_local_cliente = st.checkbox("📍 Atendimento no local do cliente", value=atend_val, key="chk_atend_local_cad")
             st.markdown("---")
             c_l1, c_l2 = st.columns(2)
             with c_l1:
-                endereco_local = st.text_input("Endereço Físico Completo", value=dados_existentes[26] if (modo_edicao and len(dados_existentes) > 26) else "", key="txt_end_cad")
+                endereco_local = st.text_input("Endereço Físico Completo", value=dados_existentes.get("endereco_local", "") if modo_edicao else "", key="txt_end_cad")
             with c_l2:
-                area_cobertura = st.text_input("Áreas de Cobertura / Atendimento (ex: Ribeirão Preto, Sertãozinho, Brodowski)", value=dados_existentes[27] if (modo_edicao and len(dados_existentes) > 27) else "", key="txt_area_cad")
+                area_cobertura = st.text_input("Áreas de Cobertura", value=dados_existentes.get("area_cobertura", "") if modo_edicao else "", key="txt_area_cad")
 
-        # SUB-ABA 5: HORÁRIOS DE FUNCIONAMENTO
         with sub_tab_horario:
-            st.markdown("**Horários de Funcionamento (Valores padrão editáveis diretamente):**")
-            
+            st.markdown("**Horários de Funcionamento:**")
             dias_semana = [
-                ("Segunda-feira", 28, "08:00", "18:00", False),
-                ("Terça-feira", 29, "08:00", "18:00", False),
-                ("Quarta-feira", 30, "08:00", "18:00", False),
-                ("Quinta-feira", 31, "08:00", "18:00", False),
-                ("Sexta-feira", 32, "08:00", "18:00", False),
-                ("Sábado", 33, "08:00", "12:00", False),
-                ("Domingo", 34, "08:00", "12:00", True)
+                ("Segunda-feira", "horario_seg", "08:00", "18:00", False),
+                ("Terça-feira", "horario_ter", "08:00", "18:00", False),
+                ("Quarta-feira", "horario_qua", "08:00", "18:00", False),
+                ("Quinta-feira", "horario_qui", "08:00", "18:00", False),
+                ("Sexta-feira", "horario_sex", "08:00", "18:00", False),
+                ("Sábado", "horario_sab", "08:00", "12:00", False),
+                ("Domingo", "horario_dom", "08:00", "12:00", True)
             ]
             
             horarios_coletados = {}
-
-            for dia_nome, idx_db, h_ab_def, h_fe_def, fechado_def in dias_semana:
+            for dia_nome, campo_db, h_ab_def, h_fe_def, fechado_def in dias_semana:
                 st.markdown(f"<p class='dia-destaque'>📅 {dia_nome}</p>", unsafe_allow_html=True)
                 col_h1, col_h2, col_h3 = st.columns([2, 2, 1])
                 
@@ -857,16 +697,15 @@ if st.session_state["aba_ativa"] == "cadastrar":
                 val_ab = h_ab_def
                 val_fe = h_fe_def
 
-                if modo_edicao and len(dados_existentes) > idx_db and dados_existentes[idx_db]:
-                    txt_h = dados_existentes[idx_db]
+                if modo_edicao and dados_existentes.get(campo_db):
+                    txt_h = dados_existentes.get(campo_db)
                     if txt_h == "Fechado":
                         is_fechado = True
                     elif " - " in txt_h:
                         is_fechado = False
                         parts = txt_h.split(" - ")
                         if len(parts) == 2:
-                            val_ab = parts[0]
-                            val_fe = parts[1]
+                            val_ab, val_fe = parts[0], parts[1]
 
                 with col_h3:
                     fechado = st.checkbox("Fechado", key=f"chk_fechado_{dia_nome}", value=is_fechado)
@@ -875,55 +714,46 @@ if st.session_state["aba_ativa"] == "cadastrar":
                 with col_h2:
                     h_fecha_sel = st.text_input("Fechamento", value=val_fe, disabled=fechado, key=f"txt_fe_{dia_nome}")
                 
-                if fechado:
-                    horarios_coletados[dia_nome] = "Fechado"
-                else:
-                    horarios_coletados[dia_nome] = f"{h_abre_sel} - {h_fecha_sel}"
+                horarios_coletados[campo_db] = "Fechado" if fechado else f"{h_abre_sel} - {h_fecha_sel}"
 
             st.markdown("---")
             c_he1, c_he2 = st.columns(2)
             with c_he1:
-                horarios_especiais = st.text_input("Horários Especiais / Feriados (ex: 25/12 Fechado)", value=dados_existentes[35] if (modo_edicao and len(dados_existentes) > 35) else "", key="txt_hor_esp_cad")
+                horarios_especiais = st.text_input("Horários Especiais", value=dados_existentes.get("horarios_especiais", "") if modo_edicao else "", key="txt_hor_esp_cad")
             with c_he2:
-                outros_horarios = st.text_input("Outros Horários (Almoço, Happy Hour, Delivery)", value=dados_existentes[36] if (modo_edicao and len(dados_existentes) > 36) else "", key="txt_outros_hor_cad")
+                outros_horarios = st.text_input("Outros Horários", value=dados_existentes.get("outros_horarios", "") if modo_edicao else "", key="txt_outros_hor_cad")
 
-        # SUB-ABA 6: CHECKLIST DE PENDÊNCIAS
         with sub_tab_mais:
             st.markdown("**Checklist de Otimização Identificadas no Diagnóstico:**")
-            pendencias_salvas = dados_existentes[37] if (modo_edicao and len(dados_existentes) > 37 and dados_existentes[37]) else ""
+            pendencias_salvas = dados_existentes.get("pendencias_checklist", "") if modo_edicao else ""
 
             col_p1, col_p2 = st.columns(2)
             with col_p1:
                 p_fita = st.checkbox("📷 Cadastrar / Atualizar Tour Virtual 360° & Fotos", value="Fotos/Tour 360°" in pendencias_salvas, key="chk_p1_cad")
                 p_cat = st.checkbox("🏷️ Otimizar Categoria Principal e Categorias Secundárias", value="Categorias GMB" in pendencias_salvas, key="chk_p2_cad")
                 p_desc = st.checkbox("✍️ Reescrever Descrição Comercial com SEO Local", value="Descrição SEO" in pendencias_salvas, key="chk_p3_cad")
-                p_redes = st.checkbox("🔗 Vincular Perfis Sociais (Instagram, Facebook, etc.)", value="Redes Sociais" in pendencias_salvas, key="chk_p4_cad")
+                p_redes = st.checkbox("🔗 Vincular Perfis Sociais", value="Redes Sociais" in pendencias_salvas, key="chk_p4_cad")
             with col_p2:
-                p_chat = st.checkbox("💬 Ativar e Configurar Chat / Mensagens", value="Chat/Mensagens" in pendencias_salvas, key="chk_p5_cad")
-                p_prod = st.checkbox("🛍️ Cadastrar Produtos e/ou Lista de Serviços", value="Produtos/Serviços" in pendencias_salvas, key="chk_p6_cad")
-                p_aval = st.checkbox("⭐ Gerar Link Curto Direto para Solicitação de Avaliações", value="Link de Avaliações" in pendencias_salvas, key="chk_p7_cad")
-                p_hor = st.checkbox("⏰ Corrigir / Validar Horários Especiais e de Funcionamento", value="Ajuste de Horários" in pendencias_salvas, key="chk_p8_cad")
+                p_chat = st.checkbox("💬 Ativar e Configurar Chat", value="Chat/Mensagens" in pendencias_salvas, key="chk_p5_cad")
+                p_prod = st.checkbox("🛍️ Cadastrar Produtos e/ou Serviços", value="Produtos/Serviços" in pendencias_salvas, key="chk_p6_cad")
+                p_aval = st.checkbox("⭐ Gerar Link Curto para Avaliações", value="Link de Avaliações" in pendencias_salvas, key="chk_p7_cad")
+                p_hor = st.checkbox("⏰ Validar Horários de Funcionamento", value="Ajuste de Horários" in pendencias_salvas, key="chk_p8_cad")
 
             st.markdown("---")
-            observacoes_tecnicas = st.text_area("Observações Técnicas Adicionais / Diagnóstico Específico", value=dados_existentes[38] if (modo_edicao and len(dados_existentes) > 38) else "", height=180, key="txt_obs_tec_cad")
+            observacoes_tecnicas = st.text_area("Observações Técnicas Adicionais", value=dados_existentes.get("observacoes_tecnicas", "") if modo_edicao else "", height=180, key="txt_obs_tec_cad")
 
-        # SUB-ABA 7: HISTÓRICO DE AUDITORIA
         with sub_tab_historico:
             if not modo_edicao:
                 st.info("O histórico de alterações ficará disponível após o primeiro cadastro da ficha.")
             else:
-                st.markdown(f"**Histórico de Registros e Otimizações Realizadas — {cliente_selecionado_menu}:**")
-                conn = sqlite3.connect(DB_NAME)
-                df_hist = pd.read_sql_query(
-                    "SELECT data_alteracao as 'Data', descricao_alteracao as 'Alteração Realizada / Registro' FROM historico_ficha WHERE cliente_id = ? ORDER BY id DESC", 
-                    conn, params=(c_id,)
-                )
-                conn.close()
-                
-                if df_hist.empty:
-                    st.write("Ficha cadastrada na versão inicial.")
-                else:
+                st.markdown(f"**Histórico de Registros — {cliente_selecionado_menu}:**")
+                res_h = supabase.table("historico_ficha").select("data_alteracao, descricao_alteracao").eq("cliente_id", c_id).order("id", desc=True).execute()
+                if res_h.data:
+                    df_hist = pd.DataFrame(res_h.data)
+                    df_hist.columns = ["Data", "Alteração Realizada / Registro"]
                     st.dataframe(df_hist, use_container_width=True)
+                else:
+                    st.write("Ficha cadastrada na versão inicial.")
 
         st.markdown("---")
         btn_salvar = st.form_submit_button("Salvar Nova Ficha" if not modo_edicao else "Atualizar Ficha e Gravar Histórico")
@@ -940,44 +770,68 @@ if st.session_state["aba_ativa"] == "cadastrar":
             if p_hor: checklist_list.append("Ajuste de Horários")
             pendencias_str = ", ".join(checklist_list) if checklist_list else "Nenhuma pendência marcada"
 
-            conn = sqlite3.connect(DB_NAME)
-            c = conn.cursor()
-            
+            payload = {
+                "nome_empresa": nome_empresa,
+                "responsavel": responsavel,
+                "data_abertura": data_abertura_str,
+                "ficha_reivindicada": ficha_reivindicada,
+                "status_avaliacoes": status_avaliacoes,
+                "qtd_avaliacoes_inicio": qtd_avaliacoes_inicio,
+                "nota_media_inicio": nota_media_inicio,
+                "qtd_fotos_inicio": qtd_fotos_inicio,
+                "valor_contrato_mensal": valor_contrato_mensal,
+                "dia_vencimento": dia_vencimento,
+                "status_contrato": status_contrato,
+                "status_respostas_avaliacoes": status_respostas_avaliacoes,
+                "categoria_principal": categoria_principal,
+                "categorias_secundarias": categorias_secundarias,
+                "descricao_empresa": descricao_empresa,
+                "telefone_contato": telefone_contato,
+                "whatsapp": whatsapp,
+                "chat_status": chat_status,
+                "website": website,
+                "instagram": instagram,
+                "facebook": facebook,
+                "linkedin": linkedin,
+                "youtube": youtube,
+                "tiktok": tiktok,
+                "atendimento_local_cliente": 1 if atendimento_local_cliente else 0,
+                "endereco_local": endereco_local,
+                "area_cobertura": area_cobertura,
+                "horario_seg": horarios_coletados["horario_seg"],
+                "horario_ter": horarios_coletados["horario_ter"],
+                "horario_qua": horarios_coletados["horario_qua"],
+                "horario_qui": horarios_coletados["horario_qui"],
+                "horario_sex": horarios_coletados["horario_sex"],
+                "horario_sab": horarios_coletados["horario_sab"],
+                "horario_dom": horarios_coletados["horario_dom"],
+                "horarios_especiais": horarios_especiais,
+                "outros_horarios": outros_horarios,
+                "pendencias_checklist": pendencias_str,
+                "observacoes_tecnicas": observacoes_tecnicas,
+                "link_drive_midias": link_drive_midias
+            }
+
             if not modo_edicao:
-                try:
-                    c.execute('''
-                        INSERT INTO clientes 
-                        (nome_empresa, responsavel, data_abertura, ficha_reivindicada, status_avaliacoes, qtd_avaliacoes_inicio, nota_media_inicio, qtd_fotos_inicio, valor_contrato_mensal, dia_vencimento, status_contrato, status_respostas_avaliacoes, categoria_principal, categorias_secundarias, descricao_empresa, telefone_contato, whatsapp, chat_status, website, instagram, facebook, linkedin, youtube, tiktok, atendimento_local_cliente, endereco_local, area_cobertura, horario_seg, horario_ter, horario_qua, horario_qui, horario_sex, horario_sab, horario_dom, horarios_especiais, outros_horarios, pendencias_checklist, observacoes_tecnicas, link_drive_midias, data_inicio) 
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    ''', (
-                        nome_empresa, responsavel, data_abertura_str, ficha_reivindicada, status_avaliacoes, qtd_avaliacoes_inicio, nota_media_inicio, qtd_fotos_inicio, valor_contrato_mensal, dia_vencimento, status_contrato, status_respostas_avaliacoes, categoria_principal, categorias_secundarias, descricao_empresa, telefone_contato, whatsapp, chat_status, website, instagram, facebook, linkedin, youtube, tiktok, 1 if atendimento_local_cliente else 0, endereco_local, area_cobertura, 
-                        horarios_coletados["Segunda-feira"], horarios_coletados["Terça-feira"], horarios_coletados["Quarta-feira"], horarios_coletados["Quinta-feira"], horarios_coletados["Sexta-feira"], horarios_coletados["Sábado"], horarios_coletados["Domingo"],
-                        horarios_especiais, outros_horarios, pendencias_str, observacoes_tecnicas, link_drive_midias, datetime.today().strftime("%Y-%m-%d")
-                    ))
-                    cliente_novo_id = c.lastrowid
-                    c.execute("INSERT INTO historico_ficha (cliente_id, data_alteracao, descricao_alteracao) VALUES (?, ?, ?)",
-                              (cliente_novo_id, datetime.now().strftime("%Y-%m-%d %H:%M"), f"Cadastro Inicial da Ficha (Mensalidade R$ {valor_contrato_mensal:.2f})"))
-                    conn.commit()
-                    st.success(f"Ficha comercial de '{nome_empresa}' cadastrada com sucesso!")
-                except sqlite3.IntegrityError:
-                    st.error(f"O cliente '{nome_empresa}' já está cadastrado no sistema!")
+                payload["data_inicio"] = datetime.today().strftime("%Y-%m-%d")
+                res_ins = supabase.table("clientes").insert(payload).execute()
+                if res_ins.data:
+                    novo_id = res_ins.data[0]["id"]
+                    supabase.table("historico_ficha").insert({
+                        "cliente_id": novo_id,
+                        "data_alteracao": datetime.now().strftime("%Y-%m-%d %H:%M"),
+                        "descricao_alteracao": f"Cadastro Inicial da Ficha (Mensalidade R$ {valor_contrato_mensal:.2f})"
+                    }).execute()
+                    st.success(f"Ficha comercial de '{nome_empresa}' cadastrada com sucesso no Supabase!")
             else:
-                c.execute('''
-                    UPDATE clientes SET 
-                    responsavel=?, data_abertura=?, ficha_reivindicada=?, status_avaliacoes=?, qtd_avaliacoes_inicio=?, nota_media_inicio=?, qtd_fotos_inicio=?, valor_contrato_mensal=?, dia_vencimento=?, status_contrato=?, status_respostas_avaliacoes=?, categoria_principal=?, categorias_secundarias=?, descricao_empresa=?, telefone_contato=?, whatsapp=?, chat_status=?, website=?, instagram=?, facebook=?, linkedin=?, youtube=?, tiktok=?, atendimento_local_cliente=?, endereco_local=?, area_cobertura=?, horario_seg=?, horario_ter=?, horario_qua=?, horario_qui=?, horario_sex=?, horario_sab=?, horario_dom=?, horarios_especiais=?, outros_horarios=?, pendencias_checklist=?, observacoes_tecnicas=?, link_drive_midias=?
-                    WHERE id=?
-                ''', (
-                    responsavel, data_abertura_str, ficha_reivindicada, status_avaliacoes, qtd_avaliacoes_inicio, nota_media_inicio, qtd_fotos_inicio, valor_contrato_mensal, dia_vencimento, status_contrato, status_respostas_avaliacoes, categoria_principal, categorias_secundarias, descricao_empresa, telefone_contato, whatsapp, chat_status, website, instagram, facebook, linkedin, youtube, tiktok, 1 if atendimento_local_cliente else 0, endereco_local, area_cobertura, 
-                    horarios_coletados["Segunda-feira"], horarios_coletados["Terça-feira"], horarios_coletados["Quarta-feira"], horarios_coletados["Quinta-feira"], horarios_coletados["Sexta-feira"], horarios_coletados["Sábado"], horarios_coletados["Domingo"],
-                    horarios_especiais, outros_horarios, pendencias_str, observacoes_tecnicas, link_drive_midias, c_id
-                ))
-                
-                c.execute("INSERT INTO historico_ficha (cliente_id, data_alteracao, descricao_alteracao) VALUES (?, ?, ?)",
-                          (c_id, datetime.now().strftime("%Y-%m-%d %H:%M"), f"Atualização Ficha e Contrato (Mensalidade: R$ {valor_contrato_mensal:.2f})"))
-                conn.commit()
-                st.success(f"Ficha comercial de '{nome_empresa}' atualizada com sucesso!")
+                supabase.table("clientes").update(payload).eq("id", c_id).execute()
+                supabase.table("historico_ficha").insert({
+                    "cliente_id": c_id,
+                    "data_alteracao": datetime.now().strftime("%Y-%m-%d %H:%M"),
+                    "descricao_alteracao": f"Atualização Ficha e Contrato (Mensalidade: R$ {valor_contrato_mensal:.2f})"
+                }).execute()
+                st.success(f"Ficha comercial de '{nome_empresa}' atualizada no Supabase!")
             
-            conn.close()
             st.rerun()
 
 # ==========================================
@@ -1015,50 +869,54 @@ elif st.session_state["aba_ativa"] == "metricas":
                 with col_m1:
                     novas_avaliacoes = st.number_input("⭐ Novas Avaliações Recebidas no Mês", min_value=0, step=1, key="num_novas_aval_m")
                 with col_m2:
-                    total_fotos_mes = st.number_input("📷 Total de Fotos Publicadas na Ficha (Até este Mês)", min_value=0, step=1, key="num_tot_fotos_m")
+                    total_fotos_mes = st.number_input("📷 Total de Fotos Publicadas na Ficha", min_value=0, step=1, key="num_tot_fotos_m")
 
                 st.markdown("---")
-                st.markdown("**2. Calculadora de ROI e Faturamento Estimado (Opcional):**")
+                st.markdown("**2. Calculadora de ROI e Faturamento Estimado:**")
                 col_r1, col_r2 = st.columns(2)
                 with col_r1:
-                    ticket_medio = st.number_input("Ticket Médio do Cliente (R$) [Padrão R$ 150]", min_value=0.0, value=150.0, step=10.0, key="num_tm_m")
+                    ticket_medio = st.number_input("Ticket Médio do Cliente (R$)", min_value=0.0, value=150.0, step=10.0, key="num_tm_m")
                 with col_r2:
-                    taxa_conversao = st.number_input("Taxa de Conversão Estimada (%) [Padrão 10%]", min_value=1.0, max_value=100.0, value=10.0, step=1.0, key="num_tc_m") / 100.0
+                    taxa_conversao = st.number_input("Taxa de Conversão Estimada (%)", min_value=1.0, max_value=100.0, value=10.0, step=1.0, key="num_tc_m") / 100.0
 
                 conversoes_totais = chamadas + rotas + cliques_site
                 faturamento_estimado = conversoes_totais * taxa_conversao * ticket_medio
                 st.info(f"💰 **Faturamento Estimado Gerado no Mês:** R$ {faturamento_estimado:,.2f}")
 
                 st.markdown("---")
-                resumo_acoes = st.text_area("🛠️ Ações Realizadas no Mês (Otimizações, fotos 360°, curadoria de pautas, etc.)", key="txt_resumo_acoes_m")
+                resumo_acoes = st.text_area("🛠️ Ações Realizadas no Mês", key="txt_resumo_acoes_m")
 
                 btn_salvar_metricas = st.form_submit_button("Salvar Métricas do Mês")
 
                 if btn_salvar_metricas:
-                    conn = sqlite3.connect(DB_NAME)
-                    c = conn.cursor()
-                    c.execute('''
-                        INSERT INTO metricas_mensais 
-                        (cliente_id, mes_ano, chamadas, rotas, cliques_site, visualizacoes, novas_avaliacoes, total_fotos_mes, ticket_medio, taxa_conversao, faturamento_estimado, resumo_acoes)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    ''', (cliente_id, mes_referencia, chamadas, rotas, cliques_site, visualizacoes, novas_avaliacoes, total_fotos_mes, ticket_medio, taxa_conversao, faturamento_estimado, resumo_acoes))
-                    conn.commit()
-                    conn.close()
+                    supabase.table("metricas_mensais").insert({
+                        "cliente_id": cliente_id,
+                        "mes_ano": mes_referencia,
+                        "chamadas": chamadas,
+                        "rotas": rotas,
+                        "cliques_site": cliques_site,
+                        "visualizacoes": visualizacoes,
+                        "novas_avaliacoes": novas_avaliacoes,
+                        "total_fotos_mes": total_fotos_mes,
+                        "ticket_medio": ticket_medio,
+                        "taxa_conversao": taxa_conversao,
+                        "faturamento_estimado": faturamento_estimado,
+                        "resumo_acoes": resumo_acoes
+                    }).execute()
                     st.success(f"Métricas salvas para {cliente_sel} no período {mes_referencia}!")
 
         with tab_m2:
             st.markdown("**Monitoramento de Palavras-Chave no Google Maps (Ranking SEO Local):**")
-            conn = sqlite3.connect(DB_NAME)
-            df_kw = pd.read_sql_query("SELECT id, palavra_chave as 'Palavra-Chave', posicao_inicial as 'Posição Inicial', posicao_atual as 'Posição Atual' FROM ranking_keywords WHERE cliente_id = ?", conn, params=(cliente_id,))
-            conn.close()
-
-            if not df_kw.empty:
+            res_kw = supabase.table("ranking_keywords").select("id, palavra_chave, posicao_inicial, posicao_atual").eq("cliente_id", cliente_id).execute()
+            if res_kw.data:
+                df_kw = pd.DataFrame(res_kw.data)
+                df_kw.columns = ["ID", "Palavra-Chave", "Posição Inicial", "Posição Atual"]
                 st.dataframe(df_kw, use_container_width=True)
 
             with st.form("form_add_keyword"):
                 col_k1, col_k2, col_k3 = st.columns(3)
                 with col_k1:
-                    kw_texto = st.text_input("Nova Palavra-Chave (ex: Fotógrafo em Ribeirão Preto)", key="txt_kw_add")
+                    kw_texto = st.text_input("Nova Palavra-Chave", key="txt_kw_add")
                 with col_k2:
                     kw_pos_in = st.number_input("Posição Inicial no Maps", min_value=1, value=10, key="num_kw_ini")
                 with col_k3:
@@ -1067,12 +925,13 @@ elif st.session_state["aba_ativa"] == "metricas":
                 btn_kw = st.form_submit_button("Cadastrar / Atualizar Termo de Busca")
 
                 if btn_kw and kw_texto:
-                    conn = sqlite3.connect(DB_NAME)
-                    c = conn.cursor()
-                    c.execute("INSERT INTO ranking_keywords (cliente_id, palavra_chave, posicao_inicial, posicao_atual, data_atualizacao) VALUES (?, ?, ?, ?, ?)",
-                              (cliente_id, kw_texto, kw_pos_in, kw_pos_at, datetime.now().strftime("%Y-%m-%d")))
-                    conn.commit()
-                    conn.close()
+                    supabase.table("ranking_keywords").insert({
+                        "cliente_id": cliente_id,
+                        "palavra_chave": kw_texto,
+                        "posicao_inicial": kw_pos_in,
+                        "posicao_atual": kw_pos_at,
+                        "data_atualizacao": datetime.now().strftime("%Y-%m-%d")
+                    }).execute()
                     st.success(f"Palavra-chave '{kw_texto}' registrada no ranking!")
                     st.rerun()
 
@@ -1090,8 +949,9 @@ elif st.session_state["aba_ativa"] == "ia":
         cliente_ia_id = int(df_clientes[df_clientes["nome_empresa"] == cliente_ia_sel]["id"].values[0])
         dados_c = obter_dados_cliente_por_id(cliente_ia_id)
 
-        cat_nome = dados_c[13] if (dados_c and len(dados_c) > 13 and dados_c[13]) else "serviços especializados"
-        cid_nome = dados_c[27] if (dados_c and len(dados_c) > 27 and dados_c[27]) else "região local"
+        cat_nome = dados_c.get("categoria_principal", "serviços especializados")
+        cid_nome = dados_c.get("area_cobertura", "região local")
+        emp_nome = dados_c.get("nome_empresa", "Empresa")
 
         tab_ia1, tab_ia2, tab_ia3, tab_ia4, tab_ia5 = st.tabs([
             "✍️ Respostas de Avaliações", 
@@ -1110,46 +970,44 @@ elif st.session_state["aba_ativa"] == "ia":
                     st.success("Opções estruturadas prontas para uso:")
                     st.markdown(f"""
                     **Opção 1 (Agradecida & Curta):**  
-                    > *"Olá! Muito obrigado pela avaliação e preferência na {dados_c[1]}. É um prazer oferecer a melhor experiência em {cat_nome} na nossa região. Conte sempre conosco!"*
+                    > *"Olá! Muito obrigado pela avaliação e preferência na {emp_nome}. É um prazer oferecer a melhor experiência em {cat_nome} na nossa região. Conte sempre conosco!"*
 
                     **Opção 2 (Foco em SEO & Posicionamento Local):**  
-                    > *"Ficamos muito felizes com o seu feedback! Na {dados_c[1]}, nos dedicamos diariamente para ser referência em {cat_nome} em {cid_nome}. Esperamos sua próxima visita!"*
+                    > *"Ficamos muito felizes com o seu feedback! Na {emp_nome}, nos dedicamos diariamente para ser referência em {cat_nome} em {cid_nome}. Esperamos sua próxima visita!"*
 
                     **Opção 3 (Institucional & Relacionamento):**  
-                    > *"Agradecemos por compartilhar sua experiência positiva! Sua satisfação é nossa prioridade. Um abraço de toda a equipe da {dados_c[1]}!"*
+                    > *"Agradecemos por compartilhar sua experiência positiva! Sua satisfação é nossa prioridade. Um abraço de toda a equipe da {emp_nome}!"*
                     """)
                 else:
                     st.warning("Cole o texto da avaliação antes de gerar as opções.")
 
         with tab_ia2:
-            st.markdown(f"**Cronograma de Atração Local e Pautas Estratégicas — {dados_c[1]}:**")
+            st.markdown(f"**Cronograma de Atração Local e Pautas Estratégicas — {emp_nome}:**")
             st.caption(f"Segmento Comercial: {cat_nome} | Região de Atendimento: {cid_nome}")
 
             st.markdown("### 📌 Pautas Recomendadas pela Curadoria Técnica:")
             st.checkbox(f"Pauta 1 (Intenção de Busca): 'Como escolher o melhor serviço de {cat_nome} em {cid_nome}?'", value=True, key="chk_p1_cron")
-            st.checkbox(f"Pauta 2 (Diferencial & Estrutura 360°): 'Conheça o espaço da {dados_c[1]} em Tour Virtual 360°'", value=True, key="chk_p2_cron")
-            st.checkbox(f"Pauta 3 (Atendimento Direto): 'Atendimento rápido e orçamentos pelo WhatsApp da {dados_c[1]}'", value=True, key="chk_p3_cron")
+            st.checkbox(f"Pauta 2 (Diferencial & Estrutura 360°): 'Conheça o espaço da {emp_nome} em Tour Virtual 360°'", value=True, key="chk_p2_cron")
+            st.checkbox(f"Pauta 3 (Atendimento Direto): 'Atendimento rápido e orçamentos pelo WhatsApp da {emp_nome}'", value=True, key="chk_p3_cron")
 
             st.markdown("---")
             st.markdown("### ✍️ Oportunidades & Sugestões Personalizadas do Rubens (Okamoto Mídias Visuais):")
-            st.caption("Insira pautas exclusivas ou ações de oportunidade identificadas diretamente no negócio do cliente:")
-
-            sug_1 = st.text_input("Sugestão Personalizada 1:", value=f"Ação Especial de Destaque: Bastidores do atendimento na {dados_c[1]}", key="txt_sug_pers_1")
+            sug_1 = st.text_input("Sugestão Personalizada 1:", value=f"Ação Especial de Destaque: Bastidores do atendimento na {emp_nome}", key="txt_sug_pers_1")
             sug_2 = st.text_input("Sugestão Personalizada 2:", value=f"Diferencial Técnico em {cat_nome} exclusivo na região de {cid_nome}", key="txt_sug_pers_2")
             sug_3 = st.text_input("Sugestão Personalizada 3:", value="Apresentação de fotos em alta resolução da equipe e estrutura", key="txt_sug_pers_3")
 
             st.markdown("---")
-            
             c_act1, c_act2 = st.columns(2)
             with c_act1:
                 if st.button("🚀 Confirmar Cronograma Estratégico", key="btn_confirmar_crono"):
-                    st.success("Cronograma aprovado e arquivado para publicação!")
+                    st.success("Cronograma aprovado!")
 
             with c_act2:
-                num_wsp_c = dados_c[17] if (dados_c and len(dados_c) > 17 and dados_c[17]) else ""
+                num_wsp_c = dados_c.get("whatsapp", "")
                 num_limpo_c = "".join([c for c in num_wsp_c if c.isdigit()])
                 
-                msg_pautas_wsp = f"Olá {dados_c[2] if dados_c[2] else dados_c[1]}, tudo bem? Aqui é o Rubens da Okamoto Mídias Visuais / Tour360VR! Montei o planejamento de pautas estratégicas do seu perfil para este mês, focado em atrair novos clientes na região. Por favor, confira as ideias propostas e me avise se aprova!"
+                resp_nome = dados_c.get("responsavel") if dados_c.get("responsavel") else emp_nome
+                msg_pautas_wsp = f"Olá {resp_nome}, tudo bem? Aqui é o Rubens da Okamoto Mídias Visuais / Tour360VR! Montei o planejamento de pautas estratégicas do seu perfil para este mês, focado em atrair novos clientes na região. Por favor, confira as ideias propostas e me avise se aprova!"
                 msg_enc_pautas = urllib.parse.quote(msg_pautas_wsp)
 
                 if num_limpo_c:
@@ -1158,22 +1016,16 @@ elif st.session_state["aba_ativa"] == "ia":
                 else:
                     st.info("Cadastre o WhatsApp do cliente para enviar o link direto de aprovação.")
 
-        # SUB-ABA 3: GERADOR DE QR CODE PERMANENTE E LIMPO
         with tab_ia3:
-            st.markdown(f"**Gerador de QR Code Permanente (Limpo & Alta Definição) — {dados_c[1]}:**")
-            st.caption("O QR Code gerado abaixo é limpo e estático, garantindo máxima leitura em câmeras de celulares e validade vitalícia para impressão em plaquinhas de acrílico ou balcão.")
-
-            url_def_review = dados_c[19] if (dados_c and len(dados_c) > 19 and dados_c[19]) else "https://maps.google.com"
-            
+            st.markdown(f"**Gerador de QR Code Permanente (Limpo & Alta Definição) — {emp_nome}:**")
+            url_def_review = dados_c.get("website", "https://maps.google.com")
             url_qr = st.text_input("Link Direto da Ficha / Página de Avaliação no Google Maps:", value=url_def_review, key="txt_url_qr_perm")
 
             if url_qr:
                 buf_qr = gerar_qr_code_limpo(url_qr)
                 col_q1, col_q2 = st.columns([1, 2])
-                
                 with col_q1:
-                    st.image(buf_qr, caption=f"QR Code Oficial — {dados_c[1]}", width=220)
-                
+                    st.image(buf_qr, caption=f"QR Code Oficial — {emp_nome}", width=220)
                 with col_q2:
                     st.markdown("""
                     ### 📌 Especificações para Impressão da Plaquinha:
@@ -1181,38 +1033,32 @@ elif st.session_state["aba_ativa"] == "ia":
                     * **Compatibilidade:** Funciona com qualquer câmera de smartphone Android ou iOS.
                     * **Formatos Sugeridos:** Placa de acrílico de mesa (10x15cm), adesivos para balcão ou cartões.
                     """)
-                    
                     st.download_button(
                         label="📥 Baixar QR Code Limpo Alta Resolução (PNG)",
                         data=buf_qr,
-                        file_name=f"QRCode_Google_Review_{dados_c[1].replace(' ', '_')}.png",
+                        file_name=f"QRCode_Google_Review_{emp_nome.replace(' ', '_')}.png",
                         mime="image/png",
                         key="btn_dl_qr_png"
                     )
 
         with tab_ia4:
-            st.markdown(f"**Estruturação de Perguntas Frequentes (FAQ Estratégico) — {dados_c[1]}:**")
-            st.caption("Crie perguntas e respostas institucionais para alimentar o Perfil do Google e o site do cliente.")
-
+            st.markdown(f"**Estruturação de Perguntas Frequentes (FAQ Estratégico) — {emp_nome}:**")
             st.markdown(f"""
             ### 📋 Pares de Perguntas e Respostas Institucionais:
 
-            **1. Pergunta:** *Qual é a localização e horário de funcionamento da {dados_c[1]}?*  
-            > **Resposta:** A **{dados_c[1]}** está localizada em {dados_c[26] if (dados_c and len(dados_c)>26 and dados_c[26]) else cid_nome}. Nosso horário de atendimento é de Segunda a Sexta das 08h às 18h.
+            **1. Pergunta:** *Qual é a localização e horário de funcionamento da {emp_nome}?*  
+            > **Resposta:** A **{emp_nome}** está localizada em {dados_c.get("endereco_local", cid_nome)}. Nosso horário de atendimento é de Segunda a Sexta das 08h às 18h.
 
-            **2. Pergunta:** *Quais serviços são oferecidos pela {dados_c[1]}?*  
-            > **Resposta:** Somos especializados em **{cat_nome}**, oferecendo soluções personalizadas para clientes em {cid_nome} com foco em qualidade e excelência.
+            **2. Pergunta:** *Quais serviços são oferecidos pela {emp_nome}?*  
+            > **Resposta:** Somos especializados em **{cat_nome}**, oferecendo soluções personalizadas para clientes em {cid_nome}.
 
             **3. Pergunta:** *É possível fazer um Tour Virtual 360° ou ver fotos do local?*  
-            > **Resposta:** Sim! O perfil oficial da **{dados_c[1]}** no Google conta com fotos atualizadas e Tour Virtual 360° interativo para você explorar nosso espaço antes da sua visita.
+            > **Resposta:** Sim! O perfil oficial da **{emp_nome}** no Google conta com fotos atualizadas e Tour Virtual 360° interativo.
             """)
 
         with tab_ia5:
-            st.markdown(f"**Direção de Arte & Prompts Fotográficos — {dados_c[1]}:**")
-            st.caption("Prompts visuais estilizados para criação de artes institucionais mantendo a identidade visual da marca:")
-
-            prompt_gerado = f"Professional commercial photography of a modern {cat_nome} establishment named '{dados_c[1]}', located in Brazil. High quality ambient lighting, photorealistic, elegant interior, clean design, 8k resolution --ar 16:9"
-            
+            st.markdown(f"**Direção de Arte & Prompts Fotográficos — {emp_nome}:**")
+            prompt_gerado = f"Professional commercial photography of a modern {cat_nome} establishment named '{emp_nome}', located in Brazil. High quality ambient lighting, photorealistic, elegant interior, clean design, 8k resolution --ar 16:9"
             st.code(prompt_gerado, language="text")
 
 # ==========================================
@@ -1228,16 +1074,9 @@ elif st.session_state["aba_ativa"] == "dashboard":
         cliente_dash = st.selectbox("Selecione o Cliente para Visualizar", df_clientes["nome_empresa"].tolist(), key="dash_cliente")
         cliente_id_dash = int(df_clientes[df_clientes["nome_empresa"] == cliente_dash]["id"].values[0])
         
-        conn = sqlite3.connect(DB_NAME)
-        df_metricas = pd.read_sql_query(
-            "SELECT mes_ano, chamadas, rotas, cliques_site, visualizacoes, novas_avaliacoes, total_fotos_mes, faturamento_estimado FROM metricas_mensais WHERE cliente_id = ? ORDER BY mes_ano ASC", 
-            conn, params=(cliente_id_dash,)
-        )
-        conn.close()
-
-        if df_metricas.empty:
-            st.info("Ainda não existem métricas registradas para este cliente.")
-        else:
+        res_m = supabase.table("metricas_mensais").select("*").eq("cliente_id", cliente_id_dash).order("mes_ano").execute()
+        if res_m.data:
+            df_metricas = pd.DataFrame(res_m.data)
             ultimas = df_metricas.iloc[-1]
             m1, m2, m3, m4 = st.columns(4)
             m1.metric("Chamadas (Último Mês)", ultimas["chamadas"])
@@ -1247,41 +1086,40 @@ elif st.session_state["aba_ativa"] == "dashboard":
 
             st.markdown("---")
             st.line_chart(df_metricas.set_index("mes_ano")[["chamadas", "rotas", "cliques_site"]])
+        else:
+            st.info("Ainda não existem métricas registradas para este cliente.")
 
 # ==========================================
-# MÓDULO 5: GERADOR DE PDF DE PROSPECÇÃO & CASES DE SUCESSO
+# MÓDULO 5: GERADOR DE PDF DE PROSPECÇÃO & CASES
 # ==========================================
 elif st.session_state["aba_ativa"] == "cases":
     st.subheader("🏆 Gerador de Relatório Comercial de Prospecção (Cases & Prova Social)")
-    st.caption("Crie um documento customizado e anônimo para apresentar a novos clientes durante reuniões de vendas.")
-
-    conn = sqlite3.connect(DB_NAME)
-    df_tot_clientes = pd.read_sql_query("SELECT COUNT(*) as qtd FROM clientes", conn)
-    df_tot_fat = pd.read_sql_query("SELECT SUM(faturamento_estimado) as total FROM metricas_mensais", conn)
     
-    df_agrupado = pd.read_sql_query(
-        "SELECT mes_ano, SUM(chamadas) as chamadas, SUM(rotas) as rotas, SUM(cliques_site) as cliques_site FROM metricas_mensais GROUP BY mes_ano ORDER BY mes_ano ASC", 
-        conn
-    )
-    
-    df_keywords_all = pd.read_sql_query("SELECT palavra_chave, posicao_inicial, posicao_atual FROM ranking_keywords ORDER BY (posicao_inicial - posicao_atual) DESC LIMIT 5", conn)
-    conn.close()
+    res_c_count = supabase.table("clientes").select("id", count="exact").execute()
+    qtd_c = res_c_count.count if res_c_count.count is not None else 0
 
-    qtd_c = df_tot_clientes['qtd'].values[0] if not df_tot_clientes.empty else 0
-    fat_c = df_tot_fat['total'].values[0] if (not df_tot_fat.empty and df_tot_fat['total'].values[0] is not None) else 0.0
-
-    st.markdown("**Selecione quais informações deseja incluir no PDF de Apresentação:**")
+    res_m_all = supabase.table("metricas_mensais").select("mes_ano, chamadas, rotas, cliques_site, faturamento_estimado").execute()
+    df_m_all = pd.DataFrame(res_m_all.data) if res_m_all.data else pd.DataFrame()
     
+    fat_c = df_m_all["faturamento_estimado"].sum() if not df_m_all.empty else 0.0
+
+    df_agrupado = None
+    if not df_m_all.empty:
+        df_agrupado = df_m_all.groupby("mes_ano")[["chamadas", "rotas", "cliques_site"]].sum().reset_index().sort_values("mes_ano")
+
+    res_kw = supabase.table("ranking_keywords").select("palavra_chave, posicao_inicial, posicao_atual").execute()
+    df_keywords_all = pd.DataFrame(res_kw.data) if res_kw.data else None
+
+    st.markdown("**Selecione quais informações deseja incluir no PDF:**")
     c_p1, c_p2 = st.columns(2)
     with c_p1:
-        inc_clientes = st.checkbox("Exibir Métrica de Quantidade de Clientes Atendidos", value=True, key="chk_inc_cli_cases")
-        inc_faturamento = st.checkbox("Exibir Valor de Faturamento Estimado Total Gerado", value=True, key="chk_inc_fat_cases")
+        inc_clientes = st.checkbox("Exibir Quantidade de Clientes Atendidos", value=True, key="chk_inc_cli_cases")
+        inc_faturamento = st.checkbox("Exibir Faturamento Estimado Total Gerado", value=True, key="chk_inc_fat_cases")
     with c_p2:
-        inc_grafico = st.checkbox("Exibir Gráfico de Crescimento Somado da Agência", value=True, key="chk_inc_graf_cases")
-        inc_keywords = st.checkbox("Exibir Tabela de Casos de Sucesso de Ranking SEO", value=True, key="chk_inc_kw_cases")
+        inc_grafico = st.checkbox("Exibir Gráfico de Crescimento Somado", value=True, key="chk_inc_graf_cases")
+        inc_keywords = st.checkbox("Exibir Tabela de Casos de Sucesso SEO", value=True, key="chk_inc_kw_cases")
 
     st.markdown("---")
-    st.write("Clique no botão abaixo para gerar o PDF personalizado para o seu prospect:")
 
     pdf_cases_bytes = gerar_pdf_prospeccao_cases(
         inc_clientes=inc_clientes,
@@ -1290,8 +1128,8 @@ elif st.session_state["aba_ativa"] == "cases":
         inc_keywords=inc_keywords,
         qtd_clientes=qtd_c,
         total_fat=fat_c,
-        df_agrupado=df_agrupado if not df_agrupado.empty else None,
-        df_keywords=df_keywords_all if not df_keywords_all.empty else None
+        df_agrupado=df_agrupado,
+        df_keywords=df_keywords_all
     )
 
     st.download_button(
@@ -1303,7 +1141,7 @@ elif st.session_state["aba_ativa"] == "cases":
     )
 
 # ==========================================
-# MÓDULO 6: RELATÓRIO PDF INDIVIDUAL & DISPARO WHATSAPP
+# MÓDULO 6: RELATÓRIO PDF INDIVIDUAL & WHATSAPP
 # ==========================================
 elif st.session_state["aba_ativa"] == "pdf":
     st.subheader("📄 Emitir Relatório Executivo em PDF & Envio via WhatsApp")
@@ -1320,21 +1158,16 @@ elif st.session_state["aba_ativa"] == "pdf":
         dados_cliente = obter_dados_cliente_por_id(cliente_pdf_id)
         
         dados_inicio = {
-            'qtd_avaliacoes_inicio': dados_cliente[6] if (dados_cliente and len(dados_cliente) > 6 and dados_cliente[6] is not None) else 0,
-            'nota_media_inicio': dados_cliente[7] if (dados_cliente and len(dados_cliente) > 7 and dados_cliente[7] is not None) else 5.0,
-            'qtd_fotos_inicio': dados_cliente[8] if (dados_cliente and len(dados_cliente) > 8 and dados_cliente[8] is not None) else 0
+            'qtd_avaliacoes_inicio': dados_cliente.get('qtd_avaliacoes_inicio', 0),
+            'nota_media_inicio': dados_cliente.get('nota_media_inicio', 5.0),
+            'qtd_fotos_inicio': dados_cliente.get('qtd_fotos_inicio', 0)
         }
 
-        conn = sqlite3.connect(DB_NAME)
-        df_m = pd.read_sql_query(
-            "SELECT * FROM metricas_mensais WHERE cliente_id = ? ORDER BY mes_ano ASC", 
-            conn, params=(cliente_pdf_id,)
-        )
-        df_kw = pd.read_sql_query(
-            "SELECT palavra_chave, posicao_inicial, posicao_atual FROM ranking_keywords WHERE cliente_id = ?",
-            conn, params=(cliente_pdf_id,)
-        )
-        conn.close()
+        res_m = supabase.table("metricas_mensais").select("*").eq("cliente_id", cliente_pdf_id).order("mes_ano").execute()
+        df_m = pd.DataFrame(res_m.data) if res_m.data else pd.DataFrame()
+
+        res_kw = supabase.table("ranking_keywords").select("palavra_chave, posicao_inicial, posicao_atual").eq("cliente_id", cliente_pdf_id).execute()
+        df_kw = pd.DataFrame(res_kw.data) if res_kw.data else None
 
         if df_m.empty:
             st.warning("Nenhuma métrica encontrada para este cliente.")
@@ -1375,10 +1208,11 @@ elif st.session_state["aba_ativa"] == "pdf":
                 )
 
             with c_dw2:
-                num_wsp = dados_cliente[17] if (dados_cliente and len(dados_cliente) > 17 and dados_cliente[17]) else ""
+                num_wsp = dados_cliente.get("whatsapp", "")
                 num_limpo = "".join([c for c in num_wsp if c.isdigit()])
+                resp_nome = dados_cliente.get("responsavel") if dados_cliente.get("responsavel") else cliente_pdf_sel
                 
-                txt_whats = f"Olá {dados_cliente[2] if dados_cliente[2] else cliente_pdf_sel}, tudo bem? Aqui é o Rubens da Tour360VR! Segue o resumo do relatório de desempenho do seu perfil no Google referente ao mês {mes_pdf_sel}: Tivemos {dados_atual['chamadas']} chamadas diretas e {dados_atual['rotas']} solicitações de rota no GPS. Estou enviando o relatório completo em PDF em anexo."
+                txt_whats = f"Olá {resp_nome}, tudo bem? Aqui é o Rubens da Tour360VR! Segue o resumo do relatório de desempenho do seu perfil no Google referente ao mês {mes_pdf_sel}: Tivemos {dados_atual['chamadas']} chamadas diretas e {dados_atual['rotas']} solicitações de rota no GPS. Estou enviando o relatório completo em PDF em anexo."
                 txt_encoded = urllib.parse.quote(txt_whats)
 
                 if num_limpo:
@@ -1392,23 +1226,17 @@ elif st.session_state["aba_ativa"] == "pdf":
 # ==========================================
 elif st.session_state["aba_ativa"] == "financeiro":
     st.subheader("💰 Gestão Financeira & Backup da Agência (MRR)")
-    st.caption("Painel restrito para controle de mensalidades, faturamento total, exportação de cadastros e backups.")
+    st.caption("Painel restrito para controle de mensalidades e faturamento do Supabase.")
 
-    conn = sqlite3.connect(DB_NAME)
-    try:
-        df_completo = pd.read_sql_query("SELECT * FROM clientes ORDER BY nome_empresa ASC", conn)
-        df_fin = pd.read_sql_query(
-            "SELECT nome_empresa as 'Cliente', responsavel as 'Responsável', telefone_contato as 'Telefone', valor_contrato_mensal as 'Mensalidade (R$)', dia_vencimento as 'Dia Vencimento', status_contrato as 'Status' FROM clientes WHERE status_contrato = 'Ativo'", 
-            conn
-        )
-    except Exception:
-        df_completo = pd.DataFrame()
-        df_fin = pd.DataFrame()
-    conn.close()
+    res_cli = supabase.table("clientes").select("*").order("nome_empresa").execute()
+    df_completo = pd.DataFrame(res_cli.data) if res_cli.data else pd.DataFrame()
 
-    if df_fin.empty:
-        st.info("Nenhum contrato ativo cadastrado no momento. Cadastre os valores das mensalidades na aba '⚙️ Ficha Comercial'.")
+    if df_completo.empty:
+        st.info("Nenhum contrato cadastrado no momento.")
     else:
+        df_fin = df_completo[df_completo["status_contrato"] == "Ativo"][["nome_empresa", "responsavel", "telefone_contato", "valor_contrato_mensal", "dia_vencimento", "status_contrato"]]
+        df_fin.columns = ["Cliente", "Responsável", "Telefone", "Mensalidade (R$)", "Dia Vencimento", "Status"]
+
         mrr_total = df_fin['Mensalidade (R$)'].sum()
         qtd_clientes_ativos = len(df_fin)
         ticket_medio_agencia = mrr_total / qtd_clientes_ativos if qtd_clientes_ativos > 0 else 0.0
@@ -1422,11 +1250,8 @@ elif st.session_state["aba_ativa"] == "financeiro":
         st.markdown("**Contratos Recorrentes Ativos:**")
         st.dataframe(df_fin, use_container_width=True)
 
-    if not df_completo.empty:
         st.markdown("---")
         st.markdown("### 📥 Backup & Exportação Completa de Cadastros")
-        st.write("Baixe a relação completa de todos os clientes, dados operacionais, horários e contratos.")
-
         csv_excel = df_completo.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig')
 
         st.download_button(
