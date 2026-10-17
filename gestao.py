@@ -229,13 +229,13 @@ st.markdown("""
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     }
 
-    /* CONTAINER CARD DO TÍTULO E BOTÕES SUPERIORES */
+    /* CONTAINER CARD DO TÍTULO E BOTÕES SUPERIORES (+1 LINHA DE ESPAÇO ABAIXO) */
     .top-card-container {
         background-color: #161F30;
         border: 1px solid #2B364A;
         border-radius: 12px;
         padding: 16px 20px 14px 20px !important;
-        margin-bottom: 15px !important;
+        margin-bottom: 35px !important; /* AUMENTADO O ESPAÇAMENTO INFERIOR */
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
     }
 
@@ -293,8 +293,9 @@ st.markdown("""
         border: 1px solid #2B364A !important;
     }
 
+    /* DIAS DA SEMANA EM BRANCO */
     .dia-destaque {
-        color: #00E5FF;
+        color: #FFFFFF !important;
         font-weight: 700;
         font-size: 1.05rem;
         margin-top: 0.8rem;
@@ -437,7 +438,7 @@ if st.session_state["aba_ativa"] == "cadastrar":
             with c_l2:
                 area_cobertura = st.text_input("Áreas de Cobertura / Atendimento (ex: Ribeirão Preto, Sertãozinho, Brodowski)", value=dados_existentes[23] if (modo_edicao and len(dados_existentes) > 23) else "")
 
-        # SUB-ABA 4: HORÁRIOS DE FUNCIONAMENTO (100% VISÍVEIS DE PRIMEIRA EM TEXT INPUT SEM SETAS)
+        # SUB-ABA 4: HORÁRIOS DE FUNCIONAMENTO (DIAS DA SEMANA EM BRANCO)
         with sub_tab_horario:
             st.markdown("**Horários de Funcionamento (Valores padrão 08:00 e 18:00 editáveis diretamente):**")
             
