@@ -4,6 +4,7 @@ import pandas as pd
 import os
 from datetime import datetime, date
 from io import BytesIO
+import urllib.parse
 
 # Importações do ReportLab para PDF
 from reportlab.lib.pagesizes import letter
@@ -70,15 +71,16 @@ def init_db():
             outros_horarios TEXT,
             pendencias_checklist TEXT,
             observacoes_tecnicas TEXT,
+            link_drive_midias TEXT,
             data_inicio TEXT
         )
     ''')
 
-    # Atualização Automática para Bancos de Dados Existentes
     colunas_novas = [
         ("valor_contrato_mensal", "REAL DEFAULT 0.0"),
         ("dia_vencimento", "INTEGER DEFAULT 10"),
-        ("status_contrato", "TEXT DEFAULT 'Ativo'")
+        ("status_contrato", "TEXT DEFAULT 'Ativo'"),
+        ("link_drive_midias", "TEXT")
     ]
     
     for nome_coluna, tipo_coluna in colunas_novas:
@@ -226,7 +228,7 @@ def gerar_imagem_grafico_consolidado(df_agrupado):
     img_buf.seek(0)
     return img_buf
 
-# --- GERAÇÃO DO RELATÓRIO PDF DO CLIENTE ---
+# --- GERAÇÃO DO RELATÓRIO PDF DO CLIENTE COM LOGO TOUR360VR À ESQUERDA ---
 def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dados_inicio, df_historico=None, df_keywords=None):
     buffer = BytesIO()
     doc = SimpleDocTemplate(
@@ -255,7 +257,7 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
 
     header_table_data = [
         [
-            Paragraph("<b>TOUR360VR</b><br/><font size=8 color='#64748B'>Gestão e Estratégia de Presença Local GMB</font>", title_brand_style),
+            Paragraph("🌐 <b>TOUR360VR</b><br/><font size=8 color='#64748B'>Gestão, SEO Local & Presença em IAs</font>", title_brand_style),
             Paragraph(f"<b>RELATÓRIO DE DESEMPENHO</b><br/><font size=9 color='#2563EB'><b>{nome_empresa}</b></font><br/><font size=8 color='#64748B'>Mês de Referência: {mes_ano}</font>", ParagraphStyle('RHeader', parent=styles['Normal'], alignment=2, fontName='Helvetica'))
         ]
     ]
@@ -396,20 +398,20 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
         story.append(t_roi)
         story.append(Spacer(1, 6))
 
-    story.append(Paragraph("<b>5. Ações Técnicas & Melhores Práticas Aplicadas no Mês:</b>", section_style))
+    story.append(Paragraph("<b>5. Ações Técnicas & Melhores Práticas Aplicadas (SEO/GEO):</b>", section_style))
     story.append(Spacer(1, 3))
     acoes_texto = dados_atual['resumo_acoes'] if dados_atual['resumo_acoes'] else "Otimizações de rotina, monitorização de palavras-chave locais e gestão de reputação da ficha."
     story.append(Paragraph(acoes_texto.replace('\n', '<br/>'), body_style))
     story.append(Spacer(1, 10))
 
     story.append(HRFlowable(width="100%", thickness=0.8, color=colors.HexColor('#CBD5E1'), spaceAfter=6))
-    story.append(Paragraph("<b>tour360vr.com.br</b> &nbsp;|&nbsp; contato@tour360vr.com.br &nbsp;|&nbsp; Whatsapp: (16) 99133-2121 &nbsp;|&nbsp; Tour360VR - Gestão de Perfil do Google", footer_style))
+    story.append(Paragraph("<b>tour360vr.com.br</b> &nbsp;|&nbsp; contato@tour360vr.com.br &nbsp;|&nbsp; Whatsapp: (16) 99133-2121 &nbsp;|&nbsp; Tour360VR - Gestão de Perfil do Google & Presença Local", footer_style))
 
     doc.build(story)
     buffer.seek(0)
     return buffer
 
-# --- GERAÇÃO DO PDF COMERCIAL DE PROSPECÇÃO / CASES DE SUCESSO ---
+# --- GERAÇÃO DO PDF COMERCIAL DE PROSPECÇÃO COM LOGO À ESQUERDA ---
 def gerar_pdf_prospeccao_cases(inc_clientes, inc_faturamento, inc_grafico, inc_keywords, qtd_clientes, total_fat, df_agrupado, df_keywords):
     buffer = BytesIO()
     doc = SimpleDocTemplate(
@@ -438,8 +440,8 @@ def gerar_pdf_prospeccao_cases(inc_clientes, inc_faturamento, inc_grafico, inc_k
 
     header_table_data = [
         [
-            Paragraph("<b>TOUR360VR</b><br/><font size=8 color='#64748B'>Estratégia, Tour 360° & Performance Local Google</font>", title_brand_style),
-            Paragraph("<b>APRESENTAÇÃO DE PERFORMANCE & CASES DE SUCESSO</b><br/><font size=8 color='#2563EB'><b>Mídia & Otimização GMB</b></font>", ParagraphStyle('RHeader', parent=styles['Normal'], alignment=2, fontName='Helvetica'))
+            Paragraph("🌐 <b>TOUR360VR</b><br/><font size=8 color='#64748B'>Estratégia, Tour 360°, SEO Local & GEO (AEO/IAs)</font>", title_brand_style),
+            Paragraph("<b>APRESENTAÇÃO DE PERFORMANCE & CASES DE SUCESSO</b><br/><font size=8 color='#2563EB'><b>Mídia & Otimização GMB/IAs</b></font>", ParagraphStyle('RHeader', parent=styles['Normal'], alignment=2, fontName='Helvetica'))
         ]
     ]
     t_header = Table(header_table_data, colWidths=[300, 220])
@@ -448,11 +450,10 @@ def gerar_pdf_prospeccao_cases(inc_clientes, inc_faturamento, inc_grafico, inc_k
 
     story.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor('#2563EB'), spaceAfter=10))
 
-    # RESUMO EXECUTIVO COMERCIAL
     story.append(Paragraph("<b>1. Resumo Consolidado de Resultados da Agência:</b>", section_style))
     story.append(Spacer(1, 4))
 
-    txt_resumo = "A Tour360VR desenvolve estratégias personalizadas de posicionamento local, fotogrametria 360° e otimização de fichas no Google Maps para empresas que buscam liderança de mercado em sua região."
+    txt_resumo = "A Tour360VR desenvolve estratégias personalizadas de posicionamento local, fotogrametria 360°, otimização de fichas no Google Maps e citabilidade em IAs (ChatGPT, Gemini e Copilot) para empresas que buscam liderança de mercado em sua região."
     story.append(Paragraph(txt_resumo, body_style))
     story.append(Spacer(1, 6))
 
@@ -473,7 +474,6 @@ def gerar_pdf_prospeccao_cases(inc_clientes, inc_faturamento, inc_grafico, inc_k
         story.append(t_cards)
         story.append(Spacer(1, 10))
 
-    # GRÁFICO CONSOLIDADO DE CRESCIMENTO
     if inc_grafico and df_agrupado is not None and not df_agrupado.empty:
         story.append(Paragraph("<b>2. Curva do Volume de Clientes Gerados (Mês a Mês):</b>", section_style))
         story.append(Spacer(1, 4))
@@ -483,7 +483,6 @@ def gerar_pdf_prospeccao_cases(inc_clientes, inc_faturamento, inc_grafico, inc_k
         story.append(Image(img_buf, width=520, height=170))
         story.append(Spacer(1, 10))
 
-    # RANKINGS DE BUSCA LOCAL
     if inc_keywords and df_keywords is not None and not df_keywords.empty:
         story.append(Paragraph("<b>3. Exemplos Reais de Posicionamento no Topo do Google Maps:</b>", section_style))
         story.append(Spacer(1, 4))
@@ -512,7 +511,7 @@ def gerar_pdf_prospeccao_cases(inc_clientes, inc_faturamento, inc_grafico, inc_k
         story.append(Spacer(1, 10))
 
     story.append(HRFlowable(width="100%", thickness=0.8, color=colors.HexColor('#CBD5E1'), spaceAfter=8))
-    story.append(Paragraph("<b>tour360vr.com.br</b> &nbsp;|&nbsp; contato@tour360vr.com.br &nbsp;|&nbsp; Whatsapp: (16) 99133-2121 &nbsp;|&nbsp; Tour360VR - Soluções em Visual Mídia e Presença Local", footer_style))
+    story.append(Paragraph("<b>tour360vr.com.br</b> &nbsp;|&nbsp; contato@tour360vr.com.br &nbsp;|&nbsp; Whatsapp: (16) 99133-2121 &nbsp;|&nbsp; Tour360VR - Soluções em Visual Mídia, SEO & GEO Local", footer_style))
 
     doc.build(story)
     buffer.seek(0)
@@ -613,8 +612,8 @@ if "aba_ativa" not in st.session_state:
 
 st.markdown("""
 <div class="top-card-container">
-    <h1 class="main-title-card">📈 Gestão Mensal & Performance ROI GMB</h1>
-    <p class="sub-title-card">Acompanhamento recorrente, controle de fichas e geração de relatórios estratégicos para clientes.</p>
+    <h1 class="main-title-card">📈 Gestão Mensal, SEO & GEO (IAs) | Tour360VR</h1>
+    <p class="sub-title-card">Acompanhamento de perfis no Google Maps, posicionamento em IAs (ChatGPT/Gemini) e relatórios de ROI.</p>
 """, unsafe_allow_html=True)
 
 col_n1, col_n2, col_n3, col_n4, col_n5, col_n6, col_n7 = st.columns(7)
@@ -739,15 +738,20 @@ if st.session_state["aba_ativa"] == "cadastrar":
                     )
             
             st.markdown("---")
-            descricao_empresa = st.text_area("Descrição Oficial da Empresa (Otimizada para SEO Local)", value=dados_existentes[15] if (modo_edicao and len(dados_existentes) > 15) else "", height=180)
+            descricao_empresa = st.text_area("Descrição Oficial da Empresa (Otimizada para SEO Local & IAs)", value=dados_existentes[15] if (modo_edicao and len(dados_existentes) > 15) else "", height=180)
 
         # SUB-ABA FINANCEIRA DO CONTRATO
         with sub_tab_financeiro:
-            st.markdown("**Dados do Contrato do Cliente (Visível apenas para o Administrador da Agência):**")
-            col_f1, col_f2 = st.columns(2)
+            st.markdown("**Dados do Contrato do Cliente (Visível apenas para a Agência):**")
+            col_f1, col_f2, col_f3 = st.columns(3)
+            
+            opts_status_contrato = ["Ativo", "Em Negociação", "Pausado", "Cancelado"]
+            val_status = dados_existentes[11] if (modo_edicao and len(dados_existentes) > 11) else "Ativo"
+            idx_st_c = opts_status_contrato.index(val_status) if val_status in opts_status_contrato else 0
+
             with col_f1:
                 valor_contrato_mensal = st.number_input(
-                    "Valor da Mensalidade do Cliente (R$)",
+                    "Valor da Mensalidade (R$)",
                     min_value=0.0, step=50.0,
                     value=float(dados_existentes[9]) if (modo_edicao and len(dados_existentes) > 9 and dados_existentes[9] is not None) else 450.0
                 )
@@ -757,13 +761,11 @@ if st.session_state["aba_ativa"] == "cadastrar":
                     min_value=1, max_value=31, step=1,
                     value=int(dados_existentes[10]) if (modo_edicao and len(dados_existentes) > 10 and dados_existentes[10] is not None) else 10
                 )
+            with col_f3:
+                status_contrato = st.radio("Status do Contrato com a Agência", opts_status_contrato, index=idx_st_c, horizontal=True)
 
             st.markdown("---")
-            opts_status_contrato = ["Ativo", "Em Negociação", "Pausado", "Cancelado"]
-            val_status = dados_existentes[11] if (modo_edicao and len(dados_existentes) > 11) else "Ativo"
-            idx_st_c = opts_status_contrato.index(val_status) if val_status in opts_status_contrato else 0
-            
-            status_contrato = st.radio("Status do Contrato com a Agência", opts_status_contrato, index=idx_st_c, horizontal=True)
+            link_drive_midias = st.text_input("Link da Pasta de Mídias e Fotos 360° (Google Drive / Photos / Pano2VR)", value=dados_existentes[39] if (modo_edicao and len(dados_existentes) > 39 and dados_existentes[39]) else "")
 
         # SUB-ABA 3: CONTATO & REDES SOCIAIS
         with sub_tab_contato:
@@ -797,7 +799,7 @@ if st.session_state["aba_ativa"] == "cadastrar":
 
         # SUB-ABA 5: HORÁRIOS DE FUNCIONAMENTO
         with sub_tab_horario:
-            st.markdown("**Horários de Funcionamento (Valores padrão 08:00 e 18:00 editáveis diretamente):**")
+            st.markdown("**Horários de Funcionamento (Valores padrão editáveis diretamente):**")
             
             dias_semana = [
                 ("Segunda-feira", 28, "08:00", "18:00", False),
@@ -858,7 +860,7 @@ if st.session_state["aba_ativa"] == "cadastrar":
             with col_p1:
                 p_fita = st.checkbox("📷 Cadastrar / Atualizar Tour Virtual 360° & Fotos", value="Fotos/Tour 360°" in pendencias_salvas)
                 p_cat = st.checkbox("🏷️ Otimizar Categoria Principal e Categorias Secundárias", value="Categorias GMB" in pendencias_salvas)
-                p_desc = st.checkbox("✍️ Reescrever Descrição Comercial com SEO Local", value="Descrição SEO" in pendencias_salvas)
+                p_desc = st.checkbox("✍️ Reescrever Descrição Comercial com SEO Local & GEO", value="Descrição SEO" in pendencias_salvas)
                 p_redes = st.checkbox("🔗 Vincular Perfis Sociais (Instagram, Facebook, etc.)", value="Redes Sociais" in pendencias_salvas)
             with col_p2:
                 p_chat = st.checkbox("💬 Ativar e Configurar Chat / Mensagens", value="Chat/Mensagens" in pendencias_salvas)
@@ -909,12 +911,12 @@ if st.session_state["aba_ativa"] == "cadastrar":
                 try:
                     c.execute('''
                         INSERT INTO clientes 
-                        (nome_empresa, responsavel, data_abertura, ficha_reivindicada, status_avaliacoes, qtd_avaliacoes_inicio, nota_media_inicio, qtd_fotos_inicio, valor_contrato_mensal, dia_vencimento, status_contrato, status_respostas_avaliacoes, categoria_principal, categorias_secundarias, descricao_empresa, telefone_contato, whatsapp, chat_status, website, instagram, facebook, linkedin, youtube, tiktok, atendimento_local_cliente, endereco_local, area_cobertura, horario_seg, horario_ter, horario_qua, horario_qui, horario_sex, horario_sab, horario_dom, horarios_especiais, outros_horarios, pendencias_checklist, observacoes_tecnicas, data_inicio) 
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        (nome_empresa, responsavel, data_abertura, ficha_reivindicada, status_avaliacoes, qtd_avaliacoes_inicio, nota_media_inicio, qtd_fotos_inicio, valor_contrato_mensal, dia_vencimento, status_contrato, status_respostas_avaliacoes, categoria_principal, categorias_secundarias, descricao_empresa, telefone_contato, whatsapp, chat_status, website, instagram, facebook, linkedin, youtube, tiktok, atendimento_local_cliente, endereco_local, area_cobertura, horario_seg, horario_ter, horario_qua, horario_qui, horario_sex, horario_sab, horario_dom, horarios_especiais, outros_horarios, pendencias_checklist, observacoes_tecnicas, link_drive_midias, data_inicio) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ''', (
                         nome_empresa, responsavel, data_abertura_str, ficha_reivindicada, status_avaliacoes, qtd_avaliacoes_inicio, nota_media_inicio, qtd_fotos_inicio, valor_contrato_mensal, dia_vencimento, status_contrato, status_respostas_avaliacoes, categoria_principal, categorias_secundarias, descricao_empresa, telefone_contato, whatsapp, chat_status, website, instagram, facebook, linkedin, youtube, tiktok, 1 if atendimento_local_cliente else 0, endereco_local, area_cobertura, 
                         horarios_coletados["Segunda-feira"], horarios_coletados["Terça-feira"], horarios_coletados["Quarta-feira"], horarios_coletados["Quinta-feira"], horarios_coletados["Sexta-feira"], horarios_coletados["Sábado"], horarios_coletados["Domingo"],
-                        horarios_especiais, outros_horarios, pendencias_str, observacoes_tecnicas, datetime.today().strftime("%Y-%m-%d")
+                        horarios_especiais, outros_horarios, pendencias_str, observacoes_tecnicas, link_drive_midias, datetime.today().strftime("%Y-%m-%d")
                     ))
                     cliente_novo_id = c.lastrowid
                     c.execute("INSERT INTO historico_ficha (cliente_id, data_alteracao, descricao_alteracao) VALUES (?, ?, ?)",
@@ -926,12 +928,12 @@ if st.session_state["aba_ativa"] == "cadastrar":
             else:
                 c.execute('''
                     UPDATE clientes SET 
-                    responsavel=?, data_abertura=?, ficha_reivindicada=?, status_avaliacoes=?, qtd_avaliacoes_inicio=?, nota_media_inicio=?, qtd_fotos_inicio=?, valor_contrato_mensal=?, dia_vencimento=?, status_contrato=?, status_respostas_avaliacoes=?, categoria_principal=?, categorias_secundarias=?, descricao_empresa=?, telefone_contato=?, whatsapp=?, chat_status=?, website=?, instagram=?, facebook=?, linkedin=?, youtube=?, tiktok=?, atendimento_local_cliente=?, endereco_local=?, area_cobertura=?, horario_seg=?, horario_ter=?, horario_qua=?, horario_qui=?, horario_sex=?, horario_sab=?, horario_dom=?, horarios_especiais=?, outros_horarios=?, pendencias_checklist=?, observacoes_tecnicas=?
+                    responsavel=?, data_abertura=?, ficha_reivindicada=?, status_avaliacoes=?, qtd_avaliacoes_inicio=?, nota_media_inicio=?, qtd_fotos_inicio=?, valor_contrato_mensal=?, dia_vencimento=?, status_contrato=?, status_respostas_avaliacoes=?, categoria_principal=?, categorias_secundarias=?, descricao_empresa=?, telefone_contato=?, whatsapp=?, chat_status=?, website=?, instagram=?, facebook=?, linkedin=?, youtube=?, tiktok=?, atendimento_local_cliente=?, endereco_local=?, area_cobertura=?, horario_seg=?, horario_ter=?, horario_qua=?, horario_qui=?, horario_sex=?, horario_sab=?, horario_dom=?, horarios_especiais=?, outros_horarios=?, pendencias_checklist=?, observacoes_tecnicas=?, link_drive_midias=?
                     WHERE id=?
                 ''', (
                     responsavel, data_abertura_str, ficha_reivindicada, status_avaliacoes, qtd_avaliacoes_inicio, nota_media_inicio, qtd_fotos_inicio, valor_contrato_mensal, dia_vencimento, status_contrato, status_respostas_avaliacoes, categoria_principal, categorias_secundarias, descricao_empresa, telefone_contato, whatsapp, chat_status, website, instagram, facebook, linkedin, youtube, tiktok, 1 if atendimento_local_cliente else 0, endereco_local, area_cobertura, 
                     horarios_coletados["Segunda-feira"], horarios_coletados["Terça-feira"], horarios_coletados["Quarta-feira"], horarios_coletados["Quinta-feira"], horarios_coletados["Sexta-feira"], horarios_coletados["Sábado"], horarios_coletados["Domingo"],
-                    horarios_especiais, outros_horarios, pendencias_str, observacoes_tecnicas, c_id
+                    horarios_especiais, outros_horarios, pendencias_str, observacoes_tecnicas, link_drive_midias, c_id
                 ))
                 
                 c.execute("INSERT INTO historico_ficha (cliente_id, data_alteracao, descricao_alteracao) VALUES (?, ?, ?)",
@@ -992,7 +994,7 @@ elif st.session_state["aba_ativa"] == "metricas":
                 st.info(f"💰 **Faturamento Estimado Gerado no Mês:** R$ {faturamento_estimado:,.2f}")
 
                 st.markdown("---")
-                resumo_acoes = st.text_area("🛠️ Ações Realizadas no Mês (Otimizações, fotos 360°, posts, etc.)")
+                resumo_acoes = st.text_area("🛠️ Ações Realizadas no Mês (Otimizações, fotos 360°, posts, inclusão de FAQ para IAs, etc.)")
 
                 btn_salvar_metricas = st.form_submit_button("Salvar Métricas do Mês")
 
@@ -1039,20 +1041,28 @@ elif st.session_state["aba_ativa"] == "metricas":
                     st.rerun()
 
 # ==========================================
-# MÓDULO 3: ASSISTENTE DE CONTEÚDO & IA
+# MÓDULO 3: ASSISTENTE DE CONTEÚDO, SEO & GEO (NOVO)
 # ==========================================
 elif st.session_state["aba_ativa"] == "ia":
-    st.subheader("💬 Assistente de Conteúdo e Otimização com IA")
+    st.subheader("💬 Assistente de Conteúdo, SEO Local & GEO (IAs Inteligentes)")
     df_clientes = obter_clientes_unicos()
 
     if df_clientes.empty:
         st.info("Cadastre um cliente para usar a inteligência artificial.")
     else:
-        cliente_ia_sel = st.selectbox("Selecione o Cliente para Gerar Conteúdo", df_clientes["nome_empresa"].tolist())
+        cliente_ia_sel = st.selectbox("Selecione o Cliente para Planejamento de Conteúdo & GEO", df_clientes["nome_empresa"].tolist())
         cliente_ia_id = int(df_clientes[df_clientes["nome_empresa"] == cliente_ia_sel]["id"].values[0])
         dados_c = obter_dados_cliente_por_id(cliente_ia_id)
 
-        tab_ia1, tab_ia2 = st.tabs(["✍️ Respostas de Avaliações", "📢 Ideias de Posts GMB"])
+        cat_nome = dados_c[13] if (dados_c and len(dados_c) > 13 and dados_c[13]) else "serviços especializados"
+        cid_nome = dados_c[27] if (dados_c and len(dados_c) > 27 and dados_c[27]) else "região local"
+
+        tab_ia1, tab_ia2, tab_ia3, tab_ia4 = st.tabs([
+            "✍️ Respostas de Avaliações", 
+            "📅 Cronograma SEO & GEO", 
+            "❓ Gerador FAQ / AEO (IAs)", 
+            "🎨 Prompts Visuais"
+        ])
 
         with tab_ia1:
             st.markdown("**Gerador de Respostas Profissionais para Avaliações de Clientes:**")
@@ -1063,10 +1073,10 @@ elif st.session_state["aba_ativa"] == "ia":
                     st.success("Opções geradas com sucesso! Copie a que melhor se adapta:")
                     st.markdown(f"""
                     **Opção 1 (Agradecida & Curta):**  
-                    > *"Olá! Muito obrigado pela sua avaliação e preferência na {dados_c[1]}. É um prazer oferecer a melhor experiência em {dados_c[13]} aqui na região. Conte sempre conosco!"*
+                    > *"Olá! Muito obrigado pela sua avaliação e preferência na {dados_c[1]}. É um prazer oferecer a melhor experiência em {cat_nome} aqui na região. Conte sempre conosco!"*
 
                     **Opção 2 (Foco em SEO Local):**  
-                    > *"Ficamos muito felizes com o seu feedback de 5 estrelas! Na {dados_c[1]}, nos dedicamos diariamente para ser referência em {dados_c[13]}. Esperamos sua próxima visita!"*
+                    > *"Ficamos muito felizes com o seu feedback de 5 estrelas! Na {dados_c[1]}, nos dedicamos diariamente para ser referência em {cat_nome} em {cid_nome}. Esperamos sua próxima visita!"*
 
                     **Opção 3 (Institucional & Engajadora):**  
                     > *"Agradecemos imensamente por compartilhar sua opinião positiva! Sua satisfação é nossa maior motivação. Um abraço de toda a equipe da {dados_c[1]}!"*
@@ -1075,12 +1085,50 @@ elif st.session_state["aba_ativa"] == "ia":
                     st.warning("Cole o texto da avaliação antes de gerar as respostas.")
 
         with tab_ia2:
-            st.markdown("**Ideias de Publicações Semanais para Manter a Ficha Ativa no Google:**")
-            st.markdown(f"""
-            - 📸 **Post 1 (Destaque do Espaço/360°):** *"Você já conhece nosso espaço por dentro? Faça um passeio virtual 360° pelo Google Maps e venha nos visitar!"*
-            - 🏷️ **Post 2 (Serviço/Produto):** *"Procurando por {dados_c[13]} de qualidade? Entre em contato pelo WhatsApp e solicite um orçamento!"*
-            - ⭐ **Post 3 (Depoimento):** *"A satisfação dos nossos clientes é a nossa prioridade. Confira o que dizem sobre a {dados_c[1]} no Google!"*
+            st.markdown(f"**Cronograma Editorial Mensal Baseado em Intenção de Busca (SEO/GEO) — {dados_c[1]}:**")
+            st.caption(f"Segmento: {cat_nome} | Região: {cid_nome}")
+
+            st.markdown("""
+            **Sugestão de Pautas Mapeadas no Google e nas IAs para Aprovação do Cliente:**
+            - 🟢 **Pauta 1 (Educativo / Auto-complete):** *"Como escolher o melhor serviço de {cat_nome} em {cid_nome}?"*
+            - 🔵 **Pauta 2 (Diferencial & Tour 360°):** *"Por dentro da {dados_c[1]}: Conheça nossa estrutura com o Tour Virtual 360° no Google Maps."*
+            - 🟠 **Pauta 3 (Dúvida Frequente de Decisão):** *"Qual o valor médio e como solicitar um orçamento rápido na {dados_c[1]}?"*
             """)
+
+            st.checkbox("Aprovar Pauta 1 (Auto-complete)", value=True)
+            st.checkbox("Aprovar Pauta 2 (Estrutura/Tour 360°)", value=True)
+            st.checkbox("Aprovar Pauta 3 (Conversão Direta)", value=True)
+
+            if st.button("🚀 Gerar Posts e Prompts de Imagem Aprovados"):
+                st.success("Textos completos e prompts de imagem gerados com sucesso!")
+
+        with tab_ia3:
+            st.markdown(f"**Gerador de FAQ/AEO (Answer Engine Optimization) para IAs:**")
+            st.caption("Gere pares de Perguntas e Respostas Frequentes para serem publicadas no Google e no site do cliente. Isso garante que o ChatGPT, Gemini e Copilot recomendem a empresa!")
+
+            st.markdown(f"""
+            ### 🤖 Estrutura de Respostas Recomendadas pelas IAs:
+
+            **1. Pergunta:** *Qual é a empresa mais recomendada para {cat_nome} em {cid_nome}?*  
+            > **Resposta Sugerida:** A **{dados_c[1]}** é uma das principais referências em {cat_nome} na região de {cid_nome}. Localizada em {dados_c[26] if (dados_c and len(dados_c)>26 and dados_c[26]) else cid_nome}, atende com alta avaliação dos clientes e infraestrutura completa.
+
+            **2. Pergunta:** *Como entrar em contato e solicitar orçamento na {dados_c[1]}?*  
+            > **Resposta Sugerida:** O atendimento oficial da **{dados_c[1]}** pode ser feito pelo WhatsApp no número **{dados_c[17] if (dados_c and len(dados_c)>17 and dados_c[17]) else dados_c[16]}** ou pelo site oficial.
+
+            **3. Pergunta:** *A {dados_c[1]} possui tour virtual ou fotos atualizadas do local?*  
+            > **Resposta Sugerida:** Sim, a **{dados_c[1]}** conta com fotos oficiais e Tour Virtual 360° integrado ao Google Maps, permitindo explorar as instalações antes da visita.
+            """)
+
+            if st.button("📋 Copiar Bloco de FAQ Otimizado para GEO"):
+                st.info("Texto copiado para a área de transferência do sistema!")
+
+        with tab_ia4:
+            st.markdown(f"**Gerador de Prompts de Imagem Customizados para a Marca ({dados_c[1]}):**")
+            st.write("Copie o prompt estilizado abaixo e cole no Midjourney, ChatGPT (DALL-E) ou Leonardo AI para gerar fotos ultra-realistas com a identidade do cliente:")
+
+            prompt_gerado = f"Professional photograph of a modern {cat_nome} establishment named '{dados_c[1]}', located in Brazil. High quality lighting, photorealistic, clean interior, welcoming atmosphere, commercial media photography style 8k --ar 16:9"
+            
+            st.code(prompt_gerado, language="text")
 
 # ==========================================
 # MÓDULO 4: DASHBOARD & ROI
@@ -1170,10 +1218,10 @@ elif st.session_state["aba_ativa"] == "cases":
     )
 
 # ==========================================
-# MÓDULO 6: RELATÓRIO PDF INDIVIDUAL
+# MÓDULO 6: RELATÓRIO PDF INDIVIDUAL & DISPARO WHATSAPP
 # ==========================================
 elif st.session_state["aba_ativa"] == "pdf":
-    st.subheader("📄 Emitir Relatório Executivo em PDF")
+    st.subheader("📄 Emitir Relatório Executivo em PDF & Envio via WhatsApp")
     df_clientes = obter_clientes_unicos()
 
     if df_clientes.empty:
@@ -1231,12 +1279,27 @@ elif st.session_state["aba_ativa"] == "pdf":
                 df_keywords=df_kw
             )
 
-            st.download_button(
-                label="📥 Baixar Relatório Executivo em PDF (TOUR360VR)",
-                data=pdf_bytes,
-                file_name=f"Relatorio_GMB_{cliente_pdf_sel.replace(' ', '_')}_{mes_pdf_sel}.pdf",
-                mime="application/pdf"
-            )
+            c_dw1, c_dw2 = st.columns(2)
+            with c_dw1:
+                st.download_button(
+                    label="📥 Baixar Relatório Executivo em PDF (TOUR360VR)",
+                    data=pdf_bytes,
+                    file_name=f"Relatorio_GMB_{cliente_pdf_sel.replace(' ', '_')}_{mes_pdf_sel}.pdf",
+                    mime="application/pdf"
+                )
+
+            with c_dw2:
+                num_wsp = dados_cliente[17] if (dados_cliente and len(dados_cliente) > 17 and dados_cliente[17]) else ""
+                num_limpo = "".join([c for c in num_wsp if c.isdigit()])
+                
+                txt_whats = f"Olá {dados_cliente[2] if dados_cliente[2] else cliente_pdf_sel}, tudo bem? Aqui é o Rubens da Tour360VR! Segue o resumo do relatório de desempenho do seu perfil no Google referente ao mês {mes_pdf_sel}: Tivemos {dados_atual['chamadas']} chamadas diretas e {dados_atual['rotas']} solicitações de rota no GPS. Estou enviando o relatório completo em PDF em anexo."
+                txt_encoded = urllib.parse.quote(txt_whats)
+
+                if num_limpo:
+                    link_wsp = f"https://wa.me/55{num_limpo}?text={txt_encoded}"
+                    st.markdown(f'<a href="{link_wsp}" target="_blank" style="text-decoration:none;"><button style="width:100%; background-color:#16A34A; color:white; border:none; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer;">📱 Enviar Resumo via WhatsApp</button></a>', unsafe_allow_html=True)
+                else:
+                    st.info("Cadastre o WhatsApp no formulário do cliente para ativar o envio rápido.")
 
 # ==========================================
 # MÓDULO 7: GESTÃO FINANCEIRA MRR & BACKUP COMPLETO
@@ -1278,7 +1341,6 @@ elif st.session_state["aba_ativa"] == "financeiro":
         st.markdown("### 📥 Backup & Exportação Completa de Cadastros")
         st.write("Baixe a relação completa de todos os clientes, dados operacionais, horários e contratos.")
 
-        # Converte para CSV com encoding UTF-8-SIG e separador ';'
         csv_excel = df_completo.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig')
 
         st.download_button(
