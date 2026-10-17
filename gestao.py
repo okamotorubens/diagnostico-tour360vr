@@ -86,13 +86,11 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, chamadas, rotas, cliques, visuali
         fontName='Helvetica', fontSize=9, leading=13, textColor=colors.HexColor('#334155')
     )
 
-    # Cabeçalho do Relatório
     story.append(Paragraph("<b>TOUR360VR — GESTÃO MENSAL GMB</b>", title_style))
     story.append(Paragraph(f"Relatório Executivo de Performance | <b>{nome_empresa}</b> — Mês: <b>{mes_ano}</b>", subtitle_style))
     story.append(Spacer(1, 10))
     story.append(HRFlowable(width="100%", thickness=1.5, color=colors.HexColor('#00E5FF'), spaceAfter=15))
 
-    # Tabela de Métricas
     data_table = [
         [Paragraph("<b>Indicador de Desempenho</b>", section_style), Paragraph("<b>Resultado do Mês</b>", section_style)],
         [Paragraph("📞 Chamadas Telefónicas Diretas", body_style), Paragraph(f"<b>{chamadas}</b>", body_style)],
@@ -113,14 +111,12 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, chamadas, rotas, cliques, visuali
     story.append(t)
     story.append(Spacer(1, 15))
 
-    # Ações Realizadas
     story.append(Paragraph("<b>Ações e Otimizações Executadas no Período:</b>", section_style))
     story.append(Spacer(1, 6))
     acoes_texto = acoes if acoes else "Otimizações de rotina e monitorização contínua do perfil."
     story.append(Paragraph(acoes_texto.replace('\n', '<br/>'), body_style))
     story.append(Spacer(1, 20))
 
-    # Rodapé
     story.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor('#94A3B8'), spaceAfter=10))
     story.append(Paragraph("<b>Okamoto Mídias Visuais & Tour360vr</b> — Gestão e Estratégia de Presença Local", subtitle_style))
 
@@ -128,28 +124,130 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, chamadas, rotas, cliques, visuali
     buffer.seek(0)
     return buffer
 
-# --- ESTILIZAÇÃO CSS ---
+# --- ESTILIZAÇÃO CSS (Dark + Borda Branca + Neon) ---
 st.markdown("""
     <style>
-    .stApp { background-color: #0B0E14; color: #E0E6ED; }
-    .main-title { color: #FFFFFF; font-weight: 800; font-size: 1.8rem; text-shadow: 0 0 10px rgba(0, 229, 255, 0.5); }
+    /* Margens e Fundo Global */
+    .block-container {
+        padding-top: 1.2rem !important;
+        padding-bottom: 1.5rem !important;
+        max-width: 98% !important;
+    }
+    
+    header[data-testid="stHeader"] {
+        display: none !important;
+    }
+
+    .stApp {
+        background-color: #0B0E14;
+        color: #E0E6ED;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    .main-title {
+        color: #FFFFFF;
+        font-weight: 800;
+        font-size: 1.85rem;
+        text-shadow: 0 0 12px rgba(0, 229, 255, 0.6);
+        margin-bottom: 1.2rem;
+    }
+
+    /* ESTILIZAÇÃO DOS BOTÕES DE NAVEGAÇÃO (Cards com Borda Branca e Neon) */
+    div[data-testid="stColumn"] > div > div > button {
+        width: 100% !important;
+        background-color: #121824 !important;
+        border: 1.5px solid #FFFFFF !important;
+        color: #FFFFFF !important;
+        border-radius: 8px !important;
+        padding: 12px 10px !important;
+        font-weight: 700 !important;
+        font-size: 0.92rem !important;
+        transition: all 0.3s ease-in-out !important;
+        box-shadow: 0 0 6px rgba(255, 255, 255, 0.12) !important;
+        margin-bottom: 10px !important;
+    }
+
+    div[data-testid="stColumn"] > div > div > button:hover {
+        border-color: #00E5FF !important;
+        color: #00E5FF !important;
+        box-shadow: 0 0 16px #00E5FF, 0 0 24px rgba(0, 229, 255, 0.4) !important;
+        background-color: #161F30 !important;
+        transform: translateY(-2px) !important;
+    }
+
+    /* Botão Selecionado / Ativo */
+    div[data-testid="stColumn"] > div > div > button[kind="primary"] {
+        background-color: #161F30 !important;
+        border-color: #00E5FF !important;
+        color: #00E5FF !important;
+        box-shadow: 0 0 14px #00E5FF !important;
+    }
     </style>
 """, unsafe_allow_html=True)
 
+# --- CABEÇALHO ---
 st.markdown("<h1 class='main-title'>📈 Gestão Mensal & Performance ROI GMB</h1>", unsafe_allow_html=True)
 
-# --- ABAS DA APLICAÇÃO ---
-aba1, aba2, aba3, aba4 = st.tabs(["📋 Inserir Métricas", "📊 Dashboard & ROI", "📄 Relatório PDF", "⚙️ Cadastrar Clientes"])
+# --- CONTROLADOR DE NAVEGAÇÃO VIA ESTADO ---
+if "aba_ativa" not in st.session_state:
+    st.session_state["aba_ativa"] = "cadastrar"
+
+col_n1, col_n2, col_n3, col_n4 = st.columns(4)
+
+with col_n1:
+    if st.button("⚙️ Cadastrar Clientes", key="btn_cad", type="primary" if st.session_state["aba_ativa"] == "cadastrar" else "secondary"):
+        st.session_state["aba_ativa"] = "cadastrar"
+        st.rerun()
+
+with col_n2:
+    if st.button("📋 Inserir Métricas", key="btn_inc", type="primary" if st.session_state["aba_ativa"] == "metricas" else "secondary"):
+        st.session_state["aba_ativa"] = "metricas"
+        st.rerun()
+
+with col_n3:
+    if st.button("📊 Dashboard & ROI", key="btn_dash", type="primary" if st.session_state["aba_ativa"] == "dashboard" else "secondary"):
+        st.session_state["aba_ativa"] = "dashboard"
+        st.rerun()
+
+with col_n4:
+    if st.button("📄 Relatório PDF", key="btn_pdf", type="primary" if st.session_state["aba_ativa"] == "pdf" else "secondary"):
+        st.session_state["aba_ativa"] = "pdf"
+        st.rerun()
+
+st.markdown("<hr style='margin: 10px 0 20px 0; border-color: #1E2640;'>", unsafe_allow_html=True)
 
 # ==========================================
-# ABA 1: INSERIR MÉTRICAS
+# MÓDULO 1: CADASTRAR CLIENTES
 # ==========================================
-with aba1:
-    st.subheader("Registo de Performance Mensal")
+if st.session_state["aba_ativa"] == "cadastrar":
+    st.subheader("⚙️ Registo de Novo Cliente de Gestão")
+    with st.form("form_cliente"):
+        nome_empresa = st.text_input("Nome da Empresa / Ficha GMB")
+        responsavel = st.text_input("Nome do Responsável")
+        whatsapp = st.text_input("WhatsApp de Contacto")
+        btn_cadastrar = st.form_submit_button("Cadastrar Cliente")
+
+        if btn_cadastrar and nome_empresa:
+            conn = sqlite3.connect(DB_NAME)
+            c = conn.cursor()
+            c.execute(
+                "INSERT INTO clientes (nome_empresa, responsavel, whatsapp, data_inicio) VALUES (?, ?, ?, ?)",
+                (nome_empresa, responsavel, whatsapp, datetime.today().strftime("%Y-%m-%d"))
+            )
+            conn.commit()
+            conn.close()
+            st.success(f"Cliente '{nome_empresa}' cadastrado com sucesso!")
+            st.rerun()
+
+# ==========================================
+# MÓDULO 2: INSERIR MÉTRICAS
+# ==========================================
+elif st.session_state["aba_ativa"] == "metricas":
+    st.subheader("📋 Registo de Performance Mensal")
     df_clientes = obter_clientes()
     
     if df_clientes.empty:
-        st.warning("Nenhum cliente cadastrado. Registe um cliente na aba 'Cadastrar Clientes' primeiro.")
+        st.warning("Nenhum cliente cadastrado. Registe um cliente primeiro no botão '⚙️ Cadastrar Clientes'.")
     else:
         with st.form("form_metricas"):
             col_c1, col_c2 = st.columns(2)
@@ -188,13 +286,15 @@ with aba1:
                 st.success(f"Métricas do mês {mes_referencia} salvas com sucesso para {cliente_sel}!")
 
 # ==========================================
-# ABA 2: DASHBOARD & ROI
+# MÓDULO 3: DASHBOARD & ROI
 # ==========================================
-with aba2:
-    st.subheader("Análise de Desempenho e ROI")
+elif st.session_state["aba_ativa"] == "dashboard":
+    st.subheader("📊 Análise de Desempenho e ROI")
     df_clientes = obter_clientes()
     
-    if not df_clientes.empty:
+    if df_clientes.empty:
+        st.info("Nenhum cliente cadastrado ainda.")
+    else:
         cliente_dash = st.selectbox("Selecione o Cliente para Visualizar", df_clientes["nome_empresa"].tolist(), key="dash_cliente")
         cliente_id_dash = int(df_clientes[df_clientes["nome_empresa"] == cliente_dash]["id"].values[0])
         
@@ -219,10 +319,10 @@ with aba2:
             st.line_chart(df_metricas.set_index("mes_ano")[["chamadas", "rotas", "cliques_site"]])
 
 # ==========================================
-# ABA 3: RELATÓRIO PDF
+# MÓDULO 4: RELATÓRIO PDF
 # ==========================================
-with aba3:
-    st.subheader("Emitir Relatório em PDF")
+elif st.session_state["aba_ativa"] == "pdf":
+    st.subheader("📄 Emitir Relatório Executivo em PDF")
     df_clientes = obter_clientes()
 
     if df_clientes.empty:
@@ -268,26 +368,3 @@ with aba3:
                 file_name=f"Relatorio_GMB_{cliente_pdf_sel.replace(' ', '_')}_{mes_pdf_sel}.pdf",
                 mime="application/pdf"
             )
-
-# ==========================================
-# ABA 4: CADASTRAR CLIENTES
-# ==========================================
-with aba4:
-    st.subheader("Registo de Novo Cliente de Gestão")
-    with st.form("form_cliente"):
-        nome_empresa = st.text_input("Nome da Empresa / Ficha GMB")
-        responsavel = st.text_input("Nome do Responsável")
-        whatsapp = st.text_input("WhatsApp de Contacto")
-        btn_cadastrar = st.form_submit_button("Cadastrar Cliente")
-
-        if btn_cadastrar and nome_empresa:
-            conn = sqlite3.connect(DB_NAME)
-            c = conn.cursor()
-            c.execute(
-                "INSERT INTO clientes (nome_empresa, responsavel, whatsapp, data_inicio) VALUES (?, ?, ?, ?)",
-                (nome_empresa, responsavel, whatsapp, datetime.today().strftime("%Y-%m-%d"))
-            )
-            conn.commit()
-            conn.close()
-            st.success(f"Cliente '{nome_empresa}' cadastrado com sucesso!")
-            st.rerun()
