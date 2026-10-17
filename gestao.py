@@ -181,7 +181,7 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, chamadas, rotas, cliques, visuali
     buffer.seek(0)
     return buffer
 
-# --- CSS PERSONALIZADO ---
+# --- CSS PERSONALIZADO (PADRÃO UNIFICADO HUB CENTRAL) ---
 st.markdown("""
     <style>
     .block-container {
@@ -208,33 +208,37 @@ st.markdown("""
         margin-bottom: 1.2rem;
     }
 
-    /* BOTÕES DA BARRA DE NAVEGAÇÃO - PADRÃO DO HUB */
-    div[data-testid="stColumn"] > div > div > button {
+    /* ESTILIZAÇÃO COMPLETA DOS BOTÕES DE NAVEGAÇÃO DO HUB */
+    div[data-testid="stColumn"] button {
         width: 100% !important;
-        background: #121824 !important;
+        background-color: #121824 !important;
         border: 1.5px solid #FFFFFF !important;
         color: #FFFFFF !important;
-        border-radius: 10px !important;
-        padding: 12px 10px !important;
+        border-radius: 8px !important;
+        padding: 10px 6px !important;
         font-weight: 700 !important;
-        font-size: 0.95rem !important;
-        box-shadow: 0 0 8px rgba(255, 255, 255, 0.12) !important;
+        font-size: 0.90rem !important;
         transition: all 0.3s ease-in-out !important;
+        box-shadow: 0 0 5px rgba(255, 255, 255, 0.15) !important;
     }
 
-    div[data-testid="stColumn"] > div > div > button:hover {
+    /* ESTADO HOVER (AO PASSAR O MOUSE) */
+    div[data-testid="stColumn"] button:hover {
         border-color: #00E5FF !important;
         color: #00E5FF !important;
-        box-shadow: 0 0 18px #00E5FF, 0 0 28px rgba(0, 229, 255, 0.4) !important;
-        background: #161F30 !important;
-        transform: translateY(-3px) !important;
+        box-shadow: 0 0 16px #00E5FF, 0 0 24px rgba(0, 229, 255, 0.4) !important;
+        background-color: #161F30 !important;
+        transform: translateY(-2px) !important;
     }
 
-    div[data-testid="stColumn"] > div > div > button[kind="primary"] {
-        background: #161F30 !important;
+    /* BOTÃO ATIVO / SELECIONADO */
+    div[data-testid="stColumn"] button[kind="primary"],
+    div[data-testid="stColumn"] button:active,
+    div[data-testid="stColumn"] button:focus {
+        background-color: #161F30 !important;
         border-color: #00E5FF !important;
         color: #00E5FF !important;
-        box-shadow: 0 0 18px #00E5FF !important;
+        box-shadow: 0 0 16px #00E5FF !important;
     }
     </style>
 """, unsafe_allow_html=True)
