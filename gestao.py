@@ -18,7 +18,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- BANCO DE DADOS (SQLite com Histórico de Versões) ---
+# --- BANCO DE DADOS (SQLite com Métricas Iniciais de Avaliações) ---
 DB_NAME = "gestao_gmb.db"
 
 def init_db():
@@ -34,6 +34,8 @@ def init_db():
             data_abertura TEXT,
             ficha_reivindicada TEXT,
             status_avaliacoes TEXT,
+            qtd_avaliacoes_inicio INTEGER DEFAULT 0,
+            nota_media_inicio REAL DEFAULT 0.0,
             status_respostas_avaliacoes TEXT,
             categoria_principal TEXT,
             categorias_secundarias TEXT,
@@ -65,7 +67,7 @@ def init_db():
         )
     ''')
 
-    # Tabela de Histórico / Auditoria da Ficha (Versões Anterior x Atual)
+    # Tabela de Histórico / Auditoria da Ficha
     c.execute('''
         CREATE TABLE IF NOT EXISTS historico_ficha (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -179,7 +181,7 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, chamadas, rotas, cliques, visuali
     buffer.seek(0)
     return buffer
 
-# --- CSS PERSONALIZADO (Padrão Neon Branco Unificado) ---
+# --- CSS PERSONALIZADO ---
 st.markdown("""
     <style>
     .block-container {
@@ -202,7 +204,7 @@ st.markdown("""
         color: #FFFFFF;
         font-weight: 800;
         font-size: 1.85rem;
-        text-shadow: 0 0 12px rgba(255, 255, 255, 0.6);
+        text-shadow: 0 0 12px rgba(0, 229, 255, 0.6);
         margin-bottom: 1.2rem;
     }
 
@@ -293,9 +295,9 @@ if st.session_state["aba_ativa"] == "cadastrar":
             "🏢 Sobre & Status Ficha", "📞 Contato & Redes", "📍 Local & Áreas", "⏰ Horários Rápidos", "🛠️ Checklist de Pendências", "📜 Histórico de Alterações"
         ])
         
-        # SUB-ABA 1: SOBRE & AUDITORIA DA FICHA (SELEÇÕES LIMPAS RESTAURADAS)
+        # SUB-ABA 1: SOBRE & AUDITORIA DA FICHA
         with sub_tab_sobre:
-            st.markdown("**Identificação Comercial & Auditoria de Propriedade:**")
+            st.markdown("**Identificação Comercial & Auditoria Inicial:**")
             c_s1, c_s2 = st.columns(2)
             
             opts_reivindicada = ["Reivindicada & Verificada", "Não Reivindicada / Perfil Aberto", "Em Processo de Verificação"]
@@ -309,60 +311,78 @@ if st.session_state["aba_ativa"] == "cadastrar":
                 
                 idx_reiv = opts_reivindicada.index(dados_existentes[4]) if (modo_edicao and dados_existentes[4] in opts_reivindicada) else 0
                 ficha_reivindicada = st.selectbox("Status de Reivindicação da Ficha", opts_reivindicada, index=idx_reiv)
-            
+                
+                idx_resp = opts_respostas.index(dados_existentes[8]) if (modo_edicao and len(dados_existentes) > 8 and dados_existentes[8] in opts_respostas) else 0
+                status_respostas_avaliacoes = st.selectbox("Status de Resposta às Avaliações", opts_respostas, index=idx_resp)
+
             with c_s2:
-                categoria_principal = st.text_input("Categoria Principal no GMB (ex: Serviço de fotografia)", value=dados_existentes[7] if modo_edicao else "")
-                categorias_secundarias = st.text_input("Categorias Secundárias (separadas por vírgula)", value=dados_existentes[8] if modo_edicao else "")
+                categoria_principal = st.text_input("Categoria Principal no GMB (ex: Serviço de fotografia)", value=dados_existentes[9] if (modo_edicao and len(dados_existentes) > 9) else "")
+                categorias_secundarias = st.text_input("Categorias Secundárias (separadas por vírgula)", value=dados_existentes[10] if (modo_edicao and len(dados_existentes) > 10) else "")
                 
                 idx_aval = opts_avaliacoes.index(dados_existentes[5]) if (modo_edicao and dados_existentes[5] in opts_avaliacoes) else 0
                 status_avaliacoes = st.selectbox("Possui Avaliações de Clientes?", opts_avaliacoes, index=idx_aval)
-                
-                idx_resp = opts_respostas.index(dados_existentes[6]) if (modo_edicao and dados_existentes[6] in opts_respostas) else 0
-                status_respostas_avaliacoes = st.selectbox("Status de Resposta às Avaliações", opts_respostas, index=idx_resp)
+
+                # CAMPOS DE PONTO DE PARTIDA DAS AVALIAÇÕES (ROI ANCORAGEM)
+                st.markdown("**Métricas das Avaliações no Início da Gestão:**")
+                col_av1, col_av2 = st.columns(2)
+                with col_av1:
+                    qtd_avaliacoes_inicio = st.number_input(
+                        "Quantidade Inicial de Avaliações",
+                        min_value=0, step=1,
+                        value=int(dados_existentes[6]) if (modo_edicao and len(dados_existentes) > 6 and dados_existentes[6] is not None) else 0
+                    )
+                with col_av2:
+                    nota_media_inicio = st.number_input(
+                        "Nota Média Inicial (0.0 a 5.0)",
+                        min_value=0.0, max_value=5.0, step=0.1,
+                        value=float(dados_existentes[7]) if (modo_edicao and len(dados_existentes) > 7 and dados_existentes[7] is not None) else 5.0
+                    )
             
             st.markdown("---")
-            descricao_empresa = st.text_area("Descrição Oficial da Empresa (Otimizada para SEO Local)", value=dados_existentes[9] if modo_edicao else "", height=200)
+            descricao_empresa = st.text_area("Descrição Oficial da Empresa (Otimizada para SEO Local)", value=dados_existentes[11] if (modo_edicao and len(dados_existentes) > 11) else "", height=200)
 
         # SUB-ABA 2: CONTATO & REDES SOCIAIS
         with sub_tab_contato:
             opts_chat = ["Ativado", "Desativado", "Não Configurado"]
             c_c1, c_c2 = st.columns(2)
             with c_c1:
-                telefone_contato = st.text_input("Número de Telefone Comercial", value=dados_existentes[10] if modo_edicao else "")
-                whatsapp = st.text_input("WhatsApp para Atendimento", value=dados_existentes[11] if modo_edicao else "")
-                website = st.text_input("Website / Link Principal", value=dados_existentes[13] if modo_edicao else "")
+                telefone_contato = st.text_input("Número de Telefone Comercial", value=dados_existentes[12] if (modo_edicao and len(dados_existentes) > 12) else "")
+                whatsapp = st.text_input("WhatsApp para Atendimento", value=dados_existentes[13] if (modo_edicao and len(dados_existentes) > 13) else "")
+                website = st.text_input("Website / Link Principal", value=dados_existentes[15] if (modo_edicao and len(dados_existentes) > 15) else "")
                 
-                idx_chat = opts_chat.index(dados_existentes[12]) if (modo_edicao and dados_existentes[12] in opts_chat) else 0
+                chat_val = dados_existentes[14] if (modo_edicao and len(dados_existentes) > 14) else "Ativado"
+                idx_chat = opts_chat.index(chat_val) if chat_val in opts_chat else 0
                 chat_status = st.selectbox("Mensagens / Chat no Perfil", opts_chat, index=idx_chat)
             with c_c2:
-                instagram = st.text_input("Link do Instagram", value=dados_existentes[14] if modo_edicao else "")
-                facebook = st.text_input("Link do Facebook", value=dados_existentes[15] if modo_edicao else "")
-                linkedin = st.text_input("Link do LinkedIn", value=dados_existentes[16] if modo_edicao else "")
-                youtube = st.text_input("Link do YouTube", value=dados_existentes[17] if modo_edicao else "")
-                tiktok = st.text_input("Link do TikTok", value=dados_existentes[18] if modo_edicao else "")
+                instagram = st.text_input("Link do Instagram", value=dados_existentes[16] if (modo_edicao and len(dados_existentes) > 16) else "")
+                facebook = st.text_input("Link do Facebook", value=dados_existentes[17] if (modo_edicao and len(dados_existentes) > 17) else "")
+                linkedin = st.text_input("Link do LinkedIn", value=dados_existentes[18] if (modo_edicao and len(dados_existentes) > 18) else "")
+                youtube = st.text_input("Link do YouTube", value=dados_existentes[19] if (modo_edicao and len(dados_existentes) > 19) else "")
+                tiktok = st.text_input("Link do TikTok", value=dados_existentes[20] if (modo_edicao and len(dados_existentes) > 20) else "")
 
         # SUB-ABA 3: LOCAL & ÁREAS
         with sub_tab_local:
-            atendimento_local_cliente = st.checkbox("📍 Atendimento no local do cliente / Prestador de serviço itinerante (Endereço oculto no Google)", value=bool(dados_existentes[19]) if modo_edicao else False)
+            atend_val = bool(dados_existentes[21]) if (modo_edicao and len(dados_existentes) > 21) else False
+            atendimento_local_cliente = st.checkbox("📍 Atendimento no local do cliente / Prestador de serviço itinerante (Endereço oculto no Google)", value=atend_val)
             st.markdown("---")
             c_l1, c_l2 = st.columns(2)
             with c_l1:
-                endereco_local = st.text_input("Endereço Físico Completo", value=dados_existentes[20] if modo_edicao else "")
+                endereco_local = st.text_input("Endereço Físico Completo", value=dados_existentes[22] if (modo_edicao and len(dados_existentes) > 22) else "")
             with c_l2:
-                area_cobertura = st.text_input("Áreas de Cobertura / Atendimento (ex: Ribeirão Preto, Sertãozinho, Brodowski)", value=dados_existentes[21] if modo_edicao else "")
+                area_cobertura = st.text_input("Áreas de Cobertura / Atendimento (ex: Ribeirão Preto, Sertãozinho, Brodowski)", value=dados_existentes[23] if (modo_edicao and len(dados_existentes) > 23) else "")
 
-        # SUB-ABA 4: HORÁRIOS RÁPIDOS (SELEÇÃO PRÉ-CONFIGURADA POR DROPDOWN)
+        # SUB-ABA 4: HORÁRIOS RÁPIDOS
         with sub_tab_horario:
             st.markdown("**Horários de Funcionamento (Clique para selecionar a hora pré-configurada):**")
             
             dias_semana = [
-                ("Segunda-feira", 22, "08:00", "18:00", False),
-                ("Terça-feira", 23, "08:00", "18:00", False),
-                ("Quarta-feira", 24, "08:00", "18:00", False),
-                ("Quinta-feira", 25, "08:00", "18:00", False),
-                ("Sexta-feira", 26, "08:00", "18:00", False),
-                ("Sábado", 27, "08:00", "12:00", False),
-                ("Domingo", 28, "08:00", "12:00", True)
+                ("Segunda-feira", 24, "08:00", "18:00", False),
+                ("Terça-feira", 25, "08:00", "18:00", False),
+                ("Quarta-feira", 26, "08:00", "18:00", False),
+                ("Quinta-feira", 27, "08:00", "18:00", False),
+                ("Sexta-feira", 28, "08:00", "18:00", False),
+                ("Sábado", 29, "08:00", "12:00", False),
+                ("Domingo", 30, "08:00", "12:00", True)
             ]
             
             horarios_coletados = {}
@@ -375,7 +395,7 @@ if st.session_state["aba_ativa"] == "cadastrar":
                 val_ab = h_ab_def
                 val_fe = h_fe_def
 
-                if modo_edicao and dados_existentes[idx_db]:
+                if modo_edicao and len(dados_existentes) > idx_db and dados_existentes[idx_db]:
                     txt_h = dados_existentes[idx_db]
                     if txt_h == "Fechado":
                         is_fechado = True
@@ -403,14 +423,14 @@ if st.session_state["aba_ativa"] == "cadastrar":
             st.markdown("---")
             c_he1, c_he2 = st.columns(2)
             with c_he1:
-                horarios_especiais = st.text_input("Horários Especiais / Feriados (ex: 25/12 Fechado)", value=dados_existentes[29] if modo_edicao else "")
+                horarios_especiais = st.text_input("Horários Especiais / Feriados (ex: 25/12 Fechado)", value=dados_existentes[31] if (modo_edicao and len(dados_existentes) > 31) else "")
             with c_he2:
-                outros_horarios = st.text_input("Outros Horários (Almoço, Happy Hour, Delivery)", value=dados_existentes[30] if modo_edicao else "")
+                outros_horarios = st.text_input("Outros Horários (Almoço, Happy Hour, Delivery)", value=dados_existentes[32] if (modo_edicao and len(dados_existentes) > 32) else "")
 
         # SUB-ABA 5: CHECKLIST DE PENDÊNCIAS
         with sub_tab_mais:
             st.markdown("**Checklist de Otimização Identificadas no Diagnóstico:**")
-            pendencias_salvas = dados_existentes[31] if (modo_edicao and dados_existentes[31]) else ""
+            pendencias_salvas = dados_existentes[33] if (modo_edicao and len(dados_existentes) > 33 and dados_existentes[33]) else ""
 
             col_p1, col_p2 = st.columns(2)
             with col_p1:
@@ -425,7 +445,7 @@ if st.session_state["aba_ativa"] == "cadastrar":
                 p_hor = st.checkbox("⏰ Corrigir / Validar Horários Especiais e de Funcionamento", value="Ajuste de Horários" in pendencias_salvas)
 
             st.markdown("---")
-            observacoes_tecnicas = st.text_area("Observações Técnicas Adicionais / Diagnóstico Específico", value=dados_existentes[32] if modo_edicao else "", height=180)
+            observacoes_tecnicas = st.text_area("Observações Técnicas Adicionais / Diagnóstico Específico", value=dados_existentes[34] if (modo_edicao and len(dados_existentes) > 34) else "", height=180)
 
         # SUB-ABA 6: HISTÓRICO DE AUDITORIA & ALTERAÇÕES
         with sub_tab_historico:
@@ -467,16 +487,16 @@ if st.session_state["aba_ativa"] == "cadastrar":
                 try:
                     c.execute('''
                         INSERT INTO clientes 
-                        (nome_empresa, responsavel, data_abertura, ficha_reivindicada, status_avaliacoes, status_respostas_avaliacoes, categoria_principal, categorias_secundarias, descricao_empresa, telefone_contato, whatsapp, chat_status, website, instagram, facebook, linkedin, youtube, tiktok, atendimento_local_cliente, endereco_local, area_cobertura, horario_seg, horario_ter, horario_qua, horario_qui, horario_sex, horario_sab, horario_dom, horarios_especiais, outros_horarios, pendencias_checklist, observacoes_tecnicas, data_inicio) 
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        (nome_empresa, responsavel, data_abertura, ficha_reivindicada, status_avaliacoes, qtd_avaliacoes_inicio, nota_media_inicio, status_respostas_avaliacoes, categoria_principal, categorias_secundarias, descricao_empresa, telefone_contato, whatsapp, chat_status, website, instagram, facebook, linkedin, youtube, tiktok, atendimento_local_cliente, endereco_local, area_cobertura, horario_seg, horario_ter, horario_qua, horario_qui, horario_sex, horario_sab, horario_dom, horarios_especiais, outros_horarios, pendencias_checklist, observacoes_tecnicas, data_inicio) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ''', (
-                        nome_empresa, responsavel, data_abertura, ficha_reivindicada, status_avaliacoes, status_respostas_avaliacoes, categoria_principal, categorias_secundarias, descricao_empresa, telefone_contato, whatsapp, chat_status, website, instagram, facebook, linkedin, youtube, tiktok, 1 if atendimento_local_cliente else 0, endereco_local, area_cobertura, 
+                        nome_empresa, responsavel, data_abertura, ficha_reivindicada, status_avaliacoes, qtd_avaliacoes_inicio, nota_media_inicio, status_respostas_avaliacoes, categoria_principal, categorias_secundarias, descricao_empresa, telefone_contato, whatsapp, chat_status, website, instagram, facebook, linkedin, youtube, tiktok, 1 if atendimento_local_cliente else 0, endereco_local, area_cobertura, 
                         horarios_coletados["Segunda-feira"], horarios_coletados["Terça-feira"], horarios_coletados["Quarta-feira"], horarios_coletados["Quinta-feira"], horarios_coletados["Sexta-feira"], horarios_coletados["Sábado"], horarios_coletados["Domingo"],
                         horarios_especiais, outros_horarios, pendencias_str, observacoes_tecnicas, datetime.today().strftime("%Y-%m-%d")
                     ))
                     cliente_novo_id = c.lastrowid
                     c.execute("INSERT INTO historico_ficha (cliente_id, data_alteracao, descricao_alteracao) VALUES (?, ?, ?)",
-                              (cliente_novo_id, datetime.now().strftime("%Y-%m-%d %H:%M"), "Cadastro Inicial da Ficha do Cliente (Versão 1.0)"))
+                              (cliente_novo_id, datetime.now().strftime("%Y-%m-%d %H:%M"), f"Cadastro Inicial da Ficha ({qtd_avaliacoes_inicio} avaliações / Nota {nota_media_inicio})"))
                     conn.commit()
                     st.success(f"Ficha comercial de '{nome_empresa}' cadastrada com sucesso!")
                 except sqlite3.IntegrityError:
@@ -484,15 +504,14 @@ if st.session_state["aba_ativa"] == "cadastrar":
             else:
                 c.execute('''
                     UPDATE clientes SET 
-                    responsavel=?, data_abertura=?, ficha_reivindicada=?, status_avaliacoes=?, status_respostas_avaliacoes=?, categoria_principal=?, categorias_secundarias=?, descricao_empresa=?, telefone_contato=?, whatsapp=?, chat_status=?, website=?, instagram=?, facebook=?, linkedin=?, youtube=?, tiktok=?, atendimento_local_cliente=?, endereco_local=?, area_cobertura=?, horario_seg=?, horario_ter=?, horario_qua=?, horario_qui=?, horario_sex=?, horario_sab=?, horario_dom=?, horarios_especiais=?, outros_horarios=?, pendencias_checklist=?, observacoes_tecnicas=?
+                    responsavel=?, data_abertura=?, ficha_reivindicada=?, status_avaliacoes=?, qtd_avaliacoes_inicio=?, nota_media_inicio=?, status_respostas_avaliacoes=?, categoria_principal=?, categorias_secundarias=?, descricao_empresa=?, telefone_contato=?, whatsapp=?, chat_status=?, website=?, instagram=?, facebook=?, linkedin=?, youtube=?, tiktok=?, atendimento_local_cliente=?, endereco_local=?, area_cobertura=?, horario_seg=?, horario_ter=?, horario_qua=?, horario_qui=?, horario_sex=?, horario_sab=?, horario_dom=?, horarios_especiais=?, outros_horarios=?, pendencias_checklist=?, observacoes_tecnicas=?
                     WHERE id=?
                 ''', (
-                    responsavel, data_abertura, ficha_reivindicada, status_avaliacoes, status_respostas_avaliacoes, categoria_principal, categorias_secundarias, descricao_empresa, telefone_contato, whatsapp, chat_status, website, instagram, facebook, linkedin, youtube, tiktok, 1 if atendimento_local_cliente else 0, endereco_local, area_cobertura, 
+                    responsavel, data_abertura, ficha_reivindicada, status_avaliacoes, qtd_avaliacoes_inicio, nota_media_inicio, status_respostas_avaliacoes, categoria_principal, categorias_secundarias, descricao_empresa, telefone_contato, whatsapp, chat_status, website, instagram, facebook, linkedin, youtube, tiktok, 1 if atendimento_local_cliente else 0, endereco_local, area_cobertura, 
                     horarios_coletados["Segunda-feira"], horarios_coletados["Terça-feira"], horarios_coletados["Quarta-feira"], horarios_coletados["Quinta-feira"], horarios_coletados["Sexta-feira"], horarios_coletados["Sábado"], horarios_coletados["Domingo"],
                     horarios_especiais, outros_horarios, pendencias_str, observacoes_tecnicas, c_id
                 ))
                 
-                # Registra a atualização no histórico de alterações da ficha
                 c.execute("INSERT INTO historico_ficha (cliente_id, data_alteracao, descricao_alteracao) VALUES (?, ?, ?)",
                           (c_id, datetime.now().strftime("%Y-%m-%d %H:%M"), f"Atualização Ficha: Pendências ({pendencias_str}) / Categoria: {categoria_principal}"))
                 conn.commit()
@@ -530,7 +549,7 @@ elif st.session_state["aba_ativa"] == "metricas":
             with c4:
                 visualizacoes = st.number_input("👁️ Total de Visualizações", min_value=0, step=1)
 
-            novas_avaliacoes = st.number_input("⭐ Novas Avaliações Recebidas", min_value=0, step=1)
+            novas_avaliacoes = st.number_input("⭐ Novas Avaliações Recebidas no Mês", min_value=0, step=1)
             resumo_acoes = st.text_area("🛠️ Ações Realizadas no Mês (Otimizações, fotos 360°, posts, etc.)")
 
             btn_salvar_metricas = st.form_submit_button("Salvar Métricas do Mês")
