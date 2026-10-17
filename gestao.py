@@ -414,25 +414,24 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     buffer.seek(0)
     return buffer
 
-# --- CSS PERSONALIZADO (PADRÃO ENTERPRISE IDÊNTICO AO RADAR & BOTÕES REFINADOS) ---
+# --- CSS PERSONALIZADO (BOTÕES ALINHADOS À ESQUERDA E DESTAQUE NO CLIENTE) ---
 st.markdown("""
     <style>
     .block-container { padding-top: 1.0rem !important; padding-bottom: 1.5rem !important; max-width: 94% !important; margin: 0 auto !important; }
     header[data-testid="stHeader"] { display: none !important; }
     .stApp { background-color: #0B0E14; color: #E0E6ED; font-family: 'Inter', -apple-system, sans-serif; }
     
-    /* Card de Topo Perfeito */
+    /* Card de Topo Original Mantido */
     .top-card-radar-style { 
         background-color: #161F30; 
         border: 1px solid #2B364A; 
         border-radius: 10px; 
-        padding: 22px 28px !important; 
-        margin-bottom: 6px !important; 
+        padding: 20px 24px !important; 
+        margin-bottom: 8px !important; 
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); 
         display: flex;
         align-items: center;
-        justify-content: center;
-        gap: 24px;
+        gap: 20px;
         width: 100%;
     }
     .radar-logo-img {
@@ -444,20 +443,19 @@ st.markdown("""
         display: flex;
         flex-direction: column;
         justify-content: center;
-        text-align: left;
     }
     .main-title-radar { color: #FFFFFF !important; font-weight: 800; font-size: 1.7rem; margin: 0 !important; }
     .sub-title-radar { color: #8E9BAE; font-size: 0.92rem; margin: 4px 0 0 0 !important; }
     
-    div[data-testid="stHorizontalBlock"] { gap: 0.15rem !important; margin-bottom: 4px !important; }
-    hr { margin-top: 2px !important; margin-bottom: 4px !important; border-color: #2B364A !important; }
+    div[data-testid="stHorizontalBlock"] { gap: 0.3rem !important; margin-bottom: 6px !important; }
+    hr { margin-top: 4px !important; margin-bottom: 4px !important; border-color: #2B364A !important; }
     
-    /* Ajuste refinado dos botões de navegação das abas */
+    /* Estilização compacta e alinhada à esquerda para os botões de navegação */
     div[data-testid="stColumn"] button { 
-        width: 100% !important; min-height: 38px !important; height: auto !important; 
+        width: auto !important; min-width: 110px !important; min-height: 38px !important; height: auto !important; 
         background-color: #161F30 !important; border: 1px solid #2B364A !important; 
-        color: #C5CDD9 !important; border-radius: 6px !important; font-weight: 600 !important; font-size: 0.68rem !important; 
-        transition: all 0.2s ease-in-out;
+        color: #C5CDD9 !important; border-radius: 6px !important; font-weight: 600 !important; font-size: 0.72rem !important; 
+        transition: all 0.2s ease-in-out; padding: 0 12px !important;
     }
     div[data-testid="stColumn"] button:hover {
         background-color: #1E293B !important; border-color: #455570 !important; color: #FFFFFF !important;
@@ -466,6 +464,17 @@ st.markdown("""
         background-color: #1E293B !important; border: 1.5px solid #FFFFFF !important; color: #FFFFFF !important;
         box-shadow: 0 0 10px rgba(255, 255, 255, 0.4) !important;
     }
+
+    /* Destaque visual especial para o seletor de clientes na Ficha Comercial */
+    .destaque-cliente-box {
+        background-color: #131A28;
+        border: 2px solid #2563EB;
+        border-radius: 10px;
+        padding: 16px;
+        margin-bottom: 16px;
+        box-shadow: 0 0 15px rgba(37, 99, 235, 0.2);
+    }
+    
     div[data-testid="stForm"] { border-color: #2B364A !important; padding: 16px !important; border-radius: 10px !important; background-color: #131A28 !important; }
     </style>
 """, unsafe_allow_html=True)
@@ -473,7 +482,7 @@ st.markdown("""
 if "aba_ativa" not in st.session_state:
     st.session_state["aba_ativa"] = "cadastrar"
 
-# --- CARD DE TOPO PADRÃO RADAR ---
+# --- CARD DE TOPO PADRÃO ORIGINAL ---
 import base64
 def obter_base64_logo(caminho):
     if os.path.exists(caminho):
@@ -494,11 +503,22 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-# Espaçamento milimetricamente reduzido entre o card e os botões
+# Espaçamento leve entre o card e a barra lateral esquerda de navegação
 st.markdown("<div style='height: 4px;'></div>", unsafe_allow_html=True)
 
-cols = st.columns(8)
-aba_map = [("cadastrar", "⚙️ Ficha"), ("auditoria", "🔍 Auditoria"), ("metricas", "📋 Métricas"), ("ia", "🎯 Curadoria"), ("dashboard", "📊 Dashboard"), ("cases", "🏆 Prospecção"), ("pdf", "📄 Relatório"), ("financeiro", "💰 Financeiro")]
+# Navegação lado a lado alinhada à esquerda (usando colunas proporcionais justas)
+cols = st.columns([1.1, 1.1, 1.1, 1.1, 1.1, 1.1, 1.1, 1.1, 3.2])
+aba_map = [
+    ("cadastrar", "⚙️ Ficha"), 
+    ("auditoria", "🔍 Auditoria"), 
+    ("metricas", "📋 Métricas"), 
+    ("ia", "🎯 Curadoria"), 
+    ("dashboard", "📊 Dashboard"), 
+    ("cases", "🏆 Prospecção"), 
+    ("pdf", "📄 Relatório"), 
+    ("financeiro", "💰 Financeiro")
+]
+
 for i, (key_aba, label_aba) in enumerate(aba_map):
     with cols[i]:
         if st.button(label_aba, key=f"btn_nav_{key_aba}", type="primary" if st.session_state["aba_ativa"] == key_aba else "secondary"):
@@ -510,17 +530,21 @@ for i, (key_aba, label_aba) in enumerate(aba_map):
 # ==========================================
 if st.session_state["aba_ativa"] == "cadastrar":
     st.subheader("⚙️ Cadastro e Atualização de Informações Comerciais (GMB)")
+    
     df_clientes = obter_clientes_unicos()
     modo_edicao = False
     dados_existentes = None
     
+    # Bloco com Destaque Visual Forte para Seleção ou Novo Cadastro
+    st.markdown('<div class="destaque-cliente-box">', unsafe_allow_html=True)
+    st.markdown("### 🗂️ Gerenciamento de Clientes Cadastrados & Novos")
     if not df_clientes.empty:
         opcoes = ["➕ Cadastrar Novo Cliente"] + df_clientes["nome_empresa"].tolist()
         sel_idx = 0
         if "cliente_sel_cad" in st.session_state and st.session_state["cliente_sel_cad"] in opcoes:
             sel_idx = opcoes.index(st.session_state["cliente_sel_cad"])
         
-        cliente_menu = st.selectbox("Selecione para Cadastrar ou Editar um Cliente Existente:", opcoes, index=sel_idx, key="sel_cliente_menu_cad")
+        cliente_menu = st.selectbox("Selecione um cliente já cadastrado na base ou escolha cadastrar novo:", opcoes, index=sel_idx, key="sel_cliente_menu_cad")
         st.session_state["cliente_sel_cad"] = cliente_menu
         
         if cliente_menu != "➕ Cadastrar Novo Cliente":
@@ -528,9 +552,13 @@ if st.session_state["aba_ativa"] == "cadastrar":
             c_id = int(df_clientes[df_clientes["nome_empresa"] == cliente_menu]["id"].values[0])
             st.session_state["cliente_id_edicao"] = c_id
             dados_existentes = obter_dados_cliente_por_id(c_id)
-            st.info(f"Modo de Edição Ativo: Alterando a Ficha de **{cliente_menu}**.")
+            st.success(f"⚡ **Modo de Edição Ativo:** Editando as informações da empresa **{cliente_menu}**.")
         else:
             st.session_state.pop("cliente_id_edicao", None)
+            st.info("✨ **Novo Cadastro:** Preencha os campos abaixo para registrar um novo cliente na agência.")
+    else:
+        st.warning("Nenhum cliente cadastrado ainda. Preencha o formulário abaixo para registrar o primeiro.")
+    st.markdown('</div>', unsafe_allow_html=True)
 
     with st.form("form_cliente_gmb_completo"):
         sub_t1, sub_t2, sub_t3, sub_t4, sub_t5, sub_t6 = st.tabs([
@@ -659,7 +687,7 @@ if st.session_state["aba_ativa"] == "cadastrar":
                     st.dataframe(df_hist, use_container_width=True)
 
         st.markdown("---")
-        btn_salvar = st.form_submit_button("Salvar Nova Ficha" if not modo_edicao else "Atualizar Ficha e Gravar Histórico")
+        btn_salvar = st.form_submit_button("💾 Salvar Nova Ficha" if not modo_edicao else "💾 Atualizar Ficha e Gravar Histórico")
 
         if btn_salvar and nome_empresa:
             checklist_list = []
