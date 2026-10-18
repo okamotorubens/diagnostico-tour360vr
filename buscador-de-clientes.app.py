@@ -574,9 +574,9 @@ elif st.session_state.etapa == 2:
     
     # Exibição segura do link do Instagram salvo no lead
              insta_link = lead.get('instagram', '')
-             if insta_link:
+                if insta_link:
              st.markdown(f"- **Instagram:** [Abrir Perfil]({insta_link})")
-             else:
+                else:
              st.markdown("- **Instagram:** ❌ Não informado")
 
              st.markdown(f"- **Maps:** [Ver no Google Maps](https://www.google.com/maps/search/?api=1&query={lead['nome'].replace(' ', '+')})")
