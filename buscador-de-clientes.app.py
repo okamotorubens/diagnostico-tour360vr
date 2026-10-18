@@ -1140,9 +1140,12 @@ elif st.session_state.etapa == 5:
             with st.spinner(f"O robô do Apify está varrendo os seguidores de '@{username_limpo}' de forma anônima e segura..."):
                 try:
                     client = ApifyClient(APIFY_TOKEN)
+                    
+                    # Estrutura de input exata exigida pelo Actor 'seemuapps/instagram-followers-scraper'
                     run_input = {
-                        "usernames": [username_limpo],
-                        "resultsLimit": limite_leads,
+                        "username": username_limpo,
+                        "mode": "followers",
+                        "maxItems": limite_leads
                     }
                     
                     run = client.actor("seemuapps/instagram-followers-scraper").call(run_input=run_input)
@@ -1165,15 +1168,14 @@ elif st.session_state.etapa == 5:
                         
                         dados_coletados.append({
                             "username": item.get("username"),
-                            "nome_completo": item.get("fullName", "Sem nome informado"),
-                            "instagram_id": str(item.get("id")),
+                            "nome_completo": item.get("displayName") or item.get("fullName") or "Sem nome informado",
+                            "instagram_id": str(item.get("userId") or item.get("id")),
                             "biografia": bio,
                             "link_bio": link_ext,
                             "whatsapp": whats,
                             "foto_perfil": item.get("profilePicUrl", "https://via.placeholder.com/150"),
                             "origem_concorrente": username_limpo
                         })
-                        
                     if dados_coletados:
                         df_leads = pd.DataFrame(dados_coletados)
                         st.session_state['leads_instagram_coletados'] = df_leads
