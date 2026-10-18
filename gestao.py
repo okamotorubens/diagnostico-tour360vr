@@ -614,59 +614,85 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     story = []
     styles = getSampleStyleSheet()
 
-    doc_title_style = ParagraphStyle("DocTitleStyle", parent=styles["Normal"], fontName="Helvetica-Bold", fontSize=13, leading=16, alignment=1, textColor=colors.HexColor("#1E293B"))
-    body_style = ParagraphStyle("DocBody", parent=styles["Normal"], fontName="Helvetica", fontSize=8, leading=9.6, alignment=4, textColor=colors.HexColor("#1E293B"))
-    signature_style = ParagraphStyle("DocSig", parent=styles["Normal"], fontName="Helvetica", fontSize=9, leading=12, alignment=1, textColor=colors.HexColor("#1E293B"))
+    doc_title_style = ParagraphStyle("DocTitleStyle", parent=styles["Normal"], fontName="Helvetica-Bold",
+                                     fontSize=13, leading=16, alignment=1, textColor=colors.HexColor("#1E293B"),
+                                     spaceAfter=4)
+    qualif_style = ParagraphStyle("DocQualif", parent=styles["Normal"], fontName="Helvetica", fontSize=9,
+                                  leading=12, alignment=4, textColor=colors.HexColor("#1E293B"), spaceAfter=8)
+    clausula_style = ParagraphStyle("DocClausula", parent=styles["Normal"], fontName="Helvetica", fontSize=9,
+                                    leading=12, alignment=4, textColor=colors.HexColor("#1E293B"), spaceAfter=5)
+    signature_style = ParagraphStyle("DocSig", parent=styles["Normal"], fontName="Helvetica", fontSize=9,
+                                     leading=12, alignment=1, textColor=colors.HexColor("#1E293B"))
 
     story += cabecalho_pdf("<b>CONTRATO DE PRESTAÇÃO DE SERVIÇOS</b>")
 
-    meses_pt = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"]
+    meses_pt = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho",
+                "agosto", "setembro", "outubro", "novembro", "dezembro"]
     hoje = agora_brasil()
     data_extenso = f"Ribeirão Preto - SP, {hoje.day} de {meses_pt[hoje.month - 1]} de {hoje.year}."
-
-    story.append(Paragraph(data_extenso, ParagraphStyle("Date", fontName="Helvetica", fontSize=9, alignment=2, textColor=colors.HexColor("#000000"))))
+    story.append(Paragraph(data_extenso, ParagraphStyle("Date", fontName="Helvetica", fontSize=9,
+                                                        alignment=2, textColor=colors.HexColor("#000000"))))
     story.append(Spacer(1, 10))
     story.append(Paragraph("TERMO DE CONTRATAÇÃO DE SERVIÇOS", doc_title_style))
-    story.append(Spacer(1, 8))
+    story.append(Spacer(1, 6))
 
     nome_emp = dados_cliente.get("nome_empresa", "Empresa Cliente")
     resp_emp = dados_cliente.get("responsavel", "Responsável")
     tel_emp = dados_cliente.get("telefone_contato", "")
 
     if meses_duracao and "Gestão Mensal" in plano_escolhido:
-        detalhe_plano = f"{plano_escolhido} com duração de {meses_duracao} meses, no valor total de R$ {valor_plano:,.2f}"
+        detalhe_plano = f"{plano_escolhido} com duração de {meses_duracao} meses, no valor total de {formatar_brl(valor_plano)}"
     else:
-        detalhe_plano = f"{plano_escolhido}, no valor total de R$ {valor_plano:,.2f}"
+        detalhe_plano = f"{plano_escolhido}, no valor total de {formatar_brl(valor_plano)}"
 
     link_site = f'<font color="{AZUL_LINK}"><a href="https://tour360vr.com.br">tour360vr.com.br</a></font>'
     link_mail = f'<font color="{AZUL_LINK}"><a href="mailto:contato@tour360vr.com.br">contato@tour360vr.com.br</a></font>'
     link_wpp = f'<font color="{AZUL_LINK}"><a href="https://wa.me/5516991332121">(16) 99133-2121</a></font>'
 
-    txt_qualificacao = f"""
-    <b>CONTRATADA:</b> <b>Tour360VR</b>, representada por Rubens Okamoto, CNPJ: 04.824.331/0001-05. Site: {link_site} | E-mail: {link_mail} | WhatsApp: {link_wpp}.<br/><br/>
-    <b>CONTRATANTE:</b> <b>{nome_emp}</b>, representada por {resp_emp}, Telefone: {tel_emp}.<br/><br/>
-    A <b>Tour360VR</b> (<b>CONTRATADA</b>) compromete-se a executar os serviços profissionais especializados em otimização, reestruturação técnica, curadoria de pautas e produção de Tour Virtual 360 para o perfil do Google da <b>CONTRATANTE</b>, referentes ao plano contratado <b>{detalhe_plano}</b>.
-    """
-    story.append(Paragraph(txt_qualificacao, body_style))
-    story.append(Spacer(1, 6))
+    story.append(Paragraph(
+        f"<b>CONTRATADA:</b> <b>Tour360VR</b>, representada por Rubens Okamoto, CNPJ: 04.824.331/0001-05. "
+        f"Site: {link_site} | E-mail: {link_mail} | WhatsApp: {link_wpp}.",
+        qualif_style))
+    story.append(Paragraph(
+        f"<b>CONTRATANTE:</b> <b>{nome_emp}</b>, representada por {resp_emp}, Telefone: {tel_emp}.",
+        qualif_style))
+    story.append(Paragraph(
+        "A <b>Tour360VR</b> (<b>CONTRATADA</b>) compromete-se a executar os serviços profissionais especializados "
+        "em otimização, reestruturação técnica, curadoria de pautas e produção de Tour Virtual 360 para o perfil "
+        f"do Google da <b>CONTRATANTE</b>, referentes ao plano contratado <b>{detalhe_plano}</b>.",
+        qualif_style))
 
-    clausulas = """
-    <b>CLÁUSULA PRIMEIRA - DO OBJETO:</b> Os serviços serão iniciados em até 5 dias úteis após a confirmação do acordo e o fornecimento de todos os acessos e informações necessárias à gestão do perfil pela <b>CONTRATANTE</b>.<br/><br/>
-    <b>CLÁUSULA SEGUNDA - DAS OBRIGAÇÕES E PAGAMENTO:</b> O não pagamento no prazo pactuado sujeitará o presente contrato à incidência de juros moratórios legais e à suspensão temporária dos serviços pela <b>Tour360VR</b> até a devida regularização financeira.<br/><br/>
-    <b>CLÁUSULA TERCEIRA - DOS DIREITOS DE USO E PROPRIEDADE:</b> Os direitos de uso do Tour Virtual 360 e fotos em alta definição serão cedidos em caráter ilimitado à <b>CONTRATANTE</b> para veiculação oficial no Google. A <b>Tour360VR</b> reserva-se o direito de utilizar o material gerado em seu portfólio profissional de divulgação.<br/><br/>
-    <b>CLÁUSULA QUARTA - CONFIDENCIALIDADE E LGPD:</b> As partes comprometem-se a manter sob sigilo absoluto todas as informações operacionais fornecidas, em estrita conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018).<br/><br/>
-    <b>CLÁUSULA QUINTA - VALIDADE DA PROPOSTA:</b> A presente proposta e condições comerciais possuem validade oficial de 15 (quinze) dias a contar da data de sua emissão.<br/><br/>
-    <b>CLÁUSULA SEXTA - AUSÊNCIA DE GARANTIA DE RESULTADOS:</b> A <b>Tour360VR</b> não garante posição específica nos resultados de busca ou no Google Maps, pois o ranqueamento depende de algoritmos e critérios de terceiros, fora de seu controle.<br/><br/>
-    <b>CLÁUSULA SÉTIMA - DAS RESPONSABILIDADES DA CONTRATANTE:</b> A <b>CONTRATANTE</b> compromete-se a fornecer informações verídicas e atualizadas, os acessos necessários e a aprovação das pautas no prazo combinado, abstendo-se de solicitar ou incentivar avaliações falsas ou fraudulentas, em conformidade com as políticas do Google.<br/><br/>
-    <b>CLÁUSULA OITAVA - DA RESCISÃO:</b> Qualquer das partes poderá rescindir o presente contrato mediante aviso prévio por escrito de 30 (trinta) dias.<br/><br/>
-    <b>CLÁUSULA NONA - DO REAJUSTE:</b> O valor da mensalidade poderá ser reajustado anualmente pela variação do IPCA ou de índice que venha a substituí-lo.<br/><br/>
-    <b>CLÁUSULA DÉCIMA - DA LIMITAÇÃO DE RESPONSABILIDADE:</b> A responsabilidade total da <b>Tour360VR</b> limita-se ao valor efetivamente pago pela <b>CONTRATANTE</b> no mês em que ocorrer o fato gerador do dano.<br/><br/>
-    <b>CLÁUSULA DÉCIMA PRIMEIRA - DO FORO:</b> Fica eleito o foro da Comarca de Ribeirão Preto/SP para dirimir quaisquer controvérsias oriundas deste contrato.<br/><br/>
-    <b>CLÁUSULA DÉCIMA SEGUNDA - DA MORA:</b> O atraso no pagamento sujeitará a <b>CONTRATANTE</b> a multa de 2% (dois por cento) e juros de 1% (um por cento) ao mês, calculados sobre o valor em atraso.
-    """
-    story.append(Paragraph(clausulas.replace("<br/><br/>", "<br/>"), body_style))
-    story.append(Spacer(1, 16))
+    clausulas = [
+        ("CLÁUSULA PRIMEIRA - DO OBJETO",
+         "Os serviços serão iniciados em até 5 dias úteis após a confirmação do acordo e o fornecimento de todos os acessos e informações necessárias à gestão do perfil pela <b>CONTRATANTE</b>."),
+        ("CLÁUSULA SEGUNDA - DAS OBRIGAÇÕES E PAGAMENTO",
+         "O não pagamento no prazo pactuado sujeitará o presente contrato à incidência de juros moratórios legais e à suspensão temporária dos serviços pela <b>Tour360VR</b> até a devida regularização financeira."),
+        ("CLÁUSULA TERCEIRA - DOS DIREITOS DE USO E PROPRIEDADE",
+         "Os direitos de uso do Tour Virtual 360 e fotos em alta definição serão cedidos em caráter ilimitado à <b>CONTRATANTE</b> para veiculação oficial no Google. A <b>Tour360VR</b> reserva-se o direito de utilizar o material gerado em seu portfólio profissional de divulgação."),
+        ("CLÁUSULA QUARTA - CONFIDENCIALIDADE E LGPD",
+         "As partes comprometem-se a manter sob sigilo absoluto todas as informações operacionais fornecidas, em estrita conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018)."),
+        ("CLÁUSULA QUINTA - VALIDADE DA PROPOSTA",
+         "A presente proposta e condições comerciais possuem validade oficial de 15 (quinze) dias a contar da data de sua emissão."),
+        ("CLÁUSULA SEXTA - AUSÊNCIA DE GARANTIA DE RESULTADOS",
+         "A <b>Tour360VR</b> não garante posição específica nos resultados de busca ou no Google Maps, pois o ranqueamento depende de algoritmos e critérios de terceiros, fora de seu controle."),
+        ("CLÁUSULA SÉTIMA - DAS RESPONSABILIDADES DA CONTRATANTE",
+         "A <b>CONTRATANTE</b> compromete-se a fornecer informações verídicas e atualizadas, os acessos necessários e a aprovação das pautas no prazo combinado, abstendo-se de solicitar ou incentivar avaliações falsas ou fraudulentas, em conformidade com as políticas do Google."),
+        ("CLÁUSULA OITAVA - DA RESCISÃO",
+         "Qualquer das partes poderá rescindir o presente contrato mediante aviso prévio por escrito de 30 (trinta) dias."),
+        ("CLÁUSULA NONA - DO REAJUSTE",
+         "O valor da mensalidade poderá ser reajustado anualmente pela variação do IPCA ou de índice que venha a substituí-lo."),
+        ("CLÁUSULA DÉCIMA - DA LIMITAÇÃO DE RESPONSABILIDADE",
+         "A responsabilidade total da <b>Tour360VR</b> limita-se ao valor efetivamente pago pela <b>CONTRATANTE</b> no mês em que ocorrer o fato gerador do dano."),
+        ("CLÁUSULA DÉCIMA PRIMEIRA - DO FORO",
+         "Fica eleito o foro da Comarca de Ribeirão Preto/SP para dirimir quaisquer controvérsias oriundas deste contrato."),
+        ("CLÁUSULA DÉCIMA SEGUNDA - DA MORA",
+         "O atraso no pagamento sujeitará a <b>CONTRATANTE</b> a multa de 2% (dois por cento) e juros de 1% (um por cento) ao mês, calculados sobre o valor em atraso."),
+    ]
+    story.append(Spacer(1, 4))
+    for titulo, texto in clausulas:
+        story.append(Paragraph(f"<b>{titulo}:</b> {texto}", clausula_style))
 
+    story.append(Spacer(1, 22))
     t_ass = Table([[
         Paragraph("__________________________________________<br/><b>Rubens Okamoto</b><br/>Tour360VR", signature_style),
         Paragraph(f"__________________________________________<br/><b>{resp_emp}</b><br/>{nome_emp}", signature_style),
@@ -676,7 +702,6 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     doc.build(story, onFirstPage=adicionar_rodape_padrao, onLaterPages=adicionar_rodape_padrao)
     buffer.seek(0)
     return buffer
-
 
 # --- ESTADO INICIAL ---
 if "aba_ativa" not in st.session_state:
