@@ -62,17 +62,18 @@ h1, h2, h3, h4 { color: var(--text-strong) !important; letter-spacing: -0.01em; 
     display: flex; flex-direction: column; align-items: center; text-align: center;
     padding: 2.5rem 0.5rem 0 0.5rem; gap: 14px;
 }
-.sidebar-box img.logo-tour { width: 150px; height: auto; }
-.sidebar-box img.logo-okamoto { width: 180px; height: auto; }
+.sidebar-box img.logo-tour { width: 105px; height: auto; }
+.sidebar-box img.logo-okamoto { width: 180px; height: auto; margin-top: 14px; }
 .sidebar-footer {
     margin-top: 18px; padding-top: 14px; width: 85%;
     border-top: 1px solid var(--border);
     color: var(--text-muted); font-size: .75rem; line-height: 1.4;
 }
 
-/* Hero */
+/* Hero centralizado */
 .hero {
     position: relative; overflow: hidden;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
     background: var(--glass);
     backdrop-filter: blur(var(--blur)); -webkit-backdrop-filter: blur(var(--blur));
     border: 1px solid var(--border); border-radius: 18px;
@@ -83,8 +84,8 @@ h1, h2, h3, h4 { color: var(--text-strong) !important; letter-spacing: -0.01em; 
     content: ""; position: absolute; left: 0; top: 0; right: 0; height: 3px;
     background: var(--gradient-brand);
 }
-.hero h1 { margin: 0 !important; font-size: 1.7rem !important; font-weight: 800; }
-.hero p { margin: 6px 0 0 0; color: var(--text-muted); font-size: 1rem; }
+.hero h1 { margin: 0 !important; font-size: 1.7rem !important; font-weight: 800; text-align: center; }
+.hero p { margin: 6px 0 0 0; color: var(--text-muted); font-size: 1rem; text-align: center; }
 
 /* Títulos de seção */
 .section-title {
@@ -95,10 +96,13 @@ h1, h2, h3, h4 { color: var(--text-strong) !important; letter-spacing: -0.01em; 
 }
 .section-title .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 10px var(--accent); }
 
-/* Cards clicáveis em vidro */
+/* Cards clicáveis em vidro (mesmo tamanho, texto branco) */
+a.sys-card, a.sys-card:visited, a.sys-card:hover, a.sys-card:focus {
+    color: #FFFFFF !important;
+}
 a.sys-card {
     display: flex; flex-direction: column; align-items: flex-start; gap: 6px;
-    height: 170px; box-sizing: border-box; padding: 18px 20px;
+    height: 180px; box-sizing: border-box; padding: 18px 20px;
     background: var(--glass);
     backdrop-filter: blur(var(--blur)); -webkit-backdrop-filter: blur(var(--blur));
     border: 1px solid var(--border); border-radius: 14px;
@@ -113,13 +117,13 @@ a.sys-card:hover {
     box-shadow: 0 0 18px rgba(74,163,218,.35);
 }
 a.sys-card .icon { font-size: 1.7rem; line-height: 1; }
-a.sys-card .name { color: var(--text-strong); font-size: 1.05rem; font-weight: 700; }
+a.sys-card .name { color: #FFFFFF !important; font-size: 1.05rem; font-weight: 700; }
 a.sys-card .desc { color: var(--text-muted); font-size: .85rem; line-height: 1.45; }
-a.sys-card:hover .name { color: var(--accent); }
-a.sys-card .go { margin-top: auto; color: var(--accent-2); font-size: .78rem; font-weight: 600; }
+a.sys-card:hover .name { color: var(--accent) !important; }
+a.sys-card .go { margin-top: auto; color: #FFFFFF !important; font-size: .78rem; font-weight: 600; }
 
-/* Divisor de espaço */
-.gap-lg { height: 6px; }
+/* Espaço entre blocos de cards */
+.gap-lg { height: 24px; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -138,7 +142,7 @@ with st.sidebar:
     )
     st.markdown(html_logos, unsafe_allow_html=True)
 
-# --- HERO ---
+# --- HERO (centralizado) ---
 st.markdown("""
 <div class="hero">
     <h1>Central de Sistemas e Operações</h1>
@@ -183,6 +187,9 @@ render_cards([
      "desc": "Acompanhamento recorrente de métricas (chamadas, rotas, WhatsApp) e relatórios executivos.",
      "url": "https://gestao-mensal-tour360vr.streamlit.app/"},
 ])
+
+# Espaço de 1 linha entre os blocos
+st.markdown("<div class='gap-lg'></div>", unsafe_allow_html=True)
 
 # ==========================================
 # SEÇÃO 2: OKAMOTO MÍDIAS VISUAIS
