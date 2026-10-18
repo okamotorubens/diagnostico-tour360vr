@@ -5,6 +5,7 @@ import json
 import time
 import base64
 import urllib.parse
+import unicodedata
 from datetime import datetime
 import re
 
@@ -581,9 +582,10 @@ def buscar_google_places_api(nicho, cidade, bairro, rua, raio_km, api_key, limit
                 if len(clean_phone) > 10 and clean_phone.startswith("55"):
                     clean_phone = clean_phone[2:]
 
-                nome_slug = re.sub(r'[^a-zA-Z0-9]', '', nome.lower())
+                # Limpeza e remoção correta de acentos (ex: Ribeirão -> ribeirao)
+                nome_normalizado = unicodedata.normalize('NFKD', nome.lower()).encode('ASCII', 'ignore').decode('ASCII')
+                nome_slug = re.sub(r'[^a-zA-Z0-9]', '', nome_normalizado)
                 instagram_url = f"https://instagram.com/{nome_slug}"
-
                 lead_obj = {
                     "data_minacao": datetime.now().strftime('%d/%m/%Y %H:%M'),
                     "cidade_busca": cidade,
