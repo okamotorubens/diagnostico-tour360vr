@@ -485,7 +485,7 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     header_table.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'MIDDLE'), ('ALIGN', (0,0), (0,0), 'LEFT'), ('ALIGN', (1,0), (1,0), 'RIGHT')]))
     story.append(header_table)
     story.append(Spacer(1, 2))
-    story.append(HRFlowable(width="100%", thickness=1.0, color=colors.HexColor('#BFDBFE'], spaceAfter=10))
+    story.append(HRFlowable(width="100%", thickness=1.0, color=colors.HexColor('#BFDBFE'), spaceAfter=10))
 
     meses_pt = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"]
     hoje = agora_brasil()
