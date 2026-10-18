@@ -1145,7 +1145,7 @@ elif st.session_state.etapa == 5:
                         "resultsLimit": limite_leads,
                     }
                     
-                    run = client.actor("apify/instagram-followers-scraper").call(run_input=run_input)
+                    run = client.actor("apify/instagram-follower-scraper").call(run_input=run_input)
                     dados_coletados = []
                     
                     for item in client.dataset(run["defaultDatasetId"]).iterate_items():
