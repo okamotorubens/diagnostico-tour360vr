@@ -5,9 +5,9 @@ import json
 import time
 import base64
 import urllib.parse
-import unicodedata
 from datetime import datetime
 import re
+import unicodedata
 
 import requests
 import pandas as pd
@@ -475,9 +475,9 @@ def mudar_etapa(nova_etapa):
 # -----------------------------------------------------------------------------
 # INTEGRAÇÃO DE BUSCA REAL VIA GOOGLE PLACES API (PAGINAÇÃO BLINDADA)
 # -----------------------------------------------------------------------------
-def buscar_google_places_api(nicho, cidade, bairro, rua, raio_km, api_key, limite=20):
+def buscar_google_places_api(nome_empresa, nicho, cidade, bairro, rua, raio_km, api_key, limite=20):
     termos = []
-    if nome_empresa: termos.append(nome_empresa.strip()) # Prioriza o nome específico se informado
+    if nome_empresa: termos.append(nome_empresa.strip())
     if nicho: termos.append(nicho.strip())
     if rua: termos.append(rua.strip())
     if bairro: termos.append(bairro.strip())
@@ -493,7 +493,6 @@ def buscar_google_places_api(nicho, cidade, bairro, rua, raio_km, api_key, limit
     next_page_token = None
     
     try:
-        # Loop para buscar páginas (o Google Places Text Search permite até 3 páginas = até 60 resultados)
         max_paginas = max(1, (limite // 20) + 1)
         for pagina in range(max_paginas):
             if len(leads) >= limite:
@@ -504,7 +503,6 @@ def buscar_google_places_api(nicho, cidade, bairro, rua, raio_km, api_key, limit
                 if not next_page_token:
                     break
                 url_requisicao = f"https://maps.googleapis.com/maps/api/place/textsearch/json?pagetoken={next_page_token}&key={api_key}"
-                # Pausa obrigatória para o Google ativar o token no servidor
                 time.sleep(3.5)
 
             response = requests.get(url_requisicao, timeout=12)
@@ -583,10 +581,11 @@ def buscar_google_places_api(nicho, cidade, bairro, rua, raio_km, api_key, limit
                 if len(clean_phone) > 10 and clean_phone.startswith("55"):
                     clean_phone = clean_phone[2:]
 
-                # Limpeza e remoção correta de acentos (ex: Ribeirão -> ribeirao)
+                # Limpeza correta de acentos e caracteres especiais para o Instagram
                 nome_normalizado = unicodedata.normalize('NFKD', nome.lower()).encode('ASCII', 'ignore').decode('ASCII')
                 nome_slug = re.sub(r'[^a-zA-Z0-9]', '', nome_normalizado)
                 instagram_url = f"https://instagram.com/{nome_slug}"
+
                 lead_obj = {
                     "data_minacao": datetime.now().strftime('%d/%m/%Y %H:%M'),
                     "cidade_busca": cidade,
@@ -627,12 +626,12 @@ def buscar_google_places_api(nicho, cidade, bairro, rua, raio_km, api_key, limit
         st.error(f"Erro na requisição à API do Google Places: {str(e)}")
     return None
 
-def minerar_e_auditar_negocios(nicho, cidade, bairro, rua, raio_km, limite=20):
+def minerar_e_auditar_negocios(nome_empresa, nicho, cidade, bairro, rua, raio_km, limite=20):
     api_key = st.secrets.get("GOOGLE_API_KEY", None) or os.getenv("GOOGLE_API_KEY", None)
     
     if api_key:
         api_key_limpa = api_key.strip().replace('"', '').replace("'", "")
-        leads_reais = buscar_google_places_api(nicho, cidade, bairro, rua, raio_km, api_key_limpa, limite)
+        leads_reais = buscar_google_places_api(nome_empresa, nicho, cidade, bairro, rua, raio_km, api_key_limpa, limite)
         if leads_reais and len(leads_reais) > 0:
             return leads_reais
     else:
@@ -731,12 +730,11 @@ if st.session_state.etapa == 1:
     st.markdown("""
         <div class="main-header">
             <h1 class="main-title">🔎 Radar e Mineração de Mercado Local</h1>
-            <div class="main-subtitle">Varredura de perfis no Google Maps por Nicho, Cidade, Bairro, Rua e Raio de Distância (km).</div>
+            <div class="main-subtitle">Varredura de perfis no Google Maps por Nome, Nicho, Cidade, Bairro, Rua e Raio de Distância (km).</div>
         </div>
     """, unsafe_allow_html=True)
 
     with st.form("form_busca"):
-        # Adicionado o campo "Nome da Empresa (Opcional)" no início do formulário
         col_nome_emp, col1, col2, col3, col4, col5, col6 = st.columns([2.2, 2, 2, 1.8, 1.8, 1.2, 1.2])
         with col_nome_emp: nome_empresa_input = st.text_input("Nome da Empresa (Opcional)", value="", help="Ex: Clínica Sorria ou Hotel X")
         with col1: nicho_input = st.text_input("Nicho / Categoria (Opcional)", value="", help="Deixe em branco para buscar empresas gerais no local")
@@ -751,7 +749,6 @@ if st.session_state.etapa == 1:
     if btn_minar:
         with st.spinner(f"Varrendo Google Maps num raio de {raio_input} km, auditando presença web e salvando na nuvem..."):
             time.sleep(1)
-            # Passamos o novo parâmetro 'nome_empresa_input' para a função de mineração
             novos = minerar_e_auditar_negocios(nome_empresa_input, nicho_input, cidade_input, bairro_input, rua_input, raio_input, limite_input)
             if novos and len(novos) > 0:
                 mudar_etapa(2)
@@ -778,7 +775,6 @@ elif st.session_state.etapa == 2:
     else:
         df_leads_crm = pd.DataFrame(base_leads)
 
-# Adicionado o filtro de busca por nome da empresa junto aos demais filtros
         col_f_busca, col_f_nicho, col_f_cid, col_f_status, col_export = st.columns([2, 2, 2, 2, 2.2])
 
         with col_f_busca:
@@ -811,12 +807,11 @@ elif st.session_state.etapa == 2:
 
         st.divider()
 
-        # Aplicação do filtro de nome em conjunto com os demais
         resultados_filtrados = base_leads
         if filtro_nome_busca.strip():
             termo_busca = filtro_nome_busca.strip().lower()
             resultados_filtrados = [r for r in resultados_filtrados if termo_busca in r['nome'].lower()]
-            
+
         if filtro_nicho != "Todos os Nichos":
             resultados_filtrados = [r for r in resultados_filtrados if r['categoria'] == filtro_nicho]
         if filtro_cidade != "Todas as Cidades":
