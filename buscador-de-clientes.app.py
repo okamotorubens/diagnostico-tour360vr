@@ -706,7 +706,7 @@ elif st.session_state.etapa == 4:
                     f"<b style='color:#FFFFFF'>{titulo}</b>{linhas}</div>"
                 )
 
-            m = folium.Map(
+                m = folium.Map(
                 location=[df_m["latitude"].mean(), df_m["longitude"].mean()],
                 zoom_start=13,
                 tiles="OpenStreetMap",
