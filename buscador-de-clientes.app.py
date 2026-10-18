@@ -207,30 +207,38 @@ def calcular_oportunidade(website, total_avaliacoes, qtd_fotos):
 
 
 def buscar_todas_paginas(query, api_key, limite):
-    """Percorre as páginas da Text Search (20 por página). Retorna lista ou None em erro."""
+    """Percorre as páginas da Text Search (20 por página) de forma segura."""
     url = "https://maps.googleapis.com/maps/api/place/textsearch/json"
     params = {"query": query, "language": "pt-BR", "key": api_key}
     resultados = []
+    
     while True:
         try:
             data = requests.get(url, params=params, timeout=12).json()
         except Exception as e:
             st.error(f"Falha de conexão com a Google Places API: {e}")
             return None
+
         status = data.get("status")
         if status == "ZERO_RESULTS":
             break
         if status != "OK":
             st.error(f"Google Places retornou '{status}'. {data.get('error_message', '')}")
             return None
+
         resultados += data.get("results", [])
         token = data.get("next_page_token")
+        
         if not token or len(resultados) >= limite:
             break
+            
+        # A API do Google exige uma pequena pausa antes que o next_page_token fique ativo
         time.sleep(PAUSA_PAGINACAO)
+        
+        # ATENÇÃO: O pagetoken deve ser enviado SOZINHO (com a key), sem o parâmetro "query"
         params = {"pagetoken": token, "key": api_key}
+        
     return resultados[:limite]
-
 
 def buscar_google_places_api(nicho, cidade, bairro, rua, api_key, limite):
     termos = [t.strip() for t in [nicho, rua, bairro, cidade] if t and t.strip()]
