@@ -491,14 +491,25 @@ def buscar_google_places_api(nicho, cidade, bairro, rua, raio_km, api_key, limit
     
     try:
         while len(leads) < limite:
+            data = {}
             if next_page_token:
                 pag_url = f"https://maps.googleapis.com/maps/api/place/textsearch/json?pagetoken={next_page_token}&key={api_key}"
-                response = requests.get(pag_url, timeout=12)
-                time.sleep(2)
+                
+                # O Google exige um tempo de espera para o token ativar. Tentamos até 3 vezes se der erro de requisição inválida.
+                success = False
+                for tentativa in range(3):
+                    time.sleep(3.5) # Aguarda 3.5 segundos para o token ficar pronto
+                    response = requests.get(pag_url, timeout=12)
+                    data = response.json()
+                    if data.get("status") == "OK":
+                        success = True
+                        break
+                if not success:
+                    break
             else:
                 response = requests.get(url, timeout=12)
+                data = response.json()
 
-            data = response.json()
             status = data.get("status")
             
             if status == "OK":
@@ -562,7 +573,6 @@ def buscar_google_places_api(nicho, cidade, bairro, rua, raio_km, api_key, limit
                     if len(clean_phone) > 10 and clean_phone.startswith("55"):
                         clean_phone = clean_phone[2:]
 
-                    # Restauração do formato original do link do Instagram gerado por nome
                     nome_slug = re.sub(r'[^a-zA-Z0-9]', '', nome.lower())
                     instagram_url = f"https://instagram.com/{nome_slug}"
 
