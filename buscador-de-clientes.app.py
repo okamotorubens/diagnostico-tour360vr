@@ -812,7 +812,18 @@ elif st.session_state.etapa == 2:
                 foto_lead = lead.get('foto_url', '')
                 if foto_lead and foto_lead.startswith("http"):
                     try:
-                        st.image(foto_lead, caption="Foto da Ficha do Google", use_container_width=True)
+                        # Faz o download seguro da foto usando a API Key para autenticar na Google
+                        api_key_atual = st.secrets.get("GOOGLE_API_KEY", None) or os.getenv("GOOGLE_API_KEY", "")
+                        if "key=" not in foto_lead and api_key_atual:
+                            foto_lead_auth = f"{foto_lead}&key={api_key_atual.strip().replace('"', '').replace("'", "")}"
+                        else:
+                            foto_lead_auth = foto_lead
+                            
+                        resp_img = requests.get(foto_lead_auth, timeout=5)
+                        if resp_img.status_code == 200:
+                            st.image(resp_img.content, caption="Foto da Ficha do Google", use_container_width=True)
+                        else:
+                            st.info("📷 Sem foto disponível na ficha")
                     except Exception:
                         st.info("📷 Sem foto disponível na ficha")
                 else:
