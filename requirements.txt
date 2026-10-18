@@ -12,7 +12,6 @@ supabase
 matplotlib
 google-genai
 qrcode
-Pillow
 supabase
 beautifulsoup4
 pytz
