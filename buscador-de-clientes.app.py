@@ -1141,16 +1141,6 @@ elif st.session_state.etapa == 5:
                 try:
                     client = ApifyClient(APIFY_TOKEN)
                     
-                    # Estrutura de input exata exigida pelo Actor 'seemuapps/instagram-followers-scraper'
-                    run_input = {
-                        "username": username_limpo,
-                        "mode": "followers",
-                        "maxItems": limite_leads
-                    }
-                    with st.spinner(f"O robô do Apify está varrendo os seguidores de '@{username_limpo}' de forma anônima e segura..."):
-                try:
-                    client = ApifyClient(APIFY_TOKEN)
-                    
                     run_input = {
                         "username": username_limpo,
                         "mode": "followers",
@@ -1161,11 +1151,13 @@ elif st.session_state.etapa == 5:
                     run = client.actor("seemuapps/instagram-followers-scraper").call(run_input=run_input)
                     dados_coletados = []
                     
-                    # Extrai o ID do dataset de forma compatível com dicionário ou objeto
+                    # Extrai o ID do dataset de forma compatível com dicionário ou objeto Run
                     if isinstance(run, dict):
                         dataset_id = run.get("defaultDatasetId") or run.get("default_dataset_id")
                     else:
-                        dataset_id = getattr(run, "default_dataset_id", getattr(run, "defaultDatasetId", None)) or run["defaultDatasetId"]
+                        dataset_id = getattr(run, "default_dataset_id", getattr(run, "defaultDatasetId", None))
+                        if not dataset_id and hasattr(run, "get"):
+                            dataset_id = run.get("defaultDatasetId") or run.get("default_dataset_id")
                     
                     for item in client.dataset(dataset_id).iterate_items():
                         bio = item.get("biography", "")
@@ -1192,6 +1184,7 @@ elif st.session_state.etapa == 5:
                             "foto_perfil": item.get("profilePicUrl", "https://via.placeholder.com/150"),
                             "origem_concorrente": username_limpo
                         })
+                        
                     if dados_coletados:
                         df_leads = pd.DataFrame(dados_coletados)
                         st.session_state['leads_instagram_coletados'] = df_leads
