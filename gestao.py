@@ -414,7 +414,7 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     buffer.seek(0)
     return buffer
 
-# --- CSS PERSONALIZADO (VERSÃO ESTÁVEL PERFEITA) ---
+# --- CSS PERSONALIZADO (SEM CONTAINER AZUL + CAMPO SELETOR EM DESTAQUE BRANCO) ---
 st.markdown("""
     <style>
     .block-container { padding-top: 1.0rem !important; padding-bottom: 1.5rem !important; max-width: 94% !important; margin: 0 auto !important; }
@@ -467,13 +467,16 @@ st.markdown("""
     }
     div[data-testid="stForm"] { border-color: #2B364A !important; padding: 16px !important; border-radius: 10px !important; background-color: #131A28 !important; }
     
-    /* Caixa de destaque refinada para a seleção de clientes */
-    .selector-box {
-        background-color: #161F30;
-        border: 1px solid #2B364A;
-        padding: 16px 20px;
-        border-radius: 10px;
-        margin-bottom: 15px;
+    /* DESTAQUE DE CONTORNO BRANCO NO SELETOR DE CLIENTES */
+    div[data-baseweb="select"] > div {
+        background-color: #131A28 !important;
+        border: 2px solid #FFFFFF !important;
+        border-radius: 8px !important;
+        box-shadow: 0 0 10px rgba(255, 255, 255, 0.25) !important;
+    }
+    div[data-baseweb="select"] > div:hover {
+        border-color: #60A5FA !important;
+        box-shadow: 0 0 14px rgba(96, 165, 250, 0.5) !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -521,16 +524,14 @@ if st.session_state["aba_ativa"] == "cadastrar":
     modo_edicao = False
     dados_existentes = None
     
-    # Bloco melhorado e separado visualmente para busca/cadastro de clientes
-    st.markdown('<div class="selector-box">', unsafe_allow_html=True)
-    st.markdown("##### 🔍 Gerenciamento Rápido de Clientes")
+    # Campo de seleção limpo (sem container azul) com destaque de contorno branco puro
     if not df_clientes.empty:
         opcoes = ["➕ Cadastrar Novo Cliente"] + df_clientes["nome_empresa"].tolist()
         sel_idx = 0
         if "cliente_sel_cad" in st.session_state and st.session_state["cliente_sel_cad"] in opcoes:
             sel_idx = opcoes.index(st.session_state["cliente_sel_cad"])
         
-        cliente_menu = st.selectbox("Selecione um cliente existente para editar ou escolha cadastrar um novo:", opcoes, index=sel_idx, key="sel_cliente_menu_cad")
+        cliente_menu = st.selectbox("🔍 Pesquisar ou Adicionar um Cliente:", opcoes, index=sel_idx, key="sel_cliente_menu_cad")
         st.session_state["cliente_sel_cad"] = cliente_menu
         
         if cliente_menu != "➕ Cadastrar Novo Cliente":
@@ -544,7 +545,8 @@ if st.session_state["aba_ativa"] == "cadastrar":
             st.info("✨ **Novo Cadastro:** Preencha os campos abaixo para registrar um novo cliente na base.")
     else:
         st.warning("Nenhum cliente cadastrado ainda na base. Preencha o formulário abaixo para registrar o primeiro.")
-    st.markdown('</div>', unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
 
     with st.form("form_cliente_gmb_completo"):
         sub_t1, sub_t2, sub_t3, sub_t4, sub_t5, sub_t6 = st.tabs([
@@ -727,22 +729,22 @@ if st.session_state["aba_ativa"] == "cadastrar":
             except Exception as e:
                 st.error(f"Erro ao salvar: {str(e)}")
 
-    # Seção de QR Code fora do formulário principal para evitar erros de layout do Streamlit
+    # Seção do QR Code posicionada exatamente abaixo do card do cliente (fora do form)
     if modo_edicao and dados_existentes:
         st.markdown("<br>", unsafe_allow_html=True)
-        with st.expander("🖨️ Gerador de QR Code de Avaliações para este Cliente", expanded=False):
-            link_maps_qr = dados_existentes.get("website", "") or "https://g.page/r/..."
-            link_qr_input = st.text_input("Link Direto de Avaliações (URL do Google Maps):", value=link_maps_qr, key="input_url_qr_gerador")
-            if link_qr_input:
-                qr = qrcode.QRCode(version=1, box_size=10, border=4)
-                qr.add_data(link_qr_input)
-                qr.make(fit=True)
-                img_qr = qr.make_image(fill_color="black", back_color="white")
-                buf_qr = BytesIO()
-                img_qr.save(buf_qr, format="PNG")
-                buf_qr.seek(0)
-                st.image(buf_qr, width=180, caption=f"QR Code - {cliente_menu}")
-                st.download_button("📥 Baixar Imagem QR Code", data=buf_qr, file_name=f"QRCode_Avaliacoes_{cliente_menu}.png", mime="application/png", key="btn_download_qr_code_safe")
+        st.markdown("### 🖨️ Gerador de QR Code de Avaliações")
+        link_maps_qr = dados_existentes.get("website", "") or "https://g.page/r/..."
+        link_qr_input = st.text_input("Link Direto de Avaliações (Basta colar a URL do Google Maps):", value=link_maps_qr, key="input_url_qr_gerador")
+        if link_qr_input:
+            qr = qrcode.QRCode(version=1, box_size=10, border=4)
+            qr.add_data(link_qr_input)
+            qr.make(fit=True)
+            img_qr = qr.make_image(fill_color="black", back_color="white")
+            buf_qr = BytesIO()
+            img_qr.save(buf_qr, format="PNG")
+            buf_qr.seek(0)
+            st.image(buf_qr, width=180, caption=f"QR Code Oficial - {cliente_menu}")
+            st.download_button("📥 Baixar Imagem QR Code", data=buf_qr, file_name=f"QRCode_Avaliacoes_{cliente_menu}.png", mime="image/png", key="btn_download_qr_code_safe")
 
     gerar_botoes_navegacao_rodape()
 
@@ -928,7 +930,7 @@ elif st.session_state["aba_ativa"] == "pdf":
             valor_personalizado = st.number_input("Valor do Plano (R$)", min_value=0.0, step=50.0, value=(500.0 if "Start" in plano_selecionado else (1500.0 if "Pro" in plano_selecionado else 600.0)))
             
             if st.button("Gerar Contrato Oficial em PDF"):
-                pdf_contrato = gerar_pdf_contrato(dados_cli, plano_selecionado, valor_personalizado, meses_gestao)
+                pdf_contrato =gerar_pdf_contrato(dados_cli, plano_selecionado, valor_personalizado, meses_gestao)
                 data_str_file = agora_brasil().strftime("%Y-%m-%d")
                 nome_arquivo_pdf = f"Contrato Tour360VR - {c_pdf} - {data_str_file}.pdf"
                 st.download_button("📥 Baixar Contrato Oficial PDF", data=pdf_contrato, file_name=nome_arquivo_pdf, mime="application/pdf")
