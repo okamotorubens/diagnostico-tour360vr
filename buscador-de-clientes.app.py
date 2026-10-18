@@ -1131,7 +1131,7 @@ elif st.session_state.etapa == 5:
     url_input = st.text_input("Cole o link do perfil do Instagram alvo (Ex: https://instagram.com/reserva ou @reserva):")
     limite_leads = st.slider("Quantidade de seguidores a buscar por execução:", min_value=10, max_value=200, value=50, step=10)
     
-    if st.button("🔍 Iniciar Captura de Leads", type="primary"):
+    if st.button("🔍 Iniciar Captura de Seguidores", type="primary"):
         if not url_input:
             st.error("Por favor, informe a URL ou @ de um perfil do Instagram ativo.")
         else:
@@ -1140,17 +1140,18 @@ elif st.session_state.etapa == 5:
                 raw_input = raw_input.split("instagram.com/")[-1]
             username_limpo = raw_input.replace("@", "").strip("/").split("?")[0].split("/")[0].strip()
             
-            with st.spinner(f"O robô do Apify está varrendo os seguidores de '@{username_limpo}' de forma segura..."):
+            with st.spinner(f"O robô do Apify está minerando os seguidores de '@{username_limpo}'..."):
                 try:
                     client = ApifyClient(APIFY_TOKEN)
                     
-                    # Usando o Actor universal e oficial de perfis/seguidores da Apify
+                    # Usando o Actor de seguidores/seguidos sem cookies da Scraping Solutions
                     run_input = {
                         "usernames": [username_limpo],
                         "resultsLimit": int(limite_leads)
                     }
                     
-                    run = client.actor("apify/instagram-profile-scraper").call(run_input=run_input)
+                    # Chamada ao Actor correto de seguidores
+                    run = client.actor("scraping-solutions/instagram-scraper-following-no-cookies").call(run_input=run_input)
                     dados_coletados = []
                     
                     dataset_id = None
@@ -1179,7 +1180,7 @@ elif st.session_state.etapa == 5:
                             dados_coletados.append({
                                 "username": item.get("username"),
                                 "nome_completo": item.get("fullName") or item.get("full_name") or item.get("displayName") or "Sem nome informado",
-                                "instagram_id": str(item.get("id") or item.get("userId") or ""),
+                                "instagram_id": str(item.get("id") or item.get("userId") or item.get("pk", "")),
                                 "biografia": bio,
                                 "link_bio": link_ext,
                                 "whatsapp": whats,
@@ -1200,7 +1201,7 @@ elif st.session_state.etapa == 5:
                                 except Exception as db_err:
                                     st.warning(f"Leads exibidos no painel, mas falhou a sincronização com o Supabase: {db_err}")
                     else:
-                        st.warning(f"Nenhum dado retornado pela API para o perfil '@{username_limpo}'. Certifique-se de que a conta é pública.")
+                        st.warning(f"Nenhum seguidor retornado pela API para o perfil '@{username_limpo}'. Certifique-se de que a conta é pública.")
                 except Exception as e:
                     st.error(f"Erro operacional durante o processo de scraping: {e}")
 
