@@ -161,7 +161,6 @@ def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
     canvas.saveState()
     styles = getSampleStyleSheet()
     
-    # 1. LOGO DESENHADA NA ESQUERDA
     logo_tour = "logo_tour_transparente.png" if os.path.exists("logo_tour_transparente.png") else None
     if logo_tour:
         img_logo = Image(logo_tour, width=170, height=60, kind='proportional')
@@ -172,7 +171,6 @@ def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
         canvas.setFillColor(colors.HexColor('#0f172a'))
         canvas.drawString(36, 735, "TOUR360VR")
 
-    # 2. TEXTO CENTRALIZADO NA PÁGINA E ALINHADO NA ALTURA DA LOGO
     header_title_style = ParagraphStyle(
         'HeaderTitleCenterPage',
         parent=styles['Normal'],
@@ -203,12 +201,10 @@ def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
     texto_table.wrapOn(canvas, 540, 60)
     texto_table.drawOn(canvas, 36, 730)
 
-    # 3. LINHA DIVISÓRIA HORIZONTAL DO CABEÇALHO
     canvas.setStrokeColor(colors.HexColor('#cbd5e1'))
     canvas.setLineWidth(0.5)
     canvas.line(36, 706, 576, 706)
     
-    # 4. RODAPÉ FIXO COM LINHA DIVISÓRIA FINA
     canvas.setLineWidth(0.5)
     canvas.line(36, 42, 576, 42)
     
@@ -372,7 +368,7 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     return buffer
 
 # -----------------------------------------------------------------------------
-# ESTILIZAÇÃO CSS CUSTOMIZADA (SIDEBAR FIXA SEM SCROLLBAR)
+# ESTILIZAÇÃO CSS CUSTOMIZADA
 # -----------------------------------------------------------------------------
 st.markdown("""
     <style>
@@ -479,7 +475,7 @@ def mudar_etapa(nova_etapa):
     st.rerun()
 
 # -----------------------------------------------------------------------------
-# INTEGRAÇÃO DE BUSCA REAL VIA GOOGLE PLACES API COM RAIO DE KM
+# GOOGLE PLACES API
 # -----------------------------------------------------------------------------
 def buscar_google_places_api(nicho, cidade, bairro, rua, raio_km, api_key, limite=20):
     termos = []
@@ -496,7 +492,6 @@ def buscar_google_places_api(nicho, cidade, bairro, rua, raio_km, api_key, limit
     try:
         response = requests.get(url, timeout=12)
         data = response.json()
-        
         status = data.get("status")
         
         if status == "OK":
@@ -588,18 +583,12 @@ def buscar_google_places_api(nicho, cidade, bairro, rua, raio_km, api_key, limit
                 salvar_lead_db(lead_obj)
                 leads.append(lead_obj)
             return leads
-        elif status == "ZERO_RESULTS":
-            st.warning("⚠️ O Google Maps não encontrou empresas para este termo exato dentro do raio especificado. Tente aumentar o raio de km.")
-        else:
-            msg_erro = data.get("error_message", "Sem detalhes adicionais do Google.")
-            st.error(f"⚠️ Resposta do Google Maps: **Status '{status}'**. Detalhes: {msg_erro}")
     except Exception as e:
         st.error(f"Erro na requisição à API do Google Places: {str(e)}")
     return None
 
 def minerar_e_auditar_negocios(nicho, cidade, bairro, rua, raio_km, limite=20):
     api_key = st.secrets.get("GOOGLE_API_KEY", None) or os.getenv("GOOGLE_API_KEY", None)
-    
     if api_key:
         api_key_limpa = api_key.strip().replace('"', '').replace("'", "")
         leads_reais = buscar_google_places_api(nicho, cidade, bairro, rua, raio_km, api_key_limpa, limite)
@@ -663,12 +652,10 @@ base_leads = carregar_todos_leads_db()
 with st.sidebar:
     st.markdown('<div class="sidebar-title">Menu Radar Comercial</div>', unsafe_allow_html=True)
     
-    # Logo Tour360VR
     if os.path.exists("logo_tour_transparente.png"):
         c1, c2, c3 = st.columns([1.2, 3.6, 1.2])
         with c2: st.image("logo_tour_transparente.png", use_container_width=True)
     
-    # Logo Okamoto Mídias Visuais
     if os.path.exists("logo_okamoto.png"):
         c1, c2, c3 = st.columns([0.8, 4.4, 0.8])
         with c2: st.image("logo_okamoto.png", use_container_width=True)
@@ -712,11 +699,11 @@ if st.session_state.etapa == 1:
 
     with st.form("form_busca"):
         col1, col2, col3, col4, col5, col6 = st.columns([2, 2, 1.8, 1.8, 1.2, 1.2])
-        with col1: nicho_input = st.text_input("Nicho / Categoria (Opcional)", value="", help="Deixe em branco para buscar empresas gerais no local")
+        with col1: nicho_input = st.text_input("Nicho / Categoria (Opcional)", value="")
         with col2: cidade_input = st.text_input("Cidade / Município", value="Ribeirão Preto")
-        with col3: rua_input = st.text_input("Rua / Avenida (Opcional)", value="", help="Ex: Av. Independência")
-        with col4: bairro_input = st.text_input("Bairro / Região (Opcional)", value="", help="Deixe em branco para amplitude de busca na cidade")
-        with col5: raio_input = st.number_input("Raio (km)", min_value=1, max_value=50, value=10, step=1, help="Distância máxima de busca a partir do centro da localidade")
+        with col3: rua_input = st.text_input("Rua / Avenida (Opcional)", value="")
+        with col4: bairro_input = st.text_input("Bairro / Região (Opcional)", value="")
+        with col5: raio_input = st.number_input("Raio (km)", min_value=1, max_value=50, value=10, step=1)
         with col6: limite_input = st.number_input("Qtd. Máxima", min_value=20, max_value=70, value=20, step=5)
         
         btn_minar = st.form_submit_button("🚀 Iniciar Varredura Profunda", use_container_width=True)
@@ -849,39 +836,6 @@ elif st.session_state.etapa == 2:
                     link_wa = f"https://wa.me/55{lead['whatsapp']}?text={urllib.parse.quote(msg_wa)}"
                     st.markdown(f'<a href="{link_wa}" target="_blank"><button style="width:100%; background-color:#25D366; color:white; border:none; padding:8px; border-radius:6px; font-weight:bold; cursor:pointer; margin-bottom:8px;">💬 WhatsApp</button></a>', unsafe_allow_html=True)
 
-            with st.expander(f"✉️ **Uso Interno — Scripts de Vendas e Abordagem ({lead['nome']})**"):
-                st.markdown("**1) Abordagem Inicial — WhatsApp**")
-                script_wa = f"""Olá! Tudo bem?
-Meu nome é Rubens Okamoto, da Okamoto Mídias Visuais e do Tour360VR.
-Estava analisando a presença da {lead['nome']} no Google, e identifiquei 3 pontos onde a visibilidade do espaço de vocês pode ser bastante ampliada em relação aos concorrentes da região.
-Montei um relatório curto de diagnóstico em PDF. Posso te enviar por aqui para você dar uma olhada?"""
-                st.markdown(f'<div class="script-box">{script_wa}</div>', unsafe_allow_html=True)
-
-                st.markdown("**2) Abordagem Inicial — E-mail**")
-                script_email = f"""Assunto: Oportunidade de Presença Digital: {lead['nome']} no Google
-
-Olá! Analisei o perfil da {lead['nome']} no Google e gostaria de compartilhar uma oportunidade importante.
-
-Identifiquei 3 pontos críticos que estão impactando a confiança de novos clientes:
-1. Ausência de Tour Virtual 360° navegável (seus concorrentes levam vantagem visual).
-2. Perfil estático com fotos e informações desatualizadas.
-3. Falta de otimização de palavras-chave para o setor de {lead['categoria']}.
-
-Temos soluções para transformar a vitrine do seu negócio no Google. Anexo um diagnóstico em PDF com a análise detalhada.
-
-Fico à disposição para conversarmos!
-
-Atenciosamente,
-
-Rubens Okamoto
-TOUR360VR | Okamoto Mídias Visuais
-(16) 99133-2121 | tour360vr.com.br"""
-                st.markdown(f'<div class="script-box">{script_email}</div>', unsafe_allow_html=True)
-
-                st.markdown("**3) Follow-up 48h — Pós-Envio do Diagnóstico**")
-                script_follow = f"Olá! Só checando por aqui — conseguiu analisar o diagnóstico em PDF da {lead['nome']} que te enviei? Fico no aguardo para tirar qualquer dúvida!"
-                st.markdown(f'<div class="script-box">{script_follow}</div>', unsafe_allow_html=True)
-
             st.divider()
 
 # -----------------------------------------------------------------------------
@@ -992,7 +946,7 @@ elif st.session_state.etapa == 3:
         )
 
 # -----------------------------------------------------------------------------
-# ETAPA 4: MAPA DE PROSPECÇÃO (CENTRALIZAÇÃO DINÂMICA)
+# ETAPA 4: MAPA DE PROSPECÇÃO
 # -----------------------------------------------------------------------------
 elif st.session_state.etapa == 4:
     st.markdown("""
@@ -1039,35 +993,13 @@ elif st.session_state.etapa == 4:
 
         CORES_PINS = ['red', 'blue', 'green', 'purple', 'orange', 'darkred', 'cadetblue', 'darkgreen', 'darkblue', 'pink']
         CORES_HEX = {
-            'red': '#ef4444', 
-            'blue': '#3b82f6', 
-            'green': '#10b981', 
-            'purple': '#8b5cf6',
-            'orange': '#f97316', 
-            'darkred': '#991b1b', 
-            'cadetblue': '#06b6d4',
-            'darkgreen': '#166534', 
-            'darkblue': '#1e3a8a', 
-            'pink': '#ec4899'
+            'red': '#ef4444', 'blue': '#3b82f6', 'green': '#10b981', 'purple': '#8b5cf6',
+            'orange': '#f97316', 'darkred': '#991b1b', 'cadetblue': '#06b6d4',
+            'darkgreen': '#166534', 'darkblue': '#1e3a8a', 'pink': '#ec4899'
         }
 
         segmentos_unicos = list(df_mapa['categoria'].unique())
         mapa_cores_seg = {seg: CORES_PINS[idx % len(CORES_PINS)] for idx, seg in enumerate(segmentos_unicos)}
-
-        if cat_sel_mapa == "Todos os Nichos" and len(segmentos_unicos) > 1:
-            st.markdown("**🎨 Legenda de Cores por Nicho:**")
-            cols_leg = st.columns(min(len(segmentos_unicos), 5))
-            for idx, (seg, cor_nome) in enumerate(mapa_cores_seg.items()):
-                hex_cor = CORES_HEX.get(cor_nome, '#ef4444')
-                with cols_leg[idx % 5]:
-                    st.markdown(
-                        f'<div style="background-color: #1e293b; padding: 8px 12px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">'
-                        f'<span style="height: 12px; width: 12px; background-color: {hex_cor}; border-radius: 50%; display: inline-block;"></span>'
-                        f'<b style="color: #ffffff; font-size: 13px;">{seg}</b>'
-                        f'</div>',
-                        unsafe_allow_html=True
-                    )
-            st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
 
         if 'latitude' in df_mapa_filtrado.columns and 'longitude' in df_mapa_filtrado.columns and len(df_mapa_filtrado) > 0:
             lat_centro = df_mapa_filtrado['latitude'].mean()
@@ -1089,9 +1021,6 @@ elif st.session_state.etapa == 4:
                     <hr style="margin: 6px 0; border: 0.5px solid #cbd5e1;"/>
                     🚨 <b>Score de Oportunidade:</b> <span style="color: #dc2626; font-weight: bold;">{row['score_oportunidade']}/100</span><br/>
                     ⭐ <b>Nota no Google:</b> {row['nota']} ({row['total_avaliacoes']} avaliações)<br/>
-                    🌐 <b>Website Oficial:</b> {'✅ Presente' if row['website'] else '❌ Ausente'}<br/>
-                    📷 <b>Fotos na Ficha:</b> {row['fotos_total']} fotos publicadas<br/>
-                    📅 <b>Última Atualização:</b> há {row['ultima_foto_dias']} dias
                 </div>
                 """
 
@@ -1107,21 +1036,18 @@ elif st.session_state.etapa == 4:
                 m.fit_bounds(bounds, padding=[30, 30])
 
             st_folium(m, width="100%", height=700)
-        else:
-            st.warning("Nenhum registro encontrado para os filtros selecionados.")
 
 # -----------------------------------------------------------------------------
-# ETAPA 5: EXTRATOR DE SEGUIDORES DO INSTAGRAM (APIFY)
+# ETAPA 5: EXTRATOR DE SEGUIDORES DO INSTAGRAM (APIFY - INSTAGRAM-SCRAPER)
 # -----------------------------------------------------------------------------
 elif st.session_state.etapa == 5:
     st.markdown("""
         <div class="main-header">
             <h1 class="main-title">📁 Extrator de Leads de Seguidores do Instagram</h1>
-            <div class="main-subtitle">Insira o link de uma conta concorrente para raspar todos os seguidores, mapear contatos comerciais de WhatsApp e salvar no Supabase.</div>
+            <div class="main-subtitle">Insira o link de uma conta concorrente para raspar seguidores com o Actor oficial apify/instagram-scraper e salvar no Supabase.</div>
         </div>
     """, unsafe_allow_html=True)
     
-    # Puxa o Token com segurança das Secrets do Streamlit
     APIFY_TOKEN = st.secrets.get("credentials", {}).get("APIFY_TOKEN") or st.secrets.get("APIFY_TOKEN", os.getenv("APIFY_TOKEN"))
     
     if not APIFY_TOKEN:
@@ -1140,17 +1066,19 @@ elif st.session_state.etapa == 5:
                 raw_input = raw_input.split("instagram.com/")[-1]
             username_limpo = raw_input.replace("@", "").strip("/").split("?")[0].split("/")[0].strip()
             
-            with st.spinner(f"O robô do Apify está varrendo os seguidores de '@{username_limpo}'..."):
+            with st.spinner(f"O robô do Apify está varrendo os seguidores de '@{username_limpo}' com o Actor oficial..."):
                 try:
                     client = ApifyClient(APIFY_TOKEN)
                     
-                    # Configuração para buscar seguidores no Actor do Apify
+                    # Chamada robusta ao Actor oficial apify/instagram-scraper
                     run_input = {
-                        "username": username_limpo,
-                        "resultsLimit": int(limite_leads)
+                        "directUrls": [f"https://www.instagram.com/{username_limpo}/"],
+                        "resultsType": "followers",
+                        "resultsLimit": int(limite_leads),
+                        "searchLimit": 1
                     }
                     
-                    run = client.actor("seemuapps/instagram-followers-scraper").call(run_input=run_input)
+                    run = client.actor("apify/instagram-scraper").call(run_input=run_input)
                     dados_coletados = []
                     
                     dataset_id = None
@@ -1163,7 +1091,6 @@ elif st.session_state.etapa == 5:
                     
                     if dataset_id:
                         for item in client.dataset(dataset_id).iterate_items():
-                            # Evita duplicar a própria conta buscada na lista de seguidores
                             if item.get("username") == username_limpo:
                                 continue
                                 
@@ -1182,8 +1109,8 @@ elif st.session_state.etapa == 5:
                             
                             dados_coletados.append({
                                 "username": item.get("username"),
-                                "nome_completo": item.get("displayName") or item.get("fullName") or item.get("full_name") or "Sem nome informado",
-                                "instagram_id": str(item.get("userId") or item.get("id") or item.get("pk", "")),
+                                "nome_completo": item.get("fullName") or item.get("full_name") or item.get("displayName") or "Sem nome informado",
+                                "instagram_id": str(item.get("id") or item.get("userId") or item.get("pk", "")),
                                 "biografia": bio,
                                 "link_bio": link_ext,
                                 "whatsapp": whats,
@@ -1208,7 +1135,6 @@ elif st.session_state.etapa == 5:
                 except Exception as e:
                     st.error(f"Erro operacional durante o processo de scraping: {e}")
 
-    # Exibição do painel visual de resultados
     if 'leads_instagram_coletados' in st.session_state:
         df_atual = st.session_state['leads_instagram_coletados']
         
