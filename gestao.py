@@ -31,6 +31,9 @@ from design.tokens import COLORS
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
 FAVICON_TOUR360 = "https://tour360vr.com.br/favicon.ico"
+AZUL_ESCURO = "#1E3A8A"
+AZUL_LINK = "#1E40AF"
+WHATSAPP_VERDE = "#25D366"
 
 st.set_page_config(
     page_title="Gestão Mensal & Estratégia | Tour360VR",
@@ -38,6 +41,23 @@ st.set_page_config(
     layout="wide",
 )
 inject_theme()
+
+# Botões WhatsApp: texto sempre branco (sobrescreve o azul de link do Streamlit)
+st.markdown(
+    """
+    <style>
+    a.gl-wpp, a.gl-wpp:visited, a.gl-wpp:hover, a.gl-wpp:focus, a.gl-wpp * {
+        color: #FFFFFF !important; text-decoration: none !important;
+    }
+    a.gl-wpp {
+        display: block; width: 100%; box-sizing: border-box;
+        background: #25D366 !important; padding: 12px; border-radius: 12px;
+        font-weight: 700; text-align: center; font-size: 1rem;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 
 # Caminho da logo (aceita raiz, assets/ ou assests/)
 LOGO_CANDIDATES = [
@@ -62,6 +82,14 @@ def obter_base64_logo(caminho):
     return ""
 
 
+def botao_whatsapp(url, texto):
+    st.markdown(f'<a class="gl-wpp" href="{url}" target="_blank">{texto}</a>', unsafe_allow_html=True)
+
+
+def csv_bytes(df):
+    return df.to_csv(index=False, sep=";").encode("utf-8-sig")
+
+
 # --- LOGO E RODAPÉ PADRÃO DO PDF ---
 def get_rl_image_pdf(width=45, height=45):
     if os.path.exists(LOGO_LOCAL_PATH):
@@ -82,9 +110,9 @@ def adicionar_rodape_padrao(canvas, doc):
     canvas.line(40, 32, letter[0] - 40, 32)
     footer_html = (
         '<font color="#334155">'
-        '<font color="#1E40AF"><a href="https://tour360vr.com.br">tour360vr.com.br</a></font> &nbsp;|&nbsp; '
-        '<font color="#1E40AF"><a href="mailto:contato@tour360vr.com.br">contato@tour360vr.com.br</a></font> &nbsp;|&nbsp; '
-        'WhatsApp: <font color="#1E40AF"><a href="https://wa.me/5516991332121">(16) 99133-2121</a></font>'
+        f'<font color="{AZUL_LINK}"><a href="https://tour360vr.com.br">tour360vr.com.br</a></font> &nbsp;|&nbsp; '
+        f'<font color="{AZUL_LINK}"><a href="mailto:contato@tour360vr.com.br">contato@tour360vr.com.br</a></font> &nbsp;|&nbsp; '
+        f'WhatsApp: <font color="{AZUL_LINK}"><a href="https://wa.me/5516991332121">(16) 99133-2121</a></font>'
         '</font>'
     )
     p = Paragraph(footer_html, ParagraphStyle("FooterStyle", fontName="Helvetica", fontSize=8, alignment=1))
@@ -93,7 +121,18 @@ def adicionar_rodape_padrao(canvas, doc):
     canvas.restoreState()
 
 
-# --- CONEXÃO COM SUPABASE ---
+def cabecalho_pdf(titulo_direita_html, logo_size=45, col_logo=55):
+    """Cabeçalho padrão: logo à esquerda, título à direita, linha divisória."""
+    styles = getSampleStyleSheet()
+    t = Table([[
+        get_rl_image_pdf(logo_size, logo_size),
+        Paragraph(titulo_direita_html, ParagraphStyle("RH", parent=styles["Normal"], alignment=2, fontName="Helvetica-Bold", fontSize=11, textColor=colors.HexColor(AZUL_ESCURO))),
+    ]], colWidths=[col_logo, 512 - col_logo])
+    t.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "MIDDLE"), ("ALIGN", (0, 0), (0, 0), "LEFT")]))
+    return [t, Spacer(1, 2), HRFlowable(width="100%", thickness=1.0, color=colors.HexColor("#BFDBFE"), spaceAfter=10)]
+
+
+# --- CONEXÃO COM SUPABASE (banco) ---
 @st.cache_resource
 def get_supabase_client() -> Client:
     url = st.secrets["SUPABASE_URL"]
@@ -103,7 +142,33 @@ def get_supabase_client() -> Client:
 
 supabase = get_supabase_client()
 
-# --- ROTA DE APROVAÇÃO EXTERNA ---
+
+# --- AUTENTICAÇÃO (Supabase Auth, plano gratuito) ---
+def get_auth_client() -> Client:
+    """Cliente exclusivo da sessão do navegador, para não compartilhar login entre usuários."""
+    if "auth_client" not in st.session_state:
+        st.session_state["auth_client"] = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
+    return st.session_state["auth_client"]
+
+
+def tela_login():
+    st.markdown("<div style='height: 6px;'></div>", unsafe_allow_html=True)
+    section_title("🔐 Acesso restrito à plataforma")
+    with glass_container():
+        with st.form("form_login"):
+            email = st.text_input("E-mail")
+            senha = st.text_input("Senha", type="password")
+            entrar = st.form_submit_button("Entrar")
+    if entrar:
+        try:
+            res = get_auth_client().auth.sign_in_with_password({"email": email, "password": senha})
+            st.session_state["usuario_logado"] = res.user.email
+            st.rerun()
+        except Exception:
+            st.error("E-mail ou senha inválidos.")
+
+
+# --- ROTA DE APROVAÇÃO EXTERNA (pública, sem login) ---
 query_params = st.query_params
 if "aprovar" in query_params or st.session_state.get("modo_aprovacao", False):
     logo_b64_aprov = obter_base64_logo(LOGO_LOCAL_PATH)
@@ -146,15 +211,34 @@ if "aprovar" in query_params or st.session_state.get("modo_aprovacao", False):
         f"Ajustes Solicitados:\n{obs_cliente if obs_cliente else 'Nenhum ajuste adicional.'}"
     )
     link_wsp_final = f"https://wa.me/5516991332121?text={urllib.parse.quote(msg_envio)}"
-
-    st.markdown(
-        f'<a href="{link_wsp_final}" target="_blank" style="text-decoration:none;">'
-        f'<div style="width:100%; background:{COLORS["success"]}; color:#0B0E14; padding:12px; '
-        f'border-radius:12px; font-weight:700; text-align:center; font-size:1rem;">'
-        f"📤 Enviar Aprovação e Ajustes para o WhatsApp do Rubens</div></a>",
-        unsafe_allow_html=True,
-    )
+    botao_whatsapp(link_wsp_final, "📤 Enviar Aprovação e Ajustes para o WhatsApp do Rubens")
     st.stop()
+
+# --- CABEÇALHO ---
+logo_base64 = obter_base64_logo(LOGO_LOCAL_PATH)
+render_hero(
+    logo_base64,
+    "Gestão Mensal & Estratégia",
+    "Plataforma corporativa de inteligência de Google Maps, auditoria, curadoria e contratos.",
+)
+
+# --- GATE DE LOGIN ---
+if "usuario_logado" not in st.session_state:
+    tela_login()
+    st.stop()
+
+col_u, col_s = st.columns([8, 1])
+with col_u:
+    st.caption(f"Conectado como **{st.session_state['usuario_logado']}**")
+with col_s:
+    if st.button("Sair", key="btn_sair", use_container_width=True):
+        try:
+            get_auth_client().auth.sign_out()
+        except Exception:
+            pass
+        for chave in ["usuario_logado", "auth_client"]:
+            st.session_state.pop(chave, None)
+        st.rerun()
 
 # --- NAVEGAÇÃO SEQUENCIAL DAS ABAS ---
 ORDEM_ABAS = ["cadastrar", "auditoria", "metricas", "ia", "dashboard", "cases", "pdf", "financeiro"]
@@ -212,6 +296,10 @@ def calcular_variacao_pct(atual, anterior):
     return f"{diff:.1f}%"
 
 
+def formatar_brl(valor):
+    return f"R$ {valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+
 # --- AUDITORIA OFICIAL COM OS 9 CRITÉRIOS ---
 def auditar_ficha_google_rigorosa(query_ou_url):
     api_key = st.secrets.get("GOOGLE_API_KEY", "")
@@ -256,11 +344,7 @@ def auditar_ficha_google_rigorosa(query_ou_url):
         else:
             criterios.append(("1. Fotos e Resolução Visual", f"{qtd_fotos} fotos registradas.", "Bom", "Atendido"))
 
-        # Corrigido: verifica as atribuições das fotos como texto, não a lista inteira
-        tem_tour = any(
-            "360" in " ".join(p.get("html_attributions", []))
-            for p in fotos
-        )
+        tem_tour = any("360" in " ".join(p.get("html_attributions", [])) for p in fotos)
         if not tem_tour:
             score -= 15
             criterios.append(("2. Tour Virtual 360° Interativo", "Não detectado via API. Necessário inclusão imersiva.", "Baixo", "Pendente"))
@@ -332,63 +416,84 @@ def auditar_ficha_google_rigorosa(query_ou_url):
         return None, f"Erro ao consultar a Google Places API: {str(e)}"
 
 
+# --- HISTÓRICO DE AUDITORIAS (Supabase, tabela "auditorias") ---
+def salvar_auditoria_historico(res_aud):
+    supabase.table("auditorias").insert({
+        "nome_empresa": res_aud["nome"],
+        "endereco": res_aud["endereco"],
+        "score": int(res_aud["score"]),
+        "criterios": [list(c) for c in res_aud["criterios"]],
+    }).execute()
+
+
+def listar_historico_auditorias(nome):
+    try:
+        res = (
+            supabase.table("auditorias")
+            .select("created_at, score, endereco")
+            .eq("nome_empresa", nome)
+            .order("created_at", desc=True)
+            .limit(50)
+            .execute()
+        )
+        return pd.DataFrame(res.data) if res.data else pd.DataFrame()
+    except Exception:
+        return pd.DataFrame()
+
+
 # --- PDF DA AUDITORIA ---
 def gerar_pdf_auditoria(res_aud):
+    nome_doc = f"Diagnostico Auditoria Google Maps {res_aud['nome']}"
     buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=40, leftMargin=40, topMargin=15, bottomMargin=55,
-                            title=f"Diagnostico Auditoria Google Maps {res_aud['nome']}")
-    story = []
+    doc = SimpleDocTemplate(
+        buffer, pagesize=letter, rightMargin=40, leftMargin=40, topMargin=15, bottomMargin=55,
+        title=nome_doc,
+    )
     styles = getSampleStyleSheet()
+    story = []
 
     section_style = ParagraphStyle("DocSection", parent=styles["Normal"], fontName="Helvetica-Bold", fontSize=10, leading=13, textColor=colors.HexColor("#1E293B"))
     body_style = ParagraphStyle("DocBody", parent=styles["Normal"], fontName="Helvetica", fontSize=8, leading=11, textColor=colors.HexColor("#334155"))
+    th_style = ParagraphStyle("DocTh", parent=styles["Normal"], fontName="Helvetica-Bold", fontSize=8, leading=10, textColor=colors.white)
+    nome_style = ParagraphStyle("DocNome", parent=styles["Normal"], fontName="Helvetica-Bold", fontSize=16, leading=20, textColor=colors.HexColor(AZUL_ESCURO))
+    score_style = ParagraphStyle("DocScore", parent=styles["Normal"], fontName="Helvetica-Bold", fontSize=20, leading=24, textColor=colors.HexColor(AZUL_ESCURO))
 
-    logo_flowable = get_rl_image_pdf(45, 45)
+    story += cabecalho_pdf("<b>DIAGNÓSTICO DE AUDITORIA GOOGLE MAPS</b>")
 
-    header_table_data = [[
-        logo_flowable,
-        Paragraph(
-            f"<b>DIAGNÓSTICO DE AUDITORIA GOOGLE MAPS</b>",
-            ParagraphStyle("RHeader", parent=styles["Normal"], alignment=2, fontName="Helvetica"),
-        ),
-    ]]
-    t_header = Table(header_table_data, colWidths=[55, 477])
-    t_header.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "MIDDLE"), ("ALIGN", (0, 0), (0, 0), "LEFT")]))
-    story.append(t_header)
-    story.append(Spacer(1, 2))
-    story.append(HRFlowable(width="100%", thickness=1.0, color=colors.HexColor("#BFDBFE"), spaceAfter=10))
-
-    story.append(Spacer(1, 12))
-    story.append(Paragraph(f"<font size=10 color='#1E40AF'><b>{res_aud['nome']}</b></font>", body_style))
+    story.append(Spacer(1, 12))  # 1 linha
+    story.append(Paragraph(res_aud["nome"], nome_style))
+    story.append(Spacer(1, 4))
     story.append(Paragraph(f"<b>Endereço:</b> {res_aud['endereco']} | <b>Telefone:</b> {res_aud['telefone']}", body_style))
-    story.append(Spacer(1, 24))
-    story.append(Paragraph(f"<b>Score da Ficha:</b> <font size=11 color='#1E40AF'><b>{res_aud['score']}/100</b></font>", body_style))
-    story.append(Spacer(1, 24))
+    story.append(Spacer(1, 24))  # 2 linhas
+    story.append(Paragraph(f"Score da Ficha: {res_aud['score']}/100", score_style))
+    story.append(Spacer(1, 24))  # 2 linhas
 
-    story.append(Paragraph("<b>Auditoria Detalhada de Pontos (9 Critérios Oficiais):</b>", section_style))
+    story.append(Paragraph("Auditoria Detalhada de Pontos (9 Critérios Oficiais)", section_style))
     story.append(Spacer(1, 6))
 
-    t_data = [[Paragraph("<b>Critério</b>", section_style), Paragraph("<b>Diagnóstico Técnico</b>", section_style),
-               Paragraph("<b>Impacto</b>", section_style), Paragraph("<b>Status</b>", section_style)]]
+    t_data = [[Paragraph("Critério", th_style), Paragraph("Diagnóstico Técnico", th_style),
+               Paragraph("Impacto", th_style), Paragraph("Status", th_style)]]
     for item, estado, impacto, status in res_aud["criterios"]:
         t_data.append([Paragraph(item, body_style), Paragraph(estado, body_style),
                        Paragraph(impacto, body_style), Paragraph(status, body_style)])
 
-    t_aud = Table(t_data, colWidths=[150, 200, 70, 92])
+    t_aud = Table(t_data, colWidths=[150, 200, 70, 92], repeatRows=1)
     t_aud.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#F1F5F9")),
-        ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#CBD5E1")),
-        ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#E2E8F0")),
-        ("PADDING", (0, 0), (-1, -1), 4),
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor(AZUL_ESCURO)),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#F1F5F9")]),
+        ("BOX", (0, 0), (-1, -1), 0.6, colors.HexColor("#94A3B8")),
+        ("LINEBELOW", (0, 0), (-1, -1), 0.3, colors.HexColor("#CBD5E1")),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("PADDING", (0, 0), (-1, -1), 6),
     ]))
     story.append(t_aud)
-    story.append(Spacer(1, 22))
+    story.append(Spacer(1, 12))  # 1 linha antes do plano
 
-    story.append(Paragraph("<b>Plano de Ação & Oportunidades Recomendadas:</b>", section_style))
+    story.append(Paragraph("Plano de Ação &amp; Oportunidades Recomendadas", section_style))
     story.append(Spacer(1, 6))
     story.append(Paragraph("1. Atração Local (SEO): Correção cadastral e otimização das categorias principal e secundárias.", body_style))
-    story.append(Paragraph("2. Segurança & Posicionamento: Frequência de atualização para sinalizar ao Google que o perfil está ativo.", body_style))
-    story.append(Paragraph("3. Confiança & Autoridade: Publicação do Tour Virtual 360° no Street View e fotos em alta resolução.", body_style))
+    story.append(Paragraph("2. Segurança &amp; Posicionamento: Frequência de atualização para sinalizar ao Google que o perfil está ativo.", body_style))
+    story.append(Paragraph("3. Confiança &amp; Autoridade: Publicação do Tour Virtual 360° no Street View e fotos em alta resolução.", body_style))
     story.append(Paragraph("4. Vitrine Imersiva: Padronização do acervo visual do espaço e integração dos canais de contato direto.", body_style))
 
     doc.build(story, onFirstPage=adicionar_rodape_padrao, onLaterPages=adicionar_rodape_padrao)
@@ -420,29 +525,19 @@ def gerar_imagem_grafico(df_historico):
 # --- PDF DO RELATÓRIO ---
 def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dados_inicio, df_historico=None, df_keywords=None):
     buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=40, leftMargin=40, topMargin=15, bottomMargin=55)
+    doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=40, leftMargin=40, topMargin=15, bottomMargin=55,
+                            title=f"Relatorio de Desempenho {nome_empresa} {mes_ano}")
     story = []
     styles = getSampleStyleSheet()
 
     section_style = ParagraphStyle("DocSection", parent=styles["Normal"], fontName="Helvetica-Bold", fontSize=10, leading=13, textColor=colors.HexColor("#1E293B"))
     body_style = ParagraphStyle("DocBody", parent=styles["Normal"], fontName="Helvetica", fontSize=8, leading=11, textColor=colors.HexColor("#334155"))
 
-    logo_flowable = get_rl_image_pdf(45, 45)
-
-    header_table_data = [[
-        logo_flowable,
-        Paragraph(
-            f"<b>RELATÓRIO DE DESEMPENHO</b><br/>"
-            f"<font size=9 color='#2563EB'><b>{nome_empresa}</b></font><br/>"
-            f"<font size=8 color='#64748B'>Mês de Referência: {mes_ano}</font>",
-            ParagraphStyle("RHeader", parent=styles["Normal"], alignment=2, fontName="Helvetica"),
-        ),
-    ]]
-    t_header = Table(header_table_data, colWidths=[55, 477])
-    t_header.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "MIDDLE"), ("ALIGN", (0, 0), (0, 0), "LEFT")]))
-    story.append(t_header)
-    story.append(Spacer(1, 2))
-    story.append(HRFlowable(width="100%", thickness=1.0, color=colors.HexColor("#BFDBFE"), spaceAfter=10))
+    story += cabecalho_pdf(
+        f"<b>RELATÓRIO DE DESEMPENHO</b><br/>"
+        f"<font size=9 color='#2563EB'><b>{nome_empresa}</b></font><br/>"
+        f"<font size=8 color='#64748B'>Mês de Referência: {mes_ano}</font>"
+    )
 
     story.append(Paragraph("<b>1. Análise Comparativa de Desempenho e Crescimento:</b>", section_style))
     story.append(Spacer(1, 6))
@@ -455,13 +550,13 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
         [Paragraph("<b>Indicador</b>", section_style), Paragraph("<b>Início</b>", section_style),
          Paragraph("<b>Mês Ant.</b>", section_style), Paragraph("<b>Mês Atual</b>", section_style),
          Paragraph("<b>Evolução</b>", section_style)],
-        [Paragraph("📞 Chamadas Telefônicas", body_style), Paragraph("Base", body_style),
+        [Paragraph("Chamadas Telefônicas", body_style), Paragraph("Base", body_style),
          Paragraph(f"{c_chamadas_ant}", body_style), Paragraph(f"<b>{dados_atual['chamadas']}</b>", body_style),
          Paragraph(f"<b>{calcular_variacao_pct(dados_atual['chamadas'], c_chamadas_ant)}</b>", body_style)],
-        [Paragraph("🗺️ Rotas GPS", body_style), Paragraph("Base", body_style),
+        [Paragraph("Rotas GPS", body_style), Paragraph("Base", body_style),
          Paragraph(f"{c_rotas_ant}", body_style), Paragraph(f"<b>{dados_atual['rotas']}</b>", body_style),
          Paragraph(f"<b>{calcular_variacao_pct(dados_atual['rotas'], c_rotas_ant)}</b>", body_style)],
-        [Paragraph("🌐 Cliques Site", body_style), Paragraph("Base", body_style),
+        [Paragraph("Cliques Site", body_style), Paragraph("Base", body_style),
          Paragraph(f"{c_cliques_ant}", body_style), Paragraph(f"<b>{dados_atual['cliques_site']}</b>", body_style),
          Paragraph(f"<b>{calcular_variacao_pct(dados_atual['cliques_site'], c_cliques_ant)}</b>", body_style)],
     ]
@@ -476,7 +571,7 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
     story.append(t_comp)
     story.append(Spacer(1, 10))
 
-    story.append(Paragraph("<b>2. Monitoramento de Palavras-Chave & Termos de Busca (Google Maps):</b>", section_style))
+    story.append(Paragraph("<b>2. Monitoramento de Palavras-Chave &amp; Termos de Busca (Google Maps):</b>", section_style))
     story.append(Spacer(1, 6))
     kw_table_data = [
         [Paragraph("<b>Termo / Palavra-Chave de Busca</b>", section_style), Paragraph("<b>Posição Anterior</b>", section_style),
@@ -485,7 +580,7 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
          Paragraph("<b>4º lugar</b>", body_style), Paragraph("<b>Alto Tráfego</b>", body_style)],
         [Paragraph("Especialista Local Verificado", body_style), Paragraph("8º lugar", body_style),
          Paragraph("<b>2º lugar</b>", body_style), Paragraph("<b>Top 3 Maps</b>", body_style)],
-        [Paragraph("Tour Virtual & Imersão 360°", body_style), Paragraph("15º lugar", body_style),
+        [Paragraph("Tour Virtual &amp; Imersão 360°", body_style), Paragraph("15º lugar", body_style),
          Paragraph("<b>5º lugar</b>", body_style), Paragraph("<b>Em Ascensão</b>", body_style)],
     ]
     t_kw = Table(kw_table_data, colWidths=[180, 100, 100, 140])
@@ -502,7 +597,6 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
     if df_historico is not None and len(df_historico) > 1:
         story.append(Paragraph("<b>3. Curva de Evolução Histórica:</b>", section_style))
         story.append(Spacer(1, 6))
-        # Corrigido: RLImage em vez de Image (NameError)
         story.append(RLImage(gerar_imagem_grafico(df_historico), width=520, height=120))
         story.append(Spacer(1, 10))
 
@@ -527,16 +621,7 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     body_style = ParagraphStyle("DocBody", parent=styles["Normal"], fontName="Helvetica", fontSize=9, leading=11, alignment=4, textColor=colors.HexColor("#1E293B"))
     signature_style = ParagraphStyle("DocSig", parent=styles["Normal"], fontName="Helvetica", fontSize=9, leading=12, alignment=1, textColor=colors.HexColor("#1E293B"))
 
-    logo_flowable = get_rl_image_pdf(62, 62)
-
-    header_table = Table([
-        [logo_flowable, Paragraph("<b>CONTRATO DE PRESTAÇÃO DE SERVIÇOS</b>",
-                                  ParagraphStyle("RH", alignment=2, fontName="Helvetica-Bold", fontSize=11, textColor=colors.HexColor("#1E3A8A")))]
-    ], colWidths=[72, 460])
-    header_table.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "MIDDLE"), ("ALIGN", (0, 0), (0, 0), "LEFT"), ("ALIGN", (1, 0), (1, 0), "RIGHT")]))
-    story.append(header_table)
-    story.append(Spacer(1, 2))
-    story.append(HRFlowable(width="100%", thickness=1.0, color=colors.HexColor("#BFDBFE"), spaceAfter=10))
+    story += cabecalho_pdf("<b>CONTRATO DE PRESTAÇÃO DE SERVIÇOS</b>", logo_size=62, col_logo=72)
 
     meses_pt = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"]
     hoje = agora_brasil()
@@ -556,8 +641,12 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     else:
         detalhe_plano = f"{plano_escolhido}, no valor total de R$ {valor_plano:,.2f}"
 
+    link_site = f'<font color="{AZUL_LINK}"><a href="https://tour360vr.com.br">tour360vr.com.br</a></font>'
+    link_mail = f'<font color="{AZUL_LINK}"><a href="mailto:contato@tour360vr.com.br">contato@tour360vr.com.br</a></font>'
+    link_wpp = f'<font color="{AZUL_LINK}"><a href="https://wa.me/5516991332121">(16) 99133-2121</a></font>'
+
     txt_qualificacao = f"""
-    <b>CONTRATADA:</b> <b>Tour360VR</b>, representada por Rubens Okamoto, CNPJ: 04.824.331/0001-05 e Telefone: (16) 99133-2121.<br/><br/>
+    <b>CONTRATADA:</b> <b>Tour360VR</b>, representada por Rubens Okamoto, CNPJ: 04.824.331/0001-05. Site: {link_site} | E-mail: {link_mail} | WhatsApp: {link_wpp}.<br/><br/>
     <b>CONTRATANTE:</b> <b>{nome_emp}</b>, representada por {resp_emp}, Telefone: {tel_emp}.<br/><br/>
     A <b>Tour360VR</b> (<b>CONTRATADA</b>) compromete-se a executar os serviços profissionais especializados em otimização, reestruturação técnica, curadoria de pautas e produção de Tour Virtual 360 para o perfil do Google da <b>CONTRATANTE</b>, referentes ao plano contratado <b>{detalhe_plano}</b>.
     """
@@ -569,7 +658,14 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     <b>CLÁUSULA SEGUNDA - DAS OBRIGAÇÕES E PAGAMENTO:</b> O não pagamento no prazo pactuado sujeitará o presente contrato à incidência de juros moratórios legais e à suspensão temporária dos serviços pela <b>Tour360VR</b> até a devida regularização financeira.<br/><br/>
     <b>CLÁUSULA TERCEIRA - DOS DIREITOS DE USO E PROPRIEDADE:</b> Os direitos de uso do Tour Virtual 360 e fotos em alta definição serão cedidos em caráter ilimitado à <b>CONTRATANTE</b> para veiculação oficial no Google. A <b>Tour360VR</b> reserva-se o direito de utilizar o material gerado em seu portfólio profissional de divulgação.<br/><br/>
     <b>CLÁUSULA QUARTA - CONFIDENCIALIDADE E LGPD:</b> As partes comprometem-se a manter sob sigilo absoluto todas as informações operacionais fornecidas, em estrita conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018).<br/><br/>
-    <b>CLÁUSULA QUINTA - VALIDADE DA PROPOSTA:</b> A presente proposta e condições comerciais possuem validade oficial de 15 (quinze) dias a contar da data de sua emissão.
+    <b>CLÁUSULA QUINTA - VALIDADE DA PROPOSTA:</b> A presente proposta e condições comerciais possuem validade oficial de 15 (quinze) dias a contar da data de sua emissão.<br/><br/>
+    <b>CLÁUSULA SEXTA - AUSÊNCIA DE GARANTIA DE RESULTADOS:</b> A <b>Tour360VR</b> não garante posição específica nos resultados de busca ou no Google Maps, pois o ranqueamento depende de algoritmos e critérios de terceiros, fora de seu controle.<br/><br/>
+    <b>CLÁUSULA SÉTIMA - DAS RESPONSABILIDADES DA CONTRATANTE:</b> A <b>CONTRATANTE</b> compromete-se a fornecer informações verídicas e atualizadas, os acessos necessários e a aprovação das pautas no prazo combinado, abstendo-se de solicitar ou incentivar avaliações falsas ou fraudulentas, em conformidade com as políticas do Google.<br/><br/>
+    <b>CLÁUSULA OITAVA - DA RESCISÃO:</b> Qualquer das partes poderá rescindir o presente contrato mediante aviso prévio por escrito de 30 (trinta) dias.<br/><br/>
+    <b>CLÁUSULA NONA - DO REAJUSTE:</b> O valor da mensalidade poderá ser reajustado anualmente pela variação do IPCA ou de índice que venha a substituí-lo.<br/><br/>
+    <b>CLÁUSULA DÉCIMA - DA LIMITAÇÃO DE RESPONSABILIDADE:</b> A responsabilidade total da <b>Tour360VR</b> limita-se ao valor efetivamente pago pela <b>CONTRATANTE</b> no mês em que ocorrer o fato gerador do dano.<br/><br/>
+    <b>CLÁUSULA DÉCIMA PRIMEIRA - DO FORO:</b> Fica eleito o foro da Comarca de Ribeirão Preto/SP para dirimir quaisquer controvérsias oriundas deste contrato.<br/><br/>
+    <b>CLÁUSULA DÉCIMA SEGUNDA - DA MORA:</b> O atraso no pagamento sujeitará a <b>CONTRATANTE</b> a multa de 2% (dois por cento) e juros de 1% (um por cento) ao mês, calculados sobre o valor em atraso.
     """
     story.append(Paragraph(clausulas, body_style))
     story.append(Spacer(1, 42))
@@ -588,14 +684,6 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
 # --- ESTADO INICIAL ---
 if "aba_ativa" not in st.session_state:
     st.session_state["aba_ativa"] = "cadastrar"
-
-# --- CABEÇALHO ---
-logo_base64 = obter_base64_logo(LOGO_LOCAL_PATH)
-render_hero(
-    logo_base64,
-    "Gestão Mensal & Estratégia",
-    "Plataforma corporativa de inteligência de Google Maps, auditoria, curadoria e contratos.",
-)
 
 # --- NAVEGAÇÃO EM ABAS (BOTÕES) ---
 aba_map = [
@@ -806,7 +894,7 @@ if st.session_state["aba_ativa"] == "cadastrar":
                 if res_h.data:
                     df_hist = pd.DataFrame(res_h.data)
                     df_hist.columns = ["Data (São Paulo)", "Alteração Realizada"]
-                    st.dataframe(df_hist, use_container_width=True)
+                    st.dataframe(df_hist)
 
         st.markdown("---")
         btn_salvar = st.form_submit_button("Salvar Nova Ficha" if not modo_edicao else "Atualizar Ficha e Gravar Histórico")
@@ -851,22 +939,14 @@ if st.session_state["aba_ativa"] == "cadastrar":
                             "cliente_id": novo_id, "data_alteracao": data_hora_sp,
                             "descricao_alteracao": "Cadastro Inicial",
                         }).execute()
-                        msg_container = st.empty()
-                        msg_container.success(f"Ficha de '{nome_empresa}' cadastrada com sucesso!")
-                        time.sleep(3)
-                        msg_container.empty()
-                        st.rerun()
+                        st.success(f"Ficha de '{nome_empresa}' cadastrada com sucesso! Atualize a página para ver a lista.")
                 else:
                     supabase.table("clientes").update(payload).eq("id", c_id).execute()
                     supabase.table("historico_ficha").insert({
                         "cliente_id": c_id, "data_alteracao": data_hora_sp,
                         "descricao_alteracao": "Atualização Cadastral",
                     }).execute()
-                    msg_container = st.empty()
-                    msg_container.success(f"Ficha comercial de '{nome_empresa}' atualizada com sucesso!")
-                    time.sleep(3)
-                    msg_container.empty()
-                    st.rerun()
+                    st.success(f"Ficha comercial de '{nome_empresa}' atualizada com sucesso!")
             except Exception as e:
                 st.error(f"Erro ao salvar: {str(e)}")
 
@@ -915,6 +995,10 @@ elif st.session_state["aba_ativa"] == "auditoria":
                 st.error(err)
             else:
                 st.session_state["ultima_auditoria"] = res_aud
+                try:
+                    salvar_auditoria_historico(res_aud)
+                except Exception:
+                    st.warning("Auditoria concluída, mas não foi possível salvar no histórico (verifique a tabela 'auditorias').")
         else:
             st.warning("Insira uma URL ou o nome da empresa.")
 
@@ -937,7 +1021,7 @@ elif st.session_state["aba_ativa"] == "auditoria":
             {"Critério": item, "Diagnóstico Técnico": estado, "Impacto Local": impacto, "Status": status}
             for item, estado, impacto, status in res_aud["criterios"]
         ]
-        st.dataframe(pd.DataFrame(dados_tabela_ui), use_container_width=True)
+        st.dataframe(pd.DataFrame(dados_tabela_ui))
 
         section_title("🚀 Plano de Ação & Oportunidades Recomendadas:")
         st.markdown("- **1. Atração Local (SEO):** Correção cadastral e otimização das categorias principal e secundárias.")
@@ -975,6 +1059,20 @@ elif st.session_state["aba_ativa"] == "auditoria":
                 except Exception as e:
                     st.error(f"Erro ao salvar no banco: {str(e)}")
 
+        with st.expander("🕓 Histórico de auditorias desta ficha"):
+            df_hist_aud = listar_historico_auditorias(res_aud["nome"])
+            if df_hist_aud.empty:
+                st.caption("Nenhuma auditoria anterior registrada.")
+            else:
+                st.dataframe(df_hist_aud)
+                st.download_button(
+                    "📥 Exportar histórico (CSV)",
+                    data=csv_bytes(df_hist_aud),
+                    file_name=f"historico_auditorias_{res_aud['nome']}.csv",
+                    mime="text/csv",
+                    key="btn_csv_hist_aud",
+                )
+
     gerar_botoes_navegacao_rodape()
 
 # ==========================================
@@ -1006,11 +1104,17 @@ elif st.session_state["aba_ativa"] == "metricas":
                     "cliques_site": cliques, "ticket_medio": tm, "taxa_conversao": tc,
                     "faturamento_estimado": fat,
                 }).execute()
-                msg_container = st.empty()
-                msg_container.success("Métricas salvas!")
-                time.sleep(3)
-                msg_container.empty()
-                st.rerun()
+                st.success("Métricas salvas! Atualize a página para ver os dados.")
+
+        section_title("🔗 Gerador de Link UTM (rastrear cliques vindos do site)")
+        with glass_container():
+            utm_site = st.text_input("URL do site do cliente:", value="https://", key="utm_site")
+            utm_campanha = st.text_input("Campanha (ex: google-maps-junho):", value="google-maps", key="utm_campanha")
+            if utm_site and utm_site != "https://":
+                sep = "&" if "?" in utm_site else "?"
+                link_utm = f"{utm_site}{sep}utm_source=google&utm_medium=maps&utm_campaign={urllib.parse.quote(utm_campanha)}"
+                st.code(link_utm, language=None)
+
     gerar_botoes_navegacao_rodape()
 
 # ==========================================
@@ -1101,13 +1205,7 @@ elif st.session_state["aba_ativa"] == "ia":
         msg_wsp = urllib.parse.quote(texto_msg_wsp)
 
         if num_limpo:
-            st.markdown(
-                f'<a href="https://wa.me/55{num_limpo}?text={msg_wsp}" target="_blank" style="text-decoration:none;">'
-                f'<div style="width:100%; background:#25D366; color:#FFFFFF; padding:12px; '
-                f'border-radius:12px; font-weight:700; text-align:center; font-size:1rem;">'
-                f"Enviar para o WhatsApp do cliente</div></a>",
-                unsafe_allow_html=True,
-            )
+            botao_whatsapp(f"https://wa.me/55{num_limpo}?text={msg_wsp}", "Enviar para o WhatsApp do cliente")
         else:
             st.warning("Cadastre o WhatsApp do cliente na aba 'Ficha Comercial' para habilitar o botão de envio direto.")
 
@@ -1137,6 +1235,13 @@ elif st.session_state["aba_ativa"] == "dashboard":
             st.markdown("<br>", unsafe_allow_html=True)
             with glass_container():
                 st.line_chart(df_m.set_index("mes_ano")[["chamadas", "rotas", "cliques_site"]])
+            st.download_button(
+                "📥 Exportar métricas (CSV)",
+                data=csv_bytes(df_m),
+                file_name=f"metricas_{c_dash}.csv",
+                mime="text/csv",
+                key="btn_csv_metricas",
+            )
         else:
             st.info("Sem métricas cadastradas.")
     gerar_botoes_navegacao_rodape()
@@ -1227,15 +1332,36 @@ elif st.session_state["aba_ativa"] == "financeiro":
 
         col1, col2, col3 = st.columns(3)
         with col1:
-            kpi_card("MRR Total da Agência", f"R$ {mrr:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."), accent=COLORS["success"])
+            kpi_card("MRR Total da Agência", formatar_brl(mrr), accent=COLORS["success"])
         with col2:
             kpi_card("Clientes Ativos", str(qtd_ativos), accent=COLORS["accent"])
         with col3:
             kpi_card("Contratos Pausados", str(qtd_pend), accent=COLORS["warning"])
 
         st.markdown("<br>", unsafe_allow_html=True)
-        st.info("💡 Dica: Verifique clientes com vencimentos próximos para manter o fluxo de caixa do MRR em dia.")
+
+        section_title("🔔 Lembretes de Vencimento (WhatsApp, sem API paga)")
+        ativos_lembrete = ativos.sort_values("dia_vencimento") if "dia_vencimento" in ativos else ativos
+        for _, row in ativos_lembrete.iterrows():
+            num = "".join(c for c in str(row.get("whatsapp", "") or "") if c.isdigit())
+            if not num:
+                continue
+            msg = (
+                f"Olá {row.get('responsavel') or row.get('nome_empresa')}! Tudo bem? "
+                f"Passando para lembrar do vencimento da mensalidade no dia {row.get('dia_vencimento')}, "
+                f"no valor de {formatar_brl(float(row.get('valor_contrato_mensal') or 0))}. Obrigado!"
+            )
+            with glass_container():
+                st.markdown(f"**{row['nome_empresa']}** · vencimento dia {row.get('dia_vencimento')}")
+                botao_whatsapp(f"https://wa.me/55{num}?text={urllib.parse.quote(msg)}", "Enviar lembrete no WhatsApp")
 
         section_title("Lista de Clientes e Contratos Recorrentes")
-        st.dataframe(df_c, use_container_width=True, height=650)
+        st.download_button(
+            "📥 Exportar clientes (CSV)",
+            data=csv_bytes(df_c),
+            file_name="clientes_tour360vr.csv",
+            mime="text/csv",
+            key="btn_csv_clientes",
+        )
+        st.dataframe(df_c, height=650)
     gerar_botoes_navegacao_rodape()
