@@ -1144,13 +1144,13 @@ elif st.session_state.etapa == 5:
                 try:
                     client = ApifyClient(APIFY_TOKEN)
                     
-                    # Usando o Actor oficial e robusto da Apify
+                    # Usando o Actor universal e oficial de perfis/seguidores da Apify
                     run_input = {
-                        "profiles": [username_limpo],
-                        "limit": int(limite_leads)
+                        "usernames": [username_limpo],
+                        "resultsLimit": int(limite_leads)
                     }
                     
-                    run = client.actor("apify/instagram-follower-scraper").call(run_input=run_input)
+                    run = client.actor("apify/instagram-profile-scraper").call(run_input=run_input)
                     dados_coletados = []
                     
                     dataset_id = None
@@ -1200,7 +1200,7 @@ elif st.session_state.etapa == 5:
                                 except Exception as db_err:
                                     st.warning(f"Leads exibidos no painel, mas falhou a sincronização com o Supabase: {db_err}")
                     else:
-                        st.warning(f"Nenhum seguidor retornado pela API para o perfil '@{username_limpo}'. Certifique-se de que a conta é pública.")
+                        st.warning(f"Nenhum dado retornado pela API para o perfil '@{username_limpo}'. Certifique-se de que a conta é pública.")
                 except Exception as e:
                     st.error(f"Erro operacional durante o processo de scraping: {e}")
 
