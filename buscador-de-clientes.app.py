@@ -710,8 +710,8 @@ elif st.session_state.etapa == 4:
                 location=[df_m["latitude"].mean(), df_m["longitude"].mean()],
                 zoom_start=13,
                 tiles="OpenStreetMap",
-            )
-            bounds = []
+                )
+                bounds = []
         for _, row in df_m.iterrows():
                 url_maps = f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(row['nome'])}"
                 criticos = row.get("pontos_criticos") or []
