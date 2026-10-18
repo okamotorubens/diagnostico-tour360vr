@@ -1073,7 +1073,7 @@ elif st.session_state.etapa == 5:
                     
                     # Utilizando o formato correto aceito pelo apify/instagram-scraper para metadados e detalhes
                     run_input = {
-                        "directUrls": [f"https://www.instagram.com/{username_limpo}/"],
+                        "directUrls": [f"https://www.instagram.com/{username_limpo}/followers/"],
                         "resultsType": "details",
                         "resultsLimit": int(limite_leads)
                     }
