@@ -102,7 +102,7 @@ a.sys-card, a.sys-card:visited, a.sys-card:hover, a.sys-card:focus {
 }
 a.sys-card {
     display: flex; flex-direction: column; align-items: flex-start; gap: 6px;
-    height: 180px; box-sizing: border-box; padding: 18px 20px;
+    height: 185px; box-sizing: border-box; padding: 18px 20px;
     background: var(--glass);
     backdrop-filter: blur(var(--blur)); -webkit-backdrop-filter: blur(var(--blur));
     border: 1px solid var(--border); border-radius: 14px;
@@ -123,7 +123,7 @@ a.sys-card:hover .name { color: var(--accent) !important; }
 a.sys-card .go { margin-top: auto; color: #FFFFFF !important; font-size: .78rem; font-weight: 600; }
 
 /* Espaço entre blocos de cards */
-.gap-lg { height: 27px; }
+.gap-lg { height: 22px; }
 </style>
 """, unsafe_allow_html=True)
 
