@@ -102,7 +102,7 @@ a.sys-card, a.sys-card:visited, a.sys-card:hover, a.sys-card:focus {
 }
 a.sys-card {
     display: flex; flex-direction: column; align-items: flex-start; gap: 6px;
-    height: 190px; box-sizing: border-box; padding: 18px 20px;
+    height: 200px; box-sizing: border-box; padding: 18px 20px;
     background: var(--glass);
     backdrop-filter: blur(var(--blur)); -webkit-backdrop-filter: blur(var(--blur));
     border: 1px solid var(--border); border-radius: 14px;
