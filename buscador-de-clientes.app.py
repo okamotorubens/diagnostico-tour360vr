@@ -1,86 +1,279 @@
-import streamlit as st
-import pandas as pd
+import os
+import io
+import csv
 import json
 import time
-import os
-import re
-import requests
-import csv
+import base64
 import urllib.parse
 from datetime import datetime
-import io
-from PIL import Image as PILImage
-import base64
-import streamlit.components.v1 as components
-from streamlit_folium import st_folium
-import folium
 
-# Conexão NUVEM Supabase
+import requests
+import pandas as pd
+import streamlit as st
+import streamlit.components.v1 as components
+import folium
+from streamlit_folium import st_folium
+from PIL import Image as PILImage
 from supabase import create_client, Client
 
-# ReportLab para geração do PDF do Panorama
 from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image as RLImage
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.graphics.shapes import Drawing, Rect, String
+from reportlab.pdfbase.pdfmetrics import stringWidth
 
-# -----------------------------------------------------------------------------
-# CONFIGURAÇÃO DO ENDEREÇO DO SEU SISTEMA DE DIAGNÓSTICO
-# -----------------------------------------------------------------------------
+# =============================================================================
+# CONFIGURAÇÕES
+# =============================================================================
+LOGO_TOUR = "logo_tour_transparente.png"
+LOGO_OKAMOTO = "logo_okamoto.png"
 URL_SISTEMA_DIAGNOSTICO = "https://tour360vr.streamlit.app/"
+SITE_TOUR = "https://tour360vr.com.br"
+EMAIL_CONTATO = "contato@tour360vr.com.br"
+WHATSAPP_NUM = "5516991332121"
+WHATSAPP_EXIBICAO = "(16) 99133-2121"
 
-# -----------------------------------------------------------------------------
-# CONFIGURAÇÃO DA PÁGINA STREAMLIT E FAVICON NO NAVEGADOR
-# -----------------------------------------------------------------------------
-favicon_img = "🔍"
-favicon_b64 = ""
-if os.path.exists("logo_tour_transparente.png"):
-    try:
-        favicon_img = PILImage.open("logo_tour_transparente.png")
-        with open("logo_tour_transparente.png", "rb") as f:
-            favicon_b64 = base64.b64encode(f.read()).decode()
-    except Exception:
-        favicon_img = "🔍"
+AZUL_LINK = "#1E40AF"
+AZUL_ESCURO = "#1E3A8A"
 
+# Paleta da logo Tour360VR
+COR_ALTA = "#F76C4A"    # coral
+COR_MEDIA = "#FFA733"   # laranja
+COR_BAIXA = "#9DBE5A"   # verde
+COR_AZUL = "#4AA3DA"
+
+# Pontuação máxima somente dos critérios verificáveis pela API (ver calcular_oportunidade)
+PONTOS_MAXIMOS_API = 75
+
+page_icon = PILImage.open(LOGO_TOUR) if os.path.exists(LOGO_TOUR) else "🔍"
 st.set_page_config(
     page_title="Radar Comercial | Tour360VR",
-    page_icon=favicon_img if not favicon_b64 else PILImage.open("logo_tour_transparente.png"),
+    page_icon=page_icon,
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
 )
 
-# FORÇAR O NAVEGADOR A IR PARA O TOPO SEMPRE QUE MUDAR DE PÁGINA
-components.html(f"""
-    <script>
-        function scrollToTop() {{
-            window.parent.scrollTo(0, 0);
-            var mainContainer = window.parent.document.querySelector(".main");
-            if (mainContainer) {{ mainContainer.scrollTop = 0; }}
-            var appContainer = window.parent.document.querySelector(".stAppViewContainer");
-            if (appContainer) {{ appContainer.scrollTop = 0; }}
-        }}
-        scrollToTop();
-        setTimeout(scrollToTop, 100);
-        setTimeout(scrollToTop, 300);
-        
-        var head = window.parent.document.getElementsByTagName('head')[0];
-        if (head && '{favicon_b64}') {{
-            var links = window.parent.document.querySelectorAll("link[rel*='icon']");
-            links.forEach(function(l) {{ l.parentNode.removeChild(l); }});
-            
-            var link = window.parent.document.createElement('link');
-            link.type = 'image/png';
-            link.rel = 'shortcut icon';
-            link.href = 'data:image/png;base64,{favicon_b64}';
-            head.appendChild(link);
-        }}
-    </script>
+# =============================================================================
+# TEMA GLASSMORPHISM DARK (mesma linguagem do sistema de Gestão)
+# =============================================================================
+TEMA_CSS = """
+<style>
+:root {
+    --bg: #0B0E14; --bg-glow: #16213A;
+    --glass: rgba(22, 31, 48, 0.55); --glass-hover: rgba(37, 45, 66, 0.70);
+    --border: rgba(255, 255, 255, 0.10); --border-hover: rgba(255, 255, 255, 0.30);
+    --text: #E6EDF7; --strong: #FFFFFF; --muted: #8E9BAE;
+    --blue: #4AA3DA; --orange: #FFA733; --green: #9DBE5A; --coral: #F76C4A;
+    --blur: 18px;
+    --grad: linear-gradient(90deg, #FFA733, #4AA3DA, #9DBE5A, #F76C4A);
+}
+header[data-testid="stHeader"] { display: none !important; }
+html, body, .stApp {
+    background:
+        radial-gradient(circle at 15% 0%, var(--bg-glow) 0%, transparent 45%),
+        radial-gradient(circle at 90% 100%, rgba(247,108,74,.08) 0%, transparent 40%),
+        var(--bg) !important;
+    color: var(--text);
+    font-family: 'Inter', -apple-system, 'Segoe UI', sans-serif;
+}
+.block-container { padding-top: 1.2rem !important; padding-bottom: 2rem !important; max-width: 1400px !important; }
+h1, h2, h3, h4 { color: var(--strong) !important; letter-spacing: -0.01em; }
+hr { border-color: var(--border) !important; }
+
+/* Sidebar */
+section[data-testid="stSidebar"] {
+    background: rgba(7, 9, 14, 0.80) !important;
+    backdrop-filter: blur(var(--blur)); -webkit-backdrop-filter: blur(var(--blur));
+    border-right: 1px solid var(--border);
+    width: 300px !important; min-width: 300px !important; max-width: 300px !important;
+}
+[data-testid="stSidebarNav"], [data-testid="stSidebarResizer"] { display: none !important; }
+section[data-testid="stSidebar"] .stButton > button { justify-content: flex-start !important; text-align: left !important; }
+.gl-side-logo { display: flex; justify-content: center; margin-bottom: 8px; }
+.gl-side-logo img { width: 130px; height: auto; }
+.gl-side-title { text-align: center; font-size: .8rem; color: var(--muted); letter-spacing: .12em; text-transform: uppercase; margin-bottom: 10px; }
+.gl-side-footer { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); text-align: center; color: var(--muted); font-size: .72rem; }
+.gl-side-footer img { width: 120px; height: auto; margin-top: 8px; }
+
+/* Cabeçalho */
+.gl-hero {
+    position: relative; display: flex; align-items: center; gap: 22px;
+    background: var(--glass); backdrop-filter: blur(var(--blur)); -webkit-backdrop-filter: blur(var(--blur));
+    border: 1px solid var(--border); border-radius: 18px;
+    padding: 22px 28px; margin-bottom: 18px; overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0,0,0,.35);
+}
+.gl-hero::before { content: ""; position: absolute; left: 0; top: 0; right: 0; height: 3px; background: var(--grad); }
+.gl-hero img { width: 64px; height: auto; }
+.gl-hero h1 { margin: 0 !important; font-size: 1.55rem !important; font-weight: 800; }
+.gl-hero p { margin: 4px 0 0 0; color: var(--muted); font-size: .92rem; }
+
+/* Títulos de seção */
+.gl-section {
+    display: flex; align-items: center; gap: 10px;
+    margin: 24px 0 12px 0; padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    color: var(--strong); font-size: 1.1rem; font-weight: 700;
+}
+.gl-section .dot { width: 8px; height: 8px; border-radius: 50%; }
+
+/* Containers em vidro */
+div[data-testid="stVerticalBlockBorderWrapper"] {
+    background: var(--glass) !important;
+    backdrop-filter: blur(var(--blur)); -webkit-backdrop-filter: blur(var(--blur));
+    border: 1px solid var(--border) !important; border-radius: 14px !important;
+    box-shadow: 0 8px 32px rgba(0,0,0,.30);
+}
+div[data-testid="stForm"] {
+    background: var(--glass) !important;
+    backdrop-filter: blur(var(--blur)); -webkit-backdrop-filter: blur(var(--blur));
+    border: 1px solid var(--border) !important; border-radius: 14px !important;
+    padding: 18px !important; box-shadow: 0 8px 32px rgba(0,0,0,.30);
+}
+
+/* Botões */
+.stButton > button, .stDownloadButton > button, .stFormSubmitButton > button,
+[data-testid="stLinkButton"] a {
+    background: var(--glass) !important; backdrop-filter: blur(12px);
+    border: 1px solid var(--border) !important; color: var(--strong) !important;
+    border-radius: 10px !important; font-weight: 600 !important; min-height: 40px;
+    transition: all .2s ease;
+}
+.stButton > button:hover, .stDownloadButton > button:hover, .stFormSubmitButton > button:hover,
+[data-testid="stLinkButton"] a:hover {
+    background: var(--glass-hover) !important; border-color: var(--border-hover) !important;
+    box-shadow: 0 0 16px rgba(74,163,218,.30); transform: translateY(-1px);
+}
+.stButton > button[kind="primary"], .stFormSubmitButton > button[kind="primary"] {
+    background: linear-gradient(135deg, rgba(74,163,218,.45), rgba(74,163,218,.18)) !important;
+    border-color: var(--blue) !important;
+}
+
+/* Inputs */
+div[data-baseweb="input"] > div, div[data-baseweb="textarea"] > div, div[data-baseweb="select"] > div {
+    background: rgba(11,14,20,.55) !important; border: 1px solid var(--border) !important; border-radius: 10px !important;
+}
+div[data-baseweb="input"] > div:focus-within, div[data-baseweb="textarea"] > div:focus-within,
+div[data-baseweb="select"] > div:focus-within {
+    border-color: var(--blue) !important; box-shadow: 0 0 0 3px rgba(74,163,218,.18) !important;
+}
+input, textarea { color: var(--strong) !important; }
+
+/* Métricas e tabelas */
+div[data-testid="stMetric"] {
+    background: var(--glass); backdrop-filter: blur(var(--blur));
+    border: 1px solid var(--border); border-radius: 14px; padding: 14px 18px;
+}
+div[data-testid="stMetricValue"] { color: var(--strong) !important; }
+div[data-testid="stDataFrame"] { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+
+/* Badges de oportunidade */
+.gl-badge { text-align: center; padding: 8px 12px; border-radius: 12px; font-weight: 700; min-width: 150px; border: 1px solid; }
+.gl-badge .r { font-size: .66rem; letter-spacing: .06em; }
+.gl-badge .n { font-size: 1.35rem; }
+.gl-badge.alta { color: var(--coral); border-color: rgba(247,108,74,.5); background: rgba(247,108,74,.12); }
+.gl-badge.media { color: var(--orange); border-color: rgba(255,167,51,.5); background: rgba(255,167,51,.12); }
+.gl-badge.baixa { color: var(--green); border-color: rgba(157,190,90,.5); background: rgba(157,190,90,.12); }
+
+.gl-muted { color: var(--muted); font-size: .86rem; }
+.gl-critico { color: #FCA5A5; font-size: .86rem; margin-bottom: 6px; }
+
+/* Links de ação */
+a.gl-wpp, a.gl-wpp:visited, a.gl-wpp:hover, a.gl-wpp:focus, a.gl-wpp * {
+    color: #FFFFFF !important; text-decoration: none !important;
+}
+a.gl-wpp {
+    display: block; text-align: center; background: #25D366 !important;
+    padding: 10px; border-radius: 10px; font-weight: 700; margin-top: 8px;
+}
+a.gl-btn-sec {
+    display: block; text-align: center; padding: 9px; border-radius: 10px;
+    border: 1px solid var(--border); background: var(--glass);
+    color: var(--strong) !important; text-decoration: none !important;
+    font-weight: 600; margin-top: 8px;
+}
+a.gl-btn-sec:hover { border-color: var(--border-hover); background: var(--glass-hover); }
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); border-radius: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+</style>
+"""
+st.markdown(TEMA_CSS, unsafe_allow_html=True)
+
+# Rola para o topo ao trocar de módulo
+components.html("""
+<script>
+    function topo() {
+        window.parent.scrollTo(0, 0);
+        var m = window.parent.document.querySelector('.main'); if (m) m.scrollTop = 0;
+    }
+    topo(); setTimeout(topo, 150);
+</script>
 """, height=0)
 
-# -----------------------------------------------------------------------------
-# CONEXÃO BANCO DE DADOS EM NUVEM PERMANENTE (SUPABASE)
-# -----------------------------------------------------------------------------
+# =============================================================================
+# COMPONENTES VISUAIS
+# =============================================================================
+def b64_arquivo(caminho):
+    if os.path.exists(caminho):
+        with open(caminho, "rb") as f:
+            return base64.b64encode(f.read()).decode()
+    return ""
+
+
+def hero(titulo, subtitulo):
+    logo = b64_arquivo(LOGO_TOUR)
+    img = f'<img src="data:image/png;base64,{logo}" alt="Tour360VR"/>' if logo else ""
+    st.markdown(
+        f'<div class="gl-hero">{img}<div><h1>{titulo}</h1><p>{subtitulo}</p></div></div>',
+        unsafe_allow_html=True,
+    )
+
+
+def secao(titulo, cor=COR_AZUL):
+    st.markdown(
+        f'<div class="gl-section"><span class="dot" style="background:{cor};box-shadow:0 0 10px {cor}"></span>{titulo}</div>',
+        unsafe_allow_html=True,
+    )
+
+
+def classificar_score(score):
+    if score >= 60:
+        return "alta", "ALTA OPORTUNIDADE", COR_ALTA
+    if score >= 30:
+        return "media", "MÉDIA OPORTUNIDADE", COR_MEDIA
+    return "baixa", "BAIXA OPORTUNIDADE", COR_BAIXA
+
+
+def badge_score(score):
+    classe, rotulo, _ = classificar_score(score)
+    return f'<div class="gl-badge {classe}"><div class="r">{rotulo}</div><div class="n">{score}/100</div></div>'
+
+
+def botao_whatsapp(url, texto):
+    st.markdown(f'<a class="gl-wpp" href="{url}" target="_blank">{texto}</a>', unsafe_allow_html=True)
+
+
+def link_secundario(url, texto):
+    st.markdown(f'<a class="gl-btn-sec" href="{url}" target="_blank">{texto}</a>', unsafe_allow_html=True)
+
+
+def csv_bytes_utf8(df):
+    return df.to_csv(index=False, sep=";").encode("utf-8-sig")
+
+
+def valor_verificacao(valor, sim="✅ Sim", nao="❌ Não"):
+    """Campos que a API não informa ficam explícitos, em vez de parecerem dados reais."""
+    if valor is None or valor == "":
+        return "⚠️ Verificar manualmente"
+    return sim if valor else nao
+
+
+# =============================================================================
+# BANCO DE DADOS (SUPABASE)
+# =============================================================================
 @st.cache_resource
 def init_supabase():
     url = st.secrets.get("SUPABASE_URL", os.getenv("SUPABASE_URL"))
@@ -89,51 +282,9 @@ def init_supabase():
         return create_client(url, key)
     return None
 
+
 supabase: Client = init_supabase()
 
-def salvar_lead_db(lead):
-    if not supabase:
-        return
-    try:
-        res = supabase.table("leads").select("id").eq("nome", lead['nome']).eq("endereco", lead['endereco']).execute()
-        if not res.data:
-            supabase.table("leads").insert({
-                "data_minacao": lead.get('data_minacao', datetime.now().strftime('%d/%m/%Y %H:%M')),
-                "cidade_busca": lead.get('cidade_busca', ''),
-                "bairro_busca": lead.get('bairro_busca', ''),
-                "nome": lead['nome'],
-                "categoria": lead['categoria'],
-                "endereco": lead['endereco'],
-                "latitude": float(lead.get('latitude', -21.1775)),
-                "longitude": float(lead.get('longitude', -47.8103)),
-                "telefone": lead.get('telefone', ''),
-                "whatsapp": lead.get('whatsapp', ''),
-                "website": lead.get('website', ''),
-                "website_https": bool(lead.get('website_https')),
-                "instagram": lead.get('instagram', ''),
-                "facebook": lead.get('facebook', ''),
-                "foto_url": lead.get('foto_url', ''),
-                "nota": float(lead.get('nota', 0.0)),
-                "total_avaliacoes": int(lead.get('total_avaliacoes', 0)),
-                "reivindicada": bool(lead.get('reivindicada')),
-                "fotos_total": int(lead.get('fotos_total', 0)),
-                "ultima_foto_dias": int(lead.get('ultima_foto_dias', 0)),
-                "tour_360": bool(lead.get('tour_360')),
-                "status_crm": lead.get('status_crm', '🆕 Novo Lead'),
-                "pontos_criticos": lead.get('pontos_criticos', []),
-                "oportunidades": lead.get('oportunidades', []),
-                "score_oportunidade": int(lead.get('score_oportunidade', 0))
-            }).execute()
-    except Exception as e:
-        st.error(f"Erro ao salvar lead '{lead.get('nome')}': {str(e)}")
-
-def atualizar_status_crm(lead_id, novo_status):
-    if not supabase:
-        return
-    try:
-        supabase.table("leads").update({"status_crm": novo_status}).eq("id", lead_id).execute()
-    except Exception as e:
-        st.error(f"Erro ao atualizar status: {str(e)}")
 
 def carregar_todos_leads_db():
     if not supabase:
@@ -142,8 +293,9 @@ def carregar_todos_leads_db():
         res = supabase.table("leads").select("*").order("id", desc=True).execute()
         return res.data or []
     except Exception as e:
-        st.error(f"Erro ao carregar dados do Supabase: {str(e)}")
+        st.error(f"Erro ao carregar leads: {e}")
         return []
+
 
 def carregar_leads_instagram_db():
     if not supabase:
@@ -151,8 +303,63 @@ def carregar_leads_instagram_db():
     try:
         res = supabase.table("leads_instagram").select("*").order("id", desc=True).execute()
         return res.data or []
-    except Exception as e:
+    except Exception:
         return []
+
+
+def salvar_lead_db(lead):
+    """Retorna True se gravou um lead novo."""
+    if not supabase:
+        return False
+    try:
+        existe = (
+            supabase.table("leads").select("id")
+            .eq("nome", lead["nome"]).eq("endereco", lead["endereco"])
+            .execute()
+        )
+        if existe.data:
+            return False
+        supabase.table("leads").insert({
+            "data_minacao": lead["data_minacao"],
+            "cidade_busca": lead["cidade_busca"],
+            "bairro_busca": lead["bairro_busca"],
+            "nome": lead["nome"],
+            "categoria": lead["categoria"],
+            "endereco": lead["endereco"],
+            "latitude": lead["latitude"],
+            "longitude": lead["longitude"],
+            "telefone": lead["telefone"],
+            "whatsapp": lead["whatsapp"],
+            "website": lead["website"],
+            "website_https": lead["website_https"],
+            "instagram": "",
+            "facebook": "",
+            "foto_url": lead["foto_url"],
+            "nota": lead["nota"],
+            "total_avaliacoes": lead["total_avaliacoes"],
+            "reivindicada": None,        # a Places API não informa
+            "fotos_total": lead["fotos_total"],
+            "ultima_foto_dias": None,    # a Places API não informa
+            "tour_360": None,            # a Places API não informa
+            "status_crm": "🆕 Novo Lead",
+            "pontos_criticos": lead["pontos_criticos"],
+            "oportunidades": lead["oportunidades"],
+            "score_oportunidade": lead["score_oportunidade"],
+        }).execute()
+        return True
+    except Exception as e:
+        st.error(f"Erro ao salvar '{lead.get('nome')}': {e}")
+        return False
+
+
+def atualizar_status_crm(lead_id, novo_status):
+    if not supabase:
+        return
+    try:
+        supabase.table("leads").update({"status_crm": novo_status}).eq("id", lead_id).execute()
+    except Exception as e:
+        st.error(f"Erro ao atualizar status: {e}")
+
 
 def limpar_banco_dados():
     if not supabase:
@@ -160,984 +367,691 @@ def limpar_banco_dados():
     try:
         supabase.table("leads").delete().neq("id", 0).execute()
     except Exception as e:
-        st.error(f"Erro ao limpar banco: {str(e)}")
+        st.error(f"Erro ao limpar banco: {e}")
 
-# -----------------------------------------------------------------------------
-# GERADOR DE PDF DO PANORAMA DE NICHO
-# -----------------------------------------------------------------------------
-def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
-    canvas.saveState()
-    styles = getSampleStyleSheet()
-    
-    logo_tour = "logo_tour_transparente.png" if os.path.exists("logo_tour_transparente.png") else None
-    if logo_tour:
-        img_logo = Image(logo_tour, width=170, height=60, kind='proportional')
-        img_logo.wrapOn(canvas, 170, 60)
-        img_logo.drawOn(canvas, 36, 715)
-    else:
-        canvas.setFont('Helvetica-Bold', 14)
-        canvas.setFillColor(colors.HexColor('#0f172a'))
-        canvas.drawString(36, 735, "TOUR360VR")
 
-    header_title_style = ParagraphStyle(
-        'HeaderTitleCenterPage',
-        parent=styles['Normal'],
-        fontName='Helvetica-Bold',
-        fontSize=14,
-        leading=15,
-        textColor=colors.HexColor('#0f172a'),
-        alignment=1,
-        leftIndent=0,
-        firstLineIndent=0
-    )
+# =============================================================================
+# GOOGLE PLACES API
+# =============================================================================
+def url_foto(valor):
+    """Fotos são guardadas como 'ref:<photo_reference>' para não gravar a chave da API no banco."""
+    if not valor:
+        return "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&q=80"
+    if valor.startswith("ref:"):
+        api_key = st.secrets.get("GOOGLE_API_KEY", os.getenv("GOOGLE_API_KEY", ""))
+        ref = valor[4:]
+        return (
+            "https://maps.googleapis.com/maps/api/place/photo?"
+            + urllib.parse.urlencode({"maxwidth": 400, "photo_reference": ref, "key": api_key})
+        )
+    return valor
 
-    texto_cabecalho = Paragraph(
-        "ESTUDO DE INTELIGÊNCIA DE MERCADO LOCAL<br/>E PRESENÇA DIGITAL NO GOOGLE",
-        header_title_style
-    )
 
-    texto_table = Table([[texto_cabecalho]], colWidths=[540])
-    texto_table.setStyle(TableStyle([
-        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
-        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-        ('LEFTPADDING', (0,0), (-1,-1), 0),
-        ('RIGHTPADDING', (0,0), (-1,-1), 0),
-        ('TOPPADDING', (0,0), (-1,-1), 0),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 0),
-    ]))
+def calcular_oportunidade(website, total_avaliacoes, qtd_fotos):
+    """
+    Score de oportunidade (0 a 100) baseado somente em dados que a API informa:
+      - Sem site: 30 pts | Site sem HTTPS: 15 pts
+      - Menos de 30 avaliações: 25 pts
+      - Menos de 8 fotos (amostra da API): 20 pts
+    Total possível: 75 pts, normalizado para 100.
+    Tour 360° e reivindicação não entram no score (a API não informa).
+    """
+    criticos, oportunidades, pontos = [], [], 0
 
-    texto_table.wrapOn(canvas, 540, 60)
-    texto_table.drawOn(canvas, 36, 730)
+    if not website:
+        criticos.append("Sem site oficial vinculado à ficha do Google")
+        oportunidades.append("Desenvolvimento de landing page / website responsivo")
+        pontos += 30
+    elif not website.startswith("https://"):
+        criticos.append("Site oficial sem certificado de segurança (HTTP)")
+        oportunidades.append("Adequação de SSL e otimização web")
+        pontos += 15
 
-    canvas.setStrokeColor(colors.HexColor('#cbd5e1'))
-    canvas.setLineWidth(0.5)
-    canvas.line(36, 706, 576, 706)
-    
-    canvas.setLineWidth(0.5)
-    canvas.line(36, 42, 576, 42)
-    
-    canvas.setFont('Helvetica', 8.5)
-    canvas.setFillColor(colors.HexColor('#0f172a'))
-    
-    texto_rodape = "tour360vr.com.br    |    contato@okamotomidiasvisuais.com.br    |    (16) 99133-2121"
-    canvas.drawCentredString(306, 25, texto_rodape)
+    if total_avaliacoes < 30:
+        criticos.append(f"Volume baixo de avaliações ({total_avaliacoes})")
+        oportunidades.append("Estratégia de reputação e gestão de avaliações")
+        pontos += 25
+
+    if qtd_fotos < 8:
+        criticos.append(f"Poucas fotos no perfil (amostra da API: {qtd_fotos})")
+        oportunidades.append("Produção de fotografia profissional do espaço")
+        pontos += 20
+
+    oportunidades.append("Fotografia 360° imersiva e publicação no Google Street View")
+    score = min(round(pontos / PONTOS_MAXIMOS_API * 100), 100)
+    return score, criticos, oportunidades
+
+
+def buscar_google_places_api(nicho, cidade, bairro, rua, api_key, limite):
+    """Retorna lista de leads, lista vazia se não houver resultados, ou None em caso de erro."""
+    termos = [t.strip() for t in [nicho, rua, bairro, cidade] if t and t.strip()]
+    query = " ".join(termos)
 
     try:
-        canvas.linkURL('https://tour360vr.com.br', (110, 15, 205, 33), relative=0)
-        canvas.linkURL('mailto:contato@okamotomidiasvisuais.com.br', (215, 15, 370, 33), relative=0)
-        canvas.linkURL('https://wa.me/5516991332121', (430, 15, 400, 33), relative=0)
-    except Exception:
-        pass
-        
+        data = requests.get(
+            "https://maps.googleapis.com/maps/api/place/textsearch/json",
+            params={"query": query, "language": "pt-BR", "key": api_key},
+            timeout=12,
+        ).json()
+    except Exception as e:
+        st.error(f"Falha de conexão com a Google Places API: {e}")
+        return None
+
+    status = data.get("status")
+    if status == "ZERO_RESULTS":
+        return []
+    if status != "OK":
+        st.error(f"Google Places retornou '{status}'. {data.get('error_message', '')}")
+        return None
+
+    leads = []
+    for place in data.get("results", [])[:limite]:
+        det = {}
+        if place.get("place_id"):
+            try:
+                det = requests.get(
+                    "https://maps.googleapis.com/maps/api/place/details/json",
+                    params={
+                        "place_id": place["place_id"],
+                        "fields": "name,formatted_address,formatted_phone_number,website,rating,user_ratings_total,photos",
+                        "language": "pt-BR",
+                        "key": api_key,
+                    },
+                    timeout=8,
+                ).json().get("result", {})
+            except Exception:
+                det = {}
+
+        loc = place.get("geometry", {}).get("location", {})
+        nome = det.get("name") or place.get("name", "Sem nome")
+        endereco = det.get("formatted_address") or place.get("formatted_address", "")
+        telefone = det.get("formatted_phone_number", "")
+        website = det.get("website", "")
+        nota = det.get("rating", place.get("rating", 0.0)) or 0.0
+        total = det.get("user_ratings_total", place.get("user_ratings_total", 0)) or 0
+        fotos = det.get("photos", place.get("photos", [])) or []
+        has_https = website.startswith("https://") if website else False
+
+        digitos = "".join(ch for ch in telefone if ch.isdigit())
+        if len(digitos) > 11 and digitos.startswith("55"):
+            digitos = digitos[2:]
+        whatsapp = digitos if len(digitos) >= 10 else ""
+
+        score, criticos, oportunidades = calcular_oportunidade(website, total, len(fotos))
+
+        leads.append({
+            "data_minacao": datetime.now().strftime("%d/%m/%Y %H:%M"),
+            "cidade_busca": cidade,
+            "bairro_busca": bairro,
+            "nome": nome,
+            "categoria": (nicho or "Comércio").strip().capitalize(),
+            "endereco": endereco,
+            "latitude": float(loc.get("lat", -21.1775)),
+            "longitude": float(loc.get("lng", -47.8103)),
+            "telefone": telefone,
+            "whatsapp": whatsapp,
+            "website": website,
+            "website_https": has_https,
+            "foto_url": f"ref:{fotos[0]['photo_reference']}" if fotos else "",
+            "nota": float(nota),
+            "total_avaliacoes": int(total),
+            "fotos_total": len(fotos),
+            "pontos_criticos": criticos,
+            "oportunidades": oportunidades,
+            "score_oportunidade": int(score),
+        })
+    return leads
+
+
+def minerar_e_salvar(nicho, cidade, bairro, rua, limite):
+    api_key = st.secrets.get("GOOGLE_API_KEY", os.getenv("GOOGLE_API_KEY"))
+    if not api_key:
+        st.error("A chave GOOGLE_API_KEY não foi encontrada nos Secrets do Streamlit.")
+        return None
+    leads = buscar_google_places_api(nicho, cidade, bairro, rua, api_key.strip(), limite)
+    if leads is None:
+        return None
+    novos = sum(1 for lead in leads if salvar_lead_db(lead))
+    return leads, novos
+
+
+# =============================================================================
+# EXPORTAÇÃO CSV
+# =============================================================================
+def gerar_csv_crm(dados_leads):
+    buf = io.StringIO()
+    buf.write("\ufeff")
+    writer = csv.writer(buf, delimiter=";")
+    writer.writerow([
+        "ID", "Data Mineração", "Cidade Busca", "Bairro Busca", "Nome da Empresa", "Categoria / Nicho",
+        "Status Comercial", "Endereço", "Telefone", "WhatsApp", "Possui Website", "Website URL",
+        "HTTPS", "Nota Google", "Total Avaliações", "Qtd. Fotos (amostra API)",
+        "Pontos Críticos", "Score de Oportunidade",
+    ])
+    for row in dados_leads:
+        criticos = row.get("pontos_criticos") or []
+        if isinstance(criticos, str):
+            criticos = json.loads(criticos or "[]")
+        writer.writerow([
+            row.get("id", ""), row.get("data_minacao", ""), row.get("cidade_busca", ""),
+            row.get("bairro_busca", ""), row.get("nome", ""), row.get("categoria", ""),
+            row.get("status_crm", ""), row.get("endereco", ""), row.get("telefone", ""),
+            row.get("whatsapp", ""), "Sim" if row.get("website") else "Não", row.get("website", ""),
+            "Sim" if row.get("website_https") else "Não",
+            str(row.get("nota", "")).replace(".", ","), row.get("total_avaliacoes", ""),
+            row.get("fotos_total", ""), " | ".join(criticos), row.get("score_oportunidade", ""),
+        ])
+    return buf.getvalue().encode("utf-8")
+
+
+# =============================================================================
+# PDF (padrão claro para impressão, com cabeçalho e rodapé Tour360VR)
+# =============================================================================
+def desenhar_cabecalho_rodape(canvas, doc):
+    canvas.saveState()
+    styles = getSampleStyleSheet()
+
+    if os.path.exists(LOGO_TOUR):
+        logo = RLImage(LOGO_TOUR, width=170, height=60, kind="proportional")
+        logo.wrapOn(canvas, 170, 60)
+        logo.drawOn(canvas, 36, 715)
+
+    titulo = Paragraph(
+        "ESTUDO DE INTELIGÊNCIA DE MERCADO LOCAL<br/>E PRESENÇA DIGITAL NO GOOGLE",
+        ParagraphStyle("HeaderTitle", parent=styles["Normal"], fontName="Helvetica-Bold",
+                       fontSize=14, leading=15, textColor=colors.HexColor("#0f172a"), alignment=1),
+    )
+    t = Table([[titulo]], colWidths=[540])
+    t.setStyle(TableStyle([
+        ("ALIGN", (0, 0), (-1, -1), "CENTER"), ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 0), ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+        ("TOPPADDING", (0, 0), (-1, -1), 0), ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+    ]))
+    t.wrapOn(canvas, 540, 60)
+    t.drawOn(canvas, 36, 730)
+
+    canvas.setStrokeColor(colors.HexColor("#cbd5e1"))
+    canvas.setLineWidth(0.5)
+    canvas.line(36, 706, 576, 706)
+
+    # Rodapé com links clicáveis, centralizados
+    partes = [
+        ("tour360vr.com.br", SITE_TOUR),
+        (EMAIL_CONTATO, f"mailto:{EMAIL_CONTATO}"),
+        (WHATSAPP_EXIBICAO, f"https://wa.me/{WHATSAPP_NUM}"),
+    ]
+    sep = "    |    "
+    fonte, tam = "Helvetica", 8.5
+    largura_total = sum(stringWidth(txt, fonte, tam) for txt, _ in partes) + stringWidth(sep, fonte, tam) * (len(partes) - 1)
+    x, y = (letter[0] - largura_total) / 2, 25
+    canvas.setFont(fonte, tam)
+    canvas.setFillColor(colors.HexColor("#0f172a"))
+    for i, (txt, url) in enumerate(partes):
+        w = stringWidth(txt, fonte, tam)
+        canvas.drawString(x, y, txt)
+        canvas.linkURL(url, (x, y - 2, x + w, y + 9), relative=0)
+        x += w
+        if i < len(partes) - 1:
+            canvas.drawString(x, y, sep)
+            x += stringWidth(sep, fonte, tam)
+
+    canvas.line(36, 42, 576, 42)
     canvas.restoreState()
+
 
 def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     buffer = io.BytesIO()
-    
     doc = SimpleDocTemplate(
-        buffer, pagesize=letter,
-        rightMargin=36, leftMargin=36, topMargin=95, bottomMargin=55,
-        title=f"Panorama de Mercado - {nicho_nome}",
-        author="Tour360VR"
+        buffer, pagesize=letter, rightMargin=36, leftMargin=36, topMargin=95, bottomMargin=55,
+        title=f"Panorama de Mercado - {nicho_nome}", author="Tour360VR",
     )
     styles = getSampleStyleSheet()
-    
-    main_title_style = ParagraphStyle(
-        'MainTitle', parent=styles['Heading1'],
-        fontSize=13, textColor=colors.HexColor('#0f172a'),
-        fontName='Helvetica-Bold', alignment=1, spaceBefore=0, spaceAfter=8
-    )
-    
-    section_heading = ParagraphStyle(
-        'SectionHeading', parent=styles['Heading2'],
-        fontSize=9.5, textColor=colors.HexColor('#0f172a'),
-        spaceBefore=8, spaceAfter=5, fontName='Helvetica-Bold', alignment=1
-    )
-    
-    body_style = ParagraphStyle('BodyTextCustom', parent=styles['Normal'], fontSize=8.5, textColor=colors.HexColor('#334155'), leading=10.5)
-    body_center = ParagraphStyle('BodyCenter', parent=body_style, alignment=1)
+    titulo_style = ParagraphStyle("MainTitle", parent=styles["Heading1"], fontSize=13,
+                                  textColor=colors.HexColor("#0f172a"), fontName="Helvetica-Bold",
+                                  alignment=1, spaceBefore=0, spaceAfter=8)
+    secao_style = ParagraphStyle("SectionHeading", parent=styles["Heading2"], fontSize=9.5,
+                                 textColor=colors.HexColor("#0f172a"), spaceBefore=8, spaceAfter=5,
+                                 fontName="Helvetica-Bold", alignment=1)
+    body = ParagraphStyle("Body", parent=styles["Normal"], fontSize=8.5, textColor=colors.HexColor("#334155"), leading=10.5)
+    body_c = ParagraphStyle("BodyC", parent=body, alignment=1)
 
-    elements = []
+    el = []
+    t_title = Table([[Paragraph(f"PANORAMA DE MERCADO: {nicho_nome.upper()}", titulo_style)]], colWidths=[540])
+    t_title.setStyle(TableStyle([("ALIGN", (0, 0), (-1, -1), "CENTER")]))
+    el += [t_title, Spacer(1, 2)]
 
-    title_p = Paragraph(f"PANORAMA DE MERCADO: {nicho_nome.upper()}", main_title_style)
-    title_table = Table([[title_p]], colWidths=[540])
-    title_table.setStyle(TableStyle([('ALIGN', (0,0), (-1,-1), 'CENTER')]))
-    elements.append(title_table)
-    
-    elements.append(Spacer(1, 2))
-    elements.append(Paragraph("DISTRIBUIÇÃO DE EMPRESAS POR SCORE DE OPORTUNIDADE COMERCIAL (PONTUAÇÃO)", section_heading))
-    elements.append(Spacer(1, 2))
+    el.append(Paragraph("DISTRIBUIÇÃO DE EMPRESAS POR SCORE DE OPORTUNIDADE", secao_style))
+    el.append(Spacer(1, 2))
 
-    scores_counts = df_nicho['score_oportunidade'].value_counts().sort_index(ascending=False)
-    
-    chart_draw = Drawing(540, 95)
-    chart_draw.hAlign = 'CENTER'
-    chart_draw.add(Rect(0, 0, 540, 95, fillColor=colors.HexColor('#f8fafc'), strokeColor=colors.HexColor('#cbd5e1'), strokeWidth=0.5, rx=0, ry=0))
-    
-    qtd_bars = len(scores_counts)
-    if qtd_bars > 0:
-        bar_w = min(40, max(18, 380 // qtd_bars))
-        gap = min(22, (500 - (qtd_bars * bar_w)) // (qtd_bars + 1))
-        max_val = max(scores_counts.values) if max(scores_counts.values) > 0 else 1
-        start_x = (540 - (qtd_bars * bar_w + (qtd_bars - 1) * gap)) / 2
-        
-        for idx_sc, (score_val, total_lead) in enumerate(scores_counts.items()):
-            bx = start_x + idx_sc * (bar_w + gap)
-            by = 22
-            bh = max((total_lead / max_val) * 52, 6)
-            
-            c_fill = colors.HexColor('#4ade80') if score_val >= 60 else (colors.HexColor('#facc15') if score_val >= 30 else colors.HexColor('#f87171'))
-            
-            chart_draw.add(Rect(bx, by, bar_w, bh, fillColor=c_fill, strokeColor=None, rx=2, ry=2))
-            chart_draw.add(String(bx + (bar_w / 2), by + bh + 4, str(total_lead), fontSize=8.5, fontName="Helvetica-Bold", fillColor=colors.HexColor('#0f172a'), textAnchor="middle"))
-            chart_draw.add(String(bx + (bar_w / 2), by - 12, f"{score_val} pts", fontSize=7.5, fontName="Helvetica-Bold", fillColor=colors.HexColor('#475569'), textAnchor="middle"))
+    contagem = df_nicho["score_oportunidade"].value_counts().sort_index(ascending=False)
+    grafico = Drawing(540, 95)
+    grafico.hAlign = "CENTER"
+    grafico.add(Rect(0, 0, 540, 95, fillColor=colors.HexColor("#f8fafc"), strokeColor=colors.HexColor("#cbd5e1"), strokeWidth=0.5))
+    if len(contagem) > 0:
+        n = len(contagem)
+        bar_w = min(40, max(18, 380 // n))
+        gap = min(22, (500 - n * bar_w) // (n + 1))
+        max_val = max(contagem.values) or 1
+        start_x = (540 - (n * bar_w + (n - 1) * gap)) / 2
+        for i, (score_val, qtd) in enumerate(contagem.items()):
+            bx = start_x + i * (bar_w + gap)
+            bh = max((qtd / max_val) * 52, 6)
+            cor = colors.HexColor(COR_ALTA if score_val >= 60 else (COR_MEDIA if score_val >= 30 else COR_BAIXA))
+            grafico.add(Rect(bx, 22, bar_w, bh, fillColor=cor, strokeColor=None, rx=2, ry=2))
+            grafico.add(String(bx + bar_w / 2, 22 + bh + 4, str(qtd), fontSize=8.5, fontName="Helvetica-Bold",
+                               fillColor=colors.HexColor("#0f172a"), textAnchor="middle"))
+            grafico.add(String(bx + bar_w / 2, 10, f"{score_val} pts", fontSize=7.5, fontName="Helvetica-Bold",
+                               fillColor=colors.HexColor("#475569"), textAnchor="middle"))
+    el += [grafico, Spacer(1, 8)]
 
-    elements.append(chart_draw)
-    elements.append(Spacer(1, 8))
+    total = len(df_nicho)
+    def pct(q):
+        return f"{(q / total * 100 if total else 0):.1f}%"
 
-    total_emp = len(df_nicho)
-    sem_site = len(df_nicho[df_nicho['website'] == ''])
-    nao_reiv = len(df_nicho[df_nicho['reivindicada'] == False])
-    poucas_av = len(df_nicho[df_nicho['total_avaliacoes'] < 30])
+    poucas_av = int((df_nicho["total_avaliacoes"] < 30).sum())
+    sem_site = int((df_nicho["website"].fillna("") == "").sum())
+    score_medio = round(df_nicho["score_oportunidade"].mean(), 1) if total else 0
 
-    dados_resumo = [
-        [Paragraph("<b>INDICADOR ESTRATÉGICO</b>", body_style), Paragraph("<b>VOLUME / %</b>", body_center), Paragraph("<b>DIAGNÓSTICO DE OPORTUNIDADE</b>", body_style)],
-        [Paragraph("Otimização de Avaliações", body_style), Paragraph(f"<b>{poucas_av} ({(poucas_av/total_emp*100 if total_emp>0 else 0):.1f}%)</b>", body_center), Paragraph("Volume baixo (<30 avaliações) afetando a prova social e ranking.", body_style)],
-        [Paragraph("Sem Website Oficial", body_style), Paragraph(f"<b>{sem_site} ({(sem_site/total_emp*100 if total_emp>0 else 0):.1f}%)</b>", body_center), Paragraph("Perda de tráfego direto e dependência de canais de terceiros.", body_style)],
-        [Paragraph("Fichas Não Reivindicadas", body_style), Paragraph(f"<b>{nao_reiv} ({(nao_reiv/total_emp*100 if total_emp>0 else 0):.1f}%)</b>", body_center), Paragraph("Vulnerabilidade de segurança e falta de gestão do perfil.", body_style)]
+    resumo = [
+        [Paragraph("<b>INDICADOR ESTRATÉGICO</b>", body), Paragraph("<b>VOLUME / %</b>", body_c), Paragraph("<b>DIAGNÓSTICO DE OPORTUNIDADE</b>", body)],
+        [Paragraph("Volume baixo de avaliações", body), Paragraph(f"<b>{poucas_av} ({pct(poucas_av)})</b>", body_c),
+         Paragraph("Menos de 30 avaliações, o que afeta a prova social e o ranking.", body)],
+        [Paragraph("Sem website oficial", body), Paragraph(f"<b>{sem_site} ({pct(sem_site)})</b>", body_c),
+         Paragraph("Perda de tráfego direto e dependência de canais de terceiros.", body)],
+        [Paragraph("Score médio de oportunidade", body), Paragraph(f"<b>{score_medio}/100</b>", body_c),
+         Paragraph("Média dos critérios verificáveis pela Google Places API.", body)],
     ]
-    t_resumo = Table(dados_resumo, colWidths=[150, 90, 300])
-    t_resumo.setStyle(TableStyle([
-        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#f1f5f9')),
-        ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1')),
-        ('INNERGRID', (0,0), (-1,-1), 0.5, colors.HexColor('#e2e8f0')),
-        ('TOPPADDING', (0,0), (-1,-1), 3.5),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 3.5),
-        ('ALIGN', (1,0), (1,-1), 'CENTER'),
+    t_res = Table(resumo, colWidths=[150, 90, 300])
+    t_res.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#f1f5f9")),
+        ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#cbd5e1")),
+        ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#e2e8f0")),
+        ("TOPPADDING", (0, 0), (-1, -1), 3.5), ("BOTTOMPADDING", (0, 0), (-1, -1), 3.5),
+        ("ALIGN", (1, 0), (1, -1), "CENTER"),
     ]))
-    elements.append(t_resumo)
-    
-    elements.append(Spacer(1, 10))
-    elements.append(Paragraph("RANKING DE EMPRESAS AUDITADAS NO SETOR", section_heading))
-    elements.append(Spacer(1, 4))
+    el += [t_res, Spacer(1, 10), Paragraph("RANKING DE EMPRESAS AUDITADAS NO SETOR", secao_style), Spacer(1, 4)]
 
-    df_nicho_sorted = df_nicho.sort_values(by='score_oportunidade', ascending=False)
-
-    t_data = [[
-        Paragraph("<b>EMPRESA</b>", body_style), 
-        Paragraph("<b>NOTA</b>", body_center), 
-        Paragraph("<b>AVALIAÇÕES</b>", body_center),
-        Paragraph("<b>SITE</b>", body_center), 
-        Paragraph("<b>SCORE</b>", body_center)
-    ]]
-    
-    t_styles = [
-        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#f8fafc')),
-        ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1')),
-        ('INNERGRID', (0,0), (-1,-1), 0.5, colors.HexColor('#f1f5f9')),
-        ('TOPPADDING', (0,0), (-1,-1), 3),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 3),
-        ('ALIGN', (1,0), (-1,-1), 'CENTER'),
+    dados = [[Paragraph("<b>EMPRESA</b>", body), Paragraph("<b>NOTA</b>", body_c), Paragraph("<b>AVALIAÇÕES</b>", body_c),
+              Paragraph("<b>SITE</b>", body_c), Paragraph("<b>SCORE</b>", body_c)]]
+    estilos = [
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#f8fafc")),
+        ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#cbd5e1")),
+        ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#f1f5f9")),
+        ("TOPPADDING", (0, 0), (-1, -1), 3), ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+        ("ALIGN", (1, 0), (-1, -1), "CENTER"),
     ]
-
-    for idx, row in enumerate(df_nicho_sorted.iterrows()):
-        r_data = row[1]
-        sc = r_data['score_oportunidade']
-        
-        if sc >= 60:
-            bg_color = colors.HexColor('#86efac')
-            txt_color = '#14532d'
-        elif sc >= 30:
-            bg_color = colors.HexColor('#fde047')
-            txt_color = '#713f12'
-        else:
-            bg_color = colors.HexColor('#fca5a5')
-            txt_color = '#7f1d1d'
-
-        p_score = Paragraph(f"<font color='{txt_color}'><b>{sc}/100</b></font>", body_center)
-
-        row_idx = idx + 1
-        t_styles.append(('BACKGROUND', (4, row_idx), (4, row_idx), bg_color))
-
-        t_data.append([
-            Paragraph(str(r_data['nome'])[:45], body_style),
-            Paragraph(str(r_data['nota']), body_center),
-            Paragraph(str(r_data['total_avaliacoes']), body_center),
-            Paragraph("Sim" if r_data['website'] else "Não", body_center),
-            p_score
+    for i, (_, r) in enumerate(df_nicho.sort_values("score_oportunidade", ascending=False).iterrows(), start=1):
+        sc = int(r["score_oportunidade"])
+        fundo = "#86efac" if sc >= 60 else ("#fde047" if sc >= 30 else "#fca5a5")
+        estilos.append(("BACKGROUND", (4, i), (4, i), colors.HexColor(fundo)))
+        dados.append([
+            Paragraph(str(r["nome"])[:45], body),
+            Paragraph(f"{float(r['nota']):.1f}", body_c),
+            Paragraph(str(int(r["total_avaliacoes"])), body_c),
+            Paragraph("Sim" if r["website"] else "Não", body_c),
+            Paragraph(f"<b>{sc}/100</b>", body_c),
         ])
+    t_emp = Table(dados, colWidths=[270, 50, 80, 50, 90], repeatRows=1)
+    t_emp.setStyle(TableStyle(estilos))
+    el.append(t_emp)
 
-    t_empresas = Table(t_data, colWidths=[270, 50, 80, 50, 90], repeatRows=1)
-    t_empresas.setStyle(TableStyle(t_styles))
-    elements.append(t_empresas)
-
-    doc.build(elements, onFirstPage=desenhar_cabecalho_rodape_todas_paginas, onLaterPages=desenhar_cabecalho_rodape_todas_paginas)
+    doc.build(el, onFirstPage=desenhar_cabecalho_rodape, onLaterPages=desenhar_cabecalho_rodape)
     buffer.seek(0)
     return buffer
 
-# -----------------------------------------------------------------------------
-# ESTILIZAÇÃO CSS CUSTOMIZADA
-# -----------------------------------------------------------------------------
-st.markdown("""
-    <style>
-    .main { background-color: #0e1117; padding-top: 15px !important; }
-    .block-container { padding-top: 1rem !important; padding-bottom: 1rem !important; }
-    
-    section[data-testid="stSidebar"] {
-        width: 310px !important;
-        min-width: 310px !important;
-        max-width: 310px !important;
-    }
-    
-    [data-testid="stSidebarResizer"],
-    div[data-testid="stSidebarResizer"],
-    .st-emotion-cache-12w0q3g,
-    .st-emotion-cache-6q42n4 {
-        display: none !important;
-        width: 0px !important;
-        pointer-events: none !important;
-        opacity: 0 !important;
-    }
 
-    [data-testid="stSidebar"] * {
-        scrollbar-width: none !important;
-    }
-
-    [data-testid="stSidebar"]::-webkit-scrollbar {
-        display: none !important;
-        width: 0px !important;
-    }
-
-    [data-testid="stSidebarNav"] {
-        display: none !important;
-    }
-    
-    .main-header {
-        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-        color: white; padding: 14px 18px; border-radius: 10px; margin-bottom: 15px;
-        border: 1px solid #334155; margin-top: 5px !important;
-    }
-    .main-title { font-size: 21px; font-weight: 700; margin: 0; color: #ffffff; }
-    .main-subtitle { font-size: 12px; color: #94a3b8; margin-top: 3px; }
-
-    .lead-card {
-        background-color: #1e293b; border-radius: 10px; padding: 14px;
-        margin-bottom: 10px; border: 1px solid #334155;
-    }
-    
-    .score-box { text-align: center; padding: 8px; border-radius: 8px; font-weight: bold; width: 130px; }
-    .score-high { background-color: #052e16; color: #86efac; border: 1px solid #166534; }
-    .score-med  { background-color: #451a03; color: #fde047; border: 1px solid #92400e; }
-    .score-low  { background-color: #450a0a; color: #fca5a5; border: 1px solid #991b1b; }
-
-    .critical-item { color: #f87171; font-size: 13px; margin-bottom: 6px; font-weight: 500; }
-    
-    .sidebar-title {
-        text-align: center; font-size: 15px; font-weight: 800; color: #ffffff;
-        margin-top: -10px; margin-bottom: 10px; letter-spacing: 0.5px;
-    }
-
-    .stButton>button, .btn-redirect {
-        background-color: #0f172a !important;
-        color: #ffffff !important;
-        border: 1px solid #cbd5e1 !important;
-        border-radius: 8px !important;
-        font-weight: 600 !important;
-        font-size: 13px !important;
-        transition: all 0.3s ease !important;
-        box-shadow: 0 0 4px rgba(255, 255, 255, 0.2) !important;
-    }
-    .stButton>button:hover, .btn-redirect:hover {
-        border-color: #ffffff !important;
-        box-shadow: 0 0 12px rgba(255, 255, 255, 0.7) !important;
-        background-color: #1e293b !important;
-    }
-
-    .btn-redirect {
-        display: block; width: 100%; text-align: center; padding: 8px 10px;
-        text-decoration: none !important; margin-bottom: 8px;
-    }
-
-    .script-box {
-        background-color: #0f172a; color: #f1f5f9;
-        font-family: 'Inter', -apple-system, sans-serif;
-        font-size: 13px; line-height: 1.5; padding: 12px 15px;
-        border-radius: 8px; border: 1px solid #334155;
-        white-space: pre-wrap; margin-bottom: 10px;
-    }
-
-    div[data-testid="stDataFrame"] table th {
-        text-align: center !important;
-    }
-    </style>
-""", unsafe_allow_html=True)
-
-# -----------------------------------------------------------------------------
-# SESSION STATE E CONTROLE DE ETAPA
-# -----------------------------------------------------------------------------
-if 'etapa' not in st.session_state:
+# =============================================================================
+# NAVEGAÇÃO (SIDEBAR)
+# =============================================================================
+if "etapa" not in st.session_state:
     st.session_state.etapa = 1
 
-def mudar_etapa(nova_etapa):
-    st.session_state.etapa = nova_etapa
+
+def mudar_etapa(nova):
+    st.session_state.etapa = nova
     st.rerun()
 
-# -----------------------------------------------------------------------------
-# GOOGLE PLACES API
-# -----------------------------------------------------------------------------
-def buscar_google_places_api(nicho, cidade, bairro, rua, raio_km, api_key, limite=20):
-    termos = []
-    if nicho: termos.append(nicho.strip())
-    if rua: termos.append(rua.strip())
-    if bairro: termos.append(bairro.strip())
-    if cidade: termos.append(cidade.strip())
-    
-    query_str = " ".join(termos)
-    raio_metros = int(raio_km * 1000)
-    
-    url = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={urllib.parse.quote(query_str)}&radius={raio_metros}&language=pt-BR&key={api_key}"
-    
-    try:
-        response = requests.get(url, timeout=12)
-        data = response.json()
-        status = data.get("status")
-        
-        if status == "OK":
-            results = data.get("results", [])[:limite]
-            leads = []
-            for place in results:
-                place_id = place.get("place_id")
-                lat = place.get("geometry", {}).get("location", {}).get("lat", -21.1775)
-                lng = place.get("geometry", {}).get("location", {}).get("lng", -47.8103)
-                
-                det_res = {}
-                if place_id:
-                    details_url = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=name,formatted_address,formatted_phone_number,website,rating,user_ratings_total,photos&language=pt-BR&key={api_key}"
-                    det_res = requests.get(details_url, timeout=5).json().get("result", {})
-                
-                nome = det_res.get("name") or place.get("name")
-                endereco = det_res.get("formatted_address") or place.get("formatted_address")
 
-                telefone = det_res.get("formatted_phone_number", "")
-                website = det_res.get("website", "")
-                nota = det_res.get("rating", place.get("rating", 0.0))
-                total_avaliacoes = det_res.get("user_ratings_total", place.get("user_ratings_total", 0))
-                photos = det_res.get("photos", place.get("photos", []))
-                
-                foto_url = f"https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference={photos[0].get('photo_reference')}&key={api_key}" if photos else "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&q=80"
-
-                pontos_criticos = []
-                oportunidades = []
-                score = 0
-
-                has_https = website.startswith("https://") if website else False
-                if not website:
-                    pontos_criticos.append("Sem site oficial vinculado à ficha do Google")
-                    oportunidades.append("Desenvolvimento de Landing Page / Website Responsivo")
-                    score += 30
-                elif not has_https:
-                    pontos_criticos.append("Site oficial sem Certificado de Segurança (HTTP inseguro)")
-                    oportunidades.append("Adequação de Segurança SSL e Otimização Web")
-                    score += 15
-
-                if total_avaliacoes < 30:
-                    pontos_criticos.append(f"Volume crítico de avaliações ({total_avaliacoes} no total)")
-                    oportunidades.append("Estratégia Acelerada de Reputação e Gestão de Avaliações")
-                    score += 25
-
-                if len(photos) < 8:
-                    pontos_criticos.append(f"Poucas fotos publicadas no perfil ({len(photos)} fotos)")
-                    oportunidades.append("Produção de Fotografia Profissional para Arquitetura e Estrutura")
-                    score += 20
-
-                pontos_criticos.append("Oportunidade de Imersão: Implantação de Tour Virtual 360°")
-                oportunidades.append("Fotografia 360° Imersiva e Publicação no Google Street View")
-                score += 25
-
-                clean_phone = "".join(filter(str.isdigit, telefone))
-                if len(clean_phone) > 10 and clean_phone.startswith("55"):
-                    clean_phone = clean_phone[2:]
-
-                nome_slug = re.sub(r'[^a-zA-Z0-9]', '', nome.lower())
-
-                lead_obj = {
-                    "data_minacao": datetime.now().strftime('%d/%m/%Y %H:%M'),
-                    "cidade_busca": cidade,
-                    "bairro_busca": bairro,
-                    "nome": nome,
-                    "categoria": (nicho or "Comércio").capitalize(),
-                    "endereco": endereco,
-                    "latitude": lat,
-                    "longitude": lng,
-                    "telefone": telefone or "(16) Contato via Ficha",
-                    "whatsapp": clean_phone if len(clean_phone) >= 10 else "16999999999",
-                    "website": website,
-                    "website_https": has_https,
-                    "instagram": f"https://instagram.com/{nome_slug}",
-                    "facebook": f"https://facebook.com/{nome_slug}",
-                    "foto_url": foto_url,
-                    "nota": nota,
-                    "total_avaliacoes": total_avaliacoes,
-                    "reivindicada": True,
-                    "fotos_total": len(photos),
-                    "ultima_foto_dias": 60,
-                    "tour_360": False,
-                    "status_crm": "🆕 Novo Lead",
-                    "pontos_criticos": pontos_criticos,
-                    "oportunidades": oportunidades,
-                    "score_oportunidade": min(score, 100)
-                }
-                
-                salvar_lead_db(lead_obj)
-                leads.append(lead_obj)
-            return leads
-    except Exception as e:
-        st.error(f"Erro na requisição à API do Google Places: {str(e)}")
-    return None
-
-def minerar_e_auditar_negocios(nicho, cidade, bairro, rua, raio_km, limite=20):
-    api_key = st.secrets.get("GOOGLE_API_KEY", None) or os.getenv("GOOGLE_API_KEY", None)
-    if api_key:
-        api_key_limpa = api_key.strip().replace('"', '').replace("'", "")
-        leads_reais = buscar_google_places_api(nicho, cidade, bairro, rua, raio_km, api_key_limpa, limite)
-        if leads_reais and len(leads_reais) > 0:
-            return leads_reais
-    else:
-        st.error("⚠️ A chave 'GOOGLE_API_KEY' não foi encontrada nos Secrets do Streamlit Cloud.")
-    return []
-
-# -----------------------------------------------------------------------------
-# GERADOR DE CSV COMPLETO
-# -----------------------------------------------------------------------------
-def gerar_csv_excel_formatado(dados_leads):
-    output = io.StringIO()
-    output.write('\ufeff')
-    writer = csv.writer(output, delimiter=';', quoting=csv.QUOTE_MINIMAL)
-    writer.writerow([
-        "ID", "Data Mineração", "Cidade Busca", "Bairro Busca", "Nome da Empresa", 
-        "Categoria / Nicho", "Status Comercial CRM", "Endereço Completo", "Telefone Fixo", 
-        "WhatsApp", "Possui Website?", "Website URL", "Site Seguro (HTTPS)?", 
-        "Instagram URL", "Facebook URL", "Nota Média Google", "Total Avaliações", 
-        "Ficha Reivindicada?", "Qtd. Fotos Publicadas", "Dias Desde Última Foto", 
-        "Possui Tour 360°?", "Pontos Críticos Identificados", "Score de Oportunidade"
-    ])
-
-    for row in dados_leads:
-        criticos_str = " | ".join(row.get("pontos_criticos", [])) if isinstance(row.get("pontos_criticos"), list) else str(row.get("pontos_criticos", ""))
-        writer.writerow([
-            row.get("id", ""),
-            row.get("data_minacao", ""),
-            row.get("cidade_busca", ""),
-            row.get("bairro_busca", ""),
-            row.get("nome", ""),
-            row.get("categoria", ""),
-            row.get("status_crm", "🆕 Novo Lead"),
-            row.get("endereco", ""),
-            row.get("telefone", ""),
-            row.get("whatsapp", ""),
-            "Sim" if row.get("website") else "Não",
-            row.get("website", ""),
-            "Sim" if row.get("website_https") else "Não",
-            row.get("instagram", ""),
-            row.get("facebook", ""),
-            str(row.get("nota", "")).replace('.', ','),
-            row.get("total_avaliacoes", ""),
-            "Sim" if row.get("reivindicada") else "Não",
-            row.get("fotos_total", ""),
-            row.get("ultima_foto_dias", ""),
-            "Sim" if row.get("tour_360") else "Não",
-            criticos_str,
-            row.get("score_oportunidade", "")
-        ])
-
-    return output.getvalue().encode('utf-8')
-
-# -----------------------------------------------------------------------------
-# BARRA LATERAL (SIDEBAR)
-# -----------------------------------------------------------------------------
 base_leads = carregar_todos_leads_db()
 base_leads_insta = carregar_leads_instagram_db()
 
+MODULOS = [
+    (1, "🎯 Radar de Leads"),
+    (2, "📊 CRM de Prospecção"),
+    (3, "📈 Panorama de Nicho"),
+    (4, "🗺️ Mapa de Prospecção"),
+    (5, "📁 Leads do Instagram"),
+]
+
 with st.sidebar:
-    st.markdown('<div class="sidebar-title">Menu Radar Comercial</div>', unsafe_allow_html=True)
-    
-    if os.path.exists("logo_tour_transparente.png"):
-        c1, c2, c3 = st.columns([1.2, 3.6, 1.2])
-        with c2: st.image("logo_tour_transparente.png", use_container_width=True)
-    
-    if os.path.exists("logo_okamoto.png"):
-        c1, c2, c3 = st.columns([0.8, 4.4, 0.8])
-        with c2: st.image("logo_okamoto.png", use_container_width=True)
+    logo_side = b64_arquivo(LOGO_TOUR)
+    if logo_side:
+        st.markdown(f'<div class="gl-side-logo"><img src="data:image/png;base64,{logo_side}"/></div>', unsafe_allow_html=True)
+    st.markdown('<div class="gl-side-title">Radar Comercial</div>', unsafe_allow_html=True)
+
+    for num, nome in MODULOS:
+        if st.button(nome, key=f"nav_{num}", use_container_width=True,
+                     type="primary" if st.session_state.etapa == num else "secondary"):
+            mudar_etapa(num)
 
     st.divider()
+    st.caption(f"☁️ Leads Google: **{len(base_leads)}** · 📱 Leads Instagram: **{len(base_leads_insta)}**")
 
-    st.markdown("### 📌 Módulos")
-    if st.button("🎯 Radar de Leads", use_container_width=True, type="primary" if st.session_state.etapa == 1 else "secondary"):
-        mudar_etapa(1)
-        
-    if st.button("📊 CRM de Prospecção", use_container_width=True, type="primary" if st.session_state.etapa == 2 else "secondary"):
-        mudar_etapa(2)
-
-    if st.button("📈 Panorama de Nicho", use_container_width=True, type="primary" if st.session_state.etapa == 3 else "secondary"):
-        mudar_etapa(3)
-
-    if st.button("🗺️ Mapa de Prospecção", use_container_width=True, type="primary" if st.session_state.etapa == 4 else "secondary"):
-        mudar_etapa(4)
-
-    if st.button("📁 Gestão Leads Instagram", use_container_width=True, type="primary" if st.session_state.etapa == 5 else "secondary"):
-        mudar_etapa(5)
-
-    st.divider()
-    st.caption(f"☁️ Google Leads: **{len(base_leads)}** | 📱 Insta Leads: **{len(base_leads_insta)}**")
-
-    if len(base_leads) > 0:
-        if st.button("🗑️ Limpar Banco Google", use_container_width=True):
+    if base_leads:
+        confirma = st.checkbox("Confirmar exclusão da base Google", key="confirma_limpeza")
+        if st.button("🗑️ Limpar base Google", use_container_width=True, disabled=not confirma):
             limpar_banco_dados()
             mudar_etapa(1)
 
-# -----------------------------------------------------------------------------
-# ETAPA 1: BUSCADOR DE CLIENTES (RADAR DE LEADS)
-# -----------------------------------------------------------------------------
+    okamoto_b64 = b64_arquivo(LOGO_OKAMOTO)
+    st.markdown(
+        '<div class="gl-side-footer">Okamoto Mídias Visuais'
+        + (f'<br/><img src="data:image/png;base64,{okamoto_b64}"/>' if okamoto_b64 else "")
+        + "</div>",
+        unsafe_allow_html=True,
+    )
+
+# =============================================================================
+# MÓDULO 1: RADAR DE LEADS
+# =============================================================================
 if st.session_state.etapa == 1:
-    st.markdown("""
-        <div class="main-header">
-            <h1 class="main-title">🎯 Radar e Mineração de Mercado Local</h1>
-            <div class="main-subtitle">Varredura de perfis no Google Maps por Nicho, Cidade, Bairro, Rua e Raio de Distância (km).</div>
-        </div>
-    """, unsafe_allow_html=True)
+    hero("Radar e Mineração de Mercado Local",
+         "Varredura de perfis no Google Maps por nicho, cidade, bairro e rua. Os dados vêm da Google Places API.")
 
     with st.form("form_busca"):
-        col1, col2, col3, col4, col5, col6 = st.columns([2, 2, 1.8, 1.8, 1.2, 1.2])
-        with col1: nicho_input = st.text_input("Nicho / Categoria (Opcional)", value="")
-        with col2: cidade_input = st.text_input("Cidade / Município", value="Ribeirão Preto")
-        with col3: rua_input = st.text_input("Rua / Avenida (Opcional)", value="")
-        with col4: bairro_input = st.text_input("Bairro / Região (Opcional)", value="")
-        with col5: raio_input = st.number_input("Raio (km)", min_value=1, max_value=50, value=10, step=1)
-        with col6: limite_input = st.number_input("Qtd. Máxima", min_value=20, max_value=70, value=20, step=5)
-        
-        btn_minar = st.form_submit_button("🚀 Iniciar Varredura Profunda", use_container_width=True)
+        c1, c2, c3, c4, c5 = st.columns([2, 2, 2, 2, 1.2])
+        nicho_input = c1.text_input("Nicho / Categoria", placeholder="Ex: clínica estética")
+        cidade_input = c2.text_input("Cidade", value="Ribeirão Preto")
+        bairro_input = c3.text_input("Bairro / Região (opcional)")
+        rua_input = c4.text_input("Rua / Avenida (opcional)")
+        limite_input = c5.number_input("Qtd. máx.", min_value=5, max_value=20, value=20, step=5)
+        enviar = st.form_submit_button("🚀 Iniciar varredura", use_container_width=True)
 
-    if btn_minar:
-        with st.spinner(f"Varrendo Google Maps num raio de {raio_input} km, auditando presença web e salvando na nuvem..."):
-            time.sleep(1)
-            novos = minerar_e_auditar_negocios(nicho_input, cidade_input, bairro_input, rua_input, raio_input, limite_input)
-            if novos and len(novos) > 0:
-                mudar_etapa(2)
+    if enviar:
+        if not nicho_input and not cidade_input:
+            st.warning("Informe pelo menos o nicho ou a cidade.")
+        else:
+            with st.spinner("Consultando o Google Maps e salvando na base..."):
+                resultado = minerar_e_salvar(nicho_input, cidade_input, bairro_input, rua_input, limite_input)
+            if resultado is not None:
+                leads, novos = resultado
+                if leads:
+                    st.success(f"{len(leads)} empresas analisadas · {novos} novas salvas na base.")
+                else:
+                    st.info("Nenhum resultado para essa busca. Tente outro nicho ou cidade.")
 
-    if len(base_leads) > 0:
-        st.divider()
-        st.info(f"O seu banco na nuvem possui **{len(base_leads)} leads salvos permanentemente**.")
-        if st.button("Ver Base Completa de Leads ➡️", type="primary"):
+    if base_leads:
+        secao("Base atual")
+        st.markdown(f"<span class='gl-muted'>Você tem <b>{len(base_leads)}</b> leads salvos na nuvem.</span>", unsafe_allow_html=True)
+        if st.button("Ver base completa no CRM ➡️", type="primary"):
             mudar_etapa(2)
 
-# -----------------------------------------------------------------------------
-# ETAPA 2: BASE DE LEADS & CRM DE VENDAS
-# -----------------------------------------------------------------------------
+# =============================================================================
+# MÓDULO 2: CRM DE PROSPECÇÃO
+# =============================================================================
 elif st.session_state.etapa == 2:
-    st.markdown("""
-        <div class="main-header">
-            <h1 class="main-title">📊 Base de Leads e Gerenciador CRM</h1>
-            <div class="main-subtitle">Seus leads permanecem salvos na nuvem indefinidamente. Atualize status, use scripts de vendas e exporte planilhas.</div>
-        </div>
-    """, unsafe_allow_html=True)
+    hero("CRM de Prospecção",
+         "Filtre, acompanhe o status comercial e acione cada lead pelo WhatsApp ou pelo diagnóstico.")
 
-    if len(base_leads) == 0:
-        st.warning("⚠️ Nenhum lead cadastrado ainda no banco de dados. Faça sua primeira busca no Módulo 1!")
+    if not base_leads:
+        st.warning("Nenhum lead cadastrado ainda. Faça a primeira busca no Radar de Leads.")
     else:
-        df_leads_crm = pd.DataFrame(base_leads)
+        df_crm = pd.DataFrame(base_leads)
+        STATUS = ["🆕 Novo Lead", "💬 Em Abordagem", "🛠️ Diagnóstico Gerado", "🤝 Cliente Fechado", "❌ Recusado"]
 
-        col_f_nicho, col_f_cid, col_f_status, col_export = st.columns([2, 2, 2, 2.2])
-
-        with col_f_nicho:
-            nichos_existentes = ["Todos os Nichos"] + list(df_leads_crm['categoria'].unique())
-            filtro_nicho = st.selectbox("Filtrar por Nicho:", nichos_existentes)
-
-        with col_f_cid:
-            cidades_existentes = ["Todas as Cidades"] + list(df_leads_crm['cidade_busca'].unique())
-            filtro_cidade = st.selectbox("Filtrar por Cidade:", cidades_existentes)
-
-        with col_f_status:
-            filtro_status = st.selectbox(
-                "Status CRM:",
-                ["Todos os Status", "🆕 Novo Lead", "💬 Em Abordagem", "🛠️ Diagnóstico Gerado", "🤝 Cliente Fechado", "❌ Recusado"]
-            )
-
-        with col_export:
-            st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
-            csv_bytes = gerar_csv_excel_formatado(base_leads)
+        f1, f2, f3, f4 = st.columns([2, 2, 2, 2])
+        filtro_nicho = f1.selectbox("Nicho", ["Todos"] + sorted(df_crm["categoria"].dropna().unique().tolist()))
+        filtro_cidade = f2.selectbox("Cidade", ["Todas"] + sorted(df_crm["cidade_busca"].dropna().unique().tolist()))
+        filtro_status = f3.selectbox("Status", ["Todos"] + STATUS)
+        with f4:
+            st.markdown("<div style='height:28px'></div>", unsafe_allow_html=True)
             st.download_button(
-                label="📊 Exportar Planilha (.csv)",
-                data=csv_bytes,
-                file_name=f"Leads_Completo_CRM_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
+                "📊 Exportar planilha (.csv)",
+                data=gerar_csv_crm(base_leads),
+                file_name=f"Leads_CRM_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
                 mime="text/csv",
-                use_container_width=True
+                use_container_width=True,
             )
 
-        st.divider()
+        filtrados = base_leads
+        if filtro_nicho != "Todos":
+            filtrados = [r for r in filtrados if r["categoria"] == filtro_nicho]
+        if filtro_cidade != "Todas":
+            filtrados = [r for r in filtrados if r["cidade_busca"] == filtro_cidade]
+        if filtro_status != "Todos":
+            filtrados = [r for r in filtrados if r["status_crm"] == filtro_status]
 
-        resultados_filtrados = base_leads
-        if filtro_nicho != "Todos os Nichos":
-            resultados_filtrados = [r for r in resultados_filtrados if r['categoria'] == filtro_nicho]
-        if filtro_cidade != "Todas as Cidades":
-            resultados_filtrados = [r for r in resultados_filtrados if r['cidade_busca'] == filtro_cidade]
-        if filtro_status != "Todos os Status":
-            resultados_filtrados = [r for r in resultados_filtrados if r['status_crm'] == filtro_status]
+        st.markdown(f"<span class='gl-muted'>Exibindo <b>{len(filtrados)}</b> oportunidades</span>", unsafe_allow_html=True)
 
-        st.markdown(f"Exibindo **{len(resultados_filtrados)}** oportunidades salvas:")
+        for lead in filtrados:
+            score = int(lead["score_oportunidade"])
+            criticos = lead.get("pontos_criticos") or []
+            if isinstance(criticos, str):
+                criticos = json.loads(criticos or "[]")
 
-        for lead in resultados_filtrados:
-            score = lead['score_oportunidade']
-            score_class = "score-high" if score >= 60 else ("score-med" if score >= 30 else "score-low")
-            score_label = "ALTA OPORTUNIDADE" if score >= 60 else ("MÉDIA OPORTUNIDADE" if score >= 30 else "BAIXA OPORTUNIDADE")
+            status_atual = lead.get("status_crm") or STATUS[0]
+            classe, rotulo, cor = classificar_score(score)
+            col_info, col_det, col_acoes = st.columns([3, 3, 2.5])
 
-            st.markdown(f"""
-                <div class="lead-card">
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
-                        <div>
-                            <h2 style="margin: 0; color: #ffffff; font-size: 19px;">{lead['nome']}</h2>
-                            <p style="margin: 3px 0 0 0; color: #94a3b8; font-size: 12.5px;">📍 {lead['endereco']} | 🏷️ {lead['categoria']}</p>
-                        </div>
-                        <div class="score-box {score_class}">
-                            <div style="font-size: 9.5px; font-weight: bold;">SCORE</div>
-                            <div style="font-size: 18px; font-weight: bold;">{score} / 100</div>
-                            <div style="font-size: 8.5px;">{score_label}</div>
-                        </div>
-                    </div>
-                </div>
-            """, unsafe_allow_html=True)
-
-            col_img, col_details1, col_details2, col_actions = st.columns([2, 2.5, 2.5, 2.5])
-
-            with col_img:
-                st.image(lead['foto_url'], caption="Foto da Ficha do Google", use_container_width=True)
-                
-                status_opcoes = ["🆕 Novo Lead", "💬 Em Abordagem", "🛠️ Diagnóstico Gerado", "🤝 Cliente Fechado", "❌ Recusado"]
-                idx_atual = status_opcoes.index(lead['status_crm']) if lead['status_crm'] in status_opcoes else 0
-                novo_st = st.selectbox("Status Comercial:", status_opcoes, index=idx_atual, key=f"crm_st_{lead['id']}")
-                if novo_st != lead['status_crm']:
-                    atualizar_status_crm(lead['id'], novo_st)
-                    st.toast("Status comercial atualizado com sucesso na nuvem!")
-                    st.rerun()
-
-            with col_details1:
-                st.markdown("**📊 Indicadores no Google:**")
-                st.markdown(f"- **Nota Média:** ⭐ {lead['nota']} ({lead['total_avaliacoes']} avaliações)")
-                st.markdown(f"- **Ficha Reivindicada?** {'✅ Sim' if lead['reivindicada'] else '❌ **NÃO REIVINDICADA**'}")
-                st.markdown(f"- **Fotos na Ficha:** {lead['fotos_total']} fotos (última há {lead['ultima_foto_dias']} dias)")
-                st.markdown(f"- **Tour 360°:** {'✅ Presente' if lead['tour_360'] else '❌ **Ausente**'}")
-
-            with col_details2:
-                st.markdown("**🚨 Pontos Críticos Encontrados:**")
-                criticos_lista = lead['pontos_criticos'] if isinstance(lead['pontos_criticos'], list) else json.loads(lead['pontos_criticos'] or '[]')
-                for pc in criticos_lista:
-                    st.markdown(f"<div class='critical-item'>❌ {pc}</div>", unsafe_allow_html=True)
-
-            with col_actions:
-                st.markdown("**🌐 Presença Web & Mídias:**")
-                st.markdown(f"- **Website:** {lead['website'] if lead['website'] else '❌ Sem site'}")
-                st.markdown(f"- **Instagram:** [Abrir Perfil]({lead['instagram']})")
-                st.markdown(f"- **Maps:** [Ver no Google Maps](https://www.google.com/maps/search/?api=1&query={lead['nome'].replace(' ', '+')})")
-
-                st.markdown(f'<a href="{URL_SISTEMA_DIAGNOSTICO}" target="_blank" class="btn-redirect">🛠️ Abrir no Diagnóstico Tour360VR</a>', unsafe_allow_html=True)
-
-                if lead['whatsapp']:
-                    msg_wa = f"Olá! Tudo bem?\nMeu nome é Rubens Okamoto, da Okamoto Mídias Visuais e do Tour360VR.\nEstava analisando a presença da {lead['nome']} no Google, e identifiquei 3 pontos onde a visibilidade do espaço de vocês pode ser bastante ampliada em relação aos concorrentes da região.\nMontei um relatório curto de diagnóstico em PDF. Posso te enviar por aqui para você dar uma olhada?."
-                    link_wa = f"https://wa.me/55{lead['whatsapp']}?text={urllib.parse.quote(msg_wa)}"
-                    st.markdown(f'<a href="{link_wa}" target="_blank"><button style="width:100%; background-color:#25D366; color:white; border:none; padding:8px; border-radius:6px; font-weight:bold; cursor:pointer; margin-bottom:8px;">💬 WhatsApp</button></a>', unsafe_allow_html=True)
-
-            st.divider()
-
-# -----------------------------------------------------------------------------
-# ETAPA 3: PANORAMA DE NICHO
-# -----------------------------------------------------------------------------
-elif st.session_state.etapa == 3:
-    st.markdown("""
-        <div class="main-header">
-            <h1 class="main-title">📈 Panorama de Mercado & Inteligência de Nicho</h1>
-            <div class="main-subtitle">Análise detalhada por categoria e município ordenada por maior oportunidade comercial.</div>
-        </div>
-    """, unsafe_allow_html=True)
-
-    if len(base_leads) == 0:
-        st.warning("⚠️ Nenhum lead cadastrado ainda no banco de dados. Faça sua primeira busca no Módulo 1!")
-    else:
-        df_leads = pd.DataFrame(base_leads)
-
-        categorias_disponiveis = ["Todos os Nichos Mapeados"] + list(df_leads['categoria'].unique())
-        cidades_disponiveis = ["Todas as Cidades"] + list(df_leads['cidade_busca'].unique())
-
-        col_sel_nicho, col_sel_cid, col_btn_pdf = st.columns([2.5, 2.5, 2])
-        
-        with col_sel_nicho:
-            nicho_selecionado = st.selectbox("🎯 Nicho Comercial:", categorias_disponiveis)
-
-        with col_sel_cid:
-            cidade_selecionada = st.selectbox("📍 Cidade / Município:", cidades_disponiveis)
-
-        df_filtrado = df_leads.copy()
-        if nicho_selecionado != "Todos os Nichos Mapeados":
-            df_filtrado = df_filtrado[df_filtrado['categoria'] == nicho_selecionado]
-        if cidade_selecionada != "Todas as Cidades":
-            df_filtrado = df_filtrado[df_filtrado['cidade_busca'] == cidade_selecionada]
-
-        df_filtrado_sorted = df_filtrado.sort_values(by='score_oportunidade', ascending=False)
-
-        data_hoje_str = datetime.now().strftime('%d-%m-%Y')
-        nicho_limpo = nicho_selecionado.replace(':', '').replace('/', ' ')
-        nome_arquivo_pdf = f"Panorama de Mercado - {nicho_limpo} - {data_hoje_str}.pdf"
-
-        with col_btn_pdf:
-            st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
-            pdf_bytes_nicho = gerar_pdf_panorama_nicho(nicho_selecionado, df_filtrado_sorted)
-            st.download_button(
-                label="📄 Baixar Relatório (.pdf)",
-                data=pdf_bytes_nicho,
-                file_name=nome_arquivo_pdf,
-                mime="application/pdf",
-                use_container_width=True
-            )
-
-        st.divider()
-
-        col_m1, col_m2, col_m3, col_m4 = st.columns(4)
-        total_count = len(df_filtrado_sorted)
-        
-        with col_m1: 
-            st.metric("Empresas Analisadas", total_count)
-        with col_m2: 
-            poucas_av = len(df_filtrado_sorted[df_filtrado_sorted['total_avaliacoes'] < 30])
-            st.metric("Poucas Avaliações (<30)", f"{(poucas_av / total_count * 100 if total_count > 0 else 0):.1f}%", f"{poucas_av} empresas")
-        with col_m3: 
-            sem_site = len(df_filtrado_sorted[df_filtrado_sorted['website'] == ''])
-            st.metric("Sem Website Oficial", f"{(sem_site / total_count * 100 if total_count > 0 else 0):.1f}%", f"{sem_site} empresas")
-        with col_m4: 
-            nao_reiv = len(df_filtrado_sorted[df_filtrado_sorted['reivindicada'] == False])
-            st.metric("Fichas não Reivindicadas", f"{(nao_reiv / total_count * 100 if total_count > 0 else 0):.1f}%", f"{nao_reiv} empresas")
-
-        st.divider()
-
-        c_chart1, c_chart2 = st.columns(2)
-        with c_chart1:
-            st.markdown("### 📊 Nível de Oportunidade Comercial (Score)")
-            st.bar_chart(df_filtrado_sorted['score_oportunidade'].value_counts())
-
-        with c_chart2:
-            st.markdown("### ⭐ Média de Avaliações no Google")
-            st.bar_chart(df_filtrado_sorted['nota'].value_counts())
-
-        st.divider()
-        st.markdown(f"### 📋 Ranking do Nicho **{nicho_selecionado}**:")
-        
-        df_exibicao = pd.DataFrame({
-            'EMPRESA': df_filtrado_sorted['nome'],
-            'CIDADE': df_filtrado_sorted['cidade_busca'],
-            'SCORE': df_filtrado_sorted['score_oportunidade'].apply(lambda x: f"{x}/100"),
-            'NOTA': df_filtrado_sorted['nota'].apply(lambda x: f"{x:.1f} ⭐"),
-            'AVALIAÇÕES': df_filtrado_sorted['total_avaliacoes'].astype(str),
-            'WEBSITE': df_filtrado_sorted['website'].apply(lambda x: x if x else "Sem site registrado")
-        })
-
-        altura_dinamica = (len(df_exibicao) + 1) * 35 + 10
-
-        st.dataframe(
-            df_exibicao,
-            use_container_width=True,
-            hide_index=True,
-            height=altura_dinamica,
-            column_config={
-                "EMPRESA": st.column_config.Column("EMPRESA", width="large"),
-                "CIDADE": st.column_config.Column("CIDADE", alignment="center"),
-                "SCORE": st.column_config.Column("SCORE", width="small", alignment="center"),
-                "NOTA": st.column_config.Column("NOTA", width="small", alignment="center"),
-                "AVALIAÇÕES": st.column_config.Column("AVALIAÇÕES", width="small", alignment="center"),
-                "WEBSITE": st.column_config.LinkColumn("WEBSITE", width="large")
-            }
-        )
-
-# -----------------------------------------------------------------------------
-# ETAPA 4: MAPA DE PROSPECÇÃO
-# -----------------------------------------------------------------------------
-elif st.session_state.etapa == 4:
-    st.markdown("""
-        <div class="main-header">
-            <h1 class="main-title">🗺️ Mapa de Localização e Concentração</h1>
-            <div class="main-subtitle">Sua base de dados de empresas mapeadas na região com alta precisão e visibilidade.</div>
-        </div>
-    """, unsafe_allow_html=True)
-
-    if len(base_leads) == 0:
-        st.warning("⚠️ Nenhum lead cadastrado ainda no banco de dados. Faça sua primeira busca no Módulo 1!")
-    else:
-        df_mapa = pd.DataFrame(base_leads)
-        
-        col_f1, col_f2, col_f3 = st.columns([2, 2, 2])
-        with col_f1:
-            cats_mapa = ["Todos os Nichos"] + list(df_mapa['categoria'].unique())
-            cat_sel_mapa = st.selectbox("🎯 Nicho no Mapa:", cats_mapa)
-            
-        with col_f2:
-            cids_mapa = ["Todas as Cidades/Regiões"] + list(df_mapa['cidade_busca'].unique())
-            cid_sel_mapa = st.selectbox("📍 Cidade / Região:", cids_mapa)
-
-        with col_f3:
-            filtro_score_op = st.selectbox(
-                "🎯 Faixa de Score de Oportunidade:",
-                ["Todos os Scores", "🚨 Crítico (Score ≥ 60)", "🟡 Médio (30 a 59)", "🟢 Baixo (< 30)"]
-            )
-
-        df_mapa_filtrado = df_mapa.copy()
-        if cat_sel_mapa != "Todos os Nichos":
-            df_mapa_filtrado = df_mapa_filtrado[df_mapa_filtrado['categoria'] == cat_sel_mapa]
-        if cid_sel_mapa != "Todas as Cidades/Regiões":
-            df_mapa_filtrado = df_mapa_filtrado[df_mapa_filtrado['cidade_busca'] == cid_sel_mapa]
-
-        if filtro_score_op == "🚨 Crítico (Score ≥ 60)":
-            df_mapa_filtrado = df_mapa_filtrado[df_mapa_filtrado['score_oportunidade'] >= 60]
-        elif filtro_score_op == "🟡 Médio (30 a 59)":
-            df_mapa_filtrado = df_mapa_filtrado[(df_mapa_filtrado['score_oportunidade'] >= 30) & (df_mapa_filtrado['score_oportunidade'] < 60)]
-        elif filtro_score_op == "🟢 Baixo (< 30)":
-            df_mapa_filtrado = df_mapa_filtrado[df_mapa_filtrado['score_oportunidade'] < 30]
-
-        st.info(f"📌 Exibindo **{len(df_mapa_filtrado)} empresas** filtradas no mapa.")
-
-        CORES_PINS = ['red', 'blue', 'green', 'purple', 'orange', 'darkred', 'cadetblue', 'darkgreen', 'darkblue', 'pink']
-        CORES_HEX = {
-            'red': '#ef4444', 'blue': '#3b82f6', 'green': '#10b981', 'purple': '#8b5cf6',
-            'orange': '#f97316', 'darkred': '#991b1b', 'cadetblue': '#06b6d4',
-            'darkgreen': '#166534', 'darkblue': '#1e3a8a', 'pink': '#ec4899'
-        }
-
-        segmentos_unicos = list(df_mapa['categoria'].unique())
-        mapa_cores_seg = {seg: CORES_PINS[idx % len(CORES_PINS)] for idx, seg in enumerate(segmentos_unicos)}
-
-        if 'latitude' in df_mapa_filtrado.columns and 'longitude' in df_mapa_filtrado.columns and len(df_mapa_filtrado) > 0:
-            lat_centro = df_mapa_filtrado['latitude'].mean()
-            lon_centro = df_mapa_filtrado['longitude'].mean()
-
-            m = folium.Map(location=[lat_centro, lon_centro], zoom_start=13, tiles="OpenStreetMap")
-
-            bounds = []
-            for _, row in df_mapa_filtrado.iterrows():
-                cor_pin = mapa_cores_seg.get(row['categoria'], 'red') if cat_sel_mapa == "Todos os Nichos" else 'red'
-                url_maps_emp = f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(row['nome'])}"
-
-                info_card_html = f"""
-                <div style="font-family: Arial, sans-serif; font-size: 12px; min-width: 240px; padding: 6px; line-height: 1.5;">
-                    <a href="{url_maps_emp}" target="_blank" style="text-decoration: none;">
-                        <b style="color: #2563eb; font-size: 14px;">{row['nome']} 🔗</b>
-                    </a><br/>
-                    <span style="color: #475569; font-size: 11px;">📍 {row['endereco']}</span><br/>
-                    <hr style="margin: 6px 0; border: 0.5px solid #cbd5e1;"/>
-                    🚨 <b>Score de Oportunidade:</b> <span style="color: #dc2626; font-weight: bold;">{row['score_oportunidade']}/100</span><br/>
-                    ⭐ <b>Nota no Google:</b> {row['nota']} ({row['total_avaliacoes']} avaliações)<br/>
-                </div>
-                """
-
-                folium.Marker(
-                    location=[row['latitude'], row['longitude']],
-                    popup=folium.Popup(info_card_html, max_width=320),
-                    icon=folium.Icon(color=cor_pin, icon="info-sign")
-                ).add_to(m)
-                
-                bounds.append([row['latitude'], row['longitude']])
-
-            if len(bounds) > 0:
-                m.fit_bounds(bounds, padding=[30, 30])
-
-            st_folium(m, width="100%", height=700)
-
-# -----------------------------------------------------------------------------
-# ETAPA 5: GESTÃO E CADASTRO MANUAL INTELIGENTE DE LEADS DO INSTAGRAM
-# -----------------------------------------------------------------------------
-elif st.session_state.etapa == 5:
-    st.markdown("""
-        <div class="main-header">
-            <h1 class="main-title">📁 Cadastro e Gestão Inteligente de Leads do Instagram</h1>
-            <div class="main-subtitle">Adicione perfis do Instagram manualmente ou cole dados para gerar contatos de WhatsApp, links diretos e salvar no Supabase.</div>
-        </div>
-    """, unsafe_allow_html=True)
-    
-    with st.form("form_cad_insta", clear_on_submit=True):
-        st.markdown("### ➕ Cadastrar Novo Lead do Instagram")
-        c1, c2, c3 = st.columns(3)
-        with c1:
-            input_username = st.text_input("Username (@perfil):", placeholder="ex: clinicaexemplo")
-        with c2:
-            input_nome = st.text_input("Nome / Empresa:", placeholder="Clínica Exemplo")
-        with c3:
-            input_whatsapp = st.text_input("WhatsApp (com DDD):", placeholder="16999999999")
-            
-        input_bio = st.text_area("Biografia / Observações:", placeholder="Ex: Especialistas em estética... Link abaixo 👇")
-        input_link = st.text_input("Link na Bio (Opcional):", placeholder="https://wa.me/...")
-        
-        btn_salvar_insta = st.form_submit_button("✨ Salvar Lead do Instagram na Nuvem", use_container_width=True)
-        
-        if btn_salvar_insta:
-            if not input_username or not input_nome:
-                st.error("Por favor, preencha pelo menos o Username e o Nome da empresa.")
-            else:
-                u_clean = input_username.replace("@", "").strip()
-                w_clean = "".join(filter(str.isdigit, input_whatsapp))
-                if len(w_clean) == 10 or len(w_clean) == 11:
-                    w_clean = "55" + w_clean
-                    
-                novo_lead_insta = {
-                    "username": u_clean,
-                    "nome_completo": input_nome,
-                    "instagram_id": u_clean,
-                    "biografia": input_bio,
-                    "link_bio": input_link,
-                    "whatsapp": w_clean if w_clean else "Não encontrado",
-                    "foto_perfil": "https://via.placeholder.com/150",
-                    "origem_concorrente": "Cadastro Manual"
-                }
-                
-                if supabase:
-                    try:
-                        supabase.table("leads_instagram").upsert(novo_lead_insta, on_conflict="username").execute()
-                        st.success(f"✨ Lead '@{u_clean}' salvo com sucesso na nuvem!")
-                        time.sleep(0.8)
+            with col_info:
+                with st.container(border=True):
+                    st.markdown(f"### {lead['nome']}")
+                    st.markdown(f"<span class='gl-muted'>📍 {lead.get('endereco', '')}<br/>🏷️ {lead.get('categoria', '')}</span>", unsafe_allow_html=True)
+                    st.markdown(badge_score(score), unsafe_allow_html=True)
+                    novo_st = st.selectbox("Status comercial", STATUS, index=STATUS.index(status_atual) if status_atual in STATUS else 0, key=f"crm_st_{lead['id']}")
+                    if novo_st != status_atual:
+                        atualizar_status_crm(lead["id"], novo_st)
+                        st.toast("Status atualizado na nuvem.")
                         st.rerun()
-                    except Exception as e:
-                        st.error(f"Erro ao salvar no Supabase: {e}")
 
-    st.divider()
-    
-    leads_insta_atuais = carregar_leads_instagram_db()
-    st.subheader(f"📊 Base de Leads do Instagram Cadastrados ({len(leads_insta_atuais)} Registros)")
-
-    if len(leads_insta_atuais) > 0:
-        df_insta_view = pd.DataFrame(leads_insta_atuais)
-        
-        buffer_insta = io.BytesIO()
-        with pd.ExcelWriter(buffer_insta, engine='openpyxl') as writer:
-            df_insta_view.to_excel(writer, index=False, sheet_name='Leads Instagram')
-        
-        st.download_button(
-            label="📥 Baixar Planilha Excel dos Leads do Instagram (.xlsx)",
-            data=buffer_insta.getvalue(),
-            file_name=f"leads_instagram_export_{datetime.now().strftime('%Y%m%d')}.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
-        
-        st.write("### 👥 Gestão Visual e Abordagem Direta")
-        for row in leads_insta_atuais:
-            with st.container(border=True):
-                col_foto, col_info, col_acoes = st.columns([1.5, 5, 3.5])
-                with col_foto:
-                    st.image(row.get('foto_perfil', 'https://via.placeholder.com/150'), width=85)
-                with col_info:
-                    st.markdown(f"**{row.get('nome_completo')}** ([@{row.get('username')}](https://instagram.com/{row.get('username')}))")
-                    if row.get('biografia'): st.caption(f"📝 *Bio:* {row.get('biografia')}")
-                    if row.get('link_bio'): st.caption(f"🔗 *Link na Bio:* [{row.get('link_bio')}]({row.get('link_bio')})")
-                with col_acoes:
-                    w_num = row.get('whatsapp', 'Não encontrado')
-                    if w_num and w_num != "Não encontrado":
-                        texto_msg = f"Olá {row.get('nome_completo')}, tudo bem? Conheci seu perfil no Instagram..."
-                        link_whats = f"https://wa.me/{w_num}?text={urllib.parse.quote(texto_msg)}"
-                        st.link_button(f"🟢 Chamar no WhatsApp ({w_num})", link_whats, use_container_width=True)
+            with col_det:
+                with st.container(border=True):
+                    st.markdown("**📊 Indicadores (Google Places)**")
+                    st.markdown(f"- Nota: ⭐ {lead.get('nota', 0)} ({lead.get('total_avaliacoes', 0)} avaliações)")
+                    st.markdown(f"- Fotos (amostra da API): {lead.get('fotos_total', 0)}")
+                    st.markdown(f"- Ficha reivindicada: ⚠️ verificar manualmente")
+                    st.markdown(f"- Tour 360°: ⚠️ verificar manualmente")
+                    st.markdown("**🚨 Pontos críticos**")
+                    if criticos:
+                        for pc in criticos:
+                            st.markdown(f"<div class='gl-critico'>❌ {pc}</div>", unsafe_allow_html=True)
                     else:
-                        st.caption("📱 Sem WhatsApp cadastrado")
-                    st.link_button("📩 Enviar Direct", f"https://instagram.com/direct/t/{row.get('username')}", use_container_width=True)
+                        st.markdown("<span class='gl-muted'>Nenhum ponto crítico nos critérios automáticos.</span>", unsafe_allow_html=True)
+
+            with col_acoes:
+                with st.container(border=True):
+                    st.markdown("**🌐 Presença e ações**")
+                    st.markdown(f"- Website: {lead['website'] if lead.get('website') else '❌ Sem site'}")
+                    st.markdown(f"[Ver no Google Maps](https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(lead['nome'])})")
+                    link_secundario(URL_SISTEMA_DIAGNOSTICO, "🛠️ Abrir no Diagnóstico Tour360VR")
+                    if lead.get("whatsapp"):
+                        msg_wa = (
+                            f"Olá! Tudo bem?\nMeu nome é Rubens Okamoto, da Okamoto Mídias Visuais e do Tour360VR.\n"
+                            f"Estava analisando a presença da {lead['nome']} no Google e identifiquei pontos onde a visibilidade "
+                            f"do espaço pode ser ampliada em relação aos concorrentes da região.\n"
+                            f"Posso te enviar um diagnóstico curto em PDF por aqui?"
+                        )
+                        botao_whatsapp(f"https://wa.me/55{lead['whatsapp']}?text={urllib.parse.quote(msg_wa)}", "💬 WhatsApp")
+                    else:
+                        st.caption("Sem WhatsApp identificado na ficha.")
+
+# =============================================================================
+# MÓDULO 3: PANORAMA DE NICHO
+# =============================================================================
+elif st.session_state.etapa == 3:
+    hero("Panorama de Mercado & Inteligência de Nicho",
+         "Análise por categoria e município, ordenada pela maior oportunidade comercial.")
+
+    if not base_leads:
+        st.warning("Nenhum lead cadastrado ainda. Faça a primeira busca no Radar de Leads.")
     else:
-        st.info("💡 Nenhum lead do Instagram cadastrado ainda. Utilize o formulário acima para adicionar os primeiros contatos.")
+        df_pan = pd.DataFrame(base_leads)
+        f1, f2, f3 = st.columns([2.5, 2.5, 2])
+        nicho_sel = f1.selectbox("🎯 Nicho", ["Todos os nichos"] + sorted(df_pan["categoria"].dropna().unique().tolist()))
+        cidade_sel = f2.selectbox("📍 Cidade", ["Todas as cidades"] + sorted(df_pan["cidade_busca"].dropna().unique().tolist()))
+
+        df_f = df_pan.copy()
+        if nicho_sel != "Todos os nichos":
+            df_f = df_f[df_f["categoria"] == nicho_sel]
+        if cidade_sel != "Todas as cidades":
+            df_f = df_f[df_f["cidade_busca"] == cidade_sel]
+        df_f = df_f.sort_values("score_oportunidade", ascending=False)
+
+        with f3:
+            st.markdown("<div style='height:28px'></div>", unsafe_allow_html=True)
+            if len(df_f) > 0:
+                nome_pdf = f"Panorama de Mercado - {nicho_sel.replace('/', ' ')} - {datetime.now().strftime('%d-%m-%Y')}.pdf"
+                st.download_button("📄 Baixar relatório (.pdf)", data=gerar_pdf_panorama_nicho(nicho_sel, df_f),
+                                   file_name=nome_pdf, mime="application/pdf", use_container_width=True)
+
+        if len(df_f) == 0:
+            st.info("Nenhuma empresa para este filtro.")
+        else:
+            total = len(df_f)
+            m1, m2, m3, m4 = st.columns(4)
+            poucas = int((df_f["total_avaliacoes"] < 30).sum())
+            sem_site = int((df_f["website"].fillna("") == "").sum())
+            m1.metric("Empresas analisadas", total)
+            m2.metric("Poucas avaliações (<30)", f"{poucas / total * 100:.1f}%", f"{poucas} empresas")
+            m3.metric("Sem website", f"{sem_site / total * 100:.1f}%", f"{sem_site} empresas")
+            m4.metric("Score médio", f"{df_f['score_oportunidade'].mean():.0f}/100")
+
+            secao("Distribuição do score de oportunidade")
+            st.bar_chart(df_f["score_oportunidade"].value_counts())
+
+            secao("Ranking do nicho")
+            df_rank = pd.DataFrame({
+                "Empresa": df_f["nome"],
+                "Cidade": df_f["cidade_busca"],
+                "Score": df_f["score_oportunidade"].apply(lambda x: f"{x}/100"),
+                "Nota": df_f["nota"].apply(lambda x: f"{float(x):.1f}"),
+                "Avaliações": df_f["total_avaliacoes"].astype(str),
+                "Website": df_f["website"].apply(lambda x: x if x else "Sem site"),
+            })
+            st.dataframe(df_rank, hide_index=True, use_container_width=True,
+                         height=min(900, (len(df_rank) + 1) * 35 + 10))
+
+# =============================================================================
+# MÓDULO 4: MAPA DE PROSPECÇÃO
+# =============================================================================
+elif st.session_state.etapa == 4:
+    hero("Mapa de Localização e Concentração",
+         "Empresas mapeadas na região, com filtros por nicho, cidade e faixa de oportunidade.")
+
+    if not base_leads:
+        st.warning("Nenhum lead cadastrado ainda. Faça a primeira busca no Radar de Leads.")
+    else:
+        df_map = pd.DataFrame(base_leads)
+        f1, f2, f3 = st.columns(3)
+        cat_map = f1.selectbox("🎯 Nicho", ["Todos"] + sorted(df_map["categoria"].dropna().unique().tolist()))
+        cid_map = f2.selectbox("📍 Cidade", ["Todas"] + sorted(df_map["cidade_busca"].dropna().unique().tolist()))
+        faixa = f3.selectbox("🎯 Faixa de score", ["Todas", "Alta (≥ 60)", "Média (30 a 59)", "Baixa (< 30)"])
+
+        df_m = df_map.copy()
+        if cat_map != "Todos":
+            df_m = df_m[df_m["categoria"] == cat_map]
+        if cid_map != "Todas":
+            df_m = df_m[df_m["cidade_busca"] == cid_map]
+        if faixa == "Alta (≥ 60)":
+            df_m = df_m[df_m["score_oportunidade"] >= 60]
+        elif faixa == "Média (30 a 59)":
+            df_m = df_m[(df_m["score_oportunidade"] >= 30) & (df_m["score_oportunidade"] < 60)]
+        elif faixa == "Baixa (< 30)":
+            df_m = df_m[df_m["score_oportunidade"] < 30]
+
+        st.markdown(f"<span class='gl-muted'>Exibindo <b>{len(df_m)}</b> empresas no mapa.</span>", unsafe_allow_html=True)
+
+        if len(df_m) > 0:
+            m = folium.Map(location=[df_m["latitude"].mean(), df_m["longitude"].mean()], zoom_start=13, tiles="CartoDB dark_matter")
+            bounds = []
+            for _, row in df_m.iterrows():
+                _, _, cor = classificar_score(int(row["score_oportunidade"]))
+                url_maps = f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(row['nome'])}"
+                html_pop = (
+                    f"<div style='font-family:Arial,sans-serif;font-size:12px;min-width:240px;line-height:1.5;color:#111'>"
+                    f"<a href='{url_maps}' target='_blank' style='text-decoration:none'><b style='color:#1E40AF;font-size:14px'>{row['nome']}</b></a><br/>"
+                    f"<span style='color:#475569'>📍 {row['endereco']}</span><hr style='margin:6px 0'/>"
+                    f"<b>Score:</b> {row['score_oportunidade']}/100<br/>"
+                    f"<b>Nota:</b> {row['nota']} ({row['total_avaliacoes']} avaliações)</div>"
+                )
+                folium.CircleMarker(
+                    location=[row["latitude"], row["longitude"]],
+                    radius=9, color=cor, fill=True, fill_color=cor, fill_opacity=0.85, weight=2,
+                    popup=folium.Popup(html_pop, max_width=320),
+                    tooltip=row["nome"],
+                ).add_to(m)
+                bounds.append([row["latitude"], row["longitude"]])
+            if len(bounds) > 1:
+                m.fit_bounds(bounds, padding=(30, 30))
+            with st.container(border=True):
+                st_folium(m, width=None, height=650, returned_objects=[])
+
+# =============================================================================
+# MÓDULO 5: LEADS DO INSTAGRAM
+# =============================================================================
+elif st.session_state.etapa == 5:
+    hero("Leads do Instagram",
+         "Cadastre perfis manualmente, gere contato de WhatsApp e exporte a base.")
+
+    with st.form("form_cad_insta", clear_on_submit=True):
+        st.markdown("**➕ Novo lead do Instagram**")
+        c1, c2, c3 = st.columns(3)
+        in_user = c1.text_input("Username (@perfil)", placeholder="ex: clinicaexemplo")
+        in_nome = c2.text_input("Nome / Empresa", placeholder="Clínica Exemplo")
+        in_whats = c3.text_input("WhatsApp (com DDD)", placeholder="16999999999")
+        in_bio = st.text_area("Biografia / observações", height=80)
+        in_link = st.text_input("Link na bio (opcional)", placeholder="https://wa.me/...")
+        salvar_insta = st.form_submit_button("✨ Salvar lead", use_container_width=True)
+
+    if salvar_insta:
+        if not in_user or not in_nome:
+            st.error("Preencha pelo menos o username e o nome da empresa.")
+        elif supabase is None:
+            st.error("Banco de dados indisponível.")
+        else:
+            u = in_user.replace("@", "").strip()
+            w = "".join(ch for ch in in_whats if ch.isdigit())
+            if len(w) in (10, 11):
+                w = "55" + w
+            try:
+                supabase.table("leads_instagram").upsert({
+                    "username": u, "nome_completo": in_nome, "instagram_id": u,
+                    "biografia": in_bio, "link_bio": in_link,
+                    "whatsapp": w or "", "foto_perfil": "",
+                    "origem_concorrente": "Cadastro manual",
+                }, on_conflict="username").execute()
+                st.success(f"Lead '@{u}' salvo na nuvem.")
+            except Exception as e:
+                st.error(f"Erro ao salvar: {e}")
+
+    secao(f"Base de leads do Instagram ({len(base_leads_insta)})")
+    if base_leads_insta:
+        df_ins = pd.DataFrame(base_leads_insta)
+        buf_xlsx = io.BytesIO()
+        with pd.ExcelWriter(buf_xlsx, engine="openpyxl") as writer:
+            df_ins.to_excel(writer, index=False, sheet_name="Leads Instagram")
+        st.download_button("📥 Baixar planilha (.xlsx)", data=buf_xlsx.getvalue(),
+                           file_name=f"leads_instagram_{datetime.now().strftime('%Y%m%d')}.xlsx",
+                           mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+        for row in base_leads_insta:
+            with st.container(border=True):
+                ci, cn, ca = st.columns([4, 5, 3])
+                with ci:
+                    st.markdown(f"**{row.get('nome_completo', '')}**")
+                    st.markdown(f"<span class='gl-muted'>@{row.get('username', '')}</span>", unsafe_allow_html=True)
+                with cn:
+                    if row.get("biografia"):
+                        st.caption(f"📝 {row.get('biografia')}")
+                    if row.get("link_bio"):
+                        st.caption(f"🔗 {row.get('link_bio')}")
+                with ca:
+                    w_num = row.get("whatsapp") or ""
+                    if w_num:
+                        texto = f"Olá {row.get('nome_completo')}, tudo bem? Conheci seu perfil no Instagram..."
+                        botao_whatsapp(f"https://wa.me/{w_num}?text={urllib.parse.quote(texto)}", "💬 WhatsApp")
+                    else:
+                        st.caption("Sem WhatsApp cadastrado")
+                    link_secundario(f"https://instagram.com/direct/t/{row.get('username', '')}", "📩 Enviar Direct")
+    else:
+        st.info("Nenhum lead do Instagram cadastrado ainda.")
