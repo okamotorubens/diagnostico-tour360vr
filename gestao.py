@@ -6,7 +6,6 @@ import time
 from datetime import datetime, date
 from io import BytesIO
 import urllib.parse
-import security
 import qrcode
 from PIL import Image as PILImage
 from supabase import create_client, Client
@@ -189,14 +188,12 @@ def auditar_ficha_google_api(query_ou_url):
         return None, "Chave GOOGLE_API_KEY não configurada nos Secrets do Streamlit."
     
     try:
-        # Se o usuário colou um link encurtado do Maps, tentamos extrair ou buscar
         termo_busca = query_ou_url
         if "http" in query_ou_url:
             if "maps.app.goo.gl" in query_ou_url or "goo.gl" in query_ou_url:
                 resp_redirect = requests.get(query_ou_url, allow_redirects=True, timeout=10)
                 termo_busca = resp_redirect.url
 
-        # Chamada à Google Places API (Text Search)
         url_search = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={urllib.parse.quote(termo_busca)}&key={api_key}&language=pt-BR"
         resp = requests.get(url_search, timeout=10).json()
 
@@ -207,28 +204,23 @@ def auditar_ficha_google_api(query_ou_url):
         place_id = place.get("place_id")
         nome = place.get("name", "Empresa Selecionada")
         
-        # Detalhes completos do local (Place Details API)
         url_details = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=name,formatted_address,formatted_phone_number,website,rating,user_ratings_total,photos,opening_hours,business_status,types&key={api_key}&language=pt-BR"
         details = requests.get(url_details, timeout=10).json().get("result", {})
 
-        # Critérios de Auditoria e Pontuação (Padrão Rigoroso API)
         score = 100
         pendencias = []
         oportunidades = []
 
-        # 1. Website
         if not details.get("website"):
             score -= 30
             pendencias.append("❌ Ficha sem Link de Website / Cartão Digital configurado na API")
             oportunidades.append("Incluir site ou landing page otimizada com Tour Virtual 360°")
         
-        # 2. Telefone
         if not details.get("formatted_phone_number"):
             score -= 20
             pendencias.append("❌ Número de Telefone Comercial não validado ou ausente")
             oportunidades.append("Atualizar o telefone principal de atendimento no GMB")
 
-        # 3. Avaliações (Reviews)
         total_reviews = details.get("user_ratings_total", 0)
         rating = details.get("rating", 0.0)
         if total_reviews < 10:
@@ -236,7 +228,6 @@ def auditar_ficha_google_api(query_ou_url):
             pendencias.append(f"⚠️ Poucas avaliações registradas ({total_reviews} avaliações, Nota: {rating})")
             oportunidades.append("Implementar captação ativa de reviews via QR Code de balcão")
 
-        # 4. Fotos
         if not details.get("photos") or len(details.get("photos", [])) < 3:
             score -= 25
             pendencias.append("⚠️ Quantidade insuficiente de fotos profissionais ou Tour Virtual")
