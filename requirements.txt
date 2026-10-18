@@ -15,6 +15,3 @@ qrcode
 supabase
 beautifulsoup4
 pytz
-apify-client
-requests.get
-requests.post
