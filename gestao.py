@@ -466,6 +466,15 @@ st.markdown("""
         box-shadow: 0 0 14px rgba(255, 255, 255, 0.9), 0 0 6px rgba(255, 255, 255, 1) !important;
     }
     div[data-testid="stForm"] { border-color: #2B364A !important; padding: 16px !important; border-radius: 10px !important; background-color: #131A28 !important; }
+    
+    /* Caixa de destaque refinada para a seleção de clientes */
+    .selector-box {
+        background-color: #161F30;
+        border: 1px solid #2B364A;
+        padding: 16px 20px;
+        border-radius: 10px;
+        margin-bottom: 15px;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -512,13 +521,16 @@ if st.session_state["aba_ativa"] == "cadastrar":
     modo_edicao = False
     dados_existentes = None
     
+    # Bloco melhorado e separado visualmente para busca/cadastro de clientes
+    st.markdown('<div class="selector-box">', unsafe_allow_html=True)
+    st.markdown("##### 🔍 Gerenciamento Rápido de Clientes")
     if not df_clientes.empty:
         opcoes = ["➕ Cadastrar Novo Cliente"] + df_clientes["nome_empresa"].tolist()
         sel_idx = 0
         if "cliente_sel_cad" in st.session_state and st.session_state["cliente_sel_cad"] in opcoes:
             sel_idx = opcoes.index(st.session_state["cliente_sel_cad"])
         
-        cliente_menu = st.selectbox("Selecione para Cadastrar ou Editar um Cliente Existente:", opcoes, index=sel_idx, key="sel_cliente_menu_cad")
+        cliente_menu = st.selectbox("Selecione um cliente existente para editar ou escolha cadastrar um novo:", opcoes, index=sel_idx, key="sel_cliente_menu_cad")
         st.session_state["cliente_sel_cad"] = cliente_menu
         
         if cliente_menu != "➕ Cadastrar Novo Cliente":
@@ -526,13 +538,17 @@ if st.session_state["aba_ativa"] == "cadastrar":
             c_id = int(df_clientes[df_clientes["nome_empresa"] == cliente_menu]["id"].values[0])
             st.session_state["cliente_id_edicao"] = c_id
             dados_existentes = obter_dados_cliente_por_id(c_id)
-            st.info(f"Modo de Edição Ativo: Alterando a Ficha de **{cliente_menu}**.")
+            st.success(f"⚡ **Modo de Edição Ativo:** Editando a ficha da empresa **{cliente_menu}**.")
         else:
             st.session_state.pop("cliente_id_edicao", None)
+            st.info("✨ **Novo Cadastro:** Preencha os campos abaixo para registrar um novo cliente na base.")
+    else:
+        st.warning("Nenhum cliente cadastrado ainda na base. Preencha o formulário abaixo para registrar o primeiro.")
+    st.markdown('</div>', unsafe_allow_html=True)
 
     with st.form("form_cliente_gmb_completo"):
-        sub_t1, sub_t2, sub_t3, sub_t4, sub_t5, sub_t6, sub_t7 = st.tabs([
-            "🏢 Sobre & Ficha", "⏰ Horários & Status", "💵 Contrato & Mídias", "📞 Contato & Redes", "🛠️ Checklist", "📜 Histórico", "🖨️ QR Code Avaliações"
+        sub_t1, sub_t2, sub_t3, sub_t4, sub_t5, sub_t6 = st.tabs([
+            "🏢 Sobre & Ficha", "⏰ Horários & Status", "💵 Contrato & Mídias", "📞 Contato & Redes", "🛠️ Checklist", "📜 Histórico"
         ])
         
         with sub_t1:
@@ -550,7 +566,6 @@ if st.session_state["aba_ativa"] == "cadastrar":
                 data_abertura_dt = st.date_input("Data de Abertura (Ficha GMB)", value=val_dt_abertura, format="DD/MM/YYYY")
                 data_abertura_str = data_abertura_dt.strftime("%d/%m/%Y")
                 
-                # Suporte a Prestador sem Endereço Fixo / Área de Cobertura
                 atende_sem_endereco = st.checkbox("Prestador de Serviço sem Endereço Fixo (Área de Cobertura / SAB)", value=dados_existentes.get("atende_sem_endereco", False) if (modo_edicao and dados_existentes) else False)
                 endereco_local = st.text_input("Endereço Físico (ou Fiscal/Origem se sem local)", value=dados_existentes.get("endereco_local", "") if (modo_edicao and dados_existentes) else "")
 
@@ -659,20 +674,6 @@ if st.session_state["aba_ativa"] == "cadastrar":
                     df_hist.columns = ["Data (São Paulo)", "Alteração Realizada"]
                     st.dataframe(df_hist, use_container_width=True)
 
-        with sub_t7:
-            st.markdown("**🖨️ Gerador de QR Code de Avaliações para Balcão / Veículo:**")
-            link_maps_qr = st.text_input("Link Direto de Avaliações (Google Maps URL curta):", value=dados_existentes.get("website", "") if (modo_edicao and dados_existentes) else "https://g.page/r/...")
-            if link_maps_qr:
-                qr = qrcode.QRCode(version=1, box_size=10, border=4)
-                qr.add_data(link_maps_qr)
-                qr.make(fit=True)
-                img_qr = qr.make_image(fill_color="black", back_color="white")
-                buf_qr = BytesIO()
-                img_qr.save(buf_qr, format="PNG")
-                buf_qr.seek(0)
-                st.image(buf_qr, width=200, caption="QR Code Oficial de Avaliações")
-                st.download_button("📥 Baixar Imagem QR Code", data=buf_qr, file_name=f"QRCode_Avaliacoes_{nome_empresa or 'Cliente'}.png", mime="image/png")
-
         st.markdown("---")
         btn_salvar = st.form_submit_button("Salvar Nova Ficha" if not modo_edicao else "Atualizar Ficha e Gravar Histórico")
 
@@ -725,6 +726,23 @@ if st.session_state["aba_ativa"] == "cadastrar":
                     st.rerun()
             except Exception as e:
                 st.error(f"Erro ao salvar: {str(e)}")
+
+    # Seção de QR Code fora do formulário principal para evitar erros de layout do Streamlit
+    if modo_edicao and dados_existentes:
+        st.markdown("<br>", unsafe_allow_html=True)
+        with st.expander("🖨️ Gerador de QR Code de Avaliações para este Cliente", expanded=False):
+            link_maps_qr = dados_existentes.get("website", "") or "https://g.page/r/..."
+            link_qr_input = st.text_input("Link Direto de Avaliações (URL do Google Maps):", value=link_maps_qr, key="input_url_qr_gerador")
+            if link_qr_input:
+                qr = qrcode.QRCode(version=1, box_size=10, border=4)
+                qr.add_data(link_qr_input)
+                qr.make(fit=True)
+                img_qr = qr.make_image(fill_color="black", back_color="white")
+                buf_qr = BytesIO()
+                img_qr.save(buf_qr, format="PNG")
+                buf_qr.seek(0)
+                st.image(buf_qr, width=180, caption=f"QR Code - {cliente_menu}")
+                st.download_button("📥 Baixar Imagem QR Code", data=buf_qr, file_name=f"QRCode_Avaliacoes_{cliente_menu}.png", mime="application/png", key="btn_download_qr_code_safe")
 
     gerar_botoes_navegacao_rodape()
 
@@ -928,7 +946,6 @@ elif st.session_state["aba_ativa"] == "financeiro":
         mrr = df_c[df_c["status_contrato"] == "Ativo"]["valor_contrato_mensal"].sum()
         st.metric("💵 MRR Total da Agência", f"R$ {mrr:,.2f}")
         
-        # Alerta de Vencimento / Inatividade simulada
         st.markdown("### ⚠️ Alertas de Pagamento & Atividade Recorrente")
         st.info("💡 Dica: Verifique clientes com vencimentos próximos para manter o fluxo de caixa do MRR em dia.")
         
