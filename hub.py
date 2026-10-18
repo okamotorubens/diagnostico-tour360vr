@@ -123,7 +123,7 @@ a.sys-card:hover .name { color: var(--accent) !important; }
 a.sys-card .go { margin-top: auto; color: #FFFFFF !important; font-size: .78rem; font-weight: 600; }
 
 /* Espaço entre blocos de cards */
-.gap-lg { height: 12px; }
+.gap-lg { height: 08px; }
 </style>
 """, unsafe_allow_html=True)
 
