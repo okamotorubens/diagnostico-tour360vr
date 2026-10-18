@@ -573,15 +573,15 @@ elif st.session_state.etapa == 2:
                         st.markdown(f"- **Website:** {lead['website'] if lead['website'] else '❌ Sem site'}")
     
     # Exibição segura do link do Instagram salvo no lead
-             insta_link = lead.get('instagram', '')
+                        insta_link = lead.get('instagram', '')
                 if insta_link:
-             st.markdown(f"- **Instagram:** [Abrir Perfil]({insta_link})")
+                        st.markdown(f"- **Instagram:** [Abrir Perfil]({insta_link})")
                 else:
-             st.markdown("- **Instagram:** ❌ Não informado")
+                        st.markdown("- **Instagram:** ❌ Não informado")
 
-             st.markdown(f"- **Maps:** [Ver no Google Maps](https://www.google.com/maps/search/?api=1&query={lead['nome'].replace(' ', '+')})")
+                        st.markdown(f"- **Maps:** [Ver no Google Maps](https://www.google.com/maps/search/?api=1&query={lead['nome'].replace(' ', '+')})")
 
-                    st.markdown(
+                        st.markdown(
                         f"[Ver no Google Maps](https://www.google.com/maps/search/?api=1&query="
                         f"{urllib.parse.quote(lead['nome'])})"
                     )
