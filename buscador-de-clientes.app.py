@@ -1135,23 +1135,24 @@ elif st.session_state.etapa == 5:
         if not url_input:
             st.error("Por favor, informe a URL ou @ de um perfil do Instagram ativo.")
         else:
+            # Sanitização rigorosa do username
             raw_input = url_input.strip()
             if "instagram.com/" in raw_input:
                 raw_input = raw_input.split("instagram.com/")[-1]
             username_limpo = raw_input.replace("@", "").strip("/").split("?")[0].split("/")[0].strip()
             
-            with st.spinner(f"O robô do Apify está minerando os seguidores de '@{username_limpo}'..."):
+            with st.spinner(f"O robô do Apify está varrendo os seguidores de '@{username_limpo}'..."):
                 try:
                     client = ApifyClient(APIFY_TOKEN)
                     
-                    # Usando o Actor de seguidores/seguidos sem cookies da Scraping Solutions
+                    # Parâmetros exatos exigidos pelo seu Actor seemuapps/instagram-followers-scraper
                     run_input = {
-                        "usernames": [username_limpo],
+                        "username": username_limpo,
                         "resultsLimit": int(limite_leads)
                     }
                     
-                    # Chamada ao Actor correto de seguidores
-                    run = client.actor("scraping-solutions/instagram-scraper-following-no-cookies").call(run_input=run_input)
+                    # Chamada ao seu Actor oficial do Apify
+                    run = client.actor("seemuapps/instagram-followers-scraper").call(run_input=run_input)
                     dados_coletados = []
                     
                     dataset_id = None
@@ -1167,6 +1168,7 @@ elif st.session_state.etapa == 5:
                             bio = item.get("biography", "") or item.get("bio", "")
                             link_ext = item.get("externalUrl", "") or item.get("external_url", "")
                             
+                            # Mapeamento de WhatsApp na bio ou link externo
                             whats = "Não encontrado"
                             wa_match = re.search(r'(wa\.me|api\.whatsapp\.com/send\?phone=)(\d+)', link_ext or "")
                             if wa_match: 
@@ -1179,8 +1181,8 @@ elif st.session_state.etapa == 5:
                             
                             dados_coletados.append({
                                 "username": item.get("username"),
-                                "nome_completo": item.get("fullName") or item.get("full_name") or item.get("displayName") or "Sem nome informado",
-                                "instagram_id": str(item.get("id") or item.get("userId") or item.get("pk", "")),
+                                "nome_completo": item.get("displayName") or item.get("fullName") or item.get("full_name") or "Sem nome informado",
+                                "instagram_id": str(item.get("userId") or item.get("id") or item.get("pk", "")),
                                 "biografia": bio,
                                 "link_bio": link_ext,
                                 "whatsapp": whats,
@@ -1192,6 +1194,7 @@ elif st.session_state.etapa == 5:
                         df_leads = pd.DataFrame(dados_coletados)
                         st.session_state['leads_instagram_coletados'] = df_leads
                         
+                        # Sincronização com o Supabase (Certifique-se de ter criado a tabela leads_instagram)
                         if supabase:
                             with st.spinner("Sincronizando registros extraídos com o banco de dados Supabase..."):
                                 try:
@@ -1201,7 +1204,7 @@ elif st.session_state.etapa == 5:
                                 except Exception as db_err:
                                     st.warning(f"Leads exibidos no painel, mas falhou a sincronização com o Supabase: {db_err}")
                     else:
-                        st.warning(f"Nenhum seguidor retornado pela API para o perfil '@{username_limpo}'. Certifique-se de que a conta é pública.")
+                        st.warning(f"Nenhum seguidor retornado pela API para o perfil '@{username_limpo}'. Certifique-se de que a conta é pública e possui seguidores ativos.")
                 except Exception as e:
                     st.error(f"Erro operacional durante o processo de scraping: {e}")
 
