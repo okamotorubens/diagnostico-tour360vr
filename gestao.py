@@ -327,7 +327,7 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
     buffer.seek(0)
     return buffer
 
-# --- GERAÇÃO DE CONTRATO EM PDF (ATUALIZADO CONFORME SOLICITADO) ---
+# --- GERAÇÃO DE CONTRATO EM PDF ---
 def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duracao=None):
     buffer = BytesIO()
     doc = SimpleDocTemplate(
@@ -339,14 +339,12 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     story = []
     styles = getSampleStyleSheet()
 
-    # Título maior (fontSize 18, leading 22) e sem o subtítulo anterior
     doc_title_style = ParagraphStyle('DocTitleStyle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=18, leading=22, alignment=1, textColor=colors.HexColor('#1E293B'))
     body_style = ParagraphStyle('DocBody', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=12.5, alignment=4, textColor=colors.HexColor('#1E293B'))
     signature_style = ParagraphStyle('DocSig', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=12, alignment=1, textColor=colors.HexColor('#1E293B'))
 
     logo_flowable = get_rl_image_pdf(55, 55)
 
-    # Header simplificado sem o texto secundário
     header_table = Table([
         [logo_flowable, Paragraph("<b>CONTRATO DE PRESTAÇÃO DE SERVIÇOS</b>", ParagraphStyle('RH', alignment=2, fontName='Helvetica-Bold', fontSize=12, textColor=colors.HexColor('#2563EB')))]
     ], colWidths=[60, 472])
@@ -359,7 +357,6 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     hoje = agora_brasil()
     data_extenso = f"Ribeirão Preto - SP, {hoje.day} de {meses_pt[hoje.month - 1]} de {hoje.year}."
     
-    # Data em PRETO puro conforme solicitado
     story.append(Paragraph(data_extenso, ParagraphStyle('Date', fontName='Helvetica', fontSize=9, alignment=2, textColor=colors.HexColor('#000000'))))
     
     story.append(Spacer(1, 20))
@@ -417,7 +414,7 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     buffer.seek(0)
     return buffer
 
-# --- CSS PERSONALIZADO (SEM CONTAINER AZUL + CAMPO SELETOR EM DESTAQUE BRANCO) ---
+# --- CSS PERSONALIZADO ---
 st.markdown("""
     <style>
     .block-container { padding-top: 1.0rem !important; padding-bottom: 1.5rem !important; max-width: 94% !important; margin: 0 auto !important; }
@@ -470,7 +467,6 @@ st.markdown("""
     }
     div[data-testid="stForm"] { border-color: #2B364A !important; padding: 16px !important; border-radius: 10px !important; background-color: #131A28 !important; }
     
-    /* DESTAQUE DE CONTORNO BRANCO NO SELETOR DE CLIENTES */
     div[data-baseweb="select"] > div {
         background-color: #131A28 !important;
         border: 2px solid #FFFFFF !important;
@@ -556,7 +552,6 @@ if st.session_state["aba_ativa"] == "cadastrar":
         ])
         
         with sub_t1:
-            # Layout com colunas espaçadas (respiro entre campos)
             c1, c_esp1, c2 = st.columns([4.8, 0.4, 4.8])
             with c1:
                 nome_empresa = st.text_input("Nome Comercial da Empresa *", value=dados_existentes["nome_empresa"] if (modo_edicao and dados_existentes) else "")
@@ -732,7 +727,6 @@ if st.session_state["aba_ativa"] == "cadastrar":
             except Exception as e:
                 st.error(f"Erro ao salvar: {str(e)}")
 
-    # Seção do QR Code posicionada exatamente abaixo do card do cliente (fora do form)
     if modo_edicao and dados_existentes:
         st.markdown("<br>", unsafe_allow_html=True)
         st.markdown("### 🖨️ Gerador de QR Code de Avaliações")
@@ -752,20 +746,46 @@ if st.session_state["aba_ativa"] == "cadastrar":
     gerar_botoes_navegacao_rodape()
 
 # ==========================================
-# MÓDULO 2: AUDITORIA EXPRESS
+# MÓDULO 2: AUDITORIA EXPRESS (CORRIGIDO)
 # ==========================================
 elif st.session_state["aba_ativa"] == "auditoria":
     st.subheader("🔍 Auditoria de Ficha Google em 1 Clique")
     url_prospect = st.text_input("URL do Google Maps da Empresa:", placeholder="https://maps.google.com/...")
+    
     if st.button("⚡ Executar Varredura"):
         if url_prospect:
-            res_aud, err = auditar_ficha_google(url_prospect)
-            if err: st.error(err)
+            with st.spinner("Analisando ficha comercial..."):
+                res_aud, err = auditar_ficha_google(url_prospect)
+            if err: 
+                st.error(err)
             else:
-                st.success(f"Score da Ficha: {res_aud['score']}%")
-                st.write(res_aud['pendencias'])
+                st.markdown(f"### 🏢 Empresa: **{res_aud['nome']}**")
+                
+                # Exibição limpa e visual do Score
+                score = res_aud['score']
+                if score >= 75:
+                    st.success(f"⭐ **Score da Ficha: {score}%** (Excelente otimização)")
+                elif score >= 50:
+                    st.warning(f"⚠️ **Score da Ficha: {score}%** (Requer melhorias)")
+                else:
+                    st.error(f"❌ **Score da Ficha: {score}%** (Crítico / Oportunidade Alta)")
+
+                st.markdown("#### 📋 Pendências Identificadas:")
+                if res_aud['pendencias']:
+                    for p in res_aud['pendencias']:
+                        st.markdown(f"- {p}")
+                else:
+                    st.markdown("- Nenhuma pendência crítica encontrada!")
+
+                st.markdown("#### 🚀 Oportunidades Recomendadas:")
+                if res_aud['oportunidades']:
+                    for op in res_aud['oportunidades']:
+                        st.markdown(f"- {op}")
+                else:
+                    st.markdown("- Perfil otimizado.")
         else:
-            st.warning("Insira uma URL válida.")
+            st.warning("Insira uma URL válida do Google Maps.")
+            
     gerar_botoes_navegacao_rodape()
 
 # ==========================================
