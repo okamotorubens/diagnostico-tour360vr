@@ -1135,32 +1135,27 @@ elif st.session_state.etapa == 5:
         if not url_input:
             st.error("Por favor, informe a URL ou @ de um perfil do Instagram ativo.")
         else:
-            # Tratamento para garantir a URL completa exigida pelo Actor seemuapps/instagram-followers-scraper
+            # Sanitização rigorosa para extrair apenas o username exato (ex: 'tour360vr')
             raw_input = url_input.strip()
             if "instagram.com/" in raw_input:
-                url_alvo = raw_input.split("?")[0]
-                if not url_alvo.endswith("/"):
-                    url_alvo += "/"
-                username_limpo = raw_input.split("instagram.com/")[-1].replace("@", "").strip("/").split("?")[0].split("/")[0]
-            else:
-                username_limpo = raw_input.replace("@", "").strip("/")
-                url_alvo = f"https://www.instagram.com/{username_limpo}/"
+                raw_input = raw_input.split("instagram.com/")[-1]
+            username_limpo = raw_input.replace("@", "").strip("/").split("?")[0].split("/")[0].strip()
             
-            with st.spinner(f"O robô do Apify está varrendo os seguidores de '{url_alvo}' de forma anônima e segura..."):
+            with st.spinner(f"O robô do Apify está varrendo os seguidores de '@{username_limpo}' de forma anônima e segura..."):
                 try:
                     client = ApifyClient(APIFY_TOKEN)
                     
-                    # Parâmetro correto exigido pelo Actor do Seemuapps
+                    # Parâmetro exato exigido pelo seu Actor na Apify
                     run_input = {
-                        "directUrls": [url_alvo],
+                        "username": username_limpo,
                         "resultsLimit": int(limite_leads)
                     }
                     
-                    # Executa o Actor correto
+                    # Executa o Actor
                     run = client.actor("seemuapps/instagram-followers-scraper").call(run_input=run_input)
                     dados_coletados = []
                     
-                    # Resolução do ID do Dataset
+                    # Resolução segura do ID do Dataset
                     dataset_id = None
                     if isinstance(run, dict):
                         dataset_id = run.get("defaultDatasetId") or run.get("default_dataset_id")
@@ -1210,7 +1205,7 @@ elif st.session_state.etapa == 5:
                                 except Exception as db_err:
                                     st.warning(f"Leads exibidos no painel, mas falhou a sincronização com o Supabase: {db_err}")
                     else:
-                        st.warning(f"Nenhum seguidor retornado pela API para o perfil '{username_limpo}'. Certifique-se de que a conta é pública e possui seguidores ativos.")
+                        st.warning(f"Nenhum seguidor retornado pela API para o perfil '@{username_limpo}'. Certifique-se de que a conta é pública e possui seguidores ativos.")
                 except Exception as e:
                     st.error(f"Erro operacional durante o processo de scraping: {e}")
 
