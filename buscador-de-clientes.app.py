@@ -1148,10 +1148,27 @@ elif st.session_state.etapa == 5:
                         "maxItems": limite_leads
                     }
                     
+                    with st.spinner(f"O robô do Apify está varrendo os seguidores de '@{username_limpo}' de forma anônima e segura..."):
+                try:
+                    client = ApifyClient(APIFY_TOKEN)
+                    
+                    run_input = {
+                        "username": username_limpo,
+                        "mode": "followers",
+                        "maxItems": limite_leads
+                    }
+                    
+                    # Executa a chamada do Actor
                     run = client.actor("seemuapps/instagram-followers-scraper").call(run_input=run_input)
                     dados_coletados = []
                     
-                    for item in client.dataset(run["defaultDatasetId"]).iterate_items():
+                    # Extrai o ID do dataset de forma compatível com dicionário ou objeto
+                    if isinstance(run, dict):
+                        dataset_id = run.get("defaultDatasetId") or run.get("default_dataset_id")
+                    else:
+                        dataset_id = getattr(run, "default_dataset_id", getattr(run, "defaultDatasetId", None)) or run["defaultDatasetId"]
+                    
+                    for item in client.dataset(dataset_id).iterate_items():
                         bio = item.get("biography", "")
                         link_ext = item.get("externalUrl", "")
                         
