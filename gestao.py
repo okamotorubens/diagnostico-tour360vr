@@ -414,14 +414,13 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     buffer.seek(0)
     return buffer
 
-# --- CSS PERSONALIZADO (VERSÃO ESTÁVEL ANTERIOR - SEM INOVAÇÕES ARRISCADAS) ---
+# --- CSS PERSONALIZADO (VERSÃO ESTÁVEL PERFEITA) ---
 st.markdown("""
     <style>
     .block-container { padding-top: 1.0rem !important; padding-bottom: 1.5rem !important; max-width: 94% !important; margin: 0 auto !important; }
     header[data-testid="stHeader"] { display: none !important; }
     .stApp { background-color: #0B0E14; color: #E0E6ED; font-family: 'Inter', -apple-system, sans-serif; }
     
-    /* Card de Topo Perfeito */
     .top-card-radar-style { 
         background-color: #161F30; 
         border: 1px solid #2B364A; 
@@ -532,8 +531,8 @@ if st.session_state["aba_ativa"] == "cadastrar":
             st.session_state.pop("cliente_id_edicao", None)
 
     with st.form("form_cliente_gmb_completo"):
-        sub_t1, sub_t2, sub_t3, sub_t4, sub_t5, sub_t6 = st.tabs([
-            "🏢 Sobre & Ficha", "⏰ Horários & Status", "💵 Contrato & Mídias", "📞 Contato & Redes", "🛠️ Checklist", "📜 Histórico"
+        sub_t1, sub_t2, sub_t3, sub_t4, sub_t5, sub_t6, sub_t7 = st.tabs([
+            "🏢 Sobre & Ficha", "⏰ Horários & Status", "💵 Contrato & Mídias", "📞 Contato & Redes", "🛠️ Checklist", "📜 Histórico", "🖨️ QR Code Avaliações"
         ])
         
         with sub_t1:
@@ -550,12 +549,15 @@ if st.session_state["aba_ativa"] == "cadastrar":
                         pass
                 data_abertura_dt = st.date_input("Data de Abertura (Ficha GMB)", value=val_dt_abertura, format="DD/MM/YYYY")
                 data_abertura_str = data_abertura_dt.strftime("%d/%m/%Y")
-                endereco_local = st.text_input("Endereço Físico Completo", value=dados_existentes.get("endereco_local", "") if (modo_edicao and dados_existentes) else "")
+                
+                # Suporte a Prestador sem Endereço Fixo / Área de Cobertura
+                atende_sem_endereco = st.checkbox("Prestador de Serviço sem Endereço Fixo (Área de Cobertura / SAB)", value=dados_existentes.get("atende_sem_endereco", False) if (modo_edicao and dados_existentes) else False)
+                endereco_local = st.text_input("Endereço Físico (ou Fiscal/Origem se sem local)", value=dados_existentes.get("endereco_local", "") if (modo_edicao and dados_existentes) else "")
 
             with c2:
                 categoria_principal = st.text_input("Categoria Principal no GMB", value=dados_existentes.get("categoria_principal", "") if (modo_edicao and dados_existentes) else "")
                 categorias_secundarias = st.text_input("Categorias Secundárias", value=dados_existentes.get("categorias_secundarias", "") if (modo_edicao and dados_existentes) else "")
-                area_cobertura = st.text_input("Área de Cobertura / Região", value=dados_existentes.get("area_cobertura", "") if (modo_edicao and dados_existentes) else "")
+                area_cobertura = st.text_input("Área de Cobertura / Regiões Atendidas", value=dados_existentes.get("area_cobertura", "") if (modo_edicao and dados_existentes) else "")
             
             descricao_empresa = st.text_area("Descrição Oficial da Empresa", value=dados_existentes.get("descricao_empresa", "") if (modo_edicao and dados_existentes) else "", height=90)
 
@@ -657,6 +659,20 @@ if st.session_state["aba_ativa"] == "cadastrar":
                     df_hist.columns = ["Data (São Paulo)", "Alteração Realizada"]
                     st.dataframe(df_hist, use_container_width=True)
 
+        with sub_t7:
+            st.markdown("**🖨️ Gerador de QR Code de Avaliações para Balcão / Veículo:**")
+            link_maps_qr = st.text_input("Link Direto de Avaliações (Google Maps URL curta):", value=dados_existentes.get("website", "") if (modo_edicao and dados_existentes) else "https://g.page/r/...")
+            if link_maps_qr:
+                qr = qrcode.QRCode(version=1, box_size=10, border=4)
+                qr.add_data(link_maps_qr)
+                qr.make(fit=True)
+                img_qr = qr.make_image(fill_color="black", back_color="white")
+                buf_qr = BytesIO()
+                img_qr.save(buf_qr, format="PNG")
+                buf_qr.seek(0)
+                st.image(buf_qr, width=200, caption="QR Code Oficial de Avaliações")
+                st.download_button("📥 Baixar Imagem QR Code", data=buf_qr, file_name=f"QRCode_Avaliacoes_{nome_empresa or 'Cliente'}.png", mime="image/png")
+
         st.markdown("---")
         btn_salvar = st.form_submit_button("Salvar Nova Ficha" if not modo_edicao else "Atualizar Ficha e Gravar Histórico")
 
@@ -676,9 +692,9 @@ if st.session_state["aba_ativa"] == "cadastrar":
                 "nome_empresa": nome_empresa, "responsavel": responsavel, "data_abertura": data_abertura_str,
                 "ficha_reivindicada": ficha_reivindicada, "chat_status": chat_status,
                 "categoria_principal": categoria_principal, "categorias_secundarias": categorias_secundarias,
-                "area_cobertura": area_cobertura, "descricao_empresa": descricao_empresa, "valor_contrato_mensal": valor_contrato_mensal,
-                "dia_vencimento": dia_vencimento, "status_contrato": status_contrato, "link_drive_midias": link_drive_midias,
-                "telefone_contato": telefone_contato, "whatsapp": whatsapp, "website": website, 
+                "area_cobertura": area_cobertura, "atende_sem_endereco": atende_sem_endereco, "descricao_empresa": descricao_empresa, 
+                "valor_contrato_mensal": valor_contrato_mensal, "dia_vencimento": dia_vencimento, "status_contrato": status_contrato, 
+                "link_drive_midias": link_drive_midias, "telefone_contato": telefone_contato, "whatsapp": whatsapp, "website": website, 
                 "instagram": instagram, "facebook": facebook, "linkedin": linkedin, "youtube": youtube, "tiktok": tiktok,
                 "endereco_local": endereco_local, "pendencias_checklist": pendencias_str, "observacoes_tecnicas": observacoes_tecnicas,
                 "horario_seg": horarios_coletados["horario_seg"], "horario_ter": horarios_coletados["horario_ter"],
@@ -905,12 +921,16 @@ elif st.session_state["aba_ativa"] == "pdf":
 # MÓDULO 8: FINANCEIRO & MRR
 # ==========================================
 elif st.session_state["aba_ativa"] == "financeiro":
-    st.subheader("💰 Gestão Financeira MRR & Backup")
+    st.subheader("💰 Gestão Financeira MRR & Alertas")
     res_cli = supabase.table("clientes").select("*").execute()
     df_c = pd.DataFrame(res_cli.data) if res_cli.data else pd.DataFrame()
     if not df_c.empty:
         mrr = df_c[df_c["status_contrato"] == "Ativo"]["valor_contrato_mensal"].sum()
         st.metric("💵 MRR Total da Agência", f"R$ {mrr:,.2f}")
+        
+        # Alerta de Vencimento / Inatividade simulada
+        st.markdown("### ⚠️ Alertas de Pagamento & Atividade Recorrente")
+        st.info("💡 Dica: Verifique clientes com vencimentos próximos para manter o fluxo de caixa do MRR em dia.")
         
         st.markdown("**Lista de Clientes e Contratos Recorrentes:**")
         st.dataframe(df_c, use_container_width=True, height=650)
