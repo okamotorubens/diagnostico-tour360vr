@@ -740,8 +740,8 @@ elif st.session_state.etapa == 4:
                 if cat_map == "Todos":
                     itens_leg = [(seg, CORES_HEX[mapa_cor_nicho[seg]]) for seg in segmentos]
                     m.get_root().html.add_child(folium.Element(legenda_html("Legenda por nicho", itens_leg)))
-                else:
-                itens_leg = [
+                    else:
+                    itens_leg = [
                     ("Alta (≥ 60)", "#ef4444"),
                     ("Média (30 a 59)", "#f97316"),
                     ("Baixa (< 30)", "#22c55e"),
