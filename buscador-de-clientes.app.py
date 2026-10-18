@@ -568,7 +568,7 @@ elif st.session_state.etapa == 2:
                         st.markdown("<span class='gl-muted'>Nenhum ponto crítico nos critérios automáticos.</span>",
                                     unsafe_allow_html=True)
 
-              with col_actions:
+                with col_actions:
                         st.markdown("**🌐 Presença Web & Mídias:**")
                         st.markdown(f"- **Website:** {lead['website'] if lead['website'] else '❌ Sem site'}")
     
