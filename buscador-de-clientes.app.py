@@ -121,7 +121,9 @@ def salvar_lead_db(lead):
                 "status_crm": lead.get('status_crm', '🆕 Novo Lead'),
                 "pontos_criticos": lead.get('pontos_criticos', []),
                 "oportunidades": lead.get('oportunidades', []),
-                "score_oportunidade": int(lead.get('score_oportunidade', 0))
+                "score_oportunidade": int(lead.get('score_oportunidade', 0)),
+                "anotacoes": lead.get('anotacoes', ''),
+                "favorito": bool(lead.get('favorito', False))
             }).execute()
     except Exception as e:
         st.error(f"Erro ao salvar lead '{lead.get('nome')}': {str(e)}")
@@ -133,6 +135,23 @@ def atualizar_status_crm(lead_id, novo_status):
         supabase.table("leads").update({"status_crm": novo_status}).eq("id", lead_id).execute()
     except Exception as e:
         st.error(f"Erro ao atualizar status: {str(e)}")
+
+def atualizar_anotacoes_db(lead_id, novas_anotacoes):
+    if not supabase:
+        return
+    try:
+        supabase.table("leads").update({"anotacoes": novas_anotacoes}).eq("id", lead_id).execute()
+    except Exception as e:
+        st.error(f"Erro ao atualizar anotações: {str(e)}")
+
+def alternar_favorito_db(lead_id, status_atual):
+    if not supabase:
+        return
+    try:
+        novo_val = not status_atual
+        supabase.table("leads").update({"favorito": novo_val}).eq("id", lead_id).execute()
+    except Exception as e:
+        st.error(f"Erro ao atualizar favorito: {str(e)}")
 
 def carregar_todos_leads_db():
     if not supabase:
@@ -564,7 +583,7 @@ def buscar_google_places_api(nome_empresa, nicho, cidade, bairro, rua, raio_km, 
                     score += 15
 
                 if total_avaliacoes < 30:
-                    pontos_criticos.append(f"Volume crítico de avaliações ({total_avaliacoes} no total)")
+                    pontos_criticos.append(f"Volume crítico de avaliações ({total_avaliacoes} total)")
                     oportunidades.append("Estratégia Acelerada de Reputação e Gestão de Avaliações")
                     score += 25
 
@@ -581,7 +600,6 @@ def buscar_google_places_api(nome_empresa, nicho, cidade, bairro, rua, raio_km, 
                 if len(clean_phone) > 10 and clean_phone.startswith("55"):
                     clean_phone = clean_phone[2:]
 
-                # Limpeza correta de acentos e caracteres especiais para o Instagram
                 nome_normalizado = unicodedata.normalize('NFKD', nome.lower()).encode('ASCII', 'ignore').decode('ASCII')
                 nome_slug = re.sub(r'[^a-zA-Z0-9]', '', nome_normalizado)
                 instagram_url = f"https://instagram.com/{nome_slug}"
@@ -611,7 +629,9 @@ def buscar_google_places_api(nome_empresa, nicho, cidade, bairro, rua, raio_km, 
                     "status_crm": "🆕 Novo Lead",
                     "pontos_criticos": pontos_criticos,
                     "oportunidades": oportunidades,
-                    "score_oportunidade": min(score, 100)
+                    "score_oportunidade": min(score, 100),
+                    "anotacoes": "",
+                    "favorito": False
                 }
                 
                 salvar_lead_db(lead_obj)
@@ -647,11 +667,11 @@ def gerar_csv_excel_formatado(dados_leads):
     writer = csv.writer(output, delimiter=';', quoting=csv.QUOTE_MINIMAL)
     writer.writerow([
         "ID", "Data Mineração", "Cidade Busca", "Bairro Busca", "Nome da Empresa", 
-        "Categoria / Nicho", "Status Comercial CRM", "Endereço Completo", "Telefone Fixo", 
+        "Categoria / Nicho", "Status Comercial CRM", "Favorito?", "Endereço Completo", "Telefone Fixo", 
         "WhatsApp", "Possui Website?", "Website URL", "Site Seguro (HTTPS)?", 
         "Instagram URL", "Facebook URL", "Nota Média Google", "Total Avaliações", 
         "Ficha Reivindicada?", "Qtd. Fotos Publicadas", "Dias Desde Última Foto", 
-        "Possui Tour 360°?", "Pontos Críticos Identificados", "Score de Oportunidade"
+        "Possui Tour 360°?", "Anotações CRM", "Pontos Críticos Identificados", "Score de Oportunidade"
     ])
 
     for row in dados_leads:
@@ -664,6 +684,7 @@ def gerar_csv_excel_formatado(dados_leads):
             row.get("nome", ""),
             row.get("categoria", ""),
             row.get("status_crm", "🆕 Novo Lead"),
+            "Sim" if row.get("favorito") else "Não",
             row.get("endereco", ""),
             row.get("telefone", ""),
             row.get("whatsapp", ""),
@@ -678,6 +699,7 @@ def gerar_csv_excel_formatado(dados_leads):
             row.get("fotos_total", ""),
             row.get("ultima_foto_dias", ""),
             "Sim" if row.get("tour_360") else "Não",
+            row.get("anotacoes", ""),
             criticos_str,
             row.get("score_oportunidade", "")
         ])
@@ -766,7 +788,7 @@ elif st.session_state.etapa == 2:
     st.markdown("""
         <div class="main-header">
             <h1 class="main-title">📊 Base de Leads e Gerenciador CRM</h1>
-            <div class="main-subtitle">Seus leads permanecem salvos na nuvem indefinidamente. Atualize status, use scripts de vendas e exporte planilhas.</div>
+            <div class="main-subtitle">Seus leads permanecem salvos na nuvem indefinidamente. Atualize status, anotações, favoritos e exporte planilhas.</div>
         </div>
     """, unsafe_allow_html=True)
 
@@ -775,7 +797,7 @@ elif st.session_state.etapa == 2:
     else:
         df_leads_crm = pd.DataFrame(base_leads)
 
-        col_f_busca, col_f_nicho, col_f_cid, col_f_status, col_export = st.columns([2, 2, 2, 2, 2.2])
+        col_f_busca, col_f_nicho, col_f_cid, col_f_status, col_f_fav, col_export = st.columns([2, 1.8, 1.8, 1.8, 1.6, 2])
 
         with col_f_busca:
             filtro_nome_busca = st.text_input("🔍 Buscar por Nome:", value="", placeholder="Ex: Nome da empresa")
@@ -792,6 +814,12 @@ elif st.session_state.etapa == 2:
             filtro_status = st.selectbox(
                 "Status CRM:",
                 ["Todos os Status", "🆕 Novo Lead", "💬 Em Abordagem", "🛠️ Diagnóstico Gerado", "🤝 Cliente Fechado", "❌ Recusado"]
+            )
+
+        with col_f_fav:
+            filtro_favorito = st.selectbox(
+                "Filtro:",
+                ["Todos", "⭐ Favoritos / Quentes"]
             )
 
         with col_export:
@@ -818,6 +846,8 @@ elif st.session_state.etapa == 2:
             resultados_filtrados = [r for r in resultados_filtrados if r['cidade_busca'] == filtro_cidade]
         if filtro_status != "Todos os Status":
             resultados_filtrados = [r for r in resultados_filtrados if r['status_crm'] == filtro_status]
+        if filtro_favorito == "⭐ Favoritos / Quentes":
+            resultados_filtrados = [r for r in resultados_filtrados if r.get('favorito') == True]
 
         st.markdown(f"Exibindo **{len(resultados_filtrados)}** oportunidades salvas:")
 
@@ -825,6 +855,9 @@ elif st.session_state.etapa == 2:
             score = lead['score_oportunidade']
             score_class = "score-high" if score >= 60 else ("score-med" if score >= 30 else "score-low")
             score_label = "ALTA OPORTUNIDADE" if score >= 60 else ("MÉDIA OPORTUNIDADE" if score >= 30 else "BAIXA OPORTUNIDADE")
+
+            is_fav = lead.get('favorito', False)
+            fav_label = "⭐ Favorito (Lead Quente)" if is_fav else "☆ Marcar como Favorito"
 
             st.markdown(f"""
                 <div class="lead-card">
@@ -864,6 +897,11 @@ elif st.session_state.etapa == 2:
                 else:
                     st.info("📷 Sem foto disponível na ficha")
                 
+                # Botão de Favorito
+                if st.button(fav_label, key=f"fav_btn_{lead['id']}", use_container_width=True):
+                    alternar_favorito_db(lead['id'], is_fav)
+                    st.rerun()
+
                 status_opcoes = ["🆕 Novo Lead", "💬 Em Abordagem", "🛠️ Diagnóstico Gerado", "🤝 Cliente Fechado", "❌ Recusado"]
                 idx_atual = status_opcoes.index(lead['status_crm']) if lead['status_crm'] in status_opcoes else 0
                 novo_st = st.selectbox("Status Comercial:", status_opcoes, index=idx_atual, key=f"crm_st_{lead['id']}")
@@ -900,11 +938,38 @@ elif st.session_state.etapa == 2:
                 st.markdown(f'<a href="{URL_SISTEMA_DIAGNOSTICO}" target="_blank" class="btn-redirect">🛠️ Abrir no Diagnóstico Tour360VR</a>', unsafe_allow_html=True)
 
                 if lead['whatsapp']:
-                    msg_wa = f"Olá! Tudo bem?\nMeu nome é Rubens Okamoto, da Okamoto Mídias Visuais e do Tour360VR.\nEstava analisando a presença da {lead['nome']} no Google, e identifiquei 3 pontos onde a visibilidade do espaço de vocês pode ser bastante ampliada em relação aos concorrentes da região.\nMontei um relatório curto de diagnóstico em PDF. Posso te enviar por aqui para você dar uma olhada?."
+                    msg_wa = f"Olá! Tudo bem?\nMeu nome é Rubens Okamoto, da Okamoto Mídias Visuais e do Tour360VR.\nEstava analisando a presença da {lead['nome']} no Google, e identifiquei 3 pontos onde a visibilidade do espaço de vocês pode ser bastante ampliada em relação aos concorrentes da região.\nMontei um relatório curto de diagnóstico em PDF. Posso te enviar por aqui para você dar uma olhada?"
                     link_wa = f"https://wa.me/55{lead['whatsapp']}?text={urllib.parse.quote(msg_wa)}"
                     st.markdown(f'<a href="{link_wa}" target="_blank"><button style="width:100%; background-color:#25D366; color:white; border:none; padding:8px; border-radius:6px; font-weight:bold; cursor:pointer; margin-bottom:8px;">💬 WhatsApp</button></a>', unsafe_allow_html=True)
 
-            with st.expander(f"✉️ **Uso Interno — Scripts de Vendas e Abordagem ({lead['nome']})**"):
+                # Botão de Disparo de E-mail Automatizado (mailto)
+                assunto_email = f"Oportunidade de Presença Digital: {lead['nome']} no Google"
+                corpo_email = f"""Olá! Analisei o perfil da {lead['nome']} no Google e gostaria de compartilhar uma oportunidade importante.
+
+Identifiquei 3 pontos críticos que estão impactando a confiança de novos clientes no setor de {lead['categoria']}:
+1. Ausência de Tour Virtual 360° navegável.
+2. Perfil estático com fotos e informações defasadas.
+3. Falta de otimização de presença digital.
+
+Temos soluções para transformar a vitrine do seu negócio no Google. Fico à disposição para conversarmos!
+
+Atenciosamente,
+Rubens Okamoto
+TOUR360VR | Okamoto Mídias Visuais
+(16) 99133-2121 | tour360vr.com.br"""
+                
+                link_mailto = f"mailto:?subject={urllib.parse.quote(assunto_email)}&body={urllib.parse.quote(corpo_email)}"
+                st.markdown(f'<a href="{link_mailto}" target="_blank"><button style="width:100%; background-color:#0284c7; color:white; border:none; padding:8px; border-radius:6px; font-weight:bold; cursor:pointer; margin-bottom:8px;">✉️ Enviar E-mail Pronto</button></a>', unsafe_allow_html=True)
+
+            # Campo de Anotações CRM com salvamento em tempo real
+            st.markdown("**📝 Anotações & Histórico de Contato:**")
+            anotacoes_atuais = lead.get('anotacoes', '') or ''
+            novas_anotacoes = st.text_area("Anotações:", value=anotacoes_atuais, height=80, key=f"txt_anot_{lead['id']}", label_visibility="collapsed", placeholder="Digite histórico de reuniões, conversas ou recados aqui...")
+            
+            if novas_anotacoes != anotacoes_atuais:
+                atualizar_anotacoes_db(lead['id'], novas_anotacoes)
+
+            with st.expander(f"✉️ **Scripts de Vendas e Abordagem Detalhada ({lead['nome']})**"):
                 st.markdown("**1) Abordagem Inicial — WhatsApp**")
                 script_wa = f"""Olá! Tudo bem?
 Meu nome é Rubens Okamoto, da Okamoto Mídias Visuais e do Tour360VR.
