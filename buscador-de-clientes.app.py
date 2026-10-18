@@ -251,7 +251,9 @@ def buscar_google_places_api(nicho, cidade, bairro, rua, raio_km, api_key, limit
                 if len(clean_phone) > 10 and clean_phone.startswith("55"):
                     clean_phone = clean_phone[2:]
 
+                # Geração limpa do link do Instagram baseada no nome da empresa
                 nome_slug = re.sub(r'[^a-zA-Z0-9]', '', nome.lower())
+                instagram_url = f"https://instagram.com/{nome_slug}"
 
                 lead_obj = {
                     "data_minacao": datetime.now().strftime('%d/%m/%Y %H:%M'),
@@ -266,7 +268,7 @@ def buscar_google_places_api(nicho, cidade, bairro, rua, raio_km, api_key, limit
                     "whatsapp": clean_phone if len(clean_phone) >= 10 else "16999999999",
                     "website": website,
                     "website_https": has_https,
-                    "instagram": f"https://instagram.com/{nome_slug}",
+                    "instagram": instagram_url,
                     "facebook": f"https://facebook.com/{nome_slug}",
                     "foto_url": foto_url,
                     "nota": nota,
@@ -566,16 +568,18 @@ elif st.session_state.etapa == 2:
                         st.markdown("<span class='gl-muted'>Nenhum ponto crítico nos critérios automáticos.</span>",
                                     unsafe_allow_html=True)
 
-                with col_acoes:
-                    st.markdown("**🌐 Presença e ações**")
-                    st.markdown(f"- Website: {lead['website'] if lead.get('website') else '❌ Sem site'}")
-                    
-                    insta_lead = lead.get('instagram', '').strip()
-                    if insta_lead:
-                        insta_user = insta_lead.replace('@', '').strip()
-                        st.markdown(f"- Instagram: [@{insta_user}](https://instagram.com/{insta_user})")
-                    else:
-                        st.markdown("- Instagram: ❌ Não informado")
+              with col_actions:
+    st.markdown("**🌐 Presença Web & Mídias:**")
+    st.markdown(f"- **Website:** {lead['website'] if lead['website'] else '❌ Sem site'}")
+    
+    # Exibição segura do link do Instagram salvo no lead
+    insta_link = lead.get('instagram', '')
+    if insta_link:
+        st.markdown(f"- **Instagram:** [Abrir Perfil]({insta_link})")
+    else:
+        st.markdown("- **Instagram:** ❌ Não informado")
+
+    st.markdown(f"- **Maps:** [Ver no Google Maps](https://www.google.com/maps/search/?api=1&query={lead['nome'].replace(' ', '+')})")
 
                     st.markdown(
                         f"[Ver no Google Maps](https://www.google.com/maps/search/?api=1&query="
