@@ -735,7 +735,9 @@ if st.session_state.etapa == 1:
     """, unsafe_allow_html=True)
 
     with st.form("form_busca"):
-        col1, col2, col3, col4, col5, col6 = st.columns([2, 2, 1.8, 1.8, 1.2, 1.2])
+        # Adicionado o campo "Nome da Empresa (Opcional)" no início do formulário
+        col_nome_emp, col1, col2, col3, col4, col5, col6 = st.columns([2.2, 2, 2, 1.8, 1.8, 1.2, 1.2])
+        with col_nome_emp: nome_empresa_input = st.text_input("Nome da Empresa (Opcional)", value="", help="Ex: Clínica Sorria ou Hotel X")
         with col1: nicho_input = st.text_input("Nicho / Categoria (Opcional)", value="", help="Deixe em branco para buscar empresas gerais no local")
         with col2: cidade_input = st.text_input("Cidade / Município", value="Ribeirão Preto")
         with col3: rua_input = st.text_input("Rua / Avenida (Opcional)", value="", help="Ex: Av. Independência")
@@ -748,7 +750,8 @@ if st.session_state.etapa == 1:
     if btn_minar:
         with st.spinner(f"Varrendo Google Maps num raio de {raio_input} km, auditando presença web e salvando na nuvem..."):
             time.sleep(1)
-            novos = minerar_e_auditar_negocios(nicho_input, cidade_input, bairro_input, rua_input, raio_input, limite_input)
+            # Passamos o novo parâmetro 'nome_empresa_input' para a função de mineração
+            novos = minerar_e_auditar_negocios(nome_empresa_input, nicho_input, cidade_input, bairro_input, rua_input, raio_input, limite_input)
             if novos and len(novos) > 0:
                 mudar_etapa(2)
 
