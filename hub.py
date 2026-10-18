@@ -2,15 +2,14 @@ import streamlit as st
 import os
 import base64
 
-# --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(
-    page_title="Central de Sistemas | Tour360vr & Okamoto",
+    page_title="Central de Sistemas | Tour360VR & Okamoto",
     page_icon="🚀",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
 )
 
-# --- FUNÇÃO PARA CONVERTER IMAGEM LOCAL PARA BASE64 ---
+# --- ASSETS ---
 def carregar_imagem_base64(caminho):
     if os.path.exists(caminho):
         with open(caminho, "rb") as f:
@@ -20,236 +19,184 @@ def carregar_imagem_base64(caminho):
 logo_tour_b64 = carregar_imagem_base64("logo_tour_transparente.png")
 logo_okamoto_b64 = carregar_imagem_base64("logo_okamoto.png") or carregar_imagem_base64("okamoto_preto.png")
 
-# --- CSS PERSONALIZADO ---
+# --- TEMA GLASSMORPHISM DARK ---
 st.markdown("""
-    <style>
-    /* 1. Margens Globais e Limpeza de Cabeçalho */
-    .block-container {
-        padding-top: 1.2rem !important;
-        padding-bottom: 1.5rem !important;
-        max-width: 98% !important;
-    }
-    
-    header[data-testid="stHeader"] {
-        display: none !important;
-    }
+<style>
+:root {
+    --bg: #0B0E14;
+    --bg-glow: #16213A;
+    --glass: rgba(22, 31, 48, 0.55);
+    --glass-hover: rgba(37, 45, 66, 0.70);
+    --border: rgba(255, 255, 255, 0.10);
+    --border-hover: rgba(255, 255, 255, 0.30);
+    --text: #E6EDF7;
+    --text-strong: #FFFFFF;
+    --text-muted: #8E9BAE;
+    --accent: #4AA3DA;
+    --accent-2: #FFA733;
+    --success: #9DBE5A;
+    --coral: #F76C4A;
+    --gradient-brand: linear-gradient(90deg, #FFA733, #4AA3DA, #9DBE5A, #F76C4A);
+    --blur: 18px;
+}
 
-    .stApp {
-        background-color: #0B0E14;
-        color: #E0E6ED;
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    }
+html, body, .stApp {
+    background:
+        radial-gradient(circle at 15% 0%, var(--bg-glow) 0%, transparent 45%),
+        radial-gradient(circle at 90% 100%, rgba(247,108,74,0.08) 0%, transparent 40%),
+        var(--bg) !important;
+    color: var(--text);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+header[data-testid="stHeader"] { display: none !important; }
+.block-container { padding-top: 1.6rem !important; padding-bottom: 2rem !important; max-width: 1200px !important; }
+h1, h2, h3, h4 { color: var(--text-strong) !important; letter-spacing: -0.01em; }
 
-    /* 2. SIDEBAR COM LOGOS */
-    [data-testid="stSidebar"] {
-        background-color: #07090E;
-        border-right: 1px solid #1E2640;
-    }
+/* Sidebar em vidro */
+[data-testid="stSidebar"] {
+    background: rgba(7, 9, 14, 0.75) !important;
+    backdrop-filter: blur(var(--blur));
+    border-right: 1px solid var(--border);
+}
+.sidebar-box {
+    display: flex; flex-direction: column; align-items: center; text-align: center;
+    padding: 2.5rem 0.5rem 0 0.5rem; gap: 14px;
+}
+.sidebar-box img.logo-tour { width: 150px; height: auto; }
+.sidebar-box img.logo-okamoto { width: 180px; height: auto; }
+.sidebar-footer {
+    margin-top: 18px; padding-top: 14px; width: 85%;
+    border-top: 1px solid var(--border);
+    color: var(--text-muted); font-size: .75rem; line-height: 1.4;
+}
 
-    [data-testid="stSidebar"] [data-testid="stVerticalBlock"] {
-        display: flex !important;
-        flex-direction: column !important;
-        justify-content: flex-start !important;
-        align-items: center !important;
-        padding-top: 6.8rem !important;
-    }
+/* Hero */
+.hero {
+    position: relative; overflow: hidden;
+    background: var(--glass);
+    backdrop-filter: blur(var(--blur)); -webkit-backdrop-filter: blur(var(--blur));
+    border: 1px solid var(--border); border-radius: 18px;
+    padding: 26px 30px; margin-bottom: 26px;
+    box-shadow: 0 8px 32px rgba(0,0,0,.35);
+}
+.hero::before {
+    content: ""; position: absolute; left: 0; top: 0; right: 0; height: 3px;
+    background: var(--gradient-brand);
+}
+.hero h1 { margin: 0 !important; font-size: 1.7rem !important; font-weight: 800; }
+.hero p { margin: 6px 0 0 0; color: var(--text-muted); font-size: 1rem; }
 
-    /* Container das Logos na Sidebar */
-    .sidebar-center-container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-        text-align: center;
-        padding: 0 10px;
-        box-sizing: border-box;
-    }
+/* Títulos de seção */
+.section-title {
+    display: flex; align-items: center; gap: 10px;
+    margin: 30px 0 14px 0; padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-strong); font-size: 1.15rem; font-weight: 700;
+}
+.section-title .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 10px var(--accent); }
 
-    .sidebar-logo-img-1 {
-        width: 155px !important;
-        height: auto;
-        margin-bottom: 16px;
-        display: block;
-    }
+/* Cards clicáveis em vidro */
+a.sys-card {
+    display: flex; flex-direction: column; align-items: flex-start; gap: 6px;
+    height: 170px; box-sizing: border-box; padding: 18px 20px;
+    background: var(--glass);
+    backdrop-filter: blur(var(--blur)); -webkit-backdrop-filter: blur(var(--blur));
+    border: 1px solid var(--border); border-radius: 14px;
+    text-decoration: none !important;
+    box-shadow: 0 4px 16px rgba(0,0,0,.25);
+    transition: all .2s ease;
+}
+a.sys-card:hover {
+    background: var(--glass-hover);
+    border-color: var(--border-hover);
+    transform: translateY(-3px);
+    box-shadow: 0 0 18px rgba(74,163,218,.35);
+}
+a.sys-card .icon { font-size: 1.7rem; line-height: 1; }
+a.sys-card .name { color: var(--text-strong); font-size: 1.05rem; font-weight: 700; }
+a.sys-card .desc { color: var(--text-muted); font-size: .85rem; line-height: 1.45; }
+a.sys-card:hover .name { color: var(--accent); }
+a.sys-card .go { margin-top: auto; color: var(--accent-2); font-size: .78rem; font-weight: 600; }
 
-    .sidebar-logo-img-2 {
-        width: 195px !important;
-        height: auto;
-        display: block;
-    }
-
-    /* 3. TÍTULOS DA PÁGINA PRINCIPAL */
-    .neon-main-title {
-        color: #FFFFFF;
-        text-shadow: 0 0 12px rgba(0, 229, 255, 0.6);
-        font-weight: 800;
-        font-size: 1.85rem;
-        margin-top: 0rem;
-        margin-bottom: 0.2rem;
-    }
-    
-    .subtitle-header {
-        color: #94A3B8;
-        font-size: 1.18rem !important;
-        margin-bottom: 1.6rem;
-    }
-
-    .neon-section-title {
-        color: #00E5FF;
-        font-size: 1.45rem !important;
-        font-weight: 700;
-        margin-top: 0.5rem;
-        margin-bottom: 1.2rem;
-        border-bottom: 1px solid rgba(0, 229, 255, 0.25);
-        padding-bottom: 0.5rem;
-    }
-
-    .section-divider-space {
-        margin-top: 2.2rem;
-    }
-
-    /* 4. CARDS CLICÁVEIS (Emojis e Títulos Aumentados) */
-    .clickable-card {
-        display: flex;
-        flex-direction: column;
-        justify-content: flex-start;
-        align-items: center;
-        text-align: center !important;
-        background: #121824;
-        border: 1.5px solid #FFFFFF;
-        border-radius: 10px;
-        padding: 18px 16px 20px 16px;
-        height: 160px !important; /* Altura ajustada para o novo tamanho */
-        box-shadow: 0 0 8px rgba(255, 255, 255, 0.12);
-        text-decoration: none !important;
-        transition: all 0.3s ease-in-out;
-        box-sizing: border-box;
-    }
-    
-    .clickable-card:hover {
-        border-color: #00E5FF !important;
-        box-shadow: 0 0 18px #00E5FF, 0 0 28px rgba(0, 229, 255, 0.4) !important;
-        transform: translateY(-3px);
-        background: #161F30;
-    }
-
-    /* Emoji / Ícone Aumentado */
-    .card-icon {
-        font-size: 1.85rem !important;
-        margin-bottom: 6px;
-        line-height: 1;
-    }
-
-    /* Nome do Sistema Aumentado */
-    .card-title-text {
-        color: #FFFFFF !important;
-        font-size: 1.28rem !important;
-        font-weight: 700 !important;
-        margin-bottom: 6px !important;
-        text-align: center !important;
-        width: 100% !important;
-    }
-
-    .clickable-card p {
-        color: #94A3B8;
-        font-size: 0.83rem;
-        line-height: 1.4;
-        margin: 0;
-        text-align: center !important;
-    }
-
-    .clickable-card:hover .card-title-text {
-        color: #00E5FF !important;
-    }
-    </style>
+/* Divisor de espaço */
+.gap-lg { height: 6px; }
+</style>
 """, unsafe_allow_html=True)
 
-# --- BARRA LATERAL (Sidebar) ---
+# --- SIDEBAR ---
 with st.sidebar:
-    html_logos = "<div class='sidebar-center-container'>"
-    
+    html_logos = "<div class='sidebar-box'>"
     if logo_tour_b64:
-        html_logos += f"<img src='data:image/png;base64,{logo_tour_b64}' class='sidebar-logo-img-1'>"
+        html_logos += f"<img class='logo-tour' src='data:image/png;base64,{logo_tour_b64}'/>"
     else:
-        html_logos += "<h3 style='color:#FFF; margin-bottom:15px;'>TOUR360VR</h3>"
-        
+        html_logos += "<h3 style='color:#FFF; margin:0;'>TOUR360VR</h3>"
     if logo_okamoto_b64:
-        html_logos += f"<img src='data:image/png;base64,{logo_okamoto_b64}' class='sidebar-logo-img-2'>"
-        
-    html_logos += """
-        <div style='margin-top: 25px; border-top: 1px solid #1E2640; width: 85%; padding-top: 15px;'>
-            <p style='color: #8A99AD; font-size: 0.75rem; line-height: 1.4; margin:0;'>
-                Painel Unificado de Operações<br>© Okamoto Mídias Visuais
-            </p>
-        </div>
-    </div>
-    """
-    
+        html_logos += f"<img class='logo-okamoto' src='data:image/png;base64,{logo_okamoto_b64}'/>"
+    html_logos += (
+        "<div class='sidebar-footer'>Painel Unificado de Operações<br>© Okamoto Mídias Visuais</div>"
+        "</div>"
+    )
     st.markdown(html_logos, unsafe_allow_html=True)
 
-# --- CABEÇALHO DA CENTRAL ---
-st.markdown("<h1 class='neon-main-title'>Central de Sistemas e Operações</h1>", unsafe_allow_html=True)
-st.markdown("<div class='subtitle-header'>Selecione o módulo operacional desejado para abrir a aplicação.</div>", unsafe_allow_html=True)
+# --- HERO ---
+st.markdown("""
+<div class="hero">
+    <h1>Central de Sistemas e Operações</h1>
+    <p>Selecione o módulo operacional desejado para abrir a aplicação.</p>
+</div>
+""", unsafe_allow_html=True)
+
+
+# --- COMPONENTE DE CARD ---
+def render_cards(cards):
+    cols = st.columns(len(cards))
+    for col, c in zip(cols, cards):
+        with col:
+            st.markdown(
+                f"""
+                <a class="sys-card" href="{c['url']}" target="_blank">
+                    <div class="icon">{c['icon']}</div>
+                    <div class="name">{c['name']}</div>
+                    <div class="desc">{c['desc']}</div>
+                    <div class="go">Abrir sistema →</div>
+                </a>
+                """,
+                unsafe_allow_html=True,
+            )
+
 
 # ==========================================
-# SEÇÃO 1: TOUR360VR (GMB & PROSPECÇÃO)
+# SEÇÃO 1: TOUR360VR
 # ==========================================
-st.markdown("<div id='tour360vr-prospeccao-diagnostico-gestao' class='neon-section-title'>🌐 Tour360vr — Prospecção, Diagnóstico & Gestão GMB</div>", unsafe_allow_html=True)
-
-col1, col2, col3 = st.columns(3)
-
-with col1:
-    st.markdown("""
-        <a href='https://radar-comercial-tour360vr.streamlit.app/' target='_blank' class='clickable-card'>
-            <div class='card-icon'>📡</div>
-            <div class='card-title-text'>Radar de Prospecção</div>
-            <p>Mapeamento de campo e varredura de fichas do Google Meu Negócio (Buscador de Clientes).</p>
-        </a>
-    """, unsafe_allow_html=True)
-
-with col2:
-    st.markdown("""
-        <a href='https://tour360vr.streamlit.app/' target='_blank' class='clickable-card'>
-            <div class='card-icon'>📊</div>
-            <div class='card-title-text'>Diagnóstico & Auditoria</div>
-            <p>Análise de saúde do perfil local com geração de proposta visual e relatório técnico em PDF.</p>
-        </a>
-    """, unsafe_allow_html=True)
-
-with col3:
-    st.markdown("""
-        <a href='https://gestao-mensal-tour360vr.streamlit.app/' target='_blank' class='clickable-card'>
-            <div class='card-icon'>📈</div>
-            <div class='card-title-text'>Gestão Mensal & ROI</div>
-            <p>Acompanhamento recorrente de métricas (chamadas, rotas, WhatsApp) e relatórios executivos.</p>
-        </a>
-    """, unsafe_allow_html=True)
-
-# Espaçamento entre os dois blocos
-st.markdown("<div class='section-divider-space'></div>", unsafe_allow_html=True)
+st.markdown(
+    "<div class='section-title'><span class='dot'></span>🌐 Tour360vr — Prospecção, Diagnóstico & Gestão GMB</div>",
+    unsafe_allow_html=True,
+)
+render_cards([
+    {"icon": "📡", "name": "Radar de Prospecção",
+     "desc": "Mapeamento de campo e varredura de fichas do Google Meu Negócio (Buscador de Clientes).",
+     "url": "https://radar-comercial-tour360vr.streamlit.app/"},
+    {"icon": "📊", "name": "Diagnóstico & Auditoria",
+     "desc": "Análise de saúde do perfil local com geração de proposta visual e relatório técnico em PDF.",
+     "url": "https://tour360vr.streamlit.app/"},
+    {"icon": "📈", "name": "Gestão Mensal & ROI",
+     "desc": "Acompanhamento recorrente de métricas (chamadas, rotas, WhatsApp) e relatórios executivos.",
+     "url": "https://gestao-mensal-tour360vr.streamlit.app/"},
+])
 
 # ==========================================
 # SEÇÃO 2: OKAMOTO MÍDIAS VISUAIS
 # ==========================================
-st.markdown("<div id='okamoto-midias-visuais-comercial-precificacao' class='neon-section-title'>📸 Okamoto Mídias Visuais — Comercial & Precificação</div>", unsafe_allow_html=True)
-
-col4, col5, col_vazia = st.columns([1, 1, 1])
-
-with col4:
-    st.markdown("""
-        <a href='https://okamoto-proposta-comercial.streamlit.app/' target='_blank' class='clickable-card'>
-            <div class='card-icon'>💼</div>
-            <div class='card-title-text'>Propostas & Custos</div>
-            <p>Elaboração de propostas comerciais e orçamentos de logística e produção visual.</p>
-        </a>
-    """, unsafe_allow_html=True)
-
-with col5:
-    st.markdown("""
-        <a href='https://seu-link-de-custos.streamlit.app' target='_blank' class='clickable-card'>
-            <div class='card-icon'>🧮</div>
-            <div class='card-title-text'>Custos & Logística</div>
-            <p>Cálculo de custos operacionais e logística de transporte para atendimentos e produções.</p>
-        </a>
-    """, unsafe_allow_html=True)
+st.markdown(
+    "<div class='section-title'><span class='dot' style='background:var(--accent-2); box-shadow:0 0 10px var(--accent-2);'></span>"
+    "📸 Okamoto Mídias Visuais — Comercial & Precificação</div>",
+    unsafe_allow_html=True,
+)
+render_cards([
+    {"icon": "💼", "name": "Propostas & Custos",
+     "desc": "Elaboração de propostas comerciais e orçamentos de logística e produção visual.",
+     "url": "https://okamoto-proposta-comercial.streamlit.app/"},
+    {"icon": "🧮", "name": "Custos & Logística",
+     "desc": "Cálculo de custos operacionais e logística de transporte para atendimentos e produções.",
+     "url": "https://seu-link-de-custos.streamlit.app"},
+])
