@@ -49,8 +49,8 @@ def obter_base64_logo(caminho):
             return base64.b64encode(f.read()).decode("utf-8")
     return ""
 
-# --- FUNÇÃO ROBUSTA PARA O PDF (BYTES LOCAIS) ---
-def get_rl_image_pdf(width, height):
+# --- FUNÇÃO PADRÃO DE LOGO NO REPORTLAB (TAMANHO IDEAL) ---
+def get_rl_image_pdf(width=45, height=45):
     if os.path.exists(LOGO_LOCAL_PATH):
         try:
             with open(LOGO_LOCAL_PATH, "rb") as f:
@@ -60,6 +60,19 @@ def get_rl_image_pdf(width, height):
             pass
     styles = getSampleStyleSheet()
     return Paragraph("<b>Tour360VR</b>", ParagraphStyle('Fallback', parent=styles['Normal'], fontName='Helvetica-Bold'))
+
+# --- RODAPÉ OFICIAL PADRÃO TOUR360VR ---
+def adicionar_rodape_padrao(canvas, doc):
+    canvas.saveState()
+    canvas.setStrokeColor(colors.HexColor('#BFDBFE'))
+    canvas.setLineWidth(0.8)
+    canvas.line(40, 32, letter[0] - 40, 32)
+    
+    footer_html = '<font color="#334155">tour360vr.com.br &nbsp;|&nbsp; contato@tour360vr.com.br &nbsp;|&nbsp; WhatsApp: (16) 99133-2121</font>'
+    p = Paragraph(footer_html, ParagraphStyle('FooterStyle', fontName='Helvetica', fontSize=8, alignment=1))
+    p.wrap(letter[0] - 80, 20)
+    p.drawOn(canvas, 40, 16)
+    canvas.restoreState()
 
 # --- CONEXÃO COM SUPABASE ---
 @st.cache_resource
@@ -189,7 +202,7 @@ def calcular_variacao_pct(atual, anterior):
         return f"+{diff:.1f}%"
     return f"{diff:.1f}%"
 
-# --- AUDITORIA OFICIAL RIGOROSA COM OS 9 CRITÉRIOS (PADRÃO PDF) ---
+# --- AUDITORIA OFICIAL RIGOROSA COM OS 9 CRITÉRIOS ---
 def auditar_ficha_google_rigorosa(query_ou_url):
     api_key = st.secrets.get("GOOGLE_API_KEY", "")
     if not api_key:
@@ -297,17 +310,17 @@ def auditar_ficha_google_rigorosa(query_ou_url):
     except Exception as e:
         return None, f"Erro ao consultar a Google Places API: {str(e)}"
 
-# --- GERAÇÃO DE PDF DA AUDITORIA ---
+# --- GERAÇÃO DE PDF DA AUDITORIA (PADRÃO UNIFICADO TOUR360VR) ---
 def gerar_pdf_auditoria(res_aud):
     buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=40, leftMargin=40, topMargin=15, bottomMargin=65)
+    doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=40, leftMargin=40, topMargin=15, bottomMargin=55)
     story = []
     styles = getSampleStyleSheet()
 
     section_style = ParagraphStyle('DocSection', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=13, textColor=colors.HexColor('#1E293B'))
     body_style = ParagraphStyle('DocBody', parent=styles['Normal'], fontName='Helvetica', fontSize=8, leading=11, textColor=colors.HexColor('#334155'))
     
-    logo_flowable = get_rl_image_pdf(55, 55)
+    logo_flowable = get_rl_image_pdf(45, 45)
 
     header_table_data = [
         [
@@ -315,7 +328,7 @@ def gerar_pdf_auditoria(res_aud):
             Paragraph(f"<b>DIAGNÓSTICO DE AUDITORIA GOOGLE MAPS</b><br/><font size=9 color='#2563EB'><b>{res_aud['nome']}</b></font><br/><font size=8 color='#64748B'>Score da Ficha: {res_aud['score']}/100</font>", ParagraphStyle('RHeader', parent=styles['Normal'], alignment=2, fontName='Helvetica'))
         ]
     ]
-    t_header = Table(header_table_data, colWidths=[60, 472])
+    t_header = Table(header_table_data, colWidths=[55, 477])
     t_header.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'MIDDLE'), ('ALIGN', (0,0), (0,0), 'LEFT')]))
     story.append(t_header)
     story.append(Spacer(1, 2))
@@ -348,18 +361,7 @@ def gerar_pdf_auditoria(res_aud):
     story.append(Paragraph("3. Confiança & Autoridade: Publicação do Tour Virtual 360° no Street View e fotos em alta resolução.", body_style))
     story.append(Paragraph("4. Vitrine Imersiva: Padronização do acervo visual do espaço e integração dos canais de contato direto.", body_style))
 
-    def add_footer_relatorio(canvas, doc):
-        canvas.saveState()
-        canvas.setStrokeColor(colors.HexColor('#BFDBFE'))
-        canvas.setLineWidth(1.0)
-        canvas.line(40, 30, letter[0] - 40, 30)
-        footer_html = '<a href="https://tour360vr.com.br" color="#334155">tour360vr.com.br</a> &nbsp;|&nbsp; <a href="mailto:contato@tour360vr.com.br" color="#334155">contato@tour360vr.com.br</a> &nbsp;|&nbsp; <a href="https://wa.me/5516991332121" color="#334155">WhatsApp: (16) 99133-2121</a>'
-        p = Paragraph(footer_html, ParagraphStyle('Footer', fontName='Helvetica', fontSize=8, alignment=1))
-        p.wrap(letter[0] - 80, 30)
-        p.drawOn(canvas, 40, 15)
-        canvas.restoreState()
-
-    doc.build(story, onFirstPage=add_footer_relatorio, onLaterPages=add_footer_relatorio)
+    doc.build(story, onFirstPage=adicionar_rodape_padrao, onLaterPages=adicionar_rodape_padrao)
     buffer.seek(0)
     return buffer
 
@@ -385,14 +387,14 @@ def gerar_imagem_grafico(df_historico):
 
 def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dados_inicio, df_historico=None, df_keywords=None):
     buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=40, leftMargin=40, topMargin=15, bottomMargin=65)
+    doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=40, leftMargin=40, topMargin=15, bottomMargin=55)
     story = []
     styles = getSampleStyleSheet()
 
     section_style = ParagraphStyle('DocSection', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=13, textColor=colors.HexColor('#1E293B'))
     body_style = ParagraphStyle('DocBody', parent=styles['Normal'], fontName='Helvetica', fontSize=8, leading=11, textColor=colors.HexColor('#334155'))
     
-    logo_flowable = get_rl_image_pdf(55, 55)
+    logo_flowable = get_rl_image_pdf(45, 45)
 
     header_table_data = [
         [
@@ -400,7 +402,7 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
             Paragraph(f"<b>RELATÓRIO DE DESEMPENHO</b><br/><font size=9 color='#2563EB'><b>{nome_empresa}</b></font><br/><font size=8 color='#64748B'>Mês de Referência: {mes_ano}</font>", ParagraphStyle('RHeader', parent=styles['Normal'], alignment=2, fontName='Helvetica'))
         ]
     ]
-    t_header = Table(header_table_data, colWidths=[60, 472])
+    t_header = Table(header_table_data, colWidths=[55, 477])
     t_header.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'MIDDLE'), ('ALIGN', (0,0), (0,0), 'LEFT')]))
     story.append(t_header)
     story.append(Spacer(1, 2))
@@ -455,45 +457,35 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
         story.append(Image(gerar_imagem_grafico(df_historico), width=520, height=120))
         story.append(Spacer(1, 10))
 
-    def add_footer_relatorio(canvas, doc):
-        canvas.saveState()
-        canvas.setStrokeColor(colors.HexColor('#BFDBFE'))
-        canvas.setLineWidth(1.0)
-        canvas.line(40, 30, letter[0] - 40, 30)
-        footer_html = '<a href="https://tour360vr.com.br" color="#334155">tour360vr.com.br</a> &nbsp;|&nbsp; <a href="mailto:contato@tour360vr.com.br" color="#334155">contato@tour360vr.com.br</a> &nbsp;|&nbsp; <a href="https://wa.me/5516991332121" color="#334155">WhatsApp: (16) 99133-2121</a>'
-        p = Paragraph(footer_html, ParagraphStyle('Footer', fontName='Helvetica', fontSize=8, alignment=1))
-        p.wrap(letter[0] - 80, 30)
-        p.drawOn(canvas, 40, 15)
-        canvas.restoreState()
-
-    doc.build(story, onFirstPage=add_footer_relatorio, onLaterPages=add_footer_relatorio)
+    doc.build(story, onFirstPage=adicionar_rodape_padrao, onLaterPages=adicionar_rodape_padrao)
     buffer.seek(0)
     return buffer
 
+# --- GERAÇÃO DE PDF DO CONTRATO (PADRÃO UNIFICADO TOUR360VR) ---
 def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duracao=None):
     buffer = BytesIO()
     doc = SimpleDocTemplate(
         buffer, 
         pagesize=letter, 
-        rightMargin=40, leftMargin=40, topMargin=15, bottomMargin=65,
+        rightMargin=40, leftMargin=40, topMargin=15, bottomMargin=55,
         title=f"Contrato Tour360VR - {dados_cliente.get('nome_empresa', 'Cliente')}"
     )
     story = []
     styles = getSampleStyleSheet()
 
-    doc_title_style = ParagraphStyle('DocTitleStyle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=18, leading=22, alignment=1, textColor=colors.HexColor('#1E293B'))
+    doc_title_style = ParagraphStyle('DocTitleStyle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=16, leading=20, alignment=1, textColor=colors.HexColor('#1E293B'))
     body_style = ParagraphStyle('DocBody', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=12.5, alignment=4, textColor=colors.HexColor('#1E293B'))
     signature_style = ParagraphStyle('DocSig', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=12, alignment=1, textColor=colors.HexColor('#1E293B'))
 
-    logo_flowable = get_rl_image_pdf(55, 55)
+    logo_flowable = get_rl_image_pdf(45, 45)
 
     header_table = Table([
-        [logo_flowable, Paragraph("<b>CONTRATO DE PRESTAÇÃO DE SERVIÇOS</b>", ParagraphStyle('RH', alignment=2, fontName='Helvetica-Bold', fontSize=12, textColor=colors.HexColor('#2563EB')))]
-    ], colWidths=[60, 472])
+        [logo_flowable, Paragraph("<b>CONTRATO DE PRESTAÇÃO DE SERVIÇOS</b>", ParagraphStyle('RH', alignment=2, fontName='Helvetica-Bold', fontSize=11, textColor=colors.HexColor('#2563EB')))]
+    ], colWidths=[55, 477])
     header_table.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'MIDDLE'), ('ALIGN', (0,0), (0,0), 'LEFT'), ('ALIGN', (1,0), (1,0), 'RIGHT')]))
     story.append(header_table)
     story.append(Spacer(1, 2))
-    story.append(HRFlowable(width="100%", thickness=1.0, color=colors.HexColor('#BFDBFE'), spaceAfter=10))
+    story.append(HRFlowable(width="100%", thickness=1.0, color=colors.HexColor('#BFDBFE'], spaceAfter=10))
 
     meses_pt = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"]
     hoje = agora_brasil()
@@ -501,9 +493,9 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     
     story.append(Paragraph(data_extenso, ParagraphStyle('Date', fontName='Helvetica', fontSize=9, alignment=2, textColor=colors.HexColor('#000000'))))
     
-    story.append(Spacer(1, 20))
+    story.append(Spacer(1, 15))
     story.append(Paragraph("TERMO DE CONTRATAÇÃO DE SERVIÇOS", doc_title_style))
-    story.append(Spacer(1, 20))
+    story.append(Spacer(1, 15))
 
     nome_emp = dados_cliente.get("nome_empresa", "Empresa Cliente")
     resp_emp = dados_cliente.get("responsavel", "Responsável")
@@ -531,7 +523,7 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     """
     story.append(Paragraph(clausulas, body_style))
     
-    story.append(Spacer(1, 40))
+    story.append(Spacer(1, 30))
 
     t_ass = Table([
         [Paragraph("__________________________________________<br/><b>Rubens Okamoto</b><br/>Tour360VR", signature_style),
@@ -539,20 +531,7 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     ], colWidths=[240, 240])
     story.append(t_ass)
 
-    def add_footer(canvas, doc):
-        canvas.saveState()
-        canvas.setStrokeColor(colors.HexColor('#BFDBFE'))
-        canvas.setLineWidth(1.0)
-        canvas.line(40, 30, letter[0] - 40, 30)
-        
-        footer_html = '<a href="https://tour360vr.com.br" color="#334155">tour360vr.com.br</a> &nbsp;|&nbsp; <a href="mailto:contato@tour360vr.com.br" color="#334155">contato@tour360vr.com.br</a> &nbsp;|&nbsp; <a href="https://wa.me/5516991332121" color="#334155">WhatsApp: (16) 99133-2121</a>'
-        p = Paragraph(footer_html, ParagraphStyle('Footer', fontName='Helvetica', fontSize=8, alignment=1))
-        p.wrap(letter[0] - 80, 30)
-        p.drawOn(canvas, 40, 15)
-        
-        canvas.restoreState()
-
-    doc.build(story, onFirstPage=add_footer, onLaterPages=add_footer)
+    doc.build(story, onFirstPage=adicionar_rodape_padrao, onLaterPages=adicionar_rodape_padrao)
     buffer.seek(0)
     return buffer
 
@@ -880,7 +859,7 @@ if st.session_state["aba_ativa"] == "cadastrar":
     gerar_botoes_navegacao_rodape()
 
 # ==========================================
-# MÓDULO 2: AUDITORIA EXPRESS (COM BOTÕES DE SALVAR E PDF)
+# MÓDULO 2: AUDITORIA EXPRESS
 # ==========================================
 elif st.session_state["aba_ativa"] == "auditoria":
     st.subheader("🔍 Auditoria Detalhada de Pontos de Busca (9 Critérios Oficiais)")
