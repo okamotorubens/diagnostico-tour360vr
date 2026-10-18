@@ -246,7 +246,6 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
     story = []
     styles = getSampleStyleSheet()
 
-    title_brand_style = ParagraphStyle('DocBrandTitle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=14, leading=18, textColor=colors.HexColor('#000000'))
     section_style = ParagraphStyle('DocSection', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=13, textColor=colors.HexColor('#1E293B'))
     body_style = ParagraphStyle('DocBody', parent=styles['Normal'], fontName='Helvetica', fontSize=8, leading=11, textColor=colors.HexColor('#334155'))
     
@@ -328,7 +327,7 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
     buffer.seek(0)
     return buffer
 
-# --- GERAÇÃO DE CONTRATO EM PDF ---
+# --- GERAÇÃO DE CONTRATO EM PDF (ATUALIZADO CONFORME SOLICITADO) ---
 def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duracao=None):
     buffer = BytesIO()
     doc = SimpleDocTemplate(
@@ -340,14 +339,16 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     story = []
     styles = getSampleStyleSheet()
 
-    doc_title_style = ParagraphStyle('DocTitleStyle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=15, leading=18, alignment=1, textColor=colors.HexColor('#1E293B'))
+    # Título maior (fontSize 18, leading 22) e sem o subtítulo anterior
+    doc_title_style = ParagraphStyle('DocTitleStyle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=18, leading=22, alignment=1, textColor=colors.HexColor('#1E293B'))
     body_style = ParagraphStyle('DocBody', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=12.5, alignment=4, textColor=colors.HexColor('#1E293B'))
     signature_style = ParagraphStyle('DocSig', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=12, alignment=1, textColor=colors.HexColor('#1E293B'))
 
     logo_flowable = get_rl_image_pdf(55, 55)
 
+    # Header simplificado sem o texto secundário
     header_table = Table([
-        [logo_flowable, Paragraph("<b>CONTRATO DE PRESTAÇÃO DE SERVIÇOS</b><br/><font size=8 color='#2563EB'>Documento Jurídico Oficial | Tour360VR</font>", ParagraphStyle('RH', alignment=2, fontName='Helvetica-Bold', fontSize=11))]
+        [logo_flowable, Paragraph("<b>CONTRATO DE PRESTAÇÃO DE SERVIÇOS</b>", ParagraphStyle('RH', alignment=2, fontName='Helvetica-Bold', fontSize=12, textColor=colors.HexColor('#2563EB')))]
     ], colWidths=[60, 472])
     header_table.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'MIDDLE'), ('ALIGN', (0,0), (0,0), 'LEFT'), ('ALIGN', (1,0), (1,0), 'RIGHT')]))
     story.append(header_table)
@@ -357,11 +358,13 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     meses_pt = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"]
     hoje = agora_brasil()
     data_extenso = f"Ribeirão Preto - SP, {hoje.day} de {meses_pt[hoje.month - 1]} de {hoje.year}."
-    story.append(Paragraph(data_extenso, ParagraphStyle('Date', fontName='Helvetica', fontSize=9, alignment=2, textColor=colors.HexColor('#64748B'))))
     
-    story.append(Spacer(1, 25))
+    # Data em PRETO puro conforme solicitado
+    story.append(Paragraph(data_extenso, ParagraphStyle('Date', fontName='Helvetica', fontSize=9, alignment=2, textColor=colors.HexColor('#000000'))))
+    
+    story.append(Spacer(1, 20))
     story.append(Paragraph("TERMO DE CONTRATAÇÃO DE SERVIÇOS", doc_title_style))
-    story.append(Spacer(1, 25))
+    story.append(Spacer(1, 20))
 
     nome_emp = dados_cliente.get("nome_empresa", "Empresa Cliente")
     resp_emp = dados_cliente.get("responsavel", "Responsável")
@@ -389,7 +392,7 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     """
     story.append(Paragraph(clausulas, body_style))
     
-    story.append(Spacer(1, 50))
+    story.append(Spacer(1, 40))
 
     t_ass = Table([
         [Paragraph("__________________________________________<br/><b>Rubens Okamoto</b><br/>Tour360VR", signature_style),
@@ -524,7 +527,6 @@ if st.session_state["aba_ativa"] == "cadastrar":
     modo_edicao = False
     dados_existentes = None
     
-    # Campo de seleção limpo (sem container azul) com destaque de contorno branco puro
     if not df_clientes.empty:
         opcoes = ["➕ Cadastrar Novo Cliente"] + df_clientes["nome_empresa"].tolist()
         sel_idx = 0
@@ -554,7 +556,8 @@ if st.session_state["aba_ativa"] == "cadastrar":
         ])
         
         with sub_t1:
-            c1, c2 = st.columns(2, gap="large")
+            # Layout com colunas espaçadas (respiro entre campos)
+            c1, c_esp1, c2 = st.columns([4.8, 0.4, 4.8])
             with c1:
                 nome_empresa = st.text_input("Nome Comercial da Empresa *", value=dados_existentes["nome_empresa"] if (modo_edicao and dados_existentes) else "")
                 responsavel = st.text_input("Nome do Responsável", value=dados_existentes.get("responsavel", "") if (modo_edicao and dados_existentes) else "")
@@ -580,7 +583,7 @@ if st.session_state["aba_ativa"] == "cadastrar":
 
         with sub_t2:
             st.markdown("**Configurações de Reivindicação, Chat e Horários:**")
-            c_s1, c_s2 = st.columns(2, gap="large")
+            c_s1, c_esp2, c_s2 = st.columns([4.8, 0.4, 4.8])
             opts_reivindicada = ["Reivindicada & Verificada", "Não Reivindicada", "Em Processo"]
             v_reiv = dados_existentes.get("ficha_reivindicada", "") if (modo_edicao and dados_existentes) else ""
             idx_reiv = opts_reivindicada.index(v_reiv) if v_reiv in opts_reivindicada else 0
@@ -636,7 +639,7 @@ if st.session_state["aba_ativa"] == "cadastrar":
             link_drive_midias = st.text_input("Link da Pasta de Mídias e Fotos 360° (Google Drive)", value=dados_existentes.get("link_drive_midias", "") if (modo_edicao and dados_existentes) else "")
 
         with sub_t4:
-            c1, c2 = st.columns(2, gap="large")
+            c1, c_esp3, c2 = st.columns([4.8, 0.4, 4.8])
             with c1:
                 telefone_contato = st.text_input("Telefone Comercial", value=dados_existentes.get("telefone_contato", "") if (modo_edicao and dados_existentes) else "")
                 whatsapp = st.text_input("WhatsApp para Envio (Ex: 16991332121)", value=dados_existentes.get("whatsapp", "") if (modo_edicao and dados_existentes) else "")
@@ -651,7 +654,7 @@ if st.session_state["aba_ativa"] == "cadastrar":
         with sub_t5:
             st.markdown("**Checklist de Otimização Identificadas no Diagnóstico:**")
             pendencias_salvas = dados_existentes.get("pendencias_checklist", "") if (modo_edicao and dados_existentes) else ""
-            c_p1, c_p2 = st.columns(2, gap="large")
+            c_p1, c_esp4, c_p2 = st.columns([4.8, 0.4, 4.8])
             with c_p1:
                 p_fita = st.checkbox("📷 Tour Virtual 360° & Fotos", value="Fotos/Tour 360°" in pendencias_salvas)
                 p_cat = st.checkbox("🏷️ Otimizar Categorias GMB", value="Categorias GMB" in pendencias_salvas)
@@ -778,11 +781,13 @@ elif st.session_state["aba_ativa"] == "metricas":
         c_id = int(df_clientes[df_clientes["nome_empresa"] == cliente_sel]["id"].values[0])
         with st.form("form_met"):
             mes_ref = st.date_input("Mês Referência", value=datetime.today()).strftime("%Y-%m")
-            c1, c2, c3 = st.columns(3)
-            with c1: chamadas = st.number_input("Chamadas", min_value=0, step=1)
-            with c2: rotas = st.number_input("Rotas", min_value=0, step=1)
-            with c3: cliques = st.number_input("Cliques Site", min_value=0, step=1)
-            tm = st.number_input("Ticket Médio (R$)", value=150.0, step=10.0)
+            c1, c_esp_m, c2 = st.columns([4.8, 0.4, 4.8])
+            with c1: 
+                chamadas = st.number_input("Chamadas", min_value=0, step=1)
+                rotas = st.number_input("Rotas", min_value=0, step=1)
+            with c2: 
+                cliques = st.number_input("Cliques Site", min_value=0, step=1)
+                tm = st.number_input("Ticket Médio (R$)", value=150.0, step=10.0)
             tc = st.number_input("Taxa Conversão (%)", value=10.0, step=1.0) / 100.0
             fat = (chamadas + rotas + cliques) * tc * tm
             st.info(f"Faturamento Estimado Gerado: R$ {fat:,.2f}")
@@ -930,7 +935,7 @@ elif st.session_state["aba_ativa"] == "pdf":
             valor_personalizado = st.number_input("Valor do Plano (R$)", min_value=0.0, step=50.0, value=(500.0 if "Start" in plano_selecionado else (1500.0 if "Pro" in plano_selecionado else 600.0)))
             
             if st.button("Gerar Contrato Oficial em PDF"):
-                pdf_contrato =gerar_pdf_contrato(dados_cli, plano_selecionado, valor_personalizado, meses_gestao)
+                pdf_contrato = gerar_pdf_contrato(dados_cli, plano_selecionado, valor_personalizado, meses_gestao)
                 data_str_file = agora_brasil().strftime("%Y-%m-%d")
                 nome_arquivo_pdf = f"Contrato Tour360VR - {c_pdf} - {data_str_file}.pdf"
                 st.download_button("📥 Baixar Contrato Oficial PDF", data=pdf_contrato, file_name=nome_arquivo_pdf, mime="application/pdf")
