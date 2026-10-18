@@ -80,7 +80,13 @@ def adicionar_rodape_padrao(canvas, doc):
     canvas.setStrokeColor(colors.HexColor("#BFDBFE"))
     canvas.setLineWidth(0.8)
     canvas.line(40, 32, letter[0] - 40, 32)
-    footer_html = '<font color="#334155">tour360vr.com.br &nbsp;|&nbsp; contato@tour360vr.com.br &nbsp;|&nbsp; WhatsApp: (16) 99133-2121</font>'
+    footer_html = (
+        '<font color="#334155">'
+        '<font color="#1E40AF"><a href="https://tour360vr.com.br">tour360vr.com.br</a></font> &nbsp;|&nbsp; '
+        '<font color="#1E40AF"><a href="mailto:contato@tour360vr.com.br">contato@tour360vr.com.br</a></font> &nbsp;|&nbsp; '
+        'WhatsApp: <font color="#1E40AF"><a href="https://wa.me/5516991332121">(16) 99133-2121</a></font>'
+        '</font>'
+    )
     p = Paragraph(footer_html, ParagraphStyle("FooterStyle", fontName="Helvetica", fontSize=8, alignment=1))
     p.wrap(letter[0] - 80, 20)
     p.drawOn(canvas, 40, 16)
@@ -329,7 +335,8 @@ def auditar_ficha_google_rigorosa(query_ou_url):
 # --- PDF DA AUDITORIA ---
 def gerar_pdf_auditoria(res_aud):
     buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=40, leftMargin=40, topMargin=15, bottomMargin=55)
+    doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=40, leftMargin=40, topMargin=15, bottomMargin=55,
+                            title=f"Diagnostico Auditoria Google Maps {res_aud['nome']}")
     story = []
     styles = getSampleStyleSheet()
 
@@ -341,9 +348,7 @@ def gerar_pdf_auditoria(res_aud):
     header_table_data = [[
         logo_flowable,
         Paragraph(
-            f"<b>DIAGNÓSTICO DE AUDITORIA GOOGLE MAPS</b><br/>"
-            f"<font size=9 color='#2563EB'><b>{res_aud['nome']}</b></font><br/>"
-            f"<font size=8 color='#64748B'>Score da Ficha: {res_aud['score']}/100</font>",
+            f"<b>DIAGNÓSTICO DE AUDITORIA GOOGLE MAPS</b>",
             ParagraphStyle("RHeader", parent=styles["Normal"], alignment=2, fontName="Helvetica"),
         ),
     ]]
@@ -353,8 +358,12 @@ def gerar_pdf_auditoria(res_aud):
     story.append(Spacer(1, 2))
     story.append(HRFlowable(width="100%", thickness=1.0, color=colors.HexColor("#BFDBFE"), spaceAfter=10))
 
+    story.append(Spacer(1, 12))
+    story.append(Paragraph(f"<font size=10 color='#1E40AF'><b>{res_aud['nome']}</b></font>", body_style))
     story.append(Paragraph(f"<b>Endereço:</b> {res_aud['endereco']} | <b>Telefone:</b> {res_aud['telefone']}", body_style))
-    story.append(Spacer(1, 8))
+    story.append(Spacer(1, 24))
+    story.append(Paragraph(f"<b>Score da Ficha:</b> <font size=11 color='#1E40AF'><b>{res_aud['score']}/100</b></font>", body_style))
+    story.append(Spacer(1, 24))
 
     story.append(Paragraph("<b>Auditoria Detalhada de Pontos (9 Critérios Oficiais):</b>", section_style))
     story.append(Spacer(1, 6))
@@ -373,7 +382,7 @@ def gerar_pdf_auditoria(res_aud):
         ("PADDING", (0, 0), (-1, -1), 4),
     ]))
     story.append(t_aud)
-    story.append(Spacer(1, 10))
+    story.append(Spacer(1, 22))
 
     story.append(Paragraph("<b>Plano de Ação & Oportunidades Recomendadas:</b>", section_style))
     story.append(Spacer(1, 6))
@@ -515,15 +524,15 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     styles = getSampleStyleSheet()
 
     doc_title_style = ParagraphStyle("DocTitleStyle", parent=styles["Normal"], fontName="Helvetica-Bold", fontSize=16, leading=20, alignment=1, textColor=colors.HexColor("#1E293B"))
-    body_style = ParagraphStyle("DocBody", parent=styles["Normal"], fontName="Helvetica", fontSize=9, leading=12.5, alignment=4, textColor=colors.HexColor("#1E293B"))
+    body_style = ParagraphStyle("DocBody", parent=styles["Normal"], fontName="Helvetica", fontSize=9, leading=11, alignment=4, textColor=colors.HexColor("#1E293B"))
     signature_style = ParagraphStyle("DocSig", parent=styles["Normal"], fontName="Helvetica", fontSize=9, leading=12, alignment=1, textColor=colors.HexColor("#1E293B"))
 
-    logo_flowable = get_rl_image_pdf(45, 45)
+    logo_flowable = get_rl_image_pdf(62, 62)
 
     header_table = Table([
         [logo_flowable, Paragraph("<b>CONTRATO DE PRESTAÇÃO DE SERVIÇOS</b>",
-                                  ParagraphStyle("RH", alignment=2, fontName="Helvetica-Bold", fontSize=11, textColor=colors.HexColor("#2563EB")))]
-    ], colWidths=[55, 477])
+                                  ParagraphStyle("RH", alignment=2, fontName="Helvetica-Bold", fontSize=11, textColor=colors.HexColor("#1E3A8A")))]
+    ], colWidths=[72, 460])
     header_table.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "MIDDLE"), ("ALIGN", (0, 0), (0, 0), "LEFT"), ("ALIGN", (1, 0), (1, 0), "RIGHT")]))
     story.append(header_table)
     story.append(Spacer(1, 2))
@@ -534,9 +543,9 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     data_extenso = f"Ribeirão Preto - SP, {hoje.day} de {meses_pt[hoje.month - 1]} de {hoje.year}."
 
     story.append(Paragraph(data_extenso, ParagraphStyle("Date", fontName="Helvetica", fontSize=9, alignment=2, textColor=colors.HexColor("#000000"))))
-    story.append(Spacer(1, 15))
+    story.append(Spacer(1, 27))
     story.append(Paragraph("TERMO DE CONTRATAÇÃO DE SERVIÇOS", doc_title_style))
-    story.append(Spacer(1, 15))
+    story.append(Spacer(1, 27))
 
     nome_emp = dados_cliente.get("nome_empresa", "Empresa Cliente")
     resp_emp = dados_cliente.get("responsavel", "Responsável")
@@ -563,7 +572,7 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     <b>CLÁUSULA QUINTA - VALIDADE DA PROPOSTA:</b> A presente proposta e condições comerciais possuem validade oficial de 15 (quinze) dias a contar da data de sua emissão.
     """
     story.append(Paragraph(clausulas, body_style))
-    story.append(Spacer(1, 30))
+    story.append(Spacer(1, 42))
 
     t_ass = Table([[
         Paragraph("__________________________________________<br/><b>Rubens Okamoto</b><br/>Tour360VR", signature_style),
@@ -944,7 +953,7 @@ elif st.session_state["aba_ativa"] == "auditoria":
             st.download_button(
                 "📥 Baixar Relatório de Auditoria em PDF",
                 data=pdf_aud_bytes,
-                file_name=f"Auditoria_{res_aud['nome'].replace(' ', '_')}.pdf",
+                file_name=f"Diagnostico Auditoria Google Maps {res_aud['nome']}.pdf",
                 mime="application/pdf",
                 key="btn_download_auditoria_pdf",
             )
@@ -1036,6 +1045,12 @@ elif st.session_state["aba_ativa"] == "ia":
             f"Por que o atendimento especializado em {cat} faz toda a diferença para você?",
             f"Novidades, melhorias e atualizações nos serviços prestados pela {emp}.",
             f"Perguntas frequentes (FAQ): Tire todas as suas dúvidas sobre {cat} com a {emp}.",
+            f"Quanto custa {cat} em {reg}? Fatores que definem o investimento.",
+            f"Passo a passo: como preparar sua visita antes de contratar {cat}.",
+            f"Tour Virtual 360° no Google Maps: como a {emp} aparece antes mesmo da visita.",
+            f"Sinais de confiança: o que avaliar em um fornecedor de {cat}.",
+            f"Sazonalidade: quando procurar {cat} em {reg} e como se planejar.",
+            f"Mitos e verdades sobre {cat} na região.",
         ]
 
         section_title("Selecione e Personalize as Pautas do Mês:")
@@ -1057,6 +1072,20 @@ elif st.session_state["aba_ativa"] == "ia":
                 if ativo:
                     pautas_selecionadas.append(p_editada)
 
+        section_title("✅ Otimizações Recomendadas para a Ficha")
+        with glass_container():
+            st.markdown(
+                "- **Respostas às avaliações:** responder todas em até 48h, inclusive as negativas, com palavras-chave do segmento.\n"
+                "- **Posts semanais no Perfil:** novidades, ofertas e eventos com foto e chamada para ação.\n"
+                "- **Fotos reais em alta resolução:** atualizar o acervo mensalmente e incluir equipe e bastidores.\n"
+                "- **Produtos e serviços:** cadastrar cada item com descrição e preço de referência.\n"
+                "- **Perguntas e respostas (Q&A):** publicar as dúvidas frequentes respondidas pela própria empresa.\n"
+                "- **Categorias:** revisar a principal e as secundárias a cada trimestre.\n"
+                "- **Horários especiais:** cadastrar feriados e datas sazonais com antecedência.\n"
+                "- **Rastreamento de links:** usar UTM no site para medir cliques e conversões reais.\n"
+                "- **Link curto de avaliações:** com QR Code no balcão e na área de atendimento."
+            )
+
         st.markdown("---")
         section_title("🔗 Link Único de Aprovação Externa (Copie e envie ao cliente)")
         link_exemplo = f"https://gestao-mensal-tour360vr.streamlit.app/?aprovar=true&cliente={emp.lower().replace(' ', '-')}"
@@ -1074,7 +1103,7 @@ elif st.session_state["aba_ativa"] == "ia":
         if num_limpo:
             st.markdown(
                 f'<a href="https://wa.me/55{num_limpo}?text={msg_wsp}" target="_blank" style="text-decoration:none;">'
-                f'<div style="width:100%; background:{COLORS["success"]}; color:#0B0E14; padding:12px; '
+                f'<div style="width:100%; background:#25D366; color:#FFFFFF; padding:12px; '
                 f'border-radius:12px; font-weight:700; text-align:center; font-size:1rem;">'
                 f"Enviar para o WhatsApp do cliente</div></a>",
                 unsafe_allow_html=True,
