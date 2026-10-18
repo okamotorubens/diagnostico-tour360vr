@@ -6,6 +6,7 @@ import time
 import base64
 import urllib.parse
 from datetime import datetime
+import re
 
 import requests
 import pandas as pd
@@ -513,7 +514,6 @@ def buscar_google_places_api(nicho, cidade, bairro, rua, raio_km, api_key, limit
                 total_avaliacoes = det_res.get("user_ratings_total", place.get("user_ratings_total", 0))
                 photos = det_res.get("photos", place.get("photos", [])) or []
                 
-                # Captura exclusivamente a foto real do Google Places, se houver
                 if photos and photos[0].get('photo_reference'):
                     foto_url = f"https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference={photos[0].get('photo_reference')}&key={api_key}"
                 else:
@@ -605,10 +605,6 @@ def minerar_e_auditar_negocios(nicho, cidade, bairro, rua, raio_km, limite=20):
     else:
         st.error("⚠️ A chave 'GOOGLE_API_KEY' não foi encontrada nos Secrets do Streamlit Cloud.")
     return []
-
-def minerar_e_salvar(nicho, cidade, bairro, rua, limite):
-    raio_padrao = 10
-    return minerar_e_auditar_negocios(nicho, cidade, bairro, rua, raio_padrao, limite)
 
 # -----------------------------------------------------------------------------
 # GERADOR DE CSV COMPLETO
@@ -812,7 +808,6 @@ elif st.session_state.etapa == 2:
                 foto_lead = lead.get('foto_url', '')
                 if foto_lead and foto_lead.startswith("http"):
                     try:
-                        # Faz o download seguro da foto usando a API Key para autenticar na Google
                         api_key_atual = st.secrets.get("GOOGLE_API_KEY", None) or os.getenv("GOOGLE_API_KEY", "")
                         if "key=" not in foto_lead and api_key_atual:
                             foto_lead_auth = f"{foto_lead}&key={api_key_atual.strip().replace('"', '').replace("'", "")}"
