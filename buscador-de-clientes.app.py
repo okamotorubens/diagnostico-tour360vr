@@ -586,7 +586,7 @@ elif st.session_state.etapa == 2:
                         f"{urllib.parse.quote(lead['nome'])})"
                         )
                         link_secundario(URL_SISTEMA_DIAGNOSTICO, "🛠️ Abrir no Diagnóstico Tour360VR")
-                    if lead.get("whatsapp"):
+                if lead.get("whatsapp"):
                         msg_wa = (
                             f"Olá! Tudo bem?\nMeu nome é Rubens Okamoto, da Okamoto Mídias Visuais e do Tour360VR.\n"
                             f"Estava analisando a presença da {lead['nome']} no Google e identifiquei pontos onde a visibilidade "
