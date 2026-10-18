@@ -1147,7 +1147,6 @@ elif st.session_state.etapa == 5:
                         "mode": "followers",
                         "maxItems": limite_leads
                     }
-                    
                     with st.spinner(f"O robô do Apify está varrendo os seguidores de '@{username_limpo}' de forma anônima e segura..."):
                 try:
                     client = ApifyClient(APIFY_TOKEN)
@@ -1193,7 +1192,6 @@ elif st.session_state.etapa == 5:
                             "foto_perfil": item.get("profilePicUrl", "https://via.placeholder.com/150"),
                             "origem_concorrente": username_limpo
                         })
-                        
                     if dados_coletados:
                         df_leads = pd.DataFrame(dados_coletados)
                         st.session_state['leads_instagram_coletados'] = df_leads
