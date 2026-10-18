@@ -1135,17 +1135,20 @@ elif st.session_state.etapa == 5:
         if not url_input:
             st.error("Por favor, informe a URL ou @ de um perfil do Instagram ativo.")
         else:
-            # Tratamento avançado de sanitização da URL do Instagram
-            username_limpo = url_input.strip()
-            if "instagram.com/" in username_limpo:
-                username_limpo = username_limpo.split("instagram.com/")[-1]
-            username_limpo = username_limpo.replace("@", "").strip("/").split("?")[0].split("/")[0]
+            # Sanitização rigorosa do username
+            raw_input = url_input.strip()
+            # Remove prefixos de URL se existirem
+            if "instagram.com/" in raw_input:
+                raw_input = raw_input.split("instagram.com/")[-1]
             
-            with st.spinner(f"O robô do Apify está varrendo os seguidores de '@{username_limpo}' de forma anônima e segura..."):
+            # Limpa @, barras finais, query params e espaços
+            username_limpo = raw_input.replace("@", "").strip("/").split("?")[0].split("/")[0].strip()
+            
+            with st.spinner(f"O robô do Apify está varrendo os seguidores de '{username_limpo}' de forma anônima e segura..."):
                 try:
                     client = ApifyClient(APIFY_TOKEN)
                     
-                    # Estrutura exata aceita pelo Actor seemuapps/instagram-followers-scraper
+                    # Estrutura do input para o Actor 'seemuapps/instagram-followers-scraper'
                     run_input = {
                         "username": username_limpo,
                         "mode": "followers",
@@ -1156,7 +1159,7 @@ elif st.session_state.etapa == 5:
                     run = client.actor("seemuapps/instagram-followers-scraper").call(run_input=run_input)
                     dados_coletados = []
                     
-                    # Resolução do ID do Dataset
+                    # Identificação do Dataset ID
                     dataset_id = None
                     if isinstance(run, dict):
                         dataset_id = run.get("defaultDatasetId") or run.get("default_dataset_id")
@@ -1170,7 +1173,7 @@ elif st.session_state.etapa == 5:
                             bio = item.get("biography", "") or item.get("bio", "")
                             link_ext = item.get("externalUrl", "") or item.get("external_url", "")
                             
-                            # Mapeamento de WhatsApp
+                            # Mapeamento de WhatsApp na Bio ou Link
                             whats = "Não encontrado"
                             wa_match = re.search(r'(wa\.me|api\.whatsapp\.com/send\?phone=)(\d+)', link_ext or "")
                             if wa_match: 
@@ -1196,7 +1199,7 @@ elif st.session_state.etapa == 5:
                         df_leads = pd.DataFrame(dados_coletados)
                         st.session_state['leads_instagram_coletados'] = df_leads
                         
-                        # Gravação no Supabase
+                        # Gravação dos dados no Supabase
                         if supabase:
                             with st.spinner("Sincronizando registros extraídos com o banco de dados Supabase..."):
                                 try:
@@ -1206,7 +1209,7 @@ elif st.session_state.etapa == 5:
                                 except Exception as db_err:
                                     st.warning(f"Leads exibidos no painel, mas falhou a sincronização com o Supabase: {db_err}")
                     else:
-                        st.warning(f"Nenhum seguidor retornado pela API para o perfil '@{username_limpo}'. Certifique-se de que a conta é pública e possui seguidores ativos.")
+                        st.warning(f"Nenhum seguidor retornado pela API para o perfil '{username_limpo}'. Certifique-se de que a conta é pública e possui seguidores ativos.")
                 except Exception as e:
                     st.error(f"Erro operacional durante o processo de scraping: {e}")
 
