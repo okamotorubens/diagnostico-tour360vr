@@ -1038,13 +1038,13 @@ elif st.session_state.etapa == 4:
             st_folium(m, width="100%", height=700)
 
 # -----------------------------------------------------------------------------
-# ETAPA 5: EXTRATOR DE LEADS DE ENGAJAMENTO DO INSTAGRAM (APIFY)
+# ETAPA 5: EXTRATOR DE LEADS COMERCIAIS DO INSTAGRAM (APIFY)
 # -----------------------------------------------------------------------------
 elif st.session_state.etapa == 5:
     st.markdown("""
         <div class="main-header">
-            <h1 class="main-title">📁 Extrator de Leads por Engajamento do Instagram</h1>
-            <div class="main-subtitle">Insira o perfil de um concorrente para extrair usuários ativos (comentaristas e engajados), mapear WhatsApps e salvar no Supabase.</div>
+            <h1 class="main-title">📁 Extrator de Leads Comerciais do Instagram</h1>
+            <div class="main-subtitle">Busque perfis de empresas locais por Hashtag ou Localização para mapear contatos comerciais e salvar no Supabase.</div>
         </div>
     """, unsafe_allow_html=True)
     
@@ -1055,26 +1055,22 @@ elif st.session_state.etapa == 5:
         st.error("⚠️ Token do Apify não configurado nas Secrets do Streamlit Cloud.")
         st.stop()
         
-    url_input = st.text_input("Cole o link do perfil do Instagram alvo (Ex: https://instagram.com/reserva ou @reserva):")
-    limite_leads = st.slider("Quantidade máxima de interações a buscar:", min_value=10, max_value=200, value=50, step=10)
+    termo_busca = st.text_input("Digite a Hashtag ou Localização alvo (Ex: #ribeiraopreto, #imoveisribeiraopreto ou Ribeirão Preto):", value="ribeiraopreto")
+    limite_leads = st.slider("Quantidade de perfis comerciais a buscar:", min_value=10, max_value=150, value=30, step=10)
     
-    if st.button("🔍 Iniciar Captura de Leads Engajados", type="primary"):
-        if not url_input:
-            st.error("Por favor, informe a URL ou @ de um perfil do Instagram ativo.")
+    if st.button("🔍 Iniciar Mineração de Leads do Instagram", type="primary"):
+        if not termo_busca:
+            st.error("Por favor, informe um termo de busca válido.")
         else:
-            raw_input = url_input.strip()
-            if "instagram.com/" in raw_input:
-                raw_input = raw_input.split("instagram.com/")[-1]
-            username_limpo = raw_input.replace("@", "").strip("/").split("?")[0].split("/")[0].strip()
-            
-            with st.spinner(f"O robô do Apify está minerando leads ativos do perfil '@{username_limpo}'..."):
+            with st.spinner(f"O robô do Apify está minerando perfis comerciais para '{termo_busca}'..."):
                 try:
                     client = ApifyClient(APIFY_TOKEN)
                     
-                    # Extraindo comentários e interações reais com o Actor oficial apify/instagram-scraper
+                    # Configuração para buscar posts e perfis por hashtag ou termo no Apify Scraper
                     run_input = {
-                        "directUrls": [f"https://www.instagram.com/{username_limpo}/"],
-                        "resultsType": "comments",
+                        "search": termo_busca,
+                        "searchType": "hashtag", # Pode ser 'hashtag' ou 'place'
+                        "resultsType": "posts",
                         "resultsLimit": int(limite_leads)
                     }
                     
@@ -1092,17 +1088,17 @@ elif st.session_state.etapa == 5:
                     if dataset_id:
                         vistos = set()
                         for item in client.dataset(dataset_id).iterate_items():
-                            # O ator de comentários retorna o autor do comentário
-                            autor_username = item.get("ownerUsername") or item.get("username")
-                            if not autor_username or autor_username == username_limpo or autor_username in vistos:
+                            owner_username = item.get("ownerUsername") or item.get("username")
+                            if not owner_username or owner_username in vistos:
                                 continue
-                            vistos.add(autor_username)
+                            vistos.add(owner_username)
                             
-                            nome_autor = item.get("ownerFullName") or item.get("fullName") or "Sem nome informado"
-                            foto_autor = item.get("ownerProfilePicUrl") or item.get("profilePicUrl") or "https://via.placeholder.com/150"
-                            bio = item.get("biography", "") or item.get("text", "")
+                            nome_completo = item.get("ownerFullName") or item.get("fullName") or "Empresa Local"
+                            foto_perfil = item.get("ownerProfilePicUrl") or item.get("profilePicUrl") or "https://via.placeholder.com/150"
+                            bio = item.get("caption", "") or item.get("biography", "")
                             link_ext = item.get("externalUrl", "")
                             
+                            # Mapeamento de WhatsApp na Bio ou Legenda
                             whats = "Não encontrado"
                             wa_match = re.search(r'(wa\.me|api\.whatsapp\.com/send\?phone=)(\d+)', link_ext or "")
                             if wa_match: 
@@ -1114,30 +1110,31 @@ elif st.session_state.etapa == 5:
                                     whats = "55" + num_limpo if len(num_limpo) == 11 and not num_limpo.startswith("55") else num_limpo
                             
                             dados_coletados.append({
-                                "username": autor_username,
-                                "nome_completo": nome_autor,
-                                "instagram_id": str(item.get("id") or autor_username),
-                                "biografia": bio,
+                                "username": owner_username,
+                                "nome_completo": nome_completo,
+                                "instagram_id": str(item.get("ownerId") or owner_username),
+                                "biografia": bio[:200],
                                 "link_bio": link_ext,
                                 "whatsapp": whats,
-                                "foto_perfil": foto_autor,
-                                "origem_concorrente": username_limpo
+                                "foto_perfil": foto_perfil,
+                                "origem_concorrente": termo_busca
                             })
                         
                     if dados_coletados:
                         df_leads = pd.DataFrame(dados_coletados)
                         st.session_state['leads_instagram_coletados'] = df_leads
                         
+                        # Sincronização com o Supabase
                         if supabase:
                             with st.spinner("Sincronizando registros extraídos com o banco de dados Supabase..."):
                                 try:
                                     payload = df_leads.to_dict(orient="records")
                                     supabase.table("leads_instagram").upsert(payload, on_conflict="username").execute()
-                                    st.success("✨ Leads engajados salvos com sucesso na tabela 'leads_instagram'!")
+                                    st.success("✨ Leads comerciais salvos com sucesso na tabela 'leads_instagram'!")
                                 except Exception as db_err:
                                     st.warning(f"Leads exibidos no painel, mas falhou a sincronização com o Supabase: {db_err}")
                     else:
-                        st.warning(f"Nenhum comentário recente encontrado para '@{username_limpo}'. Tente outro perfil com mais engajamento.")
+                        st.warning(f"Nenhum perfil retornado para o termo '{termo_busca}'. Tente outra hashtag ou palavra-chave.")
                 except Exception as e:
                     st.error(f"Erro operacional durante o processo de scraping: {e}")
 
@@ -1155,7 +1152,7 @@ elif st.session_state.etapa == 5:
         st.download_button(
             label="📥 Baixar Planilha Pronta para o Excel (.xlsx)",
             data=buffer.getvalue(),
-            file_name=f"leads_engajados_{df_atual['origem_concorrente'].iloc[0]}.xlsx",
+            file_name=f"leads_instagram_{termo_busca}.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
         
@@ -1167,7 +1164,7 @@ elif st.session_state.etapa == 5:
                     st.image(row['foto_perfil'], width=85)
                 with col_info:
                     st.markdown(f"**{row['nome_completo']}** ([@{row['username']}](https://instagram.com/{row['username']}))")
-                    if row['biografia']: st.caption(f"📝 *Atividade/Bio:* {row['biografia']}")
+                    if row['biografia']: st.caption(f"📝 *Detalhe:* {row['biografia']}")
                     if row['link_bio']: st.caption(f"🔗 *Link na Bio:* [{row['link_bio']}]({row['link_bio']})")
                 with col_acoes:
                     if row['whatsapp'] != "Não encontrado":
