@@ -673,7 +673,7 @@ elif st.session_state.etapa == 4:
         st.markdown(f"<span class='gl-muted'>Exibindo <b>{len(df_m)}</b> empresas no mapa.</span>",
                     unsafe_allow_html=True)
 
-            if len(df_m) > 0:
+        if len(df_m) > 0:
             CORES_PINS = ["red", "blue", "green", "purple", "orange", "darkred", "cadetblue", "darkgreen", "darkblue", "pink"]
             CORES_HEX = {
                 "red": "#ef4444", "blue": "#3b82f6", "green": "#10b981", "purple": "#8b5cf6",
@@ -686,13 +686,13 @@ elif st.session_state.etapa == 4:
             segmentos = sorted(df_map["categoria"].dropna().unique().tolist())
             mapa_cor_nicho = {seg: CORES_PINS[i % len(CORES_PINS)] for i, seg in enumerate(segmentos)}
 
-            def cor_pin(row):
+        def cor_pin(row):
                 if cat_map == "Todos":
                     return mapa_cor_nicho.get(row["categoria"], "red")
                 classe, _, _ = classificar_score(int(row["score_oportunidade"]))
                 return COR_SCORE[classe]
 
-            def legenda_html(titulo, itens):
+        def legenda_html(titulo, itens):
                 linhas = "".join(
                     f"<div style='display:flex;align-items:center;gap:8px;margin:3px 0'>"
                     f"<span style='width:12px;height:12px;border-radius:50%;background:{cor};display:inline-block'></span>"
@@ -712,7 +712,7 @@ elif st.session_state.etapa == 4:
                 tiles="OpenStreetMap",
             )
             bounds = []
-            for _, row in df_m.iterrows():
+        for _, row in df_m.iterrows():
                 url_maps = f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(row['nome'])}"
                 criticos = row.get("pontos_criticos") or []
                 if isinstance(criticos, str):
