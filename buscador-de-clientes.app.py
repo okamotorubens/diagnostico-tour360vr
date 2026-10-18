@@ -577,7 +577,7 @@ elif st.session_state.etapa == 2:
                             f"Olá! Tudo bem?\nMeu nome é Rubens Okamoto, da Okamoto Mídias Visuais e do Tour360VR.\n"
                             f"Estava analisando a presença da {lead['nome']} no Google e identifiquei pontos onde a visibilidade "
                             f"do espaço pode ser ampliada em relação aos concorrentes da região.\n"
-                            f"Posso te enviar um diagnóstico curto em PDF por aqui?"
+                            f"Montei um relatório curto de diagnóstico em PDF. Posso te enviar por aqui para você dar uma olhada?"
                         )
                         botao_whatsapp(f"https://wa.me/55{lead['whatsapp']}?text={urllib.parse.quote(msg_wa)}",
                                        "💬 WhatsApp")
