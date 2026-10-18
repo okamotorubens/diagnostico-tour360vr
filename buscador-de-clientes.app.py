@@ -1,21 +1,24 @@
-import os
-import io
-import csv
+import streamlit as st
+import pandas as pd
 import json
 import time
-import base64
+import os
+import re
+import requests
+import csv
 import urllib.parse
 from datetime import datetime
-
-import requests
-import pandas as pd
-import streamlit as st
-import streamlit.components.v1 as components
-import folium
-from streamlit_folium import st_folium
+import io
 from PIL import Image as PILImage
+import base64
+import streamlit.components.v1 as components
+from streamlit_folium import st_folium
+import folium
+
+# Conexão NUVEM Supabase
 from supabase import create_client, Client
 
+# ReportLab para geração do PDF do Panorama
 from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
@@ -157,6 +160,7 @@ def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
     canvas.saveState()
     styles = getSampleStyleSheet()
     
+    # 1. LOGO DESENHADA NA ESQUERDA
     logo_tour = "logo_tour_transparente.png" if os.path.exists("logo_tour_transparente.png") else None
     if logo_tour:
         img_logo = Image(logo_tour, width=170, height=60, kind='proportional')
@@ -167,6 +171,7 @@ def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
         canvas.setFillColor(colors.HexColor('#0f172a'))
         canvas.drawString(36, 735, "TOUR360VR")
 
+    # 2. TEXTO CENTRALIZADO NA PÁGINA E ALINHADO NA ALTURA DA LOGO
     header_title_style = ParagraphStyle(
         'HeaderTitleCenterPage',
         parent=styles['Normal'],
@@ -197,10 +202,12 @@ def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
     texto_table.wrapOn(canvas, 540, 60)
     texto_table.drawOn(canvas, 36, 730)
 
+    # 3. LINHA DIVISÓRIA HORIZONTAL DO CABEÇALHO (Fina: 0.5)
     canvas.setStrokeColor(colors.HexColor('#cbd5e1'))
     canvas.setLineWidth(0.5)
     canvas.line(36, 706, 576, 706)
     
+    # 4. RODAPÉ FIXO COM LINHA DIVISÓRIA FINA (Fina: 0.5)
     canvas.setLineWidth(0.5)
     canvas.line(36, 42, 576, 42)
     
@@ -274,7 +281,7 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
             by = 22
             bh = max((total_lead / max_val) * 52, 6)
             
-            c_fill = colors.HexColor('#4ade80') if score_val >= 60 else (colors.HexColor('#fde047') if score_val >= 30 else colors.HexColor('#f87171'))
+            c_fill = colors.HexColor('#4ade80') if score_val >= 60 else (colors.HexColor('#facc15') if score_val >= 30 else colors.HexColor('#f87171'))
             
             chart_draw.add(Rect(bx, by, bar_w, bh, fillColor=c_fill, strokeColor=None, rx=2, ry=2))
             chart_draw.add(String(bx + (bar_w / 2), by + bh + 4, str(total_lead), fontSize=8.5, fontName="Helvetica-Bold", fillColor=colors.HexColor('#0f172a'), textAnchor="middle"))
@@ -548,7 +555,6 @@ def buscar_google_places_api(nicho, cidade, bairro, rua, raio_km, api_key, limit
                     clean_phone = clean_phone[2:]
 
                 nome_slug = re.sub(r'[^a-zA-Z0-9]', '', nome.lower())
-                instagram_url = f"https://instagram.com/{nome_slug}"
 
                 lead_obj = {
                     "data_minacao": datetime.now().strftime('%d/%m/%Y %H:%M'),
@@ -563,7 +569,7 @@ def buscar_google_places_api(nicho, cidade, bairro, rua, raio_km, api_key, limit
                     "whatsapp": clean_phone if len(clean_phone) >= 10 else "16999999999",
                     "website": website,
                     "website_https": has_https,
-                    "instagram": instagram_url,
+                    "instagram": f"https://instagram.com/{nome_slug}",
                     "facebook": f"https://facebook.com/{nome_slug}",
                     "foto_url": foto_url,
                     "nota": nota,
@@ -601,11 +607,6 @@ def minerar_e_auditar_negocios(nicho, cidade, bairro, rua, raio_km, limite=20):
     else:
         st.error("⚠️ A chave 'GOOGLE_API_KEY' não foi encontrada nos Secrets do Streamlit Cloud.")
     return []
-
-# Função unificada para resolver o NameError chamado na Etapa 1
-def minerar_e_salvar(nicho, cidade, bairro, rua, limite):
-    raio_padrao = 10
-    return minerar_e_auditar_negocios(nicho, cidade, bairro, rua, raio_padrao, limite)
 
 # -----------------------------------------------------------------------------
 # GERADOR DE CSV COMPLETO
@@ -661,10 +662,12 @@ base_leads = carregar_todos_leads_db()
 with st.sidebar:
     st.markdown('<div class="sidebar-title">Radar Comercial</div>', unsafe_allow_html=True)
     
+    # Logo Tour360VR
     if os.path.exists("logo_tour_transparente.png"):
         c1, c2, c3 = st.columns([1.2, 3.6, 1.2])
         with c2: st.image("logo_tour_transparente.png", use_container_width=True)
     
+    # Logo Okamoto Mídias Visuais
     if os.path.exists("logo_okamoto.png"):
         c1, c2, c3 = st.columns([0.8, 4.4, 0.8])
         with c2: st.image("logo_okamoto.png", use_container_width=True)
@@ -832,13 +835,7 @@ elif st.session_state.etapa == 2:
             with col_actions:
                 st.markdown("**🌐 Presença Web & Mídias:**")
                 st.markdown(f"- **Website:** {lead['website'] if lead['website'] else '❌ Sem site'}")
-                
-                insta_link = lead.get('instagram', '')
-                if insta_link:
-                    st.markdown(f"- **Instagram:** [Abrir Perfil]({insta_link})")
-                else:
-                    st.markdown("- **Instagram:** ❌ Não informado")
-
+                st.markdown(f"- **Instagram:** [Abrir Perfil]({lead['instagram']})")
                 st.markdown(f"- **Maps:** [Ver no Google Maps](https://www.google.com/maps/search/?api=1&query={lead['nome'].replace(' ', '+')})")
 
                 st.markdown(f'<a href="{URL_SISTEMA_DIAGNOSTICO}" target="_blank" class="btn-redirect">🛠️ Abrir no Diagnóstico Tour360VR</a>', unsafe_allow_html=True)
@@ -850,7 +847,7 @@ elif st.session_state.etapa == 2:
 
             with st.expander(f"✉️ **Uso Interno — Scripts de Vendas e Abordagem ({lead['nome']})**"):
                 st.markdown("**1) Abordagem Inicial — WhatsApp**")
-                script_wa = f"""Olá! Tudo bem?
+                script_wa = script_wa = f"""Olá! Tudo bem?
 Meu nome é Rubens Okamoto, da Okamoto Mídias Visuais e do Tour360VR.
 Estava analisando a presença da {lead['nome']} no Google, e identifiquei 3 pontos onde a visibilidade do espaço de vocês pode ser bastante ampliada em relação aos concorrentes da região.
 Montei um relatório curto de diagnóstico em PDF. Posso te enviar por aqui para você dar uma olhada?"""
@@ -1074,6 +1071,7 @@ elif st.session_state.etapa == 4:
 
             m = folium.Map(location=[lat_centro, lon_centro], zoom_start=13, tiles="OpenStreetMap")
 
+            # Cálculo automático do enquadramento dos PINS no mapa
             bounds = []
             for _, row in df_mapa_filtrado.iterrows():
                 cor_pin = mapa_cores_seg.get(row['categoria'], 'red') if cat_sel_mapa == "Todos os Nichos" else 'red'
