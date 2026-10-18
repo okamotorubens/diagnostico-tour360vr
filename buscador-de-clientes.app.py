@@ -809,7 +809,16 @@ elif st.session_state.etapa == 2:
             col_img, col_details1, col_details2, col_actions = st.columns([2, 2.5, 2.5, 2.5])
 
             with col_img:
-                st.image(lead['foto_url'], caption="Foto da Ficha do Google", use_container_width=True)
+                with col_img:
+                    # Tratamento seguro para exibir a imagem ou um fallback caso o link falhe
+                    foto_lead = lead.get('foto_url', '')
+                    if not foto_lead or foto_lead.startswith("http") == False:
+                        foto_lead = "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&q=80"
+                    
+                    try:
+                        st.image(foto_lead, caption="Foto da Ficha do Google", use_container_width=True)
+                    except Exception:
+                        st.image("https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&q=80", caption="Imagem Indisponível", use_container_width=True)
                 
                 status_opcoes = ["🆕 Novo Lead", "💬 Em Abordagem", "🛠️ Diagnóstico Gerado", "🤝 Cliente Fechado", "❌ Recusado"]
                 idx_atual = status_opcoes.index(lead['status_crm']) if lead['status_crm'] in status_opcoes else 0
