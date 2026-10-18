@@ -227,11 +227,23 @@ if "usuario_logado" not in st.session_state:
     tela_login()
     st.stop()
 
-col_u, col_s = st.columns([8, 1])
+st.markdown(
+    "<style>"
+    "div[data-testid='stHorizontalBlock']:has(.gl-logout) button {"
+    "min-height: 30px !important; height: auto !important; padding: 2px 14px !important;"
+    "font-size: 0.78rem !important; width: auto !important;}"
+    "</style>",
+    unsafe_allow_html=True,
+)
+col_u, col_s = st.columns([9, 1.4])
 with col_u:
-    st.caption(f"Conectado como **{st.session_state['usuario_logado']}**")
+    st.markdown(
+        f"<div style='text-align:right; font-size:0.85rem; color:#8E9BAE;'>"
+        f"<span class='gl-logout'></span>Conectado como <b style='color:#FFFFFF'>{st.session_state['usuario_logado']}</b></div>",
+        unsafe_allow_html=True,
+    )
 with col_s:
-    if st.button("Sair", key="btn_sair", use_container_width=True):
+    if st.button("Sair", key="btn_sair"):
         try:
             get_auth_client().auth.sign_out()
         except Exception:
@@ -344,19 +356,11 @@ def auditar_ficha_google_rigorosa(query_ou_url):
         else:
             criterios.append(("1. Fotos e Resolução Visual", f"{qtd_fotos} fotos registradas.", "Bom", "Atendido"))
 
-        tem_tour = any("360" in " ".join(p.get("html_attributions", [])) for p in fotos)
-        if not tem_tour:
-            score -= 15
-            criterios.append(("2. Tour Virtual 360° Interativo", "Não detectado via API. Necessário inclusão imersiva.", "Baixo", "Pendente"))
-        else:
-            criterios.append(("2. Tour Virtual 360° Interativo", "Tour Virtual identificado.", "Alto", "Atendido"))
+        criterios.append(("2. Tour Virtual 360° Interativo", "A Places API não informa a existência de tour virtual. Conferir manualmente no perfil.", "Verificação manual", "Manual"))
 
         types = details.get("types", [])
-        if len(types) < 3:
-            score -= 10
-            criterios.append(("3. Categorias Principal e Secundárias", "Ajuste necessário em categorias secundárias para match local.", "Médio", "Incompleto"))
-        else:
-            criterios.append(("3. Categorias Principal e Secundárias", "Categorias estruturadas.", "Alto", "Atendido"))
+        tipos_txt = ", ".join(t.replace("_", " ") for t in types[:4]) or "não informado"
+        criterios.append(("3. Categorias Principal e Secundárias", f"Tipos retornados pela API: {tipos_txt}. Categoria principal e secundárias exigem conferência no painel do Google.", "Verificação manual", "Manual"))
 
         opening_hours = details.get("opening_hours", {})
         if not opening_hours or not opening_hours.get("periods"):
@@ -387,19 +391,13 @@ def auditar_ficha_google_rigorosa(query_ou_url):
         else:
             criterios.append(("7. Resumo Editorial & Descrição", "Resumo editorial presente.", "Bom", "Atendido"))
 
-        score -= 5
-        criterios.append(("8. Atributos de Acessibilidade/Serviços", "Falta cadastrar atributos de acessibilidade e facilidades.", "Baixo", "Pendente"))
+        criterios.append(("8. Atributos de Acessibilidade/Serviços", "Não consultável pela API. Conferir atributos no painel do Google.", "Verificação manual", "Manual"))
 
         reviews = details.get("reviews", [])
-        sem_resposta = any(r.get("rating", 5) <= 3 for r in reviews)
-        if sem_resposta:
-            score -= 15
-            criterios.append(("9. Interação e Resposta a Avaliações", "Existem avaliações com críticas sem resposta oficial do gestor.", "Crítico", "Pendente"))
-        else:
-            score -= 10
-            criterios.append(("9. Interação e Resposta a Avaliações", "Necessário maior frequência de respostas ativas.", "Médio", "Pendente"))
+        negativas = [r for r in reviews if r.get("rating", 5) <= 3]
+        criterios.append(("9. Interação e Resposta a Avaliações", f"A API não informa respostas do gestor. Avaliações negativas na amostra: {len(negativas)}. Conferir respostas no painel.", "Verificação manual", "Manual"))
 
-        score = max(5, score)
+        score = max(0, score)
 
         return {
             "nome": nome,
@@ -487,6 +485,8 @@ def gerar_pdf_auditoria(res_aud):
         ("PADDING", (0, 0), (-1, -1), 6),
     ]))
     story.append(t_aud)
+    story.append(Spacer(1, 6))
+    story.append(Paragraph("Metodologia: score de 0 a 100 calculado sobre os critérios automáticos (fotos -10, horários -10, website -15, avaliações -15, resumo -10). Itens marcados como Verificação manual não pontuam.", body_style))
     story.append(Spacer(1, 12))  # 1 linha antes do plano
 
     story.append(Paragraph("Plano de Ação &amp; Oportunidades Recomendadas", section_style))
@@ -542,21 +542,22 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
     story.append(Paragraph("<b>1. Análise Comparativa de Desempenho e Crescimento:</b>", section_style))
     story.append(Spacer(1, 6))
 
+    inicio = df_historico.iloc[0] if df_historico is not None and len(df_historico) > 0 else None
     c_chamadas_ant = dados_anterior["chamadas"] if dados_anterior else 0
     c_rotas_ant = dados_anterior["rotas"] if dados_anterior else 0
     c_cliques_ant = dados_anterior["cliques_site"] if dados_anterior else 0
 
     comp_table_data = [
-        [Paragraph("<b>Indicador</b>", section_style), Paragraph("<b>Início</b>", section_style),
+        [Paragraph("<b>Indicador</b>", section_style), Paragraph("<b>1º Registro</b>", section_style),
          Paragraph("<b>Mês Ant.</b>", section_style), Paragraph("<b>Mês Atual</b>", section_style),
          Paragraph("<b>Evolução</b>", section_style)],
-        [Paragraph("Chamadas Telefônicas", body_style), Paragraph("Base", body_style),
+        [Paragraph("Chamadas Telefônicas", body_style), Paragraph(str(inicio["chamadas"]) if inicio is not None else "-", body_style),
          Paragraph(f"{c_chamadas_ant}", body_style), Paragraph(f"<b>{dados_atual['chamadas']}</b>", body_style),
          Paragraph(f"<b>{calcular_variacao_pct(dados_atual['chamadas'], c_chamadas_ant)}</b>", body_style)],
-        [Paragraph("Rotas GPS", body_style), Paragraph("Base", body_style),
+        [Paragraph("Rotas GPS", body_style), Paragraph(str(inicio["rotas"]) if inicio is not None else "-", body_style),
          Paragraph(f"{c_rotas_ant}", body_style), Paragraph(f"<b>{dados_atual['rotas']}</b>", body_style),
          Paragraph(f"<b>{calcular_variacao_pct(dados_atual['rotas'], c_rotas_ant)}</b>", body_style)],
-        [Paragraph("Cliques Site", body_style), Paragraph("Base", body_style),
+        [Paragraph("Cliques Site", body_style), Paragraph(str(inicio["cliques_site"]) if inicio is not None else "-", body_style),
          Paragraph(f"{c_cliques_ant}", body_style), Paragraph(f"<b>{dados_atual['cliques_site']}</b>", body_style),
          Paragraph(f"<b>{calcular_variacao_pct(dados_atual['cliques_site'], c_cliques_ant)}</b>", body_style)],
     ]
@@ -571,28 +572,24 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
     story.append(t_comp)
     story.append(Spacer(1, 10))
 
-    story.append(Paragraph("<b>2. Monitoramento de Palavras-Chave &amp; Termos de Busca (Google Maps):</b>", section_style))
-    story.append(Spacer(1, 6))
-    kw_table_data = [
-        [Paragraph("<b>Termo / Palavra-Chave de Busca</b>", section_style), Paragraph("<b>Posição Anterior</b>", section_style),
-         Paragraph("<b>Posição Atual</b>", section_style), Paragraph("<b>Impacto / Visibilidade</b>", section_style)],
-        [Paragraph("Serviços em Destaque na Região", body_style), Paragraph("12º lugar", body_style),
-         Paragraph("<b>4º lugar</b>", body_style), Paragraph("<b>Alto Tráfego</b>", body_style)],
-        [Paragraph("Especialista Local Verificado", body_style), Paragraph("8º lugar", body_style),
-         Paragraph("<b>2º lugar</b>", body_style), Paragraph("<b>Top 3 Maps</b>", body_style)],
-        [Paragraph("Tour Virtual &amp; Imersão 360°", body_style), Paragraph("15º lugar", body_style),
-         Paragraph("<b>5º lugar</b>", body_style), Paragraph("<b>Em Ascensão</b>", body_style)],
-    ]
-    t_kw = Table(kw_table_data, colWidths=[180, 100, 100, 140])
-    t_kw.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#F1F5F9")),
-        ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#CBD5E1")),
-        ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#E2E8F0")),
-        ("PADDING", (0, 0), (-1, -1), 5),
-        ("ALIGN", (1, 0), (-1, -1), "CENTER"),
-    ]))
-    story.append(t_kw)
-    story.append(Spacer(1, 10))
+    if df_keywords is not None and len(df_keywords) > 0:
+        story.append(Paragraph("<b>2. Monitoramento de Palavras-Chave &amp; Termos de Busca (Google Maps):</b>", section_style))
+        story.append(Spacer(1, 6))
+        kw_table_data = [[Paragraph("<b>Termo / Palavra-Chave</b>", section_style), Paragraph("<b>Posição Anterior</b>", section_style),
+                          Paragraph("<b>Posição Atual</b>", section_style), Paragraph("<b>Variação</b>", section_style)]]
+        for _, kw in df_keywords.iterrows():
+            kw_table_data.append([Paragraph(str(kw.get("termo", "-")), body_style), Paragraph(str(kw.get("posicao_anterior", "-")), body_style),
+                                  Paragraph(f"<b>{kw.get('posicao_atual', '-')}</b>", body_style), Paragraph(str(kw.get("variacao", "-")), body_style)])
+        t_kw = Table(kw_table_data, colWidths=[200, 100, 100, 112])
+        t_kw.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#F1F5F9")),
+            ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#CBD5E1")),
+            ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#E2E8F0")),
+            ("PADDING", (0, 0), (-1, -1), 5),
+            ("ALIGN", (1, 0), (-1, -1), "CENTER"),
+        ]))
+        story.append(t_kw)
+        story.append(Spacer(1, 10))
 
     if df_historico is not None and len(df_historico) > 1:
         story.append(Paragraph("<b>3. Curva de Evolução Histórica:</b>", section_style))
@@ -617,20 +614,20 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     story = []
     styles = getSampleStyleSheet()
 
-    doc_title_style = ParagraphStyle("DocTitleStyle", parent=styles["Normal"], fontName="Helvetica-Bold", fontSize=16, leading=20, alignment=1, textColor=colors.HexColor("#1E293B"))
-    body_style = ParagraphStyle("DocBody", parent=styles["Normal"], fontName="Helvetica", fontSize=9, leading=11, alignment=4, textColor=colors.HexColor("#1E293B"))
+    doc_title_style = ParagraphStyle("DocTitleStyle", parent=styles["Normal"], fontName="Helvetica-Bold", fontSize=13, leading=16, alignment=1, textColor=colors.HexColor("#1E293B"))
+    body_style = ParagraphStyle("DocBody", parent=styles["Normal"], fontName="Helvetica", fontSize=8, leading=9.6, alignment=4, textColor=colors.HexColor("#1E293B"))
     signature_style = ParagraphStyle("DocSig", parent=styles["Normal"], fontName="Helvetica", fontSize=9, leading=12, alignment=1, textColor=colors.HexColor("#1E293B"))
 
-    story += cabecalho_pdf("<b>CONTRATO DE PRESTAÇÃO DE SERVIÇOS</b>", logo_size=62, col_logo=72)
+    story += cabecalho_pdf("<b>CONTRATO DE PRESTAÇÃO DE SERVIÇOS</b>")
 
     meses_pt = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"]
     hoje = agora_brasil()
     data_extenso = f"Ribeirão Preto - SP, {hoje.day} de {meses_pt[hoje.month - 1]} de {hoje.year}."
 
     story.append(Paragraph(data_extenso, ParagraphStyle("Date", fontName="Helvetica", fontSize=9, alignment=2, textColor=colors.HexColor("#000000"))))
-    story.append(Spacer(1, 27))
+    story.append(Spacer(1, 10))
     story.append(Paragraph("TERMO DE CONTRATAÇÃO DE SERVIÇOS", doc_title_style))
-    story.append(Spacer(1, 27))
+    story.append(Spacer(1, 8))
 
     nome_emp = dados_cliente.get("nome_empresa", "Empresa Cliente")
     resp_emp = dados_cliente.get("responsavel", "Responsável")
@@ -651,7 +648,7 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     A <b>Tour360VR</b> (<b>CONTRATADA</b>) compromete-se a executar os serviços profissionais especializados em otimização, reestruturação técnica, curadoria de pautas e produção de Tour Virtual 360 para o perfil do Google da <b>CONTRATANTE</b>, referentes ao plano contratado <b>{detalhe_plano}</b>.
     """
     story.append(Paragraph(txt_qualificacao, body_style))
-    story.append(Spacer(1, 10))
+    story.append(Spacer(1, 6))
 
     clausulas = """
     <b>CLÁUSULA PRIMEIRA - DO OBJETO:</b> Os serviços serão iniciados em até 5 dias úteis após a confirmação do acordo e o fornecimento de todos os acessos e informações necessárias à gestão do perfil pela <b>CONTRATANTE</b>.<br/><br/>
@@ -667,8 +664,8 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     <b>CLÁUSULA DÉCIMA PRIMEIRA - DO FORO:</b> Fica eleito o foro da Comarca de Ribeirão Preto/SP para dirimir quaisquer controvérsias oriundas deste contrato.<br/><br/>
     <b>CLÁUSULA DÉCIMA SEGUNDA - DA MORA:</b> O atraso no pagamento sujeitará a <b>CONTRATANTE</b> a multa de 2% (dois por cento) e juros de 1% (um por cento) ao mês, calculados sobre o valor em atraso.
     """
-    story.append(Paragraph(clausulas, body_style))
-    story.append(Spacer(1, 42))
+    story.append(Paragraph(clausulas.replace("<br/><br/>", "<br/>"), body_style))
+    story.append(Spacer(1, 16))
 
     t_ass = Table([[
         Paragraph("__________________________________________<br/><b>Rubens Okamoto</b><br/>Tour360VR", signature_style),
@@ -1015,6 +1012,7 @@ elif st.session_state["aba_ativa"] == "auditoria":
                 st.warning(f"⚠️ **Score da Ficha: {score}/100** (Requer otimizações)")
             else:
                 st.error(f"❌ **Score da Ficha: {score}/100** (Crítico / Alto Potencial de Consultoria)")
+            st.caption("Metodologia: score de 0 a 100 calculado sobre os critérios automáticos (fotos -10, horários -10, website -15, avaliações -15, resumo -10). Itens marcados como Verificação manual não pontuam.")
 
         section_title("📋 Auditoria Detalhada de Pontos (9 Critérios)")
         dados_tabela_ui = [
@@ -1097,7 +1095,7 @@ elif st.session_state["aba_ativa"] == "metricas":
                 tm = st.number_input("Ticket Médio (R$)", value=150.0, step=10.0)
             tc = st.number_input("Taxa Conversão (%)", value=10.0, step=1.0) / 100.0
             fat = (chamadas + rotas + cliques) * tc * tm
-            st.info(f"Faturamento Estimado Gerado: R$ {fat:,.2f}")
+            st.info(f"Faturamento estimado: R$ {fat:,.2f}. Fórmula: (chamadas + rotas + cliques) × taxa de conversão × ticket médio. Valor indicativo, não é receita comprovada.")
             if st.form_submit_button("Salvar Métricas"):
                 supabase.table("metricas_mensais").insert({
                     "cliente_id": c_id, "mes_ano": mes_ref, "chamadas": chamadas, "rotas": rotas,
