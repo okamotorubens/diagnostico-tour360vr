@@ -477,6 +477,7 @@ def mudar_etapa(nova_etapa):
 # -----------------------------------------------------------------------------
 def buscar_google_places_api(nicho, cidade, bairro, rua, raio_km, api_key, limite=20):
     termos = []
+    if nome_empresa: termos.append(nome_empresa.strip()) # Prioriza o nome específico se informado
     if nicho: termos.append(nicho.strip())
     if rua: termos.append(rua.strip())
     if bairro: termos.append(bairro.strip())
