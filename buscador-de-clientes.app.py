@@ -36,8 +36,8 @@ LOGO_TOUR = "logo_tour_transparente.png"
 LOGO_OKAMOTO = "logo_okamoto.png"
 URL_SISTEMA_DIAGNOSTICO = "https://tour360vr.streamlit.app/"
 MAX_LEADS = 60
-PONTOS_MAXIMOS_API = 75      # soma dos pesos dos critérios verificáveis pela API
-PAUSA_PAGINACAO = 2          # a Places API exige alguns segundos antes do next_page_token
+PONTOS_MAXIMOS_API = 75     # soma dos pesos dos critérios verificáveis pela API
+PAUSA_PAGINACAO = 2         # a Places API exige alguns segundos antes do next_page_token
 
 page_icon = PILImage.open(LOGO_TOUR) if os.path.exists(LOGO_TOUR) else "🔍"
 st.set_page_config(
@@ -134,7 +134,7 @@ def salvar_lead_db(lead):
             "whatsapp": lead["whatsapp"],
             "website": lead["website"],
             "website_https": lead["website_https"],
-            "instagram": "",
+            "instagram": lead.get("instagram", ""),
             "facebook": "",
             "foto_url": "",
             "nota": lead["nota"],
@@ -232,13 +232,12 @@ def buscar_todas_paginas(query, api_key, limite):
         if not token or len(resultados) >= limite:
             break
             
-        # A API do Google exige uma pequena pausa antes que o next_page_token fique ativo
         time.sleep(PAUSA_PAGINACAO)
-        
-        # ATENÇÃO: O pagetoken deve ser enviado SOZINHO (com a key), sem o parâmetro "query"
+        # O pagetoken deve ser enviado isoladamente na requisição seguinte
         params = {"pagetoken": token, "key": api_key}
         
     return resultados[:limite]
+
 
 def buscar_google_places_api(nicho, cidade, bairro, rua, api_key, limite):
     termos = [t.strip() for t in [nicho, rua, bairro, cidade] if t and t.strip()]
@@ -290,6 +289,7 @@ def buscar_google_places_api(nicho, cidade, bairro, rua, api_key, limite):
             "whatsapp": digitos if len(digitos) >= 10 else "",
             "website": website,
             "website_https": website.startswith("https://") if website else False,
+            "instagram": "",
             "nota": float(nota),
             "total_avaliacoes": int(total),
             "fotos_total": len(fotos),
@@ -575,6 +575,14 @@ elif st.session_state.etapa == 2:
                 with col_acoes:
                     st.markdown("**🌐 Presença e ações**")
                     st.markdown(f"- Website: {lead['website'] if lead.get('website') else '❌ Sem site'}")
+                    
+                    insta_lead = lead.get('instagram', '').strip()
+                    if insta_lead:
+                        insta_user = insta_lead.replace('@', '').strip()
+                        st.markdown(f"- Instagram: [@{insta_user}](https://instagram.com/{insta_user})")
+                    else:
+                        st.markdown("- Instagram: ❌ Não informado")
+
                     st.markdown(
                         f"[Ver no Google Maps](https://www.google.com/maps/search/?api=1&query="
                         f"{urllib.parse.quote(lead['nome'])})"
@@ -690,7 +698,6 @@ elif st.session_state.etapa == 4:
             }
             COR_SCORE = {"alta": "red", "media": "orange", "baixa": "green"}
 
-            # Cores por nicho calculadas sobre a base inteira, para ficarem estáveis entre filtros
             segmentos = sorted(df_map["categoria"].dropna().unique().tolist())
             mapa_cor_nicho = {seg: CORES_PINS[i % len(CORES_PINS)] for i, seg in enumerate(segmentos)}
 
@@ -744,7 +751,6 @@ elif st.session_state.etapa == 4:
                 ).add_to(m)
                 bounds.append([row["latitude"], row["longitude"]])
 
-            # Legenda
             if cat_map == "Todos":
                 itens_leg = [(seg, CORES_HEX[mapa_cor_nicho[seg]]) for seg in segmentos]
                 m.get_root().html.add_child(folium.Element(legenda_html("Legenda por nicho", itens_leg)))
