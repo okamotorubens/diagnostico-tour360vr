@@ -1193,6 +1193,7 @@ elif st.session_state.etapa == 5:
                             "foto_perfil": item.get("profilePicUrl", "https://via.placeholder.com/150"),
                             "origem_concorrente": username_limpo
                         })
+                        
                     if dados_coletados:
                         df_leads = pd.DataFrame(dados_coletados)
                         st.session_state['leads_instagram_coletados'] = df_leads
