@@ -595,7 +595,7 @@ elif st.session_state.etapa == 2:
                         )
                         botao_whatsapp(f"https://wa.me/55{lead['whatsapp']}?text={urllib.parse.quote(msg_wa)}",
                                        "💬 WhatsApp")
-                    else:
+                else:
                         st.caption("Sem WhatsApp identificado na ficha.")
 
 # =============================================================================
