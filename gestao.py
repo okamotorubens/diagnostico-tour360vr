@@ -1,78 +1,91 @@
 import streamlit as st
 import pandas as pd
 import os
-import re
 import time
+import urllib.parse
 from datetime import datetime, date
 from io import BytesIO
-import urllib.parse
+import base64
+
 import qrcode
 from PIL import Image as PILImage
 from supabase import create_client, Client
 import pytz
-import base64
+import requests
 
-# Importações do ReportLab para PDF (Padrão Enterprise Tour360VR)
+# ReportLab (PDF)
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable, Image as RLImage
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 
-# Importação do Matplotlib para geração de gráficos no PDF
+# Matplotlib (gráfico no PDF)
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-import requests
+
+# Design system Tour360VR
+from design.theme import inject_theme
+from design.components import render_hero, section_title, kpi_card, glass_container
+from design.tokens import COLORS
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
 FAVICON_TOUR360 = "https://tour360vr.com.br/favicon.ico"
 
-# Caminhos locais garantidos baseados na estrutura do repositório
-LOGO_LOCAL_PATH = "logo_tour_transparente.png"
-if not os.path.exists(LOGO_LOCAL_PATH) and os.path.exists("assests/logo_tour_transparente.png"):
-    LOGO_LOCAL_PATH = "assests/logo_tour_transparente.png"
-
 st.set_page_config(
     page_title="Gestão Mensal & Estratégia | Tour360VR",
     page_icon=FAVICON_TOUR360,
-    layout="wide"
+    layout="wide",
 )
+inject_theme()
+
+# Caminho da logo (aceita raiz, assets/ ou assests/)
+LOGO_CANDIDATES = [
+    "logo_tour_transparente.png",
+    "assets/logo_tour_transparente.png",
+    "assests/logo_tour_transparente.png",
+]
+LOGO_LOCAL_PATH = next((p for p in LOGO_CANDIDATES if os.path.exists(p)), LOGO_CANDIDATES[0])
 
 # --- FUSO HORÁRIO BRASÍLIA ---
-FUSO_BR = pytz.timezone('America/Sao_Paulo')
+FUSO_BR = pytz.timezone("America/Sao_Paulo")
+
 
 def agora_brasil():
     return datetime.now(FUSO_BR)
 
-# --- FUNÇÃO BASE64 PARA LOGO ---
+
 def obter_base64_logo(caminho):
     if os.path.exists(caminho):
         with open(caminho, "rb") as f:
             return base64.b64encode(f.read()).decode("utf-8")
     return ""
 
-# --- FUNÇÃO PADRÃO DE LOGO NO REPORTLAB (TAMANHO IDEAL) ---
+
+# --- LOGO E RODAPÉ PADRÃO DO PDF ---
 def get_rl_image_pdf(width=45, height=45):
     if os.path.exists(LOGO_LOCAL_PATH):
         try:
             with open(LOGO_LOCAL_PATH, "rb") as f:
                 img_bytes = f.read()
-            return RLImage(BytesIO(img_bytes), width=width, height=height, kind='proportional')
+            return RLImage(BytesIO(img_bytes), width=width, height=height, kind="proportional")
         except Exception:
             pass
     styles = getSampleStyleSheet()
-    return Paragraph("<b>Tour360VR</b>", ParagraphStyle('Fallback', parent=styles['Normal'], fontName='Helvetica-Bold'))
+    return Paragraph("<b>Tour360VR</b>", ParagraphStyle("Fallback", parent=styles["Normal"], fontName="Helvetica-Bold"))
 
-# --- RODAPÉ OFICIAL PADRÃO TOUR360VR ---
+
 def adicionar_rodape_padrao(canvas, doc):
     canvas.saveState()
-    canvas.setStrokeColor(colors.HexColor('#BFDBFE'))
+    canvas.setStrokeColor(colors.HexColor("#BFDBFE"))
     canvas.setLineWidth(0.8)
     canvas.line(40, 32, letter[0] - 40, 32)
-    
     footer_html = '<font color="#334155">tour360vr.com.br &nbsp;|&nbsp; contato@tour360vr.com.br &nbsp;|&nbsp; WhatsApp: (16) 99133-2121</font>'
-    p = Paragraph(footer_html, ParagraphStyle('FooterStyle', fontName='Helvetica', fontSize=8, alignment=1))
+    p = Paragraph(footer_html, ParagraphStyle("FooterStyle", fontName="Helvetica", fontSize=8, alignment=1))
     p.wrap(letter[0] - 80, 20)
     p.drawOn(canvas, 40, 16)
     canvas.restoreState()
+
 
 # --- CONEXÃO COM SUPABASE ---
 @st.cache_resource
@@ -81,74 +94,60 @@ def get_supabase_client() -> Client:
     key = st.secrets["SUPABASE_KEY"]
     return create_client(url, key)
 
+
 supabase = get_supabase_client()
 
-# --- TRATAMENTO DE ROTA DE APROVAÇÃO EXTERNA ---
+# --- ROTA DE APROVAÇÃO EXTERNA ---
 query_params = st.query_params
 if "aprovar" in query_params or st.session_state.get("modo_aprovacao", False):
-    st.markdown("""
-        <style>
-        .block-container { padding-bottom: 2rem !important; }
-        .aprovacao-container { max-width: 750px; margin: 15px auto 20px auto; background: #131A28; padding: 20px; border-radius: 12px; border: 1px solid #2B364A; color: #E0E6ED; font-family: 'Inter', sans-serif; text-align: center; }
-        .aprovacao-title { color: #FFFFFF; font-size: 1.5rem; font-weight: 800; margin-top: 5px; margin-bottom: 3px; }
-        .aprovacao-sub { color: #8E9BAE; font-size: 0.9rem; margin-bottom: 0px; }
-        .welcome-text { font-size: 1.2rem; font-weight: 700; color: #FFFFFF; text-align: center; margin-bottom: 22px; }
-        div.stCheckbox { margin-bottom: -10px !important; }
-        </style>
-    """, unsafe_allow_html=True)
+    logo_b64_aprov = obter_base64_logo(LOGO_LOCAL_PATH)
+    render_hero(
+        logo_b64_aprov,
+        "Página de Aprovação de Pautas",
+        "Planejamento Estratégico de Conteúdo e SEO Local",
+    )
 
-    col_l1, col_l2, col_l3 = st.columns([3.5, 1.5, 3.5])
-    with col_l2:
-        if os.path.exists(LOGO_LOCAL_PATH):
-            img_pil = PILImage.open(LOGO_LOCAL_PATH)
-            st.image(img_pil, use_column_width=True)
-        else:
-            st.markdown("<h2 style='text-align:center; color:#2563EB;'>Tour360VR</h2>", unsafe_allow_html=True)
+    with glass_container():
+        st.markdown("**Bem-vindo à sua página exclusiva de validação e curadoria de pautas.**")
 
-    st.markdown("""
-        <div class="aprovacao-container">
-            <div class="aprovacao-title">Página de Aprovação de Pautas</div>
-            <div class="aprovacao-sub">Planejamento Estratégico de Conteúdo e SEO Local</div>
-        </div>
-    """, unsafe_allow_html=True)
+    section_title("Selecione as Pautas Aprovadas e Informe Ajustes se Necessário:")
 
-    st.markdown('<div class="welcome-text">Bem-vindo à sua página exclusiva de validação e curadoria de pautas.</div>', unsafe_allow_html=True)
-    st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown("### Selecione as Pautas Aprovadas e Informe Ajustes se Necessário:")
-    
     pautas_exemplo = [
         "1. Como escolher o melhor serviço especializado na região com garantia de qualidade.",
         "2. Bastidores da nossa equipe: Nosso compromisso absoluto com a excelência.",
         "3. Conheça nossa estrutura imersiva através do Tour Virtual 360° no Google Maps.",
         "4. Diferenciais técnicos que tornam nosso atendimento referência local.",
         "5. Atendimento rápido, orçamentos e facilidades pelo canal oficial de atendimento.",
-        "6. Perguntas frequentes (FAQ): Tire todas as suas dúvidas diretamente conosco."
+        "6. Perguntas frequentes (FAQ): Tire todas as suas dúvidas diretamente conosco.",
     ]
 
     pautas_status = {}
-    for idx, p in enumerate(pautas_exemplo, 1):
-        pautas_status[p] = st.checkbox(p, value=False, key=f"aprov_pauta_{idx}")
+    with glass_container():
+        for idx, p in enumerate(pautas_exemplo, 1):
+            pautas_status[p] = st.checkbox(p, value=False, key=f"aprov_pauta_{idx}")
 
-    st.markdown("---")
-    st.markdown("### 💬 Solicitar Ajustes ou Alterações:")
-    obs_cliente = st.text_area("Tem alguma observação ou alteração para esta pauta? Digite aqui:", placeholder="Ex: Gostaria de alterar o foco da pauta 2 para...", height=100)
+    section_title("💬 Solicitar Ajustes ou Alterações")
+    obs_cliente = st.text_area(
+        "Tem alguma observação ou alteração para esta pauta? Digite aqui:",
+        placeholder="Ex: Gostaria de alterar o foco da pauta 2 para...",
+        height=100,
+    )
 
-    st.markdown("---")
-    
     pautas_aprovadas_txt = "\n".join([k for k, v in pautas_status.items() if v])
-    msg_envio = f"Olá Rubens!\nAvaliei o planejamento de pautas na plataforma da Tour360VR.\n\nPautas Aprovadas:\n{pautas_aprovadas_txt if pautas_aprovadas_txt else 'Nenhuma pauta marcada diretamente.'}\n\nAjustes Solicitados:\n{obs_cliente if obs_cliente else 'Nenhum ajuste adicional.'}"
+    msg_envio = (
+        "Olá Rubens!\nAvaliei o planejamento de pautas na plataforma da Tour360VR.\n\n"
+        f"Pautas Aprovadas:\n{pautas_aprovadas_txt if pautas_aprovadas_txt else 'Nenhuma pauta marcada diretamente.'}\n\n"
+        f"Ajustes Solicitados:\n{obs_cliente if obs_cliente else 'Nenhum ajuste adicional.'}"
+    )
     link_wsp_final = f"https://wa.me/5516991332121?text={urllib.parse.quote(msg_envio)}"
 
-    st.markdown(f'''
-        <a href="{link_wsp_final}" target="_blank" style="text-decoration:none;">
-            <div style="width:100%; background-color:#16A34A; color:white; border:none; padding:12px; border-radius:8px; font-weight:bold; text-align:center; cursor:pointer; font-size:1rem;">
-                📤 Enviar Aprovação e Ajustes para o WhatsApp do Rubens
-            </div>
-        </a>
-    ''', unsafe_allow_html=True)
-    
-    st.markdown("<br><br>", unsafe_allow_html=True)
-        
+    st.markdown(
+        f'<a href="{link_wsp_final}" target="_blank" style="text-decoration:none;">'
+        f'<div style="width:100%; background:{COLORS["success"]}; color:#0B0E14; padding:12px; '
+        f'border-radius:12px; font-weight:700; text-align:center; font-size:1rem;">'
+        f"📤 Enviar Aprovação e Ajustes para o WhatsApp do Rubens</div></a>",
+        unsafe_allow_html=True,
+    )
     st.stop()
 
 # --- NAVEGAÇÃO SEQUENCIAL DAS ABAS ---
@@ -161,8 +160,9 @@ NOMES_ABAS = {
     "dashboard": "📊 Dashboard ROI",
     "cases": "🏆 Prospecção",
     "pdf": "📄 Relatório & Contrato",
-    "financeiro": "💰 Financeiro MRR"
+    "financeiro": "💰 Financeiro MRR",
 }
+
 
 def gerar_botoes_navegacao_rodape():
     st.markdown("---")
@@ -182,17 +182,20 @@ def gerar_botoes_navegacao_rodape():
                 st.session_state["aba_ativa"] = aba_proxima
                 st.rerun()
 
+
 def obter_clientes_unicos():
     res = supabase.table("clientes").select("id, nome_empresa").order("nome_empresa").execute()
     if res.data:
         return pd.DataFrame(res.data)
     return pd.DataFrame(columns=["id", "nome_empresa"])
 
+
 def obter_dados_cliente_por_id(cliente_id):
     res = supabase.table("clientes").select("*").eq("id", cliente_id).execute()
     if res.data:
         return res.data[0]
     return None
+
 
 def calcular_variacao_pct(atual, anterior):
     if anterior is None or anterior == 0:
@@ -202,20 +205,23 @@ def calcular_variacao_pct(atual, anterior):
         return f"+{diff:.1f}%"
     return f"{diff:.1f}%"
 
-# --- AUDITORIA OFICIAL RIGOROSA COM OS 9 CRITÉRIOS ---
+
+# --- AUDITORIA OFICIAL COM OS 9 CRITÉRIOS ---
 def auditar_ficha_google_rigorosa(query_ou_url):
     api_key = st.secrets.get("GOOGLE_API_KEY", "")
     if not api_key:
         return None, "Chave GOOGLE_API_KEY não configurada nos Secrets do Streamlit."
-    
+
     try:
         termo_busca = query_ou_url
-        if "http" in query_ou_url:
-            if "maps.app.goo.gl" in query_ou_url or "goo.gl" in query_ou_url:
-                resp_redirect = requests.get(query_ou_url, allow_redirects=True, timeout=10)
-                termo_busca = resp_redirect.url
+        if "http" in query_ou_url and ("maps.app.goo.gl" in query_ou_url or "goo.gl" in query_ou_url):
+            resp_redirect = requests.get(query_ou_url, allow_redirects=True, timeout=10)
+            termo_busca = resp_redirect.url
 
-        url_search = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={urllib.parse.quote(termo_busca)}&key={api_key}&language=pt-BR"
+        url_search = (
+            "https://maps.googleapis.com/maps/api/place/textsearch/json"
+            f"?query={urllib.parse.quote(termo_busca)}&key={api_key}&language=pt-BR"
+        )
         resp = requests.get(url_search, timeout=10).json()
 
         if not resp.get("results"):
@@ -224,13 +230,18 @@ def auditar_ficha_google_rigorosa(query_ou_url):
         place = resp["results"][0]
         place_id = place.get("place_id")
         nome = place.get("name", "Empresa Selecionada")
-        
-        url_details = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=name,formatted_address,formatted_phone_number,website,rating,user_ratings_total,photos,opening_hours,business_status,types,editorial_summary,reviews&key={api_key}&language=pt-BR"
+
+        url_details = (
+            "https://maps.googleapis.com/maps/api/place/details/json"
+            f"?place_id={place_id}&fields=name,formatted_address,formatted_phone_number,website,rating,"
+            f"user_ratings_total,photos,opening_hours,business_status,types,editorial_summary,reviews"
+            f"&key={api_key}&language=pt-BR"
+        )
         details = requests.get(url_details, timeout=10).json().get("result", {})
 
         criterios = []
         score = 100
-        
+
         fotos = details.get("photos", [])
         qtd_fotos = len(fotos)
         if qtd_fotos < 5:
@@ -239,7 +250,11 @@ def auditar_ficha_google_rigorosa(query_ou_url):
         else:
             criterios.append(("1. Fotos e Resolução Visual", f"{qtd_fotos} fotos registradas.", "Bom", "Atendido"))
 
-        tem_tour = any("360" in p.get("html_attributions", [str(p)]) for p in fotos)
+        # Corrigido: verifica as atribuições das fotos como texto, não a lista inteira
+        tem_tour = any(
+            "360" in " ".join(p.get("html_attributions", []))
+            for p in fotos
+        )
         if not tem_tour:
             score -= 15
             criterios.append(("2. Tour Virtual 360° Interativo", "Não detectado via API. Necessário inclusão imersiva.", "Baixo", "Pendente"))
@@ -304,52 +319,58 @@ def auditar_ficha_google_rigorosa(query_ou_url):
             "website": website or "Não informado",
             "rating": rating,
             "total_reviews": total_reviews,
-            "criterios": criterios
+            "criterios": criterios,
         }, None
 
     except Exception as e:
         return None, f"Erro ao consultar a Google Places API: {str(e)}"
 
-# --- GERAÇÃO DE PDF DA AUDITORIA (PADRÃO UNIFICADO TOUR360VR) ---
+
+# --- PDF DA AUDITORIA ---
 def gerar_pdf_auditoria(res_aud):
     buffer = BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=40, leftMargin=40, topMargin=15, bottomMargin=55)
     story = []
     styles = getSampleStyleSheet()
 
-    section_style = ParagraphStyle('DocSection', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=13, textColor=colors.HexColor('#1E293B'))
-    body_style = ParagraphStyle('DocBody', parent=styles['Normal'], fontName='Helvetica', fontSize=8, leading=11, textColor=colors.HexColor('#334155'))
-    
+    section_style = ParagraphStyle("DocSection", parent=styles["Normal"], fontName="Helvetica-Bold", fontSize=10, leading=13, textColor=colors.HexColor("#1E293B"))
+    body_style = ParagraphStyle("DocBody", parent=styles["Normal"], fontName="Helvetica", fontSize=8, leading=11, textColor=colors.HexColor("#334155"))
+
     logo_flowable = get_rl_image_pdf(45, 45)
 
-    header_table_data = [
-        [
-            logo_flowable,
-            Paragraph(f"<b>DIAGNÓSTICO DE AUDITORIA GOOGLE MAPS</b><br/><font size=9 color='#2563EB'><b>{res_aud['nome']}</b></font><br/><font size=8 color='#64748B'>Score da Ficha: {res_aud['score']}/100</font>", ParagraphStyle('RHeader', parent=styles['Normal'], alignment=2, fontName='Helvetica'))
-        ]
-    ]
+    header_table_data = [[
+        logo_flowable,
+        Paragraph(
+            f"<b>DIAGNÓSTICO DE AUDITORIA GOOGLE MAPS</b><br/>"
+            f"<font size=9 color='#2563EB'><b>{res_aud['nome']}</b></font><br/>"
+            f"<font size=8 color='#64748B'>Score da Ficha: {res_aud['score']}/100</font>",
+            ParagraphStyle("RHeader", parent=styles["Normal"], alignment=2, fontName="Helvetica"),
+        ),
+    ]]
     t_header = Table(header_table_data, colWidths=[55, 477])
-    t_header.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'MIDDLE'), ('ALIGN', (0,0), (0,0), 'LEFT')]))
+    t_header.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "MIDDLE"), ("ALIGN", (0, 0), (0, 0), "LEFT")]))
     story.append(t_header)
     story.append(Spacer(1, 2))
-    story.append(HRFlowable(width="100%", thickness=1.0, color=colors.HexColor('#BFDBFE'), spaceAfter=10))
-    
+    story.append(HRFlowable(width="100%", thickness=1.0, color=colors.HexColor("#BFDBFE"), spaceAfter=10))
+
     story.append(Paragraph(f"<b>Endereço:</b> {res_aud['endereco']} | <b>Telefone:</b> {res_aud['telefone']}", body_style))
     story.append(Spacer(1, 8))
-    
+
     story.append(Paragraph("<b>Auditoria Detalhada de Pontos (9 Critérios Oficiais):</b>", section_style))
     story.append(Spacer(1, 6))
 
-    t_data = [[Paragraph("<b>Critério</b>", section_style), Paragraph("<b>Diagnóstico Técnico</b>", section_style), Paragraph("<b>Impacto</b>", section_style), Paragraph("<b>Status</b>", section_style)]]
-    for item, estado, impacto, status in res_aud['criterios']:
-        t_data.append([Paragraph(item, body_style), Paragraph(estado, body_style), Paragraph(impacto, body_style), Paragraph(status, body_style)])
+    t_data = [[Paragraph("<b>Critério</b>", section_style), Paragraph("<b>Diagnóstico Técnico</b>", section_style),
+               Paragraph("<b>Impacto</b>", section_style), Paragraph("<b>Status</b>", section_style)]]
+    for item, estado, impacto, status in res_aud["criterios"]:
+        t_data.append([Paragraph(item, body_style), Paragraph(estado, body_style),
+                       Paragraph(impacto, body_style), Paragraph(status, body_style)])
 
     t_aud = Table(t_data, colWidths=[150, 200, 70, 92])
     t_aud.setStyle(TableStyle([
-        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#F1F5F9')),
-        ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#CBD5E1')),
-        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#E2E8F0')),
-        ('PADDING', (0,0), (-1,-1), 4),
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#F1F5F9")),
+        ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#CBD5E1")),
+        ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#E2E8F0")),
+        ("PADDING", (0, 0), (-1, -1), 4),
     ]))
     story.append(t_aud)
     story.append(Spacer(1, 10))
@@ -365,69 +386,83 @@ def gerar_pdf_auditoria(res_aud):
     buffer.seek(0)
     return buffer
 
+
 def gerar_imagem_grafico(df_historico):
     fig, ax = plt.subplots(figsize=(6.5, 2.0), dpi=200)
-    ax.plot(df_historico['mes_ano'], df_historico['chamadas'], marker='o', color='#2563EB', linewidth=2, label='Chamadas')
-    ax.plot(df_historico['mes_ano'], df_historico['rotas'], marker='s', color='#16A34A', linewidth=2, label='Rotas')
-    ax.plot(df_historico['mes_ano'], df_historico['cliques_site'], marker='^', color='#0284C7', linewidth=2, label='Cliques')
-    ax.set_facecolor('#F8FAFC')
-    fig.patch.set_facecolor('#FFFFFF')
-    ax.grid(True, linestyle='--', alpha=0.5, color='#CBD5E1')
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
-    plt.xticks(fontsize=8, color='#334155', fontweight='bold')
-    plt.yticks(fontsize=8, color='#334155')
-    ax.legend(loc='upper left', fontsize=7, frameon=True, facecolor='#FFFFFF', edgecolor='#CBD5E1')
+    ax.plot(df_historico["mes_ano"], df_historico["chamadas"], marker="o", color="#2563EB", linewidth=2, label="Chamadas")
+    ax.plot(df_historico["mes_ano"], df_historico["rotas"], marker="s", color="#16A34A", linewidth=2, label="Rotas")
+    ax.plot(df_historico["mes_ano"], df_historico["cliques_site"], marker="^", color="#0284C7", linewidth=2, label="Cliques")
+    ax.set_facecolor("#F8FAFC")
+    fig.patch.set_facecolor("#FFFFFF")
+    ax.grid(True, linestyle="--", alpha=0.5, color="#CBD5E1")
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    plt.xticks(fontsize=8, color="#334155", fontweight="bold")
+    plt.yticks(fontsize=8, color="#334155")
+    ax.legend(loc="upper left", fontsize=7, frameon=True, facecolor="#FFFFFF", edgecolor="#CBD5E1")
     plt.tight_layout()
     img_buf = BytesIO()
-    plt.savefig(img_buf, format='png', dpi=200, bbox_inches='tight')
+    plt.savefig(img_buf, format="png", dpi=200, bbox_inches="tight")
     plt.close(fig)
     img_buf.seek(0)
     return img_buf
 
+
+# --- PDF DO RELATÓRIO ---
 def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dados_inicio, df_historico=None, df_keywords=None):
     buffer = BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=40, leftMargin=40, topMargin=15, bottomMargin=55)
     story = []
     styles = getSampleStyleSheet()
 
-    section_style = ParagraphStyle('DocSection', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=13, textColor=colors.HexColor('#1E293B'))
-    body_style = ParagraphStyle('DocBody', parent=styles['Normal'], fontName='Helvetica', fontSize=8, leading=11, textColor=colors.HexColor('#334155'))
-    
+    section_style = ParagraphStyle("DocSection", parent=styles["Normal"], fontName="Helvetica-Bold", fontSize=10, leading=13, textColor=colors.HexColor("#1E293B"))
+    body_style = ParagraphStyle("DocBody", parent=styles["Normal"], fontName="Helvetica", fontSize=8, leading=11, textColor=colors.HexColor("#334155"))
+
     logo_flowable = get_rl_image_pdf(45, 45)
 
-    header_table_data = [
-        [
-            logo_flowable,
-            Paragraph(f"<b>RELATÓRIO DE DESEMPENHO</b><br/><font size=9 color='#2563EB'><b>{nome_empresa}</b></font><br/><font size=8 color='#64748B'>Mês de Referência: {mes_ano}</font>", ParagraphStyle('RHeader', parent=styles['Normal'], alignment=2, fontName='Helvetica'))
-        ]
-    ]
+    header_table_data = [[
+        logo_flowable,
+        Paragraph(
+            f"<b>RELATÓRIO DE DESEMPENHO</b><br/>"
+            f"<font size=9 color='#2563EB'><b>{nome_empresa}</b></font><br/>"
+            f"<font size=8 color='#64748B'>Mês de Referência: {mes_ano}</font>",
+            ParagraphStyle("RHeader", parent=styles["Normal"], alignment=2, fontName="Helvetica"),
+        ),
+    ]]
     t_header = Table(header_table_data, colWidths=[55, 477])
-    t_header.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'MIDDLE'), ('ALIGN', (0,0), (0,0), 'LEFT')]))
+    t_header.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "MIDDLE"), ("ALIGN", (0, 0), (0, 0), "LEFT")]))
     story.append(t_header)
     story.append(Spacer(1, 2))
-    story.append(HRFlowable(width="100%", thickness=1.0, color=colors.HexColor('#BFDBFE'), spaceAfter=10))
-    
+    story.append(HRFlowable(width="100%", thickness=1.0, color=colors.HexColor("#BFDBFE"), spaceAfter=10))
+
     story.append(Paragraph("<b>1. Análise Comparativa de Desempenho e Crescimento:</b>", section_style))
     story.append(Spacer(1, 6))
 
-    c_chamadas_ant = dados_anterior['chamadas'] if dados_anterior else 0
-    c_rotas_ant = dados_anterior['rotas'] if dados_anterior else 0
-    c_cliques_ant = dados_anterior['cliques_site'] if dados_anterior else 0
+    c_chamadas_ant = dados_anterior["chamadas"] if dados_anterior else 0
+    c_rotas_ant = dados_anterior["rotas"] if dados_anterior else 0
+    c_cliques_ant = dados_anterior["cliques_site"] if dados_anterior else 0
 
     comp_table_data = [
-        [Paragraph("<b>Indicador</b>", section_style), Paragraph("<b>Início</b>", section_style), Paragraph("<b>Mês Ant.</b>", section_style), Paragraph("<b>Mês Atual</b>", section_style), Paragraph("<b>Evolução</b>", section_style)],
-        [Paragraph("📞 Chamadas Telefónicas", body_style), Paragraph("Base", body_style), Paragraph(f"{c_chamadas_ant}", body_style), Paragraph(f"<b>{dados_atual['chamadas']}</b>", body_style), Paragraph(f"<b>{calcular_variacao_pct(dados_atual['chamadas'], c_chamadas_ant)}</b>", body_style)],
-        [Paragraph("🗺️ Rotas GPS", body_style), Paragraph("Base", body_style), Paragraph(f"{c_rotas_ant}", body_style), Paragraph(f"<b>{dados_atual['rotas']}</b>", body_style), Paragraph(f"<b>{calcular_variacao_pct(dados_atual['rotas'], c_rotas_ant)}</b>", body_style)],
-        [Paragraph("🌐 Cliques Site", body_style), Paragraph("Base", body_style), Paragraph(f"{c_cliques_ant}", body_style), Paragraph(f"<b>{dados_atual['cliques_site']}</b>", body_style), Paragraph(f"<b>{calcular_variacao_pct(dados_atual['cliques_site'], c_cliques_ant)}</b>", body_style)]
+        [Paragraph("<b>Indicador</b>", section_style), Paragraph("<b>Início</b>", section_style),
+         Paragraph("<b>Mês Ant.</b>", section_style), Paragraph("<b>Mês Atual</b>", section_style),
+         Paragraph("<b>Evolução</b>", section_style)],
+        [Paragraph("📞 Chamadas Telefônicas", body_style), Paragraph("Base", body_style),
+         Paragraph(f"{c_chamadas_ant}", body_style), Paragraph(f"<b>{dados_atual['chamadas']}</b>", body_style),
+         Paragraph(f"<b>{calcular_variacao_pct(dados_atual['chamadas'], c_chamadas_ant)}</b>", body_style)],
+        [Paragraph("🗺️ Rotas GPS", body_style), Paragraph("Base", body_style),
+         Paragraph(f"{c_rotas_ant}", body_style), Paragraph(f"<b>{dados_atual['rotas']}</b>", body_style),
+         Paragraph(f"<b>{calcular_variacao_pct(dados_atual['rotas'], c_rotas_ant)}</b>", body_style)],
+        [Paragraph("🌐 Cliques Site", body_style), Paragraph("Base", body_style),
+         Paragraph(f"{c_cliques_ant}", body_style), Paragraph(f"<b>{dados_atual['cliques_site']}</b>", body_style),
+         Paragraph(f"<b>{calcular_variacao_pct(dados_atual['cliques_site'], c_cliques_ant)}</b>", body_style)],
     ]
     t_comp = Table(comp_table_data, colWidths=[160, 90, 90, 90, 100])
     t_comp.setStyle(TableStyle([
-        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#F1F5F9')),
-        ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#CBD5E1')),
-        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#E2E8F0')),
-        ('PADDING', (0,0), (-1,-1), 5),
-        ('ALIGN', (1,0), (-1,-1), 'CENTER'),
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#F1F5F9")),
+        ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#CBD5E1")),
+        ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#E2E8F0")),
+        ("PADDING", (0, 0), (-1, -1), 5),
+        ("ALIGN", (1, 0), (-1, -1), "CENTER"),
     ]))
     story.append(t_comp)
     story.append(Spacer(1, 10))
@@ -435,18 +470,22 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
     story.append(Paragraph("<b>2. Monitoramento de Palavras-Chave & Termos de Busca (Google Maps):</b>", section_style))
     story.append(Spacer(1, 6))
     kw_table_data = [
-        [Paragraph("<b>Termo / Palavra-Chave de Busca</b>", section_style), Paragraph("<b>Posição Anterior</b>", section_style), Paragraph("<b>Posição Atual</b>", section_style), Paragraph("<b>Impacto / Visibilidade</b>", section_style)],
-        [Paragraph("Serviços em Destaque na Região", body_style), Paragraph("12º lugar", body_style), Paragraph("<b>4º lugar</b>", body_style), Paragraph("<b>Alto Tráfego</b>", body_style)],
-        [Paragraph("Especialista Local Verificado", body_style), Paragraph("8º lugar", body_style), Paragraph("<b>2º lugar</b>", body_style), Paragraph("<b>Top 3 Maps</b>", body_style)],
-        [Paragraph("Tour Virtual & Imersão 360°", body_style), Paragraph("15º lugar", body_style), Paragraph("<b>5º lugar</b>", body_style), Paragraph("<b>Em Ascensão</b>", body_style)]
+        [Paragraph("<b>Termo / Palavra-Chave de Busca</b>", section_style), Paragraph("<b>Posição Anterior</b>", section_style),
+         Paragraph("<b>Posição Atual</b>", section_style), Paragraph("<b>Impacto / Visibilidade</b>", section_style)],
+        [Paragraph("Serviços em Destaque na Região", body_style), Paragraph("12º lugar", body_style),
+         Paragraph("<b>4º lugar</b>", body_style), Paragraph("<b>Alto Tráfego</b>", body_style)],
+        [Paragraph("Especialista Local Verificado", body_style), Paragraph("8º lugar", body_style),
+         Paragraph("<b>2º lugar</b>", body_style), Paragraph("<b>Top 3 Maps</b>", body_style)],
+        [Paragraph("Tour Virtual & Imersão 360°", body_style), Paragraph("15º lugar", body_style),
+         Paragraph("<b>5º lugar</b>", body_style), Paragraph("<b>Em Ascensão</b>", body_style)],
     ]
     t_kw = Table(kw_table_data, colWidths=[180, 100, 100, 140])
     t_kw.setStyle(TableStyle([
-        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#F1F5F9')),
-        ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#CBD5E1')),
-        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#E2E8F0')),
-        ('PADDING', (0,0), (-1,-1), 5),
-        ('ALIGN', (1,0), (-1,-1), 'CENTER'),
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#F1F5F9")),
+        ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#CBD5E1")),
+        ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#E2E8F0")),
+        ("PADDING", (0, 0), (-1, -1), 5),
+        ("ALIGN", (1, 0), (-1, -1), "CENTER"),
     ]))
     story.append(t_kw)
     story.append(Spacer(1, 10))
@@ -454,45 +493,47 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
     if df_historico is not None and len(df_historico) > 1:
         story.append(Paragraph("<b>3. Curva de Evolução Histórica:</b>", section_style))
         story.append(Spacer(1, 6))
-        story.append(Image(gerar_imagem_grafico(df_historico), width=520, height=120))
+        # Corrigido: RLImage em vez de Image (NameError)
+        story.append(RLImage(gerar_imagem_grafico(df_historico), width=520, height=120))
         story.append(Spacer(1, 10))
 
     doc.build(story, onFirstPage=adicionar_rodape_padrao, onLaterPages=adicionar_rodape_padrao)
     buffer.seek(0)
     return buffer
 
-# --- GERAÇÃO DE PDF DO CONTRATO (PADRÃO UNIFICADO TOUR360VR) ---
+
+# --- PDF DO CONTRATO ---
 def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duracao=None):
     buffer = BytesIO()
     doc = SimpleDocTemplate(
-        buffer, 
-        pagesize=letter, 
+        buffer,
+        pagesize=letter,
         rightMargin=40, leftMargin=40, topMargin=15, bottomMargin=55,
-        title=f"Contrato Tour360VR - {dados_cliente.get('nome_empresa', 'Cliente')}"
+        title=f"Contrato Tour360VR - {dados_cliente.get('nome_empresa', 'Cliente')}",
     )
     story = []
     styles = getSampleStyleSheet()
 
-    doc_title_style = ParagraphStyle('DocTitleStyle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=16, leading=20, alignment=1, textColor=colors.HexColor('#1E293B'))
-    body_style = ParagraphStyle('DocBody', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=12.5, alignment=4, textColor=colors.HexColor('#1E293B'))
-    signature_style = ParagraphStyle('DocSig', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=12, alignment=1, textColor=colors.HexColor('#1E293B'))
+    doc_title_style = ParagraphStyle("DocTitleStyle", parent=styles["Normal"], fontName="Helvetica-Bold", fontSize=16, leading=20, alignment=1, textColor=colors.HexColor("#1E293B"))
+    body_style = ParagraphStyle("DocBody", parent=styles["Normal"], fontName="Helvetica", fontSize=9, leading=12.5, alignment=4, textColor=colors.HexColor("#1E293B"))
+    signature_style = ParagraphStyle("DocSig", parent=styles["Normal"], fontName="Helvetica", fontSize=9, leading=12, alignment=1, textColor=colors.HexColor("#1E293B"))
 
     logo_flowable = get_rl_image_pdf(45, 45)
 
     header_table = Table([
-        [logo_flowable, Paragraph("<b>CONTRATO DE PRESTAÇÃO DE SERVIÇOS</b>", ParagraphStyle('RH', alignment=2, fontName='Helvetica-Bold', fontSize=11, textColor=colors.HexColor('#2563EB')))]
+        [logo_flowable, Paragraph("<b>CONTRATO DE PRESTAÇÃO DE SERVIÇOS</b>",
+                                  ParagraphStyle("RH", alignment=2, fontName="Helvetica-Bold", fontSize=11, textColor=colors.HexColor("#2563EB")))]
     ], colWidths=[55, 477])
-    header_table.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'MIDDLE'), ('ALIGN', (0,0), (0,0), 'LEFT'), ('ALIGN', (1,0), (1,0), 'RIGHT')]))
+    header_table.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "MIDDLE"), ("ALIGN", (0, 0), (0, 0), "LEFT"), ("ALIGN", (1, 0), (1, 0), "RIGHT")]))
     story.append(header_table)
     story.append(Spacer(1, 2))
-    story.append(HRFlowable(width="100%", thickness=1.0, color=colors.HexColor('#BFDBFE'), spaceAfter=10))
+    story.append(HRFlowable(width="100%", thickness=1.0, color=colors.HexColor("#BFDBFE"), spaceAfter=10))
 
     meses_pt = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"]
     hoje = agora_brasil()
     data_extenso = f"Ribeirão Preto - SP, {hoje.day} de {meses_pt[hoje.month - 1]} de {hoje.year}."
-    
-    story.append(Paragraph(data_extenso, ParagraphStyle('Date', fontName='Helvetica', fontSize=9, alignment=2, textColor=colors.HexColor('#000000'))))
-    
+
+    story.append(Paragraph(data_extenso, ParagraphStyle("Date", fontName="Helvetica", fontSize=9, alignment=2, textColor=colors.HexColor("#000000"))))
     story.append(Spacer(1, 15))
     story.append(Paragraph("TERMO DE CONTRATAÇÃO DE SERVIÇOS", doc_title_style))
     story.append(Spacer(1, 15))
@@ -518,133 +559,75 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     <b>CLÁUSULA PRIMEIRA - DO OBJETO:</b> Os serviços serão iniciados em até 5 dias úteis após a confirmação do acordo e o fornecimento de todos os acessos e informações necessárias à gestão do perfil pela <b>CONTRATANTE</b>.<br/><br/>
     <b>CLÁUSULA SEGUNDA - DAS OBRIGAÇÕES E PAGAMENTO:</b> O não pagamento no prazo pactuado sujeitará o presente contrato à incidência de juros moratórios legais e à suspensão temporária dos serviços pela <b>Tour360VR</b> até a devida regularização financeira.<br/><br/>
     <b>CLÁUSULA TERCEIRA - DOS DIREITOS DE USO E PROPRIEDADE:</b> Os direitos de uso do Tour Virtual 360 e fotos em alta definição serão cedidos em caráter ilimitado à <b>CONTRATANTE</b> para veiculação oficial no Google. A <b>Tour360VR</b> reserva-se o direito de utilizar o material gerado em seu portfólio profissional de divulgação.<br/><br/>
-    <b>CLÁUSULA QUARTA - CONFIDENCIALIDADE E LGPD:</b> As partes comprometem-se a mantener sob sigilo absoluto todas as informações operacionais fornecidas, em estrita conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018).<br/><br/>
+    <b>CLÁUSULA QUARTA - CONFIDENCIALIDADE E LGPD:</b> As partes comprometem-se a manter sob sigilo absoluto todas as informações operacionais fornecidas, em estrita conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018).<br/><br/>
     <b>CLÁUSULA QUINTA - VALIDADE DA PROPOSTA:</b> A presente proposta e condições comerciais possuem validade oficial de 15 (quinze) dias a contar da data de sua emissão.
     """
     story.append(Paragraph(clausulas, body_style))
-    
     story.append(Spacer(1, 30))
 
-    t_ass = Table([
-        [Paragraph("__________________________________________<br/><b>Rubens Okamoto</b><br/>Tour360VR", signature_style),
-         Paragraph(f"__________________________________________<br/><b>{resp_emp}</b><br/>{nome_emp}", signature_style)]
-    ], colWidths=[240, 240])
+    t_ass = Table([[
+        Paragraph("__________________________________________<br/><b>Rubens Okamoto</b><br/>Tour360VR", signature_style),
+        Paragraph(f"__________________________________________<br/><b>{resp_emp}</b><br/>{nome_emp}", signature_style),
+    ]], colWidths=[240, 240])
     story.append(t_ass)
 
     doc.build(story, onFirstPage=adicionar_rodape_padrao, onLaterPages=adicionar_rodape_padrao)
     buffer.seek(0)
     return buffer
 
-# --- CSS PERSONALIZADO ---
-st.markdown("""
-    <style>
-    .block-container { padding-top: 1.0rem !important; padding-bottom: 1.5rem !important; max-width: 94% !important; margin: 0 auto !important; }
-    header[data-testid="stHeader"] { display: none !important; }
-    .stApp { background-color: #0B0E14; color: #E0E6ED; font-family: 'Inter', -apple-system, sans-serif; }
-    
-    .top-card-radar-style { 
-        background-color: #161F30; 
-        border: 1px solid #2B364A; 
-        border-radius: 10px; 
-        padding: 22px 28px !important; 
-        margin-bottom: 8px !important; 
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); 
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 24px;
-        width: 100%;
-    }
-    .radar-logo-img {
-        width: 90px;
-        height: auto;
-        object-fit: contain;
-    }
-    .radar-text-content {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        text-align: left;
-    }
-    .main-title-radar { color: #FFFFFF !important; font-weight: 800; font-size: 1.7rem; margin: 0 !important; }
-    .sub-title-radar { color: #8E9BAE; font-size: 0.92rem; margin: 4px 0 0 0 !important; }
-    
-    div[data-testid="stHorizontalBlock"] { gap: 0.2rem !important; margin-bottom: 6px !important; }
-    hr { margin-top: 4px !important; margin-bottom: 4px !important; border-color: #2B364A !important; }
-    
-    div[data-testid="stColumn"] button { 
-        width: 100% !important; min-height: 42px !important; height: auto !important; 
-        background-color: #1A2130 !important; border: 1.5px solid #455570 !important; 
-        color: #FFFFFF !important; border-radius: 8px !important; font-weight: 700 !important; font-size: 0.68rem !important; 
-        transition: all 0.2s ease-in-out;
-    }
-    div[data-testid="stColumn"] button:hover {
-        background-color: #252D42 !important; border-color: #FFFFFF !important; color: #FFFFFF !important;
-        box-shadow: 0 0 12px rgba(255, 255, 255, 0.8), 0 0 4px rgba(255, 255, 255, 0.9) !important;
-    }
-    div[data-testid="stColumn"] button[kind="primary"] {
-        background-color: #252D42 !important; border-color: #FFFFFF !important;
-        box-shadow: 0 0 14px rgba(255, 255, 255, 0.9), 0 0 6px rgba(255, 255, 255, 1) !important;
-    }
-    div[data-testid="stForm"] { border-color: #2B364A !important; padding: 16px !important; border-radius: 10px !important; background-color: #131A28 !important; }
-    
-    div[data-baseweb="select"] > div {
-        background-color: #131A28 !important;
-        border: 2px solid #FFFFFF !important;
-        border-radius: 8px !important;
-        box-shadow: 0 0 10px rgba(255, 255, 255, 0.25) !important;
-    }
-    div[data-baseweb="select"] > div:hover {
-        border-color: #60A5FA !important;
-        box-shadow: 0 0 14px rgba(96, 165, 250, 0.5) !important;
-    }
-    </style>
-""", unsafe_allow_html=True)
 
+# --- ESTADO INICIAL ---
 if "aba_ativa" not in st.session_state:
     st.session_state["aba_ativa"] = "cadastrar"
 
+# --- CABEÇALHO ---
 logo_base64 = obter_base64_logo(LOGO_LOCAL_PATH)
-img_tag = f'<img src="data:image/png;base64,{logo_base64}" class="radar-logo-img"/>' if logo_base64 else '🏢'
+render_hero(
+    logo_base64,
+    "Gestão Mensal & Estratégia",
+    "Plataforma corporativa de inteligência de Google Maps, auditoria, curadoria e contratos.",
+)
 
-st.markdown(f"""
-    <div class="top-card-radar-style">
-        {img_tag}
-        <div class="radar-text-content">
-            <h1 class="main-title-radar">Gestão Mensal & Estratégia</h1>
-            <p class="sub-title-radar">Plataforma corporativa de inteligência de Google Maps, auditoria, curadoria e contratos.</p>
-        </div>
-    </div>
-""", unsafe_allow_html=True)
-
-st.markdown("<div style='height: 6px;'></div>", unsafe_allow_html=True)
-
-cols = st.columns(8)
-aba_map = [("cadastrar", "⚙️ Ficha"), ("auditoria", "🔍 Auditoria"), ("metricas", "📋 Métricas"), ("ia", "🎯 Curadoria"), ("dashboard", "📊 Dashboard"), ("cases", "🏆 Prospecção"), ("pdf", "📄 Relatório"), ("financeiro", "💰 Financeiro")]
+# --- NAVEGAÇÃO EM ABAS (BOTÕES) ---
+aba_map = [
+    ("cadastrar", "⚙️ Ficha"), ("auditoria", "🔍 Auditoria"), ("metricas", "📋 Métricas"),
+    ("ia", "🎯 Curadoria"), ("dashboard", "📊 Dashboard"), ("cases", "🏆 Prospecção"),
+    ("pdf", "📄 Relatório"), ("financeiro", "💰 Financeiro"),
+]
+cols = st.columns(len(aba_map))
 for i, (key_aba, label_aba) in enumerate(aba_map):
     with cols[i]:
-        if st.button(label_aba, key=f"btn_nav_{key_aba}", type="primary" if st.session_state["aba_ativa"] == key_aba else "secondary"):
+        if st.button(
+            label_aba,
+            key=f"btn_nav_{key_aba}",
+            type="primary" if st.session_state["aba_ativa"] == key_aba else "secondary",
+            use_container_width=True,
+        ):
             st.session_state["aba_ativa"] = key_aba
             st.rerun()
 
+st.markdown("<div style='height: 6px;'></div>", unsafe_allow_html=True)
+
 # ==========================================
-# MÓDULO 1: CADASTRAR / EDITAR FICHA DO CLIENTE
+# MÓDULO 1: FICHA COMERCIAL
 # ==========================================
 if st.session_state["aba_ativa"] == "cadastrar":
-    st.subheader("⚙️ Cadastro e Atualização de Informações Comerciais (GMB)")
+    section_title("⚙️ Cadastro e Atualização de Informações Comerciais (GMB)")
     df_clientes = obter_clientes_unicos()
     modo_edicao = False
     dados_existentes = None
-    
+    c_id = None
+    cliente_menu = None
+
     if not df_clientes.empty:
         opcoes = ["➕ Cadastrar Novo Cliente"] + df_clientes["nome_empresa"].tolist()
         sel_idx = 0
         if "cliente_sel_cad" in st.session_state and st.session_state["cliente_sel_cad"] in opcoes:
             sel_idx = opcoes.index(st.session_state["cliente_sel_cad"])
-        
+
         cliente_menu = st.selectbox("🔍 Pesquisar ou Adicionar um Cliente:", opcoes, index=sel_idx, key="sel_cliente_menu_cad")
         st.session_state["cliente_sel_cad"] = cliente_menu
-        
+
         if cliente_menu != "➕ Cadastrar Novo Cliente":
             modo_edicao = True
             c_id = int(df_clientes[df_clientes["nome_empresa"] == cliente_menu]["id"].values[0])
@@ -659,17 +642,25 @@ if st.session_state["aba_ativa"] == "cadastrar":
 
     st.markdown("<br>", unsafe_allow_html=True)
 
+    def v(campo, padrao=""):
+        """Valor do cliente em modo edição, ou padrão."""
+        if modo_edicao and dados_existentes:
+            valor = dados_existentes.get(campo)
+            return valor if valor is not None else padrao
+        return padrao
+
     with st.form("form_cliente_gmb_completo"):
         sub_t1, sub_t2, sub_t3, sub_t4, sub_t5, sub_t6 = st.tabs([
-            "🏢 Sobre & Ficha", "⏰ Horários & Status", "💵 Contrato & Mídias", "📞 Contato & Redes", "🛠️ Checklist", "📜 Histórico"
+            "🏢 Sobre & Ficha", "⏰ Horários & Status", "💵 Contrato & Mídias",
+            "📞 Contato & Redes", "🛠️ Checklist", "📜 Histórico",
         ])
-        
+
         with sub_t1:
             c1, c_esp1, c2 = st.columns([4.8, 0.4, 4.8])
             with c1:
-                nome_empresa = st.text_input("Nome Comercial da Empresa *", value=dados_existentes["nome_empresa"] if (modo_edicao and dados_existentes) else "")
-                responsavel = st.text_input("Nome do Responsável", value=dados_existentes.get("responsavel", "") if (modo_edicao and dados_existentes) else "")
-                
+                nome_empresa = st.text_input("Nome Comercial da Empresa *", value=v("nome_empresa"))
+                responsavel = st.text_input("Nome do Responsável", value=v("responsavel"))
+
                 val_dt_abertura = date.today()
                 if modo_edicao and dados_existentes and dados_existentes.get("data_abertura"):
                     try:
@@ -678,26 +669,29 @@ if st.session_state["aba_ativa"] == "cadastrar":
                         pass
                 data_abertura_dt = st.date_input("Data de Abertura (Ficha GMB)", value=val_dt_abertura, format="DD/MM/YYYY")
                 data_abertura_str = data_abertura_dt.strftime("%d/%m/%Y")
-                
-                atende_sem_endereco = st.checkbox("Prestador de Serviço sem Endereço Fixo (Área de Cobertura / SAB)", value=dados_existentes.get("atende_sem_endereco", False) if (modo_edicao and dados_existentes) else False)
-                endereco_local = st.text_input("Endereço Físico (ou Fiscal/Origem se sem local)", value=dados_existentes.get("endereco_local", "") if (modo_edicao and dados_existentes) else "")
+
+                atende_sem_endereco = st.checkbox(
+                    "Prestador de Serviço sem Endereço Fixo (Área de Cobertura / SAB)",
+                    value=bool(v("atende_sem_endereco", False)),
+                )
+                endereco_local = st.text_input("Endereço Físico (ou Fiscal/Origem se sem local)", value=v("endereco_local"))
 
             with c2:
-                categoria_principal = st.text_input("Categoria Principal no GMB", value=dados_existentes.get("categoria_principal", "") if (modo_edicao and dados_existentes) else "")
-                categorias_secundarias = st.text_input("Categorias Secundárias", value=dados_existentes.get("categorias_secundarias", "") if (modo_edicao and dados_existentes) else "")
-                area_cobertura = st.text_input("Área de Cobertura / Regiões Atendidas", value=dados_existentes.get("area_cobertura", "") if (modo_edicao and dados_existentes) else "")
-            
-            descricao_empresa = st.text_area("Descrição Oficial da Empresa", value=dados_existentes.get("descricao_empresa", "") if (modo_edicao and dados_existentes) else "", height=90)
+                categoria_principal = st.text_input("Categoria Principal no GMB", value=v("categoria_principal"))
+                categorias_secundarias = st.text_input("Categorias Secundárias", value=v("categorias_secundarias"))
+                area_cobertura = st.text_input("Área de Cobertura / Regiões Atendidas", value=v("area_cobertura"))
+
+            descricao_empresa = st.text_area("Descrição Oficial da Empresa", value=v("descricao_empresa"), height=90)
 
         with sub_t2:
             st.markdown("**Configurações de Reivindicação, Chat e Horários:**")
             c_s1, c_esp2, c_s2 = st.columns([4.8, 0.4, 4.8])
             opts_reivindicada = ["Reivindicada & Verificada", "Não Reivindicada", "Em Processo"]
-            v_reiv = dados_existentes.get("ficha_reivindicada", "") if (modo_edicao and dados_existentes) else ""
+            v_reiv = v("ficha_reivindicada")
             idx_reiv = opts_reivindicada.index(v_reiv) if v_reiv in opts_reivindicada else 0
-            
+
             opts_chat = ["Ativado", "Desativado", "Não Configurado"]
-            chat_val = dados_existentes.get("chat_status", "Ativado") if (modo_edicao and dados_existentes) else "Ativado"
+            chat_val = v("chat_status", "Ativado")
             idx_chat = opts_chat.index(chat_val) if chat_val in opts_chat else 0
 
             with c_s1:
@@ -714,54 +708,66 @@ if st.session_state["aba_ativa"] == "cadastrar":
                 ("Quinta-feira", "horario_qui", "08:00", "18:00", False),
                 ("Sexta-feira", "horario_sex", "08:00", "18:00", False),
                 ("Sábado", "horario_sab", "08:00", "12:00", False),
-                ("Domingo", "horario_dom", "08:00", "12:00", True)
+                ("Domingo", "horario_dom", "08:00", "12:00", True),
             ]
             horarios_coletados = {}
             for dia_nome, campo_db, h_ab_def, h_fe_def, fechado_def in dias_semana:
                 is_f = fechado_def
                 v_ab, v_fe = h_ab_def, h_fe_def
-                if modo_edicao and dados_existentes and dados_existentes.get(campo_db):
-                    txt_h = dados_existentes.get(campo_db)
-                    if txt_h == "Fechado": is_f = True
+                txt_h = v(campo_db)
+                if txt_h:
+                    if txt_h == "Fechado":
+                        is_f = True
                     elif " - " in txt_h:
                         is_f = False
                         parts = txt_h.split(" - ")
-                        if len(parts) == 2: v_ab, v_fe = parts[0], parts[1]
-                
+                        if len(parts) == 2:
+                            v_ab, v_fe = parts[0], parts[1]
+
                 cd, ca, cf, cc = st.columns([2.2, 2.2, 2.2, 1.4])
-                with cd: st.markdown(f"📅 **{dia_nome}**")
-                with ca: ha = st.text_input(f"Abre {dia_nome}", value=v_ab, label_visibility="collapsed", disabled=is_f, key=f"ab_{dia_nome}")
-                with cf: hf = st.text_input(f"Fecha {dia_nome}", value=v_fe, label_visibility="collapsed", disabled=is_f, key=f"fe_{dia_nome}")
-                with cc: fch = st.checkbox("Fechado", value=is_f, key=f"chk_{dia_nome}")
+                with cd:
+                    st.markdown(f"📅 **{dia_nome}**")
+                with ca:
+                    ha = st.text_input(f"Abre {dia_nome}", value=v_ab, label_visibility="collapsed", disabled=is_f, key=f"ab_{dia_nome}")
+                with cf:
+                    hf = st.text_input(f"Fecha {dia_nome}", value=v_fe, label_visibility="collapsed", disabled=is_f, key=f"fe_{dia_nome}")
+                with cc:
+                    fch = st.checkbox("Fechado", value=is_f, key=f"chk_{dia_nome}")
                 horarios_coletados[campo_db] = "Fechado" if fch else f"{ha} - {hf}"
 
         with sub_t3:
-            valor_contrato_mensal = st.number_input("Valor da Mensalidade (R$)", min_value=0.0, step=50.0, value=float(dados_existentes.get("valor_contrato_mensal", 450.0)) if (modo_edicao and dados_existentes) else 450.0)
-            dia_vencimento = st.number_input("Dia Vencimento", min_value=1, max_value=31, step=1, value=int(dados_existentes.get("dia_vencimento", 10)) if (modo_edicao and dados_existentes) else 10)
-            
+            valor_contrato_mensal = st.number_input(
+                "Valor da Mensalidade (R$)", min_value=0.0, step=50.0,
+                value=float(v("valor_contrato_mensal", 450.0)),
+            )
+            dia_vencimento = st.number_input(
+                "Dia Vencimento", min_value=1, max_value=31, step=1,
+                value=int(v("dia_vencimento", 10)),
+            )
+
             opts_status = ["Ativo", "Em Negociação", "Pausado", "Cancelado"]
-            val_status_atual = dados_existentes.get("status_contrato", "Ativo") if (modo_edicao and dados_existentes) else "Ativo"
+            val_status_atual = v("status_contrato", "Ativo")
             idx_st = opts_status.index(val_status_atual) if val_status_atual in opts_status else 0
             status_contrato = st.selectbox("Status do Contrato", opts_status, index=idx_st)
-            
-            link_drive_midias = st.text_input("Link da Pasta de Mídias e Fotos 360° (Google Drive)", value=dados_existentes.get("link_drive_midias", "") if (modo_edicao and dados_existentes) else "")
+
+            link_drive_midias = st.text_input("Link da Pasta de Mídias e Fotos 360° (Google Drive)", value=v("link_drive_midias"))
 
         with sub_t4:
             c1, c_esp3, c2 = st.columns([4.8, 0.4, 4.8])
             with c1:
-                telefone_contato = st.text_input("Telefone Comercial", value=dados_existentes.get("telefone_contato", "") if (modo_edicao and dados_existentes) else "")
-                whatsapp = st.text_input("WhatsApp para Envio (Ex: 16991332121)", value=dados_existentes.get("whatsapp", "") if (modo_edicao and dados_existentes) else "")
-                website = st.text_input("Website / Link Principal", value=dados_existentes.get("website", "") if (modo_edicao and dados_existentes) else "")
+                telefone_contato = st.text_input("Telefone Comercial", value=v("telefone_contato"))
+                whatsapp = st.text_input("WhatsApp para Envio (Ex: 16991332121)", value=v("whatsapp"))
+                website = st.text_input("Website / Link Principal", value=v("website"))
             with c2:
-                instagram = st.text_input("Instagram", value=dados_existentes.get("instagram", "") if (modo_edicao and dados_existentes) else "")
-                facebook = st.text_input("Facebook", value=dados_existentes.get("facebook", "") if (modo_edicao and dados_existentes) else "")
-                linkedin = st.text_input("LinkedIn", value=dados_existentes.get("linkedin", "") if (modo_edicao and dados_existentes) else "")
-                youtube = st.text_input("YouTube", value=dados_existentes.get("youtube", "") if (modo_edicao and dados_existentes) else "")
-                tiktok = st.text_input("TikTok", value=dados_existentes.get("tiktok", "") if (modo_edicao and dados_existentes) else "")
+                instagram = st.text_input("Instagram", value=v("instagram"))
+                facebook = st.text_input("Facebook", value=v("facebook"))
+                linkedin = st.text_input("LinkedIn", value=v("linkedin"))
+                youtube = st.text_input("YouTube", value=v("youtube"))
+                tiktok = st.text_input("TikTok", value=v("tiktok"))
 
         with sub_t5:
             st.markdown("**Checklist de Otimização Identificadas no Diagnóstico:**")
-            pendencias_salvas = dados_existentes.get("pendencias_checklist", "") if (modo_edicao and dados_existentes) else ""
+            pendencias_salvas = v("pendencias_checklist")
             c_p1, c_esp4, c_p2 = st.columns([4.8, 0.4, 4.8])
             with c_p1:
                 p_fita = st.checkbox("📷 Tour Virtual 360° & Fotos", value="Fotos/Tour 360°" in pendencias_salvas)
@@ -774,14 +780,20 @@ if st.session_state["aba_ativa"] == "cadastrar":
                 p_aval = st.checkbox("⭐ Link Curto de Avaliações", value="Link de Avaliações" in pendencias_salvas)
                 p_hor = st.checkbox("⏰ Validar Horários", value="Ajuste de Horários" in pendencias_salvas)
 
-            observacoes_tecnicas = st.text_area("Observações Técnicas Adicionais", value=dados_existentes.get("observacoes_tecnicas", "") if (modo_edicao and dados_existentes) else "", height=90)
+            observacoes_tecnicas = st.text_area("Observações Técnicas Adicionais", value=v("observacoes_tecnicas"), height=90)
 
         with sub_t6:
             if not modo_edicao:
                 st.info("Histórico disponível após o primeiro salvamento.")
             else:
                 st.markdown(f"**Histórico de Registros — {cliente_menu}:**")
-                res_h = supabase.table("historico_ficha").select("data_alteracao, descricao_alteracao").eq("cliente_id", c_id).order("id", desc=True).execute()
+                res_h = (
+                    supabase.table("historico_ficha")
+                    .select("data_alteracao, descricao_alteracao")
+                    .eq("cliente_id", c_id)
+                    .order("id", desc=True)
+                    .execute()
+                )
                 if res_h.data:
                     df_hist = pd.DataFrame(res_h.data)
                     df_hist.columns = ["Data (São Paulo)", "Alteração Realizada"]
@@ -806,15 +818,18 @@ if st.session_state["aba_ativa"] == "cadastrar":
                 "nome_empresa": nome_empresa, "responsavel": responsavel, "data_abertura": data_abertura_str,
                 "ficha_reivindicada": ficha_reivindicada, "chat_status": chat_status,
                 "categoria_principal": categoria_principal, "categorias_secundarias": categorias_secundarias,
-                "area_cobertura": area_cobertura, "atende_sem_endereco": atende_sem_endereco, "descricao_empresa": descricao_empresa, 
-                "valor_contrato_mensal": valor_contrato_mensal, "dia_vencimento": dia_vencimento, "status_contrato": status_contrato, 
-                "link_drive_midias": link_drive_midias, "telefone_contato": telefone_contato, "whatsapp": whatsapp, "website": website, 
+                "area_cobertura": area_cobertura, "atende_sem_endereco": atende_sem_endereco,
+                "descricao_empresa": descricao_empresa,
+                "valor_contrato_mensal": valor_contrato_mensal, "dia_vencimento": dia_vencimento,
+                "status_contrato": status_contrato, "link_drive_midias": link_drive_midias,
+                "telefone_contato": telefone_contato, "whatsapp": whatsapp, "website": website,
                 "instagram": instagram, "facebook": facebook, "linkedin": linkedin, "youtube": youtube, "tiktok": tiktok,
-                "endereco_local": endereco_local, "pendencias_checklist": pendencias_str, "observacoes_tecnicas": observacoes_tecnicas,
+                "endereco_local": endereco_local, "pendencias_checklist": pendencias_str,
+                "observacoes_tecnicas": observacoes_tecnicas,
                 "horario_seg": horarios_coletados["horario_seg"], "horario_ter": horarios_coletados["horario_ter"],
                 "horario_qua": horarios_coletados["horario_qua"], "horario_qui": horarios_coletados["horario_qui"],
                 "horario_sex": horarios_coletados["horario_sex"], "horario_sab": horarios_coletados["horario_sab"],
-                "horario_dom": horarios_coletados["horario_dom"]
+                "horario_dom": horarios_coletados["horario_dom"],
             }
             try:
                 data_hora_sp = agora_brasil().strftime("%Y-%m-%d %H:%M")
@@ -823,7 +838,10 @@ if st.session_state["aba_ativa"] == "cadastrar":
                     res_ins = supabase.table("clientes").insert(payload).execute()
                     if res_ins.data:
                         novo_id = res_ins.data[0]["id"]
-                        supabase.table("historico_ficha").insert({"cliente_id": novo_id, "data_alteracao": data_hora_sp, "descricao_alteracao": "Cadastro Inicial"}).execute()
+                        supabase.table("historico_ficha").insert({
+                            "cliente_id": novo_id, "data_alteracao": data_hora_sp,
+                            "descricao_alteracao": "Cadastro Inicial",
+                        }).execute()
                         msg_container = st.empty()
                         msg_container.success(f"Ficha de '{nome_empresa}' cadastrada com sucesso!")
                         time.sleep(3)
@@ -831,7 +849,10 @@ if st.session_state["aba_ativa"] == "cadastrar":
                         st.rerun()
                 else:
                     supabase.table("clientes").update(payload).eq("id", c_id).execute()
-                    supabase.table("historico_ficha").insert({"cliente_id": c_id, "data_alteracao": data_hora_sp, "descricao_alteracao": "Atualização Cadastral"}).execute()
+                    supabase.table("historico_ficha").insert({
+                        "cliente_id": c_id, "data_alteracao": data_hora_sp,
+                        "descricao_alteracao": "Atualização Cadastral",
+                    }).execute()
                     msg_container = st.empty()
                     msg_container.success(f"Ficha comercial de '{nome_empresa}' atualizada com sucesso!")
                     time.sleep(3)
@@ -842,9 +863,12 @@ if st.session_state["aba_ativa"] == "cadastrar":
 
     if modo_edicao and dados_existentes:
         st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown("### 🖨️ Gerador de QR Code de Avaliações")
+        section_title("🖨️ Gerador de QR Code de Avaliações")
         link_maps_qr = dados_existentes.get("website", "") or "https://g.page/r/..."
-        link_qr_input = st.text_input("Link Direto de Avaliações (Basta colar a URL do Google Maps):", value=link_maps_qr, key="input_url_qr_gerador")
+        link_qr_input = st.text_input(
+            "Link Direto de Avaliações (Basta colar a URL do Google Maps):",
+            value=link_maps_qr, key="input_url_qr_gerador",
+        )
         if link_qr_input:
             qr = qrcode.QRCode(version=1, box_size=10, border=4)
             qr.add_data(link_qr_input)
@@ -854,22 +878,31 @@ if st.session_state["aba_ativa"] == "cadastrar":
             img_qr.save(buf_qr, format="PNG")
             buf_qr.seek(0)
             st.image(buf_qr, width=180, caption=f"QR Code Oficial - {cliente_menu}")
-            st.download_button("📥 Baixar Imagem QR Code", data=buf_qr, file_name=f"QRCode_Avaliacoes_{cliente_menu}.png", mime="image/png", key="btn_download_qr_code_safe")
+            st.download_button(
+                "📥 Baixar Imagem QR Code",
+                data=buf_qr,
+                file_name=f"QRCode_Avaliacoes_{cliente_menu}.png",
+                mime="image/png",
+                key="btn_download_qr_code_safe",
+            )
 
     gerar_botoes_navegacao_rodape()
 
 # ==========================================
-# MÓDULO 2: AUDITORIA EXPRESS
+# MÓDULO 2: AUDITORIA
 # ==========================================
 elif st.session_state["aba_ativa"] == "auditoria":
-    st.subheader("🔍 Auditoria Detalhada de Pontos de Busca (9 Critérios Oficiais)")
-    url_prospect = st.text_input("URL ou Nome da Empresa no Google Maps:", placeholder="https://maps.google.com/... ou Nome da Empresa")
-    
+    section_title("🔍 Auditoria Detalhada de Pontos de Busca (9 Critérios Oficiais)")
+    url_prospect = st.text_input(
+        "URL ou Nome da Empresa no Google Maps:",
+        placeholder="https://maps.google.com/... ou Nome da Empresa",
+    )
+
     if st.button("⚡ Executar Varredura Rigorosa (API Google)"):
         if url_prospect:
             with st.spinner("Analisando os 9 critérios da ficha na Google Places API..."):
                 res_aud, err = auditar_ficha_google_rigorosa(url_prospect)
-            if err: 
+            if err:
                 st.error(err)
             else:
                 st.session_state["ultima_auditoria"] = res_aud
@@ -878,31 +911,26 @@ elif st.session_state["aba_ativa"] == "auditoria":
 
     if "ultima_auditoria" in st.session_state:
         res_aud = st.session_state["ultima_auditoria"]
-        st.markdown(f"### 🏢 Empresa: **{res_aud['nome']}**")
-        st.markdown(f"📍 **Endereço:** {res_aud['endereco']} | 📞 **Tel:** {res_aud['telefone']}")
-        
-        score = res_aud['score']
-        if score >= 75:
-            st.success(f"⭐ **Score da Ficha: {score}/100** (Excelente otimização)")
-        elif score >= 40:
-            st.warning(f"⚠️ **Score da Ficha: {score}/100** (Requer otimizações)")
-        else:
-            st.error(f"❌ **Score da Ficha: {score}/100** (Crítico / Alto Potencial de Consultoria)")
+        with glass_container():
+            st.markdown(f"### 🏢 {res_aud['nome']}")
+            st.markdown(f"📍 **Endereço:** {res_aud['endereco']} | 📞 **Tel:** {res_aud['telefone']}")
 
-        st.markdown("#### 📋 Auditoria Detalhada de Pontos (9 Critérios):")
-        dados_tabela_ui = []
-        for item, estado, impacto, status in res_aud['criterios']:
-            dados_tabela_ui.append({
-                "Critério": item,
-                "Diagnóstico Técnico": estado,
-                "Impacto Local": impacto,
-                "Status": status
-            })
-        
-        df_ui = pd.DataFrame(dados_tabela_ui)
-        st.dataframe(df_ui, use_container_width=True)
+            score = res_aud["score"]
+            if score >= 75:
+                st.success(f"⭐ **Score da Ficha: {score}/100** (Excelente otimização)")
+            elif score >= 40:
+                st.warning(f"⚠️ **Score da Ficha: {score}/100** (Requer otimizações)")
+            else:
+                st.error(f"❌ **Score da Ficha: {score}/100** (Crítico / Alto Potencial de Consultoria)")
 
-        st.markdown("#### 🚀 Plano de Ação & Oportunidades Recomendadas:")
+        section_title("📋 Auditoria Detalhada de Pontos (9 Critérios)")
+        dados_tabela_ui = [
+            {"Critério": item, "Diagnóstico Técnico": estado, "Impacto Local": impacto, "Status": status}
+            for item, estado, impacto, status in res_aud["criterios"]
+        ]
+        st.dataframe(pd.DataFrame(dados_tabela_ui), use_container_width=True)
+
+        section_title("🚀 Plano de Ação & Oportunidades Recomendadas:")
         st.markdown("- **1. Atração Local (SEO):** Correção cadastral e otimização das categorias principal e secundárias.")
         st.markdown("- **2. Segurança & Posicionamento:** Frequência de atualização para sinalizar ao Google que o perfil está ativo.")
         st.markdown("- **3. Confiança & Autoridade:** Publicação do Tour Virtual 360° no Street View e fotos em alta resolução.")
@@ -910,7 +938,7 @@ elif st.session_state["aba_ativa"] == "auditoria":
 
         st.markdown("---")
         col_pdf, col_db = st.columns(2)
-        
+
         with col_pdf:
             pdf_aud_bytes = gerar_pdf_auditoria(res_aud)
             st.download_button(
@@ -918,7 +946,7 @@ elif st.session_state["aba_ativa"] == "auditoria":
                 data=pdf_aud_bytes,
                 file_name=f"Auditoria_{res_aud['nome'].replace(' ', '_')}.pdf",
                 mime="application/pdf",
-                key="btn_download_auditoria_pdf"
+                key="btn_download_auditoria_pdf",
             )
 
         with col_db:
@@ -931,7 +959,7 @@ elif st.session_state["aba_ativa"] == "auditoria":
                         "website": res_aud["website"] if res_aud["website"] != "Não informado" else "",
                         "status_contrato": "Em Negociação",
                         "valor_contrato_mensal": 450.0,
-                        "observacoes_tecnicas": f"Score de Auditoria: {res_aud['score']}/100."
+                        "observacoes_tecnicas": f"Score de Auditoria: {res_aud['score']}/100.",
                     }
                     supabase.table("clientes").insert(payload_novo).execute()
                     st.success(f"Empresa '{res_aud['nome']}' salva com sucesso na aba 'Ficha Comercial'!")
@@ -944,7 +972,7 @@ elif st.session_state["aba_ativa"] == "auditoria":
 # MÓDULO 3: MÉTRICAS & SEO
 # ==========================================
 elif st.session_state["aba_ativa"] == "metricas":
-    st.subheader("📋 Métricas Mensais, SEO Local & ROI")
+    section_title("📋 Métricas Mensais, SEO Local & ROI")
     df_clientes = obter_clientes_unicos()
     if df_clientes.empty:
         st.warning("Cadastre um cliente primeiro.")
@@ -954,17 +982,21 @@ elif st.session_state["aba_ativa"] == "metricas":
         with st.form("form_met"):
             mes_ref = st.date_input("Mês Referência", value=datetime.today()).strftime("%Y-%m")
             c1, c_esp_m, c2 = st.columns([4.8, 0.4, 4.8])
-            with c1: 
+            with c1:
                 chamadas = st.number_input("Chamadas", min_value=0, step=1)
                 rotas = st.number_input("Rotas", min_value=0, step=1)
-            with c2: 
+            with c2:
                 cliques = st.number_input("Cliques Site", min_value=0, step=1)
                 tm = st.number_input("Ticket Médio (R$)", value=150.0, step=10.0)
             tc = st.number_input("Taxa Conversão (%)", value=10.0, step=1.0) / 100.0
             fat = (chamadas + rotas + cliques) * tc * tm
             st.info(f"Faturamento Estimado Gerado: R$ {fat:,.2f}")
             if st.form_submit_button("Salvar Métricas"):
-                supabase.table("metricas_mensais").insert({"cliente_id": c_id, "mes_ano": mes_ref, "chamadas": chamadas, "rotas": rotas, "cliques_site": cliques, "ticket_medio": tm, "taxa_conversao": tc, "faturamento_estimado": fat}).execute()
+                supabase.table("metricas_mensais").insert({
+                    "cliente_id": c_id, "mes_ano": mes_ref, "chamadas": chamadas, "rotas": rotas,
+                    "cliques_site": cliques, "ticket_medio": tm, "taxa_conversao": tc,
+                    "faturamento_estimado": fat,
+                }).execute()
                 msg_container = st.empty()
                 msg_container.success("Métricas salvas!")
                 time.sleep(3)
@@ -973,10 +1005,10 @@ elif st.session_state["aba_ativa"] == "metricas":
     gerar_botoes_navegacao_rodape()
 
 # ==========================================
-# MÓDULO 4: CURATORIA & PAUTAS INTELIGENTES
+# MÓDULO 4: CURADORIA & PAUTAS
 # ==========================================
 elif st.session_state["aba_ativa"] == "ia":
-    st.subheader("🎯 Curadoria Enterprise & Pautas Editáveis")
+    section_title("🎯 Curadoria Enterprise & Pautas Editáveis")
     df_clientes = obter_clientes_unicos()
 
     if df_clientes.empty:
@@ -992,7 +1024,7 @@ elif st.session_state["aba_ativa"] == "ia":
         resp_cliente = dados_c.get("responsavel") or emp
 
         st.markdown(f"**Banco Amplo de Pautas Inteligentes — Segmento: {cat} ({reg})**")
-        
+
         pautas_sugeridas = [
             f"Como escolher o melhor serviço de {cat} em {reg}?",
             f"Bastidores da equipe da {emp}: Nosso compromisso com a excelência.",
@@ -1003,41 +1035,50 @@ elif st.session_state["aba_ativa"] == "ia":
             f"Depoimentos, casos de sucesso e histórias de clientes atendidos pela {emp}.",
             f"Por que o atendimento especializado em {cat} faz toda a diferença para você?",
             f"Novidades, melhorias e atualizações nos serviços prestados pela {emp}.",
-            f"Perguntas frequentes (FAQ): Tire todas as suas dúvidas sobre {cat} com a {emp}."
+            f"Perguntas frequentes (FAQ): Tire todas as suas dúvidas sobre {cat} com a {emp}.",
         ]
 
-        st.markdown("### Selecione e Personalize as Pautas do Mês:")
+        section_title("Selecione e Personalize as Pautas do Mês:")
         pautas_selecionadas = []
-        for idx, p_text in enumerate(pautas_sugeridas, 1):
-            col_chk, col_txt = st.columns([0.1, 0.9])
-            with col_chk:
-                ativo = st.checkbox("", value=(idx <= 6), key=f"chk_pauta_{idx}")
-            with col_txt:
-                p_editada = st.text_input(f"Pauta {idx}", value=p_text, key=f"txt_pauta_{idx}", label_visibility="collapsed")
-            if ativo:
-                pautas_selecionadas.append(p_editada)
+        with glass_container():
+            for idx, p_text in enumerate(pautas_sugeridas, 1):
+                col_chk, col_txt = st.columns([0.1, 0.9])
+                with col_chk:
+                    ativo = st.checkbox(
+                        f"Ativar pauta {idx}",
+                        value=(idx <= 6),
+                        key=f"chk_pauta_{idx}",
+                        label_visibility="collapsed",
+                    )
+                with col_txt:
+                    p_editada = st.text_input(
+                        f"Pauta {idx}", value=p_text, key=f"txt_pauta_{idx}", label_visibility="collapsed",
+                    )
+                if ativo:
+                    pautas_selecionadas.append(p_editada)
 
         st.markdown("---")
-        st.markdown("### 🔗 Link Único de Aprovação Externa (Copie e envie ao cliente)")
+        section_title("🔗 Link Único de Aprovação Externa (Copie e envie ao cliente)")
         link_exemplo = f"https://gestao-mensal-tour360vr.streamlit.app/?aprovar=true&cliente={emp.lower().replace(' ', '-')}"
-        
         st.code(link_exemplo, language=None)
-        st.markdown("<br>", unsafe_allow_html=True)
 
         num_wsp = dados_c.get("whatsapp", "")
         num_limpo = "".join([c for c in str(num_wsp) if c.isdigit()])
-        
-        texto_msg_wsp = f"Olá {resp_cliente}!\nAqui é o Rubens da Tour360VR.\nSegue o link com o planejamento de pautas estratégicas para sua aprovação este mês: {link_exemplo}"
+
+        texto_msg_wsp = (
+            f"Olá {resp_cliente}!\nAqui é o Rubens da Tour360VR.\n"
+            f"Segue o link com o planejamento de pautas estratégicas para sua aprovação este mês: {link_exemplo}"
+        )
         msg_wsp = urllib.parse.quote(texto_msg_wsp)
 
         if num_limpo:
-            st.markdown(f'''
-                <a href="https://wa.me/55{num_limpo}?text={msg_wsp}" target="_blank" style="text-decoration:none;">
-                    <div style="width:100%; background-color:#16A34A; color:white; border:none; padding:12px; border-radius:8px; font-weight:bold; text-align:center; cursor:pointer; font-size:1rem;">
-                        Enviar para o Whatsapp do cliente
-                    </div>
-                </a>
-            ''', unsafe_allow_html=True)
+            st.markdown(
+                f'<a href="https://wa.me/55{num_limpo}?text={msg_wsp}" target="_blank" style="text-decoration:none;">'
+                f'<div style="width:100%; background:{COLORS["success"]}; color:#0B0E14; padding:12px; '
+                f'border-radius:12px; font-weight:700; text-align:center; font-size:1rem;">'
+                f"Enviar para o WhatsApp do cliente</div></a>",
+                unsafe_allow_html=True,
+            )
         else:
             st.warning("Cadastre o WhatsApp do cliente na aba 'Ficha Comercial' para habilitar o botão de envio direto.")
 
@@ -1047,24 +1088,35 @@ elif st.session_state["aba_ativa"] == "ia":
 # MÓDULO 5: DASHBOARD & ROI
 # ==========================================
 elif st.session_state["aba_ativa"] == "dashboard":
-    st.subheader("📊 Dashboard Executivo & ROI")
+    section_title("📊 Dashboard Executivo & ROI")
     df_clientes = obter_clientes_unicos()
     if not df_clientes.empty:
         c_dash = st.selectbox("Cliente:", df_clientes["nome_empresa"].tolist())
         c_id_d = int(df_clientes[df_clientes["nome_empresa"] == c_dash]["id"].values[0])
-        res_m = supabase.table("metricas_mensais").select("*").eq("cliente_id", c_id_d).execute()
+        res_m = supabase.table("metricas_mensais").select("*").eq("cliente_id", c_id_d).order("mes_ano").execute()
         if res_m.data:
             df_m = pd.DataFrame(res_m.data)
-            st.line_chart(df_m.set_index("mes_ano")[["chamadas", "rotas", "cliques_site"]])
+
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                kpi_card("Chamadas (total)", f"{int(df_m['chamadas'].sum()):,}".replace(",", "."), accent=COLORS["accent"])
+            with col2:
+                kpi_card("Rotas GPS (total)", f"{int(df_m['rotas'].sum()):,}".replace(",", "."), accent=COLORS["success"])
+            with col3:
+                kpi_card("Cliques no Site (total)", f"{int(df_m['cliques_site'].sum()):,}".replace(",", "."), accent=COLORS["accent_2"])
+
+            st.markdown("<br>", unsafe_allow_html=True)
+            with glass_container():
+                st.line_chart(df_m.set_index("mes_ano")[["chamadas", "rotas", "cliques_site"]])
         else:
             st.info("Sem métricas cadastradas.")
     gerar_botoes_navegacao_rodape()
 
 # ==========================================
-# MÓDULO 6: PROSPECÇÃO (CASES)
+# MÓDULO 6: PROSPECÇÃO
 # ==========================================
 elif st.session_state["aba_ativa"] == "cases":
-    st.subheader("🏆 Gerador de Relatório Comercial de Prospecção")
+    section_title("🏆 Gerador de Relatório Comercial de Prospecção")
     st.info("Módulo ativo com banco consolidado de cases da agência.")
     gerar_botoes_navegacao_rodape()
 
@@ -1072,7 +1124,7 @@ elif st.session_state["aba_ativa"] == "cases":
 # MÓDULO 7: RELATÓRIO PDF & CONTRATO
 # ==========================================
 elif st.session_state["aba_ativa"] == "pdf":
-    st.subheader("📄 Emissão de Relatório Executivo & Minuta de Contrato em PDF")
+    section_title("📄 Emissão de Relatório Executivo & Minuta de Contrato em PDF")
     df_clientes = obter_clientes_unicos()
     if df_clientes.empty:
         st.warning("Cadastre um cliente primeiro.")
@@ -1091,26 +1143,43 @@ elif st.session_state["aba_ativa"] == "pdf":
                 idx = df_m[df_m["mes_ano"] == mes_sel].index[0]
                 d_atual = df_m.iloc[idx].to_dict()
                 d_ant = df_m.iloc[idx - 1].to_dict() if idx - 1 >= 0 else None
-                
-                pdf_bytes = gerar_pdf_relatorio(c_pdf, mes_sel, d_atual, d_ant, {'qtd_avaliacoes_inicio': 0, 'nota_media_inicio': 5.0, 'qtd_fotos_inicio': 0}, df_m.iloc[:idx+1])
-                st.download_button("📥 Baixar Relatório Executivo PDF", data=pdf_bytes, file_name=f"Relatorio_{c_pdf}_{mes_sel}.pdf", mime="application/pdf")
+
+                pdf_bytes = gerar_pdf_relatorio(
+                    c_pdf, mes_sel, d_atual, d_ant,
+                    {"qtd_avaliacoes_inicio": 0, "nota_media_inicio": 5.0, "qtd_fotos_inicio": 0},
+                    df_m.iloc[: idx + 1],
+                )
+                st.download_button(
+                    "📥 Baixar Relatório Executivo PDF",
+                    data=pdf_bytes,
+                    file_name=f"Relatorio_{c_pdf}_{mes_sel}.pdf",
+                    mime="application/pdf",
+                )
+            else:
+                st.info("Sem métricas cadastradas para gerar o relatório.")
 
         with tab_pdf2:
             st.markdown("**Gerador Automático da Minuta de Contrato Jurídico:**")
-            
+
             plano_selecionado = st.selectbox("Selecione o Plano:", ["Plano Start", "Plano Pro", "Gestão Mensal"])
-            
+
             meses_gestao = None
             if "Gestão Mensal" in plano_selecionado:
                 meses_gestao = st.slider("Duração do Contrato (Meses):", min_value=3, max_value=12, value=6, step=1)
 
-            valor_personalizado = st.number_input("Valor do Plano (R$)", min_value=0.0, step=50.0, value=(500.0 if "Start" in plano_selecionado else (1500.0 if "Pro" in plano_selecionado else 600.0)))
-            
+            valor_padrao = 500.0 if "Start" in plano_selecionado else (1500.0 if "Pro" in plano_selecionado else 600.0)
+            valor_personalizado = st.number_input("Valor do Plano (R$)", min_value=0.0, step=50.0, value=valor_padrao)
+
             if st.button("Gerar Contrato Oficial em PDF"):
                 pdf_contrato = gerar_pdf_contrato(dados_cli, plano_selecionado, valor_personalizado, meses_gestao)
                 data_str_file = agora_brasil().strftime("%Y-%m-%d")
                 nome_arquivo_pdf = f"Contrato Tour360VR - {c_pdf} - {data_str_file}.pdf"
-                st.download_button("📥 Baixar Contrato Oficial PDF", data=pdf_contrato, file_name=nome_arquivo_pdf, mime="application/pdf")
+                st.download_button(
+                    "📥 Baixar Contrato Oficial PDF",
+                    data=pdf_contrato,
+                    file_name=nome_arquivo_pdf,
+                    mime="application/pdf",
+                )
 
     gerar_botoes_navegacao_rodape()
 
@@ -1118,16 +1187,26 @@ elif st.session_state["aba_ativa"] == "pdf":
 # MÓDULO 8: FINANCEIRO & MRR
 # ==========================================
 elif st.session_state["aba_ativa"] == "financeiro":
-    st.subheader("💰 Gestão Financeira MRR & Alertas")
+    section_title("💰 Gestão Financeira MRR & Alertas")
     res_cli = supabase.table("clientes").select("*").execute()
     df_c = pd.DataFrame(res_cli.data) if res_cli.data else pd.DataFrame()
     if not df_c.empty:
-        mrr = df_c[df_c["status_contrato"] == "Ativo"]["valor_contrato_mensal"].sum()
-        st.metric("💵 MRR Total da Agência", f"R$ {mrr:,.2f}")
-        
-        st.markdown("### ⚠️ Alertas de Pagamento & Atividade Recorrente")
+        ativos = df_c[df_c["status_contrato"] == "Ativo"]
+        mrr = ativos["valor_contrato_mensal"].sum()
+        qtd_ativos = len(ativos)
+        qtd_pend = int((df_c["status_contrato"] == "Pausado").sum())
+
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            kpi_card("MRR Total da Agência", f"R$ {mrr:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."), accent=COLORS["success"])
+        with col2:
+            kpi_card("Clientes Ativos", str(qtd_ativos), accent=COLORS["accent"])
+        with col3:
+            kpi_card("Contratos Pausados", str(qtd_pend), accent=COLORS["warning"])
+
+        st.markdown("<br>", unsafe_allow_html=True)
         st.info("💡 Dica: Verifique clientes com vencimentos próximos para manter o fluxo de caixa do MRR em dia.")
-        
-        st.markdown("**Lista de Clientes e Contratos Recorrentes:**")
+
+        section_title("Lista de Clientes e Contratos Recorrentes")
         st.dataframe(df_c, use_container_width=True, height=650)
     gerar_botoes_navegacao_rodape()
