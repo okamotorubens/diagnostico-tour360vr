@@ -15,8 +15,9 @@ import streamlit.components.v1 as components
 from streamlit_folium import st_folium
 import folium
 
-# Conexão NUVEM Supabase
+# Conexão NUVEM Supabase e Cliente Apify
 from supabase import create_client, Client
+from apify_client import ApifyClient
 
 # ReportLab para geração do PDF do Panorama
 from reportlab.lib.pagesizes import letter
@@ -202,19 +203,19 @@ def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
     texto_table.wrapOn(canvas, 540, 60)
     texto_table.drawOn(canvas, 36, 730)
 
-    # 3. LINHA DIVISÓRIA HORIZONTAL DO CABEÇALHO (Fina: 0.5)
+    # 3. LINHA DIVISÓRIA HORIZONTAL DO CABEÇALHO
     canvas.setStrokeColor(colors.HexColor('#cbd5e1'))
     canvas.setLineWidth(0.5)
     canvas.line(36, 706, 576, 706)
     
-    # 4. RODAPÉ FIXO COM LINHA DIVISÓRIA FINA (Fina: 0.5)
+    # 4. RODAPÉ FIXO COM LINHA DIVISÓRIA FINA
     canvas.setLineWidth(0.5)
     canvas.line(36, 42, 576, 42)
     
     canvas.setFont('Helvetica', 8.5)
     canvas.setFillColor(colors.HexColor('#0f172a'))
     
-    texto_rodape = "tour360vr.com.br   |   contato@okamotomidiasvisuais.com.br   |   (16) 99133-2121"
+    texto_rodape = "tour360vr.com.br    |    contato@okamotomidiasvisuais.com.br    |    (16) 99133-2121"
     canvas.drawCentredString(306, 25, texto_rodape)
 
     try:
@@ -655,12 +656,12 @@ def gerar_csv_excel_formatado(dados_leads):
     return output.getvalue().encode('utf-8')
 
 # -----------------------------------------------------------------------------
-# BARRA LATERAL
+# BARRA LATERAL (SIDEBAR)
 # -----------------------------------------------------------------------------
 base_leads = carregar_todos_leads_db()
 
 with st.sidebar:
-    st.markdown('<div class="sidebar-title">Radar Comercial</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sidebar-title">Menu Radar Comercial</div>', unsafe_allow_html=True)
     
     # Logo Tour360VR
     if os.path.exists("logo_tour_transparente.png"):
@@ -675,17 +676,20 @@ with st.sidebar:
     st.divider()
 
     st.markdown("### 📌 Módulos")
-    if st.button("1. Buscador de Clientes", use_container_width=True, type="primary" if st.session_state.etapa == 1 else "secondary"):
+    if st.button("🎯 Radar de Leads", use_container_width=True, type="primary" if st.session_state.etapa == 1 else "secondary"):
         mudar_etapa(1)
         
-    if st.button("2. Base & CRM de Leads", use_container_width=True, type="primary" if st.session_state.etapa == 2 else "secondary"):
+    if st.button("📊 CRM de Prospecção", use_container_width=True, type="primary" if st.session_state.etapa == 2 else "secondary"):
         mudar_etapa(2)
 
-    if st.button("3. Panorama de Nicho (Estatísticas)", use_container_width=True, type="primary" if st.session_state.etapa == 3 else "secondary"):
+    if st.button("📈 Panorama de Nicho", use_container_width=True, type="primary" if st.session_state.etapa == 3 else "secondary"):
         mudar_etapa(3)
 
-    if st.button("4. Mapa de Prospecção", use_container_width=True, type="primary" if st.session_state.etapa == 4 else "secondary"):
+    if st.button("🗺️ Mapa de Prospecção", use_container_width=True, type="primary" if st.session_state.etapa == 4 else "secondary"):
         mudar_etapa(4)
+
+    if st.button("📁 Extrator Seguidores Insta", use_container_width=True, type="primary" if st.session_state.etapa == 5 else "secondary"):
+        mudar_etapa(5)
 
     st.divider()
     st.caption(f"☁️ Supabase Nuvem: **{len(base_leads)} leads salvos**")
@@ -696,12 +700,12 @@ with st.sidebar:
             mudar_etapa(1)
 
 # -----------------------------------------------------------------------------
-# ETAPA 1: BUSCADOR DE CLIENTES
+# ETAPA 1: BUSCADOR DE CLIENTES (RADAR DE LEADS)
 # -----------------------------------------------------------------------------
 if st.session_state.etapa == 1:
     st.markdown("""
         <div class="main-header">
-            <h1 class="main-title">🔎 Radar e Mineração de Mercado Local</h1>
+            <h1 class="main-title">🎯 Radar e Mineração de Mercado Local</h1>
             <div class="main-subtitle">Varredura de perfis no Google Maps por Nicho, Cidade, Bairro, Rua e Raio de Distância (km).</div>
         </div>
     """, unsafe_allow_html=True)
@@ -847,7 +851,7 @@ elif st.session_state.etapa == 2:
 
             with st.expander(f"✉️ **Uso Interno — Scripts de Vendas e Abordagem ({lead['nome']})**"):
                 st.markdown("**1) Abordagem Inicial — WhatsApp**")
-                script_wa = script_wa = f"""Olá! Tudo bem?
+                script_wa = f"""Olá! Tudo bem?
 Meu nome é Rubens Okamoto, da Okamoto Mídias Visuais e do Tour360VR.
 Estava analisando a presença da {lead['nome']} no Google, e identifiquei 3 pontos onde a visibilidade do espaço de vocês pode ser bastante ampliada em relação aos concorrentes da região.
 Montei um relatório curto de diagnóstico em PDF. Posso te enviar por aqui para você dar uma olhada?"""
@@ -1071,7 +1075,6 @@ elif st.session_state.etapa == 4:
 
             m = folium.Map(location=[lat_centro, lon_centro], zoom_start=13, tiles="OpenStreetMap")
 
-            # Cálculo automático do enquadramento dos PINS no mapa
             bounds = []
             for _, row in df_mapa_filtrado.iterrows():
                 cor_pin = mapa_cores_seg.get(row['categoria'], 'red') if cat_sel_mapa == "Todos os Nichos" else 'red'
@@ -1106,3 +1109,123 @@ elif st.session_state.etapa == 4:
             st_folium(m, width="100%", height=700)
         else:
             st.warning("Nenhum registro encontrado para os filtros selecionados.")
+
+# -----------------------------------------------------------------------------
+# ETAPA 5: EXTRATOR DE SEGUIDORES DO INSTAGRAM (APIFY)
+# -----------------------------------------------------------------------------
+elif st.session_state.etapa == 5:
+    st.markdown("""
+        <div class="main-header">
+            <h1 class="main-title">📁 Extrator de Leads de Seguidores do Instagram</h1>
+            <div class="main-subtitle">Insira o link de uma conta concorrente para raspar todos os seguidores, mapear contatos comerciais de WhatsApp e salvar no Supabase.</div>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    # Puxa o Token com segurança das Secrets do Streamlit
+    APIFY_TOKEN = st.secrets.get("credentials", {}).get("APIFY_TOKEN") or st.secrets.get("APIFY_TOKEN", os.getenv("APIFY_TOKEN"))
+    
+    if not APIFY_TOKEN:
+        st.error("⚠️ Token do Apify não configurado nas Secrets do Streamlit Cloud.")
+        st.stop()
+        
+    url_input = st.text_input("Cole o link do perfil do Instagram alvo (Ex: https://instagram.com/reserva ou @reserva):")
+    limite_leads = st.slider("Quantidade de seguidores a buscar por execução:", min_value=10, max_value=200, value=50, step=10)
+    
+    if st.button("🔍 Iniciar Captura de Leads", type="primary"):
+        if not url_input:
+            st.error("Por favor, informe a URL ou @ de um perfil do Instagram ativo.")
+        else:
+            username_limpo = url_input.strip().split("instagram.com/")[-1].replace("@", "").replace("/", "").split("?")[0]
+            
+            with st.spinner(f"O robô do Apify está varrendo os seguidores de '@{username_limpo}' de forma anônima e segura..."):
+                try:
+                    client = ApifyClient(APIFY_TOKEN)
+                    run_input = {
+                        "usernames": [username_limpo],
+                        "resultsLimit": limite_leads,
+                    }
+                    
+                    run = client.actor("apify/instagram-followers-scraper").call(run_input=run_input)
+                    dados_coletados = []
+                    
+                    for item in client.dataset(run["defaultDatasetId"]).iterate_items():
+                        bio = item.get("biography", "")
+                        link_ext = item.get("externalUrl", "")
+                        
+                        # Captura de WhatsApp na bio ou link externo
+                        whats = "Não encontrado"
+                        wa_match = re.search(r'(wa\.me|api\.whatsapp\.com/send\?phone=)(\d+)', link_ext or "")
+                        if wa_match: 
+                            whats = wa_match.group(2)
+                        else:
+                            fone_match = re.search(r'(?:\+?55\s?)?(?:\(?\d{2}\)?\s?)?(?:9\s?\d{4}[-\s]?\d{4}|\d{4}[-\s]?\d{4})', bio or "")
+                            if fone_match:
+                                num_limpo = re.sub(r'\D', '', fone_match.group(0))
+                                whats = "55" + num_limpo if len(num_limpo) == 11 and not num_limpo.startswith("55") else num_limpo
+                        
+                        dados_coletados.append({
+                            "username": item.get("username"),
+                            "nome_completo": item.get("fullName", "Sem nome informado"),
+                            "instagram_id": str(item.get("id")),
+                            "biografia": bio,
+                            "link_bio": link_ext,
+                            "whatsapp": whats,
+                            "foto_perfil": item.get("profilePicUrl", "https://via.placeholder.com/150"),
+                            "origem_concorrente": username_limpo
+                        })
+                        
+                    if dados_coletados:
+                        df_leads = pd.DataFrame(dados_coletados)
+                        st.session_state['leads_instagram_coletados'] = df_leads
+                        
+                        # Gravação dos dados na tabela 'leads_instagram' do Supabase
+                        if supabase:
+                            with st.spinner("Sincronizando registros extraídos com o seu banco de dados Supabase..."):
+                                try:
+                                    payload = df_leads.to_dict(orient="records")
+                                    supabase.table("leads_instagram").upsert(payload, on_conflict="instagram_id").execute()
+                                    st.success("✨ Leads minerados salvos com sucesso na tabela 'leads_instagram'!")
+                                except Exception as db_err:
+                                    st.warning(f"Leads exibidos com sucesso, mas falhou o push para o Supabase: {db_err}")
+                    else:
+                        st.warning("Nenhum seguidor retornado pela API. Certifique-se de que a conta não é privada.")
+                except Exception as e:
+                    st.error(f"Erro operacional durante o processo de scraping: {e}")
+
+    # Apresentação do Painel Comercial Visual
+    if 'leads_instagram_coletados' in st.session_state:
+        df_atual = st.session_state['leads_instagram_coletados']
+        
+        st.divider()
+        st.subheader(f"📊 Leads Estruturados: {len(df_atual)} Registros Ativos")
+        
+        # Buffer de memória para geração da planilha Excel via openpyxl
+        buffer = io.BytesIO()
+        with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
+            df_atual.to_excel(writer, index=False, sheet_name='Leads Instagram')
+        
+        st.download_button(
+            label="📥 Baixar Planilha Pronta para o Excel (.xlsx)",
+            data=buffer.getvalue(),
+            file_name=f"leads_seguidores_{df_atual['origem_concorrente'].iloc[0]}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+        
+        st.write("### 👥 Gestão Visual e Abordagem Direta")
+        for index, row in df_atual.iterrows():
+            with st.container(border=True):
+                col_foto, col_info, col_acoes = st.columns([1.5, 5, 3.5])
+                with col_foto:
+                    st.image(row['foto_perfil'], width=85)
+                with col_info:
+                    st.markdown(f"**{row['nome_completo']}** ([@{row['username']}](https://instagram.com/{row['username']}))")
+                    if row['biografia']: st.caption(f"📝 *Bio:* {row['biografia']}")
+                    if row['link_bio']: st.caption(f"🔗 *Link na Bio:* [{row['link_bio']}]({row['link_bio']})")
+                with col_acoes:
+                    if row['whatsapp'] != "Não encontrado":
+                        texto_msg = f"Olá {row['nome_completo']}, tudo bem? Conheci seu perfil no Instagram..."
+                        link_whats = f"https://wa.me/{row['whatsapp']}?text={urllib.parse.quote(texto_msg)}"
+                        st.link_button(f"🟢 Chamar no WhatsApp ({row['whatsapp']})", link_whats, use_container_width=True)
+                    else:
+                        st.caption("📱 Sem WhatsApp ativo")
+                    st.link_button("📩 Enviar Direct", f"https://instagram.com/direct/t/{row['instagram_id']}", use_container_width=True)
