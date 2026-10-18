@@ -15,9 +15,8 @@ import streamlit.components.v1 as components
 from streamlit_folium import st_folium
 import folium
 
-# Conexão NUVEM Supabase e Cliente Apify
+# Conexão NUVEM Supabase
 from supabase import create_client, Client
-from apify_client import ApifyClient
 
 # ReportLab para geração do PDF do Panorama
 from reportlab.lib.pagesizes import letter
@@ -144,6 +143,15 @@ def carregar_todos_leads_db():
         return res.data or []
     except Exception as e:
         st.error(f"Erro ao carregar dados do Supabase: {str(e)}")
+        return []
+
+def carregar_leads_instagram_db():
+    if not supabase:
+        return []
+    try:
+        res = supabase.table("leads_instagram").select("*").order("id", desc=True).execute()
+        return res.data or []
+    except Exception as e:
         return []
 
 def limpar_banco_dados():
@@ -648,6 +656,7 @@ def gerar_csv_excel_formatado(dados_leads):
 # BARRA LATERAL (SIDEBAR)
 # -----------------------------------------------------------------------------
 base_leads = carregar_todos_leads_db()
+base_leads_insta = carregar_leads_instagram_db()
 
 with st.sidebar:
     st.markdown('<div class="sidebar-title">Menu Radar Comercial</div>', unsafe_allow_html=True)
@@ -675,14 +684,14 @@ with st.sidebar:
     if st.button("🗺️ Mapa de Prospecção", use_container_width=True, type="primary" if st.session_state.etapa == 4 else "secondary"):
         mudar_etapa(4)
 
-    if st.button("📁 Extrator Seguidores Insta", use_container_width=True, type="primary" if st.session_state.etapa == 5 else "secondary"):
+    if st.button("📁 Gestão Leads Instagram", use_container_width=True, type="primary" if st.session_state.etapa == 5 else "secondary"):
         mudar_etapa(5)
 
     st.divider()
-    st.caption(f"☁️ Supabase Nuvem: **{len(base_leads)} leads salvos**")
+    st.caption(f"☁️ Google Leads: **{len(base_leads)}** | 📱 Insta Leads: **{len(base_leads_insta)}**")
 
     if len(base_leads) > 0:
-        if st.button("🗑️ Limpar Banco de Dados", use_container_width=True):
+        if st.button("🗑️ Limpar Banco Google", use_container_width=True):
             limpar_banco_dados()
             mudar_etapa(1)
 
@@ -1038,139 +1047,97 @@ elif st.session_state.etapa == 4:
             st_folium(m, width="100%", height=700)
 
 # -----------------------------------------------------------------------------
-# ETAPA 5: EXTRATOR DE LEADS COMERCIAIS DO INSTAGRAM (APIFY)
+# ETAPA 5: GESTÃO E CADASTRO MANUAL INTELIGENTE DE LEADS DO INSTAGRAM
 # -----------------------------------------------------------------------------
 elif st.session_state.etapa == 5:
     st.markdown("""
         <div class="main-header">
-            <h1 class="main-title">📁 Extrator de Leads Comerciais do Instagram</h1>
-            <div class="main-subtitle">Busque perfis de empresas locais por Hashtag ou Localização para mapear contatos comerciais e salvar no Supabase.</div>
+            <h1 class="main-title">📁 Cadastro e Gestão Inteligente de Leads do Instagram</h1>
+            <div class="main-subtitle">Adicione perfis do Instagram manualmente ou cole dados para gerar contatos de WhatsApp, links diretos e salvar no Supabase.</div>
         </div>
     """, unsafe_allow_html=True)
     
-    # Puxa o Token com segurança das Secrets do Streamlit
-    APIFY_TOKEN = st.secrets.get("credentials", {}).get("APIFY_TOKEN") or st.secrets.get("APIFY_TOKEN", os.getenv("APIFY_TOKEN"))
-    
-    if not APIFY_TOKEN:
-        st.error("⚠️ Token do Apify não configurado nas Secrets do Streamlit Cloud.")
-        st.stop()
+    with st.form("form_cad_insta", clear_on_submit=True):
+        st.markdown("### ➕ Cadastrar Novo Lead do Instagram")
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            input_username = st.text_input("Username (@perfil):", placeholder="ex: clinicaexemplo")
+        with c2:
+            input_nome = st.text_input("Nome / Empresa:", placeholder="Clínica Exemplo")
+        with c3:
+            input_whatsapp = st.text_input("WhatsApp (com DDD):", placeholder="16999999999")
+            
+        input_bio = st.text_area("Biografia / Observações:", placeholder="Ex: Especialistas em estética... Link abaixo 👇")
+        input_link = st.text_input("Link na Bio (Opcional):", placeholder="https://wa.me/...")
         
-    termo_busca = st.text_input("Digite a Hashtag ou Localização alvo (Ex: #ribeiraopreto, #imoveisribeiraopreto ou Ribeirão Preto):", value="ribeiraopreto")
-    limite_leads = st.slider("Quantidade de perfis comerciais a buscar:", min_value=10, max_value=150, value=30, step=10)
-    
-    if st.button("🔍 Iniciar Mineração de Leads do Instagram", type="primary"):
-        if not termo_busca:
-            st.error("Por favor, informe um termo de busca válido.")
-        else:
-            with st.spinner(f"O robô do Apify está minerando perfis comerciais para '{termo_busca}'..."):
-                try:
-                    client = ApifyClient(APIFY_TOKEN)
+        btn_salvar_insta = st.form_submit_button("✨ Salvar Lead do Instagram na Nuvem", use_container_width=True)
+        
+        if btn_salvar_insta:
+            if not input_username or not input_nome:
+                st.error("Por favor, preencha pelo menos o Username e o Nome da empresa.")
+            else:
+                u_clean = input_username.replace("@", "").strip()
+                w_clean = "".join(filter(str.isdigit, input_whatsapp))
+                if len(w_clean) == 10 or len(w_clean) == 11:
+                    w_clean = "55" + w_clean
                     
-                    # Configuração para buscar posts e perfis por hashtag ou termo no Apify Scraper
-                    run_input = {
-                        "search": termo_busca,
-                        "searchType": "hashtag", # Pode ser 'hashtag' ou 'place'
-                        "resultsType": "posts",
-                        "resultsLimit": int(limite_leads)
-                    }
-                    
-                    run = client.actor("apify/instagram-scraper").call(run_input=run_input)
-                    dados_coletados = []
-                    
-                    dataset_id = None
-                    if isinstance(run, dict):
-                        dataset_id = run.get("defaultDatasetId") or run.get("default_dataset_id")
-                    else:
-                        dataset_id = getattr(run, "default_dataset_id", getattr(run, "defaultDatasetId", None))
-                        if not dataset_id and hasattr(run, "get"):
-                            dataset_id = run.get("defaultDatasetId") or run.get("default_dataset_id")
-                    
-                    if dataset_id:
-                        vistos = set()
-                        for item in client.dataset(dataset_id).iterate_items():
-                            owner_username = item.get("ownerUsername") or item.get("username")
-                            if not owner_username or owner_username in vistos:
-                                continue
-                            vistos.add(owner_username)
-                            
-                            nome_completo = item.get("ownerFullName") or item.get("fullName") or "Empresa Local"
-                            foto_perfil = item.get("ownerProfilePicUrl") or item.get("profilePicUrl") or "https://via.placeholder.com/150"
-                            bio = item.get("caption", "") or item.get("biography", "")
-                            link_ext = item.get("externalUrl", "")
-                            
-                            # Mapeamento de WhatsApp na Bio ou Legenda
-                            whats = "Não encontrado"
-                            wa_match = re.search(r'(wa\.me|api\.whatsapp\.com/send\?phone=)(\d+)', link_ext or "")
-                            if wa_match: 
-                                whats = wa_match.group(2)
-                            else:
-                                fone_match = re.search(r'(?:\+?55\s?)?(?:\(?\d{2}\)?\s?)?(?:9\s?\d{4}[-\s]?\d{4}|\d{4}[-\s]?\d{4})', bio or "")
-                                if fone_match:
-                                    num_limpo = re.sub(r'\D', '', fone_match.group(0))
-                                    whats = "55" + num_limpo if len(num_limpo) == 11 and not num_limpo.startswith("55") else num_limpo
-                            
-                            dados_coletados.append({
-                                "username": owner_username,
-                                "nome_completo": nome_completo,
-                                "instagram_id": str(item.get("ownerId") or owner_username),
-                                "biografia": bio[:200],
-                                "link_bio": link_ext,
-                                "whatsapp": whats,
-                                "foto_perfil": foto_perfil,
-                                "origem_concorrente": termo_busca
-                            })
-                        
-                    if dados_coletados:
-                        df_leads = pd.DataFrame(dados_coletados)
-                        st.session_state['leads_instagram_coletados'] = df_leads
-                        
-                        # Sincronização com o Supabase
-                        if supabase:
-                            with st.spinner("Sincronizando registros extraídos com o banco de dados Supabase..."):
-                                try:
-                                    payload = df_leads.to_dict(orient="records")
-                                    supabase.table("leads_instagram").upsert(payload, on_conflict="username").execute()
-                                    st.success("✨ Leads comerciais salvos com sucesso na tabela 'leads_instagram'!")
-                                except Exception as db_err:
-                                    st.warning(f"Leads exibidos no painel, mas falhou a sincronização com o Supabase: {db_err}")
-                    else:
-                        st.warning(f"Nenhum perfil retornado para o termo '{termo_busca}'. Tente outra hashtag ou palavra-chave.")
-                except Exception as e:
-                    st.error(f"Erro operacional durante o processo de scraping: {e}")
+                novo_lead_insta = {
+                    "username": u_clean,
+                    "nome_completo": input_nome,
+                    "instagram_id": u_clean,
+                    "biografia": input_bio,
+                    "link_bio": input_link,
+                    "whatsapp": w_clean if w_clean else "Não encontrado",
+                    "foto_perfil": "https://via.placeholder.com/150",
+                    "origem_concorrente": "Cadastro Manual"
+                }
+                
+                if supabase:
+                    try:
+                        supabase.table("leads_instagram").upsert(novo_lead_insta, on_conflict="username").execute()
+                        st.success(f"✨ Lead '@{u_clean}' salvo com sucesso na nuvem!")
+                        time.sleep(0.8)
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Erro ao salvar no Supabase: {e}")
 
-    # Exibição do painel visual de resultados
-    if 'leads_instagram_coletados' in st.session_state:
-        df_atual = st.session_state['leads_instagram_coletados']
+    st.divider()
+    
+    leads_insta_atuais = carregar_leads_instagram_db()
+    st.subheader(f"📊 Base de Leads do Instagram Cadastrados ({len(leads_insta_atuais)} Registros)")
+
+    if len(leads_insta_atuais) > 0:
+        df_insta_view = pd.DataFrame(leads_insta_atuais)
         
-        st.divider()
-        st.subheader(f"📊 Leads Estruturados: {len(df_atual)} Registros Ativos")
-        
-        buffer = io.BytesIO()
-        with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
-            df_atual.to_excel(writer, index=False, sheet_name='Leads Instagram')
+        buffer_insta = io.BytesIO()
+        with pd.ExcelWriter(buffer_insta, engine='openpyxl') as writer:
+            df_insta_view.to_excel(writer, index=False, sheet_name='Leads Instagram')
         
         st.download_button(
-            label="📥 Baixar Planilha Pronta para o Excel (.xlsx)",
-            data=buffer.getvalue(),
-            file_name=f"leads_instagram_{termo_busca}.xlsx",
+            label="📥 Baixar Planilha Excel dos Leads do Instagram (.xlsx)",
+            data=buffer_insta.getvalue(),
+            file_name=f"leads_instagram_export_{datetime.now().strftime('%Y%m%d')}.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
         
         st.write("### 👥 Gestão Visual e Abordagem Direta")
-        for index, row in df_atual.iterrows():
+        for row in leads_insta_atuais:
             with st.container(border=True):
                 col_foto, col_info, col_acoes = st.columns([1.5, 5, 3.5])
                 with col_foto:
-                    st.image(row['foto_perfil'], width=85)
+                    st.image(row.get('foto_perfil', 'https://via.placeholder.com/150'), width=85)
                 with col_info:
-                    st.markdown(f"**{row['nome_completo']}** ([@{row['username']}](https://instagram.com/{row['username']}))")
-                    if row['biografia']: st.caption(f"📝 *Detalhe:* {row['biografia']}")
-                    if row['link_bio']: st.caption(f"🔗 *Link na Bio:* [{row['link_bio']}]({row['link_bio']})")
+                    st.markdown(f"**{row.get('nome_completo')}** ([@{row.get('username')}](https://instagram.com/{row.get('username')}))")
+                    if row.get('biografia'): st.caption(f"📝 *Bio:* {row.get('biografia')}")
+                    if row.get('link_bio'): st.caption(f"🔗 *Link na Bio:* [{row.get('link_bio')}]({row.get('link_bio')})")
                 with col_acoes:
-                    if row['whatsapp'] != "Não encontrado":
-                        texto_msg = f"Olá {row['nome_completo']}, tudo bem? Conheci seu perfil no Instagram..."
-                        link_whats = f"https://wa.me/{row['whatsapp']}?text={urllib.parse.quote(texto_msg)}"
-                        st.link_button(f"🟢 Chamar no WhatsApp ({row['whatsapp']})", link_whats, use_container_width=True)
+                    w_num = row.get('whatsapp', 'Não encontrado')
+                    if w_num and w_num != "Não encontrado":
+                        texto_msg = f"Olá {row.get('nome_completo')}, tudo bem? Conheci seu perfil no Instagram..."
+                        link_whats = f"https://wa.me/{w_num}?text={urllib.parse.quote(texto_msg)}"
+                        st.link_button(f"🟢 Chamar no WhatsApp ({w_num})", link_whats, use_container_width=True)
                     else:
-                        st.caption("📱 Sem WhatsApp ativo")
-                    st.link_button("📩 Enviar Direct", f"https://instagram.com/direct/t/{row['instagram_id']}", use_container_width=True)
+                        st.caption("📱 Sem WhatsApp cadastrado")
+                    st.link_button("📩 Enviar Direct", f"https://instagram.com/direct/t/{row.get('username')}", use_container_width=True)
+    else:
+        st.info("💡 Nenhum lead do Instagram cadastrado ainda. Utilize o formulário acima para adicionar os primeiros contatos.")
