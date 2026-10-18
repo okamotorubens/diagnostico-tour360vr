@@ -562,8 +562,9 @@ def buscar_google_places_api(nicho, cidade, bairro, rua, raio_km, api_key, limit
                     if len(clean_phone) > 10 and clean_phone.startswith("55"):
                         clean_phone = clean_phone[2:]
 
-                    # Link seguro para pesquisa de perfil no Instagram para evitar links inválidos
-                    instagram_search_url = f"https://www.instagram.com/explore/search/keyword/?q={urllib.parse.quote(nome)}"
+                    # Restauração do formato original do link do Instagram gerado por nome
+                    nome_slug = re.sub(r'[^a-zA-Z0-9]', '', nome.lower())
+                    instagram_url = f"https://instagram.com/{nome_slug}"
 
                     lead_obj = {
                         "data_minacao": datetime.now().strftime('%d/%m/%Y %H:%M'),
@@ -578,8 +579,8 @@ def buscar_google_places_api(nicho, cidade, bairro, rua, raio_km, api_key, limit
                         "whatsapp": clean_phone if len(clean_phone) >= 10 else "16999999999",
                         "website": website,
                         "website_https": has_https,
-                        "instagram": instagram_search_url,
-                        "facebook": "",
+                        "instagram": instagram_url,
+                        "facebook": f"https://facebook.com/{nome_slug}",
                         "foto_url": foto_url,
                         "nota": nota,
                         "total_avaliacoes": total_avaliacoes,
@@ -635,7 +636,7 @@ def gerar_csv_excel_formatado(dados_leads):
         "ID", "Data Mineração", "Cidade Busca", "Bairro Busca", "Nome da Empresa", 
         "Categoria / Nicho", "Status Comercial CRM", "Endereço Completo", "Telefone Fixo", 
         "WhatsApp", "Possui Website?", "Website URL", "Site Seguro (HTTPS)?", 
-        "Instagram Pesquisa URL", "Nota Média Google", "Total Avaliações", 
+        "Instagram URL", "Facebook URL", "Nota Média Google", "Total Avaliações", 
         "Ficha Reivindicada?", "Qtd. Fotos Publicadas", "Dias Desde Última Foto", 
         "Possui Tour 360°?", "Pontos Críticos Identificados", "Score de Oportunidade"
     ])
@@ -657,6 +658,7 @@ def gerar_csv_excel_formatado(dados_leads):
             row.get("website", ""),
             "Sim" if row.get("website_https") else "Não",
             row.get("instagram", ""),
+            row.get("facebook", ""),
             str(row.get("nota", "")).replace('.', ','),
             row.get("total_avaliacoes", ""),
             "Sim" if row.get("reivindicada") else "Não",
@@ -868,7 +870,7 @@ elif st.session_state.etapa == 2:
                 
                 insta_link = lead.get('instagram', '')
                 if insta_link:
-                    st.markdown(f"- **Instagram:** [🔍 Buscar Perfil]({insta_link})")
+                    st.markdown(f"- **Instagram:** [Abrir Perfil]({insta_link})")
                 else:
                     st.markdown("- **Instagram:** ❌ Não informado")
 
