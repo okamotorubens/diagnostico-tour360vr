@@ -16,3 +16,4 @@ Pillow
 supabase
 beautifulsoup4
 pytz
+apify-client
