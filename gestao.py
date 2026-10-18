@@ -6,14 +6,11 @@ import time
 from datetime import datetime, date
 from io import BytesIO
 import urllib.parse
+import security
 import qrcode
 from PIL import Image as PILImage
 from supabase import create_client, Client
 import pytz
-
-# Bibliotecas para Scraping Gratuito
-import requests
-from bs4 import BeautifulSoup
 
 # Importações do ReportLab para PDF (Padrão Enterprise Tour360VR)
 from reportlab.lib.pagesizes import letter
@@ -23,6 +20,7 @@ from reportlab.lib import colors
 
 # Importação do Matplotlib para geração de gráficos no PDF
 import matplotlib.pyplot as plt
+import requests
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
 FAVICON_TOUR360 = "https://tour360vr.com.br/favicon.ico"
@@ -184,40 +182,82 @@ def calcular_variacao_pct(atual, anterior):
         return f"+{diff:.1f}%"
     return f"{diff:.1f}%"
 
-def auditar_ficha_google(url_maps):
-    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+# --- AUDITORIA OFICIAL COM GOOGLE PLACES API ---
+def auditar_ficha_google_api(query_ou_url):
+    api_key = st.secrets.get("GOOGLE_API_KEY", "")
+    if not api_key:
+        return None, "Chave GOOGLE_API_KEY não configurada nos Secrets do Streamlit."
+    
     try:
-        response = requests.get(url_maps, headers=headers, timeout=10)
-        if response.status_code != 200:
-            return None, "Não foi possível carregar a URL fornecida."
-        html = response.text
-        tem_site = ("http://" in html or "https://" in html) and "website" in html.lower()
-        tem_telefone = bool(re.search(r'\+?55\s?\(?\d{2}\)?\s?\d{4,5}\-?\d{4}', html)) or "phone" in html.lower()
-        tem_avaliacoes = "star" in html.lower() or "comentários" in html.lower() or "reviews" in html.lower()
-        tem_fotos = "photo" in html.lower() or "photos" in html.lower()
-        soup = BeautifulSoup(html, 'html.parser')
-        title = soup.title.string if soup.title else "Empresa Auditada"
-        nome_extraido = title.replace("- Google Maps", "").replace("- Busca Google", "").strip()
+        # Se o usuário colou um link encurtado do Maps, tentamos extrair ou buscar
+        termo_busca = query_ou_url
+        if "http" in query_ou_url:
+            if "maps.app.goo.gl" in query_ou_url or "goo.gl" in query_ou_url:
+                resp_redirect = requests.get(query_ou_url, allow_redirects=True, timeout=10)
+                termo_busca = resp_redirect.url
 
-        pontos, pendencias, oportunidades = 0, [], []
-        if tem_site: pontos += 25
-        else:
-            pendencias.append("❌ Ficha sem Link de Website / Cartão Digital configurado")
+        # Chamada à Google Places API (Text Search)
+        url_search = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={urllib.parse.quote(termo_busca)}&key={api_key}&language=pt-BR"
+        resp = requests.get(url_search, timeout=10).json()
+
+        if not resp.get("results"):
+            return None, "Nenhum local encontrado com esta URL ou termo na Google Places API."
+
+        place = resp["results"][0]
+        place_id = place.get("place_id")
+        nome = place.get("name", "Empresa Selecionada")
+        
+        # Detalhes completos do local (Place Details API)
+        url_details = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=name,formatted_address,formatted_phone_number,website,rating,user_ratings_total,photos,opening_hours,business_status,types&key={api_key}&language=pt-BR"
+        details = requests.get(url_details, timeout=10).json().get("result", {})
+
+        # Critérios de Auditoria e Pontuação (Padrão Rigoroso API)
+        score = 100
+        pendencias = []
+        oportunidades = []
+
+        # 1. Website
+        if not details.get("website"):
+            score -= 30
+            pendencias.append("❌ Ficha sem Link de Website / Cartão Digital configurado na API")
             oportunidades.append("Incluir site ou landing page otimizada com Tour Virtual 360°")
-        if tem_telefone: pontos += 25
-        else: pendencias.append("❌ Número de Telefone Comercial / WhatsApp não destacado")
-        if tem_avaliacoes: pontos += 25
-        else:
-            pendencias.append("⚠️ Poucas ou nenhuma avaliação visível destacada")
-            oportunidades.append("Implementar captação de reviews via QR Code de balcão")
-        if tem_fotos: pontos += 25
-        else:
-            pendencias.append("⚠️ Ausência de fotos recentes e Tour Virtual 360°")
-            oportunidades.append("Realizar sessão fotográfica profissional + Tour 360°")
+        
+        # 2. Telefone
+        if not details.get("formatted_phone_number"):
+            score -= 20
+            pendencias.append("❌ Número de Telefone Comercial não validado ou ausente")
+            oportunidades.append("Atualizar o telefone principal de atendimento no GMB")
 
-        return {"nome": nome_extraido or "Empresa Selecionada", "score": pontos, "has_site": tem_site, "has_phone": tem_telefone, "has_reviews": tem_avaliacoes, "has_photos": tem_fotos, "pendencias": pendencias, "oportunidades": oportunidades}, None
+        # 3. Avaliações (Reviews)
+        total_reviews = details.get("user_ratings_total", 0)
+        rating = details.get("rating", 0.0)
+        if total_reviews < 10:
+            score -= 25
+            pendencias.append(f"⚠️ Poucas avaliações registradas ({total_reviews} avaliações, Nota: {rating})")
+            oportunidades.append("Implementar captação ativa de reviews via QR Code de balcão")
+
+        # 4. Fotos
+        if not details.get("photos") or len(details.get("photos", [])) < 3:
+            score -= 25
+            pendencias.append("⚠️ Quantidade insuficiente de fotos profissionais ou Tour Virtual")
+            oportunidades.append("Realizar sessão fotográfica e inclusão de Tour 360° imersivo")
+
+        score = max(0, score)
+
+        return {
+            "nome": nome,
+            "score": score,
+            "endereco": details.get("formatted_address", "Endereço não informado"),
+            "telefone": details.get("formatted_phone_number", "Não informado"),
+            "website": details.get("website", "Não informado"),
+            "rating": rating,
+            "total_reviews": total_reviews,
+            "pendencias": pendencias,
+            "oportunidades": oportunidades
+        }, None
+
     except Exception as e:
-        return None, f"Erro ao analisar o link: {str(e)}"
+        return None, f"Erro ao consultar a Google Places API: {str(e)}"
 
 def gerar_imagem_grafico(df_historico):
     fig, ax = plt.subplots(figsize=(6.5, 2.0), dpi=200)
@@ -746,29 +786,29 @@ if st.session_state["aba_ativa"] == "cadastrar":
     gerar_botoes_navegacao_rodape()
 
 # ==========================================
-# MÓDULO 2: AUDITORIA EXPRESS (CORRIGIDO)
+# MÓDULO 2: AUDITORIA EXPRESS (VIA GOOGLE PLACES API)
 # ==========================================
 elif st.session_state["aba_ativa"] == "auditoria":
-    st.subheader("🔍 Auditoria de Ficha Google em 1 Clique")
-    url_prospect = st.text_input("URL do Google Maps da Empresa:", placeholder="https://maps.google.com/...")
+    st.subheader("🔍 Auditoria de Ficha Google em 1 Clique (Via API Oficial)")
+    url_prospect = st.text_input("URL ou Nome da Empresa no Google Maps:", placeholder="https://maps.google.com/... ou Nome da Empresa")
     
-    if st.button("⚡ Executar Varredura"):
+    if st.button("⚡ Executar Varredura com API Google"):
         if url_prospect:
-            with st.spinner("Analisando ficha comercial..."):
-                res_aud, err = auditar_ficha_google(url_prospect)
+            with st.spinner("Consultando Google Places API..."):
+                res_aud, err = auditar_ficha_google_api(url_prospect)
             if err: 
                 st.error(err)
             else:
                 st.markdown(f"### 🏢 Empresa: **{res_aud['nome']}**")
+                st.markdown(f"📍 **Endereço:** {res_aud['endereco']}")
                 
-                # Exibição limpa e visual do Score
                 score = res_aud['score']
                 if score >= 75:
-                    st.success(f"⭐ **Score da Ficha: {score}%** (Excelente otimização)")
-                elif score >= 50:
-                    st.warning(f"⚠️ **Score da Ficha: {score}%** (Requer melhorias)")
+                    st.success(f"⭐ **Score da Ficha: {score}/100** (Excelente otimização)")
+                elif score >= 40:
+                    st.warning(f"⚠️ **Score da Ficha: {score}/100** (Requer otimizações)")
                 else:
-                    st.error(f"❌ **Score da Ficha: {score}%** (Crítico / Oportunidade Alta)")
+                    st.error(f"❌ **Score da Ficha: {score}/100** (Crítico / Oportunidade de Consultoria Alta)")
 
                 st.markdown("#### 📋 Pendências Identificadas:")
                 if res_aud['pendencias']:
@@ -782,9 +822,9 @@ elif st.session_state["aba_ativa"] == "auditoria":
                     for op in res_aud['oportunidades']:
                         st.markdown(f"- {op}")
                 else:
-                    st.markdown("- Perfil otimizado.")
+                    st.markdown("- Perfil com excelente performance.")
         else:
-            st.warning("Insira uma URL válida do Google Maps.")
+            st.warning("Insira uma URL ou o nome da empresa.")
             
     gerar_botoes_navegacao_rodape()
 
