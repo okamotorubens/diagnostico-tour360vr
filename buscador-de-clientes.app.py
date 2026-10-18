@@ -174,142 +174,136 @@ base_leads = carregar_todos_leads_db()
 base_leads_insta = carregar_leads_instagram_db()
 
 
-# =============================================================================
-# GOOGLE PLACES API
-# =============================================================================
-def calcular_oportunidade(website, total_avaliacoes, qtd_fotos):
-    """
-    Score (0 a 100) só com dados que a API informa:
-      - Sem site: 30 | Site sem HTTPS: 15
-      - Menos de 30 avaliações: 25
-      - Menos de 8 fotos (amostra da API): 20
-    Tour 360° e reivindicação não entram (a API não informa).
-    """
-    criticos, oportunidades, pontos = [], [], 0
-    if not website:
-        criticos.append("Sem site oficial vinculado à ficha do Google")
-        oportunidades.append("Desenvolvimento de landing page / website responsivo")
-        pontos += 30
-    elif not website.startswith("https://"):
-        criticos.append("Site oficial sem certificado de segurança (HTTP)")
-        oportunidades.append("Adequação de SSL e otimização web")
-        pontos += 15
-    if total_avaliacoes < 30:
-        criticos.append(f"Volume baixo de avaliações ({total_avaliacoes})")
-        oportunidades.append("Estratégia de reputação e gestão de avaliações")
-        pontos += 25
-    if qtd_fotos < 8:
-        criticos.append(f"Poucas fotos no perfil (amostra da API: {qtd_fotos})")
-        oportunidades.append("Produção de fotografia profissional do espaço")
-        pontos += 20
-    oportunidades.append("Fotografia 360° imersiva e publicação no Google Street View")
-    return min(round(pontos / PONTOS_MAXIMOS_API * 100), 100), criticos, oportunidades
-
-
-def buscar_todas_paginas(query, api_key, limite):
-    """Percorre as páginas da Text Search (20 por página) de forma segura."""
-    url = "https://maps.googleapis.com/maps/api/place/textsearch/json"
-    params = {"query": query, "language": "pt-BR", "key": api_key}
-    resultados = []
+# -----------------------------------------------------------------------------
+# INTEGRAÇÃO DE BUSCA REAL VIA GOOGLE PLACES API COM RAIO DE KM
+# -----------------------------------------------------------------------------
+def buscar_google_places_api(nicho, cidade, bairro, rua, raio_km, api_key, limite=20):
+    termos = []
+    if nicho: termos.append(nicho.strip())
+    if rua: termos.append(rua.strip())
+    if bairro: termos.append(bairro.strip())
+    if cidade: termos.append(cidade.strip())
     
-    while True:
-        try:
-            data = requests.get(url, params=params, timeout=12).json()
-        except Exception as e:
-            st.error(f"Falha de conexão com a Google Places API: {e}")
-            return None
-
+    query_str = " ".join(termos)
+    raio_metros = int(raio_km * 1000)
+    
+    url = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={urllib.parse.quote(query_str)}&radius={raio_metros}&language=pt-BR&key={api_key}"
+    
+    try:
+        response = requests.get(url, timeout=12)
+        data = response.json()
+        
         status = data.get("status")
-        if status == "ZERO_RESULTS":
-            break
-        if status != "OK":
-            st.error(f"Google Places retornou '{status}'. {data.get('error_message', '')}")
-            return None
-
-        resultados += data.get("results", [])
-        token = data.get("next_page_token")
         
-        if not token or len(resultados) >= limite:
-            break
-            
-        time.sleep(PAUSA_PAGINACAO)
-        # O pagetoken deve ser enviado isoladamente na requisição seguinte
-        params = {"pagetoken": token, "key": api_key}
-        
-    return resultados[:limite]
+        if status == "OK":
+            results = data.get("results", [])[:limite]
+            leads = []
+            for place in results:
+                place_id = place.get("place_id")
+                lat = place.get("geometry", {}).get("location", {}).get("lat", -21.1775)
+                lng = place.get("geometry", {}).get("location", {}).get("lng", -47.8103)
+                
+                det_res = {}
+                if place_id:
+                    details_url = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=name,formatted_address,formatted_phone_number,website,rating,user_ratings_total,photos&language=pt-BR&key={api_key}"
+                    det_res = requests.get(details_url, timeout=5).json().get("result", {})
+                
+                nome = det_res.get("name") or place.get("name")
+                endereco = det_res.get("formatted_address") or place.get("formatted_address")
 
+                telefone = det_res.get("formatted_phone_number", "")
+                website = det_res.get("website", "")
+                nota = det_res.get("rating", place.get("rating", 0.0))
+                total_avaliacoes = det_res.get("user_ratings_total", place.get("user_ratings_total", 0))
+                photos = det_res.get("photos", place.get("photos", []))
+                
+                foto_url = f"https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference={photos[0].get('photo_reference')}&key={api_key}" if photos else "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&q=80"
 
-def buscar_google_places_api(nicho, cidade, bairro, rua, api_key, limite):
-    termos = [t.strip() for t in [nicho, rua, bairro, cidade] if t and t.strip()]
-    places = buscar_todas_paginas(" ".join(termos), api_key, limite)
-    if places is None:
-        return None
+                pontos_criticos = []
+                oportunidades = []
+                score = 0
 
-    leads = []
-    for place in places:
-        det = {}
-        if place.get("place_id"):
-            try:
-                det = requests.get(
-                    "https://maps.googleapis.com/maps/api/place/details/json",
-                    params={
-                        "place_id": place["place_id"],
-                        "fields": "name,formatted_address,formatted_phone_number,website,rating,user_ratings_total,photos",
-                        "language": "pt-BR", "key": api_key,
-                    },
-                    timeout=8,
-                ).json().get("result", {})
-            except Exception:
-                det = {}
+                has_https = website.startswith("https://") if website else False
+                if not website:
+                    pontos_criticos.append("Sem site oficial vinculado à ficha do Google")
+                    oportunidades.append("Desenvolvimento de Landing Page / Website Responsivo")
+                    score += 30
+                elif not has_https:
+                    pontos_criticos.append("Site oficial sem Certificado de Segurança (HTTP inseguro)")
+                    oportunidades.append("Adequação de Segurança SSL e Otimização Web")
+                    score += 15
 
-        loc = place.get("geometry", {}).get("location", {})
-        nome = det.get("name") or place.get("name", "Sem nome")
-        endereco = det.get("formatted_address") or place.get("formatted_address", "")
-        telefone = det.get("formatted_phone_number", "")
-        website = det.get("website", "")
-        nota = det.get("rating", place.get("rating", 0.0)) or 0.0
-        total = det.get("user_ratings_total", place.get("user_ratings_total", 0)) or 0
-        fotos = det.get("photos", place.get("photos", [])) or []
+                if total_avaliacoes < 30:
+                    pontos_criticos.append(f"Volume crítico de avaliações ({total_avaliacoes} no total)")
+                    oportunidades.append("Estratégia Acelerada de Reputação e Gestão de Avaliações")
+                    score += 25
 
-        digitos = "".join(ch for ch in telefone if ch.isdigit())
-        if len(digitos) > 11 and digitos.startswith("55"):
-            digitos = digitos[2:]
-        score, criticos, oportunidades = calcular_oportunidade(website, total, len(fotos))
+                if len(photos) < 8:
+                    pontos_criticos.append(f"Poucas fotos publicadas no perfil ({len(photos)} fotos)")
+                    oportunidades.append("Produção de Fotografia Profissional para Arquitetura e Estrutura")
+                    score += 20
 
-        leads.append({
-            "data_minacao": datetime.now().strftime("%d/%m/%Y %H:%M"),
-            "cidade_busca": cidade,
-            "bairro_busca": bairro,
-            "nome": nome,
-            "categoria": (nicho or "Comércio").strip().capitalize(),
-            "endereco": endereco,
-            "latitude": float(loc.get("lat", -21.1775)),
-            "longitude": float(loc.get("lng", -47.8103)),
-            "telefone": telefone,
-            "whatsapp": digitos if len(digitos) >= 10 else "",
-            "website": website,
-            "website_https": website.startswith("https://") if website else False,
-            "instagram": "",
-            "nota": float(nota),
-            "total_avaliacoes": int(total),
-            "fotos_total": len(fotos),
-            "pontos_criticos": criticos,
-            "oportunidades": oportunidades,
-            "score_oportunidade": int(score),
-        })
-    return leads
+                pontos_criticos.append("Oportunidade de Imersão: Implantação de Tour Virtual 360°")
+                oportunidades.append("Fotografia 360° Imersiva e Publicação no Google Street View")
+                score += 25
 
+                clean_phone = "".join(filter(str.isdigit, telefone))
+                if len(clean_phone) > 10 and clean_phone.startswith("55"):
+                    clean_phone = clean_phone[2:]
 
-def minerar_e_salvar(nicho, cidade, bairro, rua, limite):
-    api_key = st.secrets.get("GOOGLE_API_KEY", os.getenv("GOOGLE_API_KEY"))
-    if not api_key:
-        st.error("A chave GOOGLE_API_KEY não foi encontrada nos Secrets do Streamlit.")
-        return None
-    leads = buscar_google_places_api(nicho, cidade, bairro, rua, api_key.strip(), limite)
-    if leads is None:
-        return None
-    novos = sum(1 for lead in leads if salvar_lead_db(lead))
-    return leads, novos
+                nome_slug = re.sub(r'[^a-zA-Z0-9]', '', nome.lower())
+
+                lead_obj = {
+                    "data_minacao": datetime.now().strftime('%d/%m/%Y %H:%M'),
+                    "cidade_busca": cidade,
+                    "bairro_busca": bairro,
+                    "nome": nome,
+                    "categoria": (nicho or "Comércio").capitalize(),
+                    "endereco": endereco,
+                    "latitude": lat,
+                    "longitude": lng,
+                    "telefone": telefone or "(16) Contato via Ficha",
+                    "whatsapp": clean_phone if len(clean_phone) >= 10 else "16999999999",
+                    "website": website,
+                    "website_https": has_https,
+                    "instagram": f"https://instagram.com/{nome_slug}",
+                    "facebook": f"https://facebook.com/{nome_slug}",
+                    "foto_url": foto_url,
+                    "nota": nota,
+                    "total_avaliacoes": total_avaliacoes,
+                    "reivindicada": True,
+                    "fotos_total": len(photos),
+                    "ultima_foto_dias": 60,
+                    "tour_360": False,
+                    "status_crm": "🆕 Novo Lead",
+                    "pontos_criticos": pontos_criticos,
+                    "oportunidades": oportunidades,
+                    "score_oportunidade": min(score, 100)
+                }
+                
+                salvar_lead_db(lead_obj)
+                leads.append(lead_obj)
+            return leads
+        elif status == "ZERO_RESULTS":
+            st.warning("⚠️ O Google Maps não encontrou empresas para este termo exato dentro do raio especificado. Tente aumentar o raio de km.")
+        else:
+            msg_erro = data.get("error_message", "Sem detalhes adicionais do Google.")
+            st.error(f"⚠️ Resposta do Google Maps: **Status '{status}'**. Detalhes: {msg_erro}")
+    except Exception as e:
+        st.error(f"Erro na requisição à API do Google Places: {str(e)}")
+    return None
+
+def minerar_e_auditar_negocios(nicho, cidade, bairro, rua, raio_km, limite=20):
+    api_key = st.secrets.get("GOOGLE_API_KEY", None) or os.getenv("GOOGLE_API_KEY", None)
+    
+    if api_key:
+        api_key_limpa = api_key.strip().replace('"', '').replace("'", "")
+        leads_reais = buscar_google_places_api(nicho, cidade, bairro, rua, raio_km, api_key_limpa, limite)
+        if leads_reais and len(leads_reais) > 0:
+            return leads_reais
+    else:
+        st.error("⚠️ A chave 'GOOGLE_API_KEY' não foi encontrada nos Secrets do Streamlit Cloud.")
+    return []
 
 
 # =============================================================================
