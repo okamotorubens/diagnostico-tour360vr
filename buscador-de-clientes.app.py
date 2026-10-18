@@ -584,8 +584,8 @@ elif st.session_state.etapa == 2:
                         st.markdown(
                         f"[Ver no Google Maps](https://www.google.com/maps/search/?api=1&query="
                         f"{urllib.parse.quote(lead['nome'])})"
-                    )
-                    link_secundario(URL_SISTEMA_DIAGNOSTICO, "🛠️ Abrir no Diagnóstico Tour360VR")
+                        )
+                        link_secundario(URL_SISTEMA_DIAGNOSTICO, "🛠️ Abrir no Diagnóstico Tour360VR")
                     if lead.get("whatsapp"):
                         msg_wa = (
                             f"Olá! Tudo bem?\nMeu nome é Rubens Okamoto, da Okamoto Mídias Visuais e do Tour360VR.\n"
