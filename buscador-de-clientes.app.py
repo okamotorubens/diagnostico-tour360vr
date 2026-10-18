@@ -673,8 +673,39 @@ elif st.session_state.etapa == 4:
         st.markdown(f"<span class='gl-muted'>Exibindo <b>{len(df_m)}</b> empresas no mapa.</span>",
                     unsafe_allow_html=True)
 
-        if len(df_m) > 0:
-            FOLIUM_COR = {"alta": "red", "media": "orange", "baixa": "green"}
+                if len(df_m) > 0:
+            CORES_PINS = ["red", "blue", "green", "purple", "orange", "darkred", "cadetblue", "darkgreen", "darkblue", "pink"]
+            CORES_HEX = {
+                "red": "#ef4444", "blue": "#3b82f6", "green": "#10b981", "purple": "#8b5cf6",
+                "orange": "#f97316", "darkred": "#991b1b", "cadetblue": "#06b6d4",
+                "darkgreen": "#166534", "darkblue": "#1e3a8a", "pink": "#ec4899",
+            }
+            COR_SCORE = {"alta": "red", "media": "orange", "baixa": "green"}
+
+            # Cores por nicho calculadas sobre a base inteira, para ficarem estáveis entre filtros
+            segmentos = sorted(df_map["categoria"].dropna().unique().tolist())
+            mapa_cor_nicho = {seg: CORES_PINS[i % len(CORES_PINS)] for i, seg in enumerate(segmentos)}
+
+            def cor_pin(row):
+                if cat_map == "Todos":
+                    return mapa_cor_nicho.get(row["categoria"], "red")
+                classe, _, _ = classificar_score(int(row["score_oportunidade"]))
+                return COR_SCORE[classe]
+
+            def legenda_html(titulo, itens):
+                linhas = "".join(
+                    f"<div style='display:flex;align-items:center;gap:8px;margin:3px 0'>"
+                    f"<span style='width:12px;height:12px;border-radius:50%;background:{cor};display:inline-block'></span>"
+                    f"{rotulo}</div>"
+                    for rotulo, cor in itens
+                )
+                return (
+                    "<div style='position:fixed;bottom:18px;left:18px;z-index:9999;max-width:240px;"
+                    "background:rgba(11,14,20,.88);color:#E6EDF7;padding:10px 14px;border-radius:12px;"
+                    "border:1px solid rgba(255,255,255,.12);font-family:Inter,Arial,sans-serif;font-size:12px;'>"
+                    f"<b style='color:#FFFFFF'>{titulo}</b>{linhas}</div>"
+                )
+
             m = folium.Map(
                 location=[df_m["latitude"].mean(), df_m["longitude"].mean()],
                 zoom_start=13,
@@ -682,33 +713,46 @@ elif st.session_state.etapa == 4:
             )
             bounds = []
             for _, row in df_m.iterrows():
-                classe, _, _ = classificar_score(int(row["score_oportunidade"]))
                 url_maps = f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(row['nome'])}"
                 criticos = row.get("pontos_criticos") or []
                 if isinstance(criticos, str):
                     criticos = json.loads(criticos or "[]")
-                itens = "".join(f"<li style='color:#b91c1c'>{c}</li>" for c in criticos[:4]) or "<li>Nenhum ponto crítico</li>"
+                itens_crit = "".join(f"<li style='color:#b91c1c'>{c}</li>" for c in criticos[:4]) or "<li>Nenhum ponto crítico</li>"
                 html_pop = (
                     f"<div style='font-family:Arial,sans-serif;font-size:12px;min-width:250px;line-height:1.5;color:#111'>"
                     f"<a href='{url_maps}' target='_blank' style='text-decoration:none'>"
                     f"<b style='color:#1E40AF;font-size:14px'>{row['nome']}</b></a><br/>"
                     f"<span style='color:#475569'>📍 {row['endereco']}</span><hr style='margin:6px 0'/>"
+                    f"<b>Nicho:</b> {row['categoria']}<br/>"
                     f"<b>Score de oportunidade:</b> {row['score_oportunidade']}/100<br/>"
                     f"<b>Nota:</b> ⭐ {row['nota']} ({row['total_avaliacoes']} avaliações)<br/>"
-                    f"<b>Pontos críticos:</b><ul style='margin:4px 0 0 16px;padding:0'>{itens}</ul></div>"
+                    f"<b>Pontos críticos:</b><ul style='margin:4px 0 0 16px;padding:0'>{itens_crit}</ul></div>"
                 )
                 folium.Marker(
                     location=[row["latitude"], row["longitude"]],
                     popup=folium.Popup(html_pop, max_width=340),
                     tooltip=row["nome"],
-                    icon=folium.Icon(color=FOLIUM_COR[classe], icon="info-sign"),
+                    icon=folium.Icon(color=cor_pin(row), icon="info-sign"),
                 ).add_to(m)
                 bounds.append([row["latitude"], row["longitude"]])
 
+            # Legenda
+            if cat_map == "Todos":
+                itens_leg = [(seg, CORES_HEX[mapa_cor_nicho[seg]]) for seg in segmentos]
+                m.get_root().html.add_child(folium.Element(legenda_html("Legenda por nicho", itens_leg)))
+            else:
+                itens_leg = [
+                    ("Alta (≥ 60)", "#ef4444"),
+                    ("Média (30 a 59)", "#f97316"),
+                    ("Baixa (< 30)", "#22c55e"),
+                ]
+                m.get_root().html.add_child(folium.Element(legenda_html("Legenda por score", itens_leg)))
+
             if len(bounds) > 1:
                 m.fit_bounds(bounds, padding=(30, 30))
-            with glass_container():
+            with st.container(border=True):
                 st_folium(m, width=None, height=650, returned_objects=[])
+
 
 # =============================================================================
 # MÓDULO 5: LEADS DO INSTAGRAM
