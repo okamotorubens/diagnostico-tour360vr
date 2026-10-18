@@ -10,6 +10,7 @@ import qrcode
 from PIL import Image as PILImage
 from supabase import create_client, Client
 import pytz
+import base64
 
 # Importações do ReportLab para PDF (Padrão Enterprise Tour360VR)
 from reportlab.lib.pagesizes import letter
@@ -40,6 +41,13 @@ FUSO_BR = pytz.timezone('America/Sao_Paulo')
 
 def agora_brasil():
     return datetime.now(FUSO_BR)
+
+# --- FUNÇÃO BASE64 PARA LOGO ---
+def obter_base64_logo(caminho):
+    if os.path.exists(caminho):
+        with open(caminho, "rb") as f:
+            return base64.b64encode(f.read()).decode("utf-8")
+    return ""
 
 # --- FUNÇÃO ROBUSTA PARA O PDF (BYTES LOCAIS) ---
 def get_rl_image_pdf(width, height):
