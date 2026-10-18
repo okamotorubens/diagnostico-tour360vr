@@ -204,15 +204,12 @@ def auditar_ficha_google_rigorosa(query_ou_url):
         place_id = place.get("place_id")
         nome = place.get("name", "Empresa Selecionada")
         
-        # Solicitando campos detalhados
         url_details = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=name,formatted_address,formatted_phone_number,website,rating,user_ratings_total,photos,opening_hours,business_status,types,editorial_summary,reviews&key={api_key}&language=pt-BR"
         details = requests.get(url_details, timeout=10).json().get("result", {})
 
-        # Avaliação detalhada dos 9 Critérios
         criterios = []
         score = 100
         
-        # 1. Fotos e Resolução Visual
         fotos = details.get("photos", [])
         qtd_fotos = len(fotos)
         if qtd_fotos < 5:
@@ -221,8 +218,6 @@ def auditar_ficha_google_rigorosa(query_ou_url):
         else:
             criterios.append(("1. Fotos e Resolução Visual", f"{qtd_fotos} fotos registradas.", "Bom", "Atendido"))
 
-        # 2. Tour Virtual 360° Interativo
-        # Verificamos se há menções a 360 ou se é simulado como pendente pela API (padrão de auditoria rigorosa)
         tem_tour = any("360" in p.get("html_attributions", [str(p)]) for p in fotos)
         if not tem_tour:
             score -= 15
@@ -230,7 +225,6 @@ def auditar_ficha_google_rigorosa(query_ou_url):
         else:
             criterios.append(("2. Tour Virtual 360° Interativo", "Tour Virtual identificado.", "Alto", "Atendido"))
 
-        # 3. Categorias Principal e Secundárias
         types = details.get("types", [])
         if len(types) < 3:
             score -= 10
@@ -238,7 +232,6 @@ def auditar_ficha_google_rigorosa(query_ou_url):
         else:
             criterios.append(("3. Categorias Principal e Secundárias", "Categorias estruturadas.", "Alto", "Atendido"))
 
-        # 4. Horários e Exceções (Feriados)
         opening_hours = details.get("opening_hours", {})
         if not opening_hours or not opening_hours.get("periods"):
             score -= 10
@@ -246,7 +239,6 @@ def auditar_ficha_google_rigorosa(query_ou_url):
         else:
             criterios.append(("4. Horários e Exceções (Feriados)", "Horários regulares cadastrados.", "Bom", "Atendido"))
 
-        # 5. Website e Links de Conversão
         website = details.get("website")
         if not website:
             score -= 15
@@ -254,7 +246,6 @@ def auditar_ficha_google_rigorosa(query_ou_url):
         else:
             criterios.append(("5. Website e Links de Conversão", f"Website oficial: {website}", "Alto", "Ativo"))
 
-        # 6. Avaliações no Google (Prova Social)
         total_reviews = details.get("user_ratings_total", 0)
         rating = details.get("rating", 0.0)
         if total_reviews < 10:
@@ -263,7 +254,6 @@ def auditar_ficha_google_rigorosa(query_ou_url):
         else:
             criterios.append(("6. Avaliações no Google (Prova Social)", f"{total_reviews} avaliações. Boa base de prova social.", "Alto", f"{rating}/5.0"))
 
-        # 7. Resumo Editorial & Descrição
         editorial = details.get("editorial_summary")
         if not editorial:
             score -= 10
@@ -271,11 +261,9 @@ def auditar_ficha_google_rigorosa(query_ou_url):
         else:
             criterios.append(("7. Resumo Editorial & Descrição", "Resumo editorial presente.", "Bom", "Atendido"))
 
-        # 8. Atributos de Acessibilidade/Serviços
         score -= 5
         criterios.append(("8. Atributos de Acessibilidade/Serviços", "Falta cadastrar atributos de acessibilidade e facilidades.", "Baixo", "Pendente"))
 
-        # 9. Interação e Resposta a Avaliações
         reviews = details.get("reviews", [])
         sem_resposta = any(r.get("rating", 5) <= 3 for r in reviews)
         if sem_resposta:
@@ -285,7 +273,7 @@ def auditar_ficha_google_rigorosa(query_ou_url):
             score -= 10
             criterios.append(("9. Interação e Resposta a Avaliações", "Necessário maior frequência de respostas ativas.", "Médio", "Pendente"))
 
-        score = max(5, score) # Piso técnico de rigor
+        score = max(5, score)
 
         return {
             "nome": nome,
@@ -300,6 +288,72 @@ def auditar_ficha_google_rigorosa(query_ou_url):
 
     except Exception as e:
         return None, f"Erro ao consultar a Google Places API: {str(e)}"
+
+# --- GERAÇÃO DE PDF DA AUDITORIA ---
+def gerar_pdf_auditoria(res_aud):
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=40, leftMargin=40, topMargin=15, bottomMargin=65)
+    story = []
+    styles = getSampleStyleSheet()
+
+    section_style = ParagraphStyle('DocSection', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=13, textColor=colors.HexColor('#1E293B'))
+    body_style = ParagraphStyle('DocBody', parent=styles['Normal'], fontName='Helvetica', fontSize=8, leading=11, textColor=colors.HexColor('#334155'))
+    
+    logo_flowable = get_rl_image_pdf(55, 55)
+
+    header_table_data = [
+        [
+            logo_flowable,
+            Paragraph(f"<b>DIAGNÓSTICO DE AUDITORIA GOOGLE MAPS</b><br/><font size=9 color='#2563EB'><b>{res_aud['nome']}</b></font><br/><font size=8 color='#64748B'>Score da Ficha: {res_aud['score']}/100</font>", ParagraphStyle('RHeader', parent=styles['Normal'], alignment=2, fontName='Helvetica'))
+        ]
+    ]
+    t_header = Table(header_table_data, colWidths=[60, 472])
+    t_header.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'MIDDLE'), ('ALIGN', (0,0), (0,0), 'LEFT')]))
+    story.append(t_header)
+    story.append(Spacer(1, 2))
+    story.append(HRFlowable(width="100%", thickness=1.0, color=colors.HexColor('#BFDBFE'), spaceAfter=10))
+    
+    story.append(Paragraph(f"<b>Endereço:</b> {res_aud['endereco']} | <b>Telefone:</b> {res_aud['telefone']}", body_style))
+    story.append(Spacer(1, 8))
+    
+    story.append(Paragraph("<b>Auditoria Detalhada de Pontos (9 Critérios Oficiais):</b>", section_style))
+    story.append(Spacer(1, 6))
+
+    t_data = [[Paragraph("<b>Critério</b>", section_style), Paragraph("<b>Diagnóstico Técnico</b>", section_style), Paragraph("<b>Impacto</b>", section_style), Paragraph("<b>Status</b>", section_style)]]
+    for item, estado, impacto, status in res_aud['criterios']:
+        t_data.append([Paragraph(item, body_style), Paragraph(estado, body_style), Paragraph(impacto, body_style), Paragraph(status, body_style)])
+
+    t_aud = Table(t_data, colWidths=[150, 200, 70, 92])
+    t_aud.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#F1F5F9')),
+        ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#CBD5E1')),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#E2E8F0')),
+        ('PADDING', (0,0), (-1,-1), 4),
+    ]))
+    story.append(t_aud)
+    story.append(Spacer(1, 10))
+
+    story.append(Paragraph("<b>Plano de Ação & Oportunidades Recomendadas:</b>", section_style))
+    story.append(Spacer(1, 6))
+    story.append(Paragraph("1. Atração Local (SEO): Correção cadastral e otimização das categorias principal e secundárias.", body_style))
+    story.append(Paragraph("2. Segurança & Posicionamento: Frequência de atualização para sinalizar ao Google que o perfil está ativo.", body_style))
+    story.append(Paragraph("3. Confiança & Autoridade: Publicação do Tour Virtual 360° no Street View e fotos em alta resolução.", body_style))
+    story.append(Paragraph("4. Vitrine Imersiva: Padronização do acervo visual do espaço e integração dos canais de contato direto.", body_style))
+
+    def add_footer_relatorio(canvas, doc):
+        canvas.saveState()
+        canvas.setStrokeColor(colors.HexColor('#BFDBFE'))
+        canvas.setLineWidth(1.0)
+        canvas.line(40, 30, letter[0] - 40, 30)
+        footer_html = '<a href="https://tour360vr.com.br" color="#334155">tour360vr.com.br</a> &nbsp;|&nbsp; <a href="mailto:contato@tour360vr.com.br" color="#334155">contato@tour360vr.com.br</a> &nbsp;|&nbsp; <a href="https://wa.me/5516991332121" color="#334155">WhatsApp: (16) 99133-2121</a>'
+        p = Paragraph(footer_html, ParagraphStyle('Footer', fontName='Helvetica', fontSize=8, alignment=1))
+        p.wrap(letter[0] - 80, 30)
+        p.drawOn(canvas, 40, 15)
+        canvas.restoreState()
+
+    doc.build(story, onFirstPage=add_footer_relatorio, onLaterPages=add_footer_relatorio)
+    buffer.seek(0)
+    return buffer
 
 def gerar_imagem_grafico(df_historico):
     fig, ax = plt.subplots(figsize=(6.5, 2.0), dpi=200)
@@ -321,7 +375,6 @@ def gerar_imagem_grafico(df_historico):
     img_buf.seek(0)
     return img_buf
 
-# --- GERAÇÃO DE RELATÓRIO PDF EXECUTIVO ---
 def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dados_inicio, df_historico=None, df_keywords=None):
     buffer = BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=40, leftMargin=40, topMargin=15, bottomMargin=65)
@@ -409,7 +462,6 @@ def gerar_pdf_relatorio(nome_empresa, mes_ano, dados_atual, dados_anterior, dado
     buffer.seek(0)
     return buffer
 
-# --- GERAÇÃO DE CONTRATO EM PDF ---
 def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duracao=None):
     buffer = BytesIO()
     doc = SimpleDocTemplate(
@@ -564,14 +616,6 @@ st.markdown("""
 
 if "aba_ativa" not in st.session_state:
     st.session_state["aba_ativa"] = "cadastrar"
-
-# --- CARD DE TOPO PADRÃO RADAR ---
-import base64
-def obter_base64_logo(caminho):
-    if os.path.exists(caminho):
-        with open(caminho, "rb") as f:
-            return base64.b64encode(f.read()).decode("utf-8")
-    return ""
 
 logo_base64 = obter_base64_logo(LOGO_LOCAL_PATH)
 img_tag = f'<img src="data:image/png;base64,{logo_base64}" class="radar-logo-img"/>' if logo_base64 else '🏢'
@@ -828,7 +872,7 @@ if st.session_state["aba_ativa"] == "cadastrar":
     gerar_botoes_navegacao_rodape()
 
 # ==========================================
-# MÓDULO 2: AUDITORIA EXPRESS (VIA GOOGLE PLACES API - RIGOROSA 9 ITENS)
+# MÓDULO 2: AUDITORIA EXPRESS (COM BOTÕES DE SALVAR E PDF)
 # ==========================================
 elif st.session_state["aba_ativa"] == "auditoria":
     st.subheader("🔍 Auditoria Detalhada de Pontos de Busca (9 Critérios Oficiais)")
@@ -841,40 +885,72 @@ elif st.session_state["aba_ativa"] == "auditoria":
             if err: 
                 st.error(err)
             else:
-                st.markdown(f"### 🏢 Empresa: **{res_aud['nome']}**")
-                st.markdown(f"📍 **Endereço:** {res_aud['endereco']} | 📞 **Tel:** {res_aud['telefone']}")
-                
-                score = res_aud['score']
-                if score >= 75:
-                    st.success(f"⭐ **Score da Ficha: {score}/100** (Excelente otimização)")
-                elif score >= 40:
-                    st.warning(f"⚠️ **Score da Ficha: {score}/100** (Requer otimizações)")
-                else:
-                    st.error(f"❌ **Score da Ficha: {score}/100** (Crítico / Alto Potencial de Consultoria)")
-
-                st.markdown("#### 📋 Auditoria Detalhada de Pontos (9 Critérios):")
-                
-                # Montando a tabela de exibição visual dos 9 critérios na interface
-                dados_tabela_ui = []
-                for item, estado, impacto, status in res_aud['criterios']:
-                    dados_tabela_ui.append({
-                        "Critério": item,
-                        "Diagnóstico Técnico": estado,
-                        "Impacto Local": impacto,
-                        "Status": status
-                    })
-                
-                df_ui = pd.DataFrame(dados_tabela_ui)
-                st.dataframe(df_ui, use_container_width=True)
-
-                st.markdown("#### 🚀 Plano de Ação & Oportunidades Recomendadas:")
-                st.markdown("- **1. Atração Local (SEO):** Correção cadastral e otimização das categorias principal e secundárias.")
-                st.markdown("- **2. Segurança & Posicionamento:** Frequência de atualização para sinalizar ao Google que o perfil está ativo.")
-                st.markdown("- **3. Confiança & Autoridade:** Publicação do Tour Virtual 360° no Street View e fotos em alta resolução[cite: 13].")
-                st.markdown("- **4. Vitrine Imersiva:** Padronização do acervo visual e integração dos canais de contato direto[cite: 13].")
+                st.session_state["ultima_auditoria"] = res_aud
         else:
             st.warning("Insira uma URL ou o nome da empresa.")
-            
+
+    if "ultima_auditoria" in st.session_state:
+        res_aud = st.session_state["ultima_auditoria"]
+        st.markdown(f"### 🏢 Empresa: **{res_aud['nome']}**")
+        st.markdown(f"📍 **Endereço:** {res_aud['endereco']} | 📞 **Tel:** {res_aud['telefone']}")
+        
+        score = res_aud['score']
+        if score >= 75:
+            st.success(f"⭐ **Score da Ficha: {score}/100** (Excelente otimização)")
+        elif score >= 40:
+            st.warning(f"⚠️ **Score da Ficha: {score}/100** (Requer otimizações)")
+        else:
+            st.error(f"❌ **Score da Ficha: {score}/100** (Crítico / Alto Potencial de Consultoria)")
+
+        st.markdown("#### 📋 Auditoria Detalhada de Pontos (9 Critérios):")
+        dados_tabela_ui = []
+        for item, estado, impacto, status in res_aud['criterios']:
+            dados_tabela_ui.append({
+                "Critério": item,
+                "Diagnóstico Técnico": estado,
+                "Impacto Local": impacto,
+                "Status": status
+            })
+        
+        df_ui = pd.DataFrame(dados_tabela_ui)
+        st.dataframe(df_ui, use_container_width=True)
+
+        st.markdown("#### 🚀 Plano de Ação & Oportunidades Recomendadas:")
+        st.markdown("- **1. Atração Local (SEO):** Correção cadastral e otimização das categorias principal e secundárias.")
+        st.markdown("- **2. Segurança & Posicionamento:** Frequência de atualização para sinalizar ao Google que o perfil está ativo.")
+        st.markdown("- **3. Confiança & Autoridade:** Publicação do Tour Virtual 360° no Street View e fotos em alta resolução.")
+        st.markdown("- **4. Vitrine Imersiva:** Padronização do acervo visual e integração dos canais de contato direto.")
+
+        st.markdown("---")
+        col_pdf, col_db = st.columns(2)
+        
+        with col_pdf:
+            pdf_aud_bytes = gerar_pdf_auditoria(res_aud)
+            st.download_button(
+                "📥 Baixar Relatório de Auditoria em PDF",
+                data=pdf_aud_bytes,
+                file_name=f"Auditoria_{res_aud['nome'].replace(' ', '_')}.pdf",
+                mime="application/pdf",
+                key="btn_download_auditoria_pdf"
+            )
+
+        with col_db:
+            if st.button("💾 Salvar Ficha na Base de Clientes (Supabase)"):
+                try:
+                    payload_novo = {
+                        "nome_empresa": res_aud["nome"],
+                        "endereco_local": res_aud["endereco"],
+                        "telefone_contato": res_aud["telefone"],
+                        "website": res_aud["website"] if res_aud["website"] != "Não informado" else "",
+                        "status_contrato": "Em Negociação",
+                        "valor_contrato_mensal": 450.0,
+                        "observacoes_tecnicas": f"Score de Auditoria: {res_aud['score']}/100."
+                    }
+                    supabase.table("clientes").insert(payload_novo).execute()
+                    st.success(f"Empresa '{res_aud['nome']}' salva com sucesso na aba 'Ficha Comercial'!")
+                except Exception as e:
+                    st.error(f"Erro ao salvar no banco: {str(e)}")
+
     gerar_botoes_navegacao_rodape()
 
 # ==========================================
