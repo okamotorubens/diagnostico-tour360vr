@@ -673,7 +673,7 @@ elif st.session_state.etapa == 4:
         st.markdown(f"<span class='gl-muted'>Exibindo <b>{len(df_m)}</b> empresas no mapa.</span>",
                     unsafe_allow_html=True)
 
-                if len(df_m) > 0:
+            if len(df_m) > 0:
             CORES_PINS = ["red", "blue", "green", "purple", "orange", "darkred", "cadetblue", "darkgreen", "darkblue", "pink"]
             CORES_HEX = {
                 "red": "#ef4444", "blue": "#3b82f6", "green": "#10b981", "purple": "#8b5cf6",
