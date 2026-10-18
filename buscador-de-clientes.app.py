@@ -774,7 +774,11 @@ elif st.session_state.etapa == 2:
     else:
         df_leads_crm = pd.DataFrame(base_leads)
 
-        col_f_nicho, col_f_cid, col_f_status, col_export = st.columns([2, 2, 2, 2.2])
+# Adicionado o filtro de busca por nome da empresa junto aos demais filtros
+        col_f_busca, col_f_nicho, col_f_cid, col_f_status, col_export = st.columns([2, 2, 2, 2, 2.2])
+
+        with col_f_busca:
+            filtro_nome_busca = st.text_input("🔍 Buscar por Nome:", value="", placeholder="Ex: Nome da empresa")
 
         with col_f_nicho:
             nichos_existentes = ["Todos os Nichos"] + list(df_leads_crm['categoria'].unique())
@@ -803,7 +807,12 @@ elif st.session_state.etapa == 2:
 
         st.divider()
 
+        # Aplicação do filtro de nome em conjunto com os demais
         resultados_filtrados = base_leads
+        if filtro_nome_busca.strip():
+            termo_busca = filtro_nome_busca.strip().lower()
+            resultados_filtrados = [r for r in resultados_filtrados if termo_busca in r['nome'].lower()]
+            
         if filtro_nicho != "Todos os Nichos":
             resultados_filtrados = [r for r in resultados_filtrados if r['categoria'] == filtro_nicho]
         if filtro_cidade != "Todas as Cidades":
