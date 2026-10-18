@@ -748,7 +748,7 @@ elif st.session_state.etapa == 4:
                 ]
                 m.get_root().html.add_child(folium.Element(legenda_html("Legenda por score", itens_leg)))
 
-            if len(bounds) > 1:
+                if len(bounds) > 1:
                 m.fit_bounds(bounds, padding=(30, 30))
             with st.container(border=True):
                 st_folium(m, width=None, height=650, returned_objects=[])
