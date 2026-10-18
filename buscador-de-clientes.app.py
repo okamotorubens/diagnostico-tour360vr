@@ -1135,23 +1135,29 @@ elif st.session_state.etapa == 5:
         if not url_input:
             st.error("Por favor, informe a URL ou @ de um perfil do Instagram ativo.")
         else:
-            username_limpo = url_input.strip().split("instagram.com/")[-1].replace("@", "").replace("/", "").split("?")[0]
+            # Tratamento avançado de sanitização da URL do Instagram
+            username_limpo = url_input.strip()
+            if "instagram.com/" in username_limpo:
+                username_limpo = username_limpo.split("instagram.com/")[-1]
+            username_limpo = username_limpo.replace("@", "").strip("/").split("?")[0].split("/")[0]
             
             with st.spinner(f"O robô do Apify está varrendo os seguidores de '@{username_limpo}' de forma anônima e segura..."):
                 try:
                     client = ApifyClient(APIFY_TOKEN)
                     
+                    # Estrutura exata aceita pelo Actor seemuapps/instagram-followers-scraper
                     run_input = {
                         "username": username_limpo,
                         "mode": "followers",
-                        "maxItems": limite_leads
+                        "maxItems": int(limite_leads)
                     }
                     
-                    # Executa a chamada do Actor
+                    # Executa o scraping
                     run = client.actor("seemuapps/instagram-followers-scraper").call(run_input=run_input)
                     dados_coletados = []
                     
-                    # Extrai o ID do dataset de forma compatível com dicionário ou objeto Run
+                    # Resolução do ID do Dataset
+                    dataset_id = None
                     if isinstance(run, dict):
                         dataset_id = run.get("defaultDatasetId") or run.get("default_dataset_id")
                     else:
@@ -1159,58 +1165,58 @@ elif st.session_state.etapa == 5:
                         if not dataset_id and hasattr(run, "get"):
                             dataset_id = run.get("defaultDatasetId") or run.get("default_dataset_id")
                     
-                    for item in client.dataset(dataset_id).iterate_items():
-                        bio = item.get("biography", "")
-                        link_ext = item.get("externalUrl", "")
-                        
-                        # Captura de WhatsApp na bio ou link externo
-                        whats = "Não encontrado"
-                        wa_match = re.search(r'(wa\.me|api\.whatsapp\.com/send\?phone=)(\d+)', link_ext or "")
-                        if wa_match: 
-                            whats = wa_match.group(2)
-                        else:
-                            fone_match = re.search(r'(?:\+?55\s?)?(?:\(?\d{2}\)?\s?)?(?:9\s?\d{4}[-\s]?\d{4}|\d{4}[-\s]?\d{4})', bio or "")
-                            if fone_match:
-                                num_limpo = re.sub(r'\D', '', fone_match.group(0))
-                                whats = "55" + num_limpo if len(num_limpo) == 11 and not num_limpo.startswith("55") else num_limpo
-                        
-                        dados_coletados.append({
-                            "username": item.get("username"),
-                            "nome_completo": item.get("displayName") or item.get("fullName") or "Sem nome informado",
-                            "instagram_id": str(item.get("userId") or item.get("id")),
-                            "biografia": bio,
-                            "link_bio": link_ext,
-                            "whatsapp": whats,
-                            "foto_perfil": item.get("profilePicUrl", "https://via.placeholder.com/150"),
-                            "origem_concorrente": username_limpo
-                        })
+                    if dataset_id:
+                        for item in client.dataset(dataset_id).iterate_items():
+                            bio = item.get("biography", "") or item.get("bio", "")
+                            link_ext = item.get("externalUrl", "") or item.get("external_url", "")
+                            
+                            # Mapeamento de WhatsApp
+                            whats = "Não encontrado"
+                            wa_match = re.search(r'(wa\.me|api\.whatsapp\.com/send\?phone=)(\d+)', link_ext or "")
+                            if wa_match: 
+                                whats = wa_match.group(2)
+                            else:
+                                fone_match = re.search(r'(?:\+?55\s?)?(?:\(?\d{2}\)?\s?)?(?:9\s?\d{4}[-\s]?\d{4}|\d{4}[-\s]?\d{4})', bio or "")
+                                if fone_match:
+                                    num_limpo = re.sub(r'\D', '', fone_match.group(0))
+                                    whats = "55" + num_limpo if len(num_limpo) == 11 and not num_limpo.startswith("55") else num_limpo
+                            
+                            dados_coletados.append({
+                                "username": item.get("username"),
+                                "nome_completo": item.get("displayName") or item.get("fullName") or item.get("full_name") or "Sem nome informado",
+                                "instagram_id": str(item.get("userId") or item.get("id") or item.get("pk", "")),
+                                "biografia": bio,
+                                "link_bio": link_ext,
+                                "whatsapp": whats,
+                                "foto_perfil": item.get("profilePicUrl") or item.get("profile_pic_url") or "https://via.placeholder.com/150",
+                                "origem_concorrente": username_limpo
+                            })
                         
                     if dados_coletados:
                         df_leads = pd.DataFrame(dados_coletados)
                         st.session_state['leads_instagram_coletados'] = df_leads
                         
-                        # Gravação dos dados na tabela 'leads_instagram' do Supabase
+                        # Gravação no Supabase
                         if supabase:
-                            with st.spinner("Sincronizando registros extraídos com o seu banco de dados Supabase..."):
+                            with st.spinner("Sincronizando registros extraídos com o banco de dados Supabase..."):
                                 try:
                                     payload = df_leads.to_dict(orient="records")
                                     supabase.table("leads_instagram").upsert(payload, on_conflict="instagram_id").execute()
                                     st.success("✨ Leads minerados salvos com sucesso na tabela 'leads_instagram'!")
                                 except Exception as db_err:
-                                    st.warning(f"Leads exibidos com sucesso, mas falhou o push para o Supabase: {db_err}")
+                                    st.warning(f"Leads exibidos no painel, mas falhou a sincronização com o Supabase: {db_err}")
                     else:
-                        st.warning("Nenhum seguidor retornado pela API. Certifique-se de que a conta não é privada.")
+                        st.warning(f"Nenhum seguidor retornado pela API para o perfil '@{username_limpo}'. Certifique-se de que a conta é pública e possui seguidores ativos.")
                 except Exception as e:
                     st.error(f"Erro operacional durante o processo de scraping: {e}")
 
-    # Apresentação do Painel Comercial Visual
+    # Exibição do painel visual de resultados
     if 'leads_instagram_coletados' in st.session_state:
         df_atual = st.session_state['leads_instagram_coletados']
         
         st.divider()
         st.subheader(f"📊 Leads Estruturados: {len(df_atual)} Registros Ativos")
         
-        # Buffer de memória para geração da planilha Excel via openpyxl
         buffer = io.BytesIO()
         with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
             df_atual.to_excel(writer, index=False, sheet_name='Leads Instagram')
