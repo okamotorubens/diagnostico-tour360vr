@@ -488,6 +488,7 @@ def buscar_google_places_api(nicho, cidade, bairro, rua, raio_km, api_key, limit
     
     leads = []
     next_page_token = None
+    pagina_atual = 1
     
     try:
         while len(leads) < limite:
@@ -495,16 +496,16 @@ def buscar_google_places_api(nicho, cidade, bairro, rua, raio_km, api_key, limit
             if next_page_token:
                 pag_url = f"https://maps.googleapis.com/maps/api/place/textsearch/json?pagetoken={next_page_token}&key={api_key}"
                 
-                # O Google exige um tempo de espera para o token ativar. Tentamos até 3 vezes se der erro de requisição inválida.
                 success = False
-                for tentativa in range(3):
-                    time.sleep(3.5) # Aguarda 3.5 segundos para o token ficar pronto
+                for tentativa in range(4):
+                    time.sleep(4) # Espera 4 segundos para o token ativar no servidor do Google
                     response = requests.get(pag_url, timeout=12)
                     data = response.json()
                     if data.get("status") == "OK":
                         success = True
                         break
                 if not success:
+                    st.info(f"ℹ️ O Google Maps encerrou os resultados na página {pagina_atual} (Total encontrado: {len(leads)} empresas).")
                     break
             else:
                 response = requests.get(url, timeout=12)
@@ -514,6 +515,9 @@ def buscar_google_places_api(nicho, cidade, bairro, rua, raio_km, api_key, limit
             
             if status == "OK":
                 results = data.get("results", [])
+                if not results:
+                    break
+
                 for place in results:
                     if len(leads) >= limite:
                         break
@@ -608,6 +612,8 @@ def buscar_google_places_api(nicho, cidade, bairro, rua, raio_km, api_key, limit
                     leads.append(lead_obj)
                 
                 next_page_token = data.get("next_page_token")
+                pagina_atual += 1
+
                 if not next_page_token or len(leads) >= limite:
                     break
             else:
