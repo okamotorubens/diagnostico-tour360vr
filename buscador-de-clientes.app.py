@@ -569,17 +569,17 @@ elif st.session_state.etapa == 2:
                                     unsafe_allow_html=True)
 
               with col_actions:
-    st.markdown("**🌐 Presença Web & Mídias:**")
-    st.markdown(f"- **Website:** {lead['website'] if lead['website'] else '❌ Sem site'}")
+                        st.markdown("**🌐 Presença Web & Mídias:**")
+                        st.markdown(f"- **Website:** {lead['website'] if lead['website'] else '❌ Sem site'}")
     
     # Exibição segura do link do Instagram salvo no lead
-    insta_link = lead.get('instagram', '')
-    if insta_link:
-        st.markdown(f"- **Instagram:** [Abrir Perfil]({insta_link})")
-    else:
-        st.markdown("- **Instagram:** ❌ Não informado")
+             insta_link = lead.get('instagram', '')
+             if insta_link:
+             st.markdown(f"- **Instagram:** [Abrir Perfil]({insta_link})")
+             else:
+             st.markdown("- **Instagram:** ❌ Não informado")
 
-    st.markdown(f"- **Maps:** [Ver no Google Maps](https://www.google.com/maps/search/?api=1&query={lead['nome'].replace(' ', '+')})")
+             st.markdown(f"- **Maps:** [Ver no Google Maps](https://www.google.com/maps/search/?api=1&query={lead['nome'].replace(' ', '+')})")
 
                     st.markdown(
                         f"[Ver no Google Maps](https://www.google.com/maps/search/?api=1&query="
