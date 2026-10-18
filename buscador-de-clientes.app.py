@@ -603,6 +603,7 @@ def buscar_google_places_api(nome_empresa, nicho, cidade, bairro, rua, raio_km, 
                 nome_normalizado = unicodedata.normalize('NFKD', nome.lower()).encode('ASCII', 'ignore').decode('ASCII')
                 nome_slug = re.sub(r'[^a-zA-Z0-9]', '', nome_normalizado)
                 instagram_url = f"https://instagram.com/{nome_slug}"
+                facebook_url = f"https://facebook.com/{nome_slug}"
 
                 lead_obj = {
                     "data_minacao": datetime.now().strftime('%d/%m/%Y %H:%M'),
@@ -618,7 +619,7 @@ def buscar_google_places_api(nome_empresa, nicho, cidade, bairro, rua, raio_km, 
                     "website": website,
                     "website_https": has_https,
                     "instagram": instagram_url,
-                    "facebook": f"https://facebook.com/{nome_slug}",
+                    "facebook": facebook_url,
                     "foto_url": foto_url,
                     "nota": nota,
                     "total_avaliacoes": total_avaliacoes,
@@ -932,6 +933,12 @@ elif st.session_state.etapa == 2:
                     st.markdown(f"- **Instagram:** [Abrir Perfil]({insta_link})")
                 else:
                     st.markdown("- **Instagram:** ❌ Não informado")
+
+                fb_link = lead.get('facebook', '')
+                if fb_link:
+                    st.markdown(f"- **Facebook:** [Abrir Página]({fb_link})")
+                else:
+                    st.markdown("- **Facebook:** ❌ Não informado")
 
                 st.markdown(f"- **Maps:** [Ver no Google Maps](https://www.google.com/maps/search/?api=1&query={lead['nome'].replace(' ', '+')})")
 
