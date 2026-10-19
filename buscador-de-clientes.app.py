@@ -182,7 +182,7 @@ def limpar_banco_dados():
         st.error(f"Erro ao limpar banco: {str(e)}")
 
 # -----------------------------------------------------------------------------
-# GERADOR DE PDF DO PANORAMA DE NICHO
+# GERADOR DE PDF DO PANORAMA DE NICHO (MÉTRICA INVERTIDA: MAIS COMPLETA NO TOPO)
 # -----------------------------------------------------------------------------
 def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
     canvas.saveState()
@@ -284,10 +284,14 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     elements.append(title_table)
     
     elements.append(Spacer(1, 2))
-    elements.append(Paragraph("DISTRIBUIÇÃO DE EMPRESAS POR SCORE DE OPORTUNIDADE COMERCIAL (PONTUAÇÃO)", section_heading))
+    elements.append(Paragraph("DISTRIBUIÇÃO DE EMPRESAS POR NÍVEL DE MATURIDADE DIGITAL", section_heading))
     elements.append(Spacer(1, 2))
 
-    scores_counts = df_nicho['score_oportunidade'].value_counts().sort_index(ascending=False)
+    # CÁLCULO INVERTIDO PARA O PDF: Score de Saúde da Ficha (100 - score_oportunidade)
+    df_pdf = df_nicho.copy()
+    df_pdf['score_saude'] = 100 - df_pdf['score_oportunidade']
+    
+    scores_counts = df_pdf['score_saude'].value_counts().sort_index(ascending=False)
     
     chart_draw = Drawing(540, 95)
     chart_draw.hAlign = 'CENTER'
@@ -305,10 +309,10 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
             by = 22
             bh = max((total_lead / max_val) * 52, 6)
             
-            c_fill = colors.HexColor('#4ade80') if score_val >= 60 else (colors.HexColor('#facc15') if score_val >= 30 else colors.HexColor('#f87171'))
+            c_fill = colors.HexColor('#4ade80') if score_val >= 70 else (colors.HexColor('#facc15') if score_val >= 40 else colors.HexColor('#f87171'))
             
             chart_draw.add(Rect(bx, by, bar_w, bh, fillColor=c_fill, strokeColor=None, rx=2, ry=2))
-            chart_draw.add(String(bx + (bar_w / 2), by + bh + 4, str(total_lead), fontSize=8.5, fontName="Helvetica-Bold", fillColor=colors.HexColor('#0f172a'), textAnchor="middle"))
+            chart_draw.add(String(bx + (bar_w / 2), by + bh + 4, str(total_lead), fontSize=8.5, fontName="Helvetica-Bold", fillColor=colors.HexColor('#0f172a'], textAnchor="middle"))
             chart_draw.add(String(bx + (bar_w / 2), by - 12, f"{score_val} pts", fontSize=7.5, fontName="Helvetica-Bold", fillColor=colors.HexColor('#475569'), textAnchor="middle"))
 
     elements.append(chart_draw)
@@ -337,17 +341,18 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     elements.append(t_resumo)
     
     elements.append(Spacer(1, 10))
-    elements.append(Paragraph("RANKING DE EMPRESAS AUDITADAS NO SETOR", section_heading))
+    elements.append(Paragraph("RANKING DE EMPRESAS AUDITADAS NO SETOR (DA MAIS COMPLETA À MAIS FRACA)", section_heading))
     elements.append(Spacer(1, 4))
 
-    df_nicho_sorted = df_nicho.sort_values(by='score_oportunidade', ascending=False)
+    # ORDENAÇÃO NO PDF: Da ficha mais completa (menor score de oportunidade / maior saúde) para a mais fraca
+    df_pdf_sorted = df_pdf.sort_values(by='score_oportunidade', ascending=True)
 
     t_data = [[
         Paragraph("<b>EMPRESA</b>", body_style), 
         Paragraph("<b>NOTA</b>", body_center), 
         Paragraph("<b>AVALIAÇÕES</b>", body_center),
         Paragraph("<b>SITE</b>", body_center), 
-        Paragraph("<b>SCORE</b>", body_center)
+        Paragraph("<b>SAÚDE DIGITAL</b>", body_center)
     ]]
     
     t_styles = [
@@ -359,21 +364,21 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
         ('ALIGN', (1,0), (-1,-1), 'CENTER'),
     ]
 
-    for idx, row in enumerate(df_nicho_sorted.iterrows()):
+    for idx, row in enumerate(df_pdf_sorted.iterrows()):
         r_data = row[1]
-        sc = r_data['score_oportunidade']
+        sc_saude = r_data['score_saude']
         
-        if sc >= 60:
+        if sc_saude >= 70:
             bg_color = colors.HexColor('#86efac')
             txt_color = '#14532d'
-        elif sc >= 30:
+        elif sc_saude >= 40:
             bg_color = colors.HexColor('#fde047')
             txt_color = '#713f12'
         else:
             bg_color = colors.HexColor('#fca5a5')
             txt_color = '#7f1d1d'
 
-        p_score = Paragraph(f"<font color='{txt_color}'><b>{sc}/100</b></font>", body_center)
+        p_score = Paragraph(f"<font color='{txt_color}'><b>{sc_saude}/100</b></font>", body_center)
 
         row_idx = idx + 1
         t_styles.append(('BACKGROUND', (4, row_idx), (4, row_idx), bg_color))
@@ -725,9 +730,7 @@ def gerar_csv_excel_formatado(dados_leads):
 # -----------------------------------------------------------------------------
 base_leads = carregar_todos_leads_db()
 
-# Cálculo de pendências para notificação na barra lateral
 hoje_str = str(date.today())
-# Cálculo blindado de pendências para evitar erros com campos nulos na nuvem
 pendentes_hoje = []
 for l in base_leads:
     dt_fu = l.get('data_followup')
@@ -751,7 +754,6 @@ with st.sidebar:
 
     st.divider()
 
-    # Central de Notificações de Retorno
     if len(pendentes_hoje) > 0:
         st.markdown(f"""
             <div style="background-color: #7f1d1d; border: 1px solid #991b1b; padding: 10px; border-radius: 8px; margin-bottom: 12px; text-align: center;">
@@ -959,7 +961,7 @@ elif st.session_state.etapa == 2:
                             <p style="margin: 3px 0 0 0; color: #94a3b8; font-size: 12.5px;">📍 {lead['endereco']} | 🏷️ {lead['categoria']}</p>
                         </div>
                         <div class="score-box {score_class}">
-                            <div style="font-size: 9.5px; font-weight: bold;">SCORE</div>
+                            <div style="font-size: 9.5px; font-weight: bold;">SCORE OPORTUNIDADE</div>
                             <div style="font-size: 18px; font-weight: bold;">{score} / 100</div>
                             <div style="font-size: 8.5px;">{score_label}</div>
                         </div>
@@ -1158,6 +1160,7 @@ elif st.session_state.etapa == 3:
         if cidade_selecionada != "Todas as Cidades":
             df_filtrado = df_filtrado[df_filtrado['cidade_busca'] == cidade_selecionada]
 
+        # Na tela do sistema, mantemos ordenado pelo Score de Oportunidade (maior score / mais falhas no topo)
         df_filtrado_sorted = df_filtrado.sort_values(by='score_oportunidade', ascending=False)
 
         data_hoje_str = datetime.now().strftime('%d-%m-%Y')
@@ -1166,7 +1169,7 @@ elif st.session_state.etapa == 3:
 
         with col_btn_pdf:
             st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
-            pdf_bytes_nicho = gerar_pdf_panorama_nicho(nicho_selecionado, df_filtrado_sorted)
+            pdf_bytes_nicho = gerar_pdf_panorama_nicho(nicho_selecionado, df_filtrado)
             st.download_button(
                 label="📄 Baixar Relatório (.pdf)",
                 data=pdf_bytes_nicho,
@@ -1204,12 +1207,12 @@ elif st.session_state.etapa == 3:
             st.bar_chart(df_filtrado_sorted['nota'].value_counts())
 
         st.divider()
-        st.markdown(f"### 📋 Ranking do Nicho **{nicho_selecionado}**:")
+        st.markdown(f"### 📋 Ranking do Nicho **{nicho_selecionado}** (Ordem de Prospecção):")
         
         df_exibicao = pd.DataFrame({
             'EMPRESA': df_filtrado_sorted['nome'],
             'CIDADE': df_filtrado_sorted['cidade_busca'],
-            'SCORE': df_filtrado_sorted['score_oportunidade'].apply(lambda x: f"{x}/100"),
+            'SCORE OPORTUNIDADE': df_filtrado_sorted['score_oportunidade'].apply(lambda x: f"{x}/100"),
             'NOTA': df_filtrado_sorted['nota'].apply(lambda x: f"{x:.1f} ⭐"),
             'AVALIAÇÕES': df_filtrado_sorted['total_avaliacoes'].astype(str),
             'WEBSITE': df_filtrado_sorted['website'].apply(lambda x: x if x else "Sem site registrado")
@@ -1225,7 +1228,7 @@ elif st.session_state.etapa == 3:
             column_config={
                 "EMPRESA": st.column_config.Column("EMPRESA", width="large"),
                 "CIDADE": st.column_config.Column("CIDADE", alignment="center"),
-                "SCORE": st.column_config.Column("SCORE", width="small", alignment="center"),
+                "SCORE OPORTUNIDADE": st.column_config.Column("SCORE OPORTUNIDADE", width="small", alignment="center"),
                 "NOTA": st.column_config.Column("NOTA", width="small", alignment="center"),
                 "AVALIAÇÕES": st.column_config.Column("AVALIAÇÕES", width="small", alignment="center"),
                 "WEBSITE": st.column_config.LinkColumn("WEBSITE", width="large")
@@ -1313,13 +1316,12 @@ elif st.session_state.etapa == 4:
             for _, row in df_mapa_filtrado.iterrows():
                 cor_pin = mapa_cores_seg.get(row['categoria'], 'red') if cat_sel_mapa == "Todos os Nichos" else 'red'
                 
-                # CORREÇÃO APLICADA AQUI (row['nome'] em vez de row['name'])
                 info_card_html = f"""
                 <div style="font-family: Arial, sans-serif; font-size: 12px; min-width: 240px; padding: 6px; line-height: 1.5;">
                     <b style="color: #2563eb; font-size: 14px;">{row['nome']}</b><br/>
                     <span style="color: #475569; font-size: 11px;">📍 {row['endereco']}</span><br/>
                     <hr style="margin: 6px 0; border: 0.5px solid #cbd5e1;"/>
-                    🚨 <b>Score de Oportunidade:</b> <span style="color: #dc2626; font-weight: bold;">{row['score_oportunidade']}/100</span><br/>
+                    🚨 <b>Score Oportunidade:</b> <span style="color: #dc2626; font-weight: bold;">{row['score_oportunidade']}/100</span><br/>
                     ⭐ <b>Nota no Google:</b> {row['nota']} ({row['total_avaliacoes']} avaliações)<br/>
                 </div>
                 """
@@ -1339,9 +1341,9 @@ elif st.session_state.etapa == 4:
             
             st.divider()
             
-            # ITINERÁRIO SEQUENCIAL COM ROTA DE NAVEGAÇÃO REAL
-            st.markdown("### 🚗 Itinerário Sequencial de Visitas Presenciais")
-            st.markdown("Lista ordenada de paradas com rotas de navegação passo a passo a partir da sua localização:")
+            # ITINERÁRIO SEQUENCIAL (OS MAIORES SCORES DE OPORTUNIDADE PRIMEIRO)
+            st.markdown("### 🚗 Itinerário Sequencial de Visitas Presenciais (Prioridade Comercial)")
+            st.markdown("Lista ordenada do maior score de oportunidade (mais carente de serviços) para o menor:")
 
             df_mapa_sorted = df_mapa_filtrado.sort_values(by='score_oportunidade', ascending=False)
             
@@ -1355,7 +1357,7 @@ elif st.session_state.etapa == 4:
                     with col_info:
                         st.markdown(f"**{r_visita['nome']}** ({r_visita['categoria']})")
                         st.markdown(f"📍 {r_visita['endereco']}")
-                        st.markdown(f"⭐ Nota: {r_visita['nota']} | 🚨 Score de Oportunidade: **{r_visita['score_oportunidade']}/100**")
+                        st.markdown(f"⭐ Nota: {r_visita['nota']} | 🚨 Score Oportunidade: **{r_visita['score_oportunidade']}/100**")
                     with col_acao:
                         st.markdown(f"<div style='height: 4px;'></div>", unsafe_allow_html=True)
                         st.markdown(f'<a href="{url_rota_passo_a_passo}" target="_blank"><button style="width:100%; background-color:#2563eb; color:white; border:none; padding:7px; border-radius:6px; font-weight:bold; cursor:pointer; margin-bottom:5px;">🧭 Iniciar Navegação (GPS)</button></a>', unsafe_allow_html=True)
