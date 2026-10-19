@@ -570,7 +570,7 @@ st.markdown("""
     }
 
     section[data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #0a1f44 0%, #071735 100%) !important;
+        background: linear-gradient(180deg, #030712 0%, #010409 100%) !important;
         backdrop-filter: blur(22px) saturate(140%) !important;
         -webkit-backdrop-filter: blur(22px) saturate(140%) !important;
         border-right: 1px solid rgba(255,255,255,0.06) !important;
@@ -807,7 +807,7 @@ st.markdown("""
 
     section[data-testid="stSidebar"] .stButton>button {
         background: linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%) !important;
-        border: 1px solid #cbd5e1 !important;
+        border: 1px solid rgba(148,163,184,0.14) !important;
         border-radius: 8px !important;
         color: #e2e8f0 !important;
         box-shadow: none !important;
@@ -819,7 +819,7 @@ st.markdown("""
     }
     section[data-testid="stSidebar"] .stButton>button[kind="primary"] {
         background: linear-gradient(135deg, rgba(37,99,235,0.75) 0%, rgba(14,165,233,0.35) 55%, rgba(15,23,42,0.6) 100%) !important;
-        border: 1px solid #cbd5e1 !important;
+        border: 1px solid rgba(148,163,184,0.14) !important;
         color: #ffffff !important;
         box-shadow: 0 0 10px rgba(56,189,248,0.45), inset 0 1px 0 rgba(255,255,255,0.25) !important;
     }
@@ -851,6 +851,8 @@ st.markdown("""
         min-height: 38px !important;
     }
     div[data-testid="stMetricValue"] { white-space: normal !important; overflow: visible !important; font-size: 1.6rem !important; }
+    .critical-item { text-align: center !important; }
+    div[data-testid="column"]:has(.critical-item) { text-align: center; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -1333,7 +1335,7 @@ elif st.session_state.etapa == 3:
                 </div>
             """, unsafe_allow_html=True)
 
-            col_img, col_details1, col_details2, col_actions = st.columns([4.4, 2.0, 2.0, 2.2])
+            col_img, col_details1, col_details2, col_actions = st.columns([3.6, 2.8, 2.8, 2.6])
 
             with col_img:
                 foto_lead = lead.get('foto_url', '')
