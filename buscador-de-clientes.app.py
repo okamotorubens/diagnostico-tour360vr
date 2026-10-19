@@ -1233,13 +1233,13 @@ elif st.session_state.etapa == 3:
         )
 
 # -----------------------------------------------------------------------------
-# ETAPA 4: MAPA & ROTA DE VISITAS (PROSPECÇÃO PRESENCIAL COM ITINERÁRIO)
+# ETAPA 4: MAPA & ROTA DE VISITAS (PROSPECÇÃO PRESENCIAL COM ITINERÁRIO REAL)
 # -----------------------------------------------------------------------------
 elif st.session_state.etapa == 4:
     st.markdown("""
         <div class="main-header">
             <h1 class="main-title">🗺️ Mapa & Planejador de Rotas de Visitas</h1>
-            <div class="main-subtitle">Visualize leads no mapa e organize seu itinerário sequencial de prospecção presencial.</div>
+            <div class="main-subtitle">Visualize leads no mapa e organize seu itinerário sequencial com rotas de navegação passo a passo.</div>
         </div>
     """, unsafe_allow_html=True)
 
@@ -1312,18 +1312,15 @@ elif st.session_state.etapa == 4:
             bounds = []
             for _, row in df_mapa_filtrado.iterrows():
                 cor_pin = mapa_cores_seg.get(row['categoria'], 'red') if cat_sel_mapa == "Todos os Nichos" else 'red'
-                url_maps_emp = f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(row['nome'])}"
+                url_maps_emp = f"https://www.google.com/maps/dir//({urllib.parse.quote(row['endereco'])});"
 
                 info_card_html = f"""
                 <div style="font-family: Arial, sans-serif; font-size: 12px; min-width: 240px; padding: 6px; line-height: 1.5;">
-                    <a href="{url_maps_emp}" target="_blank" style="text-decoration: none;">
-                        <b style="color: #2563eb; font-size: 14px;">{row['nome']} 🔗</b>
-                    </a><br/>
+                    <b style="color: #2563eb; font-size: 14px;">{row['name']}</b><br/>
                     <span style="color: #475569; font-size: 11px;">📍 {row['endereco']}</span><br/>
                     <hr style="margin: 6px 0; border: 0.5px solid #cbd5e1;"/>
                     🚨 <b>Score de Oportunidade:</b> <span style="color: #dc2626; font-weight: bold;">{row['score_oportunidade']}/100</span><br/>
                     ⭐ <b>Nota no Google:</b> {row['nota']} ({row['total_avaliacoes']} avaliações)<br/>
-                    🌐 <b>Website Oficial:</b> {'✅ Presente' if row['website'] else '❌ Ausente'}
                 </div>
                 """
 
@@ -1342,14 +1339,15 @@ elif st.session_state.etapa == 4:
             
             st.divider()
             
-            # NOVO: ITINERÁRIO SEQUENCIAL DE VISITAS
+            # ITINERÁRIO SEQUENCIAL COM ROTA DE NAVEGAÇÃO REAL
             st.markdown("### 🚗 Itinerário Sequencial de Visitas Presenciais")
-            st.markdown("Lista ordenada de paradas com base nos filtros selecionados acima para planejar seu trajeto:")
+            st.markdown("Lista ordenada de paradas com rotas de navegação passo a passo a partir da sua localização:")
 
             df_mapa_sorted = df_mapa_filtrado.sort_values(by='score_oportunidade', ascending=False)
             
             for idx, (_, r_visita) in enumerate(df_mapa_sorted.iterrows(), start=1):
-                url_maps_rota = f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(r_visita['nome'] + ' ' + r_visita['endereco'])}"
+                # Link atualizado para forçar o Google Maps a traçar a rota (direções) até o endereço
+                url_rota_passo_a_passo = f"https://www.google.com/maps/dir/?api=1&destination={urllib.parse.quote(r_visita['endereco'])}"
                 
                 with st.container():
                     col_num, col_info, col_acao = st.columns([0.8, 4.2, 2])
@@ -1361,7 +1359,7 @@ elif st.session_state.etapa == 4:
                         st.markdown(f"⭐ Nota: {r_visita['nota']} | 🚨 Score de Oportunidade: **{r_visita['score_oportunidade']}/100**")
                     with col_acao:
                         st.markdown(f"<div style='height: 4px;'></div>", unsafe_allow_html=True)
-                        st.markdown(f'<a href="{url_maps_rota}" target="_blank"><button style="width:100%; background-color:#2563eb; color:white; border:none; padding:7px; border-radius:6px; font-weight:bold; cursor:pointer; margin-bottom:5px;">🧭 Abrir Rota no Maps</button></a>', unsafe_allow_html=True)
+                        st.markdown(f'<a href="{url_rota_passo_a_passo}" target="_blank"><button style="width:100%; background-color:#2563eb; color:white; border:none; padding:7px; border-radius:6px; font-weight:bold; cursor:pointer; margin-bottom:5px;">🧭 Iniciar Navegação (GPS)</button></a>', unsafe_allow_html=True)
                         if r_visita['whatsapp']:
                             link_wa_rota = f"https://wa.me/55{r_visita['whatsapp']}?text={urllib.parse.quote(f'Olá! Estou passando aqui na região e gostaria de agendar uma rápida apresentação presencial do Tour 360° para a {r_visita["nome"]}.')}"
                             st.markdown(f'<a href="{link_wa_rota}" target="_blank"><button style="width:100%; background-color:#25D366; color:white; border:none; padding:7px; border-radius:6px; font-weight:bold; cursor:pointer;">💬 Avisar via WhatsApp</button></a>', unsafe_allow_html=True)
