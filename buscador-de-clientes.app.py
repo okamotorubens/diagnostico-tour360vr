@@ -983,35 +983,41 @@ elif st.session_state.etapa == 2:
                         if resp_img.status_code == 200:
                             st.image(resp_img.content, caption="Foto da Ficha do Google", use_container_width=True)
                         else:
-                            st.info("📷 Sem foto disponível na ficha")
+                            st.info("📷 Sem foto")
                     except Exception:
-                        st.info("📷 Sem foto disponível na ficha")
+                        st.info("📷 Sem foto")
                 else:
-                    st.info("📷 Sem foto disponível na ficha")
+                    st.info("📷 Sem foto")
                 
-                if st.button(fav_label, key=f"fav_btn_{lead['id']}", use_container_width=True):
-                    alternar_favorito_db(lead['id'], is_fav)
-                    st.rerun()
+                # ALINHADO EM UMA ÚNICA LINHA HORIZONTAL (Favorito, Status e Follow-up)
+                c_fav, c_st, c_fu = st.columns([1.2, 1.4, 1.4])
+                
+                with c_fav:
+                    if st.button(fav_label, key=f"fav_btn_{lead['id']}", use_container_width=True):
+                        alternar_favorito_db(lead['id'], is_fav)
+                        st.rerun()
 
                 status_opcoes = ["🆕 Novo Lead", "💬 Em Abordagem", "🛠️ Diagnóstico Gerado", "🤝 Cliente Fechado", "❌ Recusado"]
                 idx_atual = status_opcoes.index(lead['status_crm']) if lead['status_crm'] in status_opcoes else 0
-                novo_st = st.selectbox("Status Comercial:", status_opcoes, index=idx_atual, key=f"crm_st_{lead['id']}")
-                if novo_st != lead['status_crm']:
-                    atualizar_status_crm(lead['id'], novo_st)
-                    st.toast("Status comercial atualizado com sucesso na nuvem!")
-                    st.rerun()
+                
+                with c_st:
+                    novo_st = st.selectbox("Status:", status_opcoes, index=idx_atual, key=f"crm_st_{lead['id']}", label_visibility="collapsed")
+                    if novo_st != lead['status_crm']:
+                        atualizar_status_crm(lead['id'], novo_st)
+                        st.toast("Status atualizado na nuvem!")
+                        st.rerun()
 
-                st.markdown("**📅 Próximo Contato (Follow-up):**")
                 dt_atual_str = lead.get('data_followup', str(date.today()))
                 try:
                     dt_obj = datetime.strptime(dt_atual_str, '%Y-%m-%d').date()
                 except Exception:
                     dt_obj = date.today()
 
-                nova_data_fu = st.date_input("Data de Retorno:", value=dt_obj, key=f"dt_fu_{lead['id']}", label_visibility="collapsed")
-                if str(nova_data_fu) != dt_atual_str:
-                    atualizar_followup_db(lead['id'], nova_data_fu)
-                    st.toast("Data de follow-up atualizada!")
+                with c_fu:
+                    nova_data_fu = st.date_input("Retorno:", value=dt_obj, key=f"dt_fu_{lead['id']}", label_visibility="collapsed")
+                    if str(nova_data_fu) != dt_atual_str:
+                        atualizar_followup_db(lead['id'], nova_data_fu)
+                        st.toast("Data de follow-up atualizada!")
 
             with col_details1:
                 st.markdown("**📊 Indicadores no Google:**")
