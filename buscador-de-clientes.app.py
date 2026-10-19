@@ -833,6 +833,23 @@ st.markdown("""
     .score-box { width: auto !important; min-width: 150px !important; max-width: 200px !important; flex-shrink: 0 !important; box-sizing: border-box !important; }
     .lead-card h2, .lead-card p { white-space: normal !important; overflow-wrap: anywhere !important; word-break: break-word !important; }
     div[data-testid="stMetric"] { min-width: 0 !important; }
+    /* MÓDULO 3: CONTROLES DO CARD (FAVORITO, STATUS, RETORNO) NA MESMA LINHA, SEM CORTE */
+    div[data-testid="column"] div[data-testid="stHorizontalBlock"]:has(> div[data-testid="column"] > div[data-testid="stButton"]) {
+        flex-wrap: nowrap !important;
+        gap: 8px !important;
+    }
+    div[data-testid="column"] div[data-testid="stHorizontalBlock"]:has(> div[data-testid="column"] > div[data-testid="stButton"]) > div[data-testid="column"] {
+        min-width: 0 !important;
+        width: auto !important;
+    }
+    div[data-testid="column"] div[data-testid="stHorizontalBlock"]:has(> div[data-testid="column"] > div[data-testid="stButton"]) button {
+        min-height: 38px !important;
+        padding: 6px 8px !important;
+    }
+    div[data-testid="column"] div[data-testid="stHorizontalBlock"]:has(> div[data-testid="column"] > div[data-testid="stButton"]) div[data-baseweb="select"] > div,
+    div[data-testid="column"] div[data-testid="stHorizontalBlock"]:has(> div[data-testid="column"] > div[data-testid="stButton"]) div[data-testid="stDateInput"] input {
+        min-height: 38px !important;
+    }
     div[data-testid="stMetricValue"] { white-space: normal !important; overflow: visible !important; font-size: 1.6rem !important; }
     </style>
 """, unsafe_allow_html=True)
@@ -1316,7 +1333,7 @@ elif st.session_state.etapa == 3:
                 </div>
             """, unsafe_allow_html=True)
 
-            col_img, col_details1, col_details2, col_actions = st.columns([2.4, 2.4, 2.4, 2.4])
+            col_img, col_details1, col_details2, col_actions = st.columns([3.6, 2.2, 2.2, 2.4])
 
             with col_img:
                 foto_lead = lead.get('foto_url', '')
@@ -1339,7 +1356,7 @@ elif st.session_state.etapa == 3:
                     st.info("📷 Sem foto")
                 
                 # ALINHADO EM UMA ÚNICA LINHA HORIZONTAL COM PROPORÇÃO OTIMIZADA
-                c_fav, c_st, c_fu = st.columns([400.0, 850.8, 1250.8])
+                c_fav, c_st, c_fu = st.columns([1.3, 2.4, 2.3])
                 
                 with c_fav:
                     if st.button(fav_label, key=f"fav_btn_{lead['id']}", use_container_width=True):
