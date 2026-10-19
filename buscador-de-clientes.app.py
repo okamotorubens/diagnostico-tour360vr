@@ -398,17 +398,29 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     return buffer
 
 # -----------------------------------------------------------------------------
-# ESTILIZAÇÃO CSS CUSTOMIZADA (SIDEBAR FIXA SEM SCROLLBAR)
+# ESTILIZAÇÃO CSS CUSTOMIZADA (TEMA DESIGN PREMIUM - SIDEBAR FIXA SEM SCROLLBAR)
 # -----------------------------------------------------------------------------
 st.markdown("""
     <style>
-    .main { background-color: #0e1117; padding-top: 15px !important; }
-    .block-container { padding-top: 1rem !important; padding-bottom: 1rem !important; }
-    
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+    html, body, [class*="css"], .stApp, .stMarkdown, button, input, textarea, select {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+    }
+
+    .stApp {
+        background: radial-gradient(1200px 600px at 10% -10%, #172554 0%, #0b1120 45%, #070b14 100%) !important;
+    }
+    .main { background-color: transparent !important; padding-top: 15px !important; }
+    .block-container { padding-top: 1rem !important; padding-bottom: 2rem !important; max-width: 1400px; }
+
+    /* SIDEBAR */
     section[data-testid="stSidebar"] {
         width: 310px !important;
         min-width: 310px !important;
         max-width: 310px !important;
+        background: linear-gradient(180deg, #0f172a 0%, #0b1120 100%) !important;
+        border-right: 1px solid #1e293b !important;
     }
     
     [data-testid="stSidebarResizer"],
@@ -433,64 +445,195 @@ st.markdown("""
     [data-testid="stSidebarNav"] {
         display: none !important;
     }
-    
+
+    /* CABEÇALHO PRINCIPAL */
     .main-header {
-        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-        color: white; padding: 14px 18px; border-radius: 10px; margin-bottom: 15px;
-        border: 1px solid #334155; margin-top: 5px !important;
+        background: linear-gradient(135deg, rgba(37,99,235,0.18) 0%, rgba(15,23,42,0.95) 60%);
+        color: white; padding: 18px 22px; border-radius: 14px; margin-bottom: 18px;
+        border: 1px solid #1e3a8a; margin-top: 5px !important;
+        box-shadow: 0 10px 30px -12px rgba(37,99,235,0.45);
+        position: relative; overflow: hidden;
     }
-    .main-title { font-size: 21px; font-weight: 700; margin: 0; color: #ffffff; }
-    .main-subtitle { font-size: 12px; color: #94a3b8; margin-top: 3px; }
+    .main-header::before {
+        content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+        background: linear-gradient(180deg, #38bdf8, #2563eb);
+    }
+    .main-title { font-size: 22px; font-weight: 800; margin: 0; color: #f8fafc; letter-spacing: -0.2px; }
+    .main-subtitle { font-size: 13px; color: #94a3b8; margin-top: 4px; }
 
+    /* CARDS DE LEAD */
     .lead-card {
-        background-color: #1e293b; border-radius: 10px; padding: 14px;
-        margin-bottom: 10px; border: 1px solid #334155;
+        background: linear-gradient(180deg, #111c33 0%, #0f172a 100%);
+        border-radius: 14px; padding: 16px 18px;
+        margin-bottom: 12px; border: 1px solid #1e293b;
+        border-left: 4px solid #2563eb;
+        box-shadow: 0 6px 18px -10px rgba(0,0,0,0.6);
+        transition: border-color .25s ease, transform .25s ease;
     }
+    .lead-card:hover { border-color: #334155; border-left-color: #38bdf8; transform: translateY(-1px); }
     
-    .score-box { text-align: center; padding: 8px; border-radius: 8px; font-weight: bold; width: 130px; }
-    .score-high { background-color: #052e16; color: #86efac; border: 1px solid #166534; }
-    .score-med  { background-color: #451a03; color: #fde047; border: 1px solid #92400e; }
-    .score-low  { background-color: #450a0a; color: #fca5a5; border: 1px solid #991b1b; }
+    /* SCORE */
+    .score-box {
+        text-align: center; padding: 10px 12px; border-radius: 12px; font-weight: 700;
+        width: 140px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+    }
+    .score-high { background: linear-gradient(180deg,#052e16,#064e3b); color: #86efac; border: 1px solid #166534; }
+    .score-med  { background: linear-gradient(180deg,#451a03,#78350f); color: #fde047; border: 1px solid #92400e; }
+    .score-low  { background: linear-gradient(180deg,#450a0a,#7f1d1d); color: #fca5a5; border: 1px solid #991b1b; }
 
-    .critical-item { color: #f87171; font-size: 13px; margin-bottom: 6px; font-weight: 500; }
+    .critical-item {
+        color: #fca5a5; font-size: 13px; margin-bottom: 6px; font-weight: 500;
+        background: rgba(127,29,29,0.18); border: 1px solid rgba(153,27,27,0.35);
+        padding: 5px 9px; border-radius: 8px;
+    }
     
     .sidebar-title {
-        text-align: center; font-size: 15px; font-weight: 800; color: #ffffff;
-        margin-top: -10px; margin-bottom: 10px; letter-spacing: 0.5px;
+        text-align: center; font-size: 16px; font-weight: 800; color: #f8fafc;
+        margin-top: -6px; margin-bottom: 12px; letter-spacing: 0.4px;
     }
 
+    /* BOTÕES */
     .stButton>button, .btn-redirect {
-        background-color: #0f172a !important;
-        color: #ffffff !important;
-        border: 1px solid #cbd5e1 !important;
-        border-radius: 8px !important;
+        background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%) !important;
+        color: #f1f5f9 !important;
+        border: 1px solid #334155 !important;
+        border-radius: 10px !important;
         font-weight: 600 !important;
         font-size: 13px !important;
-        transition: all 0.3s ease !important;
-        box-shadow: 0 0 4px rgba(255, 255, 255, 0.2) !important;
+        transition: all 0.25s ease !important;
+        box-shadow: 0 2px 8px -2px rgba(0,0,0,0.5) !important;
     }
     .stButton>button:hover, .btn-redirect:hover {
-        border-color: #ffffff !important;
-        box-shadow: 0 0 12px rgba(255, 255, 255, 0.7) !important;
-        background-color: #1e293b !important;
+        border-color: #38bdf8 !important;
+        box-shadow: 0 0 14px rgba(56,189,248,0.35) !important;
+        background: linear-gradient(180deg, #1e3a5f 0%, #0f172a 100%) !important;
+        color: #ffffff !important;
+    }
+    .stButton>button[kind="primary"] {
+        background: linear-gradient(135deg, #2563eb 0%, #0ea5e9 100%) !important;
+        border: 1px solid #38bdf8 !important;
+        color: #ffffff !important;
+        box-shadow: 0 4px 14px -4px rgba(37,99,235,0.7) !important;
     }
 
     .btn-redirect {
-        display: block; width: 100%; text-align: center; padding: 8px 10px;
-        text-decoration: none !important; margin-bottom: 8px;
+        display: block; width: 100%; text-align: center; padding: 9px 10px;
+        text-decoration: none !important; margin-bottom: 8px; border-radius: 10px;
     }
 
+    /* SCRIPTS */
     .script-box {
-        background-color: #0f172a; color: #f1f5f9;
+        background-color: #0b1220; color: #e2e8f0;
         font-family: 'Inter', -apple-system, sans-serif;
-        font-size: 13px; line-height: 1.5; padding: 12px 15px;
-        border-radius: 8px; border: 1px solid #334155;
+        font-size: 13px; line-height: 1.6; padding: 14px 16px;
+        border-radius: 10px; border: 1px solid #1e293b;
+        border-left: 3px solid #38bdf8;
         white-space: pre-wrap; margin-bottom: 10px;
     }
 
+    /* MÉTRICAS */
+    div[data-testid="stMetric"] {
+        background: linear-gradient(180deg, #111c33 0%, #0f172a 100%);
+        border: 1px solid #1e293b; border-radius: 12px; padding: 12px 16px;
+        box-shadow: 0 6px 18px -12px rgba(0,0,0,0.7);
+    }
+    div[data-testid="stMetricLabel"] p { color: #94a3b8 !important; font-weight: 600 !important; font-size: 13px !important; }
+    div[data-testid="stMetricValue"] { color: #f8fafc !important; font-weight: 800 !important; }
+
+    /* TÍTULOS E DIVISORES */
+    h3 { color: #e2e8f0 !important; font-weight: 700 !important; letter-spacing: -0.1px; }
+    hr, div[data-testid="stDivider"] { border-color: #1e293b !important; opacity: 0.8; }
+
+    /* ALERTAS */
+    div[data-testid="stAlert"] { border-radius: 10px !important; }
+
+    /* INPUTS */
+    div[data-baseweb="input"] > div, div[data-baseweb="select"] > div, textarea {
+        border-radius: 10px !important;
+        background-color: #0b1220 !important;
+        border-color: #1e293b !important;
+    }
+
+    /* TABELA */
+    div[data-testid="stDataFrame"] {
+        border: 1px solid #1e293b; border-radius: 12px; overflow: hidden;
+    }
     div[data-testid="stDataFrame"] table th {
         text-align: center !important;
     }
+
+    /* ===== TEMA MINIMALISTA DARK COM GLASSMORPHISM ===== */
+    .stApp {
+        background: radial-gradient(900px 500px at 15% -5%, rgba(99,102,241,0.18), transparent 60%),
+                    radial-gradient(800px 500px at 100% 0%, rgba(14,165,233,0.12), transparent 55%),
+                    #05070d !important;
+    }
+
+    section[data-testid="stSidebar"] {
+        background: rgba(10,14,25,0.55) !important;
+        backdrop-filter: blur(22px) saturate(140%) !important;
+        -webkit-backdrop-filter: blur(22px) saturate(140%) !important;
+        border-right: 1px solid rgba(255,255,255,0.06) !important;
+    }
+
+    .main-header, .lead-card, .script-box, .critical-item,
+    div[data-testid="stMetric"], div[data-testid="stDataFrame"],
+    div[data-testid="stAlert"], .score-box {
+        background: rgba(255,255,255,0.04) !important;
+        backdrop-filter: blur(18px) saturate(140%) !important;
+        -webkit-backdrop-filter: blur(18px) saturate(140%) !important;
+        border: 1px solid rgba(255,255,255,0.08) !important;
+        border-left: 1px solid rgba(255,255,255,0.08) !important;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.05) !important;
+        border-radius: 16px !important;
+    }
+    .main-header::before { width: 2px !important; background: rgba(255,255,255,0.35) !important; }
+    .lead-card:hover { transform: none !important; border-color: rgba(255,255,255,0.16) !important; }
+
+    .main-title { font-weight: 600 !important; letter-spacing: -0.3px !important; color: #f5f7fb !important; }
+    .main-subtitle { color: #8b93a7 !important; }
+
+    .score-high, .score-med, .score-low {
+        background: rgba(255,255,255,0.05) !important;
+        border: 1px solid rgba(255,255,255,0.12) !important;
+    }
+    .score-high { color: #6ee7b7 !important; }
+    .score-med  { color: #fde68a !important; }
+    .score-low  { color: #fca5a5 !important; }
+    .critical-item { color: #e2e8f0 !important; background: rgba(248,113,113,0.06) !important; border-color: rgba(248,113,113,0.18) !important; }
+
+    .stButton>button, .btn-redirect {
+        background: rgba(255,255,255,0.05) !important;
+        backdrop-filter: blur(10px) !important;
+        border: 1px solid rgba(255,255,255,0.10) !important;
+        border-radius: 12px !important;
+        color: #e5e7eb !important;
+        box-shadow: none !important;
+        font-weight: 500 !important;
+    }
+    .stButton>button:hover, .btn-redirect:hover {
+        background: rgba(255,255,255,0.10) !important;
+        border-color: rgba(255,255,255,0.22) !important;
+        box-shadow: 0 0 0 1px rgba(255,255,255,0.05) !important;
+        color: #ffffff !important;
+    }
+    .stButton>button[kind="primary"] {
+        background: rgba(99,102,241,0.28) !important;
+        border: 1px solid rgba(129,140,248,0.45) !important;
+        box-shadow: none !important;
+    }
+    .stButton>button[kind="primary"]:hover {
+        background: rgba(99,102,241,0.42) !important;
+    }
+
+    div[data-baseweb="input"] > div, div[data-baseweb="select"] > div, textarea {
+        background-color: rgba(255,255,255,0.03) !important;
+        border: 1px solid rgba(255,255,255,0.08) !important;
+        border-radius: 12px !important;
+    }
+
+    h1, h2, h3 { color: #f1f5f9 !important; font-weight: 600 !important; }
+    hr, div[data-testid="stDivider"] { border-color: rgba(255,255,255,0.06) !important; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -754,19 +897,19 @@ with st.sidebar:
 
     if len(pendentes_hoje) > 0:
         st.markdown(f"""
-            <div style="background-color: #7f1d1d; border: 1px solid #991b1b; padding: 10px; border-radius: 8px; margin-bottom: 12px; text-align: center;">
-                <span style="color: #fca5a5; font-weight: bold; font-size: 13px;">🔔 Notificação Ativa</span><br/>
+            <div style="background: linear-gradient(180deg,#7f1d1d,#450a0a); border: 1px solid #991b1b; padding: 12px; border-radius: 12px; margin-bottom: 14px; text-align: center; box-shadow: 0 6px 16px -8px rgba(220,38,38,0.5);">
+                <span style="color: #fca5a5; font-weight: 700; font-size: 13px; letter-spacing: 0.3px;">🔔 Notificação Ativa</span><br/>
                 <span style="color: #ffffff; font-size: 12px;"><b>{len(pendentes_hoje)} retornos pendentes</b> para hoje ou atrasados!</span>
             </div>
         """, unsafe_allow_html=True)
     else:
         st.markdown("""
-            <div style="background-color: #064e3b; border: 1px solid #065f46; padding: 8px; border-radius: 8px; margin-bottom: 12px; text-align: center;">
-                <span style="color: #6ee7b7; font-weight: bold; font-size: 12px;">✅ Agenda em dia! Sem pendências.</span>
+            <div style="background: linear-gradient(180deg,#064e3b,#022c22); border: 1px solid #065f46; padding: 10px; border-radius: 12px; margin-bottom: 14px; text-align: center;">
+                <span style="color: #6ee7b7; font-weight: 700; font-size: 12px;">✅ Agenda em dia! Sem pendências.</span>
             </div>
         """, unsafe_allow_html=True)
 
-    st.markdown("<div style='text-align: center; font-weight: 700; font-size: 14px; margin-bottom: 8px;'>📌 Módulos</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align: center; font-weight: 700; font-size: 13px; letter-spacing: 1px; text-transform: uppercase; color:#94a3b8; margin-bottom: 10px;'>Módulos</div>", unsafe_allow_html=True)
     
     if st.button("1️⃣ Dashboard Executivo", use_container_width=True, type="primary" if st.session_state.etapa == 1 else "secondary"):
         mudar_etapa(1)
@@ -780,7 +923,12 @@ with st.sidebar:
         mudar_etapa(5)
 
     st.divider()
-    st.markdown(f"<div style='text-align: center; font-size: 12px;'>☁️ Supabase Nuvem:<br/><b>{len(base_leads)} leads salvos</b></div>", unsafe_allow_html=True)
+    st.markdown(f"""
+        <div style='text-align: center; font-size: 12px; background:#0b1220; border:1px solid #1e293b; border-radius:12px; padding:10px;'>
+            <span style='color:#94a3b8;'>☁️ Supabase Nuvem</span><br/>
+            <b style='font-size:15px; color:#f8fafc;'>{len(base_leads)} leads salvos</b>
+        </div>
+    """, unsafe_allow_html=True)
 
     if len(base_leads) > 0:
         if st.button("🗑️ Limpar Banco de Dados", use_container_width=True):
@@ -954,15 +1102,15 @@ elif st.session_state.etapa == 3:
 
             st.markdown(f"""
                 <div class="lead-card">
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; gap: 12px;">
                         <div>
-                            <h2 style="margin: 0; color: #ffffff; font-size: 19px;">{lead['nome']}</h2>
-                            <p style="margin: 3px 0 0 0; color: #94a3b8; font-size: 12.5px;">📍 {lead['endereco']} | 🏷️ {lead['categoria']}</p>
+                            <h2 style="margin: 0; color: #f8fafc; font-size: 20px; font-weight: 800; letter-spacing: -0.2px;">{lead['nome']}</h2>
+                            <p style="margin: 6px 0 0 0; color: #94a3b8; font-size: 12.5px;">📍 {lead['endereco']} &nbsp;•&nbsp; 🏷️ {lead['categoria']}</p>
                         </div>
                         <div class="score-box {score_class}">
-                            <div style="font-size: 9.5px; font-weight: bold;">SCORE OPORTUNIDADE</div>
-                            <div style="font-size: 18px; font-weight: bold;">{score} / 100</div>
-                            <div style="font-size: 8.5px;">{score_label}</div>
+                            <div style="font-size: 9.5px; font-weight: 700; letter-spacing: 0.6px;">SCORE OPORTUNIDADE</div>
+                            <div style="font-size: 20px; font-weight: 800;">{score} / 100</div>
+                            <div style="font-size: 8.5px; font-weight: 700;">{score_label}</div>
                         </div>
                     </div>
                 </div>
@@ -1056,7 +1204,7 @@ elif st.session_state.etapa == 3:
                 if lead['whatsapp']:
                     msg_wa = f"Olá! Tudo bem?\nMeu nome é Rubens Okamoto, da Okamoto Mídias Visuais e do Tour360VR.\nEstava analisando a presença da {lead['nome']} no Google, e identifiquei 3 pontos onde a visibilidade do espaço de vocês pode ser bastante ampliada em relação aos concorrentes da região.\nMontei um relatório curto de diagnóstico em PDF. Posso te enviar por aqui para você dar uma olhada?"
                     link_wa = f"https://wa.me/55{lead['whatsapp']}?text={urllib.parse.quote(msg_wa)}"
-                    st.markdown(f'<a href="{link_wa}" target="_blank"><button style="width:100%; background-color:#25D366; color:white; border:none; padding:8px; border-radius:6px; font-weight:bold; cursor:pointer; margin-bottom:8px;">💬 WhatsApp</button></a>', unsafe_allow_html=True)
+                    st.markdown(f'<a href="{link_wa}" target="_blank"><button style="width:100%; background: linear-gradient(135deg,#25D366,#128C7E); color:white; border:none; padding:9px; border-radius:10px; font-weight:700; cursor:pointer; margin-bottom:8px; box-shadow:0 4px 12px -4px rgba(37,211,102,0.6);">💬 WhatsApp</button></a>', unsafe_allow_html=True)
 
                 assunto_email = f"Oportunidade de Presença Digital: {lead['nome']} no Google"
                 corpo_email = f"""Olá! Analisei o perfil da {lead['nome']} no Google e gostaria de compartilhar uma oportunidade importante.
@@ -1074,7 +1222,7 @@ TOUR360VR | Okamoto Mídias Visuais
 (16) 99133-2121 | tour360vr.com.br"""
                 
                 link_mailto = f"mailto:?subject={urllib.parse.quote(assunto_email)}&body={urllib.parse.quote(corpo_email)}"
-                st.markdown(f'<a href="{link_mailto}" target="_blank"><button style="width:100%; background-color:#0284c7; color:white; border:none; padding:8px; border-radius:6px; font-weight:bold; cursor:pointer; margin-bottom:8px;">✉️ Enviar E-mail Pronto</button></a>', unsafe_allow_html=True)
+                st.markdown(f'<a href="{link_mailto}" target="_blank"><button style="width:100%; background: linear-gradient(135deg,#2563eb,#0ea5e9); color:white; border:none; padding:9px; border-radius:10px; font-weight:700; cursor:pointer; margin-bottom:8px; box-shadow:0 4px 12px -4px rgba(37,99,235,0.6);">✉️ Enviar E-mail Pronto</button></a>', unsafe_allow_html=True)
 
             st.markdown("**📝 Anotações & Histórico de Contato:**")
             anotacoes_atuais = lead.get('anotacoes', '') or ''
@@ -1288,9 +1436,9 @@ elif st.session_state.etapa == 5:
                 hex_cor = CORES_HEX.get(cor_nome, '#ef4444')
                 with cols_leg[idx % 5]:
                     st.markdown(
-                        f'<div style="background-color: #1e293b; padding: 8px 12px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">'
-                        f'<span style="height: 12px; width: 12px; background-color: {hex_cor}; border-radius: 50%; display: inline-block;"></span>'
-                        f'<b style="color: #ffffff; font-size: 13px;">{seg}</b>'
+                        f'<div style="background: linear-gradient(180deg,#111c33,#0f172a); padding: 9px 12px; border-radius: 10px; border: 1px solid #1e293b; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px -8px rgba(0,0,0,0.6);">'
+                        f'<span style="height: 12px; width: 12px; background-color: {hex_cor}; border-radius: 50%; display: inline-block; box-shadow: 0 0 8px {hex_cor};"></span>'
+                        f'<b style="color: #f1f5f9; font-size: 13px;">{seg}</b>'
                         f'</div>',
                         unsafe_allow_html=True
                     )
@@ -1343,17 +1491,17 @@ elif st.session_state.etapa == 5:
                 with st.container():
                     col_num, col_info, col_acao = st.columns([0.8, 4.2, 2])
                     with col_num:
-                        st.markdown(f"<div style='background-color: #1e293b; color: #38bdf8; font-size: 18px; font-weight: bold; text-align: center; padding: 12px; border-radius: 8px; border: 1px solid #334155;'>#{idx}</div>", unsafe_allow_html=True)
+                        st.markdown(f"<div style='background: linear-gradient(180deg,#1e3a5f,#0f172a); color: #38bdf8; font-size: 20px; font-weight: 800; text-align: center; padding: 12px; border-radius: 12px; border: 1px solid #1e40af; box-shadow: 0 6px 16px -8px rgba(56,189,248,0.4);'>#{idx}</div>", unsafe_allow_html=True)
                     with col_info:
                         st.markdown(f"**{r_visita['nome']}** ({r_visita['categoria']})")
                         st.markdown(f"📍 {r_visita['endereco']}")
                         st.markdown(f"⭐ Nota: {r_visita['nota']} | 🚨 Score Oportunidade: **{r_visita['score_oportunidade']}/100**")
                     with col_acao:
                         st.markdown(f"<div style='height: 4px;'></div>", unsafe_allow_html=True)
-                        st.markdown(f'<a href="{url_rota_passo_a_passo}" target="_blank"><button style="width:100%; background-color:#2563eb; color:white; border:none; padding:7px; border-radius:6px; font-weight:bold; cursor:pointer; margin-bottom:5px;">🧭 Iniciar Navegação (GPS)</button></a>', unsafe_allow_html=True)
+                        st.markdown(f'<a href="{url_rota_passo_a_passo}" target="_blank"><button style="width:100%; background: linear-gradient(135deg,#2563eb,#0ea5e9); color:white; border:none; padding:8px; border-radius:10px; font-weight:700; cursor:pointer; margin-bottom:6px; box-shadow:0 4px 12px -4px rgba(37,99,235,0.6);">🧭 Iniciar Navegação (GPS)</button></a>', unsafe_allow_html=True)
                         if r_visita['whatsapp']:
                             link_wa_rota = f"https://wa.me/55{r_visita['whatsapp']}?text={urllib.parse.quote(f'Olá! Estou passando aqui na região e gostaria de agendar uma rápida apresentação presencial do Tour 360° para a {r_visita["nome"]}.')}"
-                            st.markdown(f'<a href="{link_wa_rota}" target="_blank"><button style="width:100%; background-color:#25D366; color:white; border:none; padding:7px; border-radius:6px; font-weight:bold; cursor:pointer;">💬 Avisar via WhatsApp</button></a>', unsafe_allow_html=True)
+                            st.markdown(f'<a href="{link_wa_rota}" target="_blank"><button style="width:100%; background: linear-gradient(135deg,#25D366,#128C7E); color:white; border:none; padding:8px; border-radius:10px; font-weight:700; cursor:pointer; box-shadow:0 4px 12px -4px rgba(37,211,102,0.6);">💬 Avisar via WhatsApp</button></a>', unsafe_allow_html=True)
                     st.divider()
         else:
             st.warning("Nenhum registro encontrado para os filtros selecionados.")
