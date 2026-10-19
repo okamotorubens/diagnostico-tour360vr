@@ -287,7 +287,6 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     elements.append(Paragraph("DISTRIBUIÇÃO DE EMPRESAS POR NÍVEL DE MATURIDADE DIGITAL", section_heading))
     elements.append(Spacer(1, 2))
 
-    # CÁLCULO INVERTIDO PARA O PDF: Score de Saúde da Ficha (100 - score_oportunidade)
     df_pdf = df_nicho.copy()
     df_pdf['score_saude'] = 100 - df_pdf['score_oportunidade']
     
@@ -312,7 +311,7 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
             c_fill = colors.HexColor('#4ade80') if score_val >= 70 else (colors.HexColor('#facc15') if score_val >= 40 else colors.HexColor('#f87171'))
             
             chart_draw.add(Rect(bx, by, bar_w, bh, fillColor=c_fill, strokeColor=None, rx=2, ry=2))
-            chart_draw.add(String(bx + (bar_w / 2), by + bh + 4, str(total_lead), fontSize=8.5, fontName="Helvetica-Bold", fillColor=colors.HexColor('#0f172a'], textAnchor="middle"))
+            chart_draw.add(String(bx + (bar_w / 2), by + bh + 4, str(total_lead), fontSize=8.5, fontName="Helvetica-Bold", fillColor=colors.HexColor('#0f172a'), textAnchor="middle"))
             chart_draw.add(String(bx + (bar_w / 2), by - 12, f"{score_val} pts", fontSize=7.5, fontName="Helvetica-Bold", fillColor=colors.HexColor('#475569'), textAnchor="middle"))
 
     elements.append(chart_draw)
@@ -344,7 +343,6 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     elements.append(Paragraph("RANKING DE EMPRESAS AUDITADAS NO SETOR (DA MAIS COMPLETA À MAIS FRACA)", section_heading))
     elements.append(Spacer(1, 4))
 
-    # ORDENAÇÃO NO PDF: Da ficha mais completa (menor score de oportunidade / maior saúde) para a mais fraca
     df_pdf_sorted = df_pdf.sort_values(by='score_oportunidade', ascending=True)
 
     t_data = [[
