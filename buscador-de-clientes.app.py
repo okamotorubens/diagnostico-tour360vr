@@ -495,10 +495,10 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# SESSION STATE E CONTROLE DE ETAPA (MÓDULOS 0 A 4)
+# SESSION STATE E CONTROLE DE ETAPA (MÓDULOS 1 A 5)
 # -----------------------------------------------------------------------------
 if 'etapa' not in st.session_state:
-    st.session_state.etapa = 0
+    st.session_state.etapa = 1
 
 def mudar_etapa(nova_etapa):
     st.session_state.etapa = nova_etapa
@@ -724,7 +724,7 @@ def gerar_csv_excel_formatado(dados_leads):
     return output.getvalue().encode('utf-8')
 
 # -----------------------------------------------------------------------------
-# BARRA LATERAL (COM CENTRAL DE NOTIFICAÇÕES DE FOLLOW-UP)
+# BARRA LATERAL (COM CENTRAL DE NOTIFICAÇÕES DE FOLLOW-UP E CENTRALIZAÇÃO)
 # -----------------------------------------------------------------------------
 base_leads = carregar_todos_leads_db()
 
@@ -766,30 +766,31 @@ with st.sidebar:
             </div>
         """, unsafe_allow_html=True)
 
-    st.markdown("### 📌 Módulos")
-    if st.button("0. Dashboard Executivo", use_container_width=True, type="primary" if st.session_state.etapa == 0 else "secondary"):
-        mudar_etapa(0)
-    if st.button("1. Buscador de Clientes", use_container_width=True, type="primary" if st.session_state.etapa == 1 else "secondary"):
+    st.markdown("<div style='text-align: center; font-weight: 700; font-size: 14px; margin-bottom: 8px;'>📌 Módulos</div>", unsafe_allow_html=True)
+    
+    if st.button("1️⃣ Dashboard Executivo", use_container_width=True, type="primary" if st.session_state.etapa == 1 else "secondary"):
         mudar_etapa(1)
-    if st.button("2. Base & CRM de Leads", use_container_width=True, type="primary" if st.session_state.etapa == 2 else "secondary"):
+    if st.button("2️⃣ Buscador de Clientes", use_container_width=True, type="primary" if st.session_state.etapa == 2 else "secondary"):
         mudar_etapa(2)
-    if st.button("3. Panorama de Nicho (Estatísticas)", use_container_width=True, type="primary" if st.session_state.etapa == 3 else "secondary"):
+    if st.button("3️⃣ Base & CRM de Leads", use_container_width=True, type="primary" if st.session_state.etapa == 3 else "secondary"):
         mudar_etapa(3)
-    if st.button("4. Mapa & Rota de Visitas", use_container_width=True, type="primary" if st.session_state.etapa == 4 else "secondary"):
+    if st.button("4️⃣ Panorama de Nicho", use_container_width=True, type="primary" if st.session_state.etapa == 4 else "secondary"):
         mudar_etapa(4)
+    if st.button("5️⃣ Mapa & Rota de Visitas", use_container_width=True, type="primary" if st.session_state.etapa == 5 else "secondary"):
+        mudar_etapa(5)
 
     st.divider()
-    st.caption(f"☁️ Supabase Nuvem: **{len(base_leads)} leads salvos**")
+    st.markdown(f"<div style='text-align: center; font-size: 12px;'>☁️ Supabase Nuvem:<br/><b>{len(base_leads)} leads salvos</b></div>", unsafe_allow_html=True)
 
     if len(base_leads) > 0:
         if st.button("🗑️ Limpar Banco de Dados", use_container_width=True):
             limpar_banco_dados()
-            mudar_etapa(0)
+            mudar_etapa(1)
 
 # -----------------------------------------------------------------------------
-# MÓDULO 0: DASHBOARD EXECUTIVO
+# MÓDULO 1: DASHBOARD EXECUTIVO
 # -----------------------------------------------------------------------------
-if st.session_state.etapa == 0:
+if st.session_state.etapa == 1:
     st.markdown("""
         <div class="main-header">
             <h1 class="main-title">📈 Dashboard Executivo | Okamoto Mídias & Tour360VR</h1>
@@ -798,7 +799,7 @@ if st.session_state.etapa == 0:
     """, unsafe_allow_html=True)
 
     if len(base_leads) == 0:
-        st.warning("⚠️ Nenhum lead cadastrado ainda no banco de dados. Vá até o Módulo 1 para realizar sua primeira busca!")
+        st.warning("⚠️ Nenhum lead cadastrado ainda no banco de dados. Vá até o Módulo 2 para realizar sua primeira busca!")
     else:
         df_dash = pd.DataFrame(base_leads)
 
@@ -838,9 +839,9 @@ if st.session_state.etapa == 0:
             st.success("🎉 Nenhum follow-up pendente para hoje! Sua agenda está em dia.")
 
 # -----------------------------------------------------------------------------
-# ETAPA 1: BUSCADOR DE CLIENTES
+# MÓDULO 2: BUSCADOR DE CLIENTES
 # -----------------------------------------------------------------------------
-elif st.session_state.etapa == 1:
+elif st.session_state.etapa == 2:
     st.markdown("""
         <div class="main-header">
             <h1 class="main-title">🔎 Radar e Mineração de Mercado Local</h1>
@@ -865,18 +866,18 @@ elif st.session_state.etapa == 1:
             time.sleep(1)
             novos = minerar_e_auditar_negocios(nome_empresa_input, nicho_input, cidade_input, bairro_input, rua_input, raio_input, limite_input)
             if novos and len(novos) > 0:
-                mudar_etapa(2)
+                mudar_etapa(3)
 
     if len(base_leads) > 0:
         st.divider()
         st.info(f"O seu banco na nuvem possui **{len(base_leads)} leads salvos permanentemente**.")
         if st.button("Ver Base Completa de Leads ➡️", type="primary"):
-            mudar_etapa(2)
+            mudar_etapa(3)
 
 # -----------------------------------------------------------------------------
-# ETAPA 2: BASE DE LEADS & CRM DE VENDAS
+# MÓDULO 3: BASE DE LEADS & CRM DE VENDAS
 # -----------------------------------------------------------------------------
-elif st.session_state.etapa == 2:
+elif st.session_state.etapa == 3:
     st.markdown("""
         <div class="main-header">
             <h1 class="main-title">📊 Base de Leads e Gerenciador CRM</h1>
@@ -885,7 +886,7 @@ elif st.session_state.etapa == 2:
     """, unsafe_allow_html=True)
 
     if len(base_leads) == 0:
-        st.warning("⚠️ Nenhum lead cadastrado ainda no banco de dados. Faça sua primeira busca no Módulo 1!")
+        st.warning("⚠️ Nenhum lead cadastrado ainda no banco de dados. Faça sua primeira busca no Módulo 2!")
     else:
         df_leads_crm = pd.DataFrame(base_leads)
 
@@ -949,7 +950,7 @@ elif st.session_state.etapa == 2:
             score_label = "ALTA OPORTUNIDADE" if score >= 60 else ("MÉDIA OPORTUNIDADE" if score >= 30 else "BAIXA OPORTUNIDADE")
 
             is_fav = lead.get('favorito', False)
-            fav_label = "⭐ Favorito (Lead Quente)" if is_fav else "☆ Marcar como Favorito"
+            fav_label = "⭐ Favorito" if is_fav else "☆ Favoritar"
 
             st.markdown(f"""
                 <div class="lead-card">
@@ -989,7 +990,7 @@ elif st.session_state.etapa == 2:
                 else:
                     st.info("📷 Sem foto")
                 
-                # ALINHADO EM UMA ÚNICA LINHA COM PROPORÇÃO OTIMIZADA
+                # ALINHADO EM UMA ÚNICA LINHA HORIZONTAL COM PROPORÇÃO OTIMIZADA
                 c_fav, c_st, c_fu = st.columns([1.5, 2.2, 1.8])
                 
                 with c_fav:
@@ -1118,9 +1119,9 @@ TOUR360VR | Okamoto Mídias Visuais
             st.divider()
 
 # -----------------------------------------------------------------------------
-# ETAPA 3: PANORAMA DE NICHO
+# MÓDULO 4: PANORAMA DE NICHO
 # -----------------------------------------------------------------------------
-elif st.session_state.etapa == 3:
+elif st.session_state.etapa == 4:
     st.markdown("""
         <div class="main-header">
             <h1 class="main-title">📈 Panorama de Mercado & Inteligência de Nicho</h1>
@@ -1129,7 +1130,7 @@ elif st.session_state.etapa == 3:
     """, unsafe_allow_html=True)
 
     if len(base_leads) == 0:
-        st.warning("⚠️ Nenhum lead cadastrado ainda no banco de dados. Faça sua primeira busca no Módulo 1!")
+        st.warning("⚠️ Nenhum lead cadastrado ainda no banco de dados. Faça sua primeira busca no Módulo 2!")
     else:
         df_leads = pd.DataFrame(base_leads)
 
@@ -1150,7 +1151,6 @@ elif st.session_state.etapa == 3:
         if cidade_selecionada != "Todas as Cidades":
             df_filtrado = df_filtrado[df_filtrado['cidade_busca'] == cidade_selecionada]
 
-        # Na tela do sistema, mantemos ordenado pelo Score de Oportunidade (maior score / mais falhas no topo)
         df_filtrado_sorted = df_filtrado.sort_values(by='score_oportunidade', ascending=False)
 
         data_hoje_str = datetime.now().strftime('%d-%m-%Y')
@@ -1226,9 +1226,9 @@ elif st.session_state.etapa == 3:
         )
 
 # -----------------------------------------------------------------------------
-# ETAPA 4: MAPA & ROTA DE VISITAS (PROSPECÇÃO PRESENCIAL COM ITINERÁRIO REAL)
+# MÓDULO 5: MAPA & ROTA DE VISITAS
 # -----------------------------------------------------------------------------
-elif st.session_state.etapa == 4:
+elif st.session_state.etapa == 5:
     st.markdown("""
         <div class="main-header">
             <h1 class="main-title">🗺️ Mapa & Planejador de Rotas de Visitas</h1>
@@ -1237,7 +1237,7 @@ elif st.session_state.etapa == 4:
     """, unsafe_allow_html=True)
 
     if len(base_leads) == 0:
-        st.warning("⚠️ Nenhum lead cadastrado ainda no banco de dados. Faça sua primeira busca no Módulo 1!")
+        st.warning("⚠️ Nenhum lead cadastrado ainda no banco de dados. Faça sua primeira busca no Módulo 2!")
     else:
         df_mapa = pd.DataFrame(base_leads)
         
