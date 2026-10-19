@@ -794,6 +794,46 @@ st.markdown("""
     div[data-testid="stSelectbox"] div[data-baseweb="select"] > div {
         min-width: 0 !important;
     }
+
+    /* ===== AJUSTE FINAL: FUNDO AZUL EM DEGRADÊ, TÍTULOS, BOTÕES DA SIDEBAR E CARDS ===== */
+    .stApp {
+        background:
+            radial-gradient(1000px 600px at 0% 0%, rgba(37,99,235,0.38) 0%, transparent 60%),
+            radial-gradient(900px 600px at 100% 100%, rgba(14,165,233,0.20) 0%, transparent 55%),
+            linear-gradient(160deg, #0b1d3a 0%, #071026 45%, #050914 100%) !important;
+    }
+    .block-container { padding-top: 3.4rem !important; }
+    .main-header { margin-top: 10px !important; }
+
+    section[data-testid="stSidebar"] .stButton>button {
+        background: linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%) !important;
+        border: 1px solid rgba(255,255,255,0.85) !important;
+        border-radius: 8px !important;
+        color: #e2e8f0 !important;
+        box-shadow: none !important;
+    }
+    section[data-testid="stSidebar"] .stButton>button:hover {
+        transform: scale(1.04) !important;
+        border-color: #ffffff !important;
+        box-shadow: 0 0 12px rgba(255,255,255,0.35) !important;
+    }
+    section[data-testid="stSidebar"] .stButton>button[kind="primary"] {
+        background: linear-gradient(135deg, rgba(37,99,235,0.75) 0%, rgba(14,165,233,0.35) 55%, rgba(15,23,42,0.6) 100%) !important;
+        border: 1px solid #ffffff !important;
+        color: #ffffff !important;
+        box-shadow: 0 0 10px rgba(56,189,248,0.45), inset 0 1px 0 rgba(255,255,255,0.25) !important;
+    }
+    section[data-testid="stSidebar"] .stButton>button[kind="primary"]:hover {
+        transform: scale(1.04) !important;
+        box-shadow: 0 0 16px rgba(56,189,248,0.6), inset 0 1px 0 rgba(255,255,255,0.3) !important;
+    }
+
+    .lead-card { width: 100% !important; box-sizing: border-box !important; overflow: visible !important; }
+    .lead-card > div > div:first-child { min-width: 0 !important; flex: 1 1 auto !important; }
+    .score-box { width: auto !important; min-width: 150px !important; max-width: 200px !important; flex-shrink: 0 !important; box-sizing: border-box !important; }
+    .lead-card h2, .lead-card p { white-space: normal !important; overflow-wrap: anywhere !important; word-break: break-word !important; }
+    div[data-testid="stMetric"] { min-width: 0 !important; }
+    div[data-testid="stMetricValue"] { white-space: normal !important; overflow: visible !important; font-size: 1.6rem !important; }
     </style>
 """, unsafe_allow_html=True)
 
