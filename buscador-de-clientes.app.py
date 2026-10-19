@@ -419,7 +419,7 @@ st.markdown("""
         width: 310px !important;
         min-width: 310px !important;
         max-width: 310px !important;
-        background: linear-gradient(180deg, #0f172a 0%, #0b1120 100%) !important;
+        background: linear-gradient(180deg, #0b1120 0%, #0b1120 100%) !important;
         border-right: 1px solid #1e293b !important;
     }
     
