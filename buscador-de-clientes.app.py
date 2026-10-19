@@ -1339,7 +1339,7 @@ elif st.session_state.etapa == 3:
                     st.info("📷 Sem foto")
                 
                 # ALINHADO EM UMA ÚNICA LINHA HORIZONTAL COM PROPORÇÃO OTIMIZADA
-                c_fav, c_st, c_fu = st.columns([1.5, 2.2, 1.8])
+                c_fav, c_st, c_fu = st.columns([5.8, 5.8, 5.8])
                 
                 with c_fav:
                     if st.button(fav_label, key=f"fav_btn_{lead['id']}", use_container_width=True):
