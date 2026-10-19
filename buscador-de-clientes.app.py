@@ -5,7 +5,7 @@ import json
 import time
 import base64
 import urllib.parse
-from datetime import datetime
+from datetime import datetime, date
 import re
 import unicodedata
 
@@ -117,13 +117,15 @@ def salvar_lead_db(lead):
                 "reivindicada": bool(lead.get('reivindicada')),
                 "fotos_total": int(lead.get('fotos_total', 0)),
                 "ultima_foto_dias": int(lead.get('ultima_foto_dias', 0)),
-                "tour_360": bool(lead.get('tour_360')),
+                "tour_360": False,
                 "status_crm": lead.get('status_crm', '🆕 Novo Lead'),
                 "pontos_criticos": lead.get('pontos_criticos', []),
                 "oportunidades": lead.get('oportunidades', []),
                 "score_oportunidade": int(lead.get('score_oportunidade', 0)),
                 "anotacoes": lead.get('anotacoes', ''),
-                "favorito": bool(lead.get('favorito', False))
+                "favorito": bool(lead.get('favorito', False)),
+                "data_followup": lead.get('data_followup', str(date.today())),
+                "obs_followup": lead.get('obs_followup', '')
             }).execute()
     except Exception as e:
         st.error(f"Erro ao salvar lead '{lead.get('nome')}': {str(e)}")
@@ -152,6 +154,14 @@ def alternar_favorito_db(lead_id, status_atual):
         supabase.table("leads").update({"favorito": novo_val}).eq("id", lead_id).execute()
     except Exception as e:
         st.error(f"Erro ao atualizar favorito: {str(e)}")
+
+def atualizar_followup_db(lead_id, nova_data):
+    if not supabase:
+        return
+    try:
+        supabase.table("leads").update({"data_followup": str(nova_data)}).eq("id", lead_id).execute()
+    except Exception as e:
+        st.error(f"Erro ao atualizar follow-up: {str(e)}")
 
 def carregar_todos_leads_db():
     if not supabase:
@@ -482,10 +492,10 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# SESSION STATE E CONTROLE DE ETAPA
+# SESSION STATE E CONTROLE DE ETAPA (MÓDULOS 0 A 4)
 # -----------------------------------------------------------------------------
 if 'etapa' not in st.session_state:
-    st.session_state.etapa = 1
+    st.session_state.etapa = 0
 
 def mudar_etapa(nova_etapa):
     st.session_state.etapa = nova_etapa
@@ -632,7 +642,9 @@ def buscar_google_places_api(nome_empresa, nicho, cidade, bairro, rua, raio_km, 
                     "oportunidades": oportunidades,
                     "score_oportunidade": min(score, 100),
                     "anotacoes": "",
-                    "favorito": False
+                    "favorito": False,
+                    "data_followup": str(date.today()),
+                    "obs_followup": ""
                 }
                 
                 salvar_lead_db(lead_obj)
@@ -668,7 +680,7 @@ def gerar_csv_excel_formatado(dados_leads):
     writer = csv.writer(output, delimiter=';', quoting=csv.QUOTE_MINIMAL)
     writer.writerow([
         "ID", "Data Mineração", "Cidade Busca", "Bairro Busca", "Nome da Empresa", 
-        "Categoria / Nicho", "Status Comercial CRM", "Favorito?", "Endereço Completo", "Telefone Fixo", 
+        "Categoria / Nicho", "Status Comercial CRM", "Favorito?", "Data Follow-up", "Endereço Completo", "Telefone Fixo", 
         "WhatsApp", "Possui Website?", "Website URL", "Site Seguro (HTTPS)?", 
         "Instagram URL", "Facebook URL", "Nota Média Google", "Total Avaliações", 
         "Ficha Reivindicada?", "Qtd. Fotos Publicadas", "Dias Desde Última Foto", 
@@ -686,6 +698,7 @@ def gerar_csv_excel_formatado(dados_leads):
             row.get("categoria", ""),
             row.get("status_crm", "🆕 Novo Lead"),
             "Sim" if row.get("favorito") else "Não",
+            row.get("data_followup", ""),
             row.get("endereco", ""),
             row.get("telefone", ""),
             row.get("whatsapp", ""),
@@ -699,7 +712,7 @@ def gerar_csv_excel_formatado(dados_leads):
             "Sim" if row.get("reivindicada") else "Não",
             row.get("fotos_total", ""),
             row.get("ultima_foto_dias", ""),
-            "Sim" if row.get("tour_360") else "Não",
+            "Não",
             row.get("anotacoes", ""),
             criticos_str,
             row.get("score_oportunidade", "")
@@ -708,9 +721,13 @@ def gerar_csv_excel_formatado(dados_leads):
     return output.getvalue().encode('utf-8')
 
 # -----------------------------------------------------------------------------
-# BARRA LATERAL
+# BARRA LATERAL (COM CENTRAL DE NOTIFICAÇÕES DE FOLLOW-UP)
 # -----------------------------------------------------------------------------
 base_leads = carregar_todos_leads_db()
+
+# Cálculo de pendências para notificação na barra lateral
+hoje_str = str(date.today())
+pendentes_hoje = [l for l in base_leads if l.get('data_followup', '') <= hoje_str and l.get('status_crm') not in ['🤝 Cliente Fechado', '❌ Recusado']]
 
 with st.sidebar:
     st.markdown('<div class="sidebar-title">Radar Comercial</div>', unsafe_allow_html=True)
@@ -725,17 +742,31 @@ with st.sidebar:
 
     st.divider()
 
+    # Central de Notificações de Retorno
+    if len(pendentes_hoje) > 0:
+        st.markdown(f"""
+            <div style="background-color: #7f1d1d; border: 1px solid #991b1b; padding: 10px; border-radius: 8px; margin-bottom: 12px; text-align: center;">
+                <span style="color: #fca5a5; font-weight: bold; font-size: 13px;">🔔 Notificação Ativa</span><br/>
+                <span style="color: #ffffff; font-size: 12px;"><b>{len(pendentes_hoje)} retornos pendentes</b> para hoje ou atrasados!</span>
+            </div>
+        """, unsafe_allow_html=True)
+    else:
+        st.markdown("""
+            <div style="background-color: #064e3b; border: 1px solid #065f46; padding: 8px; border-radius: 8px; margin-bottom: 12px; text-align: center;">
+                <span style="color: #6ee7b7; font-weight: bold; font-size: 12px;">✅ Agenda em dia! Sem pendências.</span>
+            </div>
+        """, unsafe_allow_html=True)
+
     st.markdown("### 📌 Módulos")
+    if st.button("0. Dashboard Executivo", use_container_width=True, type="primary" if st.session_state.etapa == 0 else "secondary"):
+        mudar_etapa(0)
     if st.button("1. Buscador de Clientes", use_container_width=True, type="primary" if st.session_state.etapa == 1 else "secondary"):
         mudar_etapa(1)
-        
     if st.button("2. Base & CRM de Leads", use_container_width=True, type="primary" if st.session_state.etapa == 2 else "secondary"):
         mudar_etapa(2)
-
     if st.button("3. Panorama de Nicho (Estatísticas)", use_container_width=True, type="primary" if st.session_state.etapa == 3 else "secondary"):
         mudar_etapa(3)
-
-    if st.button("4. Mapa de Prospecção", use_container_width=True, type="primary" if st.session_state.etapa == 4 else "secondary"):
+    if st.button("4. Mapa & Rota de Visitas", use_container_width=True, type="primary" if st.session_state.etapa == 4 else "secondary"):
         mudar_etapa(4)
 
     st.divider()
@@ -744,12 +775,63 @@ with st.sidebar:
     if len(base_leads) > 0:
         if st.button("🗑️ Limpar Banco de Dados", use_container_width=True):
             limpar_banco_dados()
-            mudar_etapa(1)
+            mudar_etapa(0)
+
+# -----------------------------------------------------------------------------
+# MÓDULO 0: DASHBOARD EXECUTIVO
+# -----------------------------------------------------------------------------
+if st.session_state.etapa == 0:
+    st.markdown("""
+        <div class="main-header">
+            <h1 class="main-title">📈 Dashboard Executivo | Okamoto Mídias & Tour360VR</h1>
+            <div class="main-subtitle">Visão geral do seu funil de prospecção e oportunidades de mercado mapeadas.</div>
+        </div>
+    """, unsafe_allow_html=True)
+
+    if len(base_leads) == 0:
+        st.warning("⚠️ Nenhum lead cadastrado ainda no banco de dados. Vá até o Módulo 1 para realizar sua primeira busca!")
+    else:
+        df_dash = pd.DataFrame(base_leads)
+
+        col_m1, col_m2, col_m3, col_m4 = st.columns(4)
+        with col_m1:
+            st.metric("Total de Leads na Base", len(df_dash))
+        with col_m2:
+            favoritos_tot = len(df_dash[df_dash['favorito'] == True])
+            st.metric("⭐ Leads Favoritos / Quentes", favoritos_tot)
+        with col_m3:
+            fechados = len(df_dash[df_dash['status_crm'] == '🤝 Cliente Fechado'])
+            st.metric("🤝 Clientes Fechados", fechados)
+        with col_m4:
+            sem_site_tot = len(df_dash[df_dash['website'] == ''])
+            st.metric("🌐 Sem Website Oficial", f"{(sem_site_tot / len(df_dash) * 100):.1f}%")
+
+        st.divider()
+
+        col_c1, col_c2 = st.columns(2)
+        with col_c1:
+            st.markdown("### 📊 Distribuição por Status no CRM")
+            status_counts = df_dash['status_crm'].value_counts()
+            st.bar_chart(status_counts)
+
+        with col_c2:
+            st.markdown("### 🏷️ Nichos / Categorias Mapeadas")
+            nicho_counts = df_dash['categoria'].value_counts().head(8)
+            st.bar_chart(nicho_counts)
+
+        st.divider()
+        st.markdown("### 🚨 Leads com Follow-up para Hoje ou Atrasados:")
+        if len(pendentes_hoje) > 0:
+            st.markdown(f"Você possui **{len(pendentes_hoje)} leads** pendentes de retorno na agenda:")
+            for r_lead in pendentes_hoje[:5]:
+                st.markdown(f"- **{r_lead['nome']}** ({r_lead['cidade_busca']}) — Status: `{r_lead['status_crm']}` — Retorno agendado para: **{r_lead['data_followup']}**")
+        else:
+            st.success("🎉 Nenhum follow-up pendente para hoje! Sua agenda está em dia.")
 
 # -----------------------------------------------------------------------------
 # ETAPA 1: BUSCADOR DE CLIENTES
 # -----------------------------------------------------------------------------
-if st.session_state.etapa == 1:
+elif st.session_state.etapa == 1:
     st.markdown("""
         <div class="main-header">
             <h1 class="main-title">🔎 Radar e Mineração de Mercado Local</h1>
@@ -789,7 +871,7 @@ elif st.session_state.etapa == 2:
     st.markdown("""
         <div class="main-header">
             <h1 class="main-title">📊 Base de Leads e Gerenciador CRM</h1>
-            <div class="main-subtitle">Seus leads permanecem salvos na nuvem indefinidamente. Atualize status, anotações, favoritos e exporte planilhas.</div>
+            <div class="main-subtitle">Seus leads permanecem salvos na nuvem. Atualize status, anotações, follow-up, calculadora de propostas e exporte planilhas.</div>
         </div>
     """, unsafe_allow_html=True)
 
@@ -898,7 +980,6 @@ elif st.session_state.etapa == 2:
                 else:
                     st.info("📷 Sem foto disponível na ficha")
                 
-                # Botão de Favorito
                 if st.button(fav_label, key=f"fav_btn_{lead['id']}", use_container_width=True):
                     alternar_favorito_db(lead['id'], is_fav)
                     st.rerun()
@@ -911,12 +992,24 @@ elif st.session_state.etapa == 2:
                     st.toast("Status comercial atualizado com sucesso na nuvem!")
                     st.rerun()
 
+                st.markdown("**📅 Próximo Contato (Follow-up):**")
+                dt_atual_str = lead.get('data_followup', str(date.today()))
+                try:
+                    dt_obj = datetime.strptime(dt_atual_str, '%Y-%m-%d').date()
+                except Exception:
+                    dt_obj = date.today()
+
+                nova_data_fu = st.date_input("Data de Retorno:", value=dt_obj, key=f"dt_fu_{lead['id']}", label_visibility="collapsed")
+                if str(nova_data_fu) != dt_atual_str:
+                    atualizar_followup_db(lead['id'], nova_data_fu)
+                    st.toast("Data de follow-up atualizada!")
+
             with col_details1:
                 st.markdown("**📊 Indicadores no Google:**")
                 st.markdown(f"- **Nota Média:** ⭐ {lead['nota']} ({lead['total_avaliacoes']} avaliações)")
                 st.markdown(f"- **Ficha Reivindicada?** {'✅ Sim' if lead['reivindicada'] else '❌ **NÃO REIVINDICADA**'}")
                 st.markdown(f"- **Fotos na Ficha:** {lead['fotos_total']} fotos (última há {lead['ultima_foto_dias']} dias)")
-                st.markdown(f"- **Tour 360°:** {'✅ Presente' if lead['tour_360'] else '❌ **Ausente**'}")
+                st.markdown(f"- **Tour 360°:** ❌ **Ausente (Oportunidade)**")
 
             with col_details2:
                 st.markdown("**🚨 Pontos Críticos Encontrados:**")
@@ -949,7 +1042,6 @@ elif st.session_state.etapa == 2:
                     link_wa = f"https://wa.me/55{lead['whatsapp']}?text={urllib.parse.quote(msg_wa)}"
                     st.markdown(f'<a href="{link_wa}" target="_blank"><button style="width:100%; background-color:#25D366; color:white; border:none; padding:8px; border-radius:6px; font-weight:bold; cursor:pointer; margin-bottom:8px;">💬 WhatsApp</button></a>', unsafe_allow_html=True)
 
-                # Botão de Disparo de E-mail Automatizado (mailto)
                 assunto_email = f"Oportunidade de Presença Digital: {lead['nome']} no Google"
                 corpo_email = f"""Olá! Analisei o perfil da {lead['nome']} no Google e gostaria de compartilhar uma oportunidade importante.
 
@@ -968,13 +1060,26 @@ TOUR360VR | Okamoto Mídias Visuais
                 link_mailto = f"mailto:?subject={urllib.parse.quote(assunto_email)}&body={urllib.parse.quote(corpo_email)}"
                 st.markdown(f'<a href="{link_mailto}" target="_blank"><button style="width:100%; background-color:#0284c7; color:white; border:none; padding:8px; border-radius:6px; font-weight:bold; cursor:pointer; margin-bottom:8px;">✉️ Enviar E-mail Pronto</button></a>', unsafe_allow_html=True)
 
-            # Campo de Anotações CRM com salvamento em tempo real
             st.markdown("**📝 Anotações & Histórico de Contato:**")
             anotacoes_atuais = lead.get('anotacoes', '') or ''
             novas_anotacoes = st.text_area("Anotações:", value=anotacoes_atuais, height=80, key=f"txt_anot_{lead['id']}", label_visibility="collapsed", placeholder="Digite histórico de reuniões, conversas ou recados aqui...")
             
             if novas_anotacoes != anotacoes_atuais:
                 atualizar_anotacoes_db(lead['id'], novas_anotacoes)
+
+            with st.expander(f"💰 **Calculadora de Proposta Comercial ({lead['nome']})**"):
+                tamanho_estab = st.selectbox("Porte do Estabelecimento:", ["Pequeno (Até 3 ambientes / 360° básico)", "Médio (4 a 8 ambientes / Tour Padrão)", "Grande (Mais de 8 ambientes / Completo)"], key=f"tamanho_{lead['id']}")
+                incluir_lp = st.checkbox("Incluir Desenvolvimento de Landing Page?", value=True, key=f"lp_{lead['id']}")
+                
+                base_val = 450 if "Pequeno" in tamanho_estab else (850 if "Médio" in tamanho_estab else 1400)
+                if incluir_lp:
+                    base_val += 600
+
+                st.info(f"💡 **Valor Sugerido para Proposta:** R$ {base_val},00 (Tour 360° Imersivo + Google Street View{' + Landing Page' if incluir_lp else ''})")
+                
+                msg_orc = f"Olá! Conforme conversamos sobre o projeto da {lead['nome']}, segue nossa proposta de investimento para implantação do Tour Virtual 360° e Otimização Digital: Total de R$ {base_val},00. Podemos fechar?"
+                link_orc_wa = f"https://wa.me/55{lead['whatsapp']}?text={urllib.parse.quote(msg_orc)}"
+                st.markdown(f'<a href="{link_orc_wa}" target="_blank"><button style="background-color:#25D366; color:white; border:none; padding:6px 12px; border-radius:6px; font-weight:bold; cursor:pointer; font-size:12px;">📤 Enviar Orçamento via WhatsApp</button></a>', unsafe_allow_html=True)
 
             with st.expander(f"✉️ **Scripts de Vendas e Abordagem Detalhada ({lead['nome']})**"):
                 st.markdown("**1) Abordagem Inicial — WhatsApp**")
@@ -1119,13 +1224,13 @@ elif st.session_state.etapa == 3:
         )
 
 # -----------------------------------------------------------------------------
-# ETAPA 4: MAPA DE PROSPECÇÃO (CENTRALIZAÇÃO DINÂMICA)
+# ETAPA 4: MAPA & ROTA DE VISITAS (PROSPECÇÃO PRESENCIAL)
 # -----------------------------------------------------------------------------
 elif st.session_state.etapa == 4:
     st.markdown("""
         <div class="main-header">
-            <h1 class="main-title">🗺️ Mapa de Localização e Concentração</h1>
-            <div class="main-subtitle">Sua base de dados de empresas mapeadas na região com alta precisão e visibilidade.</div>
+            <h1 class="main-title">🗺️ Mapa & Planejador de Rotas de Visitas</h1>
+            <div class="main-subtitle">Visualize leads no mapa e planeje sua rota de prospecção presencial por região.</div>
         </div>
     """, unsafe_allow_html=True)
 
