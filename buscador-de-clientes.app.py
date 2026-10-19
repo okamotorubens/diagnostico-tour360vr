@@ -727,7 +727,16 @@ base_leads = carregar_todos_leads_db()
 
 # Cálculo de pendências para notificação na barra lateral
 hoje_str = str(date.today())
-pendentes_hoje = [l for l in base_leads if l.get('data_followup', '') <= hoje_str and l.get('status_crm') not in ['🤝 Cliente Fechado', '❌ Recusado']]
+# Cálculo blindado de pendências para evitar erros com campos nulos na nuvem
+pendentes_hoje = []
+for l in base_leads:
+    dt_fu = l.get('data_followup')
+    if not dt_fu:
+        dt_fu = hoje_str
+    
+    st_crm = l.get('status_crm', '')
+    if dt_fu <= hoje_str and st_crm not in ['🤝 Cliente Fechado', '❌ Recusado']:
+        pendentes_hoje.append(l)
 
 with st.sidebar:
     st.markdown('<div class="sidebar-title">Radar Comercial</div>', unsafe_allow_html=True)
