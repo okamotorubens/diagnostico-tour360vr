@@ -634,6 +634,70 @@ st.markdown("""
 
     h1, h2, h3 { color: #f1f5f9 !important; font-weight: 600 !important; }
     hr, div[data-testid="stDivider"] { border-color: rgba(255,255,255,0.06) !important; }
+
+    /* ===== AJUSTE FINO: VISUAL DA REFERÊNCIA GESTÃO MENSAL (DARK + GLASS) ===== */
+    .stApp {
+        background:
+            radial-gradient(900px 500px at 20% -10%, rgba(59,130,246,0.14), transparent 60%),
+            radial-gradient(700px 500px at 95% 10%, rgba(168,85,247,0.08), transparent 55%),
+            linear-gradient(180deg, #0b1020 0%, #070a14 100%) !important;
+    }
+
+    .main-header, .lead-card, .script-box, div[data-testid="stMetric"],
+    div[data-testid="stDataFrame"], div[data-testid="stAlert"], div[data-testid="stForm"] {
+        background: rgba(20,26,44,0.55) !important;
+        border: 1px solid rgba(148,163,184,0.14) !important;
+        border-radius: 14px !important;
+        box-shadow: 0 10px 30px -12px rgba(0,0,0,0.6) !important;
+    }
+
+    .main-header { padding: 20px 24px !important; overflow: hidden; }
+    .main-header::before {
+        content: ""; position: absolute; left: 0; right: 0; top: 0; bottom: auto;
+        width: auto !important; height: 3px !important;
+        background: linear-gradient(90deg,#ef4444,#f59e0b,#22c55e,#3b82f6,#a855f7) !important;
+    }
+    .main-title { font-size: 22px !important; font-weight: 700 !important; color: #ffffff !important; }
+    .main-subtitle { color: #94a3b8 !important; }
+
+    .lead-card { border-left: 1px solid rgba(148,163,184,0.14) !important; }
+    .lead-card:hover { border-color: rgba(59,130,246,0.35) !important; }
+
+    .stButton>button, .btn-redirect {
+        background: rgba(30,41,59,0.55) !important;
+        border: 1px solid rgba(148,163,184,0.18) !important;
+        border-radius: 999px !important;
+        color: #e2e8f0 !important;
+        font-weight: 500 !important;
+    }
+    .stButton>button:hover, .btn-redirect:hover {
+        border-color: rgba(59,130,246,0.6) !important;
+        box-shadow: 0 0 14px rgba(59,130,246,0.35) !important;
+        background: rgba(37,99,235,0.15) !important;
+    }
+    .stButton>button[kind="primary"] {
+        background: rgba(37,99,235,0.22) !important;
+        border: 1px solid rgba(59,130,246,0.7) !important;
+        box-shadow: 0 0 16px rgba(59,130,246,0.35) !important;
+        color: #ffffff !important;
+    }
+
+    div[data-baseweb="tab-list"] { border-bottom: 1px solid rgba(148,163,184,0.14) !important; }
+    button[data-baseweb="tab"] { color: #94a3b8 !important; font-weight: 500 !important; }
+    button[data-baseweb="tab"][aria-selected="true"] { color: #f87171 !important; }
+    div[data-baseweb="tab-highlight"] { background-color: #f87171 !important; }
+
+    div[data-baseweb="input"] > div, div[data-baseweb="select"] > div, textarea {
+        background-color: rgba(15,23,42,0.6) !important;
+        border: 1px solid rgba(148,163,184,0.16) !important;
+        border-radius: 10px !important;
+    }
+
+    div[data-testid="stAlert"] {
+        background: rgba(30,58,138,0.22) !important;
+        border: 1px solid rgba(59,130,246,0.3) !important;
+        color: #dbeafe !important;
+    }
     </style>
 """, unsafe_allow_html=True)
 
