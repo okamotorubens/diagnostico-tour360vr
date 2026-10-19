@@ -1233,13 +1233,13 @@ elif st.session_state.etapa == 3:
         )
 
 # -----------------------------------------------------------------------------
-# ETAPA 4: MAPA & ROTA DE VISITAS (PROSPECÇÃO PRESENCIAL)
+# ETAPA 4: MAPA & ROTA DE VISITAS (PROSPECÇÃO PRESENCIAL COM ITINERÁRIO)
 # -----------------------------------------------------------------------------
 elif st.session_state.etapa == 4:
     st.markdown("""
         <div class="main-header">
             <h1 class="main-title">🗺️ Mapa & Planejador de Rotas de Visitas</h1>
-            <div class="main-subtitle">Visualize leads no mapa e planeje sua rota de prospecção presencial por região.</div>
+            <div class="main-subtitle">Visualize leads no mapa e organize seu itinerário sequencial de prospecção presencial.</div>
         </div>
     """, unsafe_allow_html=True)
 
@@ -1251,7 +1251,7 @@ elif st.session_state.etapa == 4:
         col_f1, col_f2, col_f3 = st.columns([2, 2, 2])
         with col_f1:
             cats_mapa = ["Todos os Nichos"] + list(df_mapa['categoria'].unique())
-            cat_sel_mapa = st.selectbox("🎯 Nicho no Mapa:", cats_mapa)
+            cat_sel_mapa = st.selectbox("🎯 Nicho no Roteiro:", cats_mapa)
             
         with col_f2:
             cids_mapa = ["Todas as Cidades/Regiões"] + list(df_mapa['cidade_busca'].unique())
@@ -1276,20 +1276,13 @@ elif st.session_state.etapa == 4:
         elif filtro_score_op == "🟢 Baixo (< 30)":
             df_mapa_filtrado = df_mapa_filtrado[df_mapa_filtrado['score_oportunidade'] < 30]
 
-        st.info(f"📌 Exibindo **{len(df_mapa_filtrado)} empresas** filtradas no mapa.")
+        st.info(f"📌 Exibindo **{len(df_mapa_filtrado)} empresas** no mapa e no itinerário de visitas.")
 
         CORES_PINS = ['red', 'blue', 'green', 'purple', 'orange', 'darkred', 'cadetblue', 'darkgreen', 'darkblue', 'pink']
         CORES_HEX = {
-            'red': '#ef4444', 
-            'blue': '#3b82f6', 
-            'green': '#10b981', 
-            'purple': '#8b5cf6',
-            'orange': '#f97316', 
-            'darkred': '#991b1b', 
-            'cadetblue': '#06b6d4',
-            'darkgreen': '#166534', 
-            'darkblue': '#1e3a8a', 
-            'pink': '#ec4899'
+            'red': '#ef4444', 'blue': '#3b82f6', 'green': '#10b981', 'purple': '#8b5cf6',
+            'orange': '#f97316', 'darkred': '#991b1b', 'cadetblue': '#06b6d4',
+            'darkgreen': '#166534', 'darkblue': '#1e3a8a', 'pink': '#ec4899'
         }
 
         segmentos_unicos = list(df_mapa['categoria'].unique())
@@ -1330,9 +1323,7 @@ elif st.session_state.etapa == 4:
                     <hr style="margin: 6px 0; border: 0.5px solid #cbd5e1;"/>
                     🚨 <b>Score de Oportunidade:</b> <span style="color: #dc2626; font-weight: bold;">{row['score_oportunidade']}/100</span><br/>
                     ⭐ <b>Nota no Google:</b> {row['nota']} ({row['total_avaliacoes']} avaliações)<br/>
-                    🌐 <b>Website Oficial:</b> {'✅ Presente' if row['website'] else '❌ Ausente'}<br/>
-                    📷 <b>Fotos na Ficha:</b> {row['fotos_total']} fotos publicadas<br/>
-                    📅 <b>Última Atualização:</b> há {row['ultima_foto_dias']} dias
+                    🌐 <b>Website Oficial:</b> {'✅ Presente' if row['website'] else '❌ Ausente'}
                 </div>
                 """
 
@@ -1347,6 +1338,33 @@ elif st.session_state.etapa == 4:
             if len(bounds) > 0:
                 m.fit_bounds(bounds, padding=[30, 30])
 
-            st_folium(m, width="100%", height=700)
+            st_folium(m, width="100%", height=500)
+            
+            st.divider()
+            
+            # NOVO: ITINERÁRIO SEQUENCIAL DE VISITAS
+            st.markdown("### 🚗 Itinerário Sequencial de Visitas Presenciais")
+            st.markdown("Lista ordenada de paradas com base nos filtros selecionados acima para planejar seu trajeto:")
+
+            df_mapa_sorted = df_mapa_filtrado.sort_values(by='score_oportunidade', ascending=False)
+            
+            for idx, (_, r_visita) in enumerate(df_mapa_sorted.iterrows(), start=1):
+                url_maps_rota = f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(r_visita['nome'] + ' ' + r_visita['endereco'])}"
+                
+                with st.container():
+                    col_num, col_info, col_acao = st.columns([0.8, 4.2, 2])
+                    with col_num:
+                        st.markdown(f"<div style='background-color: #1e293b; color: #38bdf8; font-size: 18px; font-weight: bold; text-align: center; padding: 12px; border-radius: 8px; border: 1px solid #334155;'>#{idx}</div>", unsafe_allow_html=True)
+                    with col_info:
+                        st.markdown(f"**{r_visita['nome']}** ({r_visita['categoria']})")
+                        st.markdown(f"📍 {r_visita['endereco']}")
+                        st.markdown(f"⭐ Nota: {r_visita['nota']} | 🚨 Score de Oportunidade: **{r_visita['score_oportunidade']}/100**")
+                    with col_acao:
+                        st.markdown(f"<div style='height: 4px;'></div>", unsafe_allow_html=True)
+                        st.markdown(f'<a href="{url_maps_rota}" target="_blank"><button style="width:100%; background-color:#2563eb; color:white; border:none; padding:7px; border-radius:6px; font-weight:bold; cursor:pointer; margin-bottom:5px;">🧭 Abrir Rota no Maps</button></a>', unsafe_allow_html=True)
+                        if r_visita['whatsapp']:
+                            link_wa_rota = f"https://wa.me/55{r_visita['whatsapp']}?text={urllib.parse.quote(f'Olá! Estou passando aqui na região e gostaria de agendar uma rápida apresentação presencial do Tour 360° para a {r_visita["nome"]}.')}"
+                            st.markdown(f'<a href="{link_wa_rota}" target="_blank"><button style="width:100%; background-color:#25D366; color:white; border:none; padding:7px; border-radius:6px; font-weight:bold; cursor:pointer;">💬 Avisar via WhatsApp</button></a>', unsafe_allow_html=True)
+                    st.divider()
         else:
             st.warning("Nenhum registro encontrado para os filtros selecionados.")
