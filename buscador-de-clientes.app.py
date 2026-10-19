@@ -1333,7 +1333,7 @@ elif st.session_state.etapa == 3:
                 </div>
             """, unsafe_allow_html=True)
 
-            col_img, col_details1, col_details2, col_actions = st.columns([3.6, 2.2, 2.2, 2.4])
+            col_img, col_details1, col_details2, col_actions = st.columns([2.6, 2.2, 2.2, 2.4])
 
             with col_img:
                 foto_lead = lead.get('foto_url', '')
