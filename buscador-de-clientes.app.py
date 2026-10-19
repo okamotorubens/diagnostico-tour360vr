@@ -419,7 +419,7 @@ st.markdown("""
         width: 310px !important;
         min-width: 310px !important;
         max-width: 310px !important;
-        background: linear-gradient(180deg, #0b1120 0%, #0b1120 100%) !important;
+        background: linear-gradient(180deg, #0f172a 0%, #0b1120 100%) !important;
         border-right: 1px solid #1e293b !important;
     }
     
@@ -570,7 +570,7 @@ st.markdown("""
     }
 
     section[data-testid="stSidebar"] {
-        background: rgba(10,14,25,0.55) !important;
+        background: linear-gradient(180deg, #0a1f44 0%, #071735 100%) !important;
         backdrop-filter: blur(22px) saturate(140%) !important;
         -webkit-backdrop-filter: blur(22px) saturate(140%) !important;
         border-right: 1px solid rgba(255,255,255,0.06) !important;
@@ -807,7 +807,7 @@ st.markdown("""
 
     section[data-testid="stSidebar"] .stButton>button {
         background: linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%) !important;
-        border: 1px solid rgba(255,255,255,0.85) !important;
+        border: 1px solid #cbd5e1 !important;
         border-radius: 8px !important;
         color: #e2e8f0 !important;
         box-shadow: none !important;
@@ -819,7 +819,7 @@ st.markdown("""
     }
     section[data-testid="stSidebar"] .stButton>button[kind="primary"] {
         background: linear-gradient(135deg, rgba(37,99,235,0.75) 0%, rgba(14,165,233,0.35) 55%, rgba(15,23,42,0.6) 100%) !important;
-        border: 1px solid #ffffff !important;
+        border: 1px solid #cbd5e1 !important;
         color: #ffffff !important;
         box-shadow: 0 0 10px rgba(56,189,248,0.45), inset 0 1px 0 rgba(255,255,255,0.25) !important;
     }
@@ -1128,15 +1128,15 @@ with st.sidebar:
 
     st.markdown("<div style='text-align: center; font-weight: 700; font-size: 13px; letter-spacing: 1px; text-transform: uppercase; color:#94a3b8; margin-bottom: 10px;'>Módulos</div>", unsafe_allow_html=True)
     
-    if st.button("1️⃣ Dashboard Executivo", use_container_width=True, type="primary" if st.session_state.etapa == 1 else "secondary"):
+    if st.button("Dashboard Executivo", use_container_width=True, type="primary" if st.session_state.etapa == 1 else "secondary"):
         mudar_etapa(1)
-    if st.button("2️⃣ Buscador de Clientes", use_container_width=True, type="primary" if st.session_state.etapa == 2 else "secondary"):
+    if st.button("Buscador de Clientes", use_container_width=True, type="primary" if st.session_state.etapa == 2 else "secondary"):
         mudar_etapa(2)
-    if st.button("3️⃣ Base & CRM de Leads", use_container_width=True, type="primary" if st.session_state.etapa == 3 else "secondary"):
+    if st.button("Base & CRM de Leads", use_container_width=True, type="primary" if st.session_state.etapa == 3 else "secondary"):
         mudar_etapa(3)
-    if st.button("4️⃣ Panorama de Nicho", use_container_width=True, type="primary" if st.session_state.etapa == 4 else "secondary"):
+    if st.button("Panorama de Nicho", use_container_width=True, type="primary" if st.session_state.etapa == 4 else "secondary"):
         mudar_etapa(4)
-    if st.button("5️⃣ Mapa & Rota de Visitas", use_container_width=True, type="primary" if st.session_state.etapa == 5 else "secondary"):
+    if st.button("Mapa & Rota de Visitas", use_container_width=True, type="primary" if st.session_state.etapa == 5 else "secondary"):
         mudar_etapa(5)
 
     st.divider()
@@ -1333,7 +1333,7 @@ elif st.session_state.etapa == 3:
                 </div>
             """, unsafe_allow_html=True)
 
-            col_img, col_details1, col_details2, col_actions = st.columns([3.6, 2.2, 2.2, 2.4])
+            col_img, col_details1, col_details2, col_actions = st.columns([4.4, 2.0, 2.0, 2.2])
 
             with col_img:
                 foto_lead = lead.get('foto_url', '')
@@ -1347,7 +1347,7 @@ elif st.session_state.etapa == 3:
                             
                         resp_img = requests.get(foto_lead_auth, timeout=5)
                         if resp_img.status_code == 200:
-                            st.image(resp_img.content, caption="Foto da Ficha do Google", use_container_width=True)
+                            st.image(resp_img.content, caption="Foto da Ficha do Google", width=260)
                         else:
                             st.info("📷 Sem foto")
                     except Exception:
@@ -1356,7 +1356,7 @@ elif st.session_state.etapa == 3:
                     st.info("📷 Sem foto")
                 
                 # ALINHADO EM UMA ÚNICA LINHA HORIZONTAL COM PROPORÇÃO OTIMIZADA
-                c_fav, c_st, c_fu = st.columns([1.3, 2.4, 2.3])
+                c_fav, c_st, c_fu = st.columns([1.6, 2.2, 2.2])
                 
                 with c_fav:
                     if st.button(fav_label, key=f"fav_btn_{lead['id']}", use_container_width=True):
