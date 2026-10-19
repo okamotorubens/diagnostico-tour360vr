@@ -748,6 +748,52 @@ st.markdown("""
     .lead-card h2 { white-space: normal !important; overflow-wrap: anywhere !important; line-height: 1.25 !important; }
     .lead-card p { white-space: normal !important; overflow-wrap: anywhere !important; }
     .critical-item { overflow-wrap: anywhere !important; }
+
+    /* ===== AJUSTE: BOTÕES MENOS ARREDONDADOS E ABA ATIVA EM VIDRO ===== */
+    .stButton>button, .btn-redirect {
+        border-radius: 6px !important;
+    }
+    .stButton>button[kind="primary"] {
+        background: linear-gradient(135deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.06) 100%) !important;
+        backdrop-filter: blur(14px) saturate(160%) !important;
+        -webkit-backdrop-filter: blur(14px) saturate(160%) !important;
+        border: 1px solid rgba(255,255,255,0.45) !important;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.35), 0 8px 24px -8px rgba(0,0,0,0.5) !important;
+        color: #ffffff !important;
+    }
+    .stButton>button[kind="primary"]:hover {
+        background: linear-gradient(135deg, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0.10) 100%) !important;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.4), 0 12px 28px -8px rgba(0,0,0,0.55) !important;
+    }
+
+    /* ===== AJUSTE: CAMPOS E CONTROLES NA MESMA LINHA, SEM CORTES ===== */
+    div[data-testid="stWidgetLabel"] {
+        min-height: 3rem !important;
+        height: 3rem !important;
+    }
+    div[data-testid="stWidgetLabel"] p {
+        font-size: 12px !important;
+        line-height: 1.25 !important;
+    }
+    div[data-testid="stForm"] div[data-testid="stHorizontalBlock"],
+    div[data-testid="column"] div[data-testid="stHorizontalBlock"] {
+        flex-wrap: wrap !important;
+        align-items: flex-start !important;
+    }
+    div[data-testid="stForm"] div[data-testid="stHorizontalBlock"] > div[data-testid="column"],
+    div[data-testid="column"] div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {
+        min-width: 120px !important;
+    }
+    div[data-testid="column"] div[data-testid="stHorizontalBlock"] > div[data-testid="column"] button,
+    div[data-testid="column"] div[data-testid="stHorizontalBlock"] > div[data-testid="column"] button p {
+        white-space: normal !important;
+        line-height: 1.2 !important;
+        text-overflow: clip !important;
+    }
+    div[data-testid="stDateInput"] input,
+    div[data-testid="stSelectbox"] div[data-baseweb="select"] > div {
+        min-width: 0 !important;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -1112,7 +1158,7 @@ elif st.session_state.etapa == 2:
     """, unsafe_allow_html=True)
 
     with st.form("form_busca"):
-        col_nome_emp, col1, col2, col3, col4, col5, col6 = st.columns([2.2, 2, 2, 1.8, 1.8, 1.2, 1.2])
+        col_nome_emp, col1, col2, col3, col4, col5, col6 = st.columns([2.4, 2.2, 2, 2, 2.2, 1.2, 1.2])
         with col_nome_emp: nome_empresa_input = st.text_input("Nome da Empresa (Opcional)", value="", help="Ex: Clínica Sorria ou Hotel X")
         with col1: nicho_input = st.text_input("Nicho / Categoria (Opcional)", value="", help="Deixe em branco para buscar empresas gerais no local")
         with col2: cidade_input = st.text_input("Cidade / Município", value="Ribeirão Preto")
@@ -1230,7 +1276,7 @@ elif st.session_state.etapa == 3:
                 </div>
             """, unsafe_allow_html=True)
 
-            col_img, col_details1, col_details2, col_actions = st.columns([2, 2.5, 2.5, 2.5])
+            col_img, col_details1, col_details2, col_actions = st.columns([2.4, 2.4, 2.4, 2.4])
 
             with col_img:
                 foto_lead = lead.get('foto_url', '')
