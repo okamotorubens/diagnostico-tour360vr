@@ -880,7 +880,7 @@ elif st.session_state.etapa == 2:
     st.markdown("""
         <div class="main-header">
             <h1 class="main-title">📊 Base de Leads e Gerenciador CRM</h1>
-            <div class="main-subtitle">Seus leads permanecem salvos na nuvem. Atualize status, anotações, follow-up, calculadora de propostas e exporte planilhas.</div>
+            <div class="main-subtitle">Seus leads permanecem salvos na nuvem. Atualize status, anotações, follow-up e exiba planilhas com facilidade.</div>
         </div>
     """, unsafe_allow_html=True)
 
@@ -1075,20 +1075,6 @@ TOUR360VR | Okamoto Mídias Visuais
             
             if novas_anotacoes != anotacoes_atuais:
                 atualizar_anotacoes_db(lead['id'], novas_anotacoes)
-
-            with st.expander(f"💰 **Calculadora de Proposta Comercial ({lead['nome']})**"):
-                tamanho_estab = st.selectbox("Porte do Estabelecimento:", ["Pequeno (Até 3 ambientes / 360° básico)", "Médio (4 a 8 ambientes / Tour Padrão)", "Grande (Mais de 8 ambientes / Completo)"], key=f"tamanho_{lead['id']}")
-                incluir_lp = st.checkbox("Incluir Desenvolvimento de Landing Page?", value=True, key=f"lp_{lead['id']}")
-                
-                base_val = 450 if "Pequeno" in tamanho_estab else (850 if "Médio" in tamanho_estab else 1400)
-                if incluir_lp:
-                    base_val += 600
-
-                st.info(f"💡 **Valor Sugerido para Proposta:** R$ {base_val},00 (Tour 360° Imersivo + Google Street View{' + Landing Page' if incluir_lp else ''})")
-                
-                msg_orc = f"Olá! Conforme conversamos sobre o projeto da {lead['nome']}, segue nossa proposta de investimento para implantação do Tour Virtual 360° e Otimização Digital: Total de R$ {base_val},00. Podemos fechar?"
-                link_orc_wa = f"https://wa.me/55{lead['whatsapp']}?text={urllib.parse.quote(msg_orc)}"
-                st.markdown(f'<a href="{link_orc_wa}" target="_blank"><button style="background-color:#25D366; color:white; border:none; padding:6px 12px; border-radius:6px; font-weight:bold; cursor:pointer; font-size:12px;">📤 Enviar Orçamento via WhatsApp</button></a>', unsafe_allow_html=True)
 
             with st.expander(f"✉️ **Scripts de Vendas e Abordagem Detalhada ({lead['nome']})**"):
                 st.markdown("**1) Abordagem Inicial — WhatsApp**")
