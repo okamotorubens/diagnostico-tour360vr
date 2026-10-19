@@ -698,6 +698,56 @@ st.markdown("""
         border: 1px solid rgba(59,130,246,0.3) !important;
         color: #dbeafe !important;
     }
+    /* ===== AJUSTES: BOTÕES COM CONTORNO BRANCO, NEON NO ATIVO E RELEVO NO HOVER ===== */
+    .stButton>button, .btn-redirect {
+        border: 1px solid #ffffff !important;
+        background: rgba(255,255,255,0.03) !important;
+        color: #ffffff !important;
+        transition: transform .25s ease, box-shadow .25s ease, background .25s ease !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        font-size: 12.5px !important;
+        padding-left: 8px !important;
+        padding-right: 8px !important;
+    }
+    .stButton>button:hover, .btn-redirect:hover {
+        transform: scale(1.06) !important;
+        border-color: #ffffff !important;
+        background: rgba(255,255,255,0.10) !important;
+        box-shadow: 0 0 10px rgba(255,255,255,0.45), 0 10px 24px -8px rgba(255,255,255,0.25) !important;
+    }
+    .stButton>button:active { transform: scale(1.02) !important; }
+    .stButton>button[kind="primary"] {
+        background: rgba(255,255,255,0.08) !important;
+        border: 1px solid #ffffff !important;
+        color: #ffffff !important;
+        box-shadow: 0 0 6px #ffffff, 0 0 16px rgba(255,255,255,0.55), inset 0 0 8px rgba(255,255,255,0.15) !important;
+    }
+    .stButton>button[kind="primary"]:hover {
+        transform: scale(1.06) !important;
+        background: rgba(255,255,255,0.14) !important;
+        box-shadow: 0 0 10px #ffffff, 0 0 26px rgba(255,255,255,0.65), inset 0 0 8px rgba(255,255,255,0.2) !important;
+    }
+
+    /* ALINHAMENTO E CORTES NOS CARDS */
+    div[data-testid="column"] { min-width: 0 !important; }
+    div[data-testid="stWidgetLabel"] {
+        min-height: 2.6rem !important;
+        display: flex !important;
+        align-items: flex-end !important;
+    }
+    div[data-testid="stWidgetLabel"] p { line-height: 1.3 !important; white-space: normal !important; }
+    div[data-testid="stSelectbox"] div[data-baseweb="select"] > div,
+    div[data-testid="stDateInput"] input {
+        font-size: 12.5px !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+    }
+    .lead-card h2 { white-space: normal !important; overflow-wrap: anywhere !important; line-height: 1.25 !important; }
+    .lead-card p { white-space: normal !important; overflow-wrap: anywhere !important; }
+    .critical-item { overflow-wrap: anywhere !important; }
     </style>
 """, unsafe_allow_html=True)
 
