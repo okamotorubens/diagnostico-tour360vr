@@ -1312,11 +1312,11 @@ elif st.session_state.etapa == 4:
             bounds = []
             for _, row in df_mapa_filtrado.iterrows():
                 cor_pin = mapa_cores_seg.get(row['categoria'], 'red') if cat_sel_mapa == "Todos os Nichos" else 'red'
-                url_maps_emp = f"https://www.google.com/maps/dir//({urllib.parse.quote(row['endereco'])});"
-
+                
+                # CORREÇÃO APLICADA AQUI (row['nome'] em vez de row['name'])
                 info_card_html = f"""
                 <div style="font-family: Arial, sans-serif; font-size: 12px; min-width: 240px; padding: 6px; line-height: 1.5;">
-                    <b style="color: #2563eb; font-size: 14px;">{row['name']}</b><br/>
+                    <b style="color: #2563eb; font-size: 14px;">{row['nome']}</b><br/>
                     <span style="color: #475569; font-size: 11px;">📍 {row['endereco']}</span><br/>
                     <hr style="margin: 6px 0; border: 0.5px solid #cbd5e1;"/>
                     🚨 <b>Score de Oportunidade:</b> <span style="color: #dc2626; font-weight: bold;">{row['score_oportunidade']}/100</span><br/>
@@ -1346,7 +1346,6 @@ elif st.session_state.etapa == 4:
             df_mapa_sorted = df_mapa_filtrado.sort_values(by='score_oportunidade', ascending=False)
             
             for idx, (_, r_visita) in enumerate(df_mapa_sorted.iterrows(), start=1):
-                # Link atualizado para forçar o Google Maps a traçar a rota (direções) até o endereço
                 url_rota_passo_a_passo = f"https://www.google.com/maps/dir/?api=1&destination={urllib.parse.quote(r_visita['endereco'])}"
                 
                 with st.container():
