@@ -570,7 +570,7 @@ st.markdown("""
     }
 
     section[data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #030712 0%, #010409 100%) !important;
+        background: linear-gradient(180deg, #14305e 0%, #0c1f42 100%) !important;
         backdrop-filter: blur(22px) saturate(140%) !important;
         -webkit-backdrop-filter: blur(22px) saturate(140%) !important;
         border-right: 1px solid rgba(255,255,255,0.06) !important;
@@ -813,9 +813,9 @@ st.markdown("""
         box-shadow: none !important;
     }
     section[data-testid="stSidebar"] .stButton>button:hover {
-        transform: scale(1.04) !important;
+        transform: scale(1.02) !important;
         border-color: #ffffff !important;
-        box-shadow: 0 0 12px rgba(255,255,255,0.35) !important;
+        box-shadow: 0 0 6px #ffffff, 0 0 18px rgba(255,255,255,0.7) !important;
     }
     section[data-testid="stSidebar"] .stButton>button[kind="primary"] {
         background: linear-gradient(135deg, rgba(37,99,235,0.75) 0%, rgba(14,165,233,0.35) 55%, rgba(15,23,42,0.6) 100%) !important;
@@ -824,8 +824,9 @@ st.markdown("""
         box-shadow: 0 0 10px rgba(56,189,248,0.45), inset 0 1px 0 rgba(255,255,255,0.25) !important;
     }
     section[data-testid="stSidebar"] .stButton>button[kind="primary"]:hover {
-        transform: scale(1.04) !important;
-        box-shadow: 0 0 16px rgba(56,189,248,0.6), inset 0 1px 0 rgba(255,255,255,0.3) !important;
+        transform: scale(1.02) !important;
+        border-color: #ffffff !important;
+        box-shadow: 0 0 6px #ffffff, 0 0 18px rgba(255,255,255,0.7), inset 0 1px 0 rgba(255,255,255,0.3) !important;
     }
 
     .lead-card { width: 100% !important; box-sizing: border-box !important; overflow: visible !important; }
@@ -833,23 +834,6 @@ st.markdown("""
     .score-box { width: auto !important; min-width: 150px !important; max-width: 200px !important; flex-shrink: 0 !important; box-sizing: border-box !important; }
     .lead-card h2, .lead-card p { white-space: normal !important; overflow-wrap: anywhere !important; word-break: break-word !important; }
     div[data-testid="stMetric"] { min-width: 0 !important; }
-    /* MÓDULO 3: CONTROLES DO CARD (FAVORITO, STATUS, RETORNO) NA MESMA LINHA, SEM CORTE */
-    div[data-testid="column"] div[data-testid="stHorizontalBlock"]:has(> div[data-testid="column"] > div[data-testid="stButton"]) {
-        flex-wrap: nowrap !important;
-        gap: 8px !important;
-    }
-    div[data-testid="column"] div[data-testid="stHorizontalBlock"]:has(> div[data-testid="column"] > div[data-testid="stButton"]) > div[data-testid="column"] {
-        min-width: 0 !important;
-        width: auto !important;
-    }
-    div[data-testid="column"] div[data-testid="stHorizontalBlock"]:has(> div[data-testid="column"] > div[data-testid="stButton"]) button {
-        min-height: 38px !important;
-        padding: 6px 8px !important;
-    }
-    div[data-testid="column"] div[data-testid="stHorizontalBlock"]:has(> div[data-testid="column"] > div[data-testid="stButton"]) div[data-baseweb="select"] > div,
-    div[data-testid="column"] div[data-testid="stHorizontalBlock"]:has(> div[data-testid="column"] > div[data-testid="stButton"]) div[data-testid="stDateInput"] input {
-        min-height: 38px !important;
-    }
     div[data-testid="stMetricValue"] { white-space: normal !important; overflow: visible !important; font-size: 1.6rem !important; }
     .critical-item { text-align: center !important; }
     div[data-testid="column"]:has(.critical-item) { text-align: center; }
@@ -1335,7 +1319,7 @@ elif st.session_state.etapa == 3:
                 </div>
             """, unsafe_allow_html=True)
 
-            col_img, col_details1, col_details2, col_actions = st.columns([3.6, 2.8, 2.8, 2.6])
+            col_img, col_details1, col_details2, col_actions = st.columns([2, 2.5, 2.5, 2.5])
 
             with col_img:
                 foto_lead = lead.get('foto_url', '')
@@ -1349,7 +1333,7 @@ elif st.session_state.etapa == 3:
                             
                         resp_img = requests.get(foto_lead_auth, timeout=5)
                         if resp_img.status_code == 200:
-                            st.image(resp_img.content, caption="Foto da Ficha do Google", width=260)
+                            st.image(resp_img.content, caption="Foto da Ficha do Google", use_container_width=True)
                         else:
                             st.info("📷 Sem foto")
                     except Exception:
@@ -1358,7 +1342,7 @@ elif st.session_state.etapa == 3:
                     st.info("📷 Sem foto")
                 
                 # ALINHADO EM UMA ÚNICA LINHA HORIZONTAL COM PROPORÇÃO OTIMIZADA
-                c_fav, c_st, c_fu = st.columns([1.6, 2.2, 2.2])
+                c_fav, c_st, c_fu = st.columns([1.5, 2.2, 1.8])
                 
                 with c_fav:
                     if st.button(fav_label, key=f"fav_btn_{lead['id']}", use_container_width=True):
