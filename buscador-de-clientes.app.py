@@ -570,7 +570,7 @@ st.markdown("""
     }
 
     section[data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #14305e 0%, #0c1f42 100%) !important;
+        background: linear-gradient(180deg, #0f2a55 0%, #0a1f42 100%) !important;
         backdrop-filter: blur(22px) saturate(140%) !important;
         -webkit-backdrop-filter: blur(22px) saturate(140%) !important;
         border-right: 1px solid rgba(255,255,255,0.06) !important;
@@ -1319,7 +1319,7 @@ elif st.session_state.etapa == 3:
                 </div>
             """, unsafe_allow_html=True)
 
-            col_img, col_details1, col_details2, col_actions = st.columns([2, 2.5, 2.5, 2.5])
+            col_img, col_details1, col_details2, col_actions = st.columns([3, 2.2, 2.2, 2.4])
 
             with col_img:
                 foto_lead = lead.get('foto_url', '')
@@ -1342,7 +1342,7 @@ elif st.session_state.etapa == 3:
                     st.info("📷 Sem foto")
                 
                 # ALINHADO EM UMA ÚNICA LINHA HORIZONTAL COM PROPORÇÃO OTIMIZADA
-                c_fav, c_st, c_fu = st.columns([1.5, 2.2, 1.8])
+                c_fav, c_st, c_fu = st.columns([1.8, 2, 1.8])
                 
                 with c_fav:
                     if st.button(fav_label, key=f"fav_btn_{lead['id']}", use_container_width=True):
