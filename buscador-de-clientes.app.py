@@ -138,6 +138,14 @@ def atualizar_status_crm(lead_id, novo_status):
     except Exception as e:
         st.error(f"Erro ao atualizar status: {str(e)}")
 
+def atualizar_categoria_db(lead_id, nova_categoria):
+    if not supabase:
+        return
+    try:
+        supabase.table("leads").update({"categoria": nova_categoria}).eq("id", lead_id).execute()
+    except Exception as e:
+        st.error(f"Erro ao atualizar categoria: {str(e)}")
+
 def atualizar_anotacoes_db(lead_id, novas_anotacoes):
     if not supabase:
         return
@@ -398,29 +406,17 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     return buffer
 
 # -----------------------------------------------------------------------------
-# ESTILIZAÇÃO CSS CUSTOMIZADA (TEMA DESIGN PREMIUM - SIDEBAR FIXA SEM SCROLLBAR)
+# ESTILIZAÇÃO CSS CUSTOMIZADA (SIDEBAR FIXA SEM SCROLLBAR)
 # -----------------------------------------------------------------------------
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-
-    html, body, [class*="css"], .stApp, .stMarkdown, button, input, textarea, select {
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
-    }
-
-    .stApp {
-        background: radial-gradient(1200px 600px at 10% -10%, #172554 0%, #0b1120 45%, #070b14 100%) !important;
-    }
-    .main { background-color: transparent !important; padding-top: 15px !important; }
-    .block-container { padding-top: 1rem !important; padding-bottom: 2rem !important; max-width: 1400px; }
-
-    /* SIDEBAR */
+    .main { background-color: #0e1117; padding-top: 15px !important; }
+    .block-container { padding-top: 1rem !important; padding-bottom: 1rem !important; }
+    
     section[data-testid="stSidebar"] {
         width: 310px !important;
         min-width: 310px !important;
         max-width: 310px !important;
-        background: linear-gradient(180deg, #0f172a 0%, #0b1120 100%) !important;
-        border-right: 1px solid #1e293b !important;
     }
     
     [data-testid="stSidebarResizer"],
@@ -445,412 +441,64 @@ st.markdown("""
     [data-testid="stSidebarNav"] {
         display: none !important;
     }
-
-    /* CABEÇALHO PRINCIPAL */
-    .main-header {
-        background: linear-gradient(135deg, rgba(37,99,235,0.18) 0%, rgba(15,23,42,0.95) 60%);
-        color: white; padding: 18px 22px; border-radius: 14px; margin-bottom: 18px;
-        border: 1px solid #1e3a8a; margin-top: 5px !important;
-        box-shadow: 0 10px 30px -12px rgba(37,99,235,0.45);
-        position: relative; overflow: hidden;
-    }
-    .main-header::before {
-        content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
-        background: linear-gradient(180deg, #38bdf8, #2563eb);
-    }
-    .main-title { font-size: 22px; font-weight: 800; margin: 0; color: #f8fafc; letter-spacing: -0.2px; }
-    .main-subtitle { font-size: 13px; color: #94a3b8; margin-top: 4px; }
-
-    /* CARDS DE LEAD */
-    .lead-card {
-        background: linear-gradient(180deg, #111c33 0%, #0f172a 100%);
-        border-radius: 14px; padding: 16px 18px;
-        margin-bottom: 12px; border: 1px solid #1e293b;
-        border-left: 4px solid #2563eb;
-        box-shadow: 0 6px 18px -10px rgba(0,0,0,0.6);
-        transition: border-color .25s ease, transform .25s ease;
-    }
-    .lead-card:hover { border-color: #334155; border-left-color: #38bdf8; transform: translateY(-1px); }
     
-    /* SCORE */
-    .score-box {
-        text-align: center; padding: 10px 12px; border-radius: 12px; font-weight: 700;
-        width: 140px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+    .main-header {
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        color: white; padding: 14px 18px; border-radius: 10px; margin-bottom: 15px;
+        border: 1px solid #334155; margin-top: 5px !important;
     }
-    .score-high { background: linear-gradient(180deg,#052e16,#064e3b); color: #86efac; border: 1px solid #166534; }
-    .score-med  { background: linear-gradient(180deg,#451a03,#78350f); color: #fde047; border: 1px solid #92400e; }
-    .score-low  { background: linear-gradient(180deg,#450a0a,#7f1d1d); color: #fca5a5; border: 1px solid #991b1b; }
+    .main-title { font-size: 21px; font-weight: 700; margin: 0; color: #ffffff; }
+    .main-subtitle { font-size: 12px; color: #94a3b8; margin-top: 3px; }
 
-    .critical-item {
-        color: #fca5a5; font-size: 13px; margin-bottom: 6px; font-weight: 500;
-        background: rgba(127,29,29,0.18); border: 1px solid rgba(153,27,27,0.35);
-        padding: 5px 9px; border-radius: 8px;
+    .lead-card {
+        background-color: #1e293b; border-radius: 10px; padding: 14px;
+        margin-bottom: 10px; border: 1px solid #334155;
     }
+    
+    .score-box { text-align: center; padding: 8px; border-radius: 8px; font-weight: bold; width: 130px; }
+    .score-high { background-color: #052e16; color: #86efac; border: 1px solid #166534; }
+    .score-med  { background-color: #451a03; color: #fde047; border: 1px solid #92400e; }
+    .score-low  { background-color: #450a0a; color: #fca5a5; border: 1px solid #991b1b; }
+
+    .critical-item { color: #f87171; font-size: 13px; margin-bottom: 6px; font-weight: 500; }
     
     .sidebar-title {
-        text-align: center; font-size: 16px; font-weight: 800; color: #f8fafc;
-        margin-top: -6px; margin-bottom: 12px; letter-spacing: 0.4px;
+        text-align: center; font-size: 15px; font-weight: 800; color: #ffffff;
+        margin-top: -10px; margin-bottom: 10px; letter-spacing: 0.5px;
     }
 
-    /* BOTÕES */
     .stButton>button, .btn-redirect {
-        background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%) !important;
-        color: #f1f5f9 !important;
-        border: 1px solid #334155 !important;
-        border-radius: 10px !important;
+        background-color: #0f172a !important;
+        color: #ffffff !important;
+        border: 1px solid #cbd5e1 !important;
+        border-radius: 8px !important;
         font-weight: 600 !important;
         font-size: 13px !important;
-        transition: all 0.25s ease !important;
-        box-shadow: 0 2px 8px -2px rgba(0,0,0,0.5) !important;
+        transition: all 0.3s ease !important;
+        box-shadow: 0 0 4px rgba(255, 255, 255, 0.2) !important;
     }
     .stButton>button:hover, .btn-redirect:hover {
-        border-color: #38bdf8 !important;
-        box-shadow: 0 0 14px rgba(56,189,248,0.35) !important;
-        background: linear-gradient(180deg, #1e3a5f 0%, #0f172a 100%) !important;
-        color: #ffffff !important;
-    }
-    .stButton>button[kind="primary"] {
-        background: linear-gradient(135deg, #2563eb 0%, #0ea5e9 100%) !important;
-        border: 1px solid #38bdf8 !important;
-        color: #ffffff !important;
-        box-shadow: 0 4px 14px -4px rgba(37,99,235,0.7) !important;
+        border-color: #ffffff !important;
+        box-shadow: 0 0 12px rgba(255, 255, 255, 0.7) !important;
+        background-color: #1e293b !important;
     }
 
     .btn-redirect {
-        display: block; width: 100%; text-align: center; padding: 9px 10px;
-        text-decoration: none !important; margin-bottom: 8px; border-radius: 10px;
+        display: block; width: 100%; text-align: center; padding: 8px 10px;
+        text-decoration: none !important; margin-bottom: 8px;
     }
 
-    /* SCRIPTS */
     .script-box {
-        background-color: #0b1220; color: #e2e8f0;
+        background-color: #0f172a; color: #f1f5f9;
         font-family: 'Inter', -apple-system, sans-serif;
-        font-size: 13px; line-height: 1.6; padding: 14px 16px;
-        border-radius: 10px; border: 1px solid #1e293b;
-        border-left: 3px solid #38bdf8;
+        font-size: 13px; line-height: 1.5; padding: 12px 15px;
+        border-radius: 8px; border: 1px solid #334155;
         white-space: pre-wrap; margin-bottom: 10px;
     }
 
-    /* MÉTRICAS */
-    div[data-testid="stMetric"] {
-        background: linear-gradient(180deg, #111c33 0%, #0f172a 100%);
-        border: 1px solid #1e293b; border-radius: 12px; padding: 12px 16px;
-        box-shadow: 0 6px 18px -12px rgba(0,0,0,0.7);
-    }
-    div[data-testid="stMetricLabel"] p { color: #94a3b8 !important; font-weight: 600 !important; font-size: 13px !important; }
-    div[data-testid="stMetricValue"] { color: #f8fafc !important; font-weight: 800 !important; }
-
-    /* TÍTULOS E DIVISORES */
-    h3 { color: #e2e8f0 !important; font-weight: 700 !important; letter-spacing: -0.1px; }
-    hr, div[data-testid="stDivider"] { border-color: #1e293b !important; opacity: 0.8; }
-
-    /* ALERTAS */
-    div[data-testid="stAlert"] { border-radius: 10px !important; }
-
-    /* INPUTS */
-    div[data-baseweb="input"] > div, div[data-baseweb="select"] > div, textarea {
-        border-radius: 10px !important;
-        background-color: #0b1220 !important;
-        border-color: #1e293b !important;
-    }
-
-    /* TABELA */
-    div[data-testid="stDataFrame"] {
-        border: 1px solid #1e293b; border-radius: 12px; overflow: hidden;
-    }
     div[data-testid="stDataFrame"] table th {
         text-align: center !important;
     }
-
-    /* ===== TEMA MINIMALISTA DARK COM GLASSMORPHISM ===== */
-    .stApp {
-        background: radial-gradient(900px 500px at 15% -5%, rgba(99,102,241,0.18), transparent 60%),
-                    radial-gradient(800px 500px at 100% 0%, rgba(14,165,233,0.12), transparent 55%),
-                    #05070d !important;
-    }
-
-    section[data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #0a1f44 0%, #071735 100%) !important;
-        backdrop-filter: blur(22px) saturate(140%) !important;
-        -webkit-backdrop-filter: blur(22px) saturate(140%) !important;
-        border-right: 1px solid rgba(255,255,255,0.06) !important;
-    }
-
-    .main-header, .lead-card, .script-box, .critical-item,
-    div[data-testid="stMetric"], div[data-testid="stDataFrame"],
-    div[data-testid="stAlert"], .score-box {
-        background: rgba(255,255,255,0.04) !important;
-        backdrop-filter: blur(18px) saturate(140%) !important;
-        -webkit-backdrop-filter: blur(18px) saturate(140%) !important;
-        border: 1px solid rgba(255,255,255,0.08) !important;
-        border-left: 1px solid rgba(255,255,255,0.08) !important;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.05) !important;
-        border-radius: 16px !important;
-    }
-    .main-header::before { width: 2px !important; background: rgba(255,255,255,0.35) !important; }
-    .lead-card:hover { transform: none !important; border-color: rgba(255,255,255,0.16) !important; }
-
-    .main-title { font-weight: 600 !important; letter-spacing: -0.3px !important; color: #f5f7fb !important; }
-    .main-subtitle { color: #8b93a7 !important; }
-
-    .score-high, .score-med, .score-low {
-        background: rgba(255,255,255,0.05) !important;
-        border: 1px solid rgba(255,255,255,0.12) !important;
-    }
-    .score-high { color: #6ee7b7 !important; }
-    .score-med  { color: #fde68a !important; }
-    .score-low  { color: #fca5a5 !important; }
-    .critical-item { color: #e2e8f0 !important; background: rgba(248,113,113,0.06) !important; border-color: rgba(248,113,113,0.18) !important; }
-
-    .stButton>button, .btn-redirect {
-        background: rgba(255,255,255,0.05) !important;
-        backdrop-filter: blur(10px) !important;
-        border: 1px solid rgba(255,255,255,0.10) !important;
-        border-radius: 12px !important;
-        color: #e5e7eb !important;
-        box-shadow: none !important;
-        font-weight: 500 !important;
-    }
-    .stButton>button:hover, .btn-redirect:hover {
-        background: rgba(255,255,255,0.10) !important;
-        border-color: rgba(255,255,255,0.22) !important;
-        box-shadow: 0 0 0 1px rgba(255,255,255,0.05) !important;
-        color: #ffffff !important;
-    }
-    .stButton>button[kind="primary"] {
-        background: rgba(99,102,241,0.28) !important;
-        border: 1px solid rgba(129,140,248,0.45) !important;
-        box-shadow: none !important;
-    }
-    .stButton>button[kind="primary"]:hover {
-        background: rgba(99,102,241,0.42) !important;
-    }
-
-    div[data-baseweb="input"] > div, div[data-baseweb="select"] > div, textarea {
-        background-color: rgba(255,255,255,0.03) !important;
-        border: 1px solid rgba(255,255,255,0.08) !important;
-        border-radius: 12px !important;
-    }
-
-    h1, h2, h3 { color: #f1f5f9 !important; font-weight: 600 !important; }
-    hr, div[data-testid="stDivider"] { border-color: rgba(255,255,255,0.06) !important; }
-
-    /* ===== AJUSTE FINO: VISUAL DA REFERÊNCIA GESTÃO MENSAL (DARK + GLASS) ===== */
-    .stApp {
-        background:
-            radial-gradient(900px 500px at 20% -10%, rgba(59,130,246,0.14), transparent 60%),
-            radial-gradient(700px 500px at 95% 10%, rgba(168,85,247,0.08), transparent 55%),
-            linear-gradient(180deg, #0b1020 0%, #070a14 100%) !important;
-    }
-
-    .main-header, .lead-card, .script-box, div[data-testid="stMetric"],
-    div[data-testid="stDataFrame"], div[data-testid="stAlert"], div[data-testid="stForm"] {
-        background: rgba(20,26,44,0.55) !important;
-        border: 1px solid rgba(148,163,184,0.14) !important;
-        border-radius: 14px !important;
-        box-shadow: 0 10px 30px -12px rgba(0,0,0,0.6) !important;
-    }
-
-    .main-header { padding: 20px 24px !important; overflow: hidden; }
-    .main-header::before {
-        content: ""; position: absolute; left: 0; right: 0; top: 0; bottom: auto;
-        width: auto !important; height: 3px !important;
-        background: linear-gradient(90deg,#ef4444,#f59e0b,#22c55e,#3b82f6,#a855f7) !important;
-    }
-    .main-title { font-size: 22px !important; font-weight: 700 !important; color: #ffffff !important; }
-    .main-subtitle { color: #94a3b8 !important; }
-
-    .lead-card { border-left: 1px solid rgba(148,163,184,0.14) !important; }
-    .lead-card:hover { border-color: rgba(59,130,246,0.35) !important; }
-
-    .stButton>button, .btn-redirect {
-        background: rgba(30,41,59,0.55) !important;
-        border: 1px solid rgba(148,163,184,0.18) !important;
-        border-radius: 999px !important;
-        color: #e2e8f0 !important;
-        font-weight: 500 !important;
-    }
-    .stButton>button:hover, .btn-redirect:hover {
-        border-color: rgba(59,130,246,0.6) !important;
-        box-shadow: 0 0 14px rgba(59,130,246,0.35) !important;
-        background: rgba(37,99,235,0.15) !important;
-    }
-    .stButton>button[kind="primary"] {
-        background: rgba(37,99,235,0.22) !important;
-        border: 1px solid rgba(59,130,246,0.7) !important;
-        box-shadow: 0 0 16px rgba(59,130,246,0.35) !important;
-        color: #ffffff !important;
-    }
-
-    div[data-baseweb="tab-list"] { border-bottom: 1px solid rgba(148,163,184,0.14) !important; }
-    button[data-baseweb="tab"] { color: #94a3b8 !important; font-weight: 500 !important; }
-    button[data-baseweb="tab"][aria-selected="true"] { color: #f87171 !important; }
-    div[data-baseweb="tab-highlight"] { background-color: #f87171 !important; }
-
-    div[data-baseweb="input"] > div, div[data-baseweb="select"] > div, textarea {
-        background-color: rgba(15,23,42,0.6) !important;
-        border: 1px solid rgba(148,163,184,0.16) !important;
-        border-radius: 10px !important;
-    }
-
-    div[data-testid="stAlert"] {
-        background: rgba(30,58,138,0.22) !important;
-        border: 1px solid rgba(59,130,246,0.3) !important;
-        color: #dbeafe !important;
-    }
-    /* ===== AJUSTES: BOTÕES COM CONTORNO BRANCO, NEON NO ATIVO E RELEVO NO HOVER ===== */
-    .stButton>button, .btn-redirect {
-        border: 1px solid #ffffff !important;
-        background: rgba(255,255,255,0.03) !important;
-        color: #ffffff !important;
-        transition: transform .25s ease, box-shadow .25s ease, background .25s ease !important;
-        white-space: nowrap !important;
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
-        font-size: 12.5px !important;
-        padding-left: 8px !important;
-        padding-right: 8px !important;
-    }
-    .stButton>button:hover, .btn-redirect:hover {
-        transform: scale(1.06) !important;
-        border-color: #ffffff !important;
-        background: rgba(255,255,255,0.10) !important;
-        box-shadow: 0 0 10px rgba(255,255,255,0.45), 0 10px 24px -8px rgba(255,255,255,0.25) !important;
-    }
-    .stButton>button:active { transform: scale(1.02) !important; }
-    .stButton>button[kind="primary"] {
-        background: rgba(255,255,255,0.08) !important;
-        border: 1px solid #ffffff !important;
-        color: #ffffff !important;
-        box-shadow: 0 0 6px #ffffff, 0 0 16px rgba(255,255,255,0.55), inset 0 0 8px rgba(255,255,255,0.15) !important;
-    }
-    .stButton>button[kind="primary"]:hover {
-        transform: scale(1.06) !important;
-        background: rgba(255,255,255,0.14) !important;
-        box-shadow: 0 0 10px #ffffff, 0 0 26px rgba(255,255,255,0.65), inset 0 0 8px rgba(255,255,255,0.2) !important;
-    }
-
-    /* ALINHAMENTO E CORTES NOS CARDS */
-    div[data-testid="column"] { min-width: 0 !important; }
-    div[data-testid="stWidgetLabel"] {
-        min-height: 2.6rem !important;
-        display: flex !important;
-        align-items: flex-end !important;
-    }
-    div[data-testid="stWidgetLabel"] p { line-height: 1.3 !important; white-space: normal !important; }
-    div[data-testid="stSelectbox"] div[data-baseweb="select"] > div,
-    div[data-testid="stDateInput"] input {
-        font-size: 12.5px !important;
-        white-space: nowrap !important;
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
-    }
-    .lead-card h2 { white-space: normal !important; overflow-wrap: anywhere !important; line-height: 1.25 !important; }
-    .lead-card p { white-space: normal !important; overflow-wrap: anywhere !important; }
-    .critical-item { overflow-wrap: anywhere !important; }
-
-    /* ===== AJUSTE: BOTÕES MENOS ARREDONDADOS E ABA ATIVA EM VIDRO ===== */
-    .stButton>button, .btn-redirect {
-        border-radius: 6px !important;
-    }
-    .stButton>button[kind="primary"] {
-        background: linear-gradient(135deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.06) 100%) !important;
-        backdrop-filter: blur(14px) saturate(160%) !important;
-        -webkit-backdrop-filter: blur(14px) saturate(160%) !important;
-        border: 1px solid rgba(255,255,255,0.45) !important;
-        box-shadow: inset 0 1px 0 rgba(255,255,255,0.35), 0 8px 24px -8px rgba(0,0,0,0.5) !important;
-        color: #ffffff !important;
-    }
-    .stButton>button[kind="primary"]:hover {
-        background: linear-gradient(135deg, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0.10) 100%) !important;
-        box-shadow: inset 0 1px 0 rgba(255,255,255,0.4), 0 12px 28px -8px rgba(0,0,0,0.55) !important;
-    }
-
-    /* ===== AJUSTE: CAMPOS E CONTROLES NA MESMA LINHA, SEM CORTES ===== */
-    div[data-testid="stWidgetLabel"] {
-        min-height: 3rem !important;
-        height: 3rem !important;
-    }
-    div[data-testid="stWidgetLabel"] p {
-        font-size: 12px !important;
-        line-height: 1.25 !important;
-    }
-    div[data-testid="stForm"] div[data-testid="stHorizontalBlock"],
-    div[data-testid="column"] div[data-testid="stHorizontalBlock"] {
-        flex-wrap: wrap !important;
-        align-items: flex-start !important;
-    }
-    div[data-testid="stForm"] div[data-testid="stHorizontalBlock"] > div[data-testid="column"],
-    div[data-testid="column"] div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {
-        min-width: 120px !important;
-    }
-    div[data-testid="column"] div[data-testid="stHorizontalBlock"] > div[data-testid="column"] button,
-    div[data-testid="column"] div[data-testid="stHorizontalBlock"] > div[data-testid="column"] button p {
-        white-space: normal !important;
-        line-height: 1.2 !important;
-        text-overflow: clip !important;
-    }
-    div[data-testid="stDateInput"] input,
-    div[data-testid="stSelectbox"] div[data-baseweb="select"] > div {
-        min-width: 0 !important;
-    }
-
-    /* ===== AJUSTE FINAL: FUNDO AZUL EM DEGRADÊ, TÍTULOS, BOTÕES DA SIDEBAR E CARDS ===== */
-    .stApp {
-        background:
-            radial-gradient(1000px 600px at 0% 0%, rgba(37,99,235,0.38) 0%, transparent 60%),
-            radial-gradient(900px 600px at 100% 100%, rgba(14,165,233,0.20) 0%, transparent 55%),
-            linear-gradient(160deg, #0b1d3a 0%, #071026 45%, #050914 100%) !important;
-    }
-    .block-container { padding-top: 3.4rem !important; }
-    .main-header { margin-top: 10px !important; }
-
-    section[data-testid="stSidebar"] .stButton>button {
-        background: linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%) !important;
-        border: 1px solid #cbd5e1 !important;
-        border-radius: 8px !important;
-        color: #e2e8f0 !important;
-        box-shadow: none !important;
-    }
-    section[data-testid="stSidebar"] .stButton>button:hover {
-        transform: scale(1.04) !important;
-        border-color: #ffffff !important;
-        box-shadow: 0 0 12px rgba(255,255,255,0.35) !important;
-    }
-    section[data-testid="stSidebar"] .stButton>button[kind="primary"] {
-        background: linear-gradient(135deg, rgba(37,99,235,0.75) 0%, rgba(14,165,233,0.35) 55%, rgba(15,23,42,0.6) 100%) !important;
-        border: 1px solid #cbd5e1 !important;
-        color: #ffffff !important;
-        box-shadow: 0 0 10px rgba(56,189,248,0.45), inset 0 1px 0 rgba(255,255,255,0.25) !important;
-    }
-    section[data-testid="stSidebar"] .stButton>button[kind="primary"]:hover {
-        transform: scale(1.04) !important;
-        box-shadow: 0 0 16px rgba(56,189,248,0.6), inset 0 1px 0 rgba(255,255,255,0.3) !important;
-    }
-
-    .lead-card { width: 100% !important; box-sizing: border-box !important; overflow: visible !important; }
-    .lead-card > div > div:first-child { min-width: 0 !important; flex: 1 1 auto !important; }
-    .score-box { width: auto !important; min-width: 150px !important; max-width: 200px !important; flex-shrink: 0 !important; box-sizing: border-box !important; }
-    .lead-card h2, .lead-card p { white-space: normal !important; overflow-wrap: anywhere !important; word-break: break-word !important; }
-    div[data-testid="stMetric"] { min-width: 0 !important; }
-    /* MÓDULO 3: CONTROLES DO CARD (FAVORITO, STATUS, RETORNO) NA MESMA LINHA, SEM CORTE */
-    div[data-testid="column"] div[data-testid="stHorizontalBlock"]:has(> div[data-testid="column"] > div[data-testid="stButton"]) {
-        flex-wrap: nowrap !important;
-        gap: 8px !important;
-    }
-    div[data-testid="column"] div[data-testid="stHorizontalBlock"]:has(> div[data-testid="column"] > div[data-testid="stButton"]) > div[data-testid="column"] {
-        min-width: 0 !important;
-        width: auto !important;
-    }
-    div[data-testid="column"] div[data-testid="stHorizontalBlock"]:has(> div[data-testid="column"] > div[data-testid="stButton"]) button {
-        min-height: 38px !important;
-        padding: 6px 8px !important;
-    }
-    div[data-testid="column"] div[data-testid="stHorizontalBlock"]:has(> div[data-testid="column"] > div[data-testid="stButton"]) div[data-baseweb="select"] > div,
-    div[data-testid="column"] div[data-testid="stHorizontalBlock"]:has(> div[data-testid="column"] > div[data-testid="stButton"]) div[data-testid="stDateInput"] input {
-        min-height: 38px !important;
-    }
-    div[data-testid="stMetricValue"] { white-space: normal !important; overflow: visible !important; font-size: 1.6rem !important; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -1114,38 +762,33 @@ with st.sidebar:
 
     if len(pendentes_hoje) > 0:
         st.markdown(f"""
-            <div style="background: linear-gradient(180deg,#7f1d1d,#450a0a); border: 1px solid #991b1b; padding: 12px; border-radius: 12px; margin-bottom: 14px; text-align: center; box-shadow: 0 6px 16px -8px rgba(220,38,38,0.5);">
-                <span style="color: #fca5a5; font-weight: 700; font-size: 13px; letter-spacing: 0.3px;">🔔 Notificação Ativa</span><br/>
+            <div style="background-color: #7f1d1d; border: 1px solid #991b1b; padding: 10px; border-radius: 8px; margin-bottom: 12px; text-align: center;">
+                <span style="color: #fca5a5; font-weight: bold; font-size: 13px;">🔔 Notificação Ativa</span><br/>
                 <span style="color: #ffffff; font-size: 12px;"><b>{len(pendentes_hoje)} retornos pendentes</b> para hoje ou atrasados!</span>
             </div>
         """, unsafe_allow_html=True)
     else:
         st.markdown("""
-            <div style="background: linear-gradient(180deg,#064e3b,#022c22); border: 1px solid #065f46; padding: 10px; border-radius: 12px; margin-bottom: 14px; text-align: center;">
-                <span style="color: #6ee7b7; font-weight: 700; font-size: 12px;">✅ Agenda em dia! Sem pendências.</span>
+            <div style="background-color: #064e3b; border: 1px solid #065f46; padding: 8px; border-radius: 8px; margin-bottom: 12px; text-align: center;">
+                <span style="color: #6ee7b7; font-weight: bold; font-size: 12px;">✅ Agenda em dia! Sem pendências.</span>
             </div>
         """, unsafe_allow_html=True)
 
-    st.markdown("<div style='text-align: center; font-weight: 700; font-size: 13px; letter-spacing: 1px; text-transform: uppercase; color:#94a3b8; margin-bottom: 10px;'>Módulos</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align: center; font-weight: 700; font-size: 14px; margin-bottom: 8px;'>📌 Módulos</div>", unsafe_allow_html=True)
     
-    if st.button("Dashboard Executivo", use_container_width=True, type="primary" if st.session_state.etapa == 1 else "secondary"):
+    if st.button("1️⃣ Dashboard Executivo", use_container_width=True, type="primary" if st.session_state.etapa == 1 else "secondary"):
         mudar_etapa(1)
-    if st.button("Buscador de Clientes", use_container_width=True, type="primary" if st.session_state.etapa == 2 else "secondary"):
+    if st.button("2️⃣ Buscador de Clientes", use_container_width=True, type="primary" if st.session_state.etapa == 2 else "secondary"):
         mudar_etapa(2)
-    if st.button("Base & CRM de Leads", use_container_width=True, type="primary" if st.session_state.etapa == 3 else "secondary"):
+    if st.button("3️⃣ Base & CRM de Leads", use_container_width=True, type="primary" if st.session_state.etapa == 3 else "secondary"):
         mudar_etapa(3)
-    if st.button("Panorama de Nicho", use_container_width=True, type="primary" if st.session_state.etapa == 4 else "secondary"):
+    if st.button("4️⃣ Panorama de Nicho", use_container_width=True, type="primary" if st.session_state.etapa == 4 else "secondary"):
         mudar_etapa(4)
-    if st.button("Mapa & Rota de Visitas", use_container_width=True, type="primary" if st.session_state.etapa == 5 else "secondary"):
+    if st.button("5️⃣ Mapa & Rota de Visitas", use_container_width=True, type="primary" if st.session_state.etapa == 5 else "secondary"):
         mudar_etapa(5)
 
     st.divider()
-    st.markdown(f"""
-        <div style='text-align: center; font-size: 12px; background:#0b1220; border:1px solid #1e293b; border-radius:12px; padding:10px;'>
-            <span style='color:#94a3b8;'>☁️ Supabase Nuvem</span><br/>
-            <b style='font-size:15px; color:#f8fafc;'>{len(base_leads)} leads salvos</b>
-        </div>
-    """, unsafe_allow_html=True)
+    st.markdown(f"<div style='text-align: center; font-size: 12px;'>☁️ Supabase Nuvem:<br/><b>{len(base_leads)} leads salvos</b></div>", unsafe_allow_html=True)
 
     if len(base_leads) > 0:
         if st.button("🗑️ Limpar Banco de Dados", use_container_width=True):
@@ -1204,34 +847,115 @@ if st.session_state.etapa == 1:
             st.success("🎉 Nenhum follow-up pendente para hoje! Sua agenda está em dia.")
 
 # -----------------------------------------------------------------------------
-# MÓDULO 2: BUSCADOR DE CLIENTES
+# MÓDULO 2: BUSCADOR DE CLIENTES & CADASTRO MANUAL
 # -----------------------------------------------------------------------------
 elif st.session_state.etapa == 2:
     st.markdown("""
         <div class="main-header">
             <h1 class="main-title">🔎 Radar e Mineração de Mercado Local</h1>
-            <div class="main-subtitle">Varredura de perfis no Google Maps por Nome, Nicho, Cidade, Bairro, Rua e Raio de Distância (km).</div>
+            <div class="main-subtitle">Varredura automática no Google Maps ou Cadastro Manual de empresas de rua e indicações.</div>
         </div>
     """, unsafe_allow_html=True)
 
-    with st.form("form_busca"):
-        col_nome_emp, col1, col2, col3, col4, col5, col6 = st.columns([2.4, 2.2, 2, 2, 2.2, 1.2, 1.2])
-        with col_nome_emp: nome_empresa_input = st.text_input("Nome da Empresa (Opcional)", value="", help="Ex: Clínica Sorria ou Hotel X")
-        with col1: nicho_input = st.text_input("Nicho / Categoria (Opcional)", value="", help="Deixe em branco para buscar empresas gerais no local")
-        with col2: cidade_input = st.text_input("Cidade / Município", value="Ribeirão Preto")
-        with col3: rua_input = st.text_input("Rua / Avenida (Opcional)", value="", help="Ex: Av. Independência")
-        with col4: bairro_input = st.text_input("Bairro / Região (Opcional)", value="", help="Deixe em branco para amplitude de busca na cidade")
-        with col5: raio_input = st.number_input("Raio (km)", min_value=1, max_value=50, value=10, step=1, help="Distância máxima de busca a partir do centro da localidade")
-        with col6: limite_input = st.number_input("Qtd. Máxima", min_value=20, max_value=70, value=40, step=5)
-        
-        btn_minar = st.form_submit_button("🚀 Iniciar Varredura Profunda", use_container_width=True)
+    tab_busca, tab_manual = st.tabs(["🚀 Varredura Automática (Google Maps)", "✍️ Cadastro Manual de Lead"])
 
-    if btn_minar:
-        with st.spinner(f"Varrendo Google Maps num raio de {raio_input} km, auditando presença web e salvando na nuvem..."):
-            time.sleep(1)
-            novos = minerar_e_auditar_negocios(nome_empresa_input, nicho_input, cidade_input, bairro_input, rua_input, raio_input, limite_input)
-            if novos and len(novos) > 0:
-                mudar_etapa(3)
+    with tab_busca:
+        with st.form("form_busca"):
+            col_nome_emp, col1, col2, col3, col4, col5, col6 = st.columns([2.2, 2, 2, 1.8, 1.8, 1.2, 1.2])
+            with col_nome_emp: nome_empresa_input = st.text_input("Nome da Empresa (Opcional)", value="", help="Ex: Clínica Sorria ou Hotel X")
+            with col1: nicho_input = st.text_input("Nicho / Categoria (Opcional)", value="", help="Deixe em branco para buscar empresas gerais no local")
+            with col2: cidade_input = st.text_input("Cidade / Município", value="Ribeirão Preto")
+            with col3: rua_input = st.text_input("Rua / Avenida (Opcional)", value="", help="Ex: Av. Independência")
+            with col4: bairro_input = st.text_input("Bairro / Região (Opcional)", value="", help="Deixe em branco para amplitude de busca na cidade")
+            with col5: raio_input = st.number_input("Raio (km)", min_value=1, max_value=50, value=10, step=1, help="Distância máxima de busca a partir do centro da localidade")
+            with col6: limite_input = st.number_input("Qtd. Máxima", min_value=20, max_value=70, value=40, step=5)
+            
+            btn_minar = st.form_submit_button("🚀 Iniciar Varredura Profunda", use_container_width=True)
+
+        if btn_minar:
+            with st.spinner(f"Varrendo Google Maps num raio de {raio_input} km, auditando presença web e salvando na nuvem..."):
+                time.sleep(1)
+                novos = minerar_e_auditar_negocios(nome_empresa_input, nicho_input, cidade_input, bairro_input, rua_input, raio_input, limite_input)
+                if novos and len(novos) > 0:
+                    mudar_etapa(3)
+
+    with tab_manual:
+        st.markdown("### Inserir Empresa Manualmente no CRM")
+        st.caption("Use esta opção para adicionar leads de rua, indicações ou empresas que não vieram na busca automática.")
+        
+        with st.form("form_cadastro_manual"):
+            m_col1, m_col2 = st.columns(2)
+            with m_col1:
+                man_nome = st.text_input("Nome da Empresa *")
+                man_nicho = st.text_input("Categoria / Tag / Nicho *", value="Vestuário / Comércio", help="Ex: Óticas, Loja de Roupas, Clínica")
+                man_cidade = st.text_input("Cidade", value="Ribeirão Preto")
+                man_endereco = st.text_input("Endereço Completo", value="Rua Exemplo, 100 - Centro")
+            with m_col2:
+                man_tel = st.text_input("Telefone / Contato", value="(16) 99999-9999")
+                man_zap = st.text_input("WhatsApp (apenas números com DDD)", value="16999999999")
+                man_site = st.text_input("Website (Opcional)", value="")
+                man_nota = st.number_input("Nota Média Google (0 a 5)", min_value=0.0, max_value=5.0, value=5.0, step=0.1)
+                man_av = st.number_input("Total de Avaliações", min_value=0, max_value=5000, value=10, step=1)
+
+            btn_salvar_manual = st.form_submit_button("💾 Salvar Lead Manualmente no CRM", use_container_width=True)
+            
+            if btn_salvar_manual:
+                if not man_nome.strip() or not man_endereco.strip():
+                    st.error("Preencha ao menos o Nome e o Endereço da empresa.")
+                else:
+                    # Auditoria automática simplificada para o lead manual
+                    pontos_criticos = []
+                    oportunidades = []
+                    score = 0
+                    has_https = man_site.startswith("https://") if man_site else False
+                    
+                    if not man_site:
+                        pontos_criticos.append("Sem site oficial vinculado à ficha do Google")
+                        oportunidades.append("Desenvolvimento de Landing Page / Website Responsivo")
+                        score += 30
+                    if man_av < 30:
+                        pontos_criticos.append(f"Volume crítico de avaliações ({man_av} total)")
+                        oportunidades.append("Estratégia Acelerada de Reputação e Gestão de Avaliações")
+                        score += 25
+                    pontos_criticos.append("Oportunidade de Imersão: Implantação de Tour Virtual 360°")
+                    oportunidades.append("Fotografia 360° Imersiva e Publicação no Google Street View")
+                    score += 25
+
+                    lead_manual = {
+                        "data_minacao": datetime.now().strftime('%d/%m/%Y %H:%M'),
+                        "cidade_busca": man_cidade,
+                        "bairro_busca": "Manual",
+                        "nome": man_nome.strip(),
+                        "categoria": man_nicho.strip().capitalize(),
+                        "endereco": man_endereco.strip(),
+                        "latitude": -21.1775,
+                        "longitude": -47.8103,
+                        "telefone": man_tel,
+                        "whatsapp": man_zap,
+                        "website": man_site,
+                        "website_https": has_https,
+                        "instagram": f"https://instagram.com/{re.sub(r'[^a-zA-Z0-9]', '', man_nome.lower())}",
+                        "facebook": f"https://facebook.com/{re.sub(r'[^a-zA-Z0-9]', '', man_nome.lower())}",
+                        "foto_url": "",
+                        "nota": man_nota,
+                        "total_avaliacoes": man_av,
+                        "reivindicada": True,
+                        "fotos_total": 5,
+                        "ultima_foto_dias": 30,
+                        "tour_360": False,
+                        "status_crm": "🆕 Novo Lead",
+                        "pontos_criticos": pontos_criticos,
+                        "oportunidades": oportunidades,
+                        "score_oportunidade": min(score, 100),
+                        "anotacoes": "Cadastrado manualmente no sistema.",
+                        "favorito": True,
+                        "data_followup": str(date.today()),
+                        "obs_followup": ""
+                    }
+                    salvar_lead_db(lead_manual)
+                    st.success(f"Empresa '{man_nome}' cadastrada com sucesso! Vá para o Módulo 3 para gerenciá-la.")
+                    time.sleep(1.5)
+                    mudar_etapa(3)
 
     if len(base_leads) > 0:
         st.divider()
@@ -1240,18 +964,18 @@ elif st.session_state.etapa == 2:
             mudar_etapa(3)
 
 # -----------------------------------------------------------------------------
-# MÓDULO 3: BASE DE LEADS & CRM DE VENDAS
+# MÓDULO 3: BASE DE LEADS & CRM DE VENDAS (COM TAGS E FILTRO AVANÇADO)
 # -----------------------------------------------------------------------------
 elif st.session_state.etapa == 3:
     st.markdown("""
         <div class="main-header">
             <h1 class="main-title">📊 Base de Leads e Gerenciador CRM</h1>
-            <div class="main-subtitle">Seus leads permanecem salvos na nuvem. Atualize status, anotações, follow-up e exiba planilhas com facilidade.</div>
+            <div class="main-subtitle">Gerencie status, edite tags/nichos personalizados, agende follow-ups e exporte planilhas direto da nuvem.</div>
         </div>
     """, unsafe_allow_html=True)
 
     if len(base_leads) == 0:
-        st.warning("⚠️ Nenhum lead cadastrado ainda no banco de dados. Faça sua primeira busca no Módulo 2!")
+        st.warning("⚠️ Nenhum lead cadastrado ainda no banco de dados. Faça sua primeira busca ou cadastro manual no Módulo 2!")
     else:
         df_leads_crm = pd.DataFrame(base_leads)
 
@@ -1261,8 +985,8 @@ elif st.session_state.etapa == 3:
             filtro_nome_busca = st.text_input("🔍 Buscar por Nome:", value="", placeholder="Ex: Nome da empresa")
 
         with col_f_nicho:
-            nichos_existentes = ["Todos os Nichos"] + list(df_leads_crm['categoria'].unique())
-            filtro_nicho = st.selectbox("Filtrar por Nicho:", nichos_existentes)
+            nichos_existentes = ["Todos os Nichos / Tags"] + list(df_leads_crm['categoria'].unique())
+            filtro_nicho = st.selectbox("Filtrar por Tag/Nicho:", nichos_existentes)
 
         with col_f_cid:
             cidades_existentes = ["Todas as Cidades"] + list(df_leads_crm['cidade_busca'].unique())
@@ -1298,7 +1022,7 @@ elif st.session_state.etapa == 3:
             termo_busca = filtro_nome_busca.strip().lower()
             resultados_filtrados = [r for r in resultados_filtrados if termo_busca in r['nome'].lower()]
 
-        if filtro_nicho != "Todos os Nichos":
+        if filtro_nicho != "Todos os Nichos / Tags":
             resultados_filtrados = [r for r in resultados_filtrados if r['categoria'] == filtro_nicho]
         if filtro_cidade != "Todas as Cidades":
             resultados_filtrados = [r for r in resultados_filtrados if r['cidade_busca'] == filtro_cidade]
@@ -1319,21 +1043,21 @@ elif st.session_state.etapa == 3:
 
             st.markdown(f"""
                 <div class="lead-card">
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; gap: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
                         <div>
-                            <h2 style="margin: 0; color: #f8fafc; font-size: 20px; font-weight: 800; letter-spacing: -0.2px;">{lead['nome']}</h2>
-                            <p style="margin: 6px 0 0 0; color: #94a3b8; font-size: 12.5px;">📍 {lead['endereco']} &nbsp;•&nbsp; 🏷️ {lead['categoria']}</p>
+                            <h2 style="margin: 0; color: #ffffff; font-size: 19px;">{lead['nome']}</h2>
+                            <p style="margin: 3px 0 0 0; color: #94a3b8; font-size: 12.5px;">📍 {lead['endereco']} | 🏷️ <b>{lead['categoria']}</b></p>
                         </div>
                         <div class="score-box {score_class}">
-                            <div style="font-size: 9.5px; font-weight: 700; letter-spacing: 0.6px;">SCORE OPORTUNIDADE</div>
-                            <div style="font-size: 20px; font-weight: 800;">{score} / 100</div>
-                            <div style="font-size: 8.5px; font-weight: 700;">{score_label}</div>
+                            <div style="font-size: 9.5px; font-weight: bold;">SCORE OPORTUNIDADE</div>
+                            <div style="font-size: 18px; font-weight: bold;">{score} / 100</div>
+                            <div style="font-size: 8.5px;">{score_label}</div>
                         </div>
                     </div>
                 </div>
             """, unsafe_allow_html=True)
 
-            col_img, col_details1, col_details2, col_actions = st.columns([4.4, 2.0, 2.0, 2.2])
+            col_img, col_details1, col_details2, col_actions = st.columns([2, 2.5, 2.5, 2.5])
 
             with col_img:
                 foto_lead = lead.get('foto_url', '')
@@ -1347,7 +1071,7 @@ elif st.session_state.etapa == 3:
                             
                         resp_img = requests.get(foto_lead_auth, timeout=5)
                         if resp_img.status_code == 200:
-                            st.image(resp_img.content, caption="Foto da Ficha do Google", width=260)
+                            st.image(resp_img.content, caption="Foto da Ficha do Google", use_container_width=True)
                         else:
                             st.info("📷 Sem foto")
                     except Exception:
@@ -1355,8 +1079,15 @@ elif st.session_state.etapa == 3:
                 else:
                     st.info("📷 Sem foto")
                 
+                # EDIÇÃO RÁPIDA DE TAG / NICHO PERSONALIZADO
+                nova_tag_input = st.text_input("Editar Tag / Nicho:", value=lead.get('categoria', 'Comércio'), key=f"tag_edit_{lead['id']}")
+                if nova_tag_input.strip() and nova_tag_input.strip() != lead.get('categoria'):
+                    atualizar_categoria_db(lead['id'], nova_tag_input.strip().capitalize())
+                    st.toast("Tag/Nicho atualizado com sucesso!")
+                    st.rerun()
+
                 # ALINHADO EM UMA ÚNICA LINHA HORIZONTAL COM PROPORÇÃO OTIMIZADA
-                c_fav, c_st, c_fu = st.columns([1.6, 2.2, 2.2])
+                c_fav, c_st, c_fu = st.columns([1.5, 2.2, 1.8])
                 
                 with c_fav:
                     if st.button(fav_label, key=f"fav_btn_{lead['id']}", use_container_width=True):
@@ -1421,7 +1152,7 @@ elif st.session_state.etapa == 3:
                 if lead['whatsapp']:
                     msg_wa = f"Olá! Tudo bem?\nMeu nome é Rubens Okamoto, da Okamoto Mídias Visuais e do Tour360VR.\nEstava analisando a presença da {lead['nome']} no Google, e identifiquei 3 pontos onde a visibilidade do espaço de vocês pode ser bastante ampliada em relação aos concorrentes da região.\nMontei um relatório curto de diagnóstico em PDF. Posso te enviar por aqui para você dar uma olhada?"
                     link_wa = f"https://wa.me/55{lead['whatsapp']}?text={urllib.parse.quote(msg_wa)}"
-                    st.markdown(f'<a href="{link_wa}" target="_blank"><button style="width:100%; background: linear-gradient(135deg,#25D366,#128C7E); color:white; border:none; padding:9px; border-radius:10px; font-weight:700; cursor:pointer; margin-bottom:8px; box-shadow:0 4px 12px -4px rgba(37,211,102,0.6);">💬 WhatsApp</button></a>', unsafe_allow_html=True)
+                    st.markdown(f'<a href="{link_wa}" target="_blank"><button style="width:100%; background-color:#25D366; color:white; border:none; padding:8px; border-radius:6px; font-weight:bold; cursor:pointer; margin-bottom:8px;">💬 WhatsApp</button></a>', unsafe_allow_html=True)
 
                 assunto_email = f"Oportunidade de Presença Digital: {lead['nome']} no Google"
                 corpo_email = f"""Olá! Analisei o perfil da {lead['nome']} no Google e gostaria de compartilhar uma oportunidade importante.
@@ -1439,7 +1170,7 @@ TOUR360VR | Okamoto Mídias Visuais
 (16) 99133-2121 | tour360vr.com.br"""
                 
                 link_mailto = f"mailto:?subject={urllib.parse.quote(assunto_email)}&body={urllib.parse.quote(corpo_email)}"
-                st.markdown(f'<a href="{link_mailto}" target="_blank"><button style="width:100%; background: linear-gradient(135deg,#2563eb,#0ea5e9); color:white; border:none; padding:9px; border-radius:10px; font-weight:700; cursor:pointer; margin-bottom:8px; box-shadow:0 4px 12px -4px rgba(37,99,235,0.6);">✉️ Enviar E-mail Pronto</button></a>', unsafe_allow_html=True)
+                st.markdown(f'<a href="{link_mailto}" target="_blank"><button style="width:100%; background-color:#0284c7; color:white; border:none; padding:8px; border-radius:6px; font-weight:bold; cursor:pointer; margin-bottom:8px;">✉️ Enviar E-mail Pronto</button></a>', unsafe_allow_html=True)
 
             st.markdown("**📝 Anotações & Histórico de Contato:**")
             anotacoes_atuais = lead.get('anotacoes', '') or ''
@@ -1505,7 +1236,7 @@ elif st.session_state.etapa == 4:
         col_sel_nicho, col_sel_cid, col_btn_pdf = st.columns([2.5, 2.5, 2])
         
         with col_sel_nicho:
-            nicho_selecionado = st.selectbox("🎯 Nicho Comercial:", categorias_disponiveis)
+            nicho_selecionado = st.selectbox("🎯 Nicho Comercial / Tag:", categorias_disponiveis)
 
         with col_sel_cid:
             cidade_selecionada = st.selectbox("📍 Cidade / Município:", cidades_disponiveis)
@@ -1567,6 +1298,7 @@ elif st.session_state.etapa == 4:
         df_exibicao = pd.DataFrame({
             'EMPRESA': df_filtrado_sorted['nome'],
             'CIDADE': df_filtrado_sorted['cidade_busca'],
+            'TAG / NICHO': df_filtrado_sorted['categoria'],
             'SCORE OPORTUNIDADE': df_filtrado_sorted['score_oportunidade'].apply(lambda x: f"{x}/100"),
             'NOTA': df_filtrado_sorted['nota'].apply(lambda x: f"{x:.1f} ⭐"),
             'AVALIAÇÕES': df_filtrado_sorted['total_avaliacoes'].astype(str),
@@ -1583,6 +1315,7 @@ elif st.session_state.etapa == 4:
             column_config={
                 "EMPRESA": st.column_config.Column("EMPRESA", width="large"),
                 "CIDADE": st.column_config.Column("CIDADE", alignment="center"),
+                "TAG / NICHO": st.column_config.Column("TAG / NICHO", alignment="center"),
                 "SCORE OPORTUNIDADE": st.column_config.Column("SCORE OPORTUNIDADE", width="small", alignment="center"),
                 "NOTA": st.column_config.Column("NOTA", width="small", alignment="center"),
                 "AVALIAÇÕES": st.column_config.Column("AVALIAÇÕES", width="small", alignment="center"),
@@ -1608,8 +1341,8 @@ elif st.session_state.etapa == 5:
         
         col_f1, col_f2, col_f3 = st.columns([2, 2, 2])
         with col_f1:
-            cats_mapa = ["Todos os Nichos"] + list(df_mapa['categoria'].unique())
-            cat_sel_mapa = st.selectbox("🎯 Nicho no Roteiro:", cats_mapa)
+            cats_mapa = ["Todos os Nichos / Tags"] + list(df_mapa['categoria'].unique())
+            cat_sel_mapa = st.selectbox("🎯 Nicho / Tag no Roteiro:", cats_mapa)
             
         with col_f2:
             cids_mapa = ["Todas as Cidades/Regiões"] + list(df_mapa['cidade_busca'].unique())
@@ -1622,7 +1355,7 @@ elif st.session_state.etapa == 5:
             )
 
         df_mapa_filtrado = df_mapa.copy()
-        if cat_sel_mapa != "Todos os Nichos":
+        if cat_sel_mapa != "Todos os Nichos / Tags":
             df_mapa_filtrado = df_mapa_filtrado[df_mapa_filtrado['categoria'] == cat_sel_mapa]
         if cid_sel_mapa != "Todas as Cidades/Regiões":
             df_mapa_filtrado = df_mapa_filtrado[df_mapa_filtrado['cidade_busca'] == cid_sel_mapa]
@@ -1646,16 +1379,16 @@ elif st.session_state.etapa == 5:
         segmentos_unicos = list(df_mapa['categoria'].unique())
         mapa_cores_seg = {seg: CORES_PINS[idx % len(CORES_PINS)] for idx, seg in enumerate(segmentos_unicos)}
 
-        if cat_sel_mapa == "Todos os Nichos" and len(segmentos_unicos) > 1:
-            st.markdown("**🎨 Legenda de Cores por Nicho:**")
+        if cat_sel_mapa == "Todos os Nichos / Tags" and len(segmentos_unicos) > 1:
+            st.markdown("**🎨 Legenda de Cores por Tag / Nicho:**")
             cols_leg = st.columns(min(len(segmentos_unicos), 5))
             for idx, (seg, cor_nome) in enumerate(mapa_cores_seg.items()):
                 hex_cor = CORES_HEX.get(cor_nome, '#ef4444')
                 with cols_leg[idx % 5]:
                     st.markdown(
-                        f'<div style="background: linear-gradient(180deg,#111c33,#0f172a); padding: 9px 12px; border-radius: 10px; border: 1px solid #1e293b; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px -8px rgba(0,0,0,0.6);">'
-                        f'<span style="height: 12px; width: 12px; background-color: {hex_cor}; border-radius: 50%; display: inline-block; box-shadow: 0 0 8px {hex_cor};"></span>'
-                        f'<b style="color: #f1f5f9; font-size: 13px;">{seg}</b>'
+                        f'<div style="background-color: #1e293b; padding: 8px 12px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">'
+                        f'<span style="height: 12px; width: 12px; background-color: {hex_cor}; border-radius: 50%; display: inline-block;"></span>'
+                        f'<b style="color: #ffffff; font-size: 13px;">{seg}</b>'
                         f'</div>',
                         unsafe_allow_html=True
                     )
@@ -1669,13 +1402,14 @@ elif st.session_state.etapa == 5:
 
             bounds = []
             for _, row in df_mapa_filtrado.iterrows():
-                cor_pin = mapa_cores_seg.get(row['categoria'], 'red') if cat_sel_mapa == "Todos os Nichos" else 'red'
+                cor_pin = mapa_cores_seg.get(row['categoria'], 'red') if cat_sel_mapa == "Todos os Nichos / Tags" else 'red'
                 
                 info_card_html = f"""
                 <div style="font-family: Arial, sans-serif; font-size: 12px; min-width: 240px; padding: 6px; line-height: 1.5;">
                     <b style="color: #2563eb; font-size: 14px;">{row['nome']}</b><br/>
                     <span style="color: #475569; font-size: 11px;">📍 {row['endereco']}</span><br/>
                     <hr style="margin: 6px 0; border: 0.5px solid #cbd5e1;"/>
+                    🏷️ <b>Tag / Nicho:</b> {row['categoria']}<br/>
                     🚨 <b>Score Oportunidade:</b> <span style="color: #dc2626; font-weight: bold;">{row['score_oportunidade']}/100</span><br/>
                     ⭐ <b>Nota no Google:</b> {row['nota']} ({row['total_avaliacoes']} avaliações)<br/>
                 </div>
@@ -1708,17 +1442,17 @@ elif st.session_state.etapa == 5:
                 with st.container():
                     col_num, col_info, col_acao = st.columns([0.8, 4.2, 2])
                     with col_num:
-                        st.markdown(f"<div style='background: linear-gradient(180deg,#1e3a5f,#0f172a); color: #38bdf8; font-size: 20px; font-weight: 800; text-align: center; padding: 12px; border-radius: 12px; border: 1px solid #1e40af; box-shadow: 0 6px 16px -8px rgba(56,189,248,0.4);'>#{idx}</div>", unsafe_allow_html=True)
+                        st.markdown(f"<div style='background-color: #1e293b; color: #38bdf8; font-size: 18px; font-weight: bold; text-align: center; padding: 12px; border-radius: 8px; border: 1px solid #334155;'>#{idx}</div>", unsafe_allow_html=True)
                     with col_info:
-                        st.markdown(f"**{r_visita['nome']}** ({r_visita['categoria']})")
+                        st.markdown(f"**{r_visita['nome']}** (Tag: *{r_visita['categoria']}*)")
                         st.markdown(f"📍 {r_visita['endereco']}")
                         st.markdown(f"⭐ Nota: {r_visita['nota']} | 🚨 Score Oportunidade: **{r_visita['score_oportunidade']}/100**")
                     with col_acao:
                         st.markdown(f"<div style='height: 4px;'></div>", unsafe_allow_html=True)
-                        st.markdown(f'<a href="{url_rota_passo_a_passo}" target="_blank"><button style="width:100%; background: linear-gradient(135deg,#2563eb,#0ea5e9); color:white; border:none; padding:8px; border-radius:10px; font-weight:700; cursor:pointer; margin-bottom:6px; box-shadow:0 4px 12px -4px rgba(37,99,235,0.6);">🧭 Iniciar Navegação (GPS)</button></a>', unsafe_allow_html=True)
+                        st.markdown(f'<a href="{url_rota_passo_a_passo}" target="_blank"><button style="width:100%; background-color:#2563eb; color:white; border:none; padding:7px; border-radius:6px; font-weight:bold; cursor:pointer; margin-bottom:5px;">🧭 Iniciar Navegação (GPS)</button></a>', unsafe_allow_html=True)
                         if r_visita['whatsapp']:
                             link_wa_rota = f"https://wa.me/55{r_visita['whatsapp']}?text={urllib.parse.quote(f'Olá! Estou passando aqui na região e gostaria de agendar uma rápida apresentação presencial do Tour 360° para a {r_visita["nome"]}.')}"
-                            st.markdown(f'<a href="{link_wa_rota}" target="_blank"><button style="width:100%; background: linear-gradient(135deg,#25D366,#128C7E); color:white; border:none; padding:8px; border-radius:10px; font-weight:700; cursor:pointer; box-shadow:0 4px 12px -4px rgba(37,211,102,0.6);">💬 Avisar via WhatsApp</button></a>', unsafe_allow_html=True)
+                            st.markdown(f'<a href="{link_wa_rota}" target="_blank"><button style="width:100%; background-color:#25D366; color:white; border:none; padding:7px; border-radius:6px; font-weight:bold; cursor:pointer;">💬 Avisar via WhatsApp</button></a>', unsafe_allow_html=True)
                     st.divider()
         else:
             st.warning("Nenhum registro encontrado para os filtros selecionados.")
