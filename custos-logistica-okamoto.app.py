@@ -11,6 +11,7 @@ from datetime import datetime
 from PIL import Image as PILImage
 import urllib.request
 import json
+from supabase import create_client, Client
 
 def fmt_brl(val):
     s = f"{val:,.2f}"
@@ -92,6 +93,18 @@ ESTADOS_BR = [
 
 st.set_page_config(page_title="Proposta Comercial & Custos - Okamoto Mídias Visuais", page_icon="📊", layout="wide")
 
+# Conexão Supabase
+@st.cache_resource
+def init_supabase():
+    try:
+        url = st.secrets["supabase"]["url"]
+        key = st.secrets["supabase"]["key"]
+        return create_client(url, key)
+    except Exception:
+        return None
+
+supabase = init_supabase()
+
 st.markdown("""
     <style>
         .block-container {
@@ -150,23 +163,31 @@ def calcular_distancia_maps(destino_endereco):
     try:
         api_key = st.secrets.get("google", {}).get("maps_api_key", "")
         if not api_key:
-            return None
+            return None, 0.0
         origem = "Rua Manoel Achê, 327, Ribeirão Preto - SP"
-        url = f"https://maps.googleapis.com/maps/api/distancematrix/json?origins={urllib.parse.quote(origem)}&destinations={urllib.parse.quote(destino_endereco)}&key={api_key}&language=pt-BR"
+        url = f"https://maps.googleapis.com/maps/api/directions/json?origin={urllib.parse.quote(origem)}&destination={urllib.parse.quote(destino_endereco)}&key={api_key}&language=pt-BR"
         
         req = urllib.request.urlopen(url)
         data = json.loads(req.read().decode('utf-8'))
         
-        if data['status'] == 'OK':
-            elemento = data['rows'][0]['elements'][0]
-            if elemento['status'] == 'OK':
-                distancia_metros = elemento['distance']['value']
-                distancia_km_ida = distancia_metros / 1000.0
-                distancia_ida_volta = distancia_km_ida * 2
-                return round(distancia_ida_volta)
+        if data['status'] == 'OK' and len(data['routes']) > 0:
+            leg = data['routes'][0]['legs'][0]
+            distancia_metros = leg['distance']['value']
+            distancia_km_ida = distancia_metros / 1000.0
+            distancia_ida_volta = round(distancia_km_ida * 2)
+            
+            # Estimativa simples de pedágios com base na rota do Google Maps
+            pedagios_estimado = 0.0
+            # Se houver passos indicando praças de pedágio
+            for step in leg.get('steps', []):
+                instrucao = step.get('html_instructions', '').lower()
+                if 'pedágio' in instrucao or 'toll' in instrucao:
+                    pedagios_estimado += 15.0 # Média estimada por praça de pedágio
+            
+            return distancia_ida_volta, pedagios_estimado
     except Exception:
         pass
-    return None
+    return None, 0.0
 
 class NumberedCanvasProposal(canvas.Canvas):
     def __init__(self, *args, **kwargs):
@@ -496,9 +517,6 @@ def gerar_pdf_interno(dados):
     local_txt = dados['local'] if dados['local'] else "Local a definir"
     captacao_txt = dados['captacao'] if dados['captacao'] else "—"
     
-    # Bloco estruturado em 4 colunas precisas (colWidths=[80, 160, 70, 170]):
-    # 1ª coluna: rótulos e textos alinhados à esquerda (esquerda da página)
-    # 2ª coluna: início, término, pagamento e datas alinhados à esquerda (iniciando do meio para a direita)
     info_geral = [
         [Paragraph("<b>Cliente:</b>", style_bold), Paragraph(dados['contato'], style_corpo), Paragraph("<b>Início:</b>", style_bold), Paragraph(data_ev_str, style_corpo)],
         [Paragraph("<b>Empresa:</b>", style_bold), Paragraph(dados['empresa'], style_corpo), Paragraph("<b>Término:</b>", style_bold), Paragraph(data_fim_str, style_corpo)],
@@ -664,12 +682,12 @@ if logo_app_path:
     st.image(logo_app_path, width=280)
 
 st.markdown("<h1 style='text-align: center; margin-top: -0.2rem; margin-bottom: 0rem;'>⚡ Sistema de Propostas & Custos</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; color: #94a3b8; margin-top: 0rem; margin-bottom: 0.8rem;'>Gerencie orçamentos comerciais, analise a viabilidade interna e gere documentação profissional em PDF.</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #94a3b8; margin-top: 0rem; margin-bottom: 0.8rem;'>Gerencie orçamentos comerciais, analise a viabilidade interna e acompanhe seus negócios.</p>", unsafe_allow_html=True)
 
 if 'current_tab_idx' not in st.session_state:
     st.session_state.current_tab_idx = 0
 
-tab_names = ["1. 📋 Dados & Serviços", "2. 🚗 Custos & Logística", "3. 📄 Prazos, Resumo & Relatórios"]
+tab_names = ["1. 📋 Dados & Serviços", "2. 🚗 Custos & Logística", "3. 📄 Prazos, Resumo & Relatórios", "4. 📊 Painel de Negócios & Histórico"]
 
 st.markdown("<br>", unsafe_allow_html=True)
 tab_selecionada = st.radio("Navegação:", tab_names, index=st.session_state.current_tab_idx, horizontal=True, label_visibility="collapsed")
@@ -684,9 +702,34 @@ st.markdown("<hr style='margin-top: 0px; margin-bottom: 20px;'>", unsafe_allow_h
 
 default_entrega_txt = "Até 72h após o término do serviço, editado e enviado via link para download, em alta e baixa resolução, disponível por 30 dias."
 
+# Buscar clientes salvos para autocompletar inteligente
+clientes_cadastrados = []
+if supabase:
+    try:
+        res_cli = supabase.table("historico_propostas").select("contato, empresa, telefone, email, cidade, estado").execute()
+        if res_cli.data:
+            clientes_cadastrados = list({item['contato']: item for item in res_cli.data if item.get('contato')}.values())
+    except Exception:
+        pass
+
 if st.session_state.current_tab_idx == 0:
     st.subheader("📋 Dados do Cliente e Serviço")
     
+    if clientes_cadastrados:
+        nomes_cli = ["Selecione ou digite novo..."] + [c['contato'] + " (" + c.get('empresa', '') + ")" for c in clientes_cadastrados]
+        cli_escolhido = st.selectbox("🔍 Autocompletar Cliente Anterior", nomes_cli)
+        if cli_escolhido != "Selecione ou digite novo...":
+            idx_sel = nomes_cli.index(cli_escolhido) - 1
+            c_dados = clientes_cadastrados[idx_sel]
+            if st.button("📥 Carregar Dados deste Cliente"):
+                st.session_state.contato = c_dados.get('contato', '')
+                st.session_state.empresa = c_dados.get('empresa', '')
+                st.session_state.telefone = c_dados.get('telefone', '')
+                st.session_state.email = c_dados.get('email', '')
+                st.session_state.cidade = c_dados.get('cidade', 'Ribeirão Preto')
+                st.session_state.estado = c_dados.get('estado', 'SP')
+                st.rerun()
+
     col_l1, col_l2 = st.columns(2)
     
     with col_l1:
@@ -761,14 +804,15 @@ if st.session_state.current_tab_idx == 0:
             with sub_c2:
                 st.session_state.estado = st.selectbox("UF", ESTADOS_BR, index=ESTADOS_BR.index(st.session_state.get("estado", "SP")) if st.session_state.get("estado", "SP") in ESTADOS_BR else 0, label_visibility="collapsed")
 
-    if st.button("🗺️ Calcular KM Automático (Google Maps)", use_container_width=True):
+    if st.button("🗺️ Calcular KM & Pedágios Automático (Google Maps)", use_container_width=True):
         endereco_completo = f"{st.session_state.local}, {st.session_state.cidade} - {st.session_state.estado}"
-        km_calc = calcular_distancia_maps(endereco_completo)
+        km_calc, pedagio_calc = calcular_distancia_maps(endereco_completo)
         if km_calc is not None:
             st.session_state.distancia_ida_volta = km_calc
-            st.success(f"Rota encontrada com sucesso! Distância de ida e volta: {km_calc} km.")
+            st.session_state.pedagio_total = pedagio_calc
+            st.success(f"Rota calculada! Distância: {km_calc} km | Pedágios estimados: {fmt_brl(pedagio_calc)}")
         else:
-            st.warning("⚠️ Não foi possível calcular automaticamente. Verifique o endereço e a chave da API.")
+            st.warning("⚠️ Não foi possível calcular automaticamente. Verifique o endereço e a chave da API do Google Maps.")
 
     st.markdown("---")
     st.subheader("📝 Detalhamento Técnico (Escopo & Captação)")
@@ -923,7 +967,7 @@ elif st.session_state.current_tab_idx == 2:
             st.session_state.condicao_pagamento_final = f"{st.session_state.condicao_pagamento} ({dias_txt})"
 
     st.markdown("---")
-    st.subheader("📥 Geração de Documentos (PDF)")
+    st.subheader("📥 Geração de Documentos & Salvamento no Supabase")
     
     try:
         s_tipo = st.session_state.get("tipo_servico", "Evento social")
@@ -1069,8 +1113,40 @@ elif st.session_state.current_tab_idx == 2:
     pdf_cliente_bytes = gerar_pdf_cliente(dados_completos)
     pdf_interno_bytes = gerar_pdf_interno(dados_completos)
 
+    # Salvar automaticamente no Supabase ao gerar
+    if supabase and st.button("💾 Salvar Proposta & Custos no Supabase", use_container_width=True):
+        try:
+            # Salvar Proposta
+            supabase.table("historico_propostas").insert({
+                "contato": dados_completos["contato"],
+                "empresa": dados_completos["empresa"],
+                "telefone": dados_completos["telefone"],
+                "email": dados_completos["email"],
+                "tipo_servico": dados_completos["tipo_servico"],
+                "nome_servico": nome_serv_ev,
+                "data_evento": dados_completos["data_evento"].isoformat(),
+                "cidade": dados_completos["cidade"],
+                "estado": dados_completos["estado"],
+                "valor_final": float(valor_final),
+                "status": "Pendente",
+                "dados_completos": json.dumps(dados_completos, default=str)
+            }).execute()
+
+            # Salvar Custos
+            supabase.table("historico_custos").insert({
+                "nome_servico": nome_serv_ev,
+                "cliente": dados_completos["contato"],
+                "faturamento": float(valor_final),
+                "custo_total": float(custo_total_interno),
+                "lucro_liquido": float(lucro_liquido),
+                "margem_lucro": float(margem_lucro)
+            }).execute()
+            
+            st.success("✅ Proposta e Custos salvos com sucesso no Supabase!")
+        except Exception as e:
+            st.error(f"Erro ao salvar no Supabase: {e}")
+
     col_down1, col_down2 = st.columns(2)
-    
     data_arquivo_str = datetime.now().strftime('%d-%m-%Y')
     nome_arquivo_cliente = f"Proposta comercial - Okamoto Midias Visuais - {nome_serv_ev} - {data_arquivo_str}.pdf"
     nome_arquivo_interno = f"Relatorio de custos - {nome_serv_ev} - {data_arquivo_str}.pdf"
@@ -1099,6 +1175,68 @@ elif st.session_state.current_tab_idx == 2:
         scroll_to_top()
         st.rerun()
 
+elif st.session_state.current_tab_idx == 3:
+    st.subheader("📊 Painel de Negócios & Histórico (Pipeline)")
+    
+    if supabase:
+        try:
+            # Buscar Propostas
+            res_props = supabase.table("historico_propostas").select("*").order("created_at", desc=True).limit(20).execute()
+            propostas = res_props.data if res_props.data else []
+
+            # Métricas rápidas no topo
+            total_props = len(propostas)
+            aprovadas = sum(1 for p in propostas if p.get('status') == 'Aprovada')
+            pendentes = sum(1 for p in propostas if p.get('status') == 'Pendente')
+            recusadas = sum(1 for p in propostas if p.get('status') == 'Recusada')
+
+            m1, m2, m3, m4 = st.columns(4)
+            m1.metric("Total Registros", total_props)
+            m2.metric("Pendentes", pendentes)
+            m3.metric("Aprovadas", aprovadas)
+            m4.metric("Recusadas", recusadas)
+
+            st.markdown("---")
+            st.markdown("##### 📋 Últimas Propostas Gerenciadas")
+
+            for prop in propostas:
+                with st.container():
+                    col_info1, col_info2, col_info3, col_info4 = st.columns([2.5, 2.0, 1.5, 1.5])
+                    with col_info1:
+                        st.markdown(f"**{prop.get('contato')}** ({prop.get('empresa')})<br><small>{prop.get('nome_servico')}</small>", unsafe_allow_html=True)
+                    with col_info2:
+                        st.markdown(f"Valor: **{fmt_brl(prop.get('valor_final', 0))}**<br><small>Data: {prop.get('created_at')[:10]}</small>", unsafe_allow_html=True)
+                    with col_info3:
+                        status_atual = prop.get('status', 'Pendente')
+                        novo_status = st.selectbox("Status", ["Pendente", "Aprovada", "Recusada"], index=["Pendente", "Aprovada", "Recusada"].index(status_atual), key=f"st_{prop['id']}")
+                        if novo_status != status_atual:
+                            supabase.table("historico_propostas").update({"status": novo_status}).eq("id", prop['id']).execute()
+                            st.rerun()
+                    with col_info4:
+                        if st.button("✏️ Carregar / Editar", key=f"edit_{prop['id']}"):
+                            try:
+                                dados_antigos = json.loads(prop['dados_completos'])
+                                for k, v in dados_antigos.items():
+                                    if k in ["data_orcamento", "data_evento", "data_termino"] and v:
+                                        try:
+                                            st.session_state[k] = datetime.fromisoformat(v)
+                                        except Exception:
+                                            pass
+                                    else:
+                                        st.session_state[k] = v
+                                st.session_state.current_tab_idx = 0
+                                st.success("Orçamento carregado para edição!")
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"Erro ao carregar: {e}")
+                    st.divider()
+
+        except Exception as e:
+            st.error(f"Erro ao conectar com o Supabase: {e}")
+    else:
+        st.warning("⚠️ Conexão com o Supabase não configurada. Verifique os segredos (secrets.toml).")
+
+# Prévia em tempo real rodapé
 try:
     s_tipo = st.session_state.get("tipo_servico", "Evento social")
     s_outro = st.session_state.get("outro_servico_nome", "")
@@ -1165,17 +1303,10 @@ try:
     lucro_liquido = valor_final - custo_total_interno
     margem_lucro = (lucro_liquido / valor_final * 100) if valor_final > 0 else 0
 except Exception:
-    valor_base = 0.0
-    valor_desconto_calculado = 0.0
     valor_final = 0.0
-    litros_gastos = 0.0
-    custo_combustivel = 0.0
-    hosp_tot = 0.0
     custo_total_interno = 0.0
     lucro_liquido = 0.0
     margem_lucro = 0.0
-    valor_impostos = 0.0
-    valor_comissao = 0.0
 
 st.markdown("---")
 st.markdown("### 📈 Quadro de Prévia em Tempo Real (Visão Geral)")
