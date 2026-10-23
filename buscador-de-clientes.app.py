@@ -172,7 +172,6 @@ def atualizar_followup_db(lead_id, nova_data):
         st.error(f"Erro ao atualizar follow-up: {str(e)}")
 
 def revalidar_ficha_google(lead):
-    """Consulta a API do Google Places em tempo real para atualizar dados e gerar alertas inteligentes."""
     api_key = st.secrets.get("GOOGLE_API_KEY", None) or os.getenv("GOOGLE_API_KEY", None)
     if not api_key:
         st.error("Chave do Google API Key não configurada.")
@@ -203,7 +202,6 @@ def revalidar_ficha_google(lead):
         
         dif_av = novas_av - lead['total_avaliacoes']
         
-        # Gerar nota de histórico na timeline com a revalidação
         data_hoje = datetime.now().strftime('%d/%m/%Y %H:%M')
         aviso_reval = f"[{data_hoje}] 🔄 Revalidação Google: Nota {nova_nota} (Antes: {lead['nota']}), Avaliações: {novas_av} ({'+' if dif_av>=0 else ''}{dif_av})."
         
@@ -790,7 +788,7 @@ def gerar_csv_excel_formatado(dados_leads):
     return output.getvalue().encode('utf-8')
 
 # -----------------------------------------------------------------------------
-# BARRA LATERAL (COM CENTRAL DE NOTIFICAÇÕES DE FOLLOW-UP E CENTRALIZAÇÃO)
+# BARRA LATERAL
 # -----------------------------------------------------------------------------
 base_leads = carregar_todos_leads_db()
 
@@ -941,26 +939,37 @@ elif st.session_state.etapa == 2:
         st.markdown("### Inserir Empresa Manualmente no CRM")
         st.caption("Use esta opção para adicionar leads de rua, indicações ou empresas que não vieram na busca automática.")
         
+        # Tags já salvas no banco
+        tags_existentes_cad = sorted(list(set([l.get('categoria', 'Comércio') for l in base_leads]))) if base_leads else ["Comércio", "Vestuário", "Saúde", "Alimentação"]
+        opcoes_tag_cad = tags_existentes_cad + ["➕ Digitar Nova Categoria..."]
+
         with st.form("form_cadastro_manual"):
             m_col1, m_col2 = st.columns(2)
             with m_col1:
                 man_nome = st.text_input("Nome da Empresa *")
-                tags_salvas_cad = list(set([l.get('categoria', 'Comércio') for l in base_leads])) if base_leads else ["Comércio", "Vestuário", "Saúde", "Alimentação"]
-                man_nicho = st.selectbox("Categoria / Tag / Nicho *", options=tags_salvas_cad, help="Selecione um nicho existente ou edite depois no CRM")
+                
+                # Seleção ou criação de categoria/tag
+                escolha_cat_manual = st.selectbox("Categoria / Tag / Nicho *", options=opcoes_tag_cad)
+                man_nicho_novo = ""
+                if escolha_cat_manual == "➕ Digitar Nova Categoria...":
+                    man_nicho_novo = st.text_input("Digite a Nova Categoria / Nicho *", value="", placeholder="Ex: Ótica, Confeitaria, Imobiliária")
+
                 man_cidade = st.text_input("Cidade", value="Ribeirão Preto")
-                man_endereco = st.text_input("Endereço Completo", value="Rua Exemplo, 100 - Centro")
+                man_endereco = st.text_input("Endereço Completo", value="", placeholder="Ex: Rua Exemplo, 100 - Centro")
             with m_col2:
-                man_tel = st.text_input("Telefone / Contato", value="(16) 99999-9999")
-                man_zap = st.text_input("WhatsApp (apenas números com DDD)", value="16999999999")
-                man_site = st.text_input("Website (Opcional)", value="")
+                man_tel = st.text_input("Telefone / Contato", value="", placeholder="Ex: (16) 3333-4444")
+                man_zap = st.text_input("WhatsApp (apenas números com DDD)", value="", placeholder="Ex: 16999999999")
+                man_site = st.text_input("Website (Opcional)", value="", placeholder="Ex: https://www.site.com.br")
                 man_nota = st.number_input("Nota Média Google (0 a 5)", min_value=0.0, max_value=5.0, value=5.0, step=0.1)
                 man_av = st.number_input("Total de Avaliações", min_value=0, max_value=5000, value=10, step=1)
 
             btn_salvar_manual = st.form_submit_button("💾 Salvar Lead Manualmente no CRM", use_container_width=True)
             
             if btn_salvar_manual:
-                if not man_nome.strip() or not man_endereco.strip():
-                    st.error("Preencha ao menos o Nome e o Endereço da empresa.")
+                categoria_final = man_nicho_novo.strip() if escolha_cat_manual == "➕ Digitar Nova Categoria..." else escolha_cat_manual
+                
+                if not man_nome.strip() or not man_endereco.strip() or not categoria_final:
+                    st.error("Preencha o Nome, a Categoria/Nicho e o Endereço da empresa.")
                 else:
                     pontos_criticos = []
                     oportunidades = []
@@ -984,13 +993,13 @@ elif st.session_state.etapa == 2:
                         "cidade_busca": man_cidade,
                         "bairro_busca": "Manual",
                         "nome": man_nome.strip(),
-                        "categoria": man_nicho.strip().capitalize(),
+                        "categoria": categoria_final.capitalize(),
                         "endereco": man_endereco.strip(),
                         "latitude": -21.1775,
                         "longitude": -47.8103,
-                        "telefone": man_tel,
-                        "whatsapp": man_zap,
-                        "website": man_site,
+                        "telefone": man_tel.strip() if man_tel else "(16) Contato via Ficha",
+                        "whatsapp": man_zap.strip() if man_zap else "",
+                        "website": man_site.strip(),
                         "website_https": has_https,
                         "instagram": f"https://instagram.com/{re.sub(r'[^a-zA-Z0-9]', '', man_nome.lower())}",
                         "facebook": f"https://facebook.com/{re.sub(r'[^a-zA-Z0-9]', '', man_nome.lower())}",
@@ -1159,7 +1168,6 @@ elif st.session_state.etapa == 3:
                     st.toast("Tag atualizada com sucesso!")
                     st.rerun()
 
-                # BOTÃO DE REVALIDAÇÃO / ATUALIZAÇÃO DA FICHA EM TEMPO REAL
                 if st.button("🔄 Revalidar com Google Maps", key=f"reval_{lead['id']}", use_container_width=True):
                     with st.spinner("Consultando dados atuais no Google Maps..."):
                         revalidar_ficha_google(lead)
@@ -1253,7 +1261,6 @@ TOUR360VR | Okamoto Mídias Visuais
                     atualizar_followup_db(lead['id'], nova_data_fu)
                     st.toast("Data de follow-up atualizada!")
 
-            # TIMELINE / HISTÓRICO DE INTERAÇÕES POR DATA
             st.markdown("**📱 Histórico e Timeline de Interações (Log de Atividades):**")
             anotacoes_atuais = lead.get('anotacoes', '') or ''
             
@@ -1272,7 +1279,6 @@ TOUR360VR | Okamoto Mídias Visuais
                     time.sleep(0.5)
                     st.rerun()
 
-            # Exibir histórico formatado em caixa de estilo limpo
             if anotacoes_atuais:
                 st.markdown(f'<div class="script-box" style="max-height: 150px; overflow-y: auto;">{anotacoes_atuais}</div>', unsafe_allow_html=True)
             else:
@@ -1287,6 +1293,24 @@ Montei um relatório curto de diagnóstico em PDF. Posso te enviar por aqui para
                 st.markdown(f'<div class="script-box">{script_wa}</div>', unsafe_allow_html=True)
 
                 st.markdown("**2) Abordagem Inicial — E-mail**")
+                script_email = f"""Assunto: Oportunidade de Presença Digital: {lead['nome']} no Google
+
+Olá! Analisei o perfil da {lead['nome']} no Google e gostaria de compartilhar uma oportunidade importante.
+
+Identifiquei 3 pontos críticos que estão impactando a confiança de novos clientes:
+1. Ausência de Tour Virtual 360° navegável (seus concorrentes levam vantagem visual).
+2. Perfil estático com fotos e informações desatualizadas.
+3. Falta de otimização de palavras-chave para o setor de {lead['categoria']}.
+
+Temos soluções para transformar a vitrine do seu negócio no Google. Anexo um diagnóstico em PDF com a análise detalhada.
+
+Fico à disposição para conversarmos!
+
+Atenciosamente,
+
+Rubens Okamoto
+TOUR360VR | Okamoto Mídias Visuais
+(16) 99133-2121 | tour360vr.com.br"""
                 script_email = f"""Assunto: Oportunidade de Presença Digital: {lead['nome']} no Google
 
 Olá! Analisei o perfil da {lead['nome']} no Google e gostaria de compartilhar uma oportunidade importante.
@@ -1529,7 +1553,6 @@ elif st.session_state.etapa == 5:
             
             st.divider()
             
-            # ITINERÁRIO SEQUENCIAL (OS MAIORES SCORES DE OPORTUNIDADE PRIMEIRO)
             st.markdown("### 🚗 Itinerário Sequencial de Visitas Presenciais (Prioridade Comercial)")
             st.markdown("Lista ordenada do maior score de oportunidade (mais carente de serviços) para o menor:")
 
