@@ -1033,7 +1033,7 @@ elif st.session_state.etapa == 3:
 
         st.markdown(f"Exibindo **{len(resultados_filtrados)}** oportunidades salvas:")
 
-        for lead in resultados_filtrados:
+for lead in resultados_filtrados:
             score = lead['score_oportunidade']
             score_class = "score-high" if score >= 60 else ("score-med" if score >= 30 else "score-low")
             score_label = "ALTA OPORTUNIDADE" if score >= 60 else ("MÉDIA OPORTUNIDADE" if score >= 30 else "BAIXA OPORTUNIDADE")
@@ -1085,36 +1085,6 @@ elif st.session_state.etapa == 3:
                     atualizar_categoria_db(lead['id'], nova_tag_input.strip().capitalize())
                     st.toast("Tag/Nicho atualizado com sucesso!")
                     st.rerun()
-
-                # ALINHADO EM UMA ÚNICA LINHA HORIZONTAL COM PROPORÇÃO OTIMIZADA
-                c_fav, c_st, c_fu = st.columns([1.5, 2.2, 1.8])
-                
-                with c_fav:
-                    if st.button(fav_label, key=f"fav_btn_{lead['id']}", use_container_width=True):
-                        alternar_favorito_db(lead['id'], is_fav)
-                        st.rerun()
-
-                status_opcoes = ["🆕 Novo Lead", "💬 Em Abordagem", "🛠️ Diagnóstico Gerado", "🤝 Cliente Fechado", "❌ Recusado"]
-                idx_atual = status_opcoes.index(lead['status_crm']) if lead['status_crm'] in status_opcoes else 0
-                
-                with c_st:
-                    novo_st = st.selectbox("Status:", status_opcoes, index=idx_atual, key=f"crm_st_{lead['id']}", label_visibility="collapsed")
-                    if novo_st != lead['status_crm']:
-                        atualizar_status_crm(lead['id'], novo_st)
-                        st.toast("Status atualizado na nuvem!")
-                        st.rerun()
-
-                dt_atual_str = lead.get('data_followup', str(date.today()))
-                try:
-                    dt_obj = datetime.strptime(dt_atual_str, '%Y-%m-%d').date()
-                except Exception:
-                    dt_obj = date.today()
-
-                with c_fu:
-                    nova_data_fu = st.date_input("Retorno:", value=dt_obj, key=f"dt_fu_{lead['id']}", label_visibility="collapsed")
-                    if str(nova_data_fu) != dt_atual_str:
-                        atualizar_followup_db(lead['id'], nova_data_fu)
-                        st.toast("Data de follow-up atualizada!")
 
             with col_details1:
                 st.markdown("**📊 Indicadores no Google:**")
@@ -1171,6 +1141,37 @@ TOUR360VR | Okamoto Mídias Visuais
                 
                 link_mailto = f"mailto:?subject={urllib.parse.quote(assunto_email)}&body={urllib.parse.quote(corpo_email)}"
                 st.markdown(f'<a href="{link_mailto}" target="_blank"><button style="width:100%; background-color:#0284c7; color:white; border:none; padding:8px; border-radius:6px; font-weight:bold; cursor:pointer; margin-bottom:8px;">✉️ Enviar E-mail Pronto</button></a>', unsafe_allow_html=True)
+
+            # BARRA HORIZONTAL DE CONTROLOS CRM EM LARGURA TOTAL ABAIXO DAS COLUNAS
+            st.markdown("<div style='border-top: 1px solid #334155; margin: 12px 0;'></div>", unsafe_allow_html=True)
+            bar_col1, bar_col2, bar_col3 = st.columns([1.5, 3, 2.5])
+            
+            with bar_col1:
+                if st.button(fav_label, key=f"fav_btn_{lead['id']}", use_container_width=True):
+                    alternar_favorito_db(lead['id'], is_fav)
+                    st.rerun()
+
+            status_opcoes = ["🆕 Novo Lead", "💬 Em Abordagem", "🛠️ Diagnóstico Gerado", "🤝 Cliente Fechado", "❌ Recusado"]
+            idx_atual = status_opcoes.index(lead['status_crm']) if lead['status_crm'] in status_opcoes else 0
+            
+            with bar_col2:
+                novo_st = st.selectbox("Status Comercial:", status_opcoes, index=idx_atual, key=f"crm_st_{lead['id']}")
+                if novo_st != lead['status_crm']:
+                    atualizar_status_crm(lead['id'], novo_st)
+                    st.toast("Status atualizado na nuvem!")
+                    st.rerun()
+
+            dt_atual_str = lead.get('data_followup', str(date.today()))
+            try:
+                dt_obj = datetime.strptime(dt_atual_str, '%Y-%m-%d').date()
+            except Exception:
+                dt_obj = date.today()
+
+            with bar_col3:
+                nova_data_fu = st.date_input("Próximo Contato (Follow-up):", value=dt_obj, key=f"dt_fu_{lead['id']}")
+                if str(nova_data_fu) != dt_atual_str:
+                    atualizar_followup_db(lead['id'], nova_data_fu)
+                    st.toast("Data de follow-up atualizada!")
 
             st.markdown("**📝 Anotações & Histórico de Contato:**")
             anotacoes_atuais = lead.get('anotacoes', '') or ''
