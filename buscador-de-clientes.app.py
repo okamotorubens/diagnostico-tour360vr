@@ -903,7 +903,6 @@ elif st.session_state.etapa == 2:
                 if not man_nome.strip() or not man_endereco.strip():
                     st.error("Preencha ao menos o Nome e o Endereço da empresa.")
                 else:
-                    # Auditoria automática simplificada para o lead manual
                     pontos_criticos = []
                     oportunidades = []
                     score = 0
@@ -964,7 +963,7 @@ elif st.session_state.etapa == 2:
             mudar_etapa(3)
 
 # -----------------------------------------------------------------------------
-# MÓDULO 3: BASE DE LEADS & CRM DE VENDAS (COM TAGS E FILTRO AVANÇADO)
+# MÓDULO 3: BASE DE LEADS & CRM DE VENDAS
 # -----------------------------------------------------------------------------
 elif st.session_state.etapa == 3:
     st.markdown("""
@@ -1033,7 +1032,7 @@ elif st.session_state.etapa == 3:
 
         st.markdown(f"Exibindo **{len(resultados_filtrados)}** oportunidades salvas:")
 
-for lead in resultados_filtrados:
+        for lead in resultados_filtrados:
             score = lead['score_oportunidade']
             score_class = "score-high" if score >= 60 else ("score-med" if score >= 30 else "score-low")
             score_label = "ALTA OPORTUNIDADE" if score >= 60 else ("MÉDIA OPORTUNIDADE" if score >= 30 else "BAIXA OPORTUNIDADE")
