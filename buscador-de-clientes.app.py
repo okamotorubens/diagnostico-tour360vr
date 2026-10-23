@@ -887,7 +887,11 @@ elif st.session_state.etapa == 2:
             m_col1, m_col2 = st.columns(2)
             with m_col1:
                 man_nome = st.text_input("Nome da Empresa *")
-                man_nicho = st.text_input("Categoria / Tag / Nicho *", value="Vestuário / Comércio", help="Ex: Óticas, Loja de Roupas, Clínica")
+                
+                # Lista de tags já existentes para selecionar ou usar em cadastro manual
+                tags_salvas_cad = list(set([l.get('categoria', 'Comércio') for l in base_leads])) if base_leads else ["Comércio", "Vestuário", "Saúde", "Alimentação"]
+                man_nicho = st.selectbox("Categoria / Tag / Nicho *", options=tags_salvas_cad, help="Selecione um nicho existente ou edite depois no CRM")
+                
                 man_cidade = st.text_input("Cidade", value="Ribeirão Preto")
                 man_endereco = st.text_input("Endereço Completo", value="Rua Exemplo, 100 - Centro")
             with m_col2:
@@ -969,7 +973,7 @@ elif st.session_state.etapa == 3:
     st.markdown("""
         <div class="main-header">
             <h1 class="main-title">📊 Base de Leads e Gerenciador CRM</h1>
-            <div class="main-subtitle">Gerencie status, edite tags/nichos personalizados, agende follow-ups e exporte planilhas direto da nuvem.</div>
+            <div class="main-subtitle">Gerencie status, selecione tags já salvas ou crie novas, agende follow-ups e exporte planilhas direto da nuvem.</div>
         </div>
     """, unsafe_allow_html=True)
 
@@ -1032,6 +1036,9 @@ elif st.session_state.etapa == 3:
 
         st.markdown(f"Exibindo **{len(resultados_filtrados)}** oportunidades salvas:")
 
+        # Lista de tags já salvas no banco para reutilizar na edição rápida
+        tags_ja_salvas = sorted(list(df_leads_crm['categoria'].unique()))
+
         for lead in resultados_filtrados:
             score = lead['score_oportunidade']
             score_class = "score-high" if score >= 60 else ("score-med" if score >= 30 else "score-low")
@@ -1078,11 +1085,25 @@ elif st.session_state.etapa == 3:
                 else:
                     st.info("📷 Sem foto")
                 
-                # EDIÇÃO RÁPIDA DE TAG / NICHO PERSONALIZADO
-                nova_tag_input = st.text_input("Editar Tag / Nicho:", value=lead.get('categoria', 'Comércio'), key=f"tag_edit_{lead['id']}")
-                if nova_tag_input.strip() and nova_tag_input.strip() != lead.get('categoria'):
-                    atualizar_categoria_db(lead['id'], nova_tag_input.strip().capitalize())
-                    st.toast("Tag/Nicho atualizado com sucesso!")
+                # SELEÇÃO / MEMÓRIA DE TAGS COM OPÇÃO DE DIGITAR NOVA
+                cat_atual = lead.get('categoria', 'Comércio')
+                opcoes_tag_select = list(tags_salvas_salvas if 'tags_salvas_salvas' in locals() else tags_ja_salvas)
+                if cat_atual not in opcoes_tag_select:
+                    opcoes_tag_select.insert(0, cat_atual)
+                opcoes_tag_select.append("➕ Digitar Nova Tag...")
+
+                idx_tag_atual = opcoes_tag_select.index(cat_atual) if cat_atual in opcoes_tag_select else 0
+                escolha_tag = st.selectbox("Tag / Nicho:", options=opcoes_tag_select, index=idx_tag_atual, key=f"sel_tag_{lead['id']}")
+
+                if escolha_tag == "➕ Digitar Nova Tag...":
+                    nova_tag_digitada = st.text_input("Nova Tag:", value="", key=f"txt_novo_tag_{lead['id']}", placeholder="Ex: Ótica, Vestuário")
+                    if nova_tag_digitada.strip() and nova_tag_digitada.strip() != cat_atual:
+                        atualizar_categoria_db(lead['id'], nova_tag_digitada.strip().capitalize())
+                        st.toast("Nova tag criada e salva!")
+                        st.rerun()
+                elif escolha_tag != cat_atual:
+                    atualizar_categoria_db(lead['id'], escolha_tag)
+                    st.toast("Tag atualizada com sucesso!")
                     st.rerun()
 
             with col_details1:
