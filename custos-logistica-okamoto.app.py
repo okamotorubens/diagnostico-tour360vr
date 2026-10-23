@@ -176,19 +176,20 @@ def calcular_distancia_maps(destino_endereco):
             distancia_km_ida = distancia_metros / 1000.0
             distancia_ida_volta = round(distancia_km_ida * 2)
             
-            # Estimativa simples de pedágios com base na rota do Google Maps
-            pedagios_estimado = 0.0
-            # Se houver passos indicando praças de pedágio
+            # Conta os pedágios da ida e multiplica por 2 (ida e volta)
+            pedagios_ida = 0.0
             for step in leg.get('steps', []):
                 instrucao = step.get('html_instructions', '').lower()
                 if 'pedágio' in instrucao or 'toll' in instrucao:
-                    pedagios_estimado += 15.0 # Média estimada por praça de pedágio
+                    pedagios_ida += 15.0 # Média estimada por praça de pedágio
             
-            return distancia_ida_volta, pedagios_estimado
+            pedagio_ida_volta = pedagios_ida * 2
+            
+            return distancia_ida_volta, pedagio_ida_volta
     except Exception:
         pass
     return None, 0.0
-
+    
 class NumberedCanvasProposal(canvas.Canvas):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
