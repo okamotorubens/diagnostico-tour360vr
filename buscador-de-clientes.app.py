@@ -171,6 +171,64 @@ def atualizar_followup_db(lead_id, nova_data):
     except Exception as e:
         st.error(f"Erro ao atualizar follow-up: {str(e)}")
 
+def revalidar_ficha_google(lead):
+    """Consulta a API do Google Places em tempo real para atualizar dados e gerar alertas inteligentes."""
+    api_key = st.secrets.get("GOOGLE_API_KEY", None) or os.getenv("GOOGLE_API_KEY", None)
+    if not api_key:
+        st.error("Chave do Google API Key não configurada.")
+        return lead
+    
+    api_key_limpa = api_key.strip().replace('"', '').replace("'", "")
+    query_str = f"{lead['nome']} {lead['cidade_busca']}"
+    base_url = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={urllib.parse.quote(query_str)}&language=pt-BR&key={api_key_limpa}"
+    
+    try:
+        resp = requests.get(base_url, timeout=10).json()
+        results = resp.get("results", [])
+        if not results:
+            st.warning("⚠️ O Google Maps não retornou dados atualizados para esta empresa neste momento.")
+            return lead
+            
+        place = results[0]
+        place_id = place.get("place_id")
+        
+        det_res = {}
+        if place_id:
+            details_url = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=name,formatted_address,formatted_phone_number,website,rating,user_ratings_total,photos&language=pt-BR&key={api_key_limpa}"
+            det_res = requests.get(details_url, timeout=5).json().get("result", {})
+            
+        nova_nota = det_res.get("rating", place.get("rating", lead['nota']))
+        novas_av = det_res.get("user_ratings_total", place.get("user_ratings_total", lead['total_avaliacoes']))
+        novo_site = det_res.get("website", lead['website'])
+        
+        dif_av = novas_av - lead['total_avaliacoes']
+        
+        # Gerar nota de histórico na timeline com a revalidação
+        data_hoje = datetime.now().strftime('%d/%m/%Y %H:%M')
+        aviso_reval = f"[{data_hoje}] 🔄 Revalidação Google: Nota {nova_nota} (Antes: {lead['nota']}), Avaliações: {novas_av} ({'+' if dif_av>=0 else ''}{dif_av})."
+        
+        anotacoes_atuais = lead.get('anotacoes', '') or ''
+        novas_anotacoes = f"{aviso_reval}\n{anotacoes_atuais}"
+        
+        if supabase:
+            supabase.table("leads").update({
+                "nota": float(nova_nota),
+                "total_avaliacoes": int(novas_av),
+                "website": novo_site,
+                "anotacoes": novas_anotacoes
+            }).eq("id", lead['id']).execute()
+            
+        lead['nota'] = nova_nota
+        lead['total_avaliacoes'] = novas_av
+        lead['website'] = novo_site
+        lead['anotacoes'] = novas_anotacoes
+        
+        st.success(f"✅ Ficha revalidada com sucesso! (Variação de avaliações: {'+' if dif_av>=0 else ''}{dif_av})")
+        return lead
+    except Exception as e:
+        st.error(f"Erro ao revalidar ficha: {str(e)}")
+        return lead
+
 def carregar_todos_leads_db():
     if not supabase:
         return []
@@ -190,7 +248,7 @@ def limpar_banco_dados():
         st.error(f"Erro ao limpar banco: {str(e)}")
 
 # -----------------------------------------------------------------------------
-# GERADOR DE PDF DO PANORAMA DE NICHO (MÉTRICA INVERTIDA: MAIS COMPLETA NO TOPO)
+# GERADOR DE PDF DO PANORAMA DE NICHO
 # -----------------------------------------------------------------------------
 def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
     canvas.saveState()
@@ -406,7 +464,7 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     return buffer
 
 # -----------------------------------------------------------------------------
-# ESTILIZAÇÃO CSS CUSTOMIZADA (SIDEBAR FIXA SEM SCROLLBAR)
+# ESTILIZAÇÃO CSS CUSTOMIZADA
 # -----------------------------------------------------------------------------
 st.markdown("""
     <style>
@@ -513,7 +571,7 @@ def mudar_etapa(nova_etapa):
     st.rerun()
 
 # -----------------------------------------------------------------------------
-# INTEGRAÇÃO DE BUSCA REAL VIA GOOGLE PLACES API (PAGINAÇÃO BLINDADA)
+# INTEGRAÇÃO DE BUSCA REAL VIA GOOGLE PLACES API
 # -----------------------------------------------------------------------------
 def buscar_google_places_api(nome_empresa, nicho, cidade, bairro, rua, raio_km, api_key, limite=20):
     termos = []
@@ -887,11 +945,8 @@ elif st.session_state.etapa == 2:
             m_col1, m_col2 = st.columns(2)
             with m_col1:
                 man_nome = st.text_input("Nome da Empresa *")
-                
-                # Lista de tags já existentes para selecionar ou usar em cadastro manual
                 tags_salvas_cad = list(set([l.get('categoria', 'Comércio') for l in base_leads])) if base_leads else ["Comércio", "Vestuário", "Saúde", "Alimentação"]
                 man_nicho = st.selectbox("Categoria / Tag / Nicho *", options=tags_salvas_cad, help="Selecione um nicho existente ou edite depois no CRM")
-                
                 man_cidade = st.text_input("Cidade", value="Ribeirão Preto")
                 man_endereco = st.text_input("Endereço Completo", value="Rua Exemplo, 100 - Centro")
             with m_col2:
@@ -950,7 +1005,7 @@ elif st.session_state.etapa == 2:
                         "pontos_criticos": pontos_criticos,
                         "oportunidades": oportunidades,
                         "score_oportunidade": min(score, 100),
-                        "anotacoes": "Cadastrado manualmente no sistema.",
+                        "anotacoes": f"[{datetime.now().strftime('%d/%m/%Y %H:%M')}] Cadastrado manualmente no sistema.",
                         "favorito": True,
                         "data_followup": str(date.today()),
                         "obs_followup": ""
@@ -973,7 +1028,7 @@ elif st.session_state.etapa == 3:
     st.markdown("""
         <div class="main-header">
             <h1 class="main-title">📊 Base de Leads e Gerenciador CRM</h1>
-            <div class="main-subtitle">Gerencie status, selecione tags já salvas ou crie novas, agende follow-ups e exporte planilhas direto da nuvem.</div>
+            <div class="main-subtitle">Gerencie status, selecione tags, revalide fichas em tempo real, acompanhe a timeline de interações e exporte planilhas.</div>
         </div>
     """, unsafe_allow_html=True)
 
@@ -1036,7 +1091,6 @@ elif st.session_state.etapa == 3:
 
         st.markdown(f"Exibindo **{len(resultados_filtrados)}** oportunidades salvas:")
 
-        # Lista de tags já salvas no banco para reutilizar na edição rápida
         tags_ja_salvas = sorted(list(df_leads_crm['categoria'].unique()))
 
         for lead in resultados_filtrados:
@@ -1085,9 +1139,8 @@ elif st.session_state.etapa == 3:
                 else:
                     st.info("📷 Sem foto")
                 
-                # SELEÇÃO / MEMÓRIA DE TAGS COM OPÇÃO DE DIGITAR NOVA
                 cat_atual = lead.get('categoria', 'Comércio')
-                opcoes_tag_select = list(tags_salvas_salvas if 'tags_salvas_salvas' in locals() else tags_ja_salvas)
+                opcoes_tag_select = list(tags_ja_salvas)
                 if cat_atual not in opcoes_tag_select:
                     opcoes_tag_select.insert(0, cat_atual)
                 opcoes_tag_select.append("➕ Digitar Nova Tag...")
@@ -1105,6 +1158,12 @@ elif st.session_state.etapa == 3:
                     atualizar_categoria_db(lead['id'], escolha_tag)
                     st.toast("Tag atualizada com sucesso!")
                     st.rerun()
+
+                # BOTÃO DE REVALIDAÇÃO / ATUALIZAÇÃO DA FICHA EM TEMPO REAL
+                if st.button("🔄 Revalidar com Google Maps", key=f"reval_{lead['id']}", use_container_width=True):
+                    with st.spinner("Consultando dados atuais no Google Maps..."):
+                        revalidar_ficha_google(lead)
+                        st.rerun()
 
             with col_details1:
                 st.markdown("**📊 Indicadores no Google:**")
@@ -1194,12 +1253,30 @@ TOUR360VR | Okamoto Mídias Visuais
                     atualizar_followup_db(lead['id'], nova_data_fu)
                     st.toast("Data de follow-up atualizada!")
 
-            st.markdown("**📝 Anotações & Histórico de Contato:**")
+            # TIMELINE / HISTÓRICO DE INTERAÇÕES POR DATA
+            st.markdown("**📱 Histórico e Timeline de Interações (Log de Atividades):**")
             anotacoes_atuais = lead.get('anotacoes', '') or ''
-            novas_anotacoes = st.text_area("Anotações:", value=anotacoes_atuais, height=80, key=f"txt_anot_{lead['id']}", label_visibility="collapsed", placeholder="Digite histórico de reuniões, conversas ou recados aqui...")
             
-            if novas_anotacoes != anotacoes_atuais:
-                atualizar_anotacoes_db(lead['id'], novas_anotacoes)
+            with st.form(key=f"form_timeline_{lead['id']}"):
+                nova_interacao = st.text_input("Adicionar nova interação / log:", placeholder="Ex: Ligou, enviou proposta, marcou reunião para terça...")
+                col_btn_tl1, col_btn_tl2 = st.columns([2, 4])
+                with col_btn_tl1:
+                    btn_add_tl = st.form_submit_button("➕ Registrar na Timeline", use_container_width=True)
+                
+                if btn_add_tl and nova_interacao.strip():
+                    data_hora_agora = datetime.now().strftime('%d/%m/%Y %H:%M')
+                    registro_formatado = f"[{data_hora_agora}] {nova_interacao.strip()}"
+                    historico_atualizado = f"{registro_formatado}\n{anotacoes_atuais}" if anotacoes_atuais else registro_formatado
+                    atualizar_anotacoes_db(lead['id'], historico_atualizado)
+                    st.success("Interação registrada na timeline!")
+                    time.sleep(0.5)
+                    st.rerun()
+
+            # Exibir histórico formatado em caixa de estilo limpo
+            if anotacoes_atuais:
+                st.markdown(f'<div class="script-box" style="max-height: 150px; overflow-y: auto;">{anotacoes_atuais}</div>', unsafe_allow_html=True)
+            else:
+                st.caption("Nenhum histórico registrado ainda.")
 
             with st.expander(f"✉️ **Scripts de Vendas e Abordagem Detalhada ({lead['nome']})**"):
                 st.markdown("**1) Abordagem Inicial — WhatsApp**")
