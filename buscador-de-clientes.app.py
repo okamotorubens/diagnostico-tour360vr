@@ -1141,11 +1141,12 @@ TOUR360VR | Okamoto Mídias Visuais
                 link_mailto = f"mailto:?subject={urllib.parse.quote(assunto_email)}&body={urllib.parse.quote(corpo_email)}"
                 st.markdown(f'<a href="{link_mailto}" target="_blank"><button style="width:100%; background-color:#0284c7; color:white; border:none; padding:8px; border-radius:6px; font-weight:bold; cursor:pointer; margin-bottom:8px;">✉️ Enviar E-mail Pronto</button></a>', unsafe_allow_html=True)
 
-            # BARRA HORIZONTAL DE CONTROLOS CRM EM LARGURA TOTAL ABAIXO DAS COLUNAS
+            # BARRA HORIZONTAL DE CONTROLOS CRM ALINHADA PERFEITAMENTE
             st.markdown("<div style='border-top: 1px solid #334155; margin: 12px 0;'></div>", unsafe_allow_html=True)
             bar_col1, bar_col2, bar_col3 = st.columns([1.5, 3, 2.5])
             
             with bar_col1:
+                st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
                 if st.button(fav_label, key=f"fav_btn_{lead['id']}", use_container_width=True):
                     alternar_favorito_db(lead['id'], is_fav)
                     st.rerun()
