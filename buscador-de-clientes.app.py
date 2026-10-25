@@ -939,13 +939,8 @@ elif st.session_state.etapa == 2:
         st.markdown("### Inserir Empresa Manualmente no CRM")
         st.caption("Use esta opção para adicionar leads de rua, indicações ou empresas que não vieram na busca automática.")
         
-        tags_existentes_cad = sorted(list(set([l.get('categoria', 'Comércio') for l in base_leads]))) if base_leads else ["Comércio", "Vestuário", "Saúde", "Alimentação"]
-        
-        # Gerenciamento direto em session_state para persistir a categoria nova digitada
-        if 'manual_escolha_tag' not in st.session_state:
-            st.session_state.manual_escolha_tag = tags_existentes_cad[0] if tags_existentes_cad else "Comércio"
-        if 'manual_nova_tag_input' not in st.session_state:
-            st.session_state.manual_nova_tag_input = ""
+        # Atualização dinâmica das tags baseada diretamente nos leads atuais da base nuvem
+        tags_existentes_cad = sorted(list(set([l.get('category', l.get('categoria', 'Comércio')) for l in base_leads]))) if base_leads else ["Comércio", "Vestuário", "Saúde", "Alimentação"]
 
         with st.form("form_cadastro_manual"):
             m_col1, m_col2 = st.columns(2)
