@@ -171,6 +171,25 @@ def atualizar_followup_db(lead_id, nova_data):
     except Exception as e:
         st.error(f"Erro ao atualizar follow-up: {str(e)}")
 
+def obter_coordenadas_endereco(endereco_completo, cidade):
+    """Busca a latitude e longitude reais via Google Geocoding API para cadastros manuais."""
+    api_key = st.secrets.get("GOOGLE_API_KEY", None) or os.getenv("GOOGLE_API_KEY", None)
+    if not api_key:
+        return -21.1775, -47.8103 # Padrão Ribeirão Preto caso não tenha chave
+    
+    api_key_limpa = api_key.strip().replace('"', '').replace("'", "")
+    endereco_str = f"{endereco_completo}, {cidade}"
+    geo_url = f"https://maps.googleapis.com/maps/api/geocode/json?address={urllib.parse.quote(endereco_str)}&key={api_key_limpa}"
+    
+    try:
+        resp = requests.get(geo_url, timeout=5).json()
+        if resp.get("status") == "OK":
+            loc = resp["results"][0]["geometry"]["location"]
+            return float(loc["lat"]), float(loc["lng"])
+    except Exception:
+        pass
+    return -21.1775, -47.8103
+
 def revalidar_ficha_google(lead):
     api_key = st.secrets.get("GOOGLE_API_KEY", None) or os.getenv("GOOGLE_API_KEY", None)
     if not api_key:
@@ -757,7 +776,6 @@ def gerar_csv_excel_formatado(dados_leads):
     for row in dados_leads:
         criticos_str = " | ".join(row.get("pontos_criticos", [])) if isinstance(row.get("pontos_criticos"), list) else str(row.get("pontos_criticos", ""))
         
-        # Limpar quebras de linha das anotações para o CSV ficar perfeitamente alinhado em linha única
         anotacoes_brutas = row.get("anotacoes", "") or ""
         anotacoes_limpas = " ".join(anotacoes_brutas.splitlines())
 
@@ -974,6 +992,9 @@ elif st.session_state.etapa == 2:
             if not man_nome.strip() or not man_endereco.strip() or not categoria_final:
                 st.error("⚠️ Preencha o Nome, o Endereço e a Categoria/Nicho da empresa.")
             else:
+                with st.spinner("Geocodificando endereço e salvando na nuvem..."):
+                    lat_manual, lng_manual = obter_coordenadas_endereco(man_endereco.strip(), man_cidade)
+
                 pontos_criticos = []
                 oportunidades = []
                 score = 0
@@ -998,8 +1019,8 @@ elif st.session_state.etapa == 2:
                     "nome": man_nome.strip(),
                     "categoria": categoria_final.capitalize(),
                     "endereco": man_endereco.strip(),
-                    "latitude": -21.1775,
-                    "longitude": -47.8103,
+                    "latitude": lat_manual,
+                    "longitude": lng_manual,
                     "telefone": man_tel.strip() if man_tel else "(16) Contato via Ficha",
                     "whatsapp": man_zap.strip() if man_zap else "",
                     "website": man_site.strip(),
@@ -1023,7 +1044,7 @@ elif st.session_state.etapa == 2:
                     "obs_followup": ""
                 }
                 salvar_lead_db(lead_manual)
-                st.success(f"✅ Empresa '{man_nome}' cadastrada com sucesso com a tag '{categoria_final.capitalize()}'!")
+                st.success(f"✅ Empresa '{man_nome}' cadastrada e mapeada com sucesso!")
                 time.sleep(1.5)
                 mudar_etapa(3)
 
