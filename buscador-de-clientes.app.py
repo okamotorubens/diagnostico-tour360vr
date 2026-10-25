@@ -940,17 +940,22 @@ elif st.session_state.etapa == 2:
         st.caption("Use esta opção para adicionar leads de rua, indicações ou empresas que não vieram na busca automática.")
         
         tags_existentes_cad = sorted(list(set([l.get('categoria', 'Comércio') for l in base_leads]))) if base_leads else ["Comércio", "Vestuário", "Saúde", "Alimentação"]
-        opcoes_tag_cad = tags_existentes_cad + ["➕ Digitar Nova Categoria..."]
+        
+        # Gerenciamento direto em session_state para persistir a categoria nova digitada
+        if 'manual_escolha_tag' not in st.session_state:
+            st.session_state.manual_escolha_tag = tags_existentes_cad[0] if tags_existentes_cad else "Comércio"
+        if 'manual_nova_tag_input' not in st.session_state:
+            st.session_state.manual_nova_tag_input = ""
 
         with st.form("form_cadastro_manual"):
             m_col1, m_col2 = st.columns(2)
             with m_col1:
                 man_nome = st.text_input("Nome da Empresa *")
                 
-                escolha_cat_manual = st.selectbox("Categoria / Tag / Nicho *", options=opcoes_tag_cad)
+                opcoes_tag_cad = tags_existentes_cad + ["➕ Digitar Nova Categoria..."]
+                escolha_cat_manual = st.selectbox("Categoria / Tag / Nicho *", options=opcoes_tag_cad, key="widget_escolha_cat")
                 
-                # Campo de texto para nova categoria fora da seleção condicional estrita dentro do submit para evitar perda de foco
-                man_nicho_novo = st.text_input("Se escolheu 'Digitar Nova Categoria', digite aqui:", value="", placeholder="Ex: Ótica, Confeitaria, Imobiliária")
+                man_nicho_novo = st.text_input("Se escolheu 'Digitar Nova Categoria', digite aqui:", value="", key="widget_nova_cat_txt", placeholder="Ex: Ótica, Confeitaria, Imobiliária")
 
                 man_cidade = st.text_input("Cidade", value="Ribeirão Preto")
                 man_endereco = st.text_input("Endereço Completo", value="", placeholder="Ex: Rua Exemplo, 100 - Centro")
