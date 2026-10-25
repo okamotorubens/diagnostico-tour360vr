@@ -172,22 +172,32 @@ def atualizar_followup_db(lead_id, nova_data):
         st.error(f"Erro ao atualizar follow-up: {str(e)}")
 
 def obter_coordenadas_endereco(endereco_completo, cidade):
-    """Busca a latitude e longitude reais via Google Geocoding API para cadastros manuais."""
+    """Busca a latitude e longitude reais via Google Geocoding API e OpenStreetMap (fallback)."""
+    endereco_str = f"{endereco_completo}, {cidade}, Brasil"
+    
+    # 1. Tentar via Google Geocoding API
     api_key = st.secrets.get("GOOGLE_API_KEY", None) or os.getenv("GOOGLE_API_KEY", None)
-    if not api_key:
-        return -21.1775, -47.8103 # Padrão Ribeirão Preto caso não tenha chave
-    
-    api_key_limpa = api_key.strip().replace('"', '').replace("'", "")
-    endereco_str = f"{endereco_completo}, {cidade}"
-    geo_url = f"https://maps.googleapis.com/maps/api/geocode/json?address={urllib.parse.quote(endereco_str)}&key={api_key_limpa}"
-    
+    if api_key:
+        api_key_limpa = api_key.strip().replace('"', '').replace("'", "")
+        geo_url = f"https://maps.googleapis.com/maps/api/geocode/json?address={urllib.parse.quote(endereco_str)}&key={api_key_limpa}"
+        try:
+            resp = requests.get(geo_url, timeout=5).json()
+            if resp.get("status") == "OK":
+                loc = resp["results"][0]["geometry"]["location"]
+                return float(loc["lat"]), float(loc["lng"])
+        except Exception:
+            pass
+
+    # 2. Fallback via Nominatim (OpenStreetMap) caso o Google falhe
     try:
-        resp = requests.get(geo_url, timeout=5).json()
-        if resp.get("status") == "OK":
-            loc = resp["results"][0]["geometry"]["location"]
-            return float(loc["lat"]), float(loc["lng"])
+        nom_url = f"https://nominatim.openstreetmap.org/search?q={urllib.parse.quote(endereco_str)}&format=json&limit=1"
+        headers = {'User-Agent': 'Tour360VR-RadarComercial/1.0'}
+        resp_nom = requests.get(nom_url, headers=headers, timeout=5).json()
+        if resp_nom and len(resp_nom) > 0:
+            return float(resp_nom[0]["lat"]), float(resp_nom[0]["lon"])
     except Exception:
         pass
+
     return -21.1775, -47.8103
 
 def revalidar_ficha_google(lead):
@@ -992,7 +1002,7 @@ elif st.session_state.etapa == 2:
             if not man_nome.strip() or not man_endereco.strip() or not categoria_final:
                 st.error("⚠️ Preencha o Nome, o Endereço e a Categoria/Nicho da empresa.")
             else:
-                with st.spinner("Geocodificando endereço e salvando na nuvem..."):
+                with st.spinner("Geocodificando endereço exato e salvando na nuvem..."):
                     lat_manual, lng_manual = obter_coordenadas_endereco(man_endereco.strip(), man_cidade)
 
                 pontos_criticos = []
