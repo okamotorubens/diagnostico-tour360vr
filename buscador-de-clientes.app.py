@@ -739,7 +739,7 @@ def minerar_e_auditar_negocios(nome_empresa, nicho, cidade, bairro, rua, raio_km
     return []
 
 # -----------------------------------------------------------------------------
-# GERADOR DE CSV COMPLETO
+# GERADOR DE CSV COMPLETO (COM LIMPEZA DE QUEBRAS DE LINHA NAS ANOTAÇÕES)
 # -----------------------------------------------------------------------------
 def gerar_csv_excel_formatado(dados_leads):
     output = io.StringIO()
@@ -756,6 +756,11 @@ def gerar_csv_excel_formatado(dados_leads):
 
     for row in dados_leads:
         criticos_str = " | ".join(row.get("pontos_criticos", [])) if isinstance(row.get("pontos_criticos"), list) else str(row.get("pontos_criticos", ""))
+        
+        # Limpar quebras de linha das anotações para o CSV ficar perfeitamente alinhado em linha única
+        anotacoes_brutas = row.get("anotacoes", "") or ""
+        anotacoes_limpas = " ".join(anotacoes_brutas.splitlines())
+
         writer.writerow([
             row.get("id", ""),
             row.get("data_minacao", ""),
@@ -780,7 +785,7 @@ def gerar_csv_excel_formatado(dados_leads):
             row.get("fotos_total", ""),
             row.get("ultima_foto_dias", ""),
             "Não",
-            row.get("anotacoes", ""),
+            anotacoes_limpas,
             criticos_str,
             row.get("score_oportunidade", "")
         ])
@@ -942,7 +947,6 @@ elif st.session_state.etapa == 2:
         tags_existentes_cad = sorted(list(set([l.get('categoria', 'Comércio') for l in base_leads]))) if base_leads else ["Comércio", "Vestuário", "Saúde", "Alimentação"]
         opcoes_tag_cad = tags_existentes_cad + ["➕ Digitar Nova Categoria..."]
 
-        # Variáveis fora do form para evitar perda de estado com Enter ou recarregamentos
         man_nome = st.text_input("Nome da Empresa *", key="input_man_nome")
         escolha_cat_manual = st.selectbox("Categoria / Tag / Nicho *", options=opcoes_tag_cad, key="input_escolha_cat")
         
