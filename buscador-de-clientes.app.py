@@ -939,7 +939,6 @@ elif st.session_state.etapa == 2:
         st.markdown("### Inserir Empresa Manualmente no CRM")
         st.caption("Use esta opção para adicionar leads de rua, indicações ou empresas que não vieram na busca automática.")
         
-        # Tags já salvas no banco
         tags_existentes_cad = sorted(list(set([l.get('categoria', 'Comércio') for l in base_leads]))) if base_leads else ["Comércio", "Vestuário", "Saúde", "Alimentação"]
         opcoes_tag_cad = tags_existentes_cad + ["➕ Digitar Nova Categoria..."]
 
@@ -948,11 +947,10 @@ elif st.session_state.etapa == 2:
             with m_col1:
                 man_nome = st.text_input("Nome da Empresa *")
                 
-                # Seleção ou criação de categoria/tag
                 escolha_cat_manual = st.selectbox("Categoria / Tag / Nicho *", options=opcoes_tag_cad)
-                man_nicho_novo = ""
-                if escolha_cat_manual == "➕ Digitar Nova Categoria...":
-                    man_nicho_novo = st.text_input("Digite a Nova Categoria / Nicho *", value="", placeholder="Ex: Ótica, Confeitaria, Imobiliária")
+                
+                # Campo de texto para nova categoria fora da seleção condicional estrita dentro do submit para evitar perda de foco
+                man_nicho_novo = st.text_input("Se escolheu 'Digitar Nova Categoria', digite aqui:", value="", placeholder="Ex: Ótica, Confeitaria, Imobiliária")
 
                 man_cidade = st.text_input("Cidade", value="Ribeirão Preto")
                 man_endereco = st.text_input("Endereço Completo", value="", placeholder="Ex: Rua Exemplo, 100 - Centro")
@@ -966,7 +964,10 @@ elif st.session_state.etapa == 2:
             btn_salvar_manual = st.form_submit_button("💾 Salvar Lead Manualmente no CRM", use_container_width=True)
             
             if btn_salvar_manual:
-                categoria_final = man_nicho_novo.strip() if escolha_cat_manual == "➕ Digitar Nova Categoria..." else escolha_cat_manual
+                if escolha_cat_manual == "➕ Digitar Nova Categoria...":
+                    categoria_final = man_nicho_novo.strip()
+                else:
+                    categoria_final = escolha_cat_manual
                 
                 if not man_nome.strip() or not man_endereco.strip() or not categoria_final:
                     st.error("Preencha o Nome, a Categoria/Nicho e o Endereço da empresa.")
@@ -1020,7 +1021,7 @@ elif st.session_state.etapa == 2:
                         "obs_followup": ""
                     }
                     salvar_lead_db(lead_manual)
-                    st.success(f"Empresa '{man_nome}' cadastrada com sucesso! Vá para o Módulo 3 para gerenciá-la.")
+                    st.success(f"Empresa '{man_nome}' cadastrada com sucesso com a tag '{categoria_final.capitalize()}'!")
                     time.sleep(1.5)
                     mudar_etapa(3)
 
@@ -1293,24 +1294,6 @@ Montei um relatório curto de diagnóstico em PDF. Posso te enviar por aqui para
                 st.markdown(f'<div class="script-box">{script_wa}</div>', unsafe_allow_html=True)
 
                 st.markdown("**2) Abordagem Inicial — E-mail**")
-                script_email = f"""Assunto: Oportunidade de Presença Digital: {lead['nome']} no Google
-
-Olá! Analisei o perfil da {lead['nome']} no Google e gostaria de compartilhar uma oportunidade importante.
-
-Identifiquei 3 pontos críticos que estão impactando a confiança de novos clientes:
-1. Ausência de Tour Virtual 360° navegável (seus concorrentes levam vantagem visual).
-2. Perfil estático com fotos e informações desatualizadas.
-3. Falta de otimização de palavras-chave para o setor de {lead['categoria']}.
-
-Temos soluções para transformar a vitrine do seu negócio no Google. Anexo um diagnóstico em PDF com a análise detalhada.
-
-Fico à disposição para conversarmos!
-
-Atenciosamente,
-
-Rubens Okamoto
-TOUR360VR | Okamoto Mídias Visuais
-(16) 99133-2121 | tour360vr.com.br"""
                 script_email = f"""Assunto: Oportunidade de Presença Digital: {lead['nome']} no Google
 
 Olá! Analisei o perfil da {lead['nome']} no Google e gostaria de compartilhar uma oportunidade importante.
