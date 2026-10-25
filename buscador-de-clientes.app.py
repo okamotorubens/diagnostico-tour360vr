@@ -939,96 +939,94 @@ elif st.session_state.etapa == 2:
         st.markdown("### Inserir Empresa Manualmente no CRM")
         st.caption("Use esta opção para adicionar leads de rua, indicações ou empresas que não vieram na busca automática.")
         
-        # Atualização dinâmica das tags baseada diretamente nos leads atuais da base nuvem
-        tags_existentes_cad = sorted(list(set([l.get('category', l.get('categoria', 'Comércio')) for l in base_leads]))) if base_leads else ["Comércio", "Vestuário", "Saúde", "Alimentação"]
+        tags_existentes_cad = sorted(list(set([l.get('categoria', 'Comércio') for l in base_leads]))) if base_leads else ["Comércio", "Vestuário", "Saúde", "Alimentação"]
+        opcoes_tag_cad = tags_existentes_cad + ["➕ Digitar Nova Categoria..."]
 
-        with st.form("form_cadastro_manual"):
-            m_col1, m_col2 = st.columns(2)
-            with m_col1:
-                man_nome = st.text_input("Nome da Empresa *")
-                
-                opcoes_tag_cad = tags_existentes_cad + ["➕ Digitar Nova Categoria..."]
-                escolha_cat_manual = st.selectbox("Categoria / Tag / Nicho *", options=opcoes_tag_cad, key="widget_escolha_cat")
-                
-                man_nicho_novo = st.text_input("Se escolheu 'Digitar Nova Categoria', digite aqui:", value="", key="widget_nova_cat_txt", placeholder="Ex: Ótica, Confeitaria, Imobiliária")
+        # Variáveis fora do form para evitar perda de estado com Enter ou recarregamentos
+        man_nome = st.text_input("Nome da Empresa *", key="input_man_nome")
+        escolha_cat_manual = st.selectbox("Categoria / Tag / Nicho *", options=opcoes_tag_cad, key="input_escolha_cat")
+        
+        man_nicho_novo = ""
+        if escolha_cat_manual == "➕ Digitar Nova Categoria...":
+            man_nicho_novo = st.text_input("Digite a nova Categoria / Nicho *", placeholder="Ex: Ótica, Confeitaria, Imobiliária", key="input_man_nicho_novo")
 
-                man_cidade = st.text_input("Cidade", value="Ribeirão Preto")
-                man_endereco = st.text_input("Endereço Completo", value="", placeholder="Ex: Rua Exemplo, 100 - Centro")
-            with m_col2:
-                man_tel = st.text_input("Telefone / Contato", value="", placeholder="Ex: (16) 3333-4444")
-                man_zap = st.text_input("WhatsApp (apenas números com DDD)", value="", placeholder="Ex: 16999999999")
-                man_site = st.text_input("Website (Opcional)", value="", placeholder="Ex: https://www.site.com.br")
-                man_nota = st.number_input("Nota Média Google (0 a 5)", min_value=0.0, max_value=5.0, value=5.0, step=0.1)
-                man_av = st.number_input("Total de Avaliações", min_value=0, max_value=5000, value=10, step=1)
+        m_col1, m_col2 = st.columns(2)
+        with m_col1:
+            man_cidade = st.text_input("Cidade", value="Ribeirão Preto", key="input_man_cid")
+            man_endereco = st.text_input("Endereço Completo *", value="", placeholder="Ex: Rua Exemplo, 100 - Centro", key="input_man_end")
+            man_tel = st.text_input("Telefone / Contato", value="", placeholder="Ex: (16) 3333-4444", key="input_man_tel")
+        with m_col2:
+            man_zap = st.text_input("WhatsApp (apenas números com DDD)", value="", placeholder="Ex: 16999999999", key="input_man_zap")
+            man_site = st.text_input("Website (Opcional)", value="", placeholder="Ex: https://www.site.com.br", key="input_man_site")
+            man_nota = st.number_input("Nota Média Google (0 a 5)", min_value=0.0, max_value=5.0, value=5.0, step=0.1, key="input_man_nota")
+            man_av = st.number_input("Total de Avaliações", min_value=0, max_value=5000, value=10, step=1, key="input_man_av")
 
-            btn_salvar_manual = st.form_submit_button("💾 Salvar Lead Manualmente no CRM", use_container_width=True)
+        if st.button("💾 Salvar Lead Manualmente no CRM", use_container_width=True, type="primary"):
+            if escolha_cat_manual == "➕ Digitar Nova Categoria...":
+                categoria_final = man_nicho_novo.strip()
+            else:
+                categoria_final = escolha_cat_manual
             
-            if btn_salvar_manual:
-                if escolha_cat_manual == "➕ Digitar Nova Categoria...":
-                    categoria_final = man_nicho_novo.strip()
-                else:
-                    categoria_final = escolha_cat_manual
+            if not man_nome.strip() or not man_endereco.strip() or not categoria_final:
+                st.error("⚠️ Preencha o Nome, o Endereço e a Categoria/Nicho da empresa.")
+            else:
+                pontos_criticos = []
+                oportunidades = []
+                score = 0
+                has_https = man_site.startswith("https://") if man_site else False
                 
-                if not man_nome.strip() or not man_endereco.strip() or not categoria_final:
-                    st.error("Preencha o Nome, a Categoria/Nicho e o Endereço da empresa.")
-                else:
-                    pontos_criticos = []
-                    oportunidades = []
-                    score = 0
-                    has_https = man_site.startswith("https://") if man_site else False
-                    
-                    if not man_site:
-                        pontos_criticos.append("Sem site oficial vinculado à ficha do Google")
-                        oportunidades.append("Desenvolvimento de Landing Page / Website Responsivo")
-                        score += 30
-                    if man_av < 30:
-                        pontos_criticos.append(f"Volume crítico de avaliações ({man_av} total)")
-                        oportunidades.append("Estratégia Acelerada de Reputação e Gestão de Avaliações")
-                        score += 25
-                    pontos_criticos.append("Oportunidade de Imersão: Implantação de Tour Virtual 360°")
-                    oportunidades.append("Fotografia 360° Imersiva e Publicação no Google Street View")
+                if not man_site:
+                    pontos_criticos.append("Sem site oficial vinculado à ficha do Google")
+                    oportunidades.append("Desenvolvimento de Landing Page / Website Responsivo")
+                    score += 30
+                if man_av < 30:
+                    pontos_criticos.append(f"Volume crítico de avaliações ({man_av} total)")
+                    oportunidades.append("Estratégia Acelerada de Reputação e Gestão de Avaliações")
                     score += 25
+                pontos_criticos.append("Oportunidade de Imersão: Implantação de Tour Virtual 360°")
+                oportunidades.append("Fotografia 360° Imersiva e Publicação no Google Street View")
+                score += 25
 
-                    lead_manual = {
-                        "data_minacao": datetime.now().strftime('%d/%m/%Y %H:%M'),
-                        "cidade_busca": man_cidade,
-                        "bairro_busca": "Manual",
-                        "nome": man_nome.strip(),
-                        "categoria": categoria_final.capitalize(),
-                        "endereco": man_endereco.strip(),
-                        "latitude": -21.1775,
-                        "longitude": -47.8103,
-                        "telefone": man_tel.strip() if man_tel else "(16) Contato via Ficha",
-                        "whatsapp": man_zap.strip() if man_zap else "",
-                        "website": man_site.strip(),
-                        "website_https": has_https,
-                        "instagram": f"https://instagram.com/{re.sub(r'[^a-zA-Z0-9]', '', man_nome.lower())}",
-                        "facebook": f"https://facebook.com/{re.sub(r'[^a-zA-Z0-9]', '', man_nome.lower())}",
-                        "foto_url": "",
-                        "nota": man_nota,
-                        "total_avaliacoes": man_av,
-                        "reivindicada": True,
-                        "fotos_total": 5,
-                        "ultima_foto_dias": 30,
-                        "tour_360": False,
-                        "status_crm": "🆕 Novo Lead",
-                        "pontos_criticos": pontos_criticos,
-                        "oportunidades": oportunidades,
-                        "score_oportunidade": min(score, 100),
-                        "anotacoes": f"[{datetime.now().strftime('%d/%m/%Y %H:%M')}] Cadastrado manualmente no sistema.",
-                        "favorito": True,
-                        "data_followup": str(date.today()),
-                        "obs_followup": ""
-                    }
-                    salvar_lead_db(lead_manual)
-                    st.success(f"Empresa '{man_nome}' cadastrada com sucesso com a tag '{categoria_final.capitalize()}'!")
-                    time.sleep(1.5)
-                    mudar_etapa(3)
+                lead_manual = {
+                    "data_minacao": datetime.now().strftime('%d/%m/%Y %H:%M'),
+                    "cidade_busca": man_cidade,
+                    "bairro_busca": "Manual",
+                    "nome": man_nome.strip(),
+                    "categoria": categoria_final.capitalize(),
+                    "endereco": man_endereco.strip(),
+                    "latitude": -21.1775,
+                    "longitude": -47.8103,
+                    "telefone": man_tel.strip() if man_tel else "(16) Contato via Ficha",
+                    "whatsapp": man_zap.strip() if man_zap else "",
+                    "website": man_site.strip(),
+                    "website_https": has_https,
+                    "instagram": f"https://instagram.com/{re.sub(r'[^a-zA-Z0-9]', '', man_nome.lower())}",
+                    "facebook": f"https://facebook.com/{re.sub(r'[^a-zA-Z0-9]', '', man_nome.lower())}",
+                    "foto_url": "",
+                    "nota": man_nota,
+                    "total_avaliacoes": man_av,
+                    "reivindicada": True,
+                    "fotos_total": 5,
+                    "ultima_foto_dias": 30,
+                    "tour_360": False,
+                    "status_crm": "🆕 Novo Lead",
+                    "pontos_criticos": pontos_criticos,
+                    "oportunidades": oportunidades,
+                    "score_oportunidade": min(score, 100),
+                    "anotacoes": f"[{datetime.now().strftime('%d/%m/%Y %H:%M')}] Cadastrado manualmente no sistema.",
+                    "favorito": True,
+                    "data_followup": str(date.today()),
+                    "obs_followup": ""
+                }
+                salvar_lead_db(lead_manual)
+                st.success(f"✅ Empresa '{man_nome}' cadastrada com sucesso com a tag '{categoria_final.capitalize()}'!")
+                time.sleep(1.5)
+                mudar_etapa(3)
 
     if len(base_leads) > 0:
         st.divider()
         st.info(f"O seu banco na nuvem possui **{len(base_leads)} leads salvos permanentemente**.")
-        if st.button("Ver Base Completa de Leads ➡️", type="primary"):
+        if st.button("Ver Base Completa de Leads ➡️", type="secondary"):
             mudar_etapa(3)
 
 # -----------------------------------------------------------------------------
