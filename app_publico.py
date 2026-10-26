@@ -28,13 +28,13 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# CSS Rígido: Zeramento de margens e ocultação de rodapé
+# CSS Rígido: Zeramento de margens, otimização mobile e UI refinada
 custom_css = """
 <style>
     html, body, [data-testid="stAppViewContainer"], .main, .stApp {
         overflow: hidden !important;
         background-color: #FFFFFF !important;
-        color: #000000 !important;
+        color: #111111 !important;
         padding-top: 0rem !important;
         margin-top: 0rem !important;
     }
@@ -98,40 +98,40 @@ custom_css = """
     }
 
     .card-resultado-compacto {
-        background-color: #F0F4F8 !important;
-        border: 1px solid #D0D7DE !important;
-        border-radius: 10px !important;
-        padding: 10px 16px !important;
-        margin: 0.2rem auto !important;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.04) !important;
+        background: linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%) !important;
+        border: 1.5px solid #CBD5E1 !important;
+        border-radius: 12px !important;
+        padding: 14px 18px !important;
+        margin: 0.4rem auto !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05) !important;
     }
 
     .titulo-principal {
         text-align: center;
-        color: #111111 !important;
-        font-size: 2.1rem;
+        color: #0F172A !important;
+        font-size: 1.9rem;
         font-weight: 800;
-        margin-bottom: 0.1rem;
+        margin-bottom: 0.2rem;
         line-height: 1.2;
         font-family: 'Arial', sans-serif;
     }
 
     .instrucao-subtitulo {
         text-align: center;
-        color: #444444 !important;
-        font-size: 1.05rem;
+        color: #475569 !important;
+        font-size: 1.0rem;
         font-weight: 600;
-        margin-bottom: 0.4rem;
+        margin-bottom: 0.6rem;
         font-family: 'Arial', sans-serif;
     }
 
     .titulo-secundario {
         text-align: center;
-        color: #111111 !important;
-        font-size: 1.1rem;
+        color: #0F172A !important;
+        font-size: 1.05rem;
         font-weight: 700;
-        margin-top: 0.4rem;
-        margin-bottom: 0.2rem;
+        margin-top: 0.6rem;
+        margin-bottom: 0.3rem;
         font-family: 'Arial', sans-serif;
     }
 
@@ -143,31 +143,36 @@ custom_css = """
     .stTextInput input {
         background-color: #FFFFFF !important;
         color: #000000 !important;
-        border-color: #CCCCCC !important;
     }
 
     .stTextInput input {
-        border: 1px solid #CCCCCC !important;
-        border-radius: 6px !important;
+        border: 1.5px solid #CBD5E1 !important;
+        border-radius: 8px !important;
         font-size: 0.95rem !important;
-        padding: 0.4rem 0.8rem !important;
+        padding: 0.5rem 0.8rem !important;
         text-align: center !important;
-        color: #000000 !important;
+        color: #0F172A !important;
+        box-shadow: inset 0 1px 2px rgba(0,0,0,0.02);
+    }
+    
+    .stTextInput input:focus {
+        border-color: #1565C0 !important;
+        box-shadow: 0 0 0 2px rgba(21, 101, 192, 0.15) !important;
     }
 
     .rotulo-campo {
         text-align: center !important;
-        color: #111111 !important;
-        font-size: 0.9rem !important;
+        color: #1E293B !important;
+        font-size: 0.88rem !important;
         font-weight: 700 !important;
-        margin-top: 0.15rem !important;
+        margin-top: 0.3rem !important;
         margin-bottom: 0.05rem !important;
     }
     .subtexto-label {
         font-size: 0.75rem !important;
-        color: #666666 !important;
+        color: #64748B !important;
         text-align: center !important;
-        margin-bottom: 0.15rem !important;
+        margin-bottom: 0.2rem !important;
     }
 
     div[data-testid="stButton"], div.stButton {
@@ -175,32 +180,38 @@ custom_css = """
         justify-content: center !important;
         align-items: center !important;
         width: 100% !important;
-        margin: 0.3rem auto !important;
+        margin: 0.4rem auto !important;
     }
     .stButton > button {
         background-color: #1565C0 !important;
         color: #FFFFFF !important;
         font-size: 1rem !important;
         font-weight: bold !important;
-        border-radius: 6px !important;
+        border-radius: 8px !important;
         border: none !important;
-        padding: 0.5rem 2rem !important;
+        padding: 0.6rem 2rem !important;
         cursor: pointer !important;
         width: 100% !important;
         max-width: 520px !important;
+        transition: background-color 0.2s ease;
+        box-shadow: 0 4px 6px rgba(21, 101, 192, 0.2);
+    }
+    .stButton > button:hover {
+        background-color: #0D47A1 !important;
     }
 
     .card-sucesso-destaque {
-        background-color: #E8F5E9 !important;
-        border: 2px solid #2E7D32 !important;
-        border-radius: 8px !important;
-        padding: 10px 14px !important;
+        background-color: #ECFDF5 !important;
+        border: 2px solid #10B981 !important;
+        border-radius: 10px !important;
+        padding: 12px 16px !important;
         text-align: center !important;
-        color: #1B5E20 !important;
-        font-size: 1rem !important;
+        color: #065F46 !important;
+        font-size: 0.95rem !important;
         font-weight: 700 !important;
-        margin: 0.4rem auto !important;
+        margin: 0.6rem auto !important;
         max-width: 520px !important;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.1);
     }
 </style>
 """
@@ -309,7 +320,7 @@ def enviar_lead_zoho_bigin(nome_lead, email_lead, whatsapp_lead, empresa_nome, e
         return False
 
 # ==========================================
-# CÁLCULO DE SCORE IDENTICO AO SISTEMA INTERNO
+# CÁLCULO DE SCORE MELHORADO E MAIS FLEXÍVEL
 # ==========================================
 def consultar_score_google_rigoroso(nome_empresa):
     url = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={requests.utils.quote(nome_empresa)}&key={GOOGLE_API_KEY}"
@@ -332,6 +343,7 @@ def consultar_score_google_rigoroso(nome_empresa):
 
             # 1. Status Operacional
             if details.get("business_status") == "OPERATIONAL":
+                score += 15
                 criterios_eval.append("1. Status Operacional: Ativo no Google Maps")
             else:
                 criterios_eval.append("1. Status Operacional: Pendente / Inativo")
@@ -406,9 +418,8 @@ def desenhar_rodape_fixo(canvas, doc):
     styles = getSampleStyleSheet()
     style_footer_link = ParagraphStyle('FooterLink', parent=styles['Normal'], fontName='Helvetica', fontSize=8, textColor=colors.HexColor('#444444'), alignment=1)
     
-    # URL oficial direta e limpa para WhatsApp
     link_whats_rodape = "https://api.whatsapp.com/send?phone=5516996222121"
-    txt_rodape_html = f"Tour360VR   &nbsp;&nbsp;•&nbsp;&nbsp;   Rubens Okamoto   &nbsp;&nbsp;•&nbsp;&nbsp;   <a href='{link_whats_rodape}' color='#1565C0'>WhatsApp: (16) 99622-2121</a>   &nbsp;&nbsp;•&nbsp;&nbsp;   <a href='mailto:contato@tour360vr.com.br' color='#1565C0'>contato@tour360vr.com.br</a>   &nbsp;&nbsp;•&nbsp;&nbsp;   <a href='https://tour360vr.com.br/' color='#1565C0'>https://tour360vr.com.br/</a>"
+    txt_rodape_html = f"Tour360VR    &nbsp;&nbsp;•&nbsp;&nbsp;    Rubens Okamoto    &nbsp;&nbsp;•&nbsp;&nbsp;    <a href='{link_whats_rodape}' color='#1565C0'>WhatsApp: (16) 99622-2121</a>    &nbsp;&nbsp;•&nbsp;&nbsp;    <a href='mailto:contato@tour360vr.com.br' color='#1565C0'>contato@tour360vr.com.br</a>    &nbsp;&nbsp;•&nbsp;&nbsp;    <a href='https://tour360vr.com.br/' color='#1565C0'>https://tour360vr.com.br/</a>"
     
     p = Paragraph(txt_rodape_html, style_footer_link)
     p.wrapOn(canvas, 525, 20)
@@ -416,7 +427,6 @@ def desenhar_rodape_fixo(canvas, doc):
     canvas.restoreState()
 
 def obter_logo_tour360vr():
-    """Carrega o ficheiro local logo_tour_transparente.png"""
     caminhos_possiveis = [
         "logo_tour_transparente.png",
         "ativos/logo_tour_transparente.png",
@@ -437,7 +447,6 @@ def obter_logo_tour360vr():
     return None
 
 def criar_imagem_proporcional(caminho_ou_buffer, largura_max_cm=5.2, altura_max_cm=1.8):
-    """Calcula a proporção da logo permitindo maior destaque visual"""
     try:
         img_reader = ImageReader(caminho_ou_buffer)
         orig_w, orig_h = img_reader.getSize()
@@ -478,7 +487,6 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
 
         elements = []
         
-        # CABEÇALHO COM LOGO MAIOR
         src_logo = obter_logo_tour360vr()
         txt_cabecalho = Paragraph("<b>AUDITORIA DE POSICIONAMENTO GOOGLE MAPS</b><br/><font size=8.5 color='#666666'>Relatório Técnico de Visibilidade Digital</font>", style_title_hdr)
         
@@ -500,18 +508,15 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
         elements.append(Spacer(1, 4))
         elements.append(HRFlowable(width="100%", thickness=2, color=colors.HexColor('#1565C0'), spaceBefore=2, spaceAfter=12))
         
-        # Dados da Empresa Analisada
         elements.append(Paragraph(f"<b>Empresa Analisada:</b> {empresa_nome}", style_sub_maior))
         elements.append(Spacer(1, 2))
         elements.append(Paragraph(f"<b>Endereço Registrado:</b> {endereco}", style_body_maior))
         
-        # Pontuação de Otimização
         elements.append(Spacer(1, 14))
         cor_score_hex = obter_cor_score(score)
         elements.append(Paragraph(f"PONTUAÇÃO DE OTIMIZAÇÃO: <font color='{cor_score_hex}'><b>{score} / 100 PONTOS</b></font>", ParagraphStyle('ScorePDFDestaque', parent=style_title, fontSize=13, leading=16)))
         elements.append(Spacer(1, 14))
 
-        # Tabela de Critérios
         elements.append(Paragraph("<b>Análise Detalhada dos Critérios Avaliados:</b>", style_sub_maior))
         elements.append(Spacer(1, 6))
         
@@ -531,16 +536,13 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
         ]))
         elements.append(t)
         
-        # Plano de Ação
         elements.append(Spacer(1, 14))
         elements.append(Paragraph("<b>Plano de Ação Sugerido para Alta Visibilidade:</b>", style_sub_maior))
         elements.append(Spacer(1, 4))
         elements.append(Paragraph("1. Otimização técnica da Ficha Google (categorias estratégicas, atributos e SEO local).<br/>2. Implantação de Tour Virtual 360° Interativo integrado ao Google Street View.<br/>3. Produção de Fotografia e Vídeo Profissional para galeria e redes sociais.<br/>4. Gestão ativa de reputação, avaliações e integração multicanais.", style_body_maior))
         
-        # ESPAÇAMENTO DE RESPIRO ANTES DO CONTAINER CTA
         elements.append(Spacer(1, 20))
         
-        # QUADRO CTA COM RESPIRO INTERNO E QUEBRA EM 2 LINHAS
         style_cta_title_destaque = ParagraphStyle('CTATitleDestaque', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=12, leading=15, textColor=colors.HexColor('#0F2537'), alignment=1)
         style_cta_linha1 = ParagraphStyle('CTALinha1', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, leading=14, textColor=colors.HexColor('#1565C0'), alignment=1)
         style_cta_linha2 = ParagraphStyle('CTALinha2', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=14, textColor=colors.HexColor('#333333'), alignment=1)
@@ -550,7 +552,6 @@ def gerar_pdf_bytes_in_memory(empresa_nome, endereco, score, criterios):
         txt_frase_l1 = "Aumente a visibilidade e autoridade da sua marca."
         txt_frase_l2 = "Estruturamos sua Ficha Google, criamos o Tour Virtual 360°, produzimos Fotos &amp; Vídeos Profissionais<br/>e gerenciamos suas Redes Sociais."
         
-        # URL WhatsApp direta para acionamento universal em leitores de PDF
         link_whats_cta = "https://api.whatsapp.com/send?phone=5516996222121"
         
         txt_botao_html = f'<a href="{link_whats_cta}" color="#FFFFFF"><b>Fale agora com nossa equipe</b></a>'
@@ -712,11 +713,11 @@ if "resultado_busca" in st.session_state:
     
     html_card_resultado = f"""
     <div class="card-resultado-compacto">
-        <div style="text-align: center; color: #111111; font-size: 1.2rem; font-weight: 800; margin-bottom: 2px;">Empresa Localizada: {dados["nome"]}</div>
-        <p style="text-align: center; color: #555555; font-size: 0.88rem; margin-top: 0; margin-bottom: 4px;">📍 {dados["endereco"]}</p>
-        <p style="text-align: center; font-weight: 700; font-size: 1rem; margin-top: 2px; margin-bottom: 2px;">Pontuação Geral de Otimização</p>
-        <div style="text-align: center; font-size: 3rem; font-weight: 900; line-height: 1; margin: 2px 0 6px 0; color: {cor_nota} !important;">{dados["score"]} / 100</div>
-        <div style="background-color: #FFFDE7; border: 1px solid #FBC02D; border-radius: 6px; padding: 5px 8px; text-align: center; color: #5D4037; font-size: 0.88rem; font-weight: 600;">
+        <div style="text-align: center; color: #0F172A; font-size: 1.15rem; font-weight: 800; margin-bottom: 2px;">Empresa Localizada: {dados["nome"]}</div>
+        <p style="text-align: center; color: #475569; font-size: 0.88rem; margin-top: 0; margin-bottom: 6px;">📍 {dados["endereco"]}</p>
+        <p style="text-align: center; font-weight: 700; font-size: 0.95rem; color: #1E293B; margin-top: 2px; margin-bottom: 2px;">Pontuação Geral de Otimização</p>
+        <div style="text-align: center; font-size: 2.8rem; font-weight: 900; line-height: 1; margin: 4px 0 8px 0; color: {cor_nota} !important;">{dados["score"]} / 100</div>
+        <div style="background-color: #FEF3C7; border: 1px solid #F59E0B; border-radius: 6px; padding: 6px 10px; text-align: center; color: #92400E; font-size: 0.86rem; font-weight: 600;">
             ⚠️ Identificamos oportunidades de melhoria que podem estar reduzindo a visibilidade do seu negócio para novos clientes.
         </div>
     </div>
