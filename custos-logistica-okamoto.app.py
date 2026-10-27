@@ -176,12 +176,11 @@ def calcular_distancia_maps(destino_endereco):
             distancia_km_ida = distancia_metros / 1000.0
             distancia_ida_volta = round(distancia_km_ida * 2)
             
-            # Conta os pedágios da ida e multiplica por 2 (ida e volta)
             pedagios_ida = 0.0
             for step in leg.get('steps', []):
                 instrucao = step.get('html_instructions', '').lower()
                 if 'pedágio' in instrucao or 'toll' in instrucao:
-                    pedagios_ida += 15.0 # Média estimada por praça de pedágio
+                    pedagios_ida += 15.0
             
             pedagio_ida_volta = pedagios_ida * 2
             
@@ -189,7 +188,7 @@ def calcular_distancia_maps(destino_endereco):
     except Exception:
         pass
     return None, 0.0
-    
+
 class NumberedCanvasProposal(canvas.Canvas):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -547,13 +546,16 @@ def gerar_pdf_interno(dados):
     story.append(Spacer(1, 4))
     
     combustivel_detalhe = f"Consumo: {dados['consumo_veiculo']} km/L | {dados['litros_gastos']:.1f}L a {fmt_brl(dados['preco_combustivel'])}/L"
+    trajeto_detalhe = f"Origem: Rua Manoel Achê, 327, Ribeirão Preto - SP<br/>Destino: {dados.get('local', 'Local')} — {dados['cidade']}/{dados['estado']}<br/>(Cálculo automático Google Maps - Ida e Volta)"
+    
     custo_logistica_parcial = dados['custo_combustivel'] + dados['pedagios'] + dados['custo_estacionamento'] + dados['custo_hospedagem_total'] + dados['custo_almoco'] + dados['custo_jantar'] + dados['custo_freelancer'] + dados['custo_outros']
     
     tabela_log_dados = [
         [Paragraph("<b>Parâmetro</b>", style_bold), Paragraph("<b>Detalhe / Métrica</b>", style_bold), Paragraph("<b>Custo Parcial</b>", style_bold)],
-        [Paragraph("Distância Total", style_corpo), Paragraph(f"{dados['distancia']} km (Ida e Volta)", style_corpo), Paragraph("&nbsp;&nbsp;-", style_corpo)],
+        [Paragraph("Trajeto / Rota", style_corpo), Paragraph(trajeto_detalhe, style_corpo), Paragraph("&nbsp;&nbsp;-", style_corpo)],
+        [Paragraph("Distância Total", style_corpo), Paragraph(f"{dados['distancia']} km (Ida e Volta calculada)", style_corpo), Paragraph("&nbsp;&nbsp;-", style_corpo)],
         [Paragraph("Combustível", style_corpo), Paragraph(combustivel_detalhe, style_corpo), Paragraph(f"&nbsp;&nbsp;{fmt_brl(dados['custo_combustivel'])}", style_corpo)],
-        [Paragraph("Pedágios", style_corpo), Paragraph("Tarifas de estrada", style_corpo), Paragraph(f"&nbsp;&nbsp;{fmt_brl(dados['pedagios'])}", style_corpo)],
+        [Paragraph("Pedágios", style_corpo), Paragraph("Tarifas de estrada (Ida e Volta estimadas)", style_corpo), Paragraph(f"&nbsp;&nbsp;{fmt_brl(dados['pedagios'])}", style_corpo)],
         [Paragraph("Estacionamento", style_corpo), Paragraph("Estacionamento / Local", style_corpo), Paragraph(f"&nbsp;&nbsp;{fmt_brl(dados['custo_estacionamento'])}", style_corpo)],
         [Paragraph("Hospedagem", style_corpo), Paragraph("Diárias de hospedagem", style_corpo), Paragraph(f"&nbsp;&nbsp;{fmt_brl(dados['custo_hospedagem_total'])}", style_corpo)],
         [Paragraph("Almoço", style_corpo), Paragraph("Refeição", style_corpo), Paragraph(f"&nbsp;&nbsp;{fmt_brl(dados['custo_almoco'])}", style_corpo)],
@@ -811,7 +813,7 @@ if st.session_state.current_tab_idx == 0:
         if km_calc is not None:
             st.session_state.distancia_ida_volta = km_calc
             st.session_state.pedagio_total = pedagio_calc
-            st.success(f"Rota calculada! Distância: {km_calc} km | Pedágios estimados: {fmt_brl(pedagio_calc)}")
+            st.success(f"Rota calculada! Distância Total (Ida e Volta): {km_calc} km | Pedágios Totais (Ida e Volta): {fmt_brl(pedagio_calc)}")
         else:
             st.warning("⚠️ Não foi possível calcular automaticamente. Verifique o endereço e a chave da API do Google Maps.")
 
@@ -1181,11 +1183,9 @@ elif st.session_state.current_tab_idx == 3:
     
     if supabase:
         try:
-            # Buscar Propostas
             res_props = supabase.table("historico_propostas").select("*").order("created_at", desc=True).limit(20).execute()
             propostas = res_props.data if res_props.data else []
 
-            # Métricas rápidas no topo
             total_props = len(propostas)
             aprovadas = sum(1 for p in propostas if p.get('status') == 'Aprovada')
             pendentes = sum(1 for p in propostas if p.get('status') == 'Pendente')
@@ -1202,7 +1202,7 @@ elif st.session_state.current_tab_idx == 3:
 
             for prop in propostas:
                 with st.container():
-                    col_info1, col_info2, col_info3, col_info4 = st.columns([2.5, 2.0, 1.5, 1.5])
+                    col_info1, col_info2, col_info3, col_info4, col_info5 = st.columns([2.5, 2.0, 1.5, 1.3, 1.3])
                     with col_info1:
                         st.markdown(f"**{prop.get('contato')}** ({prop.get('empresa')})<br><small>{prop.get('nome_servico')}</small>", unsafe_allow_html=True)
                     with col_info2:
@@ -1214,7 +1214,7 @@ elif st.session_state.current_tab_idx == 3:
                             supabase.table("historico_propostas").update({"status": novo_status}).eq("id", prop['id']).execute()
                             st.rerun()
                     with col_info4:
-                        if st.button("✏️ Carregar / Editar", key=f"edit_{prop['id']}"):
+                        if st.button("✏️ Editar", key=f"edit_{prop['id']}"):
                             try:
                                 dados_antigos = json.loads(prop['dados_completos'])
                                 for k, v in dados_antigos.items():
@@ -1230,6 +1230,14 @@ elif st.session_state.current_tab_idx == 3:
                                 st.rerun()
                             except Exception as e:
                                 st.error(f"Erro ao carregar: {e}")
+                    with col_info5:
+                        if st.button("🗑️ Excluir", key=f"del_{prop['id']}"):
+                            try:
+                                supabase.table("historico_propostas").delete().eq("id", prop['id']).execute()
+                                st.success("Proposta excluída com sucesso!")
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"Erro ao excluir: {e}")
                     st.divider()
 
         except Exception as e:
