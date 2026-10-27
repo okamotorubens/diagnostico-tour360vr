@@ -530,7 +530,7 @@ def gerar_pdf_diagnostico_individual(lead):
     dados_empresa = [
         [Paragraph("<b>Empresa / Nicho</b>", body_style), Paragraph(f"{lead['nome']} ({lead['categoria']})", body_style)],
         [Paragraph("<b>Endereço</b>", body_style), Paragraph(f"{lead['endereco']} - {lead['cidade_busca']}", body_style)],
-        [Paragraph("<b>Nota Google / Avaliações</b>", body_style), Paragraph(f"⭐ {lead['nota']} ({lead['total_avaliacoes']} avaliações)", body_style)],
+        [Paragraph("<b>Nota Google / Avaliações</b>", body_style), Paragraph(f"<font color='#d97706'><b>★</b></font> {lead['nota']} ({lead['total_avaliacoes']} avaliações)", body_style)],
         [Paragraph("<b>Website Oficial</b>", body_style), Paragraph(f"{lead['website'] if lead['website'] else 'Não possui site vinculado'}", body_style)],
     ]
     t_emp = Table(dados_empresa, colWidths=[150, 390])
