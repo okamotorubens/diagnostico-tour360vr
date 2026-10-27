@@ -83,6 +83,47 @@ components.html(f"""
 """, height=0)
 
 # -----------------------------------------------------------------------------
+# BOTÃO FLUTUANTE DE VOLTAR AO TOPO (HTML/JS)
+# -----------------------------------------------------------------------------
+components.html("""
+    <script>
+        // Criação do botão flutuante de seta para o topo
+        if (!document.getElementById("btn-voltar-topo")) {
+            const btnTop = document.createElement("button");
+            btnTop.id = "btn-voltar-topo";
+            btnTop.innerHTML = "⬆️ Topo";
+            btnTop.style.position = "fixed";
+            btnTop.style.bottom = "25px";
+            btnTop.style.right = "25px";
+            btnTop.style.zIndex = "999999";
+            btnTop.style.backgroundColor = "#2563eb";
+            btnTop.style.color = "#ffffff";
+            btnTop.style.border = "none";
+            btnTop.style.borderRadius = "30px";
+            btnTop.style.padding = "10px 16px";
+            btnTop.style.fontSize = "13px";
+            btnTop.style.fontWeight = "bold";
+            btnTop.style.cursor = "pointer";
+            btnTop.style.boxShadow = "0 4px 12px rgba(0,0,0,0.3)";
+            btnTop.style.transition = "all 0.3s ease";
+
+            btnTop.onmouseover = function() { btnTop.style.backgroundColor = "#1d4ed8"; };
+            btnTop.onmouseout = function() { btnTop.style.backgroundColor = "#2563eb"; };
+
+            btnTop.onclick = function() {
+                window.parent.scrollTo({ top: 0, behavior: 'smooth' });
+                try {
+                    window.parent.document.querySelector(".main").scrollTop = 0;
+                    window.parent.document.querySelector(".stAppViewContainer").scrollTop = 0;
+                } catch(e) {}
+            };
+
+            window.parent.document.body.appendChild(btnTop);
+        }
+    </script>
+""", height=0)
+
+# -----------------------------------------------------------------------------
 # CONEXÃO BANCO DE DADOS EM NUVEM PERMANENTE (SUPABASE - TABELA ÚNICA)
 # -----------------------------------------------------------------------------
 @st.cache_resource
@@ -799,7 +840,6 @@ def buscar_google_places_api(nome_empresa, nicho, cidade, bairro, rua, raio_km, 
                 else:
                     foto_url = ""
 
-                # --- AUDITORIA AMPLIADA (MÚLTIPLOS PONTOS CRÍTICOS E OPORTUNIDADES) ---
                 pontos_criticos = []
                 oportunidades = []
                 score = 0
@@ -1327,7 +1367,7 @@ elif st.session_state.etapa == 3:
                     nova_tag_digitada = st.text_input("Nova Tag:", value="", key=f"txt_novo_tag_{lead['id']}", placeholder="Ex: Ótica, Vestuário")
                     if nova_tag_digitada.strip() and nova_tag_digitada.strip() != cat_atual:
                         atualizar_categoria_db(lead['id'], nova_tag_digitada.strip().capitalize())
-                        st.toast("Nova tag criada e salva!")
+                        st.toast("New tag criada e salva!")
                         st.rerun()
                 elif escolha_tag != cat_atual:
                     atualizar_categoria_db(lead['id'], escolha_tag)
@@ -1767,7 +1807,7 @@ elif st.session_state.etapa == 5:
             st.warning("Nenhum registro encontrado para los filtros selecionados.")
 
 # -----------------------------------------------------------------------------
-# MÓDULO 6: RADAR PROSPECÇÃO (KANBAN INTERATIVO COM CARDS COMPACTOS EXPANSÍVEIS)
+# MÓDULO 6: RADAR PROSPECÇÃO (KANBAN INTERATIVO - CARDS EXPANSÍVEIS)
 # -----------------------------------------------------------------------------
 elif st.session_state.etapa == 6:
     st.markdown("""
@@ -1825,10 +1865,8 @@ elif st.session_state.etapa == 6:
                     for _, l in leads_col.iterrows():
                         tem_site_bool = bool(l.get('website'))
                         
-                        # TÍTULO RESUMIDO DO CARD COMPACTO
                         titulo_card = f"{l.get('nome', '')} ({l.get('categoria', 'Geral')}) - ⭐ {l.get('nota', 0.0)}"
                         
-                        # CARD EXPANSÍVEL PARA ECONOMIZAR ESPAÇO NA TELA
                         with st.expander(titulo_card, expanded=False):
                             st.markdown(f"<span style='color: #94a3b8; font-size: 11px;'>📍 {l.get('endereco', '')} - {l.get('cidade_busca', '')}</span>", unsafe_allow_html=True)
                             st.markdown(f"<span style='color: {'#4ade80' if tem_site_bool else '#f87171'}; font-size: 11px;'>{'🌐 Possui Site' if tem_site_bool else '❌ Sem Site'}</span> | <span style='color: #fbbf24; font-size: 11px;'>Avaliações: {l.get('total_avaliacoes', 0)}</span>", unsafe_allow_html=True)
