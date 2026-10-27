@@ -1632,13 +1632,13 @@ elif st.session_state.etapa == 5:
             st.warning("Nenhum registro encontrado para los filtros selecionados.")
 
 # -----------------------------------------------------------------------------
-# MÓDULO 6: RADAR PROSPECÇÃO (KANBAN INTERATIVO)
+# MÓDULO 6: RADAR PROSPECÇÃO (KANBAN INTERATIVO - CARD ÚNICO UNIFICADO)
 # -----------------------------------------------------------------------------
 elif st.session_state.etapa == 6:
     st.markdown("""
         <div class="main-header">
             <h1 class="main-title">🚀 Radar Prospecção Pro</h1>
-            <div class="main-subtitle">Funil Kanban interativo: altere o status dos leads diretamente nas colunas para movimentar suas oportunidades.</div>
+            <div class="main-subtitle">Funil Kanban interativo: informações, movimentação de colunas e botões unificados em cards modernos.</div>
         </div>
     """, unsafe_allow_html=True)
 
@@ -1690,31 +1690,32 @@ elif st.session_state.etapa == 6:
                     for _, l in leads_col.iterrows():
                         with st.container():
                             tem_site_bool = bool(l.get('website'))
-                            st.markdown(f"""
-                                <div style="background-color: #1e293b; padding: 12px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 10px;">
-                                    <b style="color: #ffffff; font-size: 14px;">{l.get('nome', '')}</b><br/>
-                                    <span style="color: #94a3b8; font-size: 11.5px;">📍 {l.get('cidade_busca', '')} | 🏷️ {l.get('categoria', '')}</span><br/>
-                                    <span style="color: {'#4ade80' if tem_site_bool else '#f87171'}; font-size: 11px;">{'🌐 Possui Site' if tem_site_bool else '❌ Sem Site'}</span><br/>
-                                    <span style="color: #fbbf24; font-size: 11px;">⭐ Nota: {l.get('nota', 0.0)} ({l.get('total_avaliacoes', 0)} avaliações)</span>
-                                </div>
-                            """, unsafe_allow_html=True)
+                            
+                            # CARD ÚNICO ENCAPSULANDO TUDO
+                            with st.container(border=True):
+                                st.markdown(f"<b style='color: #ffffff; font-size: 14.5px;'>{l.get('nome', '')}</b>", unsafe_allow_html=True)
+                                st.markdown(f"<span style='color: #94a3b8; font-size: 11.5px;'>📍 {l.get('cidade_busca', '')} | 🏷️ {l.get('categoria', '')}</span>", unsafe_allow_html=True)
+                                st.markdown(f"<span style='color: {'#4ade80' if tem_site_bool else '#f87171'}; font-size: 11px;'>{'🌐 Possui Site' if tem_site_bool else '❌ Sem Site'}</span>", unsafe_allow_html=True)
+                                st.markdown(f"<span style='color: #fbbf24; font-size: 11px;'>⭐ Nota: {l.get('nota', 0.0)} ({l.get('total_avaliacoes', 0)} avaliações)</span>", unsafe_allow_html=True)
+                                
+                                st.markdown("<div style='margin-top: 6px; margin-bottom: 2px; font-size: 11px; color: #cbd5e1;'><b>Mover Coluna:</b></div>", unsafe_allow_html=True)
+                                idx_st = status_opcoes_kanban.index(l.get('status_crm', '🆕 Novo Lead')) if l.get('status_crm', '🆕 Novo Lead') in status_opcoes_kanban else 0
+                                novo_status_card = st.selectbox(
+                                    "Mover Coluna",
+                                    status_opcoes_kanban,
+                                    index=idx_st,
+                                    key=f"kanban_move_{l['id']}",
+                                    label_visibility="collapsed"
+                                )
 
-                            idx_st = status_opcoes_kanban.index(l.get('status_crm', '🆕 Novo Lead')) if l.get('status_crm', '🆕 Novo Lead') in status_opcoes_kanban else 0
-                            novo_status_card = st.selectbox(
-                                "Mover Coluna:",
-                                status_opcoes_kanban,
-                                index=idx_st,
-                                key=f"kanban_move_{l['id']}"
-                            )
+                                if novo_status_card != l.get('status_crm'):
+                                    atualizar_status_crm(l['id'], novo_status_card)
+                                    st.toast(f"Lead '{l.get('nome')}' movido com sucesso!")
+                                    st.rerun()
 
-                            if novo_status_card != l.get('status_crm'):
-                                atualizar_status_crm(l['id'], novo_status_card)
-                                st.toast(f"Lead '{l.get('nome')}' movido com sucesso!")
-                                st.rerun()
+                                if l.get('whatsapp'):
+                                    msg_k = f"Olá, {l.get('nome')}! Tudo bem? Passando para retomarmos nosso contato..."
+                                    link_wa_k = f"https://wa.me/55{l.get('whatsapp')}?text={urllib.parse.quote(msg_k)}"
+                                    st.markdown(f'<a href="{link_wa_k}" target="_blank"><button style="width:100%; background-color:#25D366; color:white; border:none; padding:6px; border-radius:6px; font-weight:bold; font-size:12px; cursor:pointer; margin-top:6px;">💬 WhatsApp</button></a>', unsafe_allow_html=True)
 
-                            if l.get('whatsapp'):
-                                msg_k = f"Olá, {l.get('nome')}! Tudo bem? Passando para retomarmos nosso contato..."
-                                link_wa_k = f"https://wa.me/55{l.get('whatsapp')}?text={urllib.parse.quote(msg_k)}"
-                                st.markdown(f'<a href="{link_wa_k}" target="_blank"><button style="width:100%; background-color:#25D366; color:white; border:none; padding:5px; border-radius:4px; font-weight:bold; font-size:11px; cursor:pointer; margin-top:4px;">💬 WhatsApp</button></a>', unsafe_allow_html=True)
-
-                            st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
+                            st.markdown("<div style='height: 4px;'></div>", unsafe_allow_html=True)
