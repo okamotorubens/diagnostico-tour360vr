@@ -85,15 +85,48 @@ components.html(f"""
 # -----------------------------------------------------------------------------
 # BOTÃO FLUTUANTE DE VOLTAR AO TOPO (HTML/JS)
 # -----------------------------------------------------------------------------
+# FORÇAR O NAVEGADOR A IR PARA O TOPO SEMPRE QUE MUDAR DE PÁGINA OU EXECUTAR
+components.html(f"""
+    <script>
+        function scrollToTop() {{
+            try {{
+                window.parent.scrollTo({{ top: 0, behavior: 'instant' }});
+                var containers = window.parent.document.querySelectorAll('.main, .stAppViewContainer, section.main, [data-testid="stAppViewContainer"], [data-testid="stMain"]');
+                containers.forEach(function(el) {{
+                    if (el) {{ el.scrollTop = 0; }}
+                }});
+            }} catch(e) {{}}
+        }}
+        scrollToTop();
+        setTimeout(scrollToTop, 50);
+        setTimeout(scrollToTop, 150);
+        setTimeout(scrollToTop, 300);
+        
+        var head = window.parent.document.getElementsByTagName('head')[0];
+        if (head && '{favicon_b64}') {{
+            var links = window.parent.document.querySelectorAll("link[rel*='icon']");
+            links.forEach(function(l) {{ l.parentNode.removeChild(l); }});
+            
+            var link = window.parent.document.createElement('link');
+            link.type = 'image/png';
+            link.rel = 'shortcut icon';
+            link.href = 'data:image/png;base64,{favicon_b64}';
+            head.appendChild(link);
+        }}
+    </script>
+""", height=0)
+
+# -----------------------------------------------------------------------------
+# BOTÃO FLUTUANTE DE VOLTAR AO TOPO (REPOSICIONADO ACIMA DO BOTÃO DO STREAMLIT)
+# -----------------------------------------------------------------------------
 components.html("""
     <script>
-        // Criação do botão flutuante de seta para o topo
-        if (!document.getElementById("btn-voltar-topo")) {
-            const btnTop = document.createElement("button");
+        if (!window.parent.document.getElementById("btn-voltar-topo")) {
+            const btnTop = window.parent.document.createElement("button");
             btnTop.id = "btn-voltar-topo";
             btnTop.innerHTML = "⬆️ Topo";
             btnTop.style.position = "fixed";
-            btnTop.style.bottom = "25px";
+            btnTop.style.bottom = "85px"; /* Posicionado acima do botão do Streamlit */
             btnTop.style.right = "25px";
             btnTop.style.zIndex = "999999";
             btnTop.style.backgroundColor = "#2563eb";
@@ -104,7 +137,7 @@ components.html("""
             btnTop.style.fontSize = "13px";
             btnTop.style.fontWeight = "bold";
             btnTop.style.cursor = "pointer";
-            btnTop.style.boxShadow = "0 4px 12px rgba(0,0,0,0.3)";
+            btnTop.style.boxShadow = "0 4px 12px rgba(0,0,0,0.4)";
             btnTop.style.transition = "all 0.3s ease";
 
             btnTop.onmouseover = function() { btnTop.style.backgroundColor = "#1d4ed8"; };
@@ -112,17 +145,16 @@ components.html("""
 
             btnTop.onclick = function() {
                 window.parent.scrollTo({ top: 0, behavior: 'smooth' });
-                try {
-                    window.parent.document.querySelector(".main").scrollTop = 0;
-                    window.parent.document.querySelector(".stAppViewContainer").scrollTop = 0;
-                } catch(e) {}
+                var containers = window.parent.document.querySelectorAll('.main, .stAppViewContainer, section.main, [data-testid="stAppViewContainer"], [data-testid="stMain"]');
+                containers.forEach(function(el) {
+                    if (el) { el.scrollTop = 0; }
+                });
             };
 
             window.parent.document.body.appendChild(btnTop);
         }
     </script>
 """, height=0)
-
 # -----------------------------------------------------------------------------
 # CONEXÃO BANCO DE DADOS EM NUVEM PERMANENTE (SUPABASE - TABELA ÚNICA)
 # -----------------------------------------------------------------------------
