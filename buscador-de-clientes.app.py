@@ -171,6 +171,14 @@ def atualizar_followup_db(lead_id, nova_data):
     except Exception as e:
         st.error(f"Erro ao atualizar follow-up: {str(e)}")
 
+def atualizar_dados_cadastrais_db(lead_id, dados_dict):
+    if not supabase:
+        return
+    try:
+        supabase.table("leads").update(dados_dict).eq("id", lead_id).execute()
+    except Exception as e:
+        st.error(f"Erro ao atualizar dados do lead: {str(e)}")
+
 def obter_coordenadas_endereco(endereco_completo, cidade):
     """Busca a latitude e longitude reais via Google Geocoding API e OpenStreetMap (fallback)."""
     endereco_str = f"{endereco_completo}, {cidade}, Brasil"
@@ -1294,6 +1302,40 @@ TOUR360VR | Okamoto Mídias Visuais
                 if str(nova_data_fu) != dt_atual_str:
                     atualizar_followup_db(lead['id'], nova_data_fu)
                     st.toast("Data de follow-up atualizada!")
+
+            # -------------------------------------------------------------
+            # NOVO EXPANDER: EDITAR DADOS CADASTRAIS DO LEAD
+            # -------------------------------------------------------------
+            with st.expander(f"✏️ **Editar Dados Cadastrais (Nome, Endereço, Telefone, Site, Instagram)**"):
+                with st.form(key=f"form_edit_lead_{lead['id']}"):
+                    edit_nome = st.text_input("Nome da Empresa", value=lead.get('nome', ''))
+                    edit_end = st.text_input("Endereço Completo", value=lead.get('endereco', ''))
+                    edit_tel = st.text_input("Telefone / Contato", value=lead.get('telefone', ''))
+                    edit_site = st.text_input("Website URL", value=lead.get('website', ''))
+                    edit_insta = st.text_input("Instagram URL", value=lead.get('instagram', ''))
+                    
+                    btn_salvar_edit = st.form_submit_button("💾 Salvar Alterações Cadastrais", use_container_width=True)
+                    
+                    if btn_salvar_edit:
+                        novos_dados = {
+                            "nome": edit_nome.strip(),
+                            "endereco": edit_end.strip(),
+                            "telefone": edit_tel.strip(),
+                            "website": edit_site.strip(),
+                            "instagram": edit_insta.strip()
+                        }
+                        
+                        # Se o endereço mudou, recalcular coordenadas para o mapa/rotas
+                        if edit_end.strip() != lead.get('endereco', ''):
+                            with st.spinner("Recalculando coordenadas do novo endereço..."):
+                                lat_novo, lng_novo = obter_coordenadas_endereco(edit_end.strip(), lead.get('cidade_busca', 'Ribeirão Preto'))
+                                novos_dados["latitude"] = lat_novo
+                                novos_dados["longitude"] = lng_novo
+
+                        atualizar_dados_cadastrais_db(lead['id'], novos_dados)
+                        st.success("✅ Dados atualizados com sucesso!")
+                        time.sleep(1)
+                        st.rerun()
 
             st.markdown("**📱 Histórico e Timeline de Interações (Log de Atividades):**")
             anotacoes_atuais = lead.get('anotacoes', '') or ''
