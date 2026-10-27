@@ -1629,75 +1629,95 @@ elif st.session_state.etapa == 5:
                             st.markdown(f'<a href="{link_wa_rota}" target="_blank"><button style="width:100%; background-color:#25D366; color:white; border:none; padding:7px; border-radius:6px; font-weight:bold; cursor:pointer;">💬 Avisar via WhatsApp</button></a>', unsafe_allow_html=True)
                     st.divider()
         else:
-            st.warning("Nenhum registro encontrado para los filtros selecionados.")
+            st.warning("Nenhum registro encontrado para os filtros selecionados.")
 
 # -----------------------------------------------------------------------------
-# MÓDULO 6: RADAR PROSPECÇÃO (KANBAN UNIFICADO)
+# MÓDULO 6: RADAR PROSPECÇÃO (KANBAN INTERATIVO)
 # -----------------------------------------------------------------------------
 elif st.session_state.etapa == 6:
     st.markdown("""
         <div class="main-header">
             <h1 class="main-title">🚀 Radar Prospecção Pro</h1>
-            <div class="main-subtitle">Gestão comercial e funil Kanban integrado com a base unificada de leads.</div>
+            <div class="main-subtitle">Funil Kanban interativo: altere o status dos leads diretamente nas colunas para movimentar suas oportunidades.</div>
         </div>
     """, unsafe_allow_html=True)
 
     if not base_leads:
         st.info("ℹ️ Nenhum lead encontrado na base. Realize uma busca no Buscador de Clientes para abastecer o funil Kanban.")
     else:
-        st.markdown("### 📋 Funil Kanban de Oportunidades")
-        
-        col_k1, col_k2, col_k3, col_k4 = st.columns(4)
+        # Filtros rápidos para o Kanban
+        col_fk1, col_fk2 = st.columns([2, 2])
         df_kanban = pd.DataFrame(base_leads)
+        
+        with col_fk1:
+            tags_k = ["Todos os Nichos / Tags"] + list(df_kanban['categoria'].unique())
+            filtro_tag_k = st.selectbox("🎯 Filtrar Kanban por Nicho/Tag:", tags_k)
+            
+        with col_fk2:
+            cidades_k = ["Todas as Cidades"] + list(df_kanban['cidade_busca'].unique())
+            filtro_cid_k = st.selectbox("📍 Filtrar Kanban por Cidade:", cidades_k)
 
-        with col_k1:
-            st.markdown("#### 🆕 Novos Leads")
-            leads_novos = df_kanban[df_kanban['status_crm'] == '🆕 Novo Lead'] if 'status_crm' in df_kanban.columns else df_kanban
-            for _, l in leads_novos.iterrows():
-                tem_site_bool = bool(l.get('website'))
-                st.markdown(f"""
-                    <div style="background-color: #1e293b; padding: 10px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 8px;">
-                        <b style="color: #ffffff; font-size: 14px;">{l.get('nome', '')}</b><br/>
-                        <span style="color: #94a3b8; font-size: 12px;">🏷️ {l.get('categoria', '')} — {l.get('cidade_busca', '')}</span><br/>
-                        <span style="color: {'#4ade80' if tem_site_bool else '#f87171'}; font-size: 11px;">{'🌐 Possui Site' if tem_site_bool else '❌ Sem Site'}</span>
-                    </div>
-                """, unsafe_allow_html=True)
+        if filtro_tag_k != "Todos os Nichos / Tags":
+            df_kanban = df_kanban[df_kanban['categoria'] == filtro_tag_k]
+        if filtro_cid_k != "Todas as Cidades":
+            df_kanban = df_kanban[df_kanban['cidade_busca'] == filtro_cid_k]
 
-        with col_k2:
-            st.markdown("#### 💬 Em Abordagem")
-            leads_abordagem = df_kanban[df_kanban['status_crm'] == '💬 Em Abordagem'] if 'status_crm' in df_kanban.columns else pd.DataFrame()
-            for _, l in leads_abordagem.iterrows():
-                tem_site_bool = bool(l.get('website'))
-                st.markdown(f"""
-                    <div style="background-color: #1e293b; padding: 10px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 8px;">
-                        <b style="color: #ffffff; font-size: 14px;">{l.get('nome', '')}</b><br/>
-                        <span style="color: #94a3b8; font-size: 12px;">🏷️ {l.get('categoria', '')} — {l.get('cidade_busca', '')}</span><br/>
-                        <span style="color: {'#4ade80' if tem_site_bool else '#f87171'}; font-size: 11px;">{'🌐 Possui Site' if tem_site_bool else '❌ Sem Site'}</span>
-                    </div>
-                """, unsafe_allow_html=True)
+        st.divider()
 
-        with col_k3:
-            st.markdown("#### 🛠️ Em Negociação")
-            leads_negociacao = df_kanban[df_kanban['status_crm'].isin(['🛠️ Diagnóstico Gerado', 'Em Negociação'])] if 'status_crm' in df_kanban.columns else pd.DataFrame()
-            for _, l in leads_negociacao.iterrows():
-                tem_site_bool = bool(l.get('website'))
-                st.markdown(f"""
-                    <div style="background-color: #1e293b; padding: 10px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 8px;">
-                        <b style="color: #ffffff; font-size: 14px;">{l.get('nome', '')}</b><br/>
-                        <span style="color: #94a3b8; font-size: 12px;">🏷️ {l.get('categoria', '')} — {l.get('cidade_busca', '')}</span><br/>
-                        <span style="color: {'#4ade80' if tem_site_bool else '#f87171'}; font-size: 11px;">{'🌐 Possui Site' if tem_site_bool else '❌ Sem Site'}</span>
-                    </div>
-                """, unsafe_allow_html=True)
+        col_k1, col_k2, col_k3, col_k4 = st.columns(4)
+        
+        status_colunas = [
+            ("🆕 Novo Lead", col_k1),
+            ("💬 Em Abordagem", col_k2),
+            ("🛠️ Em Negociação", col_k3),
+            ("🤝 Cliente Fechado", col_k4)
+        ]
 
-        with col_k4:
-            st.markdown("#### ✅ Fechados")
-            leads_fechados = df_kanban[df_kanban['status_crm'] == '🤝 Cliente Fechado'] if 'status_crm' in df_kanban.columns else pd.DataFrame()
-            for _, l in leads_fechados.iterrows():
-                tem_site_bool = bool(l.get('website'))
-                st.markdown(f"""
-                    <div style="background-color: #1e293b; padding: 10px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 8px;">
-                        <b style="color: #ffffff; font-size: 14px;">{l.get('nome', '')}</b><br/>
-                        <span style="color: #94a3b8; font-size: 12px;">🏷️ {l.get('categoria', '')} — {l.get('cidade_busca', '')}</span><br/>
-                        <span style="color: {'#4ade80' if tem_site_bool else '#f87171'}; font-size: 11px;">{'🌐 Possui Site' if tem_site_bool else '❌ Sem Site'}</span>
-                    </div>
-                """, unsafe_allow_html=True)
+        status_opcoes_kanban = ["🆕 Novo Lead", "💬 Em Abordagem", "🛠️ Diagnóstico Gerado", "🤝 Cliente Fechado", "❌ Recusado"]
+
+        for status_nome, coluna_streamlit in status_colunas:
+            with coluna_streamlit:
+                if status_nome == "🛠️ Em Negociação":
+                    leads_col = df_kanban[df_kanban['status_crm'].isin(['🛠️ Diagnóstico Gerado', 'Em Negociação'])] if 'status_crm' in df_kanban.columns else pd.DataFrame()
+                else:
+                    leads_col = df_kanban[df_kanban['status_crm'] == status_nome] if 'status_crm' in df_kanban.columns else pd.DataFrame()
+
+                st.markdown(f"#### {status_nome} ({len(leads_col)})")
+                st.markdown("<div style='height: 4px;'></div>", unsafe_allow_html=True)
+
+                if len(leads_col) == 0:
+                    st.caption("Nenhum lead nesta etapa.")
+                else:
+                    for _, l in leads_col.iterrows():
+                        with st.container():
+                            tem_site_bool = bool(l.get('website'))
+                            st.markdown(f"""
+                                <div style="background-color: #1e293b; padding: 12px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 10px;">
+                                    <b style="color: #ffffff; font-size: 14px;">{l.get('nome', '')}</b><br/>
+                                    <span style="color: #94a3b8; font-size: 11.5px;">📍 {l.get('cidade_busca', '')} | 🏷️ {l.get('categoria', '')}</span><br/>
+                                    <span style="color: {'#4ade80' if tem_site_bool else '#f87171'}; font-size: 11px;">{'🌐 Possui Site' if tem_site_bool else '❌ Sem Site'}</span><br/>
+                                    <span style="color: #fbbf24; font-size: 11px;">⭐ Nota: {l.get('nota', 0.0)} ({l.get('total_avaliacoes', 0)} avaliações)</span>
+                                </div>
+                            """, unsafe_allow_html=True)
+
+                            # Seletor rápido para mudar de coluna direto no card
+                            idx_ st = status_opcoes_kanban.index(l.get('status_crm', '🆕 Novo Lead')) if l.get('status_crm', '🆕 Novo Lead') in status_opcoes_kanban else 0
+                            novo_status_card = st.selectbox(
+                                "Mover Coluna:",
+                                status_opcoes_kanban,
+                                index=idx_ st,
+                                key=f"kanban_move_{l['id']}"
+                            )
+
+                            if novo_status_card != l.get('status_crm'):
+                                atualizar_status_crm(l['id'], novo_status_card)
+                                st.toast(f"Lead '{l.get('nome')}' movido com sucesso!")
+                                st.rerun()
+
+                            # Atalho rápido para WhatsApp se tiver número
+                            if l.get('whatsapp'):
+                                msg_k = f"Olá, {l.get('nome')}! Tudo bem? Passando para retomarmos nosso contato..."
+                                link_wa_k = f"https://wa.me/55{l.get('whatsapp')}?text={urllib.parse.quote(msg_k)}"
+                                st.markdown(f'<a href="{link_wa_k}" target="_blank"><button style="width:100%; background-color:#25D366; color:white; border:none; padding:5px; border-radius:4px; font-weight:bold; font-size:11px; cursor:pointer; margin-top:4px;">💬 WhatsApp</button></a>', unsafe_allow_html=True)
+
+                            st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
