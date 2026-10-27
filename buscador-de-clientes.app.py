@@ -78,7 +78,7 @@ components.html(f"""
 """, height=0)
 
 # -----------------------------------------------------------------------------
-# CONEXÃO BANCO DE DADOS EM NUVEM PERMANENTE (SUPABASE)
+# CONEXÃO BANCO DE DADOS EM NUVEM PERMANENTE (SUPABASE - TABELA ÚNICA)
 # -----------------------------------------------------------------------------
 @st.cache_resource
 def init_supabase():
@@ -129,26 +129,6 @@ def salvar_lead_db(lead):
             }).execute()
     except Exception as e:
         st.error(f"Erro ao salvar lead '{lead.get('nome')}': {str(e)}")
-
-# Funções específicas para a nova tabela isolada `leads_radar_pro`
-def salvar_lead_radar_pro(lead):
-    if not supabase:
-        return
-    try:
-        res = supabase.table("leads_radar_pro").select("id").eq("nome_estabelecimento", lead['nome_estabelecimento']).eq("cidade", lead['cidade']).execute()
-        if not res.data:
-            supabase.table("leads_radar_pro").insert(lead).execute()
-    except Exception as e:
-        st.error(f"Erro ao salvar na nova tabela leads_radar_pro: {str(e)}")
-
-def carregar_leads_radar_pro():
-    if not supabase:
-        return []
-    try:
-        res = supabase.table("leads_radar_pro").select("*").order("id", desc=True).execute()
-        return res.data or []
-    except Exception as e:
-        return []
 
 def atualizar_status_crm(lead_id, novo_status):
     if not supabase:
@@ -768,20 +748,6 @@ def buscar_google_places_api(nome_empresa, nicho, cidade, bairro, rua, raio_km, 
                 }
                 
                 salvar_lead_db(lead_obj)
-                
-                # Salvar também na nova tabela isolada `leads_radar_pro`
-                lead_radar_pro_obj = {
-                    "nome_estabelecimento": nome,
-                    "nicho": (nicho or "Comércio").capitalize(),
-                    "cidade": cidade,
-                    "telefone_whatsapp": clean_phone if len(clean_phone) >= 10 else "16999999999",
-                    "instagram": instagram_url,
-                    "tem_site": bool(website),
-                    "link_maps": f"https://www.google.com/maps/search/?api=1&query={nome.replace(' ', '+')}",
-                    "status_kanban": "Novos Leads"
-                }
-                salvar_lead_radar_pro(lead_radar_pro_obj)
-
                 leads.append(lead_obj)
 
             next_page_token = data.get("next_page_token")
@@ -903,17 +869,17 @@ with st.sidebar:
 
     st.markdown("<div style='text-align: center; font-weight: 700; font-size: 14px; margin-bottom: 8px;'>📌 Módulos</div>", unsafe_allow_html=True)
     
-    if st.button("1️⃣ Dashboard Executivo", use_container_width=True, type="primary" if st.session_state.etapa == 1 else "secondary"):
+    if st.button("📊 Dashboard Executivo", use_container_width=True, type="primary" if st.session_state.etapa == 1 else "secondary"):
         mudar_etapa(1)
-    if st.button("2️⃣ Buscador de Clientes", use_container_width=True, type="primary" if st.session_state.etapa == 2 else "secondary"):
+    if st.button("🔍 Buscador de Clientes", use_container_width=True, type="primary" if st.session_state.etapa == 2 else "secondary"):
         mudar_etapa(2)
-    if st.button("3️⃣ Base & CRM de Leads", use_container_width=True, type="primary" if st.session_state.etapa == 3 else "secondary"):
+    if st.button("📋 Base & CRM de Leads", use_container_width=True, type="primary" if st.session_state.etapa == 3 else "secondary"):
         mudar_etapa(3)
-    if st.button("4️⃣ Panorama de Nicho", use_container_width=True, type="primary" if st.session_state.etapa == 4 else "secondary"):
+    if st.button("📈 Panorama de Nicho", use_container_width=True, type="primary" if st.session_state.etapa == 4 else "secondary"):
         mudar_etapa(4)
-    if st.button("5️⃣ Mapa & Rota de Visitas", use_container_width=True, type="primary" if st.session_state.etapa == 5 else "secondary"):
+    if st.button("🗺️ Mapa & Rota de Visitas", use_container_width=True, type="primary" if st.session_state.etapa == 5 else "secondary"):
         mudar_etapa(5)
-    if st.button("6️⃣ Radar Prospecção (Nova Aba)", use_container_width=True, type="primary" if st.session_state.etapa == 6 else "secondary"):
+    if st.button("🚀 Radar Prospecção", use_container_width=True, type="primary" if st.session_state.etapa == 6 else "secondary"):
         mudar_etapa(6)
 
     st.divider()
@@ -936,7 +902,7 @@ if st.session_state.etapa == 1:
     """, unsafe_allow_html=True)
 
     if len(base_leads) == 0:
-        st.warning("⚠️ Nenhum lead cadastrado ainda no banco de dados. Vá até o Módulo 2 para realizar sua primeira busca!")
+        st.warning("⚠️ Nenhum lead cadastrado ainda no banco de dados. Vá até o Buscador de Clientes para realizar sua primeira busca!")
     else:
         df_dash = pd.DataFrame(base_leads)
 
@@ -1095,19 +1061,6 @@ elif st.session_state.etapa == 2:
                     "obs_followup": ""
                 }
                 salvar_lead_db(lead_manual)
-                
-                # Salvar também na nova tabela isolada `leads_radar_pro`
-                salvar_lead_radar_pro({
-                    "nome_estabelecimento": man_nome.strip(),
-                    "nicho": categoria_final.capitalize(),
-                    "cidade": man_cidade,
-                    "telefone_whatsapp": clean_zap if len(clean_zap) >= 10 else "16999999999",
-                    "instagram": f"https://instagram.com/{re.sub(r'[^a-zA-Z0-9]', '', man_nome.lower())}",
-                    "tem_site": bool(man_site.strip()),
-                    "link_maps": f"https://www.google.com/maps/search/?api=1&query={man_nome.strip().replace(' ', '+')}",
-                    "status_kanban": "Novos Leads"
-                })
-
                 st.success(f"✅ Empresa '{man_nome}' cadastrada e mapeada com sucesso!")
                 time.sleep(1.5)
                 mudar_etapa(3)
@@ -1130,7 +1083,7 @@ elif st.session_state.etapa == 3:
     """, unsafe_allow_html=True)
 
     if len(base_leads) == 0:
-        st.warning("⚠️ Nenhum lead cadastrado ainda no banco de dados. Faça sua primeira busca ou cadastro manual no Módulo 2!")
+        st.warning("⚠️ Nenhum lead cadastrado ainda no banco de dados. Faça sua primeira busca ou cadastro manual no Buscador de Clientes!")
     else:
         df_leads_crm = pd.DataFrame(base_leads)
 
@@ -1222,7 +1175,7 @@ elif st.session_state.etapa == 3:
                     try:
                         api_key_atual = st.secrets.get("GOOGLE_API_KEY", None) or os.getenv("GOOGLE_API_KEY", "")
                         if "key=" not in foto_lead and api_key_atual:
-                            foto_lead_auth = f"{foto_lead}&key={api_key_atual.strip().replace('.', '').replace("'", "")}"
+                            foto_lead_auth = f"{foto_lead}&key={api_key_atual.strip().replace('"', '').replace("'", "")}"
                         else:
                             foto_lead_auth = foto_lead
                             
@@ -1448,7 +1401,7 @@ elif st.session_state.etapa == 4:
     """, unsafe_allow_html=True)
 
     if len(base_leads) == 0:
-        st.warning("⚠️ Nenhum lead cadastrado ainda no banco de dados. Faça sua primeira busca no Módulo 2!")
+        st.warning("⚠️ Nenhum lead cadastrado ainda no banco de dados. Faça sua primeira busca no Buscador de Clientes!")
     else:
         df_leads = pd.DataFrame(base_leads)
 
@@ -1557,7 +1510,7 @@ elif st.session_state.etapa == 5:
     """, unsafe_allow_html=True)
 
     if len(base_leads) == 0:
-        st.warning("⚠️ Nenhum lead cadastrado ainda no banco de dados. Faça sua primeira busca no Módulo 2!")
+        st.warning("⚠️ Nenhum lead cadastrado ainda no banco de dados. Faça sua primeira busca no Buscador de Clientes!")
     else:
         df_mapa = pd.DataFrame(base_leads)
         
@@ -1676,52 +1629,75 @@ elif st.session_state.etapa == 5:
                             st.markdown(f'<a href="{link_wa_rota}" target="_blank"><button style="width:100%; background-color:#25D366; color:white; border:none; padding:7px; border-radius:6px; font-weight:bold; cursor:pointer;">💬 Avisar via WhatsApp</button></a>', unsafe_allow_html=True)
                     st.divider()
         else:
-            st.warning("Nenhum registro encontrado para os filtros selecionados.")
+            st.warning("Nenhum registro encontrado para los filtros selecionados.")
 
 # -----------------------------------------------------------------------------
-# MÓDULO 6: RADAR PROSPECÇÃO (NOVA ABA COM CRM KANBAN ISOLADO)
+# MÓDULO 6: RADAR PROSPECÇÃO (KANBAN UNIFICADO)
 # -----------------------------------------------------------------------------
 elif st.session_state.etapa == 6:
     st.markdown("""
         <div class="main-header">
-            <h1 class="main-title">🚀 Radar Prospecção Pro (Nova Aba Integrada)</h1>
-            <div class="main-subtitle">Gestão comercial com tabela isolada no Supabase e fluxo Kanban por etapas.</div>
+            <h1 class="main-title">🚀 Radar Prospecção Pro</h1>
+            <div class="main-subtitle">Gestão comercial e funil Kanban integrado com a base unificada de leads.</div>
         </div>
     """, unsafe_allow_html=True)
 
-    leads_radar = carregar_leads_radar_pro()
+    if not base_leads:
+        st.info("ℹ️ Nenhum lead encontrado na base. Realize uma busca no Buscador de Clientes para abastecer o funil Kanban.")
+    else:
+        st.markdown("### 📋 Funil Kanban de Oportunidades")
+        
+        col_k1, col_k2, col_k3, col_k4 = st.columns(4)
+        df_kanban = pd.DataFrame(base_leads)
 
-    if not leads_radar:
-        st.info("ℹ️ Nenhum lead encontrado na nova tabela isolada `leads_radar_pro`. Realize uma nova busca no Módulo 2 para abastecer esta aba automaticamente ou veja os dados abaixo.")
-    
-    st.markdown("### 📋 Funil Kanban de Oportunidades")
-    
-    col_k1, col_k2, col_k3, col_k4 = st.columns(4)
-    etapas_kanban = ["Novos Leads", "Abordagem WhatsApp", "Em Negociação", "Contrato Fechado"]
-    
-    # Exemplo visual do Kanban com os dados da base isolada
-    df_radar_kanban = pd.DataFrame(leads_radar) if leads_radar else pd.DataFrame(columns=["nome_estabelecimento", "nicho", "cidade", "telefone_whatsapp", "instagram", "tem_site", "status_kanban"])
-    
-    with col_k1:
-        st.markdown("#### 🆕 Novos Leads")
-        novos_l = df_radar_kanban[df_radar_kanban.get('status_kanban', 'Novos Leads') == 'Novos Leads'] if not df_radar_kanban.empty else []
-        for _, l in df_radar_kanban.iterrows():
-            st.markdown(f"""
-                <div style="background-color: #1e293b; padding: 10px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 8px;">
-                    <b style="color: #ffffff; font-size: 14px;">{l.get('nome_estabelecimento', '')}</b><br/>
-                    <span style="color: #94a3b8; font-size: 12px;">🏷️ {l.get('nicho', '')} — {l.get('cidade', '')}</span><br/>
-                    <span style="color: {'#4ade80' if l.get('tem_site') else '#f87171'}; font-size: 11px;">{'🌐 Possui Site' if l.get('tem_site') else '❌ Sem Site'}</span>
-                </div>
-            """, unsafe_allow_html=True)
+        with col_k1:
+            st.markdown("#### 🆕 Novos Leads")
+            leads_novos = df_kanban[df_kanban['status_crm'] == '🆕 Novo Lead'] if 'status_crm' in df_kanban.columns else df_kanban
+            for _, l in leads_novos.iterrows():
+                tem_site_bool = bool(l.get('website'))
+                st.markdown(f"""
+                    <div style="background-color: #1e293b; padding: 10px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 8px;">
+                        <b style="color: #ffffff; font-size: 14px;">{l.get('nome', '')}</b><br/>
+                        <span style="color: #94a3b8; font-size: 12px;">🏷️ {l.get('categoria', '')} — {l.get('cidade_busca', '')}</span><br/>
+                        <span style="color: {'#4ade80' if tem_site_bool else '#f87171'}; font-size: 11px;">{'🌐 Possui Site' if tem_site_bool else '❌ Sem Site'}</span>
+                    </div>
+                """, unsafe_allow_html=True)
 
-    with col_k2:
-        st.markdown("#### 💬 Abordagem WhatsApp")
-        st.caption("Acompanhe os disparos de contato.")
+        with col_k2:
+            st.markdown("#### 💬 Em Abordagem")
+            leads_abordagem = df_kanban[df_kanban['status_crm'] == '💬 Em Abordagem'] if 'status_crm' in df_kanban.columns else pd.DataFrame()
+            for _, l in leads_abordagem.iterrows():
+                tem_site_bool = bool(l.get('website'))
+                st.markdown(f"""
+                    <div style="background-color: #1e293b; padding: 10px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 8px;">
+                        <b style="color: #ffffff; font-size: 14px;">{l.get('nome', '')}</b><br/>
+                        <span style="color: #94a3b8; font-size: 12px;">🏷️ {l.get('categoria', '')} — {l.get('cidade_busca', '')}</span><br/>
+                        <span style="color: {'#4ade80' if tem_site_bool else '#f87171'}; font-size: 11px;">{'🌐 Possui Site' if tem_site_bool else '❌ Sem Site'}</span>
+                    </div>
+                """, unsafe_allow_html=True)
 
-    with col_k3:
-        st.markdown("#### 🤝 Em Negociação")
-        st.caption("Propostas e reuniões em andamento.")
+        with col_k3:
+            st.markdown("#### 🛠️ Em Negociação")
+            leads_negociacao = df_kanban[df_kanban['status_crm'].isin(['🛠️ Diagnóstico Gerado', 'Em Negociação'])] if 'status_crm' in df_kanban.columns else pd.DataFrame()
+            for _, l in leads_negociacao.iterrows():
+                tem_site_bool = bool(l.get('website'))
+                st.markdown(f"""
+                    <div style="background-color: #1e293b; padding: 10px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 8px;">
+                        <b style="color: #ffffff; font-size: 14px;">{l.get('nome', '')}</b><br/>
+                        <span style="color: #94a3b8; font-size: 12px;">🏷️ {l.get('categoria', '')} — {l.get('cidade_busca', '')}</span><br/>
+                        <span style="color: {'#4ade80' if tem_site_bool else '#f87171'}; font-size: 11px;">{'🌐 Possui Site' if tem_site_bool else '❌ Sem Site'}</span>
+                    </div>
+                """, unsafe_allow_html=True)
 
-    with col_k4:
-        st.markdown("#### ✅ Fechados")
-        st.caption("Contratos convertidos.")
+        with col_k4:
+            st.markdown("#### ✅ Fechados")
+            leads_fechados = df_kanban[df_kanban['status_crm'] == '🤝 Cliente Fechado'] if 'status_crm' in df_kanban.columns else pd.DataFrame()
+            for _, l in leads_fechados.iterrows():
+                tem_site_bool = bool(l.get('website'))
+                st.markdown(f"""
+                    <div style="background-color: #1e293b; padding: 10px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 8px;">
+                        <b style="color: #ffffff; font-size: 14px;">{l.get('nome', '')}</b><br/>
+                        <span style="color: #94a3b8; font-size: 12px;">🏷️ {l.get('categoria', '')} — {l.get('cidade_busca', '')}</span><br/>
+                        <span style="color: {'#4ade80' if tem_site_bool else '#f87171'}; font-size: 11px;">{'🌐 Possui Site' if tem_site_bool else '❌ Sem Site'}</span>
+                    </div>
+                """, unsafe_allow_html=True)
