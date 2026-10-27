@@ -284,7 +284,7 @@ def limpar_banco_dados():
         st.error(f"Erro ao limpar banco: {str(e)}")
 
 # -----------------------------------------------------------------------------
-# GERADOR DE PDF DO PANORAMA DE NICHO
+# GERADOR DE PDF DO PANORAMA DE NICHO E DO DIAGNÓSTICO INDIVIDUAL
 # -----------------------------------------------------------------------------
 def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
     canvas.saveState()
@@ -499,6 +499,94 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
     buffer.seek(0)
     return buffer
 
+def gerar_pdf_diagnostico_individual(lead):
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buffer, pagesize=letter,
+        rightMargin=36, leftMargin=36, topMargin=95, bottomMargin=55,
+        title=f"Diagnóstico Comercial - {lead['nome']}",
+        author="Tour360VR"
+    )
+    styles = getSampleStyleSheet()
+    
+    main_title_style = ParagraphStyle(
+        'MainTitle', parent=styles['Heading1'],
+        fontSize=13, textColor=colors.HexColor('#0f172a'),
+        fontName='Helvetica-Bold', alignment=1, spaceBefore=0, spaceAfter=8
+    )
+    section_heading = ParagraphStyle(
+        'SectionHeading', parent=styles['Heading2'],
+        fontSize=9.5, textColor=colors.HexColor('#0f172a'),
+        spaceBefore=8, spaceAfter=5, fontName='Helvetica-Bold', alignment=1
+    )
+    body_style = ParagraphStyle('BodyTextCustom', parent=styles['Normal'], fontSize=8.5, textColor=colors.HexColor('#334155'), leading=10.5)
+    
+    elements = []
+    title_p = Paragraph(f"DIAGNÓSTICO DE PRESENÇA DIGITAL: {lead['nome'].upper()}", main_title_style)
+    elements.append(Table([[title_p]], colWidths=[540], style=[('ALIGN', (0,0), (-1,-1), 'CENTER')]))
+    elements.append(Spacer(1, 4))
+    
+    # Dados Gerais
+    dados_empresa = [
+        [Paragraph("<b>Empresa / Nicho</b>", body_style), Paragraph(f"{lead['nome']} ({lead['categoria']})", body_style)],
+        [Paragraph("<b>Endereço</b>", body_style), Paragraph(f"{lead['endereco']} - {lead['cidade_busca']}", body_style)],
+        [Paragraph("<b>Nota Google / Avaliações</b>", body_style), Paragraph(f"⭐ {lead['nota']} ({lead['total_avaliacoes']} avaliações)", body_style)],
+        [Paragraph("<b>Website Oficial</b>", body_style), Paragraph(f"{lead['website'] if lead['website'] else 'Não possui site vinculado'}", body_style)],
+    ]
+    t_emp = Table(dados_empresa, colWidths=[150, 390])
+    t_emp.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (0,-1), colors.HexColor('#f1f5f9')),
+        ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1')),
+        ('INNERGRID', (0,0), (-1,-1), 0.5, colors.HexColor('#e2e8f0')),
+        ('TOPPADDING', (0,0), (-1,-1), 4),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 4),
+    ]))
+    elements.append(t_emp)
+    elements.append(Spacer(1, 8))
+    
+    elements.append(Paragraph("PONTOS CRÍTICOS IDENTIFICADOS NA VITRINE DIGITAL", section_heading))
+    criticos = lead.get('pontos_criticos', [])
+    if isinstance(criticos, str):
+        try: criticos = json.loads(criticos)
+        except: criticos = [criticos]
+        
+    data_crit = [[Paragraph("<b>#</b>", body_style), Paragraph("<b>Gargalo / Ponto de Atenção</b>", body_style)]]
+    for i, pc in enumerate(criticos, 1):
+        data_crit.append([Paragraph(str(i), body_style), Paragraph(pc, body_style)])
+    t_crit = Table(data_crit, colWidths=[30, 510])
+    t_crit.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#fef2f2')),
+        ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#fca5a5')),
+        ('INNERGRID', (0,0), (-1,-1), 0.5, colors.HexColor('#fee2e2')),
+        ('TOPPADDING', (0,0), (-1,-1), 4),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 4),
+    ]))
+    elements.append(t_crit)
+    elements.append(Spacer(1, 8))
+    
+    elements.append(Paragraph("OPORTUNIDADES DE TRANSFORMAÇÃO E RETORNO COMERCIAL", section_heading))
+    oportunidades = lead.get('oportunidades', [])
+    if isinstance(oportunidades, str):
+        try: oportunidades = json.loads(oportunidades)
+        except: oportunidades = [oportunidades]
+        
+    data_op = [[Paragraph("<b>#</b>", body_style), Paragraph("<b>Solução Estratégica Proposta</b>", body_style)]]
+    for i, op in enumerate(oportunidades, 1):
+        data_op.append([Paragraph(str(i), body_style), Paragraph(op, body_style)])
+    t_op = Table(data_op, colWidths=[30, 510])
+    t_op.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#f0fdf4')),
+        ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#86efac')),
+        ('INNERGRID', (0,0), (-1,-1), 0.5, colors.HexColor('#dcfce7')),
+        ('TOPPADDING', (0,0), (-1,-1), 4),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 4),
+    ]))
+    elements.append(t_op)
+    
+    doc.build(elements, onFirstPage=desenhar_cabecalho_rodape_todas_paginas, onLaterPages=desenhar_cabecalho_rodape_todas_paginas)
+    buffer.seek(0)
+    return buffer
+
 # -----------------------------------------------------------------------------
 # ESTILIZAÇÃO CSS CUSTOMIZADA
 # -----------------------------------------------------------------------------
@@ -607,8 +695,23 @@ def mudar_etapa(nova_etapa):
     st.rerun()
 
 # -----------------------------------------------------------------------------
-# INTEGRAÇÃO DE BUSCA REAL VIA GOOGLE PLACES API (ATÉ 70 RESULTADOS)
+# INTEGRAÇÃO DE BUSCA REAL VIA GOOGLE PLACES API & ENRIQUECIMENTO DE REDES SOCIAIS
 # -----------------------------------------------------------------------------
+def enriquecer_redes_sociais(nome_empresa, website):
+    nome_normalizado = unicodedata.normalize('NFKD', nome_empresa.lower()).encode('ASCII', 'ignore').decode('ASCII')
+    nome_slug = re.sub(r'[^a-zA-Z0-9]', '', nome_normalizado)
+    
+    instagram_url = f"https://instagram.com/{nome_slug}"
+    facebook_url = f"https://facebook.com/{nome_slug}"
+    
+    if website and "http" in website:
+        dominio = website.replace("https://", "").replace("http://", "").replace("www.", "").split("/")[0]
+        nome_slug_dom = re.sub(r'[^a-zA-Z0-9]', '', dominio.split(".")[0])
+        if len(nome_slug_dom) > 2:
+            instagram_url = f"https://instagram.com/{nome_slug_dom}"
+            
+    return instagram_url, facebook_url
+
 def buscar_google_places_api(nome_empresa, nicho, cidade, bairro, rua, raio_km, api_key, limite=70):
     termos = []
     if nome_empresa: termos.append(nome_empresa.strip())
@@ -715,10 +818,7 @@ def buscar_google_places_api(nome_empresa, nicho, cidade, bairro, rua, raio_km, 
                 if len(clean_phone) > 10 and clean_phone.startswith("55"):
                     clean_phone = clean_phone[2:]
 
-                nome_normalizado = unicodedata.normalize('NFKD', nome.lower()).encode('ASCII', 'ignore').decode('ASCII')
-                nome_slug = re.sub(r'[^a-zA-Z0-9]', '', nome_normalizado)
-                instagram_url = f"https://instagram.com/{nome_slug}"
-                facebook_url = f"https://facebook.com/{nome_slug}"
+                instagram_url, facebook_url = enriquecer_redes_sociais(nome, website)
 
                 lead_obj = {
                     "data_minacao": datetime.now().strftime('%d/%m/%Y %H:%M'),
@@ -1034,6 +1134,8 @@ elif st.session_state.etapa == 2:
                 score += 25
 
                 clean_zap = "".join(filter(str.isdigit, man_zap.strip()))
+                instagram_url, facebook_url = enriquecer_redes_sociais(man_nome, man_site)
+
                 lead_manual = {
                     "data_minacao": datetime.now().strftime('%d/%m/%Y %H:%M'),
                     "cidade_busca": man_cidade,
@@ -1047,8 +1149,8 @@ elif st.session_state.etapa == 2:
                     "whatsapp": clean_zap if len(clean_zap) >= 10 else "16999999999",
                     "website": man_site.strip(),
                     "website_https": has_https,
-                    "instagram": f"https://instagram.com/{re.sub(r'[^a-zA-Z0-9]', '', man_nome.lower())}",
-                    "facebook": f"https://facebook.com/{re.sub(r'[^a-zA-Z0-9]', '', man_nome.lower())}",
+                    "instagram": instagram_url,
+                    "facebook": facebook_url,
                     "foto_url": "",
                     "nota": man_nota,
                     "total_avaliacoes": man_av,
@@ -1218,6 +1320,17 @@ elif st.session_state.etapa == 3:
                     with st.spinner("Consultando dados atuais no Google Maps..."):
                         revalidar_ficha_google(lead)
                         st.rerun()
+
+                # BOTÃO DE DOWNLOAD DO PDF DE DIAGNÓSTICO INDIVIDUAL
+                pdf_bytes_ind = gerar_pdf_diagnostico_individual(lead)
+                st.download_button(
+                    label="📄 Baixar Diagnóstico (.pdf)",
+                    data=pdf_bytes_ind,
+                    file_name=f"Diagnostico_{lead['nome'].replace(' ', '_')}.pdf",
+                    mime="application/pdf",
+                    key=f"dl_pdf_{lead['id']}",
+                    use_container_width=True
+                )
 
             with col_details1:
                 st.markdown("**📊 Indicadores no Google:**")
