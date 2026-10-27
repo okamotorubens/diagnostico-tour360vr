@@ -1767,13 +1767,13 @@ elif st.session_state.etapa == 5:
             st.warning("Nenhum registro encontrado para los filtros selecionados.")
 
 # -----------------------------------------------------------------------------
-# MÓDULO 6: RADAR PROSPECÇÃO (KANBAN INTERATIVO - COM TIMELINE NO CARD)
+# MÓDULO 6: RADAR PROSPECÇÃO (KANBAN INTERATIVO COM CARDS COMPACTOS EXPANSÍVEIS)
 # -----------------------------------------------------------------------------
 elif st.session_state.etapa == 6:
     st.markdown("""
         <div class="main-header">
             <h1 class="main-title">🚀 Radar Prospecção Pro</h1>
-            <div class="main-subtitle">Funil Kanban interativo: acompanhe o histórico, adicione anotações e mude colunas diretamente nos cards.</div>
+            <div class="main-subtitle">Funil Kanban interativo: cards compactos expansíveis para otimizar sua visualização e agilizar o dia a dia.</div>
         </div>
     """, unsafe_allow_html=True)
 
@@ -1823,52 +1823,53 @@ elif st.session_state.etapa == 6:
                     st.caption("Nenhum lead nesta etapa.")
                 else:
                     for _, l in leads_col.iterrows():
-                        with st.container():
-                            tem_site_bool = bool(l.get('website'))
+                        tem_site_bool = bool(l.get('website'))
+                        
+                        # TÍTULO RESUMIDO DO CARD COMPACTO
+                        titulo_card = f"{l.get('nome', '')} ({l.get('categoria', 'Geral')}) - ⭐ {l.get('nota', 0.0)}"
+                        
+                        # CARD EXPANSÍVEL PARA ECONOMIZAR ESPAÇO NA TELA
+                        with st.expander(titulo_card, expanded=False):
+                            st.markdown(f"<span style='color: #94a3b8; font-size: 11px;'>📍 {l.get('endereco', '')} - {l.get('cidade_busca', '')}</span>", unsafe_allow_html=True)
+                            st.markdown(f"<span style='color: {'#4ade80' if tem_site_bool else '#f87171'}; font-size: 11px;'>{'🌐 Possui Site' if tem_site_bool else '❌ Sem Site'}</span> | <span style='color: #fbbf24; font-size: 11px;'>Avaliações: {l.get('total_avaliacoes', 0)}</span>", unsafe_allow_html=True)
                             
-                            with st.container(border=True):
-                                st.markdown(f"<b style='color: #ffffff; font-size: 14px;'>{l.get('nome', '')}</b>", unsafe_allow_html=True)
-                                st.markdown(f"<span style='color: #94a3b8; font-size: 11px;'>📍 {l.get('cidade_busca', '')} | 🏷️ {l.get('categoria', '')}</span>", unsafe_allow_html=True)
-                                st.markdown(f"<span style='color: {'#4ade80' if tem_site_bool else '#f87171'}; font-size: 10.5px;'>{'🌐 Possui Site' if tem_site_bool else '❌ Sem Site'}</span>", unsafe_allow_html=True)
-                                st.markdown(f"<span style='color: #fbbf24; font-size: 10.5px;'>⭐ Nota: {l.get('nota', 0.0)} ({l.get('total_avaliacoes', 0)} avaliações)</span>", unsafe_allow_html=True)
+                            anotacoes_atuais = l.get('anotacoes', '') or ''
+                            if anotacoes_atuais:
+                                st.markdown("<div style='margin-top: 6px; font-size: 11px; color: #94a3b8;'><b>📜 Histórico Recente:</b></div>", unsafe_allow_html=True)
+                                st.markdown(f'<div class="script-box" style="font-size: 11px; padding: 6px 8px; max-height: 90px; overflow-y: auto; margin-bottom: 6px;">{anotacoes_atuais}</div>', unsafe_allow_html=True)
+                            else:
+                                st.caption("Sem histórico registrado.")
+
+                            with st.form(key=f"form_kanban_tl_{l['id']}"):
+                                nova_interacao_k = st.text_input("Nova interação:", placeholder="Ex: Ligou, enviou proposta...", label_visibility="collapsed", key=f"input_tl_k_{l['id']}")
+                                btn_add_tl_k = st.form_submit_button("➕ Salvar Log", use_container_width=True)
                                 
-                                anotacoes_atuais = l.get('anotacoes', '') or ''
-                                if anotacoes_atuais:
-                                    st.markdown("<div style='margin-top: 6px; font-size: 11px; color: #94a3b8;'><b>📜 Histórico Recente:</b></div>", unsafe_allow_html=True)
-                                    st.markdown(f'<div class="script-box" style="font-size: 11px; padding: 6px 8px; max-height: 90px; overflow-y: auto; margin-bottom: 6px;">{anotacoes_atuais}</div>', unsafe_allow_html=True)
-                                else:
-                                    st.markdown("<div style='margin-top: 4px; font-size: 10px; color: #64748b;'><i>Sem histórico registrado.</i></div>", unsafe_allow_html=True)
-
-                                with st.form(key=f"form_kanban_tl_{l['id']}"):
-                                    nova_interacao_k = st.text_input("Nova interação:", placeholder="Ex: Ligou, enviou proposta...", label_visibility="collapsed", key=f"input_tl_k_{l['id']}")
-                                    btn_add_tl_k = st.form_submit_button("➕ Salvar Log", use_container_width=True)
-                                    
-                                    if btn_add_tl_k and nova_interacao_k.strip():
-                                        data_hora_agora = datetime.now().strftime('%d/%m/%Y %H:%M')
-                                        registro_formatado = f"[{data_hora_agora}] {nova_interacao_k.strip()}"
-                                        historico_atualizado = f"{registro_formatado}\n{anotacoes_atuais}" if anotacoes_atuais else registro_formatado
-                                        atualizar_anotacoes_db(l['id'], historico_atualizado)
-                                        st.toast("Interação salva!")
-                                        st.rerun()
-
-                                st.markdown("<div style='margin-top: 4px; margin-bottom: 2px; font-size: 11px; color: #cbd5e1;'><b>Mover Coluna:</b></div>", unsafe_allow_html=True)
-                                idx_st = status_opcoes_kanban.index(l.get('status_crm', '🆕 Novo Lead')) if l.get('status_crm', '🆕 Novo Lead') in status_opcoes_kanban else 0
-                                novo_status_card = st.selectbox(
-                                    "Mover Coluna",
-                                    status_opcoes_kanban,
-                                    index=idx_st,
-                                    key=f"kanban_move_{l['id']}",
-                                    label_visibility="collapsed"
-                                )
-
-                                if novo_status_card != l.get('status_crm'):
-                                    atualizar_status_crm(l['id'], novo_status_card)
-                                    st.toast(f"Lead '{l.get('nome')}' movido com sucesso!")
+                                if btn_add_tl_k and nova_interacao_k.strip():
+                                    data_hora_agora = datetime.now().strftime('%d/%m/%Y %H:%M')
+                                    registro_formatado = f"[{data_hora_agora}] {nova_interacao_k.strip()}"
+                                    historico_atualizado = f"{registro_formatado}\n{anotacoes_atuais}" if anotacoes_atuais else registro_formatado
+                                    atualizar_anotacoes_db(l['id'], historico_atualizado)
+                                    st.toast("Interação salva!")
                                     st.rerun()
 
-                                if l.get('whatsapp'):
-                                    msg_k = f"Olá, {l.get('nome')}! Tudo bem? Passando para retomarmos nosso contato..."
-                                    link_wa_k = f"https://wa.me/55{l.get('whatsapp')}?text={urllib.parse.quote(msg_k)}"
-                                    st.markdown(f'<a href="{link_wa_k}" target="_blank"><button style="width:100%; background-color:#25D366; color:white; border:none; padding:6px; border-radius:6px; font-weight:bold; font-size:12px; cursor:pointer; margin-top:6px;">💬 WhatsApp</button></a>', unsafe_allow_html=True)
+                            st.markdown("<div style='margin-top: 4px; margin-bottom: 2px; font-size: 11px; color: #cbd5e1;'><b>Mover Coluna:</b></div>", unsafe_allow_html=True)
+                            idx_st = status_opcoes_kanban.index(l.get('status_crm', '🆕 Novo Lead')) if l.get('status_crm', '🆕 Novo Lead') in status_opcoes_kanban else 0
+                            novo_status_card = st.selectbox(
+                                "Mover Coluna",
+                                status_opcoes_kanban,
+                                index=idx_st,
+                                key=f"kanban_move_{l['id']}",
+                                label_visibility="collapsed"
+                            )
 
-                            st.markdown("<div style='height: 4px;'></div>", unsafe_allow_html=True)
+                            if novo_status_card != l.get('status_crm'):
+                                atualizar_status_crm(l['id'], novo_status_card)
+                                st.toast(f"Lead '{l.get('nome')}' movido com sucesso!")
+                                st.rerun()
+
+                            if l.get('whatsapp'):
+                                msg_k = f"Olá, {l.get('nome')}! Tudo bem? Passando para retomarmos nosso contato..."
+                                link_wa_k = f"https://wa.me/55{l.get('whatsapp')}?text={urllib.parse.quote(msg_k)}"
+                                st.markdown(f'<a href="{link_wa_k}" target="_blank"><button style="width:100%; background-color:#25D366; color:white; border:none; padding:6px; border-radius:6px; font-weight:bold; font-size:12px; cursor:pointer; margin-top:6px;">💬 WhatsApp</button></a>', unsafe_allow_html=True)
+
+                        st.markdown("<div style='height: 4px;'></div>", unsafe_allow_html=True)
