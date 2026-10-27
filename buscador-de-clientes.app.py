@@ -1629,7 +1629,7 @@ elif st.session_state.etapa == 5:
                             st.markdown(f'<a href="{link_wa_rota}" target="_blank"><button style="width:100%; background-color:#25D366; color:white; border:none; padding:7px; border-radius:6px; font-weight:bold; cursor:pointer;">💬 Avisar via WhatsApp</button></a>', unsafe_allow_html=True)
                     st.divider()
         else:
-            st.warning("Nenhum registro encontrado para os filtros selecionados.")
+            st.warning("Nenhum registro encontrado para los filtros selecionados.")
 
 # -----------------------------------------------------------------------------
 # MÓDULO 6: RADAR PROSPECÇÃO (KANBAN INTERATIVO)
@@ -1645,7 +1645,6 @@ elif st.session_state.etapa == 6:
     if not base_leads:
         st.info("ℹ️ Nenhum lead encontrado na base. Realize uma busca no Buscador de Clientes para abastecer o funil Kanban.")
     else:
-        # Filtros rápidos para o Kanban
         col_fk1, col_fk2 = st.columns([2, 2])
         df_kanban = pd.DataFrame(base_leads)
         
@@ -1700,12 +1699,11 @@ elif st.session_state.etapa == 6:
                                 </div>
                             """, unsafe_allow_html=True)
 
-                            # Seletor rápido para mudar de coluna direto no card
-                            idx_ st = status_opcoes_kanban.index(l.get('status_crm', '🆕 Novo Lead')) if l.get('status_crm', '🆕 Novo Lead') in status_opcoes_kanban else 0
+                            idx_st = status_opcoes_kanban.index(l.get('status_crm', '🆕 Novo Lead')) if l.get('status_crm', '🆕 Novo Lead') in status_opcoes_kanban else 0
                             novo_status_card = st.selectbox(
                                 "Mover Coluna:",
                                 status_opcoes_kanban,
-                                index=idx_ st,
+                                index=idx_st,
                                 key=f"kanban_move_{l['id']}"
                             )
 
@@ -1714,7 +1712,6 @@ elif st.session_state.etapa == 6:
                                 st.toast(f"Lead '{l.get('nome')}' movido com sucesso!")
                                 st.rerun()
 
-                            # Atalho rápido para WhatsApp se tiver número
                             if l.get('whatsapp'):
                                 msg_k = f"Olá, {l.get('nome')}! Tudo bem? Passando para retomarmos nosso contato..."
                                 link_wa_k = f"https://wa.me/55{l.get('whatsapp')}?text={urllib.parse.quote(msg_k)}"
