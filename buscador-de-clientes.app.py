@@ -284,7 +284,7 @@ def limpar_banco_dados():
         st.error(f"Erro ao limpar banco: {str(e)}")
 
 # -----------------------------------------------------------------------------
-# GERADOR DE PDF DO PANORAMA DE NICHO E DO DIAGNÓSTICO INDIVIDUAL
+# GERADOR DE PDF DO PANORAMA DE NICHO E DO DIAGNÓSTICO INDIVIDUAL APRIMORADO
 # -----------------------------------------------------------------------------
 def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
     canvas.saveState()
@@ -526,12 +526,15 @@ def gerar_pdf_diagnostico_individual(lead):
     elements.append(Table([[title_p]], colWidths=[540], style=[('ALIGN', (0,0), (-1,-1), 'CENTER')]))
     elements.append(Spacer(1, 4))
     
-    # Dados Gerais
+    # Dados Gerais atualizados com estrela corrigida e Score de Oportunidade
+    score_val = lead.get('score_oportunidade', 0)
     dados_empresa = [
         [Paragraph("<b>Empresa / Nicho</b>", body_style), Paragraph(f"{lead['nome']} ({lead['categoria']})", body_style)],
         [Paragraph("<b>Endereço</b>", body_style), Paragraph(f"{lead['endereco']} - {lead['cidade_busca']}", body_style)],
         [Paragraph("<b>Nota Google / Avaliações</b>", body_style), Paragraph(f"<font color='#d97706'><b>★</b></font> {lead['nota']} ({lead['total_avaliacoes']} avaliações)", body_style)],
         [Paragraph("<b>Website Oficial</b>", body_style), Paragraph(f"{lead['website'] if lead['website'] else 'Não possui site vinculado'}", body_style)],
+        [Paragraph("<b>Score de Oportunidade</b>", body_style), Paragraph(f"<b>{score_val} / 100</b> (Prioridade Comercial Mapeada)", body_style)],
+        [Paragraph("<b>Ficha Reivindicada / Fotos</b>", body_style), Paragraph(f"{'Sim' if lead.get('reivindicada') else 'Não reivindicada'} | {lead.get('fotos_total', 0)} fotos públicas na ficha", body_style)],
     ]
     t_emp = Table(dados_empresa, colWidths=[150, 390])
     t_emp.setStyle(TableStyle([
@@ -1321,7 +1324,7 @@ elif st.session_state.etapa == 3:
                         revalidar_ficha_google(lead)
                         st.rerun()
 
-                # BOTÃO DE DOWNLOAD DO PDF DE DIAGNÓSTICO INDIVIDUAL
+                # BOTÃO DE DOWNLOAD DO PDF DE DIAGNÓSTICO INDIVIDUAL APRIMORADO
                 pdf_bytes_ind = gerar_pdf_diagnostico_individual(lead)
                 st.download_button(
                     label="📄 Baixar Diagnóstico (.pdf)",
