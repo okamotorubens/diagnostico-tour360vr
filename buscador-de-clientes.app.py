@@ -49,18 +49,23 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# FORÇAR O NAVEGADOR A IR PARA O TOPO SEMPRE QUE MUDAR DE PÁGINA
+# FORÇAR O NAVEGADOR A IR PARA O TOPO SEMPRE QUE MUDAR DE PÁGINA OU EXECUTAR
 components.html(f"""
     <script>
         function scrollToTop() {{
-            window.parent.scrollTo(0, 0);
-            var mainContainer = window.parent.document.querySelector(".main");
-            if (mainContainer) {{ mainContainer.scrollTop = 0; }}
-            var appContainer = window.parent.document.querySelector(".stAppViewContainer");
-            if (appContainer) {{ appContainer.scrollTop = 0; }}
+            try {{
+                window.parent.scrollTo({{ top: 0, behavior: 'instant' }});
+                var mainContainer = window.parent.document.querySelector(".main");
+                if (mainContainer) {{ mainContainer.scrollTop = 0; }}
+                var appContainer = window.parent.document.querySelector(".stAppViewContainer");
+                if (appContainer) {{ appContainer.scrollTop = 0; }}
+                var body = window.parent.document.body;
+                if (body) {{ body.scrollTop = 0; }}
+            }} catch(e) {{}}
         }}
         scrollToTop();
-        setTimeout(scrollToTop, 100);
+        setTimeout(scrollToTop, 50);
+        setTimeout(scrollToTop, 150);
         setTimeout(scrollToTop, 300);
         
         var head = window.parent.document.getElementsByTagName('head')[0];
