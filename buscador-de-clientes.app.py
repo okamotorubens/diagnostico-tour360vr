@@ -130,6 +130,26 @@ def salvar_lead_db(lead):
     except Exception as e:
         st.error(f"Erro ao salvar lead '{lead.get('nome')}': {str(e)}")
 
+# Funções específicas para a nova tabela isolada `leads_radar_pro`
+def salvar_lead_radar_pro(lead):
+    if not supabase:
+        return
+    try:
+        res = supabase.table("leads_radar_pro").select("id").eq("nome_estabelecimento", lead['nome_estabelecimento']).eq("cidade", lead['cidade']).execute()
+        if not res.data:
+            supabase.table("leads_radar_pro").insert(lead).execute()
+    except Exception as e:
+        st.error(f"Erro ao salvar na nova tabela leads_radar_pro: {str(e)}")
+
+def carregar_leads_radar_pro():
+    if not supabase:
+        return []
+    try:
+        res = supabase.table("leads_radar_pro").select("*").order("id", desc=True).execute()
+        return res.data or []
+    except Exception as e:
+        return []
+
 def atualizar_status_crm(lead_id, novo_status):
     if not supabase:
         return
@@ -180,10 +200,7 @@ def atualizar_dados_cadastrais_db(lead_id, dados_dict):
         st.error(f"Erro ao atualizar dados do lead: {str(e)}")
 
 def obter_coordenadas_endereco(endereco_completo, cidade):
-    """Busca a latitude e longitude reais via Google Geocoding API e OpenStreetMap (fallback)."""
     endereco_str = f"{endereco_completo}, {cidade}, Brasil"
-    
-    # 1. Tentar via Google Geocoding API
     api_key = st.secrets.get("GOOGLE_API_KEY", None) or os.getenv("GOOGLE_API_KEY", None)
     if api_key:
         api_key_limpa = api_key.strip().replace('"', '').replace("'", "")
@@ -196,7 +213,6 @@ def obter_coordenadas_endereco(endereco_completo, cidade):
         except Exception:
             pass
 
-    # 2. Fallback via Nominatim (OpenStreetMap) caso o Google falhe
     try:
         nom_url = f"https://nominatim.openstreetmap.org/search?q={urllib.parse.quote(endereco_str)}&format=json&limit=1"
         headers = {'User-Agent': 'Tour360VR-RadarComercial/1.0'}
@@ -596,7 +612,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# SESSION STATE E CONTROLE DE ETAPA (MÓDULOS 1 A 5)
+# SESSION STATE E CONTROLE DE ETAPA (MÓDULOS 1 A 6)
 # -----------------------------------------------------------------------------
 if 'etapa' not in st.session_state:
     st.session_state.etapa = 1
@@ -606,9 +622,9 @@ def mudar_etapa(nova_etapa):
     st.rerun()
 
 # -----------------------------------------------------------------------------
-# INTEGRAÇÃO DE BUSCA REAL VIA GOOGLE PLACES API
+# INTEGRAÇÃO DE BUSCA REAL VIA GOOGLE PLACES API (ATÉ 70 RESULTADOS)
 # -----------------------------------------------------------------------------
-def buscar_google_places_api(nome_empresa, nicho, cidade, bairro, rua, raio_km, api_key, limite=20):
+def buscar_google_places_api(nome_empresa, nicho, cidade, bairro, rua, raio_km, api_key, limite=70):
     termos = []
     if nome_empresa: termos.append(nome_empresa.strip())
     if nicho: termos.append(nicho.strip())
@@ -752,6 +768,20 @@ def buscar_google_places_api(nome_empresa, nicho, cidade, bairro, rua, raio_km, 
                 }
                 
                 salvar_lead_db(lead_obj)
+                
+                # Salvar também na nova tabela isolada `leads_radar_pro`
+                lead_radar_pro_obj = {
+                    "nome_estabelecimento": nome,
+                    "nicho": (nicho or "Comércio").capitalize(),
+                    "cidade": cidade,
+                    "telefone_whatsapp": clean_phone if len(clean_phone) >= 10 else "16999999999",
+                    "instagram": instagram_url,
+                    "tem_site": bool(website),
+                    "link_maps": f"https://www.google.com/maps/search/?api=1&query={nome.replace(' ', '+')}",
+                    "status_kanban": "Novos Leads"
+                }
+                salvar_lead_radar_pro(lead_radar_pro_obj)
+
                 leads.append(lead_obj)
 
             next_page_token = data.get("next_page_token")
@@ -763,7 +793,7 @@ def buscar_google_places_api(nome_empresa, nicho, cidade, bairro, rua, raio_km, 
         st.error(f"Erro na requisição à API do Google Places: {str(e)}")
     return None
 
-def minerar_e_auditar_negocios(nome_empresa, nicho, cidade, bairro, rua, raio_km, limite=20):
+def minerar_e_auditar_negocios(nome_empresa, nicho, cidade, bairro, rua, raio_km, limite=70):
     api_key = st.secrets.get("GOOGLE_API_KEY", None) or os.getenv("GOOGLE_API_KEY", None)
     
     if api_key:
@@ -883,6 +913,8 @@ with st.sidebar:
         mudar_etapa(4)
     if st.button("5️⃣ Mapa & Rota de Visitas", use_container_width=True, type="primary" if st.session_state.etapa == 5 else "secondary"):
         mudar_etapa(5)
+    if st.button("6️⃣ Radar Prospecção (Nova Aba)", use_container_width=True, type="primary" if st.session_state.etapa == 6 else "secondary"):
+        mudar_etapa(6)
 
     st.divider()
     st.markdown(f"<div style='text-align: center; font-size: 12px;'>☁️ Supabase Nuvem:<br/><b>{len(base_leads)} leads salvos</b></div>", unsafe_allow_html=True)
@@ -965,12 +997,12 @@ elif st.session_state.etapa == 2:
             with col3: rua_input = st.text_input("Rua / Avenida (Opcional)", value="", help="Ex: Av. Independência")
             with col4: bairro_input = st.text_input("Bairro / Região (Opcional)", value="", help="Deixe em branco para amplitude de busca na cidade")
             with col5: raio_input = st.number_input("Raio (km)", min_value=1, max_value=50, value=10, step=1, help="Distância máxima de busca a partir do centro da localidade")
-            with col6: limite_input = st.number_input("Qtd. Máxima", min_value=20, max_value=70, value=40, step=5)
+            with col6: limite_input = st.number_input("Qtd. Máxima", min_value=20, max_value=70, value=70, step=5)
             
-            btn_minar = st.form_submit_button("🚀 Iniciar Varredura Profunda", use_container_width=True)
+            btn_minar = st.form_submit_button("🚀 Iniciar Varredura Profunda (Até 70)", use_container_width=True)
 
         if btn_minar:
-            with st.spinner(f"Varrendo Google Maps num raio de {raio_input} km, auditando presença web e salvando na nuvem..."):
+            with st.spinner(f"Varrendo Google Maps num raio de {raio_input} km, aplicando paginação avançada (até 70 resultados) e salvando na nuvem..."):
                 time.sleep(1)
                 novos = minerar_e_auditar_negocios(nome_empresa_input, nicho_input, cidade_input, bairro_input, rua_input, raio_input, limite_input)
                 if novos and len(novos) > 0:
@@ -1030,6 +1062,7 @@ elif st.session_state.etapa == 2:
                 oportunidades.append("Fotografia 360° Imersiva e Publicação no Google Street View")
                 score += 25
 
+                clean_zap = "".join(filter(str.isdigit, man_zap.strip()))
                 lead_manual = {
                     "data_minacao": datetime.now().strftime('%d/%m/%Y %H:%M'),
                     "cidade_busca": man_cidade,
@@ -1040,7 +1073,7 @@ elif st.session_state.etapa == 2:
                     "latitude": lat_manual,
                     "longitude": lng_manual,
                     "telefone": man_tel.strip() if man_tel else "(16) Contato via Ficha",
-                    "whatsapp": man_zap.strip() if man_zap else "",
+                    "whatsapp": clean_zap if len(clean_zap) >= 10 else "16999999999",
                     "website": man_site.strip(),
                     "website_https": has_https,
                     "instagram": f"https://instagram.com/{re.sub(r'[^a-zA-Z0-9]', '', man_nome.lower())}",
@@ -1062,6 +1095,19 @@ elif st.session_state.etapa == 2:
                     "obs_followup": ""
                 }
                 salvar_lead_db(lead_manual)
+                
+                # Salvar também na nova tabela isolada `leads_radar_pro`
+                salvar_lead_radar_pro({
+                    "nome_estabelecimento": man_nome.strip(),
+                    "nicho": categoria_final.capitalize(),
+                    "cidade": man_cidade,
+                    "telefone_whatsapp": clean_zap if len(clean_zap) >= 10 else "16999999999",
+                    "instagram": f"https://instagram.com/{re.sub(r'[^a-zA-Z0-9]', '', man_nome.lower())}",
+                    "tem_site": bool(man_site.strip()),
+                    "link_maps": f"https://www.google.com/maps/search/?api=1&query={man_nome.strip().replace(' ', '+')}",
+                    "status_kanban": "Novos Leads"
+                })
+
                 st.success(f"✅ Empresa '{man_nome}' cadastrada e mapeada com sucesso!")
                 time.sleep(1.5)
                 mudar_etapa(3)
@@ -1176,7 +1222,7 @@ elif st.session_state.etapa == 3:
                     try:
                         api_key_atual = st.secrets.get("GOOGLE_API_KEY", None) or os.getenv("GOOGLE_API_KEY", "")
                         if "key=" not in foto_lead and api_key_atual:
-                            foto_lead_auth = f"{foto_lead}&key={api_key_atual.strip().replace('"', '').replace("'", "")}"
+                            foto_lead_auth = f"{foto_lead}&key={api_key_atual.strip().replace('.', '').replace("'", "")}"
                         else:
                             foto_lead_auth = foto_lead
                             
@@ -1271,7 +1317,6 @@ TOUR360VR | Okamoto Mídias Visuais
                 link_mailto = f"mailto:?subject={urllib.parse.quote(assunto_email)}&body={urllib.parse.quote(corpo_email)}"
                 st.markdown(f'<a href="{link_mailto}" target="_blank"><button style="width:100%; background-color:#0284c7; color:white; border:none; padding:8px; border-radius:6px; font-weight:bold; cursor:pointer; margin-bottom:8px;">✉️ Enviar E-mail Pronto</button></a>', unsafe_allow_html=True)
 
-            # BARRA HORIZONTAL DE CONTROLOS CRM ALINHADA PERFEITAMENTE
             st.markdown("<div style='border-top: 1px solid #334155; margin: 12px 0;'></div>", unsafe_allow_html=True)
             bar_col1, bar_col2, bar_col3 = st.columns([1.5, 3, 2.5])
             
@@ -1303,9 +1348,6 @@ TOUR360VR | Okamoto Mídias Visuais
                     atualizar_followup_db(lead['id'], nova_data_fu)
                     st.toast("Data de follow-up atualizada!")
 
-            # -------------------------------------------------------------
-            # NOVO EXPANDER: EDITAR DADOS CADASTRAIS DO LEAD
-            # -------------------------------------------------------------
             with st.expander(f"✏️ **Editar Dados Cadastrais (Nome, Endereço, Telefone, Site, Instagram)**"):
                 with st.form(key=f"form_edit_lead_{lead['id']}"):
                     edit_nome = st.text_input("Nome da Empresa", value=lead.get('nome', ''))
@@ -1325,7 +1367,6 @@ TOUR360VR | Okamoto Mídias Visuais
                             "instagram": edit_insta.strip()
                         }
                         
-                        # Se o endereço mudou, recalcular coordenadas para o mapa/rotas
                         if edit_end.strip() != lead.get('endereco', ''):
                             with st.spinner("Recalculando coordenadas do novo endereço..."):
                                 lat_novo, lng_novo = obter_coordenadas_endereco(edit_end.strip(), lead.get('cidade_busca', 'Ribeirão Preto'))
@@ -1636,3 +1677,51 @@ elif st.session_state.etapa == 5:
                     st.divider()
         else:
             st.warning("Nenhum registro encontrado para os filtros selecionados.")
+
+# -----------------------------------------------------------------------------
+# MÓDULO 6: RADAR PROSPECÇÃO (NOVA ABA COM CRM KANBAN ISOLADO)
+# -----------------------------------------------------------------------------
+elif st.session_state.etapa == 6:
+    st.markdown("""
+        <div class="main-header">
+            <h1 class="main-title">🚀 Radar Prospecção Pro (Nova Aba Integrada)</h1>
+            <div class="main-subtitle">Gestão comercial com tabela isolada no Supabase e fluxo Kanban por etapas.</div>
+        </div>
+    """, unsafe_allow_html=True)
+
+    leads_radar = carregar_leads_radar_pro()
+
+    if not leads_radar:
+        st.info("ℹ️ Nenhum lead encontrado na nova tabela isolada `leads_radar_pro`. Realize uma nova busca no Módulo 2 para abastecer esta aba automaticamente ou veja os dados abaixo.")
+    
+    st.markdown("### 📋 Funil Kanban de Oportunidades")
+    
+    col_k1, col_k2, col_k3, col_k4 = st.columns(4)
+    etapas_kanban = ["Novos Leads", "Abordagem WhatsApp", "Em Negociação", "Contrato Fechado"]
+    
+    # Exemplo visual do Kanban com os dados da base isolada
+    df_radar_kanban = pd.DataFrame(leads_radar) if leads_radar else pd.DataFrame(columns=["nome_estabelecimento", "nicho", "cidade", "telefone_whatsapp", "instagram", "tem_site", "status_kanban"])
+    
+    with col_k1:
+        st.markdown("#### 🆕 Novos Leads")
+        novos_l = df_radar_kanban[df_radar_kanban.get('status_kanban', 'Novos Leads') == 'Novos Leads'] if not df_radar_kanban.empty else []
+        for _, l in df_radar_kanban.iterrows():
+            st.markdown(f"""
+                <div style="background-color: #1e293b; padding: 10px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 8px;">
+                    <b style="color: #ffffff; font-size: 14px;">{l.get('nome_estabelecimento', '')}</b><br/>
+                    <span style="color: #94a3b8; font-size: 12px;">🏷️ {l.get('nicho', '')} — {l.get('cidade', '')}</span><br/>
+                    <span style="color: {'#4ade80' if l.get('tem_site') else '#f87171'}; font-size: 11px;">{'🌐 Possui Site' if l.get('tem_site') else '❌ Sem Site'}</span>
+                </div>
+            """, unsafe_allow_html=True)
+
+    with col_k2:
+        st.markdown("#### 💬 Abordagem WhatsApp")
+        st.caption("Acompanhe os disparos de contato.")
+
+    with col_k3:
+        st.markdown("#### 🤝 Em Negociação")
+        st.caption("Propostas e reuniões em andamento.")
+
+    with col_k4:
+        st.markdown("#### ✅ Fechados")
+        st.caption("Contratos convertidos.")
