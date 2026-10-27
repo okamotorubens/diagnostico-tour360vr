@@ -284,7 +284,7 @@ def limpar_banco_dados():
         st.error(f"Erro ao limpar banco: {str(e)}")
 
 # -----------------------------------------------------------------------------
-# GERADOR DE PDF DO PANORAMA DE NICHO E DO DIAGNÓSTICO INDIVIDUAL APRIMORADO
+# GERADOR DE PDF DO PANORAMA DE NICHO E DO DIAGNÓSTICO INDIVIDUAL
 # -----------------------------------------------------------------------------
 def desenhar_cabecalho_rodape_todas_paginas(canvas, doc):
     canvas.saveState()
@@ -515,7 +515,6 @@ def gerar_pdf_diagnostico_individual(lead):
         fontName='Helvetica-Bold', alignment=1, spaceBefore=0, spaceAfter=4
     )
     
-    # Estilo para o texto de introdução/impacto
     intro_style = ParagraphStyle(
         'IntroText', parent=styles['Normal'],
         fontSize=8.5, textColor=colors.HexColor('#475569'),
@@ -533,13 +532,11 @@ def gerar_pdf_diagnostico_individual(lead):
     title_p = Paragraph(f"DIAGNÓSTICO DE PRESENÇA DIGITAL: {lead['nome'].upper()}", main_title_style)
     elements.append(Table([[title_p]], colWidths=[540], style=[('ALIGN', (0,0), (-1,-1), 'CENTER')]))
     
-    # Adicionando o texto institucional de impacto no PDF
     texto_intro = "Este diagnóstico foi elaborado pela Okamoto Mídias Visuais e Tour360VR com base em inteligência de mercado local para destacar pontos cegos na sua vitrine digital do Google."
     intro_p = Paragraph(texto_intro, intro_style)
     elements.append(intro_p)
     elements.append(Spacer(1, 2))
     
-    # Dados Gerais atualizados com estrela corrigida e Score de Oportunidade
     score_val = lead.get('score_oportunidade', 0)
     dados_empresa = [
         [Paragraph("<b>Empresa / Nicho</b>", body_style), Paragraph(f"{lead['nome']} ({lead['categoria']})", body_style)],
@@ -802,33 +799,38 @@ def buscar_google_places_api(nome_empresa, nicho, cidade, bairro, rua, raio_km, 
                 else:
                     foto_url = ""
 
+                # --- AUDITORIA AMPLIADA (MÚLTIPLOS PONTOS CRÍTICOS E OPORTUNIDADES) ---
                 pontos_criticos = []
                 oportunidades = []
                 score = 0
 
                 has_https = website.startswith("https://") if website else False
                 if not website:
-                    pontos_criticos.append("Sem site oficial vinculado à ficha do Google")
-                    oportunidades.append("Desenvolvimento de Landing Page / Website Responsivo")
-                    score += 30
+                    pontos_criticos.append("Sem website oficial vinculado à ficha do Google (perda de tráfego direto)")
+                    oportunidades.append("Desenvolvimento de Landing Page / Website Responsivo de alta conversão")
+                    score += 25
                 elif not has_https:
-                    pontos_criticos.append("Site oficial sem Certificado de Segurança (HTTP inseguro)")
-                    oportunidades.append("Adequação de Segurança SSL e Otimização Web")
+                    pontos_criticos.append("Site oficial sem Certificado de Segurança SSL (HTTP inseguro gerando alerta no navegador)")
+                    oportunidades.append("Adequação de Segurança SSL e Otimização Web estrutural")
                     score += 15
 
                 if total_avaliacoes < 30:
-                    pontos_criticos.append(f"Volume crítico de avaliações ({total_avaliacoes} total)")
-                    oportunidades.append("Estratégia Acelerada de Reputação e Gestão de Avaliações")
-                    score += 25
-
-                if len(photos) < 8:
-                    pontos_criticos.append(f"Poucas fotos publicadas no perfil ({len(photos)} fotos)")
-                    oportunidades.append("Produção de Fotografia Profissional para Arquitetura e Estrutura")
+                    pontos_criticos.append(f"Volume crítico de avaliações ({total_avaliacoes} total), afetando a prova social perante concorrentes")
+                    oportunidades.append("Estratégia Acelerada de Reputação, QR Codes e Gestão de Avaliações no Google")
                     score += 20
 
-                pontos_criticos.append("Oportunidade de Imersão: Implantação de Tour Virtual 360°")
-                oportunidades.append("Fotografia 360° Imersiva e Publicação no Google Street View")
-                score += 25
+                if len(photos) < 8:
+                    pontos_criticos.append(f"Acervo visual reduzido na ficha do Google ({len(photos)} fotos públicas)")
+                    oportunidades.append("Produção de Fotografia Profissional em Alta Resolução para Arquitetura e Produtos")
+                    score += 20
+
+                pontos_criticos.append("Ausência de Tour Virtual 360° interativo navegável no perfil do Google Street View")
+                oportunidades.append("Implantação de Fotografia 360° Imersiva e Publicação Oficial no Google Maps")
+                score += 20
+
+                pontos_criticos.append("Falta de otimização de palavras-chave locais e descrição editorial estratégica na ficha")
+                oportunidades.append("Reestruturação completa de SEO Local para dominar o Top 3 das buscas na região")
+                score += 15
 
                 clean_phone = "".join(filter(str.isdigit, telefone))
                 if len(clean_phone) > 10 and clean_phone.startswith("55"):
@@ -1138,16 +1140,16 @@ elif st.session_state.etapa == 2:
                 has_https = man_site.startswith("https://") if man_site else False
                 
                 if not man_site:
-                    pontos_criticos.append("Sem site oficial vinculado à ficha do Google")
-                    oportunidades.append("Desenvolvimento de Landing Page / Website Responsivo")
-                    score += 30
-                if man_av < 30:
-                    pontos_criticos.append(f"Volume crítico de avaliações ({man_av} total)")
-                    oportunidades.append("Estratégia Acelerada de Reputação e Gestão de Avaliações")
+                    pontos_criticos.append("Sem website oficial vinculado à ficha do Google (perda de tráfego direto)")
+                    oportunidades.append("Desenvolvimento de Landing Page / Website Responsivo de alta conversão")
                     score += 25
-                pontos_criticos.append("Oportunidade de Imersão: Implantação de Tour Virtual 360°")
-                oportunidades.append("Fotografia 360° Imersiva e Publicação no Google Street View")
-                score += 25
+                if man_av < 30:
+                    pontos_criticos.append(f"Volume crítico de avaliações ({man_av} total), afetando a prova social perante concorrentes")
+                    oportunidades.append("Estratégia Acelerada de Reputação, QR Codes e Gestão de Avaliações no Google")
+                    score += 20
+                pontos_criticos.append("Ausência de Tour Virtual 360° interativo navegável no perfil do Google Street View")
+                oportunidades.append("Implantação de Fotografia 360° Imersiva e Publicação Oficial no Google Maps")
+                score += 20
 
                 clean_zap = "".join(filter(str.isdigit, man_zap.strip()))
                 instagram_url, facebook_url = enriquecer_redes_sociais(man_nome, man_site)
@@ -1337,7 +1339,6 @@ elif st.session_state.etapa == 3:
                         revalidar_ficha_google(lead)
                         st.rerun()
 
-                # BOTÃO DE DOWNLOAD DO PDF DE DIAGNÓSTICO INDIVIDUAL APRIMORADO
                 pdf_bytes_ind = gerar_pdf_diagnostico_individual(lead)
                 st.download_button(
                     label="📄 Baixar Diagnóstico (.pdf)",
@@ -1389,7 +1390,7 @@ elif st.session_state.etapa == 3:
                 assunto_email = f"Oportunidade de Presença Digital: {lead['nome']} no Google"
                 corpo_email = f"""Olá! Analisei o perfil da {lead['nome']} no Google e gostaria de compartilhar uma oportunidade importante.
 
-Identifiquei 3 pontos críticos que estão impactando a confiança de novos clientes no setor de {lead['categoria']}:
+Identifiquei pontos críticos que estão impactando a confiança de novos clientes no setor de {lead['categoria']}:
 1. Ausência de Tour Virtual 360° navegável.
 2. Perfil estático com fotos e informações defasadas.
 3. Falta de otimização de presença digital.
@@ -1492,7 +1493,7 @@ TOUR360VR | Okamoto Mídias Visuais
                 st.markdown("**1) Abordagem Inicial — WhatsApp**")
                 script_wa = f"""Olá! Tudo bem?
 Meu nome é Rubens Okamoto, da Okamoto Mídias Visuais e do Tour360VR.
-Estava analisando a presença da {lead['nome']} no Google, e identifiquei 3 pontos onde a visibilidade do espaço de vocês pode ser bastante ampliada em relação aos concorrentes da região.
+Estava analisando a presença da {lead['nome']} no Google, e identifiquei pontos onde a visibilidade do espaço de vocês pode ser bastante ampliada em relação aos concorrentes da região.
 Montei um relatório curto de diagnóstico em PDF. Posso te enviar por aqui para você dar uma olhada?"""
                 st.markdown(f'<div class="script-box">{script_wa}</div>', unsafe_allow_html=True)
 
@@ -1501,7 +1502,7 @@ Montei um relatório curto de diagnóstico em PDF. Posso te enviar por aqui para
 
 Olá! Analisei o perfil da {lead['nome']} no Google e gostaria de compartilhar uma oportunidade importante.
 
-Identifiquei 3 pontos críticos que estão impactando a confiança de novos clientes:
+Identifiquei pontos críticos que estão impactando a confiança de novos clientes:
 1. Ausência de Tour Virtual 360° navegável (seus concorrentes levam vantagem visual).
 2. Perfil estático com fotos e informações desatualizadas.
 3. Falta de otimização de palavras-chave para o setor de {lead['categoria']}.
@@ -1825,14 +1826,12 @@ elif st.session_state.etapa == 6:
                         with st.container():
                             tem_site_bool = bool(l.get('website'))
                             
-                            # CARD ÚNICO UNIFICADO COM TIMELINE
                             with st.container(border=True):
                                 st.markdown(f"<b style='color: #ffffff; font-size: 14px;'>{l.get('nome', '')}</b>", unsafe_allow_html=True)
                                 st.markdown(f"<span style='color: #94a3b8; font-size: 11px;'>📍 {l.get('cidade_busca', '')} | 🏷️ {l.get('categoria', '')}</span>", unsafe_allow_html=True)
                                 st.markdown(f"<span style='color: {'#4ade80' if tem_site_bool else '#f87171'}; font-size: 10.5px;'>{'🌐 Possui Site' if tem_site_bool else '❌ Sem Site'}</span>", unsafe_allow_html=True)
                                 st.markdown(f"<span style='color: #fbbf24; font-size: 10.5px;'>⭐ Nota: {l.get('nota', 0.0)} ({l.get('total_avaliacoes', 0)} avaliações)</span>", unsafe_allow_html=True)
                                 
-                                # TIMELINE / HISTÓRICO RESTRITO NO CARD
                                 anotacoes_atuais = l.get('anotacoes', '') or ''
                                 if anotacoes_atuais:
                                     st.markdown("<div style='margin-top: 6px; font-size: 11px; color: #94a3b8;'><b>📜 Histórico Recente:</b></div>", unsafe_allow_html=True)
@@ -1840,7 +1839,6 @@ elif st.session_state.etapa == 6:
                                 else:
                                     st.markdown("<div style='margin-top: 4px; font-size: 10px; color: #64748b;'><i>Sem histórico registrado.</i></div>", unsafe_allow_html=True)
 
-                                # FORMULÁRIO RÁPIDO DE ADICIONAR INTERAÇÃO NO CARD
                                 with st.form(key=f"form_kanban_tl_{l['id']}"):
                                     nova_interacao_k = st.text_input("Nova interação:", placeholder="Ex: Ligou, enviou proposta...", label_visibility="collapsed", key=f"input_tl_k_{l['id']}")
                                     btn_add_tl_k = st.form_submit_button("➕ Salvar Log", use_container_width=True)
