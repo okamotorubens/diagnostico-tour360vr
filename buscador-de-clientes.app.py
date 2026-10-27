@@ -512,8 +512,16 @@ def gerar_pdf_diagnostico_individual(lead):
     main_title_style = ParagraphStyle(
         'MainTitle', parent=styles['Heading1'],
         fontSize=13, textColor=colors.HexColor('#0f172a'),
-        fontName='Helvetica-Bold', alignment=1, spaceBefore=0, spaceAfter=8
+        fontName='Helvetica-Bold', alignment=1, spaceBefore=0, spaceAfter=4
     )
+    
+    # Estilo para o texto de introdução/impacto
+    intro_style = ParagraphStyle(
+        'IntroText', parent=styles['Normal'],
+        fontSize=8.5, textColor=colors.HexColor('#475569'),
+        alignment=1, leading=11, spaceBefore=0, spaceAfter=8
+    )
+    
     section_heading = ParagraphStyle(
         'SectionHeading', parent=styles['Heading2'],
         fontSize=9.5, textColor=colors.HexColor('#0f172a'),
@@ -524,7 +532,12 @@ def gerar_pdf_diagnostico_individual(lead):
     elements = []
     title_p = Paragraph(f"DIAGNÓSTICO DE PRESENÇA DIGITAL: {lead['nome'].upper()}", main_title_style)
     elements.append(Table([[title_p]], colWidths=[540], style=[('ALIGN', (0,0), (-1,-1), 'CENTER')]))
-    elements.append(Spacer(1, 4))
+    
+    # Adicionando o texto institucional de impacto no PDF
+    texto_intro = "Este diagnóstico foi elaborado pela Okamoto Mídias Visuais e Tour360VR com base em inteligência de mercado local para destacar pontos cegos na sua vitrine digital do Google."
+    intro_p = Paragraph(texto_intro, intro_style)
+    elements.append(intro_p)
+    elements.append(Spacer(1, 2))
     
     # Dados Gerais atualizados com estrela corrigida e Score de Oportunidade
     score_val = lead.get('score_oportunidade', 0)
