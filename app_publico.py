@@ -28,72 +28,42 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# CSS Rígido: Zeramento de margens, otimização mobile e UI refinada com Botões Modernos
+# CSS Rígido: Ocultação total de barras do Streamlit e Centralização Completa
 custom_css = """
 <style>
     html, body, [data-testid="stAppViewContainer"], .main, .stApp {
-        overflow: hidden !important;
         background-color: #FFFFFF !important;
         color: #111111 !important;
-        padding-top: 0rem !important;
-        margin-top: 0rem !important;
     }
     
     .block-container {
-        padding-top: 0rem !important;
-        padding-bottom: 0rem !important;
+        padding-top: 0.5rem !important;
+        padding-bottom: 2rem !important;
         padding-left: 0.5rem !important;
         padding-right: 0.5rem !important;
-        margin-top: -1.2rem !important;
         max-width: 900px !important;
         border: none !important;
         box-shadow: none !important;
-        outline: none !important;
     }
 
-    [data-testid="stAppViewBlockContainer"], 
-    [data-testid="stForm"],
-    div[class*="stApp"],
-    div[class*="block-container"],
-    div[data-testid="stVerticalBlock"] {
-        border: none !important;
-        box-shadow: none !important;
-        outline: none !important;
-    }
-
+    /* OCULTAÇÃO TOTAL DA BARRA E RODAPÉ DO STREAMLIT */
     footer, 
-    .stApp footer,
-    header, 
+    [data-testid="stFooter"],
     [data-testid="stHeader"], 
-    [data-testid="stAppHeader"],
     [data-testid="stToolbar"], 
     [data-testid="stDecoration"], 
     [data-testid="stStatusWidget"],
-    [data-testid="stFooter"],
     [data-testid="stBottom"],
     [data-testid="stBottomBlockContainer"],
     #MainMenu, 
-    .viewerBadge_container__1QSob, 
-    .styles_viewerBadge__1yB5_,
-    button[title="View source"],
-    button[title="Toggle fullscreen"],
-    a[href*="streamlit"],
-    a[href*="github"],
     div[class*="viewerBadge"],
-    div[class*="styles_viewerBadge"],
     div[class*="stStatusWidget"],
-    div[class*="viewerBadge_container"],
-    div[data-testid*="stStatusWidget"],
-    div[data-testid*="viewerBadge"],
     div[class*="stEmbedFooter"],
-    .stEmbedFooter,
-    .stStatusWidget,
-    div[class*="stBottom"] {
+    .stStatusWidget {
         display: none !important;
         visibility: hidden !important;
         opacity: 0 !important;
         height: 0px !important;
-        width: 0px !important;
         pointer-events: none !important;
     }
 
@@ -132,11 +102,9 @@ custom_css = """
         font-weight: 700;
         margin-bottom: 0.5rem;
         background-color: #ECFDF5;
-        padding: 4px 10px;
+        padding: 4px 12px;
         border-radius: 20px;
         display: inline-block;
-        margin-left: auto;
-        margin-right: auto;
     }
 
     .titulo-secundario {
@@ -144,11 +112,12 @@ custom_css = """
         color: #0F172A !important;
         font-size: 1.05rem;
         font-weight: 700;
-        margin-top: 0.6rem;
-        margin-bottom: 0.3rem;
+        margin-top: 0.8rem;
+        margin-bottom: 0.4rem;
         font-family: 'Arial', sans-serif;
     }
 
+    /* Centralização e Estilização dos Inputs */
     div[data-baseweb="input"], 
     div[data-baseweb="input"] > div, 
     div[data-baseweb="base-input"],
@@ -157,6 +126,7 @@ custom_css = """
     .stTextInput input {
         background-color: #FFFFFF !important;
         color: #000000 !important;
+        text-align: center !important;
     }
 
     .stTextInput input {
@@ -164,9 +134,9 @@ custom_css = """
         border-radius: 10px !important;
         font-size: 1rem !important;
         padding: 0.6rem 0.8rem !important;
-        text-align: center !important;
         color: #0F172A !important;
         box-shadow: inset 0 1px 2px rgba(0,0,0,0.02);
+        margin: 0 auto !important;
     }
     
     .stTextInput input:focus {
@@ -179,14 +149,17 @@ custom_css = """
         color: #1E293B !important;
         font-size: 0.88rem !important;
         font-weight: 700 !important;
-        margin-top: 0.3rem !important;
+        margin-top: 0.5rem !important;
         margin-bottom: 0.05rem !important;
+        width: 100%;
     }
+    
     .subtexto-label {
         font-size: 0.75rem !important;
         color: #64748B !important;
         text-align: center !important;
         margin-bottom: 0.2rem !important;
+        width: 100%;
     }
 
     div[data-testid="stButton"], div.stButton {
@@ -235,19 +208,21 @@ custom_css = """
 """
 st.markdown(custom_css, unsafe_allow_html=True)
 
-# JS de Limpeza Rígida
+# JS de Limpeza Rígida reforçado
 components.html("""
 <script>
-    function destroyStreamlitBadges() {
+    function destroyStreamlitElements() {
         var targets = [document, window.parent.document, window.top.document];
         targets.forEach(function(doc) {
             try {
                 if(!doc) return;
                 var selectors = [
+                    'footer',
                     '[data-testid="stStatusWidget"]',
                     '[data-testid="stHeader"]',
                     '[data-testid="stBottom"]',
                     '[data-testid="stBottomBlockContainer"]',
+                    '[data-testid="stFooter"]',
                     '.viewerBadge_container__1QSob',
                     '[class*="viewerBadge"]',
                     '[class*="styles_viewerBadge"]',
@@ -265,7 +240,7 @@ components.html("""
             } catch(e){}
         });
     }
-    setInterval(destroyStreamlitBadges, 150);
+    setInterval(destroyStreamlitElements, 100);
 </script>
 """, height=0, width=0)
 
@@ -703,7 +678,7 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
         return False, f"Falha no envio do e-mail/PDF: {str(e)}"
 
 # ==========================================
-# INTERFACE STREAMLIT COM COPY PERSUASIVO
+# INTERFACE STREAMLIT COM LAYOUT TOTALMENTE CENTRALIZADO
 # ==========================================
 st.markdown('<div class="titulo-principal">Sua empresa está perdendo clientes no Google agora mesmo?</div>', unsafe_allow_html=True)
 st.markdown('<div class="instrucao-subtitulo">Digite o Nome Comercial exato da sua empresa seguido da Cidade e Estado para descobrir sua nota real.</div>', unsafe_allow_html=True)
