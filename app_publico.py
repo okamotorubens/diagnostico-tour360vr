@@ -22,13 +22,13 @@ from email.mime.application import MIMEApplication
 # CONFIGURAÇÃO DE PÁGINA E CSS STREAMLIT
 # ==========================================
 st.set_page_config(
-    page_title="Análise de Perfil no Google - Tour360VR",
+    page_title="Auditoria Gratuita: Perfil da Empresa no Google | Tour360VR",
     page_icon="🔍",
     layout="centered",
     initial_sidebar_state="collapsed"
 )
 
-# CSS Rígido: Ocultação total de barras do Streamlit e Centralização Completa
+# CSS Rígido: Ocultação total e implacável de barras do Streamlit e UI Moderna
 custom_css = """
 <style>
     html, body, [data-testid="stAppViewContainer"], .main, .stApp {
@@ -46,7 +46,7 @@ custom_css = """
         box-shadow: none !important;
     }
 
-    /* OCULTAÇÃO TOTAL DA BARRA E RODAPÉ DO STREAMLIT */
+    /* OCULTAÇÃO ABSOLUTA DA BARRA, RODAPÉ E MENU DO STREAMLIT */
     footer, 
     [data-testid="stFooter"],
     [data-testid="stHeader"], 
@@ -59,12 +59,17 @@ custom_css = """
     div[class*="viewerBadge"],
     div[class*="stStatusWidget"],
     div[class*="stEmbedFooter"],
-    .stStatusWidget {
+    div[class*="viewerBadge_container"],
+    .stStatusWidget,
+    .viewerBadge_container__1QSob {
         display: none !important;
         visibility: hidden !important;
         opacity: 0 !important;
         height: 0px !important;
+        width: 0px !important;
         pointer-events: none !important;
+        position: absolute !important;
+        z-index: -9999 !important;
     }
 
     .card-resultado-compacto {
@@ -79,7 +84,7 @@ custom_css = """
     .titulo-principal {
         text-align: center;
         color: #0F172A !important;
-        font-size: 1.7rem;
+        font-size: 1.65rem;
         font-weight: 800;
         margin-bottom: 0.2rem;
         line-height: 1.2;
@@ -102,7 +107,7 @@ custom_css = """
         font-weight: 700;
         margin-bottom: 0.5rem;
         background-color: #ECFDF5;
-        padding: 4px 12px;
+        padding: 4px 14px;
         border-radius: 20px;
         display: inline-block;
     }
@@ -208,39 +213,20 @@ custom_css = """
 """
 st.markdown(custom_css, unsafe_allow_html=True)
 
-# JS de Limpeza Rígida reforçado
+# JavaScript Ultra-Agressivo para Destruição da Barra do Streamlit em Tempo de Execução
 components.html("""
 <script>
-    function destroyStreamlitElements() {
-        var targets = [document, window.parent.document, window.top.document];
-        targets.forEach(function(doc) {
-            try {
-                if(!doc) return;
-                var selectors = [
-                    'footer',
-                    '[data-testid="stStatusWidget"]',
-                    '[data-testid="stHeader"]',
-                    '[data-testid="stBottom"]',
-                    '[data-testid="stBottomBlockContainer"]',
-                    '[data-testid="stFooter"]',
-                    '.viewerBadge_container__1QSob',
-                    '[class*="viewerBadge"]',
-                    '[class*="styles_viewerBadge"]',
-                    'a[href*="streamlit"]',
-                    'a[href*="github"]',
-                    '.stEmbedFooter'
-                ];
-                selectors.forEach(function(s) {
-                    var elements = doc.querySelectorAll(s);
-                    elements.forEach(function(el) {
-                        el.style.display = 'none';
-                        el.remove();
-                    });
-                });
-            } catch(e){}
+    function nukeStreamlitFooter() {
+        const targets = [document, window.parent.document, window.top.document];
+        targets.forEach(doc => {
+            if(!doc) return;
+            const elements = doc.querySelectorAll('footer, [data-testid="stFooter"], [data-testid="stStatusWidget"], [data-testid="stHeader"], .viewerBadge_container__1QSob, [class*="viewerBadge"]');
+            elements.forEach(el => {
+                el.remove();
+            });
         });
     }
-    setInterval(destroyStreamlitElements, 100);
+    setInterval(nukeStreamlitFooter, 50);
 </script>
 """, height=0, width=0)
 
@@ -302,7 +288,7 @@ def enviar_lead_zoho_bigin(nome_lead, email_lead, whatsapp_lead, empresa_nome, e
         'Accounts.Account Name': empresa_nome,
         'Phone': whatsapp_lead,
         'CONTACTCF6': f"{score}/100",
-        'Description': f"📌 ORIGEM: Formulário Diagnóstico Site\nCidade: {cidade}\nEndereço: {endereco}\nPontuação Google: {score}/100"
+        'Description': f"📌 ORIGEM: Formulário Diagnóstico Site (GMN)\nCidade: {cidade}\nEndereço: {endereco}\nPontuação Google: {score}/100"
     }
     
     try:
@@ -610,7 +596,7 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
         msg_admin['From'] = f"Tour360VR <{SMTP_USER}>"
         msg_admin['To'] = SMTP_USER
         msg_admin['Reply-To'] = SMTP_USER
-        msg_admin['Subject'] = f"🚀 NOVO LEAD: {empresa_nome} (Score: {score}/100)"
+        msg_admin['Subject'] = f"🚀 NOVO LEAD GMN: {empresa_nome} (Score: {score}/100)"
         
         corpo_admin_html = f"""
         <!DOCTYPE html>
@@ -618,10 +604,10 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
         <head><meta charset="utf-8"></head>
         <body style="font-family: Arial, sans-serif; background-color: #F4F6F9; padding: 15px; margin: 0;">
             <div style="max-width: 580px; background-color: #FFFFFF; padding: 20px; border-radius: 10px; border-top: 5px solid #1565C0; margin: 0 auto;">
-                <h2 style="color: #111111; margin-top: 0; font-size: 18px;">Novo Lead Capturado no Site!</h2>
+                <h2 style="color: #111111; margin-top: 0; font-size: 18px;">Novo Lead Capturado na Isca GMN!</h2>
                 <hr style="border: 0; border-top: 1px solid #EEEEEE; margin: 12px 0;">
                 <p style="font-size: 14px; margin: 4px 0;"><b>Empresa:</b> {empresa_nome}</p>
-                <p style="font-size: 14px; margin: 4px 0;"><b>Pontuação:</b> <span style="font-size: 16px; color: {cor_score_hex}; font-weight: bold;">{score} / 100</span></p>
+                <p style="font-size: 14px; margin: 4px 0;"><b>Pontuação GMN:</b> <span style="font-size: 16px; color: {cor_score_hex}; font-weight: bold;">{score} / 100</span></p>
                 
                 <div style="background-color: #F8F9FA; padding: 12px; border-radius: 8px; border-left: 4px solid #1565C0; margin: 14px 0;">
                     <p style="margin: 3px 0; font-size: 14px;"><b>Nome:</b> {nome_lead}</p>
@@ -646,7 +632,7 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
         msg_cliente['From'] = f"Rubens Okamoto | Tour360VR <{SMTP_USER}>"
         msg_cliente['To'] = email_lead
         msg_cliente['Reply-To'] = SMTP_USER
-        msg_cliente['Subject'] = f"Diagnóstico de Perfil no Google - {empresa_nome}"
+        msg_cliente['Subject'] = f"Auditoria do Perfil da Empresa no Google - {empresa_nome}"
         
         corpo_html_cliente = f"""<!DOCTYPE html>
 <html>
@@ -654,10 +640,10 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
 <body style="font-family: Arial, sans-serif; color: #333333; font-size: 15px; line-height: 1.4; background-color: #FFFFFF; padding: 10px; margin: 0;">
 <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; font-size: 15px; color: #333333;">
 <p style="margin: 0 0 32px 0; font-size: 15px;">Olá, {nome_lead}!</p>
-<p style="margin: 0 0 16px 0;">Recebemos a solicitação de diagnóstico para <b>{empresa_nome}</b>.</p>
-<p style="margin: 0 0 16px 0;">Sua pontuação de otimização atual no Google é: <b style="font-size: 17px; color: {cor_score_hex};">{score}/100</b>.</p>
-<p style="margin: 0 0 16px 0;">Anexamos a este e-mail o seu relatório detalhado em PDF.</p>
-<p style="margin: 32px 0 24px 0;">Em breve, um especialista entrará em contato.</p>
+<p style="margin: 0 0 16px 0;">Realizamos a auditoria automatizada do Perfil da Empresa no Google (Google Meu Negócio) para <b>{empresa_nome}</b>.</p>
+<p style="margin: 0 0 16px 0;">Sua pontuação de otimização atual é: <b style="font-size: 17px; color: {cor_score_hex};">{score}/100</b>.</p>
+<p style="margin: 0 0 16px 0;">Anexamos o relatório técnico completo em PDF contendo o raio-x e as falhas críticas detectadas.</p>
+<p style="margin: 32px 0 24px 0;">Em breve, nossa equipe entrará em contato para ajudar a posicionar sua marca no topo.</p>
 <p style="margin: 0;">Atenciosamente,<br/><b>Rubens Okamoto | Tour360VR</b><br/><a href="https://tour360vr.com.br/" target="_blank" style="color: #1565C0;">https://tour360vr.com.br/</a></p>
 </div>
 </body>
@@ -678,17 +664,17 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
         return False, f"Falha no envio do e-mail/PDF: {str(e)}"
 
 # ==========================================
-# INTERFACE STREAMLIT COM LAYOUT TOTALMENTE CENTRALIZADO
+# INTERFACE STREAMLIT - SEO OTIMIZADO & ISCA DE LEADS
 # ==========================================
-st.markdown('<div class="titulo-principal">Sua empresa está perdendo clientes no Google agora mesmo?</div>', unsafe_allow_html=True)
-st.markdown('<div class="instrucao-subtitulo">Digite o Nome Comercial exato da sua empresa seguido da Cidade e Estado para descobrir sua nota real.</div>', unsafe_allow_html=True)
-st.markdown('<div style="text-align: center;"><span class="selo-gratuito">🔒 Consulta 100% Gratuita e Instantânea</span></div>', unsafe_allow_html=True)
+st.markdown('<div class="titulo-principal">Sua empresa está perdendo clientes no Google Maps e no Google Meu Negócio agora mesmo?</div>', unsafe_allow_html=True)
+st.markdown('<div class="instrucao-subtitulo">Descubra a nota real do Perfil da sua Empresa no Google e quais falhas estão jogando faturamento para os seus concorrentes.</div>', unsafe_allow_html=True)
+st.markdown('<div style="text-align: center;"><span class="selo-gratuito">🔒 Auditoria SEO Local 100% Gratuita e Instantânea</span></div>', unsafe_allow_html=True)
 
 nome_empresa = st.text_input("BuscaInput", value="", placeholder="Ex: Tour360VR Ribeirão Preto SP", label_visibility="collapsed")
 
-if st.button("🔍 Quero Analisar Minha Empresa Grátis Agora"):
+if st.button("🔍 Quero Analisar o Perfil da Minha Empresa Grátis"):
     if nome_empresa:
-        with st.spinner("Analisando perfil no Google Maps..."):
+        with st.spinner("Analisando ranqueamento no Google Maps..."):
             res = consultar_score_google_rigoroso(nome_empresa)
             if res["sucesso"]:
                 st.session_state["resultado_busca"] = res
@@ -703,16 +689,16 @@ if "resultado_busca" in st.session_state:
     <div class="card-resultado-compacto">
         <div style="text-align: center; color: #0F172A; font-size: 1.15rem; font-weight: 800; margin-bottom: 2px;">Empresa Localizada: {dados["nome"]}</div>
         <p style="text-align: center; color: #475569; font-size: 0.88rem; margin-top: 0; margin-bottom: 6px;">📍 {dados["endereco"]}</p>
-        <p style="text-align: center; font-weight: 700; font-size: 0.95rem; color: #1E293B; margin-top: 2px; margin-bottom: 2px;">Pontuação Geral de Otimização</p>
+        <p style="text-align: center; font-weight: 700; font-size: 0.95rem; color: #1E293B; margin-top: 2px; margin-bottom: 2px;">Nota de Otimização no Google</p>
         <div style="text-align: center; font-size: 2.8rem; font-weight: 900; line-height: 1; margin: 4px 0 8px 0; color: {cor_nota} !important;">{dados["score"]} / 100</div>
         <div style="background-color: #FEF3C7; border: 1px solid #F59E0B; border-radius: 6px; padding: 8px 12px; text-align: center; color: #92400E; font-size: 0.88rem; font-weight: 600;">
-            ⚠️ <strong>Atenção:</strong> Identificamos falhas críticas no seu perfil que estão jogando clientes direto para os seus concorrentes!
+            ⚠️ <strong>Alerta Vermelho:</strong> Encontramos falhas de posicionamento e SEO local que estão afastando clientes em potencial da sua região!
         </div>
     </div>
     """
     st.markdown(html_card_resultado, unsafe_allow_html=True)
 
-    st.markdown('<div class="titulo-secundario">Para onde devemos enviar o relatório completo com o raio-x e onde sua ficha está errando?</div>', unsafe_allow_html=True)
+    st.markdown('<div class="titulo-secundario">Para onde devemos enviar o relatório em PDF com o raio-x completo de onde sua ficha está errando?</div>', unsafe_allow_html=True)
     
     st.markdown('<div class="rotulo-campo">Seu Nome:</div>', unsafe_allow_html=True)
     nome_lead = st.text_input("NomeInput", value="", placeholder="Digite o seu nome completo", label_visibility="collapsed")
@@ -729,7 +715,7 @@ if "resultado_busca" in st.session_state:
     if st.session_state.get("envio_sucesso"):
         st.markdown("""
         <div class="card-sucesso-destaque">
-            🎉 Diagnóstico desbloqueado e enviado com sucesso!<br/>Verifique sua caixa de entrada e o spam do seu e-mail.
+            🎉 Diagnóstico desbloqueado e enviado com sucesso!<br/>Verifique sua caixa de entrada e a pasta de spam do seu e-mail.
         </div>
         """, unsafe_allow_html=True)
     else:
