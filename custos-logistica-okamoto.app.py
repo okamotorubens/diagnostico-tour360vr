@@ -176,6 +176,9 @@ def calcular_distancia_maps(destino_endereco):
             distancia_km_ida = distancia_metros / 1000.0
             distancia_ida_volta = round(distancia_km_ida * 2)
             
+            # Capturar duração da viagem (ida)
+            duracao_texto = leg.get('duration', {}).get('text', '')
+            
             pedagios_ida = 0.0
             rodovias_encontradas = []
             
@@ -186,10 +189,7 @@ def calcular_distancia_maps(destino_endereco):
                 if 'pedágio' in instrucao_lower or 'toll' in instrucao_lower:
                     pedagios_ida += 15.0
                 
-                # Extrair rodovias (ex: SP-330, BR-050, Rodovia Anhanguera, etc.)
-                # Limpa tags HTML das instruções
                 texto_limpo = re.sub('<.*?>', '', instrucao_html)
-                # Procura padrões de rodovias comuns no Brasil (SP-XXX, BR-XXX, Rodovia...)
                 matches = re.findall(r'\b(?:BR|SP|MG|MS|GO|PR|RJ)[-–]\d+|\bRodovia\s+[A-Za-zÀ-ÿ\s\d-]+', texto_limpo, re.IGNORECASE)
                 for m in matches:
                     m_clean = m.strip()
@@ -198,12 +198,13 @@ def calcular_distancia_maps(destino_endereco):
             
             pedagio_ida_volta = pedagios_ida * 2
             
-            # Formatar string de rodovias/trechos
             if rodovias_encontradas:
-                # Limitar para não poluir muito o PDF (ex: pegar até 4 principais)
                 rodovias_str = " / ".join(rodovias_encontradas[:4])
             else:
                 rodovias_str = "Rotas principais pavimentadas"
+                
+            if duracao_texto:
+                rodovias_str += f" (Tempo aprox. ida: {duracao_texto})"
             
             return distancia_ida_volta, pedagio_ida_volta, rodovias_str
     except Exception:
@@ -263,10 +264,10 @@ class SimpleCanvasInternal(canvas.Canvas):
         
         self.setStrokeColor(colors.HexColor("#cbd5e1"))
         self.setLineWidth(0.75)
-        self.line(35, 30, 575, 30)
+        self.line(35, 25, 575, 25)
         
         footer_text = "okamotomidiasvisuais.com.br  |  contato@okamotomidiasvisuais.com.br  |  16 99133 2121"
-        self.drawCentredString(305.0, 18, footer_text)
+        self.drawCentredString(305.0, 14, footer_text)
         self.restoreState()
 
 def get_logo_app_path():
@@ -468,7 +469,8 @@ def gerar_pdf_cliente(dados):
 
 def gerar_pdf_interno(dados):
     buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=35, rightMargin=35, topMargin=15, bottomMargin=35)
+    # Margens e espaçamentos compactos para garantir perfeitamente 1 única página
+    doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=35, rightMargin=35, topMargin=12, bottomMargin=25)
     
     servico_exibido = dados['tipo_servico'] if dados['tipo_servico'] != "Outro" else dados['outro_servico_nome']
     nome_serv_ev = dados['nome_servico_input'] if dados['nome_servico_input'] else servico_exibido
@@ -477,13 +479,13 @@ def gerar_pdf_interno(dados):
     doc.title = f"Relatório de custos - {nome_serv_ev} - {data_ev_str}"
     
     styles = getSampleStyleSheet()
-    style_titulo = ParagraphStyle('TitInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=15, leading=18, alignment=0, textColor=colors.HexColor('#0f172a'))
-    style_subtitulo_serv = ParagraphStyle('SubServInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, leading=14, alignment=0, textColor=colors.HexColor('#1e3a8a'))
-    style_data_cab = ParagraphStyle('DataCabInt', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=11, alignment=0, textColor=colors.HexColor('#000000'))
+    style_titulo = ParagraphStyle('TitInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=14, leading=17, alignment=0, textColor=colors.HexColor('#0f172a'))
+    style_subtitulo_serv = ParagraphStyle('SubServInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10.5, leading=13, alignment=0, textColor=colors.HexColor('#1e3a8a'))
+    style_data_cab = ParagraphStyle('DataCabInt', parent=styles['Normal'], fontName='Helvetica', fontSize=8.5, leading=10, alignment=0, textColor=colors.HexColor('#000000'))
     
-    style_secao = ParagraphStyle('SecInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=12, alignment=0, textColor=colors.HexColor('#1e3a8a'))
-    style_corpo = ParagraphStyle('CorpoInt', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=11, textColor=colors.HexColor('#000000'))
-    style_bold = ParagraphStyle('BoldInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9, leading=11, textColor=colors.HexColor('#000000'))
+    style_secao = ParagraphStyle('SecInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9.5, leading=11, alignment=0, textColor=colors.HexColor('#1e3a8a'))
+    style_corpo = ParagraphStyle('CorpoInt', parent=styles['Normal'], fontName='Helvetica', fontSize=8.5, leading=10.5, textColor=colors.HexColor('#000000'))
+    style_bold = ParagraphStyle('BoldInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=8.5, leading=10.5, textColor=colors.HexColor('#000000'))
     
     story = []
 
@@ -492,24 +494,24 @@ def gerar_pdf_interno(dados):
     largura_util = 480
     
     if logo_path:
-        img_int = criar_imagem_proporcional(logo_path, target_width=135)
+        img_int = criar_imagem_proporcional(logo_path, target_width=125)
         img_int.hAlign = 'LEFT'
         
         col_cab_esq = img_int
         col_cab_dir = [
             Paragraph("Relatório de Custos", style_titulo),
-            Spacer(1, 2),
+            Spacer(1, 1),
             Paragraph(f"{nome_serv_ev}", style_subtitulo_serv),
-            Spacer(1, 3),
+            Spacer(1, 2),
             Paragraph(data_criacao_str, style_data_cab)
         ]
         
-        t_cabecalho = Table([[col_cab_esq, col_cab_dir]], colWidths=[140, 340])
+        t_cabecalho = Table([[col_cab_esq, col_cab_dir]], colWidths=[130, 350])
         t_cabecalho.hAlign = 'CENTER'
         t_cabecalho.setStyle(TableStyle([
             ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
             ('LEFTPADDING', (0,0), (0,0), 0),
-            ('LEFTPADDING', (1,0), (1,0), 20),
+            ('LEFTPADDING', (1,0), (1,0), 15),
             ('RIGHTPADDING', (0,0), (-1,-1), 0),
             ('TOPPADDING', (0,0), (-1,-1), 0),
             ('BOTTOMPADDING', (0,0), (-1,-1), 0),
@@ -517,12 +519,12 @@ def gerar_pdf_interno(dados):
         story.append(t_cabecalho)
     else:
         story.append(Paragraph("<b>[ LOGO OKAMOTO ]</b>", style_bold))
-        story.append(Spacer(1, 4))
+        story.append(Spacer(1, 2))
         story.append(Paragraph("Relatório de Custos", style_titulo))
         story.append(Paragraph(f"{nome_serv_ev}", style_subtitulo_serv))
         story.append(Paragraph(data_criacao_str, style_data_cab))
         
-    story.append(Spacer(1, 6))
+    story.append(Spacer(1, 4))
     
     t_linha_int = Table([['']], colWidths=[largura_util], rowHeights=[1])
     t_linha_int.hAlign = 'CENTER'
@@ -532,7 +534,7 @@ def gerar_pdf_interno(dados):
         ('TOPPADDING', (0,0), (-1,-1), 0),
     ]))
     story.append(t_linha_int)
-    story.append(Spacer(1, 10))
+    story.append(Spacer(1, 6))
     
     data_fim_str = dados['data_termino'].strftime('%d/%m/%Y') if dados['tem_data_termino'] else data_ev_str
     local_txt = dados['local'] if dados['local'] else "Local a definir"
@@ -545,12 +547,12 @@ def gerar_pdf_interno(dados):
         [Paragraph("<b>Local:</b>", style_bold), Paragraph(f"{local_txt} — {dados['cidade']}/{dados['estado']}", style_corpo), Paragraph("", style_corpo), Paragraph("", style_corpo)],
         [Paragraph("<b>Captação:</b>", style_bold), Paragraph(captacao_txt, style_corpo), Paragraph("", style_corpo), Paragraph("", style_corpo)]
     ]
-    t_geral = Table(info_geral, colWidths=[80, 160, 70, 170])
+    t_geral = Table(info_geral, colWidths=[75, 165, 70, 170])
     t_geral.hAlign = 'CENTER'
     t_geral.setStyle(TableStyle([
         ('VALIGN', (0,0), (-1,-1), 'TOP'), 
-        ('BOTTOMPADDING', (0,0), (-1,-1), 3), 
-        ('TOPPADDING', (0,0), (-1,-1), 3),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 2), 
+        ('TOPPADDING', (0,0), (-1,-1), 2),
         ('LEFTPADDING', (0,0), (-1,-1), 0),
         ('RIGHTPADDING', (0,0), (-1,-1), 4),
         ('SPAN', (1, 3), (3, 3)),
@@ -558,17 +560,15 @@ def gerar_pdf_interno(dados):
     ]))
     story.append(t_geral)
     
-    story.append(Spacer(1, 16))
+    story.append(Spacer(1, 10))
     
     t_sec1 = Table([[Paragraph("1. Custos de Logística, Deslocamento & Operacionais", style_secao)]], colWidths=[largura_util])
     t_sec1.hAlign = 'CENTER'
     t_sec1.setStyle(TableStyle([('LEFTPADDING', (0,0), (-1,-1), 0), ('RIGHTPADDING', (0,0), (-1,-1), 0), ('TOPPADDING', (0,0), (-1,-1), 0), ('BOTTOMPADDING', (0,0), (-1,-1), 0)]))
     story.append(t_sec1)
-    story.append(Spacer(1, 4))
+    story.append(Spacer(1, 3))
     
     combustivel_detalhe = f"Consumo: {dados['consumo_veiculo']} km/L | {dados['litros_gastos']:.1f}L a {fmt_brl(dados['preco_combustivel'])}/L"
-    
-    # Puxar rodovias capturadas ou usar padrão
     rodovias_info = dados.get('rodovias_trecho', 'Rodovias e acessos principais')
     trajeto_detalhe = f"Origem: Rua Manoel Achê, 327, Ribeirão Preto - SP<br/>Destino: {dados.get('local', 'Local')} — {dados['cidade']}/{dados['estado']}<br/><b>Rodovias/Trecho:</b> {rodovias_info}<br/>(Cálculo automático Google Maps - Ida e Volta)"
     
@@ -588,7 +588,7 @@ def gerar_pdf_interno(dados):
         [Paragraph("Outros", style_corpo), Paragraph("Despesas diversas", style_corpo), Paragraph(f"&nbsp;&nbsp;{fmt_brl(dados['custo_outros'])}", style_corpo)],
         [Paragraph("<b>TOTAL LOGÍSTICA & OPERACIONAL</b>", style_bold), Paragraph("", style_corpo), Paragraph(f"<b>&nbsp;&nbsp;{fmt_brl(custo_logistica_parcial)}</b>", style_bold)]
     ]
-    t_log = Table(tabela_log_dados, colWidths=[120, 240, 120])
+    t_log = Table(tabela_log_dados, colWidths=[110, 260, 110])
     t_log.hAlign = 'CENTER'
     ts_log = TableStyle()
     ts_log.add('BACKGROUND', (0,0), (-1,0), colors.HexColor('#f8fafc'))
@@ -596,22 +596,22 @@ def gerar_pdf_interno(dados):
     ts_log.add('ALIGN', (0,0), (-1,-1), 'LEFT')
     ts_log.add('ALIGN', (2,0), (2,-1), 'RIGHT')
     ts_log.add('VALIGN', (0,0), (-1,-1), 'MIDDLE')
-    ts_log.add('BOTTOMPADDING', (0,0), (-1,-1), 1.5)
-    ts_log.add('TOPPADDING', (0,0), (-1,-1), 1.5)
-    ts_log.add('LEFTPADDING', (0,0), (-1,-1), 5)
-    ts_log.add('RIGHTPADDING', (0,0), (-1,-1), 5)
+    ts_log.add('BOTTOMPADDING', (0,0), (-1,-1), 1)
+    ts_log.add('TOPPADDING', (0,0), (-1,-1), 1)
+    ts_log.add('LEFTPADDING', (0,0), (-1,-1), 4)
+    ts_log.add('RIGHTPADDING', (0,0), (-1,-1), 4)
     ts_log.add('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1'))
     ts_log.add('SPAN', (0, -1), (1, -1))
     t_log.setStyle(ts_log)
     story.append(t_log)
     
-    story.append(Spacer(1, 16))
+    story.append(Spacer(1, 10))
     
     t_sec2 = Table([[Paragraph("2. Impostos & Comissão", style_secao)]], colWidths=[largura_util])
     t_sec2.hAlign = 'CENTER'
     t_sec2.setStyle(TableStyle([('LEFTPADDING', (0,0), (-1,-1), 0), ('RIGHTPADDING', (0,0), (-1,-1), 0), ('TOPPADDING', (0,0), (-1,-1), 0), ('BOTTOMPADDING', (0,0), (-1,-1), 0)]))
     story.append(t_sec2)
-    story.append(Spacer(1, 4))
+    story.append(Spacer(1, 3))
     
     total_impostos_comissao = dados['valor_impostos'] + dados['comissao']
     
@@ -624,7 +624,7 @@ def gerar_pdf_interno(dados):
         [Paragraph("Comissão", style_corpo), Paragraph(f"{dados['comissao_perc']}% sobre o faturamento", style_corpo), Paragraph(f"&nbsp;&nbsp;{fmt_brl(dados['comissao'])}", style_corpo)],
         [Paragraph("<b>TOTAL IMPOSTOS & COMISSÃO</b>", style_bold), Paragraph("", style_corpo), Paragraph(f"<b>&nbsp;&nbsp;{fmt_brl(total_impostos_comissao)}</b>", style_bold)]
     ]
-    t_op = Table(tabela_op_dados, colWidths=[120, 240, 120])
+    t_op = Table(tabela_op_dados, colWidths=[110, 260, 110])
     t_op.hAlign = 'CENTER'
     ts_op = TableStyle()
     ts_op.add('BACKGROUND', (0,0), (-1,0), colors.HexColor('#f8fafc'))
@@ -632,27 +632,27 @@ def gerar_pdf_interno(dados):
     ts_op.add('ALIGN', (0,0), (-1,-1), 'LEFT')
     ts_op.add('ALIGN', (2,0), (2,-1), 'RIGHT')
     ts_op.add('VALIGN', (0,0), (-1,-1), 'MIDDLE')
-    ts_op.add('BOTTOMPADDING', (0,0), (-1,-1), 1.5)
-    ts_op.add('TOPPADDING', (0,0), (-1,-1), 1.5)
-    ts_op.add('LEFTPADDING', (0,0), (-1,-1), 5)
-    ts_op.add('RIGHTPADDING', (0,0), (-1,-1), 5)
+    ts_op.add('BOTTOMPADDING', (0,0), (-1,-1), 1)
+    ts_op.add('TOPPADDING', (0,0), (-1,-1), 1)
+    ts_op.add('LEFTPADDING', (0,0), (-1,-1), 4)
+    ts_op.add('RIGHTPADDING', (0,0), (-1,-1), 4)
     ts_op.add('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1'))
     ts_op.add('SPAN', (0, -1), (1, -1))
     t_op.setStyle(ts_op)
     story.append(t_op)
     
-    story.append(Spacer(1, 16))
+    story.append(Spacer(1, 10))
     
     t_sec3 = Table([[Paragraph("3. Fechamento Financeiro & Margem", style_secao)]], colWidths=[largura_util])
     t_sec3.hAlign = 'CENTER'
     t_sec3.setStyle(TableStyle([('LEFTPADDING', (0,0), (-1,-1), 0), ('RIGHTPADDING', (0,0), (-1,-1), 0), ('TOPPADDING', (0,0), (-1,-1), 0), ('BOTTOMPADDING', (0,0), (-1,-1), 0)]))
     story.append(t_sec3)
-    story.append(Spacer(1, 4))
+    story.append(Spacer(1, 3))
     
-    style_res_label = ParagraphStyle('ResLabelInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9.5, leading=12, alignment=0, textColor=colors.HexColor('#334155'))
-    style_res_fat_val = ParagraphStyle('ResFatValInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9.5, leading=12, alignment=2, textColor=colors.HexColor('#1e3a8a'))
-    style_res_custo_val = ParagraphStyle('ResCustoValInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9.5, leading=12, alignment=2, textColor=colors.HexColor('#b91c1c'))
-    style_res_lucro_val = ParagraphStyle('ResLucroValInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=13, alignment=2, textColor=colors.HexColor('#047857'))
+    style_res_label = ParagraphStyle('ResLabelInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=8.5, leading=11, alignment=0, textColor=colors.HexColor('#334155'))
+    style_res_fat_val = ParagraphStyle('ResFatValInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=8.5, leading=11, alignment=2, textColor=colors.HexColor('#1e3a8a'))
+    style_res_custo_val = ParagraphStyle('ResCustoValInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=8.5, leading=11, alignment=2, textColor=colors.HexColor('#b91c1c'))
+    style_res_lucro_val = ParagraphStyle('ResLucroValInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9, leading=12, alignment=2, textColor=colors.HexColor('#047857'))
     
     tabela_resumo_interno = [
         [Paragraph("Faturamento Total:", style_res_label), Paragraph(fmt_brl(dados['valor_final']), style_res_fat_val)],
@@ -665,40 +665,14 @@ def gerar_pdf_interno(dados):
     ts_res = TableStyle()
     ts_res.add('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#f8fafc'))
     ts_res.add('VALIGN', (0,0), (-1,-1), 'MIDDLE')
-    ts_res.add('BOTTOMPADDING', (0,0), (-1,-1), 4.5)
-    ts_res.add('TOPPADDING', (0,0), (-1,-1), 4.5)
-    ts_res.add('LEFTPADDING', (0,0), (-1,-1), 10)
-    ts_res.add('RIGHTPADDING', (0,0), (-1,-1), 10)
+    ts_res.add('BOTTOMPADDING', (0,0), (-1,-1), 3.5)
+    ts_res.add('TOPPADDING', (0,0), (-1,-1), 3.5)
+    ts_res.add('LEFTPADDING', (0,0), (-1,-1), 8)
+    ts_res.add('RIGHTPADDING', (0,0), (-1,-1), 8)
     ts_res.add('BOX', (0,0), (-1,-1), 1, colors.HexColor('#cbd5e1'))
     ts_res.add('LINEBELOW', (0,0), (-1,-2), 0.5, colors.HexColor('#e2e8f0'))
     t_res_int.setStyle(ts_res)
     story.append(t_res_int)
-    
-    story.append(Spacer(1, 16))
-    
-    t_sec4 = Table([[Paragraph("4. Observações", style_secao)]], colWidths=[largura_util])
-    t_sec4.hAlign = 'CENTER'
-    t_sec4.setStyle(TableStyle([('LEFTPADDING', (0,0), (-1,-1), 0), ('RIGHTPADDING', (0,0), (-1,-1), 0), ('TOPPADDING', (0,0), (-1,-1), 0), ('BOTTOMPADDING', (0,0), (-1,-1), 0)]))
-    story.append(t_sec4)
-    story.append(Spacer(1, 4))
-    
-    obs_linhas = [
-        [Paragraph("", style_corpo)],
-        [Paragraph("", style_corpo)],
-        [Paragraph("", style_corpo)],
-        [Paragraph("", style_corpo)],
-        [Paragraph("", style_corpo)]
-    ]
-    t_obs = Table(obs_linhas, colWidths=[largura_util], rowHeights=[22, 22, 22, 22, 22])
-    t_obs.hAlign = 'CENTER'
-    t_obs.setStyle(TableStyle([
-        ('BOX', (0,0), (-1,-1), 0.75, colors.HexColor('#cbd5e1')),
-        ('LINEBELOW', (0,0), (-1,-2), 0.5, colors.HexColor('#e2e8f0')),
-        ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#fcfcfc')),
-        ('TOPPADDING', (0,0), (-1,-1), 2),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 2),
-    ]))
-    story.append(t_obs)
 
     doc.build(story, canvasmaker=SimpleCanvasInternal)
     buffer.seek(0)
