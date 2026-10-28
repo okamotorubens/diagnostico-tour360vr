@@ -565,6 +565,7 @@ def gerar_pdf_interno(dados):
     
     combustivel_detalhe = f"Consumo: {dados['consumo_veiculo']} km/L | {dados['litros_gastos']:.1f}L a {fmt_brl(dados['preco_combustivel'])}/L"
     
+    # Separando em linhas limpas conforme solicitado
     origem_txt = "Origem: Rua Manoel Achê, 327, Ribeirão Preto - SP"
     destino_txt = f"Destino: {dados.get('local', 'Local')} — {dados['cidade']}/{dados['estado']}"
     rodovias_info = dados.get('rodovias_trecho', 'Rodovias e acessos principais')
@@ -981,4 +982,362 @@ elif st.session_state.current_tab_idx == 2:
         s_outro = st.session_state.get("outro_servico_nome", "")
         s_input = st.session_state.get("nome_servico_input", "")
         
-        servico_nome = s_tipo if s_tipo != "
+        servico_nome = s_tipo if s_tipo != "Outro" else s_outro
+        nome_serv_ev = s_input if s_input else servico_nome
+        
+        tabela_atual = TABELAS_SERVICOS.get(s_tipo, TABELAS_SERVICOS["Evento social"])
+        
+        dias_evento = 1
+        d_ev = st.session_state.get("data_evento", datetime.now())
+        d_ter = st.session_state.get("data_termino", datetime.now())
+        if st.session_state.get("tem_data_termino", False):
+            dias_evento = max(1, (d_ter - d_ev).days + 1)
+
+        val_pers = st.session_state.get("valor_personalizado", 0.0)
+        if val_pers > 0:
+            valor_base = val_pers
+        else:
+            c_horaria = st.session_state.get("carga_horaria_sel", "1h")
+            if "diária" in c_horaria:
+                qtd_diarias = int(c_horaria.split()[0])
+                valor_base = tabela_atual.get(10, 1300.0) * qtd_diarias * dias_evento
+            else:
+                horas_num = int(c_horaria.replace("h", ""))
+                horas_buscadas = min(horas_num, 12)
+                valor_base = tabela_atual.get(horas_buscadas, 1500.0) * dias_evento
+                if horas_num > 12:
+                    valor_base += (horas_num - 12) * tabela_atual.get(1, 180.0) * dias_evento
+
+        d_perc = st.session_state.get("desconto_perc", 0.0)
+        d_val = st.session_state.get("desconto_valor_input", 0.0)
+        aj_man = st.session_state.get("ajuste_manual", 0.0)
+        
+        if d_perc > 0:
+            valor_desconto_calculado = valor_base * (d_perc / 100.0)
+        else:
+            valor_desconto_calculado = d_val
+
+        valor_intermediario = valor_base - valor_desconto_calculado - aj_man
+        valor_final = max(0.0, valor_intermediario)
+
+        dist = st.session_state.get("distancia_ida_volta", 0)
+        cons = st.session_state.get("consumo_medio", 11.5)
+        p_comb = st.session_state.get("preco_combustivel", 6.8)
+        ped = st.session_state.get("pedagio_total", 0.0)
+        est = st.session_state.get("custo_estacionamento", 0.0)
+        
+        litros_gastos = dist / cons if cons > 0 else 0
+        custo_combustivel = litros_gastos * p_comb
+        custo_logistica_total = custo_combustivel + ped + est
+
+        hosp_tot = st.session_state.get("qtd_hosp", 0) * st.session_state.get("val_hosp", 250.0)
+        custo_total_operacional_log = custo_logistica_total + hosp_tot + st.session_state.get("custo_almoco", 0.0) + st.session_state.get("custo_jantar", 0.0) + st.session_state.get("custo_freelancer", 0.0) + st.session_state.get("custo_outros", 0.0)
+        
+        imp_p = st.session_state.get("imposto_perc", 6.0)
+        com_p = st.session_state.get("comissao_perc", 0)
+        
+        valor_impostos = valor_final * (imp_p / 100.0)
+        valor_comissao = valor_final * (com_p / 100.0)
+        
+        custo_total_interno = custo_total_operacional_log + valor_impostos + valor_comissao
+        lucro_liquido = valor_final - custo_total_interno
+        margem_lucro = (lucro_liquido / valor_final * 100) if valor_final > 0 else 0
+    except Exception:
+        valor_base = 0.0
+        valor_desconto_calculado = 0.0
+        valor_final = 0.0
+        litros_gastos = 0.0
+        custo_combustivel = 0.0
+        hosp_tot = 0.0
+        custo_total_interno = 0.0
+        lucro_liquido = 0.0
+        margem_lucro = 0.0
+        valor_impostos = 0.0
+        valor_comissao = 0.0
+
+    c_horaria_sel_str = st.session_state.get("carga_horaria_sel", "1h")
+    if "diária" in c_horaria_sel_str:
+        num_diarias_unit = int(c_horaria_sel_str.split()[0])
+        carga_horaria_total_texto_pdf = f"{num_diarias_unit * dias_evento} diária(s)"
+    else:
+        horas_unit = int(c_horaria_sel_str.replace("h", ""))
+        total_horas_calc = horas_unit * dias_evento
+        if dias_evento > 1:
+            carga_horaria_total_texto_pdf = f"{total_horas_calc}h ({dias_evento}d x {horas_unit}h)"
+        else:
+            carga_horaria_total_texto_pdf = f"{total_horas_calc}h"
+
+    dados_completos = {
+        "contato": st.session_state.get("contato", ""),
+        "empresa": st.session_state.get("empresa", ""),
+        "telefone": st.session_state.get("telefone", ""),
+        "email": st.session_state.get("email", ""),
+        "data_orcamento": st.session_state.get("data_orcamento", datetime.now()),
+        "data_evento": st.session_state.get("data_evento", datetime.now()),
+        "tem_data_termino": st.session_state.get("tem_data_termino", False),
+        "data_termino": st.session_state.get("data_termino", datetime.now()),
+        "horario": st.session_state.get("horario", "08h00"),
+        "nome_servico_input": st.session_state.get("nome_servico_input", ""),
+        "local": st.session_state.get("local", ""),
+        "cidade": st.session_state.get("cidade", "Ribeirão Preto"),
+        "estado": st.session_state.get("estado", "SP"),
+        "tipo_servico": st.session_state.get("tipo_servico", "Evento social"),
+        "outro_servico_nome": st.session_state.get("outro_servico_nome", ""),
+        "carga_horaria_sel": st.session_state.get("carga_horaria_sel", "1h"),
+        "carga_horaria_total_texto_pdf": carga_horaria_total_texto_pdf,
+        "escopo_servico": st.session_state.get("escopo_servico", ""),
+        "captacao": st.session_state.get("captacao", ""),
+        "validade_orcamento": st.session_state.get("validade_orcamento", "05 dias"),
+        "forma_entrega": st.session_state.get("forma_entrega", default_entrega_txt),
+        "forma_pagamento_tipo": st.session_state.get("forma_pagamento_tipo", "À vista"),
+        "condicao_pagamento": st.session_state.get("condicao_pagamento_final", "PIX"),
+        "prazo_pagamento_dias": st.session_state.get("prazo_pagamento_dias", 5),
+        "desconto_perc": st.session_state.get("desconto_perc", 0.0),
+        "ajuste_manual": st.session_state.get("ajuste_manual", 0.0),
+        "valor_base": valor_base,
+        "valor_desconto_calculado": valor_desconto_calculado,
+        "valor_final": valor_final,
+        "distancia": st.session_state.get("distancia_ida_volta", 0),
+        "consumo_veiculo": st.session_state.get("consumo_medio", 11.5),
+        "litros_gastos": litros_gastos,
+        "preco_combustivel": st.session_state.get("preco_combustivel", 6.8),
+        "custo_combustivel": custo_combustivel,
+        "pedagios": st.session_state.get("pedagio_total", 0.0),
+        "custo_estacionamento": st.session_state.get("custo_estacionamento", 0.0),
+        "custo_hospedagem_total": hosp_tot,
+        "custo_almoco": st.session_state.get("custo_almoco", 0.0),
+        "custo_jantar": st.session_state.get("custo_jantar", 0.0),
+        "custo_freelancer": st.session_state.get("custo_freelancer", 0.0),
+        "custo_outros": st.session_state.get("custo_outros", 0.0),
+        "imposto_perc": st.session_state.get("imposto_perc", 6.0),
+        "valor_impostos": valor_impostos,
+        "comissao_perc": st.session_state.get("comissao_perc", 0),
+        "comissao": valor_comissao,
+        "custo_total_interno": custo_total_interno,
+        "lucro_liquido": lucro_liquido,
+        "margem_lucro": margem_lucro,
+        "rodovias_trecho": st.session_state.get("rodovias_trecho", "Rodovias e acessos principais"),
+        "tempo_viagem": st.session_state.get("tempo_viagem", "")
+    }
+
+    pdf_cliente_bytes = gerar_pdf_cliente(dados_completos)
+    pdf_interno_bytes = gerar_pdf_interno(dados_completos)
+
+    if supabase and st.button("💾 Salvar Proposta & Custos no Supabase", use_container_width=True):
+        try:
+            supabase.table("historico_propostas").insert({
+                "contato": dados_completos["contato"],
+                "empresa": dados_completos["empresa"],
+                "telefone": dados_completos["telefone"],
+                "email": dados_completos["email"],
+                "tipo_servico": dados_completos["tipo_servico"],
+                "nome_servico": nome_serv_ev,
+                "data_evento": dados_completos["data_evento"].isoformat(),
+                "cidade": dados_completos["cidade"],
+                "estado": dados_completos["estado"],
+                "valor_final": float(valor_final),
+                "status": "Pendente",
+                "dados_completos": json.dumps(dados_completos, default=str)
+            }).execute()
+
+            supabase.table("historico_custos").insert({
+                "nome_servico": nome_serv_ev,
+                "cliente": dados_completos["contato"],
+                "faturamento": float(valor_final),
+                "custo_total": float(custo_total_interno),
+                "lucro_liquido": float(lucro_liquido),
+                "margem_lucro": float(margem_lucro)
+            }).execute()
+            
+            st.success("✅ Proposta e Custos salvos com sucesso no Supabase!")
+        except Exception as e:
+            st.error(f"Erro ao salvar no Supabase: {e}")
+
+    col_down1, col_down2 = st.columns(2)
+    data_arquivo_str = datetime.now().strftime('%d-%m-%Y')
+    nome_arquivo_cliente = f"Proposta comercial - Okamoto Midias Visuais - {nome_serv_ev} - {data_arquivo_str}.pdf"
+    nome_arquivo_interno = f"Relatorio de custos - {nome_serv_ev} - {data_arquivo_str}.pdf"
+
+    with col_down1:
+        st.download_button(
+            label="📄 Baixar Proposta Comercial (Cliente)",
+            data=pdf_cliente_bytes,
+            file_name=nome_arquivo_cliente,
+            mime="application/pdf",
+            use_container_width=True
+        )
+
+    with col_down2:
+        st.download_button(
+            label="🔒 Baixar Relatório Interno (Custos)",
+            data=pdf_interno_bytes,
+            file_name=nome_arquivo_interno,
+            mime="application/pdf",
+            use_container_width=True
+        )
+
+    st.markdown("---")
+    if st.button("⬅️ Voltar", key="btn_voltar_aba2", use_container_width=True):
+        st.session_state.current_tab_idx = 1
+        scroll_to_top()
+        st.rerun()
+
+elif st.session_state.current_tab_idx == 3:
+    st.subheader("📊 Painel de Negócios & Histórico (Pipeline)")
+    
+    if supabase:
+        try:
+            res_props = supabase.table("historico_propostas").select("*").order("created_at", desc=True).limit(20).execute()
+            propostas = res_props.data if res_props.data else []
+
+            total_props = len(propostas)
+            aprovadas = sum(1 for p in propostas if p.get('status') == 'Aprovada')
+            pendentes = sum(1 for p in propostas if p.get('status') == 'Pendente')
+            recusadas = sum(1 for p in propostas if p.get('status') == 'Recusada')
+
+            m1, m2, m3, m4 = st.columns(4)
+            m1.metric("Total Registros", total_props)
+            m2.metric("Pendentes", pendentes)
+            m3.metric("Aprovadas", aprovadas)
+            m4.metric("Recusadas", recusadas)
+
+            st.markdown("---")
+            st.markdown("##### 📋 Últimas Propostas Gerenciadas")
+
+            for prop in propostas:
+                with st.container():
+                    col_info1, col_info2, col_info3, col_info4, col_info5 = st.columns([2.5, 2.0, 1.5, 1.3, 1.3])
+                    with col_info1:
+                        st.markdown(f"**{prop.get('contato')}** ({prop.get('empresa')})<br><small>{prop.get('nome_servico')}</small>", unsafe_allow_html=True)
+                    with col_info2:
+                        st.markdown(f"Valor: **{fmt_brl(prop.get('valor_final', 0))}**<br><small>Data: {prop.get('created_at')[:10]}</small>", unsafe_allow_html=True)
+                    with col_info3:
+                        status_atual = prop.get('status', 'Pendente')
+                        novo_status = st.selectbox("Status", ["Pendente", "Aprovada", "Recusada"], index=["Pendente", "Aprovada", "Recusada"].index(status_atual), key=f"st_{prop['id']}")
+                        if novo_status != status_atual:
+                            supabase.table("historico_propostas").update({"status": novo_status}).eq("id", prop['id']).execute()
+                            st.rerun()
+                    with col_info4:
+                        if st.button("✏️ Editar", key=f"edit_{prop['id']}"):
+                            try:
+                                dados_antigos = json.loads(prop['dados_completos'])
+                                for k, v in dados_antigos.items():
+                                    if k in ["data_orcamento", "data_evento", "data_termino"] and v:
+                                        try:
+                                            st.session_state[k] = datetime.fromisoformat(v)
+                                        except Exception:
+                                            pass
+                                    else:
+                                        st.session_state[k] = v
+                                st.session_state.current_tab_idx = 0
+                                st.success("Orçamento carregado para edição!")
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"Erro ao carregar: {e}")
+                    with col_info5:
+                        if st.button("🗑️ Excluir", key=f"del_{prop['id']}"):
+                            try:
+                                supabase.table("historico_propostas").delete().eq("id", prop['id']).execute()
+                                st.success("Proposta excluída com sucesso!")
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"Erro ao excluir: {e}")
+                    st.divider()
+
+        except Exception as e:
+            st.error(f"Erro ao conectar com o Supabase: {e}")
+    else:
+        st.warning("⚠️ Conexão com o Supabase não configurada. Verifique os segredos (secrets.toml).")
+
+try:
+    s_tipo = st.session_state.get("tipo_servico", "Evento social")
+    s_outro = st.session_state.get("outro_servico_nome", "")
+    s_input = st.session_state.get("nome_servico_input", "")
+    
+    servico_nome = s_tipo if s_tipo != "Outro" else s_outro
+    nome_serv_ev = s_input if s_input else servico_nome
+    
+    tabela_atual = TABELAS_SERVICOS.get(s_tipo, TABELAS_SERVICOS["Evento social"])
+    
+    dias_evento = 1
+    d_ev = st.session_state.get("data_evento", datetime.now())
+    d_ter = st.session_state.get("data_termino", datetime.now())
+    if st.session_state.get("tem_data_termino", False):
+        dias_evento = max(1, (d_ter - d_ev).days + 1)
+
+    val_pers = st.session_state.get("valor_personalizado", 0.0)
+    if val_pers > 0:
+        valor_base = val_pers
+    else:
+        c_horaria = st.session_state.get("carga_horaria_sel", "1h")
+        if "diária" in c_horaria:
+            qtd_diarias = int(c_horaria.split()[0])
+            valor_base = tabela_atual.get(10, 1300.0) * qtd_diarias * dias_evento
+        else:
+            horas_num = int(c_horaria.replace("h", ""))
+            horas_buscadas = min(horas_num, 12)
+            valor_base = tabela_atual.get(horas_buscadas, 1500.0) * dias_evento
+            if horas_num > 12:
+                valor_base += (horas_num - 12) * tabela_atual.get(1, 180.0) * dias_evento
+
+    d_perc = st.session_state.get("desconto_perc", 0.0)
+    d_val = st.session_state.get("desconto_valor_input", 0.0)
+    aj_man = st.session_state.get("ajuste_manual", 0.0)
+    
+    if d_perc > 0:
+        valor_desconto_calculado = valor_base * (d_perc / 100.0)
+    else:
+        valor_desconto_calculado = d_val
+
+    valor_intermediario = valor_base - valor_desconto_calculado - aj_man
+    valor_final = max(0.0, valor_intermediario)
+
+    dist = st.session_state.get("distancia_ida_volta", 0)
+    cons = st.session_state.get("consumo_medio", 11.5)
+    p_comb = st.session_state.get("preco_combustivel", 6.8)
+    ped = st.session_state.get("pedagio_total", 0.0)
+    est = st.session_state.get("custo_estacionamento", 0.0)
+    
+    litros_gastos = dist / cons if cons > 0 else 0
+    custo_combustivel = litros_gastos * p_comb
+    custo_logistica_total = custo_combustivel + ped + est
+
+    hosp_tot = st.session_state.get("qtd_hosp", 0) * st.session_state.get("val_hosp", 250.0)
+    custo_total_operacional_log = custo_logistica_total + hosp_tot + st.session_state.get("custo_almoco", 0.0) + st.session_state.get("custo_jantar", 0.0) + st.session_state.get("custo_freelancer", 0.0) + st.session_state.get("custo_outros", 0.0)
+    
+    imp_p = st.session_state.get("imposto_perc", 6.0)
+    com_p = st.session_state.get("comissao_perc", 0)
+    
+    valor_impostos = valor_final * (imp_p / 100.0)
+    valor_comissao = valor_final * (com_p / 100.0)
+    
+    custo_total_interno = custo_total_operacional_log + valor_impostos + valor_comissao
+    lucro_liquido = valor_final - custo_total_interno
+    margem_lucro = (lucro_liquido / valor_final * 100) if valor_final > 0 else 0
+except Exception:
+    valor_final = 0.0
+    custo_total_interno = 0.0
+    lucro_liquido = 0.0
+    margem_lucro = 0.0
+
+st.markdown("---")
+st.markdown("### 📈 Quadro de Prévia em Tempo Real (Visão Geral)")
+
+c_horaria_sel_str = st.session_state.get("carga_horaria_sel", "1h")
+if "diária" in c_horaria_sel_str:
+    num_diarias_unit = int(c_horaria_sel_str.split()[0])
+    carga_horaria_total_exibida = f"{num_diarias_unit * dias_evento} diária(s)"
+else:
+    horas_unit = int(c_horaria_sel_str.replace("h", ""))
+    total_horas_calc = horas_unit * dias_evento
+    if dias_evento > 1:
+        carga_horaria_total_exibida = f"{total_horas_calc}h ({dias_evento}d x {horas_unit}h)"
+    else:
+        carga_horaria_total_exibida = f"{total_horas_calc}h"
+
+col_res1, col_res2, col_res3, col_res4, col_res5 = st.columns([1.2, 1.2, 1.2, 1.1, 1.3])
+col_res1.metric("Valor Cliente", fmt_brl(valor_final))
+col_res2.metric("Custos", fmt_brl(custo_total_interno))
+col_res3.metric("Lucro Est.", fmt_brl(lucro_liquido))
+col_res4.metric("Margem", f"{margem_lucro:.1f}%")
+col_res5.metric("Carga Horária", carga_horaria_total_exibida)
