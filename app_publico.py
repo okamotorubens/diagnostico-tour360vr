@@ -28,7 +28,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# CSS Rígido: Zeramento de margens, otimização mobile e UI refinada
+# CSS Rígido: Zeramento de margens, otimização mobile e UI refinada com Botões Modernos
 custom_css = """
 <style>
     html, body, [data-testid="stAppViewContainer"], .main, .stApp {
@@ -109,7 +109,7 @@ custom_css = """
     .titulo-principal {
         text-align: center;
         color: #0F172A !important;
-        font-size: 1.9rem;
+        font-size: 1.7rem;
         font-weight: 800;
         margin-bottom: 0.2rem;
         line-height: 1.2;
@@ -119,10 +119,24 @@ custom_css = """
     .instrucao-subtitulo {
         text-align: center;
         color: #475569 !important;
-        font-size: 1.0rem;
+        font-size: 0.95rem;
         font-weight: 600;
         margin-bottom: 0.6rem;
         font-family: 'Arial', sans-serif;
+    }
+    
+    .selo-gratuito {
+        text-align: center;
+        color: #059669 !important;
+        font-size: 0.85rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        background-color: #ECFDF5;
+        padding: 4px 10px;
+        border-radius: 20px;
+        display: inline-block;
+        margin-left: auto;
+        margin-right: auto;
     }
 
     .titulo-secundario {
@@ -147,9 +161,9 @@ custom_css = """
 
     .stTextInput input {
         border: 1.5px solid #CBD5E1 !important;
-        border-radius: 8px !important;
-        font-size: 0.95rem !important;
-        padding: 0.5rem 0.8rem !important;
+        border-radius: 10px !important;
+        font-size: 1rem !important;
+        padding: 0.6rem 0.8rem !important;
         text-align: center !important;
         color: #0F172A !important;
         box-shadow: inset 0 1px 2px rgba(0,0,0,0.02);
@@ -157,7 +171,7 @@ custom_css = """
     
     .stTextInput input:focus {
         border-color: #1565C0 !important;
-        box-shadow: 0 0 0 2px rgba(21, 101, 192, 0.15) !important;
+        box-shadow: 0 0 0 3px rgba(21, 101, 192, 0.15) !important;
     }
 
     .rotulo-campo {
@@ -180,24 +194,28 @@ custom_css = """
         justify-content: center !important;
         align-items: center !important;
         width: 100% !important;
-        margin: 0.4rem auto !important;
+        margin: 0.6rem auto !important;
     }
+    
+    /* Botões Modernos com Gradiente e Destaque Aumentado */
     .stButton > button {
-        background-color: #1565C0 !important;
+        background: linear-gradient(135deg, #0052D4 0%, #1565C0 50%, #4364F7 100%) !important;
         color: #FFFFFF !important;
-        font-size: 1rem !important;
-        font-weight: bold !important;
-        border-radius: 8px !important;
+        font-size: 1.05rem !important;
+        font-weight: 800 !important;
+        border-radius: 12px !important;
         border: none !important;
-        padding: 0.6rem 2rem !important;
+        padding: 0.8rem 1.5rem !important;
         cursor: pointer !important;
         width: 100% !important;
-        max-width: 520px !important;
-        transition: background-color 0.2s ease;
-        box-shadow: 0 4px 6px rgba(21, 101, 192, 0.2);
+        max-width: 580px !important;
+        box-shadow: 0 6px 16px rgba(21, 101, 192, 0.35) !important;
+        transition: all 0.3s ease;
     }
     .stButton > button:hover {
-        background-color: #0D47A1 !important;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 22px rgba(21, 101, 192, 0.5) !important;
+        background: linear-gradient(135deg, #0040A5 0%, #0D47A1 50%, #3552D8 100%) !important;
     }
 
     .card-sucesso-destaque {
@@ -210,7 +228,7 @@ custom_css = """
         font-size: 0.95rem !important;
         font-weight: 700 !important;
         margin: 0.6rem auto !important;
-        max-width: 520px !important;
+        max-width: 580px !important;
         box-shadow: 0 4px 12px rgba(16, 185, 129, 0.1);
     }
 </style>
@@ -320,7 +338,7 @@ def enviar_lead_zoho_bigin(nome_lead, email_lead, whatsapp_lead, empresa_nome, e
         return False
 
 # ==========================================
-# CÁLCULO DE SCORE MELHORADO E MAIS FLEXÍVEL
+# CÁLCULO DE SCORE RIGOROSO
 # ==========================================
 def consultar_score_google_rigoroso(nome_empresa):
     url = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={requests.utils.quote(nome_empresa)}&key={GOOGLE_API_KEY}"
@@ -341,14 +359,12 @@ def consultar_score_google_rigoroso(nome_empresa):
             score = 0
             criterios_eval = []
 
-            # 1. Status Operacional
             if details.get("business_status") == "OPERATIONAL":
                 score += 15
                 criterios_eval.append("1. Status Operacional: Ativo no Google Maps")
             else:
                 criterios_eval.append("1. Status Operacional: Pendente / Inativo")
 
-            # 2. Galeria de Fotos HD (Até 20 pontos)
             photos = details.get("photos", [])
             qtd_fotos = len(photos)
             if qtd_fotos >= 20:
@@ -360,21 +376,18 @@ def consultar_score_google_rigoroso(nome_empresa):
             else:
                 criterios_eval.append(f"2. Galeria de Fotos HD: Insuficiente ({qtd_fotos} fotos)")
 
-            # 3. Categorias de Atuação (15 pontos)
             if details.get("types"):
                 score += 15
                 criterios_eval.append("3. Categorias de Atuação: Mapeadas e Configuradas")
             else:
                 criterios_eval.append("3. Categorias de Atuação: Incompletas")
 
-            # 4. Horários de Atendimento (10 pontos)
             if details.get("opening_hours"):
                 score += 10
                 criterios_eval.append("4. Horários de Atendimento: Configurados")
             else:
                 criterios_eval.append("4. Horários de Atendimento: Ausentes")
 
-            # 5. Avaliações e Engajamento (Até 15 pontos)
             rating = details.get("rating", 0)
             reviews = details.get("user_ratings_total", 0)
             if reviews >= 20 and rating >= 4.5:
@@ -386,7 +399,6 @@ def consultar_score_google_rigoroso(nome_empresa):
             else:
                 criterios_eval.append("5. Respostas e Engajamento de Avaliações: Ausente")
 
-            # 6, 7 e 8: Itens do Checklist
             criterios_eval.append("6. Tour Virtual 360° Street View: Ausente (Oportunidade Crítica)")
             criterios_eval.append("7. Atributos de Serviços e Produtos: Pendente de Otimização")
             criterios_eval.append("8. Descrição Institucional SEO: Incompleta")
@@ -407,7 +419,7 @@ def consultar_score_google_rigoroso(nome_empresa):
     return {"sucesso": False, "mensagem": "Empresa não encontrada no Google."}
 
 # ==========================================
-# GERADOR DE PDF - REFINADO COM LOGO MAIOR E LINKS WHATSAPP DIRETOS
+# GERADOR DE PDF - REFINADO
 # ==========================================
 def desenhar_rodape_fixo(canvas, doc):
     canvas.saveState()
@@ -691,14 +703,15 @@ def enviar_emails_diagnostico_completo(nome_lead, email_lead, whatsapp_lead, dad
         return False, f"Falha no envio do e-mail/PDF: {str(e)}"
 
 # ==========================================
-# INTERFACE STREAMLIT
+# INTERFACE STREAMLIT COM COPY PERSUASIVO
 # ==========================================
-st.markdown('<div class="titulo-principal">Pronto para destacar sua empresa no Google?</div>', unsafe_allow_html=True)
-st.markdown('<div class="instrucao-subtitulo">Digite o Nome Comercial exato da sua empresa seguido da Cidade e Estado.</div>', unsafe_allow_html=True)
+st.markdown('<div class="titulo-principal">Sua empresa está perdendo clientes no Google agora mesmo?</div>', unsafe_allow_html=True)
+st.markdown('<div class="instrucao-subtitulo">Digite o Nome Comercial exato da sua empresa seguido da Cidade e Estado para descobrir sua nota real.</div>', unsafe_allow_html=True)
+st.markdown('<div style="text-align: center;"><span class="selo-gratuito">🔒 Consulta 100% Gratuita e Instantânea</span></div>', unsafe_allow_html=True)
 
 nome_empresa = st.text_input("BuscaInput", value="", placeholder="Ex: Tour360VR Ribeirão Preto SP", label_visibility="collapsed")
 
-if st.button("🔍 Analisar perfil"):
+if st.button("🔍 Quero Analisar Minha Empresa Grátis Agora"):
     if nome_empresa:
         with st.spinner("Analisando perfil no Google Maps..."):
             res = consultar_score_google_rigoroso(nome_empresa)
@@ -717,22 +730,22 @@ if "resultado_busca" in st.session_state:
         <p style="text-align: center; color: #475569; font-size: 0.88rem; margin-top: 0; margin-bottom: 6px;">📍 {dados["endereco"]}</p>
         <p style="text-align: center; font-weight: 700; font-size: 0.95rem; color: #1E293B; margin-top: 2px; margin-bottom: 2px;">Pontuação Geral de Otimização</p>
         <div style="text-align: center; font-size: 2.8rem; font-weight: 900; line-height: 1; margin: 4px 0 8px 0; color: {cor_nota} !important;">{dados["score"]} / 100</div>
-        <div style="background-color: #FEF3C7; border: 1px solid #F59E0B; border-radius: 6px; padding: 6px 10px; text-align: center; color: #92400E; font-size: 0.86rem; font-weight: 600;">
-            ⚠️ Identificamos oportunidades de melhoria que podem estar reduzindo a visibilidade do seu negócio para novos clientes.
+        <div style="background-color: #FEF3C7; border: 1px solid #F59E0B; border-radius: 6px; padding: 8px 12px; text-align: center; color: #92400E; font-size: 0.88rem; font-weight: 600;">
+            ⚠️ <strong>Atenção:</strong> Identificamos falhas críticas no seu perfil que estão jogando clientes direto para os seus concorrentes!
         </div>
     </div>
     """
     st.markdown(html_card_resultado, unsafe_allow_html=True)
 
-    st.markdown('<div class="titulo-secundario">Preencha os dados abaixo e receba o diagnóstico completo do seu posicionamento digital.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="titulo-secundario">Para onde devemos enviar o relatório completo com o raio-x e onde sua ficha está errando?</div>', unsafe_allow_html=True)
     
-    st.markdown('<div class="rotulo-campo">Nome:</div>', unsafe_allow_html=True)
+    st.markdown('<div class="rotulo-campo">Seu Nome:</div>', unsafe_allow_html=True)
     nome_lead = st.text_input("NomeInput", value="", placeholder="Digite o seu nome completo", label_visibility="collapsed")
     
-    st.markdown('<div class="rotulo-campo">E-mail:</div>', unsafe_allow_html=True)
+    st.markdown('<div class="rotulo-campo">Seu E-mail principal:</div>', unsafe_allow_html=True)
     email_lead = st.text_input("EmailInput", value="", placeholder="exemplo@email.com", label_visibility="collapsed")
     
-    st.markdown('<div class="rotulo-campo">WhatsApp</div>', unsafe_allow_html=True)
+    st.markdown('<div class="rotulo-campo">WhatsApp para contato</div>', unsafe_allow_html=True)
     st.markdown('<div class="subtexto-label">(DDD + 9 dígitos - Apenas números)</div>', unsafe_allow_html=True)
     
     raw_whats_input = st.text_input("WhatsInput", value="", placeholder="16991332121", label_visibility="collapsed")
@@ -741,11 +754,11 @@ if "resultado_busca" in st.session_state:
     if st.session_state.get("envio_sucesso"):
         st.markdown("""
         <div class="card-sucesso-destaque">
-            ✅ Diagnóstico enviado com sucesso!<br/>Verifique sua caixa de entrada e spam.
+            🎉 Diagnóstico desbloqueado e enviado com sucesso!<br/>Verifique sua caixa de entrada e o spam do seu e-mail.
         </div>
         """, unsafe_allow_html=True)
     else:
-        if st.button("📩 Receber diagnóstico"):
+        if st.button("🚀 Desbloquear Meu Diagnóstico Completo Gratuitamente"):
             if not nome_lead or len(nome_lead.strip()) < 2:
                 st.error("Por favor, informe seu nome completo.")
             elif not email_lead or "@" not in email_lead:
@@ -755,7 +768,7 @@ if "resultado_busca" in st.session_state:
             else:
                 whats_completo = "55" + apenas_numeros
 
-                with st.spinner("Gerando diagnóstico e enviando por e-mail..."):
+                with st.spinner("Gerando diagnóstico e enviando relatório por e-mail..."):
                     email_sucesso, email_msg = enviar_emails_diagnostico_completo(nome_lead, email_lead, whats_completo, dados)
                     enviar_lead_zoho_bigin(nome_lead, email_lead, whats_completo, dados['nome'], dados['endereco'], dados['score'])
 
