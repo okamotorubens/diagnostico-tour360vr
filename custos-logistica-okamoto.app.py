@@ -11,6 +11,7 @@ from datetime import datetime
 from PIL import Image as PILImage
 import urllib.request
 import json
+import re
 from supabase import create_client, Client
 
 def fmt_brl(val):
@@ -93,7 +94,6 @@ ESTADOS_BR = [
 
 st.set_page_config(page_title="Proposta Comercial & Custos - Okamoto Mídias Visuais", page_icon="📊", layout="wide")
 
-# Conexão Supabase
 @st.cache_resource
 def init_supabase():
     try:
@@ -163,7 +163,7 @@ def calcular_distancia_maps(destino_endereco):
     try:
         api_key = st.secrets.get("google", {}).get("maps_api_key", "")
         if not api_key:
-            return None, 0.0
+            return None, 0.0, ""
         origem = "Rua Manoel Achê, 327, Ribeirão Preto - SP"
         url = f"https://maps.googleapis.com/maps/api/directions/json?origin={urllib.parse.quote(origem)}&destination={urllib.parse.quote(destino_endereco)}&key={api_key}&language=pt-BR"
         
@@ -177,17 +177,38 @@ def calcular_distancia_maps(destino_endereco):
             distancia_ida_volta = round(distancia_km_ida * 2)
             
             pedagios_ida = 0.0
+            rodovias_encontradas = []
+            
             for step in leg.get('steps', []):
-                instrucao = step.get('html_instructions', '').lower()
-                if 'pedágio' in instrucao or 'toll' in instrucao:
+                instrucao_html = step.get('html_instructions', '')
+                instrucao_lower = instrucao_html.lower()
+                
+                if 'pedágio' in instrucao_lower or 'toll' in instrucao_lower:
                     pedagios_ida += 15.0
+                
+                # Extrair rodovias (ex: SP-330, BR-050, Rodovia Anhanguera, etc.)
+                # Limpa tags HTML das instruções
+                texto_limpo = re.sub('<.*?>', '', instrucao_html)
+                # Procura padrões de rodovias comuns no Brasil (SP-XXX, BR-XXX, Rodovia...)
+                matches = re.findall(r'\b(?:BR|SP|MG|MS|GO|PR|RJ)[-–]\d+|\bRodovia\s+[A-Za-zÀ-ÿ\s\d-]+', texto_limpo, re.IGNORECASE)
+                for m in matches:
+                    m_clean = m.strip()
+                    if m_clean not in rodovias_encontradas and len(m_clean) > 3:
+                        rodovias_encontradas.append(m_clean)
             
             pedagio_ida_volta = pedagios_ida * 2
             
-            return distancia_ida_volta, pedagio_ida_volta
+            # Formatar string de rodovias/trechos
+            if rodovias_encontradas:
+                # Limitar para não poluir muito o PDF (ex: pegar até 4 principais)
+                rodovias_str = " / ".join(rodovias_encontradas[:4])
+            else:
+                rodovias_str = "Rotas principais pavimentadas"
+            
+            return distancia_ida_volta, pedagio_ida_volta, rodovias_str
     except Exception:
         pass
-    return None, 0.0
+    return None, 0.0, ""
 
 class NumberedCanvasProposal(canvas.Canvas):
     def __init__(self, *args, **kwargs):
@@ -546,7 +567,10 @@ def gerar_pdf_interno(dados):
     story.append(Spacer(1, 4))
     
     combustivel_detalhe = f"Consumo: {dados['consumo_veiculo']} km/L | {dados['litros_gastos']:.1f}L a {fmt_brl(dados['preco_combustivel'])}/L"
-    trajeto_detalhe = f"Origem: Rua Manoel Achê, 327, Ribeirão Preto - SP<br/>Destino: {dados.get('local', 'Local')} — {dados['cidade']}/{dados['estado']}<br/>(Cálculo automático Google Maps - Ida e Volta)"
+    
+    # Puxar rodovias capturadas ou usar padrão
+    rodovias_info = dados.get('rodovias_trecho', 'Rodovias e acessos principais')
+    trajeto_detalhe = f"Origem: Rua Manoel Achê, 327, Ribeirão Preto - SP<br/>Destino: {dados.get('local', 'Local')} — {dados['cidade']}/{dados['estado']}<br/><b>Rodovias/Trecho:</b> {rodovias_info}<br/>(Cálculo automático Google Maps - Ida e Volta)"
     
     custo_logistica_parcial = dados['custo_combustivel'] + dados['pedagios'] + dados['custo_estacionamento'] + dados['custo_hospedagem_total'] + dados['custo_almoco'] + dados['custo_jantar'] + dados['custo_freelancer'] + dados['custo_outros']
     
@@ -705,7 +729,6 @@ st.markdown("<hr style='margin-top: 0px; margin-bottom: 20px;'>", unsafe_allow_h
 
 default_entrega_txt = "Até 72h após o término do serviço, editado e enviado via link para download, em alta e baixa resolução, disponível por 30 dias."
 
-# Buscar clientes salvos para autocompletar inteligente
 clientes_cadastrados = []
 if supabase:
     try:
@@ -809,11 +832,12 @@ if st.session_state.current_tab_idx == 0:
 
     if st.button("🗺️ Calcular KM & Pedágios Automático (Google Maps)", use_container_width=True):
         endereco_completo = f"{st.session_state.local}, {st.session_state.cidade} - {st.session_state.estado}"
-        km_calc, pedagio_calc = calcular_distancia_maps(endereco_completo)
+        km_calc, pedagio_calc, rodovias_calc = calcular_distancia_maps(endereco_completo)
         if km_calc is not None:
             st.session_state.distancia_ida_volta = km_calc
             st.session_state.pedagio_total = pedagio_calc
-            st.success(f"Rota calculada! Distância Total (Ida e Volta): {km_calc} km | Pedágios Totais (Ida e Volta): {fmt_brl(pedagio_calc)}")
+            st.session_state.rodovias_trecho = rodovias_calc
+            st.success(f"Rota calculada! Distância Total: {km_calc} km | Pedágios: {fmt_brl(pedagio_calc)} | Rodovias: {rodovias_calc}")
         else:
             st.warning("⚠️ Não foi possível calcular automaticamente. Verifique o endereço e a chave da API do Google Maps.")
 
@@ -1110,16 +1134,15 @@ elif st.session_state.current_tab_idx == 2:
         "comissao": valor_comissao,
         "custo_total_interno": custo_total_interno,
         "lucro_liquido": lucro_liquido,
-        "margem_lucro": margem_lucro
+        "margem_lucro": margem_lucro,
+        "rodovias_trecho": st.session_state.get("rodovias_trecho", "Rodovias e acessos principais")
     }
 
     pdf_cliente_bytes = gerar_pdf_cliente(dados_completos)
     pdf_interno_bytes = gerar_pdf_interno(dados_completos)
 
-    # Salvar automaticamente no Supabase ao gerar
     if supabase and st.button("💾 Salvar Proposta & Custos no Supabase", use_container_width=True):
         try:
-            # Salvar Proposta
             supabase.table("historico_propostas").insert({
                 "contato": dados_completos["contato"],
                 "empresa": dados_completos["empresa"],
@@ -1135,7 +1158,6 @@ elif st.session_state.current_tab_idx == 2:
                 "dados_completos": json.dumps(dados_completos, default=str)
             }).execute()
 
-            # Salvar Custos
             supabase.table("historico_custos").insert({
                 "nome_servico": nome_serv_ev,
                 "cliente": dados_completos["contato"],
@@ -1245,7 +1267,6 @@ elif st.session_state.current_tab_idx == 3:
     else:
         st.warning("⚠️ Conexão com o Supabase não configurada. Verifique os segredos (secrets.toml).")
 
-# Prévia em tempo real rodapé
 try:
     s_tipo = st.session_state.get("tipo_servico", "Evento social")
     s_outro = st.session_state.get("outro_servico_nome", "")
