@@ -163,7 +163,7 @@ def calcular_distancia_maps(destino_endereco):
     try:
         api_key = st.secrets.get("google", {}).get("maps_api_key", "")
         if not api_key:
-            return None, 0.0, ""
+            return None, 0.0, "", ""
         origem = "Rua Manoel Achê, 327, Ribeirão Preto - SP"
         url = f"https://maps.googleapis.com/maps/api/directions/json?origin={urllib.parse.quote(origem)}&destination={urllib.parse.quote(destino_endereco)}&key={api_key}&language=pt-BR"
         
@@ -176,7 +176,6 @@ def calcular_distancia_maps(destino_endereco):
             distancia_km_ida = distancia_metros / 1000.0
             distancia_ida_volta = round(distancia_km_ida * 2)
             
-            # Capturar duração da viagem (ida)
             duracao_texto = leg.get('duration', {}).get('text', '')
             
             pedagios_ida = 0.0
@@ -202,14 +201,11 @@ def calcular_distancia_maps(destino_endereco):
                 rodovias_str = " / ".join(rodovias_encontradas[:4])
             else:
                 rodovias_str = "Rotas principais pavimentadas"
-                
-            if duracao_texto:
-                rodovias_str += f" (Tempo aprox. ida: {duracao_texto})"
             
-            return distancia_ida_volta, pedagio_ida_volta, rodovias_str
+            return distancia_ida_volta, pedagio_ida_volta, rodovias_str, duracao_texto
     except Exception:
         pass
-    return None, 0.0, ""
+    return None, 0.0, "", ""
 
 class NumberedCanvasProposal(canvas.Canvas):
     def __init__(self, *args, **kwargs):
@@ -469,7 +465,6 @@ def gerar_pdf_cliente(dados):
 
 def gerar_pdf_interno(dados):
     buffer = io.BytesIO()
-    # Margens e espaçamentos compactos para garantir perfeitamente 1 única página
     doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=35, rightMargin=35, topMargin=12, bottomMargin=25)
     
     servico_exibido = dados['tipo_servico'] if dados['tipo_servico'] != "Outro" else dados['outro_servico_nome']
@@ -484,8 +479,8 @@ def gerar_pdf_interno(dados):
     style_data_cab = ParagraphStyle('DataCabInt', parent=styles['Normal'], fontName='Helvetica', fontSize=8.5, leading=10, alignment=0, textColor=colors.HexColor('#000000'))
     
     style_secao = ParagraphStyle('SecInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9.5, leading=11, alignment=0, textColor=colors.HexColor('#1e3a8a'))
-    style_corpo = ParagraphStyle('CorpoInt', parent=styles['Normal'], fontName='Helvetica', fontSize=8.5, leading=10.5, textColor=colors.HexColor('#000000'))
-    style_bold = ParagraphStyle('BoldInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=8.5, leading=10.5, textColor=colors.HexColor('#000000'))
+    style_corpo = ParagraphStyle('CorpoInt', parent=styles['Normal'], fontName='Helvetica', fontSize=8.5, leading=11, textColor=colors.HexColor('#000000'))
+    style_bold = ParagraphStyle('BoldInt', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=8.5, leading=11, textColor=colors.HexColor('#000000'))
     
     story = []
 
@@ -569,8 +564,19 @@ def gerar_pdf_interno(dados):
     story.append(Spacer(1, 3))
     
     combustivel_detalhe = f"Consumo: {dados['consumo_veiculo']} km/L | {dados['litros_gastos']:.1f}L a {fmt_brl(dados['preco_combustivel'])}/L"
+    
+    # Separando em linhas limpas conforme solicitado
+    origem_txt = "Origem: Rua Manoel Achê, 327, Ribeirão Preto - SP"
+    destino_txt = f"Destino: {dados.get('local', 'Local')} — {dados['cidade']}/{dados['estado']}"
     rodovias_info = dados.get('rodovias_trecho', 'Rodovias e acessos principais')
-    trajeto_detalhe = f"Origem: Rua Manoel Achê, 327, Ribeirão Preto - SP<br/>Destino: {dados.get('local', 'Local')} — {dados['cidade']}/{dados['estado']}<br/><b>Rodovias/Trecho:</b> {rodovias_info}<br/>(Cálculo automático Google Maps - Ida e Volta)"
+    tempo_info = dados.get('tempo_viagem', '')
+    
+    trajeto_linhas_lista = [origem_txt, destino_txt, f"<b>Rodovias/Trecho:</b> {rodovias_info}"]
+    if tempo_info:
+        trajeto_linhas_lista.append(f"<b>Tempo Estimado (Ida):</b> {tempo_info}")
+    trajeto_linhas_lista.append("(Cálculo automático Google Maps - Ida e Volta)")
+    
+    trajeto_detalhe = "<br/>".join(trajeto_linhas_lista)
     
     custo_logistica_parcial = dados['custo_combustivel'] + dados['pedagios'] + dados['custo_estacionamento'] + dados['custo_hospedagem_total'] + dados['custo_almoco'] + dados['custo_jantar'] + dados['custo_freelancer'] + dados['custo_outros']
     
@@ -806,12 +812,13 @@ if st.session_state.current_tab_idx == 0:
 
     if st.button("🗺️ Calcular KM & Pedágios Automático (Google Maps)", use_container_width=True):
         endereco_completo = f"{st.session_state.local}, {st.session_state.cidade} - {st.session_state.estado}"
-        km_calc, pedagio_calc, rodovias_calc = calcular_distancia_maps(endereco_completo)
+        km_calc, pedagio_calc, rodovias_calc, tempo_calc = calcular_distancia_maps(endereco_completo)
         if km_calc is not None:
             st.session_state.distancia_ida_volta = km_calc
             st.session_state.pedagio_total = pedagio_calc
             st.session_state.rodovias_trecho = rodovias_calc
-            st.success(f"Rota calculada! Distância Total: {km_calc} km | Pedágios: {fmt_brl(pedagio_calc)} | Rodovias: {rodovias_calc}")
+            st.session_state.tempo_viagem = tempo_calc
+            st.success(f"Rota calculada! Distância: {km_calc} km | Pedágios: {fmt_brl(pedagio_calc)} | Tempo: {tempo_calc}")
         else:
             st.warning("⚠️ Não foi possível calcular automaticamente. Verifique o endereço e a chave da API do Google Maps.")
 
@@ -1109,7 +1116,8 @@ elif st.session_state.current_tab_idx == 2:
         "custo_total_interno": custo_total_interno,
         "lucro_liquido": lucro_liquido,
         "margem_lucro": margem_lucro,
-        "rodovias_trecho": st.session_state.get("rodovias_trecho", "Rodovias e acessos principais")
+        "rodovias_trecho": st.session_state.get("rodovias_trecho", "Rodovias e acessos principais"),
+        "tempo_viagem": st.session_state.get("tempo_viagem", "")
     }
 
     pdf_cliente_bytes = gerar_pdf_cliente(dados_completos)
