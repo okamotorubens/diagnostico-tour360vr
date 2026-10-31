@@ -1506,7 +1506,7 @@ with st.sidebar:
   )
 
   if os.path.exists("logo_tour_transparente.png"):
-    c1, c2, c3 = st.columns([1.2, 3.6, 1.2])
+    c1, c2, c3 = st.columns([1.74, 2.52, 1.74])
     with c2:
       st.image("logo_tour_transparente.png", use_container_width=True)
 
