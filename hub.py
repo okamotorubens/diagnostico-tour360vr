@@ -162,6 +162,7 @@ def render_cards(cards):
                     <div class="icon">{c['icon']}</div>
                     <div class="name">{c['name']}</div>
                     <div class="desc">{c['desc']}</div>
+                    
                 </a>
                 """,
                 unsafe_allow_html=True,
