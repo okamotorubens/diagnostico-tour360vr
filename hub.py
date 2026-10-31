@@ -75,14 +75,14 @@ h1, h2, h3, h4 { color: var(--text-strong) !important; letter-spacing: -0.01em; 
     color: var(--text-muted); font-size: .85rem; line-height: 1.4;
 }
 
-/* Hero centralizado */
+/* Hero centralizado (Ajustado) */
 .hero {
     position: relative; overflow: hidden;
     display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
     background: var(--glass);
     backdrop-filter: blur(var(--blur)); -webkit-backdrop-filter: blur(var(--blur));
     border: 1px solid var(--border); border-radius: 18px;
-    padding: 28px 32px; margin-bottom: 26px;
+    padding: 22px 30px; margin-bottom: 26px;
     box-shadow: 0 8px 32px rgba(0,0,0,.35);
 }
 .hero::before {
@@ -90,7 +90,6 @@ h1, h2, h3, h4 { color: var(--text-strong) !important; letter-spacing: -0.01em; 
     background: var(--gradient-brand);
 }
 .hero h1 { margin: 0 !important; font-size: 2rem !important; font-weight: 800; text-align: center; }
-.hero p { margin: 6px 0 0 0; color: var(--text-muted); font-size: 1.15rem; text-align: center; }
 
 /* Títulos de seção */
 .section-title {
@@ -100,7 +99,7 @@ h1, h2, h3, h4 { color: var(--text-strong) !important; letter-spacing: -0.01em; 
     color: var(--text-strong); font-size: 1.35rem; font-weight: 700;
 }
 
-/* CARDS COMPACTOS, CENTRALIZADOS E COM TEXTO AMPLIAÇÃO */
+/* CARDS COMPACTOS E CENTRALIZADOS */
 a.sys-card, a.sys-card:visited, a.sys-card:hover, a.sys-card:focus {
     color: #FFFFFF !important;
 }
@@ -111,7 +110,7 @@ a.sys-card {
     justify-content: center;   
     text-align: center;         
     gap: 8px;
-    min-height: 180px;          /* Ajustado para acomodar fontes maiores */
+    min-height: 180px;          
     box-sizing: border-box; 
     padding: 18px 16px;         
     background: var(--glass);
@@ -130,7 +129,7 @@ a.sys-card:hover {
     box-shadow: 0 0 18px rgba(74,163,218,.35);
 }
 
-/* Fontes aumentadas */
+/* Fontes dos cards */
 a.sys-card .icon { font-size: 2.2rem; line-height: 1; margin-bottom: 2px; }
 a.sys-card .name { color: #FFFFFF !important; font-size: 1.25rem; font-weight: 700; }
 a.sys-card .desc { color: var(--text-muted); font-size: 0.98rem; line-height: 1.45; }
@@ -167,12 +166,11 @@ with st.sidebar:
     )
     st.markdown(html_logos, unsafe_allow_html=True)
 
-# --- HERO (centralizado) ---
+# --- HERO (Centralizado sem o texto secundário) ---
 st.markdown(
     """
 <div class="hero">
     <h1>Central de Sistemas e Operações</h1>
-    <p>Selecione o módulo operacional desejado para abrir a aplicação.</p>
 </div>
 """,
     unsafe_allow_html=True,
@@ -245,23 +243,12 @@ st.markdown(
     " Precificação</div>",
     unsafe_allow_html=True,
 )
-render_cards([
-    {
-        "icon": "💼",
-        "name": "Propostas & Custos",
-        "desc": (
-            "Elaboração de propostas comerciais e orçamentos de logística e"
-            " produção visual."
-        ),
-        "url": "https://okamoto-proposta-comercial.streamlit.app/",
-    },
-    {
-        "icon": "🧮",
-        "name": "Custos & Logística",
-        "desc": (
-            "Cálculo de custos operacionais e logística de transporte para"
-            " atendimentos e produções."
-        ),
-        "url": "https://seu-link-de-custos.streamlit.app",
-    },
-])
+render_cards([{
+    "icon": "💼",
+    "name": "Propostas & Custos",
+    "desc": (
+        "Elaboração de propostas comerciais e orçamentos de logística e"
+        " produção visual."
+    ),
+    "url": "https://okamoto-proposta-comercial.streamlit.app/",
+}])
