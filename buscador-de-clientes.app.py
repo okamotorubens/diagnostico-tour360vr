@@ -330,7 +330,7 @@ def limpar_banco_dados():
 
 
 # -----------------------------------------------------------------------------
-# FUNÇÃO DE CÁLCULO DE SCORE & AUDITORIA SEGUINDO O MODELO SOLICITADO
+# CÁLCULO DE SCORE DE OTIMIZAÇÃO & AUDITORIA DA FICHA
 # -----------------------------------------------------------------------------
 def calcular_score_e_auditoria(
     fotos_total,
@@ -341,10 +341,12 @@ def calcular_score_e_auditoria(
     has_https=True,
     reivindicada=True,
 ):
-  """Calcula a pontuação de oportunidade e os gargalos seguindo o modelo do anexo."""
+  """Calcula o nível de otimização (saúde da ficha) e os gargalos."""
   pontos_criticos = []
   oportunidades = []
-  score_oportunidade = 0
+
+  # Começamos com pontuação base 100 e vamos reduzindo conforme os gargalos encontrados
+  score_saude = 100
 
   # 1. Avaliação de Website
   if not website:
@@ -356,7 +358,7 @@ def calcular_score_e_auditoria(
         "Desenvolvimento de Landing Page / Website Responsivo de alta"
         " conversão"
     )
-    score_oportunidade += 25
+    score_saude -= 25
   elif not has_https:
     pontos_criticos.append(
         "Website sem certificado de segurança SSL (alerta de site inseguro)"
@@ -364,7 +366,7 @@ def calcular_score_e_auditoria(
     oportunidades.append(
         "Adequação de Segurança SSL e Otimização Web Estrutural"
     )
-    score_oportunidade += 15
+    score_saude -= 15
 
   # 2. Avaliação de Reputação (Volume de Avaliações)
   if total_avaliacoes < 30:
@@ -376,7 +378,7 @@ def calcular_score_e_auditoria(
         "Estratégia Acelerada de Reputação, QR Codes e Gestão de Avaliações no"
         " Google"
     )
-    score_oportunidade += 25
+    score_saude -= 25
 
   # 3. Tour Virtual 360°
   if not tour_360:
@@ -388,7 +390,7 @@ def calcular_score_e_auditoria(
         "Implantação de Fotografia 360° Imersiva e Publicação Oficial no Google"
         " Maps"
     )
-    score_oportunidade += 30
+    score_saude -= 30
 
   # 4. Fotos da Ficha
   if fotos_total < 8:
@@ -398,10 +400,10 @@ def calcular_score_e_auditoria(
     oportunidades.append(
         "Produção de Fotografia Profissional em Alta Resolução"
     )
-    score_oportunidade += 20
+    score_saude -= 20
 
-  score_oportunidade = min(score_oportunidade, 100)
-  score_saude = 100 - score_oportunidade
+  score_saude = max(0, min(score_saude, 100))
+  score_oportunidade = 100 - score_saude
 
   return {
       "score_saude": score_saude,
@@ -462,7 +464,7 @@ def revalidar_ficha_google(lead):
 
     dif_av = novas_av - lead["total_avaliacoes"]
     data_hoje = datetime.now().strftime("%d/%m/%Y %H:%M")
-    aviso_reval = f"[{data_hoje}] 🔄 Revalidação Google: Nota {nova_nota} (Antes: {lead['nota']}), Avaliações: {novas_av} ({'+' if dif_av>=0 else ''}{dif_av}). Score: {auditoria['score_oportunidade']}/100."
+    aviso_reval = f"[{data_hoje}] 🔄 Revalidação Google: Nota {nova_nota} (Antes: {lead['nota']}), Avaliações: {novas_av} ({'+' if dif_av>=0 else ''}{dif_av}). Saúde Ficha: {auditoria['score_saude']}/100."
 
     anotacoes_atuais = lead.get("anotacoes", "") or ""
     novas_anotacoes = f"{aviso_reval}\n{anotacoes_atuais}"
@@ -499,7 +501,7 @@ def revalidar_ficha_google(lead):
 
 
 # -----------------------------------------------------------------------------
-# GERADOR DE PDF DO DIAGNÓSTICO ESTRUTURADO (MODELO ANEXO)
+# GERADOR DE PDF DO DIAGNÓSTICO (MODELO CORRIGIDO)
 # -----------------------------------------------------------------------------
 def desenhar_cabecalho_rodape_diagnostico(canvas, doc):
   canvas.saveState()
@@ -538,13 +540,23 @@ def desenhar_cabecalho_rodape_diagnostico(canvas, doc):
   canvas.setLineWidth(0.75)
   canvas.line(36, 725, 576, 725)
 
-  # Rodapé Institucional (Modelo Fiel ao Anexo)
+  # Rodapé Institucional com links limpos
   canvas.line(36, 42, 576, 42)
-  canvas.setFont("Helvetica", 8.5)
-  canvas.setFillColor(colors.HexColor("#475569"))
 
-  texto_rodape = f"{WEBSITE_OFICIAL} | {EMAIL_CONTATO} | {CONTATO_WHATSAPP}"
-  canvas.drawCentredString(306, 26, texto_rodape)
+  style_footer = ParagraphStyle(
+      "FooterLinkStyle",
+      parent=styles["Normal"],
+      fontName="Helvetica",
+      fontSize=8.5,
+      textColor=colors.HexColor("#475569"),
+      alignment=1,
+  )
+
+  footer_html = f'<a href="https://{WEBSITE_OFICIAL}" color="#475569">{WEBSITE_OFICIAL}</a> | <a href="mailto:{EMAIL_CONTATO}" color="#475569">{EMAIL_CONTATO}</a> | <a href="https://wa.me/5516991332121" color="#475569">{CONTATO_WHATSAPP}</a>'
+  p_footer = Paragraph(footer_html, style_footer)
+  t_footer = Table([[p_footer]], colWidths=[540])
+  t_footer.wrapOn(canvas, 540, 20)
+  t_footer.drawOn(canvas, 36, 22)
 
   canvas.restoreState()
 
@@ -568,8 +580,8 @@ def gerar_pdf_diagnostico_individual(lead):
   style_title = ParagraphStyle(
       "TitleModelo",
       parent=styles["Heading1"],
-      fontSize=13,
-      leading=16,
+      fontSize=12,
+      leading=15,
       textColor=colors.HexColor("#0f172a"),
       fontName="Helvetica-Bold",
       alignment=0,
@@ -637,49 +649,50 @@ def gerar_pdf_diagnostico_individual(lead):
       )
   )
 
-  # Card de Dados da Empresa (Modelo Anexo)
+  # Card de Dados da Empresa sem barras adicionais soltas
   website_txt = (
       lead["website"] if lead.get("website") else "Não possui site vinculado"
   )
   reiv_txt = "Sim" if lead.get("reivindicada") else "Não"
   fotos_txt = f"{lead.get('fotos_total', 0)} fotos públicas na ficha"
 
+  score_saude = auditoria["score_saude"]
+  status_score = (
+      "Excelente"
+      if score_saude >= 80
+      else ("Atenção Necessária" if score_saude >= 50 else "Grave Defasagem Digital")
+  )
+
   dados_empresa = [
       [
           Paragraph("Empresa / Nicho", style_cell_bold),
-          Paragraph(
-              f"| {lead['nome']} ({lead['categoria']})", style_cell_bold
-          ),
+          Paragraph(f"{lead['nome']} ({lead['categoria']})", style_cell_bold),
       ],
       [
           Paragraph("Endereço", style_cell_bold),
-          Paragraph(
-              f"| {lead['endereco']} - {lead['cidade_busca']}", style_cell
-          ),
+          Paragraph(f"{lead['endereco']} - {lead['cidade_busca']}", style_cell),
       ],
       [
           Paragraph("Nota Google / Avaliações", style_cell_bold),
           Paragraph(
-              f"| ★{lead.get('nota', 0.0)} ({lead.get('total_avaliacoes', 0)}"
+              f"★{lead.get('nota', 0.0)} ({lead.get('total_avaliacoes', 0)}"
               " avaliações)",
               style_cell,
           ),
       ],
       [
           Paragraph("Website Oficial", style_cell_bold),
-          Paragraph(f"| {website_txt}", style_cell),
+          Paragraph(f"{website_txt}", style_cell),
       ],
       [
-          Paragraph("Score de Oportunidade", style_cell_bold),
+          Paragraph("Score de Otimização da Ficha", style_cell_bold),
           Paragraph(
-              f"| {auditoria['score_oportunidade']}/100 (Prioridade Comercial"
-              " Mapeada)",
-              style_cell_bold,
+              f"<b>{score_saude}/100</b> ({status_score})", style_cell_bold
           ),
       ],
       [
           Paragraph("Ficha Reivindicada / Fotos", style_cell_bold),
-          Paragraph(f"| {reiv_txt} {fotos_txt}", style_cell),
+          Paragraph(f"{reiv_txt} - {fotos_txt}", style_cell),
       ],
   ]
   t_emp = Table(dados_empresa, colWidths=[150, 390])
