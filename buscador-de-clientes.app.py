@@ -37,7 +37,7 @@ import streamlit.components.v1 as components
 # -----------------------------------------------------------------------------
 URL_SISTEMA_DIAGNOSTICO = "https://tour360vr.streamlit.app/"
 CONTATO_WHATSAPP = "(16) 99133-2121"
-EMAIL_CONTATO = "contato@tour360vr.com.br"
+EMAIL_CONTATO = "contato@okamotomidiasvisuais.com.br"
 WEBSITE_OFICIAL = "tour360vr.com.br"
 
 # -----------------------------------------------------------------------------
@@ -330,7 +330,7 @@ def limpar_banco_dados():
 
 
 # -----------------------------------------------------------------------------
-# FUNÇÃO UNIFICADA DE CÁLCULO DE SCORE & MATRIZ DOS 9 PONTOS VITAIS
+# FUNÇÃO DE CÁLCULO DE SCORE & AUDITORIA SEGUINDO O MODELO SOLICITADO
 # -----------------------------------------------------------------------------
 def calcular_score_e_auditoria(
     fotos_total,
@@ -341,121 +341,73 @@ def calcular_score_e_auditoria(
     has_https=True,
     reivindicada=True,
 ):
-  """Calcula a pontuação de otimização de vitrine (0 a 100).
-
-  Alinhado com a metodologia do Diagnóstico de 3 Páginas.
-  """
+  """Calcula a pontuação de oportunidade e os gargalos seguindo o modelo do anexo."""
   pontos_criticos = []
   oportunidades = []
+  score_oportunidade = 0
 
-  # 1. Galeria de Fotos HD
-  score_fotos = 15 if fotos_total >= 8 else (8 if fotos_total >= 3 else 0)
-  if fotos_total < 8:
-    pontos_criticos.append(
-        f"Acervo visual reduzido na ficha do Google ({fotos_total} fotos"
-        " públicas)."
-    )
-    oportunidades.append(
-        "Produção de Fotografia Profissional em Alta Resolução para produtos e"
-        " ambiente."
-    )
-
-  # 2. Tour Virtual 360°
-  score_360 = 20 if tour_360 else 0
-  if not tour_360:
-    pontos_criticos.append(
-        "Ausência de Tour Virtual 360° interativo navegável no perfil do Google"
-        " Street View."
-    )
-    oportunidades.append(
-        "Implantação de Fotografia 360° Imersiva e Publicação Oficial no Google"
-        " Maps."
-    )
-
-  # 3. Categorias Mapeadas
-  score_categorias = 10
-
-  # 4. Horários e Exceções
-  score_horarios = 10
-
-  # 5. Website & Links de Conversão
-  score_web = 15 if (website and has_https) else (5 if website else 0)
+  # 1. Avaliação de Website
   if not website:
     pontos_criticos.append(
         "Sem website oficial vinculado à ficha do Google (perda de tráfego"
-        " direto)."
+        " direto)"
     )
     oportunidades.append(
         "Desenvolvimento de Landing Page / Website Responsivo de alta"
-        " conversão."
+        " conversão"
     )
+    score_oportunidade += 25
   elif not has_https:
     pontos_criticos.append(
-        "Site oficial sem Certificado SSL (HTTP inseguro gerando alertas)."
+        "Website sem certificado de segurança SSL (alerta de site inseguro)"
     )
     oportunidades.append(
-        "Adequação de Segurança SSL e Otimização Web Estrutural."
+        "Adequação de Segurança SSL e Otimização Web Estrutural"
     )
+    score_oportunidade += 15
 
-  # 6. Avaliações (Prova Social)
-  score_av = (
-      15
-      if (total_avaliacoes >= 30 and nota >= 4.0)
-      else (8 if total_avaliacoes >= 10 else 0)
-  )
+  # 2. Avaliação de Reputação (Volume de Avaliações)
   if total_avaliacoes < 30:
     pontos_criticos.append(
         f"Volume crítico de avaliações ({total_avaliacoes} total), afetando a"
-        " prova social perante concorrentes."
+        " prova social perante concorrentes"
     )
     oportunidades.append(
         "Estratégia Acelerada de Reputação, QR Codes e Gestão de Avaliações no"
-        " Google."
+        " Google"
     )
+    score_oportunidade += 25
 
-  # 7. Descrição Institucional SEO
-  score_desc = 5
+  # 3. Tour Virtual 360°
+  if not tour_360:
+    pontos_criticos.append(
+        "Ausência de Tour Virtual 360° interativo navegável no perfil do Google"
+        " Street View"
+    )
+    oportunidades.append(
+        "Implantação de Fotografia 360° Imersiva e Publicação Oficial no Google"
+        " Maps"
+    )
+    score_oportunidade += 30
 
-  # 8. Atributos de Serviços
-  score_atrib = 5
+  # 4. Fotos da Ficha
+  if fotos_total < 8:
+    pontos_criticos.append(
+        f"Acervo visual reduzido no perfil ({fotos_total} fotos públicas)"
+    )
+    oportunidades.append(
+        "Produção de Fotografia Profissional em Alta Resolução"
+    )
+    score_oportunidade += 20
 
-  # 9. Interação / Resposta a Avaliações
-  score_resp = 5
-
-  # Score Total da Ficha (0 a 100)
-  score_saude = (
-      score_fotos
-      + score_360
-      + score_categorias
-      + score_horarios
-      + score_web
-      + score_av
-      + score_desc
-      + score_atrib
-      + score_resp
-  )
-
-  # O Score de Oportunidade Comercial é a carência da ficha (quanto menor a saúde, maior a oportunidade comercial)
-  score_oportunidade = 100 - score_saude
+  score_oportunidade = min(score_oportunidade, 100)
+  score_saude = 100 - score_oportunidade
 
   return {
       "score_saude": score_saude,
       "score_oportunidade": score_oportunidade,
       "pontos_criticos": pontos_criticos,
       "oportunidades": oportunidades,
-      "detalhes_9_pontos": {
-          "1. Fotos HD": f"{fotos_total} fotos" if fotos_total >= 8 else "Baixo",
-          "2. Tour 360°": (
-              "Ativo" if tour_360 else "Ausente (Oportunidade Crítica)"
-          ),
-          "3. Categorias": "Configuradas",
-          "4. Horários": "Configurados",
-          "5. Website": "Cadastrado" if website else "Falho (Ausente)",
-          "6. Avaliações": f"{nota}⭐ ({total_avaliacoes} avaliações)",
-          "7. Descrição SEO": "Pendente",
-          "8. Atributos": "Pendente",
-          "9. Respostas": "Baixa interação",
-      },
   }
 
 
@@ -468,7 +420,6 @@ def revalidar_ficha_google(lead):
     return lead
 
   api_key_limpa = api_key.strip().replace('"', "").replace("'", "")
-  # Sanitização para evitar falha no endpoint com caracteres acentuados
   nome_limpo = re.sub(r"[´`\'\"]", "", lead["nome"])
   query_str = f"{nome_limpo} {lead['cidade_busca']}"
   base_url = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={urllib.parse.quote(query_str)}&language=pt-BR&key={api_key_limpa}"
@@ -501,7 +452,6 @@ def revalidar_ficha_google(lead):
     novo_site = det_res.get("website", lead["website"])
     photos = det_res.get("photos", place.get("photos", [])) or []
 
-    # Recalcula a auditoria e os scores padronizados
     auditoria = calcular_score_e_auditoria(
         fotos_total=len(photos),
         tour_360=lead.get("tour_360", False),
@@ -549,7 +499,7 @@ def revalidar_ficha_google(lead):
 
 
 # -----------------------------------------------------------------------------
-# GERADOR DE PDF PADRONIZADO DO DIAGNÓSTICO DE 3 PÁGINAS
+# GERADOR DE PDF DO DIAGNÓSTICO ESTRUTURADO (MODELO ANEXO)
 # -----------------------------------------------------------------------------
 def desenhar_cabecalho_rodape_diagnostico(canvas, doc):
   canvas.saveState()
@@ -562,16 +512,12 @@ def desenhar_cabecalho_rodape_diagnostico(canvas, doc):
       else None
   )
   if logo_tour:
-    img_logo = Image(logo_tour, width=140, height=45, kind="proportional")
-    img_logo.wrapOn(canvas, 140, 45)
-    img_logo.drawOn(canvas, 36, 732)
-  else:
-    canvas.setFont("Helvetica-Bold", 12)
-    canvas.setFillColor(colors.HexColor("#1A237E"))
-    canvas.drawString(36, 750, "TOUR360VR | OKAMOTO MÍDIAS")
+    img_logo = Image(logo_tour, width=130, height=40, kind="proportional")
+    img_logo.wrapOn(canvas, 130, 40)
+    img_logo.drawOn(canvas, 36, 735)
 
   header_text_style = ParagraphStyle(
-      "HeaderDiagnostico3Pag",
+      "HeaderDiagnostico",
       parent=styles["Normal"],
       fontName="Helvetica-Bold",
       fontSize=10,
@@ -581,25 +527,24 @@ def desenhar_cabecalho_rodape_diagnostico(canvas, doc):
   )
 
   head_p = Paragraph(
-      "TOUR360VR — GESTÃO DE PERFIL & DIAGNÓSTICO GOOGLE MEU NEGÓCIO",
+      "ESTUDO DE INTELIGÊNCIA DE MERCADO LOCAL<br/>E PRESENÇA DIGITAL NO GOOGLE",
       header_text_style,
   )
   head_table = Table([[head_p]], colWidths=[380])
-  head_table.wrapOn(canvas, 380, 45)
-  head_table.drawOn(canvas, 196, 740)
+  head_table.wrapOn(canvas, 380, 40)
+  head_table.drawOn(canvas, 196, 735)
 
   canvas.setStrokeColor(colors.HexColor("#cbd5e1"))
   canvas.setLineWidth(0.75)
   canvas.line(36, 725, 576, 725)
 
-  # Rodapé Institucional
+  # Rodapé Institucional (Modelo Fiel ao Anexo)
   canvas.line(36, 42, 576, 42)
   canvas.setFont("Helvetica", 8.5)
   canvas.setFillColor(colors.HexColor("#475569"))
 
-  texto_rodape = f"Tour360VR | {CONTATO_WHATSAPP} | Ribeirão Preto - SP | {WEBSITE_OFICIAL}"
+  texto_rodape = f"{WEBSITE_OFICIAL} | {EMAIL_CONTATO} | {CONTATO_WHATSAPP}"
   canvas.drawCentredString(306, 26, texto_rodape)
-  canvas.drawString(530, 26, f"Página {doc.page} de 3")
 
   canvas.restoreState()
 
@@ -614,37 +559,36 @@ def gerar_pdf_diagnostico_individual(lead):
       leftMargin=36,
       topMargin=75,
       bottomMargin=50,
-      title=f"Diagnóstico de Presença Digital - {lead['nome']}",
+      title=f"Diagnóstico - {lead['nome']}",
       author="Tour360VR",
   )
 
   styles = getSampleStyleSheet()
 
-  # Estilos Visuais
-  style_title_p1 = ParagraphStyle(
-      "TitleP1",
+  style_title = ParagraphStyle(
+      "TitleModelo",
       parent=styles["Heading1"],
-      fontSize=18,
-      leading=22,
-      textColor=colors.HexColor("#1A237E"),
+      fontSize=13,
+      leading=16,
+      textColor=colors.HexColor("#0f172a"),
       fontName="Helvetica-Bold",
-      alignment=1,
+      alignment=0,
       spaceAfter=4,
   )
-  style_sub_p1 = ParagraphStyle(
-      "SubP1",
+  style_sub = ParagraphStyle(
+      "SubModelo",
       parent=styles["Normal"],
-      fontSize=10,
-      leading=13,
+      fontSize=8.5,
+      leading=11,
       textColor=colors.HexColor("#475569"),
-      alignment=1,
-      spaceAfter=15,
+      alignment=0,
+      spaceAfter=12,
   )
   style_section_heading = ParagraphStyle(
       "SectionHead",
       parent=styles["Heading2"],
-      fontSize=12,
-      leading=15,
+      fontSize=10,
+      leading=13,
       textColor=colors.HexColor("#1A237E"),
       fontName="Helvetica-Bold",
       spaceBefore=10,
@@ -665,7 +609,7 @@ def gerar_pdf_diagnostico_individual(lead):
       parent=style_cell,
       fontName="Helvetica-Bold",
       textColor=colors.white,
-      alignment=1,
+      alignment=0,
   )
   style_cell_center = ParagraphStyle("CellCenter", parent=style_cell, alignment=1)
 
@@ -679,422 +623,105 @@ def gerar_pdf_diagnostico_individual(lead):
       nota=lead.get("nota", 0.0),
   )
 
-  # =========================================================================
-  # PÁGINA 1: CAPA & RESUMO EXECUTIVO
-  # =========================================================================
   elements.append(
-      Paragraph("DIAGNÓSTICO DE PRESENÇA DIGITAL GOOGLE MAPS", style_title_p1)
+      Paragraph(
+          f"DIAGNÓSTICO DE PRESENÇA DIGITAL: {lead['nome'].upper()}", style_title
+      )
   )
   elements.append(
       Paragraph(
-          "Gestão de reputação e imagem online para o segmento no Google Maps",
-          style_sub_p1,
+          "Este diagnóstico foi elaborado pela Okamoto Mídias Visuais e"
+          " Tour360VR com base em inteligência de mercado local para destacar"
+          " pontos cegos na sua vitrine digital do Google.",
+          style_sub,
       )
   )
-  elements.append(Spacer(1, 10))
 
-  # Imagem de Capa do Relatório (Se houver logo ou imagem)
-  if os.path.exists("logo_tour_transparente.png"):
-    img_capa = Image(
-        "logo_tour_transparente.png", width=120, height=120, kind="proportional"
-    )
-    elements.append(img_capa)
-    elements.append(Spacer(1, 15))
+  # Card de Dados da Empresa (Modelo Anexo)
+  website_txt = (
+      lead["website"] if lead.get("website") else "Não possui site vinculado"
+  )
+  reiv_txt = "Sim" if lead.get("reivindicada") else "Não"
+  fotos_txt = f"{lead.get('fotos_total', 0)} fotos públicas na ficha"
 
-  # Card de Dados da Empresa
-  dados_empresa_p1 = [
+  dados_empresa = [
       [
-          Paragraph("<b>Empresa Analisada:</b>", style_cell_bold),
-          Paragraph(f"<b>{lead['nome']}</b>", style_cell_bold),
-      ],
-      [
-          Paragraph("<b>Segmento / Nicho:</b>", style_cell),
-          Paragraph(lead["categoria"], style_cell),
-      ],
-      [
-          Paragraph("<b>Endereço Registrado:</b>", style_cell),
+          Paragraph("Empresa / Nicho", style_cell_bold),
           Paragraph(
-              f"{lead['endereco']} - {lead['cidade_busca']}", style_cell
+              f"| {lead['nome']} ({lead['categoria']})", style_cell_bold
           ),
       ],
       [
-          Paragraph("<b>Telefone / Contato:</b>", style_cell),
+          Paragraph("Endereço", style_cell_bold),
           Paragraph(
-              f"{lead['telefone']} | WhatsApp: {lead['whatsapp']}", style_cell
+              f"| {lead['endereco']} - {lead['cidade_busca']}", style_cell
           ),
       ],
       [
-          Paragraph("<b>Website Registrado:</b>", style_cell),
+          Paragraph("Nota Google / Avaliações", style_cell_bold),
           Paragraph(
-              lead["website"] if lead["website"] else "Não cadastrado na ficha",
+              f"| ★{lead.get('nota', 0.0)} ({lead.get('total_avaliacoes', 0)}"
+              " avaliações)",
               style_cell,
           ),
       ],
-  ]
-  t_emp_p1 = Table(dados_empresa_p1, colWidths=[130, 410])
-  t_emp_p1.setStyle(
-      TableStyle([
-          ("BACKGROUND", (0, 0), (0, -1), colors.HexColor("#f1f5f9")),
-          ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#cbd5e1")),
-          ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#e2e8f0")),
-          ("TOPPADDING", (0, 0), (-1, -1), 5),
-          ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
-      ])
-  )
-  elements.append(t_emp_p1)
-  elements.append(Spacer(1, 20))
-
-  # Banner Alerta de Destaque
-  nota_lead = lead.get("nota", 0.0)
-  total_av_lead = lead.get("total_avaliacoes", 0)
-  texto_destaque_p1 = f"""<b>SEU PERFIL TEM NOTA DE {nota_lead}★ COM {total_av_lead} AVALIAÇÕES NO GOOGLE,<br/>
-BUT A FALTA DE EXPERIÊNCIA IMERSIVA E OTIMIZAÇÃO 360° DEIXA DINHEIRO NA MESA.</b>"""
-
-  p_destaque = Paragraph(
-      texto_destaque_p1,
-      ParagraphStyle(
-          "DestaqueBox",
-          parent=styles["Normal"],
-          fontName="Helvetica-Bold",
-          fontSize=10,
-          leading=14,
-          textColor=colors.HexColor("#991b1b"),
-          alignment=1,
-      ),
-  )
-
-  t_destaque = Table([[p_destaque]], colWidths=[540])
-  t_destaque.setStyle(
-      TableStyle([
-          ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#fee2e2")),
-          ("BOX", (0, 0), (-1, -1), 1, colors.HexColor("#f87171")),
-          ("TOPPADDING", (0, 0), (-1, -1), 12),
-          ("BOTTOMPADDING", (0, 0), (-1, -1), 12),
-          ("LEFTPADDING", (0, 0), (-1, -1), 15),
-          ("RIGHTPADDING", (0, 0), (-1, -1), 15),
-      ])
-  )
-  elements.append(t_destaque)
-
-  elements.append(PageBreak())
-
-  # =========================================================================
-  # PÁGINA 2: AUDITORIA DETALHADA & COMPARATIVO DE CONCORRENTES
-  # =========================================================================
-  elements.append(
-      Paragraph(
-          "AUDITORIA DETALHADA DE PONTOS DE BUSCA & VISIBILIDADE",
-          style_section_heading,
-      )
-  )
-
-  score_saude = auditoria["score_saude"]
-  score_op = auditoria["score_oportunidade"]
-
-  # Box de Resumo da Pontuação
-  dados_score_header = [
       [
-          Paragraph("<b>OTIMIZAÇÃO DA FICHA</b>", style_cell_header),
-          Paragraph("<b>NOTA DOS CLIENTES</b>", style_cell_header),
-          Paragraph("<b>SCORE OPORTUNIDADE</b>", style_cell_header),
+          Paragraph("Website Oficial", style_cell_bold),
+          Paragraph(f"| {website_txt}", style_cell),
       ],
       [
+          Paragraph("Score de Oportunidade", style_cell_bold),
           Paragraph(
-              f"<b>{score_saude} / 100</b>",
-              ParagraphStyle(
-                  "S1",
-                  parent=style_cell_center,
-                  fontSize=14,
-                  textColor=colors.HexColor("#1A237E"),
-                  fontName="Helvetica-Bold",
-              ),
-          ),
-          Paragraph(
-              f"<b>{nota_lead} ★</b><br/>{total_av_lead} avaliações",
-              ParagraphStyle(
-                  "S2",
-                  parent=style_cell_center,
-                  fontSize=10,
-                  textColor=colors.HexColor("#d97706"),
-              ),
-          ),
-          Paragraph(
-              f"<b>{score_op} / 100</b><br/>(Prioridade Comercial)",
-              ParagraphStyle(
-                  "S3",
-                  parent=style_cell_center,
-                  fontSize=10,
-                  textColor=colors.HexColor("#dc2626"),
-                  fontName="Helvetica-Bold",
-              ),
+              f"| {auditoria['score_oportunidade']}/100 (Prioridade Comercial"
+              " Mapeada)",
+              style_cell_bold,
           ),
       ],
+      [
+          Paragraph("Ficha Reivindicada / Fotos", style_cell_bold),
+          Paragraph(f"| {reiv_txt} {fotos_txt}", style_cell),
+      ],
   ]
-  t_score_head = Table(dados_score_header, colWidths=[180, 180, 180])
-  t_score_head.setStyle(
+  t_emp = Table(dados_empresa, colWidths=[150, 390])
+  t_emp.setStyle(
       TableStyle([
-          ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1A237E")),
-          ("BACKGROUND", (0, 1), (-1, 1), colors.HexColor("#f8fafc")),
-          ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#cbd5e1")),
-          ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#e2e8f0")),
-          ("TOPPADDING", (0, 0), (-1, -1), 5),
-          ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
-      ])
-  )
-  elements.append(t_score_head)
-  elements.append(Spacer(1, 10))
-
-  # Checklist de Auditoria (9 Pontos)
-  rows_audit = [[
-      Paragraph("<b>Critério de Otimização</b>", style_cell_header),
-      Paragraph("<b>Estado Atual no Google</b>", style_cell_header),
-      Paragraph("<b>Impacto na Busca / Conversão</b>", style_cell_header),
-  ]]
-
-  matriz_detalhes = [
-      (
-          "1. Fotos e Resolução Visual",
-          auditoria["detalhes_9_pontos"]["1. Fotos HD"],
-          "Fotos em alta resolução atraem até 42% mais solicitações de rotas.",
-      ),
-      (
-          "2. Tour Virtual 360° Interativo",
-          auditoria["detalhes_9_pontos"]["2. Tour 360°"],
-          "Garante imersão no Street View e aumenta o tempo de permanência.",
-      ),
-      (
-          "3. Categorias Principal e Secundárias",
-          auditoria["detalhes_9_pontos"]["3. Categorias"],
-          "Garante o match correto com buscas locais de clientes qualificados.",
-      ),
-      (
-          "4. Horários e Exceções (Feriados)",
-          auditoria["detalhes_9_pontos"]["4. Horários"],
-          "Evita perda de clientes por horários defasados em feriados.",
-      ),
-      (
-          "5. Website e Links de Conversão",
-          auditoria["detalhes_9_pontos"]["5. Website"],
-          "Encaminha tráfego aquecido da busca diretamente para o WhatsApp.",
-      ),
-      (
-          "6. Avaliações no Google (Prova Social)",
-          auditoria["detalhes_9_pontos"]["6. Avaliações"],
-          "Fator decisivo para o cliente escolher sua empresa em vez do"
-          " concorrente.",
-      ),
-      (
-          "7. Resumo Editorial & Descrição",
-          auditoria["detalhes_9_pontos"]["7. Descrição SEO"],
-          "Aumenta o indexamento de palavras-chave da região no algoritmo.",
-      ),
-      (
-          "8. Atributos de Acessibilidade/Serviços",
-          auditoria["detalhes_9_pontos"]["8. Atributos"],
-          "Destaca facilidades do local (Wi-Fi, Estacionamento, Acessibilidade).",
-      ),
-      (
-          "9. Interação e Resposta a Avaliações",
-          auditoria["detalhes_9_pontos"]["9. Respostas"],
-          "Demonstra atenção ao cliente e eleva a autoridade do perfil.",
-      ),
-  ]
-
-  for item, estado, impacto in matriz_detalhes:
-    rows_audit.append([
-        Paragraph(item, style_cell_bold),
-        Paragraph(estado, style_cell_center),
-        Paragraph(impacto, style_cell),
-    ])
-
-  t_audit = Table(rows_audit, colWidths=[150, 130, 260])
-  t_audit.setStyle(
-      TableStyle([
-          ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1A237E")),
+          ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#f8fafc")),
           ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#cbd5e1")),
           ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#e2e8f0")),
           ("TOPPADDING", (0, 0), (-1, -1), 4),
           ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
       ])
   )
-  elements.append(t_audit)
+  elements.append(t_emp)
   elements.append(Spacer(1, 10))
 
-  # Tabela Comparativa de Concorrentes (Com Auto-Wrap em Células)
+  # Tabela de Pontos Críticos Identificados
   elements.append(
       Paragraph(
-          "ANÁLISE COMPARATIVA DE CONCORRENTES DA REGIÃO", style_section_heading
-      )
-  )
-
-  col_widths_conc = [130, 35, 35, 40, 40, 40, 35, 40, 40, 40, 65]
-  headers_conc = [
-      Paragraph("Empresa / Concorrente", style_cell_header),
-      Paragraph("Fotos", style_cell_header),
-      Paragraph("360°", style_cell_header),
-      Paragraph("Categ", style_cell_header),
-      Paragraph("Horá", style_cell_header),
-      Paragraph("Web", style_cell_header),
-      Paragraph("Nota", style_cell_header),
-      Paragraph("Desc", style_cell_header),
-      Paragraph("Atrib", style_cell_header),
-      Paragraph("Resp", style_cell_header),
-      Paragraph("Score", style_cell_header),
-  ]
-  dados_concorrentes = [headers_conc]
-
-  # Linha da empresa auditada
-  dados_concorrentes.append([
-      Paragraph(f"<b>{lead['nome'][:20]}</b>", style_cell),
-      Paragraph("Sim" if lead.get("fotos_total", 0) >= 8 else "Não", style_cell),
-      Paragraph("Sim" if lead.get("tour_360") else "Não", style_cell),
-      Paragraph("Sim", style_cell),
-      Paragraph("Sim", style_cell),
-      Paragraph("Sim" if lead.get("website") else "Não", style_cell),
-      Paragraph(str(lead.get("nota", 0.0)), style_cell),
-      Paragraph("Não", style_cell),
-      Paragraph("Não", style_cell),
-      Paragraph("Não", style_cell),
-      Paragraph(f"<b>{score_saude}/100</b>", style_cell_bold),
-  ])
-
-  # Concorrentes simulados/padrão do setor para benchmarking
-  concorrentes_demo = [
-      ("Concorrente Bairro A", "Sim", "Não", "Sim", "Sim", "Sim", "4.8", "55/100"),
-      ("Concorrente Região B", "Sim", "Não", "Sim", "Sim", "Não", "4.2", "40/100"),
-  ]
-  for c_nome, c_fo, c_36, c_ca, c_ho, c_we, c_no, c_sc in concorrentes_demo:
-    dados_concorrentes.append([
-        Paragraph(c_nome, style_cell),
-        Paragraph(c_fo, style_cell),
-        Paragraph(c_36, style_cell),
-        Paragraph(c_ca, style_cell),
-        Paragraph(c_ho, style_cell),
-        Paragraph(c_we, style_cell),
-        Paragraph(c_no, style_cell),
-        Paragraph("Não", style_cell),
-        Paragraph("Não", style_cell),
-        Paragraph("Não", style_cell),
-        Paragraph(c_sc, style_cell),
-    ])
-
-  t_conc = Table(dados_concorrentes, colWidths=col_widths_conc)
-  t_conc.setStyle(
-      TableStyle([
-          ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1A237E")),
-          ("BACKGROUND", (0, 1), (-1, 1), colors.HexColor("#fef3c7")),
-          ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#cbd5e1")),
-          ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#e2e8f0")),
-          ("ALIGN", (1, 0), (-1, -1), "CENTER"),
-          ("TOPPADDING", (0, 0), (-1, -1), 3),
-          ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
-      ])
-  )
-  elements.append(t_conc)
-
-  elements.append(PageBreak())
-
-  # =========================================================================
-  # PÁGINA 3: GEOLOCALIZAÇÃO & PLANO DE AÇÃO DE EXPANSÃO DE RAIO
-  # =========================================================================
-  elements.append(
-      Paragraph(
-          "MAPEAMENTO GEOGRÁFICO DE RAIO DE ATRAÇÃO LOCAL",
-          style_section_heading,
-      )
-  )
-  elements.append(
-      Paragraph(
-          "Simulação de visibilidade em buscas por proximidade ('próximo a"
-          " mim')",
-          style_sub_p1,
-      )
-  )
-
-  # Cards dos 3 Raios de Atração
-  dados_raio = [
-      [
-          Paragraph("<b>RAIO BAIRRO (1.5 km)</b>", style_cell_header),
-          Paragraph("<b>RAIO REGIÃO (3.0 km)</b>", style_cell_header),
-          Paragraph("<b>RAIO CIDADE (5.0+ km)</b>", style_cell_header),
-      ],
-      [
-          Paragraph(
-              "Buscas diretas da vizinhança.<br/><b>Status: Visibilidade"
-              " Moderada</b>",
-              style_cell_center,
-          ),
-          Paragraph(
-              "Queda de relevância para concorrentes.<br/><b>Status: Perda de"
-              " Posição</b>",
-              style_cell_center,
-          ),
-          Paragraph(
-              "Fora do raio primário.<br/><b>Status: Invisível sem Tour"
-              " 360°</b>",
-              style_cell_center,
-          ),
-      ],
-  ]
-  t_raio = Table(dados_raio, colWidths=[180, 180, 180])
-  t_raio.setStyle(
-      TableStyle([
-          ("BACKGROUND", (0, 0), (0, 0), colors.HexColor("#166534")),
-          ("BACKGROUND", (1, 0), (1, 0), colors.HexColor("#854d0e")),
-          ("BACKGROUND", (2, 0), (2, 0), colors.HexColor("#991b1b")),
-          ("BACKGROUND", (0, 1), (-1, 1), colors.HexColor("#f8fafc")),
-          ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#cbd5e1")),
-          ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#e2e8f0")),
-          ("TOPPADDING", (0, 0), (-1, -1), 6),
-          ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
-      ])
-  )
-  elements.append(t_raio)
-  elements.append(Spacer(1, 15))
-
-  # Diagnóstico por Intenção de Busca
-  elements.append(
-      Paragraph(
-          "DIAGNÓSTICO DE BUSCAS POR INTENÇÃO DE CLIENTES",
+          "PONTOS CRÍTICOS IDENTIFICADOS NA VITRINE DIGITAL",
           style_section_heading,
       )
   )
 
-  dados_intencao = [
-      [
-          Paragraph("<b>Tipo de Busca</b>", style_cell_header),
-          Paragraph("<b>Comportamento do Consumidor</b>", style_cell_header),
-          Paragraph("<b>Ranking Estimado</b>", style_cell_header),
-      ],
-      [
-          Paragraph("Busca por Proximidade", style_cell_bold),
-          Paragraph(
-              "92% dos usuários clicam nos 3 primeiros resultados do mapa.",
-              style_cell,
-          ),
-          Paragraph("Top 3 a Top 5", style_cell_center),
-      ],
-      [
-          Paragraph("Busca por Categoria Local", style_cell_bold),
-          Paragraph(
-              "Sem Tour 360° e fotos HD, o perfil perde espaço para"
-              " concorrentes.",
-              style_cell,
-          ),
-          Paragraph("8º ao 15º Lugar", style_cell_center),
-      ],
-      [
-          Paragraph("Busca Direta por Marca", style_cell_bold),
-          Paragraph(
-              "Cliente digita o nome exato da empresa mas falta imersão"
-              " visual.",
-              style_cell,
-          ),
-          Paragraph("1º Lugar", style_cell_center),
-      ],
-  ]
-  t_intencao = Table(dados_intencao, colWidths=[140, 280, 120])
-  t_intencao.setStyle(
+  criticos_lista = (
+      lead["pontos_criticos"]
+      if isinstance(lead.get("pontos_criticos"), list)
+      else auditoria["pontos_criticos"]
+  )
+  if not criticos_lista:
+    criticos_lista = auditoria["pontos_criticos"]
+
+  rows_criticos = [[
+      Paragraph("#", style_cell_header),
+      Paragraph("Gargalo / Ponto de Atenção", style_cell_header),
+  ]]
+  for idx, pc in enumerate(criticos_lista, start=1):
+    rows_criticos.append(
+        [Paragraph(str(idx), style_cell_center), Paragraph(pc, style_cell)]
+    )
+
+  t_criticos = Table(rows_criticos, colWidths=[30, 510])
+  t_criticos.setStyle(
       TableStyle([
           ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1A237E")),
           ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#cbd5e1")),
@@ -1103,86 +730,45 @@ BUT A FALTA DE EXPERIÊNCIA IMERSIVA E OTIMIZAÇÃO 360° DEIXA DINHEIRO NA MESA
           ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
       ])
   )
-  elements.append(t_intencao)
-  elements.append(Spacer(1, 15))
+  elements.append(t_criticos)
+  elements.append(Spacer(1, 10))
 
-  # Plano de Ação Estratégico
+  # Tabela de Oportunidades de Transformação
   elements.append(
       Paragraph(
-          "PLANO DE AÇÃO E APONTAMENTOS ESTRATÉGICOS PERSONALIZADOS",
+          "OPORTUNIDADES DE TRANSFORMAÇÃO E RETORNO COMERCIAL",
           style_section_heading,
       )
   )
 
-  acoes_p3 = [
-      (
-          "1. Atração Local (SEO):",
-          (
-              "Correção cadastral e otimização das categorias principal e"
-              " secundárias."
-          ),
-      ),
-      (
-          "2. Segurança & Posicionamento:",
-          (
-              "Frequência de atualização de acervo para sinalizar relevância ao"
-              " algoritmo."
-          ),
-      ),
-      (
-          "3. Confiança & Autoridade:",
-          (
-              "Publicação do Tour Virtual 360° no Google Street View e Fotos HD"
-              " Profissionais."
-          ),
-      ),
-      (
-          "4. Vitrine Imersiva & Conversão:",
-          (
-              "Padronização visual do espaço e integração direta com canais de"
-              " atendimento."
-          ),
-      ),
-  ]
-  for tit_ac, desc_ac in acoes_p3:
-    elements.append(
-        Paragraph(
-            f"<b>{tit_ac}</b> {desc_ac}",
-            ParagraphStyle(
-                "AcaoItem", parent=style_cell, fontSize=8.5, leading=11
-            ),
-        )
-    )
-    elements.append(Spacer(1, 3))
-
-  elements.append(Spacer(1, 10))
-
-  # Chamada para Ação Final
-  box_cta = Paragraph(
-      f"""<b>PRONTO PARA ELEVAR O NÍVEL DA SUA EMPRESA NO GOOGLE MAPS?</b><br/>
-Estruturamos sua Ficha Google, criamos o Tour Virtual 360°, produzimos Fotos & Vídeos Profissionais e gerenciamos sua Reputação.<br/>
-<b>Fale com nossa equipe: WhatsApp {CONTATO_WHATSAPP} | {EMAIL_CONTATO} | {WEBSITE_OFICIAL}</b>""",
-      ParagraphStyle(
-          "CTAEnd",
-          parent=styles["Normal"],
-          fontName="Helvetica-Bold",
-          fontSize=8.5,
-          leading=12,
-          textColor=colors.HexColor("#1A237E"),
-          alignment=1,
-      ),
+  op_lista = (
+      lead["oportunidades"]
+      if isinstance(lead.get("oportunidades"), list)
+      else auditoria["oportunidades"]
   )
+  if not op_lista:
+    op_lista = auditoria["oportunidades"]
 
-  t_cta = Table([[box_cta]], colWidths=[540])
-  t_cta.setStyle(
+  rows_op = [[
+      Paragraph("#", style_cell_header),
+      Paragraph("Solução Estratégica Proposta", style_cell_header),
+  ]]
+  for idx, op in enumerate(op_lista, start=1):
+    rows_op.append(
+        [Paragraph(str(idx), style_cell_center), Paragraph(op, style_cell)]
+    )
+
+  t_op = Table(rows_op, colWidths=[30, 510])
+  t_op.setStyle(
       TableStyle([
-          ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#f1f5f9")),
-          ("BOX", (0, 0), (-1, -1), 1, colors.HexColor("#cbd5e1")),
-          ("TOPPADDING", (0, 0), (-1, -1), 8),
-          ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+          ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1A237E")),
+          ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#cbd5e1")),
+          ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#e2e8f0")),
+          ("TOPPADDING", (0, 0), (-1, -1), 5),
+          ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
       ])
   )
-  elements.append(t_cta)
+  elements.append(t_op)
 
   doc.build(
       elements,
@@ -1526,9 +1112,9 @@ st.markdown(
     }
     
     .score-box { text-align: center; padding: 8px; border-radius: 8px; font-weight: bold; width: 130px; }
-    .score-high { background-color: #052e16; color: #86efac; border: 1px solid #166534; }
+    .score-high { background-color: #450a0a; color: #fca5a5; border: 1px solid #991b1b; }
     .score-med  { background-color: #451a03; color: #fde047; border: 1px solid #92400e; }
-    .score-low  { background-color: #450a0a; color: #fca5a5; border: 1px solid #991b1b; }
+    .score-low  { background-color: #052e16; color: #86efac; border: 1px solid #166534; }
 
     .critical-item { color: #f87171; font-size: 13px; margin-bottom: 6px; font-weight: 500; }
     
@@ -1713,7 +1299,6 @@ def buscar_google_places_api(
 
         has_https = website.startswith("https://") if website else False
 
-        # Executa o cálculo de auditoria e score padronizado
         auditoria = calcular_score_e_auditoria(
             fotos_total=len(photos),
             tour_360=False,
@@ -2529,7 +2114,7 @@ elif st.session_state.etapa == 3:
             atualizar_categoria_db(
                 lead["id"], nova_tag_digitada.strip().capitalize()
             )
-            st.toast("New tag criada e salva!")
+            st.toast("Nova tag criada e salva!")
             st.rerun()
         elif escolha_tag != cat_atual:
           atualizar_categoria_db(lead["id"], escolha_tag)
@@ -2575,7 +2160,7 @@ elif st.session_state.etapa == 3:
         )
 
       with col_details2:
-        st.markdown("**🚨 Pontos Críticos Encontrados:**")
+        st.markdown("**🚨 Pontos Críticos Identificados:**")
         criticos_lista = (
             lead["pontos_criticos"]
             if isinstance(lead["pontos_criticos"], list)
@@ -2620,11 +2205,10 @@ elif st.session_state.etapa == 3:
           msg_wa = (
               "Olá! Tudo bem?\nMeu nome é Rubens Okamoto, da Okamoto Mídias"
               f" Visuais e do Tour360VR.\nEstava analisando a presença da"
-              f" {lead['nome']} no Google, e identifiquei 3 pontos onde a"
-              " visibilidade do espaço de vocês pode ser bastante ampliada em"
-              " relação aos concorrentes da região.\nMontei um relatório curto"
-              " de diagnóstico em PDF. Posso te enviar por aqui para você dar"
-              " uma olhada?"
+              f" {lead['nome']} no Google, e identifiquei pontos estratégicos"
+              " onde a visibilidade de vocês pode ser ampliada em relação aos"
+              " concorrentes.\nMontei um relatório rápido de diagnóstico em PDF."
+              " Posso te enviar por aqui?"
           )
           link_wa = (
               f"https://wa.me/55{lead['whatsapp']}?text={urllib.parse.quote(msg_wa)}"
@@ -2819,11 +2403,10 @@ TOUR360VR | Okamoto Mídias Visuais
         script_wa = (
             "Olá! Tudo bem?\nMeu nome é Rubens Okamoto, da Okamoto Mídias"
             f" Visuais e do Tour360VR.\nEstava analisando a presença da"
-            f" {lead['nome']} no Google, e identifiquei pontos onde a"
-            " visibilidade do espaço de vocês pode ser bastante ampliada em"
-            " relação aos concorrentes da região.\nMontei um relatório curto"
-            " de diagnóstico em PDF. Posso te enviar por aqui para você dar"
-            " uma olhada?"
+            f" {lead['nome']} no Google, e identifiquei pontos estratégicos"
+            " onde a visibilidade de vocês pode ser ampliada em relação aos"
+            " concorrentes.\nMontei um relatório rápido de diagnóstico em PDF."
+            " Posso te enviar por aqui?"
         )
         st.markdown(
             f'<div class="script-box">{script_wa}</div>',
@@ -3209,8 +2792,7 @@ elif st.session_state.etapa == 5:
           " Comercial)"
       )
       st.markdown(
-          "Lista ordenada do maior score de oportunidade (mais carente de"
-          " serviços) para o menor:"
+          "Lista ordenada do maior score de oportunidade para o menor:"
       )
 
       df_mapa_sorted = df_mapa_filtrado.sort_values(
