@@ -1,6 +1,6 @@
-import streamlit as st
-import os
 import base64
+import os
+import streamlit as st
 
 st.set_page_config(
     page_title="Central de Sistemas | Tour360VR & Okamoto",
@@ -9,6 +9,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+
 # --- ASSETS ---
 def carregar_imagem_base64(caminho):
     if os.path.exists(caminho):
@@ -16,11 +17,15 @@ def carregar_imagem_base64(caminho):
             return base64.b64encode(f.read()).decode()
     return None
 
+
 logo_tour_b64 = carregar_imagem_base64("logo_tour_transparente.png")
-logo_okamoto_b64 = carregar_imagem_base64("logo_okamoto.png") or carregar_imagem_base64("okamoto_preto.png")
+logo_okamoto_b64 = carregar_imagem_base64("logo_okamoto.png") or carregar_imagem_base64(
+    "okamoto_preto.png"
+)
 
 # --- TEMA GLASSMORPHISM DARK ---
-st.markdown("""
+st.markdown(
+    """
 <style>
 :root {
     --bg: #0B0E14;
@@ -96,16 +101,25 @@ h1, h2, h3, h4 { color: var(--text-strong) !important; letter-spacing: -0.01em; 
 }
 .section-title .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 10px var(--accent); }
 
-/* Cards clicáveis em vidro (mesmo tamanho, texto branco) */
+/* CARDS COMPACTOS E CENTRALIZADOS */
 a.sys-card, a.sys-card:visited, a.sys-card:hover, a.sys-card:focus {
     color: #FFFFFF !important;
 }
 a.sys-card {
-    display: flex; flex-direction: column; align-items: flex-start; gap: 6px;
-    height: 200px; box-sizing: border-box; padding: 18px 20px;
+    display: flex; 
+    flex-direction: column; 
+    align-items: center;        /* Centraliza na horizontal */
+    justify-content: center;   /* Centraliza na vertical */
+    text-align: center;         /* Centraliza o texto */
+    gap: 4px;
+    height: 150px;              /* Reduzido de 200px para 150px */
+    box-sizing: border-box; 
+    padding: 14px 12px;         /* Padding interno menor */
     background: var(--glass);
-    backdrop-filter: blur(var(--blur)); -webkit-backdrop-filter: blur(var(--blur));
-    border: 1px solid var(--border); border-radius: 14px;
+    backdrop-filter: blur(var(--blur)); 
+    -webkit-backdrop-filter: blur(var(--blur));
+    border: 1px solid var(--border); 
+    border-radius: 12px;        /* Bordas levemente mais suaves */
     text-decoration: none !important;
     box-shadow: 0 4px 16px rgba(0,0,0,.25);
     transition: all .2s ease;
@@ -116,39 +130,45 @@ a.sys-card:hover {
     transform: translateY(-3px);
     box-shadow: 0 0 18px rgba(74,163,218,.35);
 }
-a.sys-card .icon { font-size: 1.7rem; line-height: 1; }
-a.sys-card .name { color: #FFFFFF !important; font-size: 1.05rem; font-weight: 700; }
-a.sys-card .desc { color: var(--text-muted); font-size: .85rem; line-height: 1.45; }
+a.sys-card .icon { font-size: 1.5rem; line-height: 1; margin-bottom: 2px; }
+a.sys-card .name { color: #FFFFFF !important; font-size: 0.95rem; font-weight: 700; }
+a.sys-card .desc { color: var(--text-muted); font-size: .78rem; line-height: 1.35; }
 a.sys-card:hover .name { color: var(--accent) !important; }
-a.sys-card .go { margin-top: auto; color: #FFFFFF !important; font-size: .78rem; font-weight: 600; }
 
 /* Espaço entre blocos de cards */
 .gap-lg { height: 08px; }
 </style>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 # --- SIDEBAR ---
 with st.sidebar:
     html_logos = "<div class='sidebar-box'>"
     if logo_tour_b64:
-        html_logos += f"<img class='logo-tour' src='data:image/png;base64,{logo_tour_b64}'/>"
+        html_logos += (
+            f"<img class='logo-tour' src='data:image/png;base64,{logo_tour_b64}'/>"
+        )
     else:
         html_logos += "<h3 style='color:#FFF; margin:0;'>TOUR360VR</h3>"
     if logo_okamoto_b64:
         html_logos += f"<img class='logo-okamoto' src='data:image/png;base64,{logo_okamoto_b64}'/>"
     html_logos += (
-        "<div class='sidebar-footer'>Painel Unificado de Operações<br>© Okamoto Mídias Visuais</div>"
-        "</div>"
+        "<div class='sidebar-footer'>Painel Unificado de Operações<br>© Okamoto"
+        " Mídias Visuais</div></div>"
     )
     st.markdown(html_logos, unsafe_allow_html=True)
 
 # --- HERO (centralizado) ---
-st.markdown("""
+st.markdown(
+    """
 <div class="hero">
     <h1>Central de Sistemas e Operações</h1>
     <p>Selecione o módulo operacional desejado para abrir a aplicação.</p>
 </div>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 
 # --- COMPONENTE DE CARD ---
@@ -162,7 +182,6 @@ def render_cards(cards):
                     <div class="icon">{c['icon']}</div>
                     <div class="name">{c['name']}</div>
                     <div class="desc">{c['desc']}</div>
-                    
                 </a>
                 """,
                 unsafe_allow_html=True,
@@ -173,19 +192,38 @@ def render_cards(cards):
 # SEÇÃO 1: TOUR360VR
 # ==========================================
 st.markdown(
-    "<div class='section-title'><span class='dot'></span>🌐 Tour360vr — Prospecção, Diagnóstico & Gestão GMB</div>",
+    "<div class='section-title'><span class='dot'></span>🌐 Tour360vr —"
+    " Prospecção, Diagnóstico & Gestão GMB</div>",
     unsafe_allow_html=True,
 )
 render_cards([
-    {"icon": "📡", "name": "Radar de Prospecção",
-     "desc": "Mapeamento de campo e varredura de fichas do Google Meu Negócio (Buscador de Clientes).",
-     "url": "https://radar-comercial-tour360vr.streamlit.app/"},
-    {"icon": "📊", "name": "Diagnóstico & Auditoria",
-     "desc": "Análise de saúde do perfil local com geração de proposta visual e relatório técnico em PDF.",
-     "url": "https://tour360vr.streamlit.app/"},
-    {"icon": "📈", "name": "Gestão Mensal & ROI",
-     "desc": "Acompanhamento recorrente de métricas (chamadas, rotas, WhatsApp) e relatórios executivos.",
-     "url": "https://gestao-mensal-tour360vr.streamlit.app/"},
+    {
+        "icon": "📡",
+        "name": "Radar de Prospecção",
+        "desc": (
+            "Mapeamento de campo e varredura de fichas do Google Meu Negócio"
+            " (Buscador de Clientes)."
+        ),
+        "url": "https://radar-comercial-tour360vr.streamlit.app/",
+    },
+    {
+        "icon": "📊",
+        "name": "Diagnóstico & Auditoria",
+        "desc": (
+            "Análise de saúde do perfil local com geração de proposta visual e"
+            " relatório técnico em PDF."
+        ),
+        "url": "https://tour360vr.streamlit.app/",
+    },
+    {
+        "icon": "📈",
+        "name": "Gestão Mensal & ROI",
+        "desc": (
+            "Acompanhamento recorrente de métricas (chamadas, rotas, WhatsApp)"
+            " e relatórios executivos."
+        ),
+        "url": "https://gestao-mensal-tour360vr.streamlit.app/",
+    },
 ])
 
 # Espaço de 1 linha entre os blocos
@@ -195,15 +233,29 @@ st.markdown("<div class='gap-lg'></div>", unsafe_allow_html=True)
 # SEÇÃO 2: OKAMOTO MÍDIAS VISUAIS
 # ==========================================
 st.markdown(
-    "<div class='section-title'><span class='dot' style='background:var(--accent-2); box-shadow:0 0 10px var(--accent-2);'></span>"
-    "📸 Okamoto Mídias Visuais — Comercial & Precificação</div>",
+    "<div class='section-title'><span"
+    " class='dot' style='background:var(--accent-2); box-shadow:0 0 10px"
+    " var(--accent-2);'></span>📸 Okamoto Mídias Visuais — Comercial &"
+    " Precificação</div>",
     unsafe_allow_html=True,
 )
 render_cards([
-    {"icon": "💼", "name": "Propostas & Custos",
-     "desc": "Elaboração de propostas comerciais e orçamentos de logística e produção visual.",
-     "url": "https://okamoto-proposta-comercial.streamlit.app/"},
-    {"icon": "🧮", "name": "Custos & Logística",
-     "desc": "Cálculo de custos operacionais e logística de transporte para atendimentos e produções.",
-     "url": "https://seu-link-de-custos.streamlit.app"},
+    {
+        "icon": "💼",
+        "name": "Propostas & Custos",
+        "desc": (
+            "Elaboração de propostas comerciais e orçamentos de logística e"
+            " produção visual."
+        ),
+        "url": "https://okamoto-proposta-comercial.streamlit.app/",
+    },
+    {
+        "icon": "🧮",
+        "name": "Custos & Logística",
+        "desc": (
+            "Cálculo de custos operacionais e logística de transporte para"
+            " atendimentos e produções."
+        ),
+        "url": "https://seu-link-de-custos.streamlit.app",
+    },
 ])
