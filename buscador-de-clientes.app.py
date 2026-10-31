@@ -642,8 +642,8 @@ def gerar_pdf_diagnostico_individual(lead):
   )
   elements.append(
       Paragraph(
-          "Este diagnóstico foi elaborado pela Okamoto Mídias Visuais e"
-          " Tour360VR com base em inteligência de mercado local para destacar"
+          "Este diagnóstico foi elaborado pelo Tour360VR e a"
+          " Okamoto Mídias Visuais com base em inteligência de mercado local para destacar"
           " pontos cegos na sua vitrine digital do Google.",
           style_sub,
       )
@@ -1599,7 +1599,7 @@ if st.session_state.etapa == 1:
   st.markdown(
       """
         <div class="main-header">
-            <h1 class="main-title">📈 Dashboard Executivo | Okamoto Mídias & Tour360VR</h1>
+            <h1 class="main-title">📈 Dashboard Executivo | Tour360VR</h1>
             <div class="main-subtitle">Visão geral do seu funil de prospecção e oportunidades de mercado mapeadas.</div>
         </div>
     """,
