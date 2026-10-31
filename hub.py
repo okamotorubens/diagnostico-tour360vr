@@ -72,7 +72,7 @@ h1, h2, h3, h4 { color: var(--text-strong) !important; letter-spacing: -0.01em; 
 .sidebar-footer {
     margin-top: 18px; padding-top: 14px; width: 85%;
     border-top: 1px solid var(--border);
-    color: var(--text-muted); font-size: .75rem; line-height: 1.4;
+    color: var(--text-muted); font-size: .85rem; line-height: 1.4;
 }
 
 /* Hero centralizado */
@@ -82,25 +82,25 @@ h1, h2, h3, h4 { color: var(--text-strong) !important; letter-spacing: -0.01em; 
     background: var(--glass);
     backdrop-filter: blur(var(--blur)); -webkit-backdrop-filter: blur(var(--blur));
     border: 1px solid var(--border); border-radius: 18px;
-    padding: 26px 30px; margin-bottom: 26px;
+    padding: 28px 32px; margin-bottom: 26px;
     box-shadow: 0 8px 32px rgba(0,0,0,.35);
 }
 .hero::before {
     content: ""; position: absolute; left: 0; top: 0; right: 0; height: 3px;
     background: var(--gradient-brand);
 }
-.hero h1 { margin: 0 !important; font-size: 1.8rem !important; font-weight: 800; text-align: center; }
-.hero p { margin: 6px 0 0 0; color: var(--text-muted); font-size: 1.05rem; text-align: center; }
+.hero h1 { margin: 0 !important; font-size: 2rem !important; font-weight: 800; text-align: center; }
+.hero p { margin: 6px 0 0 0; color: var(--text-muted); font-size: 1.15rem; text-align: center; }
 
 /* Títulos de seção */
 .section-title {
     display: flex; align-items: center; gap: 10px;
-    margin: 30px 0 14px 0; padding-bottom: 10px;
+    margin: 30px 0 16px 0; padding-bottom: 10px;
     border-bottom: 1px solid var(--border);
-    color: var(--text-strong); font-size: 1.25rem; font-weight: 700;
+    color: var(--text-strong); font-size: 1.35rem; font-weight: 700;
 }
 
-/* CARDS COMPACTOS E CENTRALIZADOS */
+/* CARDS COMPACTOS, CENTRALIZADOS E COM TEXTO AMPLIAÇÃO */
 a.sys-card, a.sys-card:visited, a.sys-card:hover, a.sys-card:focus {
     color: #FFFFFF !important;
 }
@@ -110,15 +110,15 @@ a.sys-card {
     align-items: center;        
     justify-content: center;   
     text-align: center;         
-    gap: 6px;
-    min-height: 160px;          
+    gap: 8px;
+    min-height: 180px;          /* Ajustado para acomodar fontes maiores */
     box-sizing: border-box; 
-    padding: 16px 14px;         
+    padding: 18px 16px;         
     background: var(--glass);
     backdrop-filter: blur(var(--blur)); 
     -webkit-backdrop-filter: blur(var(--blur));
     border: 1px solid var(--border); 
-    border-radius: 12px;        
+    border-radius: 14px;        
     text-decoration: none !important;
     box-shadow: 0 4px 16px rgba(0,0,0,.25);
     transition: all .2s ease;
@@ -130,21 +130,21 @@ a.sys-card:hover {
     box-shadow: 0 0 18px rgba(74,163,218,.35);
 }
 
-/* Tamanho dos textos aumentados */
-a.sys-card .icon { font-size: 1.8rem; line-height: 1; margin-bottom: 2px; }
-a.sys-card .name { color: #FFFFFF !important; font-size: 1.1rem; font-weight: 700; }
-a.sys-card .desc { color: var(--text-muted); font-size: 0.9rem; line-height: 1.4; }
+/* Fontes aumentadas */
+a.sys-card .icon { font-size: 2.2rem; line-height: 1; margin-bottom: 2px; }
+a.sys-card .name { color: #FFFFFF !important; font-size: 1.25rem; font-weight: 700; }
+a.sys-card .desc { color: var(--text-muted); font-size: 0.98rem; line-height: 1.45; }
 a.sys-card:hover .name { color: var(--accent) !important; }
 
-/* Ajuste de espaçamento para telas menores (celular) */
+/* Espaçamento em telas menores (celular) */
 @media (max-width: 768px) {
     a.sys-card {
-        margin-bottom: 14px; /* Garante que os cards empilhados não fiquem grudados */
+        margin-bottom: 16px; 
     }
 }
 
 /* Espaço entre blocos de cards */
-.gap-lg { height: 12px; }
+.gap-lg { height: 16px; }
 </style>
 """,
     unsafe_allow_html=True,
