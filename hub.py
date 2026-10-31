@@ -89,17 +89,16 @@ h1, h2, h3, h4 { color: var(--text-strong) !important; letter-spacing: -0.01em; 
     content: ""; position: absolute; left: 0; top: 0; right: 0; height: 3px;
     background: var(--gradient-brand);
 }
-.hero h1 { margin: 0 !important; font-size: 1.7rem !important; font-weight: 800; text-align: center; }
-.hero p { margin: 6px 0 0 0; color: var(--text-muted); font-size: 1rem; text-align: center; }
+.hero h1 { margin: 0 !important; font-size: 1.8rem !important; font-weight: 800; text-align: center; }
+.hero p { margin: 6px 0 0 0; color: var(--text-muted); font-size: 1.05rem; text-align: center; }
 
 /* Títulos de seção */
 .section-title {
     display: flex; align-items: center; gap: 10px;
     margin: 30px 0 14px 0; padding-bottom: 10px;
     border-bottom: 1px solid var(--border);
-    color: var(--text-strong); font-size: 1.15rem; font-weight: 700;
+    color: var(--text-strong); font-size: 1.25rem; font-weight: 700;
 }
-.section-title .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 10px var(--accent); }
 
 /* CARDS COMPACTOS E CENTRALIZADOS */
 a.sys-card, a.sys-card:visited, a.sys-card:hover, a.sys-card:focus {
@@ -108,18 +107,18 @@ a.sys-card, a.sys-card:visited, a.sys-card:hover, a.sys-card:focus {
 a.sys-card {
     display: flex; 
     flex-direction: column; 
-    align-items: center;        /* Centraliza na horizontal */
-    justify-content: center;   /* Centraliza na vertical */
-    text-align: center;         /* Centraliza o texto */
-    gap: 4px;
-    height: 150px;              /* Reduzido de 200px para 150px */
+    align-items: center;        
+    justify-content: center;   
+    text-align: center;         
+    gap: 6px;
+    min-height: 160px;          
     box-sizing: border-box; 
-    padding: 14px 12px;         /* Padding interno menor */
+    padding: 16px 14px;         
     background: var(--glass);
     backdrop-filter: blur(var(--blur)); 
     -webkit-backdrop-filter: blur(var(--blur));
     border: 1px solid var(--border); 
-    border-radius: 12px;        /* Bordas levemente mais suaves */
+    border-radius: 12px;        
     text-decoration: none !important;
     box-shadow: 0 4px 16px rgba(0,0,0,.25);
     transition: all .2s ease;
@@ -130,13 +129,22 @@ a.sys-card:hover {
     transform: translateY(-3px);
     box-shadow: 0 0 18px rgba(74,163,218,.35);
 }
-a.sys-card .icon { font-size: 1.5rem; line-height: 1; margin-bottom: 2px; }
-a.sys-card .name { color: #FFFFFF !important; font-size: 0.95rem; font-weight: 700; }
-a.sys-card .desc { color: var(--text-muted); font-size: .78rem; line-height: 1.35; }
+
+/* Tamanho dos textos aumentados */
+a.sys-card .icon { font-size: 1.8rem; line-height: 1; margin-bottom: 2px; }
+a.sys-card .name { color: #FFFFFF !important; font-size: 1.1rem; font-weight: 700; }
+a.sys-card .desc { color: var(--text-muted); font-size: 0.9rem; line-height: 1.4; }
 a.sys-card:hover .name { color: var(--accent) !important; }
 
+/* Ajuste de espaçamento para telas menores (celular) */
+@media (max-width: 768px) {
+    a.sys-card {
+        margin-bottom: 14px; /* Garante que os cards empilhados não fiquem grudados */
+    }
+}
+
 /* Espaço entre blocos de cards */
-.gap-lg { height: 08px; }
+.gap-lg { height: 12px; }
 </style>
 """,
     unsafe_allow_html=True,
@@ -192,8 +200,8 @@ def render_cards(cards):
 # SEÇÃO 1: TOUR360VR
 # ==========================================
 st.markdown(
-    "<div class='section-title'><span class='dot'></span>🌐 Tour360vr —"
-    " Prospecção, Diagnóstico & Gestão GMB</div>",
+    "<div class='section-title'>🌐 Tour360vr — Prospecção, Diagnóstico & Gestão"
+    " GMB</div>",
     unsafe_allow_html=True,
 )
 render_cards([
@@ -226,16 +234,14 @@ render_cards([
     },
 ])
 
-# Espaço de 1 linha entre os blocos
+# Espaço entre os blocos
 st.markdown("<div class='gap-lg'></div>", unsafe_allow_html=True)
 
 # ==========================================
 # SEÇÃO 2: OKAMOTO MÍDIAS VISUAIS
 # ==========================================
 st.markdown(
-    "<div class='section-title'><span"
-    " class='dot' style='background:var(--accent-2); box-shadow:0 0 10px"
-    " var(--accent-2);'></span>📸 Okamoto Mídias Visuais — Comercial &"
+    "<div class='section-title'>📸 Okamoto Mídias Visuais — Comercial &"
     " Precificação</div>",
     unsafe_allow_html=True,
 )
