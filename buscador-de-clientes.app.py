@@ -1247,7 +1247,6 @@ def buscar_google_places_api(
   query_str = " ".join(termos)
   raio_metros = int(raio_km * 1000)
 
-  # URL da PRIMEIRA página
   base_url = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={urllib.parse.quote(query_str)}&radius={raio_metros}&language=pt-BR&key={api_key}"
 
   leads = []
@@ -1255,7 +1254,6 @@ def buscar_google_places_api(
   next_page_token = None
 
   try:
-    # O Google Places Text Search fornece no máximo 60 resultados (3 páginas de 20)
     max_paginas = min(3, max(1, (limite // 20) + (1 if limite % 20 != 0 else 0)))
 
     for pagina in range(max_paginas):
@@ -1266,30 +1264,26 @@ def buscar_google_places_api(
         url_requisicao = base_url
       else:
         if not next_page_token:
+          st.warning("⚠️ O Google Maps não possui mais páginas de resultados para este termo.")
           break
 
-        # PAUSA OBRIGATÓRIA: Espera 3.2 segundos para o token ficar ativo na Google
-        time.sleep(3.2)
+        # PAUSA OBRIGATÓRIA de 3.5s para ativar o token no Google
+        time.sleep(3.5)
         url_requisicao = f"https://maps.googleapis.com/maps/api/place/textsearch/json?pagetoken={next_page_token}&key={api_key}"
 
-      # Tentativa de requisição com tratamento de token
       response = requests.get(url_requisicao, timeout=12)
       data = response.json()
       status = data.get("status")
 
-      # Se o token ainda não estiver pronto, faz mais uma pequena pausa de segurança e tenta de novo
+      # Trata token ainda não ativo
       if status == "INVALID_REQUEST" and pagina > 0:
-        time.sleep(2.5)
+        time.sleep(3.0)
         response = requests.get(url_requisicao, timeout=12)
         data = response.json()
         status = data.get("status")
 
-      if status != "OK":
-        if status == "ZERO_RESULTS" and len(leads) == 0:
-          st.warning(
-              "⚠️ O Google Maps não encontrou empresas para este termo exato"
-              " dentro do raio especificado. Tente simplificar a busca."
-          )
+      if status not in ["OK", "ZERO_RESULTS"]:
+        st.warning(f"⚠️ Status retornado pelo Google na página {pagina+1}: {status}")
         break
 
       results = data.get("results", [])
@@ -1300,99 +1294,107 @@ def buscar_google_places_api(
         if len(leads) >= limite:
           break
 
-        place_id = place.get("place_id")
-        if place_id in seen_place_ids:
-          continue
-        seen_place_ids.add(place_id)
+        try:
+          place_id = place.get("place_id")
+          if not place_id or place_id in seen_place_ids:
+            continue
+          seen_place_ids.add(place_id)
 
-        lat = (
-            place.get("geometry", {})
-            .get("location", {})
-            .get("lat", -21.1775)
-        )
-        lng = (
-            place.get("geometry", {})
-            .get("location", {})
-            .get("lng", -47.8103)
-        )
-
-        det_res = {}
-        if place_id:
-          details_url = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=name,formatted_address,formatted_phone_number,website,rating,user_ratings_total,photos&language=pt-BR&key={api_key}"
-          det_res = (
-              requests.get(details_url, timeout=5).json().get("result", {})
+          lat = (
+              place.get("geometry", {})
+              .get("location", {})
+              .get("lat", -21.1775)
+          )
+          lng = (
+              place.get("geometry", {})
+              .get("location", {})
+              .get("lng", -47.8103)
           )
 
-        nome = det_res.get("name") or place.get("name")
-        endereco = det_res.get("formatted_address") or place.get(
-            "formatted_address"
-        )
-        telefone = det_res.get("formatted_phone_number", "")
-        website = det_res.get("website", "")
-        nota = det_res.get("rating", place.get("rating", 0.0))
-        total_avaliacoes = det_res.get(
-            "user_ratings_total", place.get("user_ratings_total", 0)
-        )
-        photos = det_res.get("photos", place.get("photos", [])) or []
+          det_res = {}
+          if place_id:
+            try:
+              details_url = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=name,formatted_address,formatted_phone_number,website,rating,user_ratings_total,photos&language=pt-BR&key={api_key}"
+              det_res = (
+                  requests.get(details_url, timeout=4).json().get("result", {})
+              )
+            except Exception:
+              det_res = {}
 
-        foto_url = ""
-        if photos and photos[0].get("photo_reference"):
-          foto_url = f"https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference={photos[0].get('photo_reference')}&key={api_key}"
+          nome = det_res.get("name") or place.get("name")
+          endereco = det_res.get("formatted_address") or place.get(
+              "formatted_address"
+          )
+          telefone = det_res.get("formatted_phone_number", "")
+          website = det_res.get("website", "")
+          nota = det_res.get("rating", place.get("rating", 0.0))
+          total_avaliacoes = det_res.get(
+              "user_ratings_total", place.get("user_ratings_total", 0)
+          )
+          photos = det_res.get("photos", place.get("photos", [])) or []
 
-        has_https = website.startswith("https://") if website else False
+          foto_url = ""
+          if photos and photos[0].get("photo_reference"):
+            foto_url = f"https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference={photos[0].get('photo_reference')}&key={api_key}"
 
-        auditoria = calcular_score_e_auditoria(
-            fotos_total=len(photos),
-            tour_360=False,
-            website=website,
-            total_avaliacoes=total_avaliacoes,
-            nota=nota,
-            has_https=has_https,
-        )
+          has_https = website.startswith("https://") if website else False
 
-        clean_phone = "".join(filter(str.isdigit, telefone))
-        if len(clean_phone) > 10 and clean_phone.startswith("55"):
-          clean_phone = clean_phone[2:]
+          auditoria = calcular_score_e_auditoria(
+              fotos_total=len(photos),
+              tour_360=False,
+              website=website,
+              total_avaliacoes=total_avaliacoes,
+              nota=nota,
+              has_https=has_https,
+          )
 
-        instagram_url, facebook_url = enriquecer_redes_sociais(nome, website)
+          clean_phone = "".join(filter(str.isdigit, telefone))
+          if len(clean_phone) > 10 and clean_phone.startswith("55"):
+            clean_phone = clean_phone[2:]
 
-        lead_obj = {
-            "data_minacao": datetime.now().strftime("%d/%m/%Y %H:%M"),
-            "cidade_busca": cidade,
-            "bairro_busca": bairro,
-            "nome": nome,
-            "categoria": (nicho or "Comércio").capitalize(),
-            "endereco": endereco,
-            "latitude": lat,
-            "longitude": lng,
-            "telefone": telefone or "(16) Contato via Ficha",
-            "whatsapp": (
-                clean_phone if len(clean_phone) >= 10 else "16999999999"
-            ),
-            "website": website,
-            "website_https": has_https,
-            "instagram": instagram_url,
-            "facebook": facebook_url,
-            "foto_url": foto_url,
-            "nota": nota,
-            "total_avaliacoes": total_avaliacoes,
-            "reivindicada": True,
-            "fotos_total": len(photos),
-            "ultima_foto_dias": 60,
-            "tour_360": False,
-            "status_crm": "🆕 Novo Lead",
-            "pontos_criticos": auditoria["pontos_criticos"],
-            "oportunidades": auditoria["oportunidades"],
-            "score_oportunidade": auditoria["score_oportunidade"],
-            "anotacoes": "",
-            "favorito": False,
-            "data_followup": str(date.today()),
-            "obs_followup": "",
-        }
+          instagram_url, facebook_url = enriquecer_redes_sociais(nome, website)
 
-        salvar_lead_db(lead_obj)
-        leads.append(lead_obj)
+          lead_obj = {
+              "data_minacao": datetime.now().strftime("%d/%m/%Y %H:%M"),
+              "cidade_busca": cidade,
+              "bairro_busca": bairro,
+              "nome": nome,
+              "categoria": (nicho or "Comércio").capitalize(),
+              "endereco": endereco,
+              "latitude": lat,
+              "longitude": lng,
+              "telefone": telefone or "(16) Contato via Ficha",
+              "whatsapp": (
+                  clean_phone if len(clean_phone) >= 10 else "16999999999"
+              ),
+              "website": website,
+              "website_https": has_https,
+              "instagram": instagram_url,
+              "facebook": facebook_url,
+              "foto_url": foto_url,
+              "nota": nota,
+              "total_avaliacoes": total_avaliacoes,
+              "reivindicada": True,
+              "fotos_total": len(photos),
+              "ultima_foto_dias": 60,
+              "tour_360": False,
+              "status_crm": "🆕 Novo Lead",
+              "pontos_criticos": auditoria["pontos_criticos"],
+              "oportunidades": auditoria["oportunidades"],
+              "score_oportunidade": auditoria["score_oportunidade"],
+              "anotacoes": "",
+              "favorito": False,
+              "data_followup": str(date.today()),
+              "obs_followup": "",
+          }
 
+          salvar_lead_db(lead_obj)
+          leads.append(lead_obj)
+
+        except Exception as err_item:
+          continue
+
+      # Atualiza o token para a página seguinte
       next_page_token = data.get("next_page_token")
       if not next_page_token:
         break
