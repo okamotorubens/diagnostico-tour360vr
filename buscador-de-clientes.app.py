@@ -1247,11 +1247,8 @@ def buscar_google_places_api(
   query_principal = " ".join(termos_base)
   raio_metros = int(raio_km * 1000)
 
-  # Para garantir tudo numa busca só sem dependência de paginação/delay,
-  # fazemos a consulta direta e sub-varreduras paralelas complementares se necessário.
   queries_para_executar = [query_principal]
 
-  # Se houver nicho e cidade, adiciona variações complementares para cobrir a região em 1 só rodada
   if nicho and cidade:
     queries_para_executar.append(f"{nicho} em {cidade}")
     if bairro:
@@ -1737,8 +1734,8 @@ elif st.session_state.etapa == 2:
 
     if btn_minar:
       with st.spinner(
-          f"Varrendo Google Maps num raio de {raio_input} km, aplicando"
-          " paginação avançada (até 70 resultados) e salvando na nuvem..."
+          f"Varrendo Google Maps num raio de {raio_input} km e salvando na"
+          " nuvem..."
       ):
         time.sleep(1)
         novos = minerar_e_auditar_negocios(
@@ -2712,9 +2709,6 @@ elif st.session_state.etapa == 5:
         " itinerário de visitas."
     )
 
-    # -------------------------------------------------------------------------
-    # PALETA AMPLIADA DE 19 CORES OFICIAIS DE PINS DO FOLIUM
-    # -------------------------------------------------------------------------
     CORES_PINS = [
         "red",
         "blue",
@@ -2760,13 +2754,11 @@ elif st.session_state.etapa == 5:
     segmentos_unicos = sorted(list(df_mapa["categoria"].unique()))
     qtd_segmentos = len(segmentos_unicos)
 
-    # Mapeia cada nicho para uma cor de pin oficial (com reuso dinâmico se passar de 18)
     mapa_cores_seg = {
         seg: CORES_PINS[idx % len(CORES_PINS)]
         for idx, seg in enumerate(segmentos_unicos)
     }
 
-    # Legenda de Cores por Nicho
     if cat_sel_mapa == "Todos os Nichos / Tags" and qtd_segmentos > 1:
       st.markdown("**🎨 Legenda de Cores por Tag / Nicho:**")
 
@@ -2787,9 +2779,6 @@ elif st.session_state.etapa == 5:
           )
       st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
 
-    # -------------------------------------------------------------------------
-    # RENDERIZAÇÃO DO MAPA FOLIUM COM PINS PROFISSIONAIS
-    # -------------------------------------------------------------------------
     if (
         "latitude" in df_mapa_filtrado.columns
         and "longitude" in df_mapa_filtrado.columns
@@ -2820,285 +2809,7 @@ elif st.session_state.etapa == 5:
                 </div>
                 """
 
-        # Marcador no formato de PIN tradicional com ícone de informação
         folium.Marker(
             location=[row["latitude"], row["longitude"]],
             popup=folium.Popup(info_card_html, max_width=320),
-            icon=folium.Icon(color=cor_pin, icon="info-sign"),
-        ).add_to(m)
-
-        bounds.append([row["latitude"], row["longitude"]])
-
-      if len(bounds) > 0:
-        m.fit_bounds(bounds, padding=[30, 30])
-
-      st_folium(m, width="100%", height=500)
-
-      st.divider()
-
-      # -----------------------------------------------------------------------
-      # ITINERÁRIO SEQUENCIAL DE VISITAS
-      # -----------------------------------------------------------------------
-      st.markdown(
-          "### 🚗 Itinerário Sequencial de Visitas Presenciais (Prioridade"
-          " Comercial)"
-      )
-      st.markdown(
-          "Lista ordenada do maior score de oportunidade para o menor:"
-      )
-
-      df_mapa_sorted = df_mapa_filtrado.sort_values(
-          by="score_oportunidade", ascending=False
-      )
-
-      for idx, (_, r_visita) in enumerate(
-          df_mapa_sorted.iterrows(), start=1
-      ):
-        url_rota_passo_a_passo = f"https://www.google.com/maps/dir/?api=1&destination={urllib.parse.quote(r_visita['endereco'])}"
-
-        with st.container():
-          col_num, col_info, col_acao = st.columns([0.8, 4.2, 2])
-          with col_num:
-            st.markdown(
-                f"<div style='background-color: #1e293b; color: #38bdf8;"
-                " font-size: 18px; font-weight: bold; text-align: center;"
-                " padding: 12px; border-radius: 8px; border: 1px solid"
-                f" #334155;'>#{idx}</div>",
-                unsafe_allow_html=True,
-            )
-          with col_info:
-            cor_nome = mapa_cores_seg.get(r_visita["categoria"], "red")
-            hex_cor_tag = CORES_HEX.get(cor_nome, "#38bdf8")
-            st.markdown(
-                f"**{r_visita['nome']}** (Tag: <span"
-                f" style='color:{hex_cor_tag}; font-weight:bold;'>{r_visita['categoria']}</span>)",
-                unsafe_allow_html=True,
-            )
-            st.markdown(f"📍 {r_visita['endereco']}")
-            st.markdown(
-                f"⭐ Nota: {r_visita['nota']} | 🚨 Score Oportunidade:"
-                f" **{r_visita['score_oportunidade']}/100**"
-            )
-          with col_acao:
-            st.markdown(
-                "<div style='height: 4px;'></div>", unsafe_allow_html=True
-            )
-            st.markdown(
-                f'<a href="{url_rota_passo_a_passo}" target="_blank"><button'
-                ' style="width:100%; background-color:#2563eb; color:white;'
-                " border:none; padding:7px; border-radius:6px; font-weight:bold;"
-                ' cursor:pointer; margin-bottom:5px;">🧭 Iniciar Navegação'
-                " (GPS)</button></a>",
-                unsafe_allow_html=True,
-            )
-            if r_visita["whatsapp"]:
-              link_wa_rota = (
-                  f"https://wa.me/55{r_visita['whatsapp']}?text={urllib.parse.quote(f'Olá! Estou passando aqui na região e gostaria de agendar uma rápida apresentação presencial do Tour 360° para a {r_visita["nome"]}.')}"
-              )
-              st.markdown(
-                  f'<a href="{link_wa_rota}" target="_blank"><button'
-                  ' style="width:100%; background-color:#25D366; color:white;'
-                  " border:none; padding:7px; border-radius:6px;"
-                  ' font-weight:bold; cursor:pointer;">💬 Avisar via'
-                  " WhatsApp</button></a>",
-                  unsafe_allow_html=True,
-              )
-          st.divider()
-    else:
-      st.warning(
-          "Nenhum registro encontrado para os filtros selecionados."
-      )
-
-# -----------------------------------------------------------------------------
-# MÓDULO 6: RADAR PROSPECÇÃO (KANBAN INTERATIVO)
-# -----------------------------------------------------------------------------
-elif st.session_state.etapa == 6:
-  st.markdown(
-      """
-        <div class="main-header">
-            <h1 class="main-title">🚀 Radar Prospecção Pro</h1>
-            <div class="main-subtitle">Funil Kanban interativo: cards compactos expansíveis para otimizar sua visualização e agilizar o dia a dia.</div>
-        </div>
-    """,
-      unsafe_allow_html=True,
-  )
-
-  if not base_leads:
-    st.info(
-        "ℹ️ Nenhum lead encontrado na base. Realize uma busca no Buscador de"
-        " Clientes para abastecer o funil Kanban."
-    )
-  else:
-    col_fk1, col_fk2 = st.columns([2, 2])
-    df_kanban = pd.DataFrame(base_leads)
-
-    with col_fk1:
-      tags_k = ["Todos os Nichos / Tags"] + list(
-          df_kanban["categoria"].unique()
-      )
-      filtro_tag_k = st.selectbox("🎯 Filtrar Kanban por Nicho/Tag:", tags_k)
-
-    with col_fk2:
-      cidades_k = ["Todas as Cidades"] + list(
-          df_kanban["cidade_busca"].unique()
-      )
-      filtro_cid_k = st.selectbox("📍 Filtrar Kanban por Cidade:", cidades_k)
-
-    if filtro_tag_k != "Todos os Nichos / Tags":
-      df_kanban = df_kanban[df_kanban["categoria"] == filtro_tag_k]
-    if filtro_cid_k != "Todas as Cidades":
-      df_kanban = df_kanban[df_kanban["cidade_busca"] == filtro_cid_k]
-
-    st.divider()
-
-    col_k1, col_k2, col_k3, col_k4 = st.columns(4)
-
-    status_colunas = [
-        ("🆕 Novo Lead", col_k1),
-        ("💬 Em Abordagem", col_k2),
-        ("🛠️ Em Negociação", col_k3),
-        ("🤝 Cliente Fechado", col_k4),
-    ]
-
-    status_opcoes_kanban = [
-        "🆕 Novo Lead",
-        "💬 Em Abordagem",
-        "🛠️ Diagnóstico Gerado",
-        "🤝 Cliente Fechado",
-        "❌ Recusado",
-    ]
-
-    for status_nome, coluna_streamlit in status_colunas:
-      with coluna_streamlit:
-        if status_nome == "🛠️ Em Negociação":
-          leads_col = (
-              df_kanban[
-                  df_kanban["status_crm"].isin(
-                      ["🛠️ Diagnóstico Gerado", "Em Negociação"]
-                  )
-              ]
-              if "status_crm" in df_kanban.columns
-              else pd.DataFrame()
-          )
-        else:
-          leads_col = (
-              df_kanban[df_kanban["status_crm"] == status_nome]
-              if "status_crm" in df_kanban.columns
-              else pd.DataFrame()
-          )
-
-        st.markdown(f"#### {status_nome} ({len(leads_col)})")
-        st.markdown(
-            "<div style='height: 4px;'></div>", unsafe_allow_html=True
-        )
-
-        if len(leads_col) == 0:
-          st.caption("Nenhum lead nesta etapa.")
-        else:
-          for _, l in leads_col.iterrows():
-            tem_site_bool = bool(l.get("website"))
-
-            titulo_card = (
-                f"{l.get('nome', '')} ({l.get('categoria', 'Geral')}) - ⭐"
-                f" {l.get('nota', 0.0)}"
-            )
-
-            with st.expander(titulo_card, expanded=False):
-              st.markdown(
-                  "<span style='color: #94a3b8; font-size: 11px;'>📍"
-                  f" {l.get('endereco', '')} - {l.get('cidade_busca', '')}</span>",
-                  unsafe_allow_html=True,
-              )
-              st.markdown(
-                  "<span style='color:"
-                  f" {'#4ade80' if tem_site_bool else '#f87171'}; font-size:"
-                  f" 11px;'>{'🌐 Possui Site' if tem_site_bool else '❌ Sem Site'}</span>"
-                  " | <span style='color: #fbbf24; font-size: 11px;'>Avaliações:"
-                  f" {l.get('total_avaliacoes', 0)}</span>",
-                  unsafe_allow_html=True,
-              )
-
-              anotacoes_atuais = l.get("anotacoes", "") or ""
-              if anotacoes_atuais:
-                st.markdown(
-                    "<div style='margin-top: 6px; font-size: 11px; color:"
-                    " #94a3b8;'><b>📜 Histórico Recente:</b></div>",
-                    unsafe_allow_html=True,
-                )
-                st.markdown(
-                    '<div class="script-box" style="font-size: 11px; padding:'
-                    " 6px 8px; max-height: 90px; overflow-y: auto;"
-                    f' margin-bottom: 6px;">{anotacoes_atuais}</div>',
-                    unsafe_allow_html=True,
-                )
-              else:
-                st.caption("Sem histórico registrado.")
-
-              with st.form(key=f"form_kanban_tl_{l['id']}"):
-                nova_interacao_k = st.text_input(
-                    "Nova interação:",
-                    placeholder="Ex: Ligou, enviou proposta...",
-                    label_visibility="collapsed",
-                    key=f"input_tl_k_{l['id']}",
-                )
-                btn_add_tl_k = st.form_submit_button(
-                    "➕ Salvar Log", use_container_width=True
-                )
-
-                if btn_add_tl_k and nova_interacao_k.strip():
-                  data_hora_agora = datetime.now().strftime("%d/%m/%Y %H:%M")
-                  registro_formatado = (
-                      f"[{data_hora_agora}] {nova_interacao_k.strip()}"
-                  )
-                  historico_atualizado = (
-                      f"{registro_formatado}\n{anotacoes_atuais}"
-                      if anotacoes_atuais
-                      else registro_formatado
-                  )
-                  atualizar_anotacoes_db(l["id"], historico_atualizado)
-                  st.toast("Interação salva!")
-                  st.rerun()
-
-              st.markdown(
-                  "<div style='margin-top: 4px; margin-bottom: 2px; font-size:"
-                  " 11px; color: #cbd5e1;'><b>Mover Coluna:</b></div>",
-                  unsafe_allow_html=True,
-              )
-              idx_st = (
-                  status_opcoes_kanban.index(l.get("status_crm", "🆕 Novo Lead"))
-                  if l.get("status_crm", "🆕 Novo Lead") in status_opcoes_kanban
-                  else 0
-              )
-              novo_status_card = st.selectbox(
-                  "Mover Coluna",
-                  status_opcoes_kanban,
-                  index=idx_st,
-                  key=f"kanban_move_{l['id']}",
-                  label_visibility="collapsed",
-              )
-
-              if novo_status_card != l.get("status_crm"):
-                atualizar_status_crm(l["id"], novo_status_card)
-                st.toast(f"Lead '{l.get('nome')}' movido com sucesso!")
-                st.rerun()
-
-              if l.get("whatsapp"):
-                msg_k = (
-                    f"Olá, {l.get('nome')}! Tudo bem? Passando para retomarmos"
-                    " nosso contato..."
-                )
-                link_wa_k = (
-                    f"https://wa.me/55{l.get('whatsapp')}?text={urllib.parse.quote(msg_k)}"
-                )
-                st.markdown(
-                    f'<a href="{link_wa_k}" target="_blank"><button'
-                    ' style="width:100%; background-color:#25D366; color:white;'
-                    " border:none; padding:6px; border-radius:6px;"
-                    " font-weight:bold; font-size:12px; cursor:pointer;"
-                    ' margin-top:6px;">💬 WhatsApp</button></a>',
-                    unsafe_allow_html=True,
-                )
-
-            st.markdown(
-                "<div style='height: 4px;'></div>", unsafe_allow_html=True
-            )
+            icon=fol
