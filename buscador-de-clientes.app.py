@@ -1247,6 +1247,7 @@ def buscar_google_places_api(
   query_str = " ".join(termos)
   raio_metros = int(raio_km * 1000)
 
+  # URL da PRIMEIRA página
   base_url = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={urllib.parse.quote(query_str)}&radius={raio_metros}&language=pt-BR&key={api_key}"
 
   leads = []
@@ -1254,28 +1255,28 @@ def buscar_google_places_api(
   next_page_token = None
 
   try:
-    max_paginas = max(1, (limite // 20) + 1)
+    max_paginas = max(1, (limite // 20) + (1 if limite % 20 != 0 else 0))
+
     for pagina in range(max_paginas):
       if len(leads) >= limite:
         break
 
-      url_requisicao = base_url
-      if pagina > 0:
+      # Se for a 1ª página usa a query, se for das seguintes usa APENAS o pagetoken
+      if pagina == 0:
+        url_requisicao = base_url
+      else:
         if not next_page_token:
           break
+        # PAUSA OBRIGATÓRIA: O token precisa de 2.5 a 3 segundos para ativar no Google
+        time.sleep(3.0)
         url_requisicao = f"https://maps.googleapis.com/maps/api/place/textsearch/json?pagetoken={next_page_token}&key={api_key}"
-        time.sleep(3.5)
 
       response = requests.get(url_requisicao, timeout=12)
       data = response.json()
       status = data.get("status")
 
-      if status != "OK":
-        if status == "ZERO_RESULTS" and len(leads) == 0:
-          st.warning(
-              "⚠️ O Google Maps não encontrou empresas para este termo exato"
-              " dentro do raio especificado. Tente simplificar a busca."
-          )
+      if status not in ["OK", "ZERO_RESULTS"]:
+        # Se der INVALID_REQUEST por falta de tempo do token, encerra com o acumulado
         break
 
       results = data.get("results", [])
@@ -1321,10 +1322,9 @@ def buscar_google_places_api(
         )
         photos = det_res.get("photos", place.get("photos", [])) or []
 
+        foto_url = ""
         if photos and photos[0].get("photo_reference"):
           foto_url = f"https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference={photos[0].get('photo_reference')}&key={api_key}"
-        else:
-          foto_url = ""
 
         has_https = website.startswith("https://") if website else False
 
@@ -1380,6 +1380,7 @@ def buscar_google_places_api(
         salvar_lead_db(lead_obj)
         leads.append(lead_obj)
 
+      # Atualiza o token para o próximo ciclo do loop
       next_page_token = data.get("next_page_token")
       if not next_page_token:
         break
