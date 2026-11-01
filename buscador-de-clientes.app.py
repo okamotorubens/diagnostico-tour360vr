@@ -1073,7 +1073,7 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
 
 
 # -----------------------------------------------------------------------------
-# ESTILIZAÇÃO CSS CUSTOMIZADA (AJUSTES DE ESPAÇAMENTO E EFEITO NEON FIXO)
+# ESTILIZAÇÃO CSS CUSTOMIZADA (ESPAÇAMENTOS E EFEITO NEON FIXO)
 # -----------------------------------------------------------------------------
 st.markdown(
     """
@@ -1110,9 +1110,9 @@ st.markdown(
         display: none !important;
     }
 
-    /* Redução de margens da sidebar para aproximar logos e alerta */
+    /* Espaçamento equilibrado no bloco vertical da Sidebar */
     [data-testid="stSidebar"] [data-testid="stVerticalBlock"] {
-        gap: 0.4rem !important;
+        gap: 0.8rem !important;
     }
     
     .main-header {
@@ -1137,7 +1137,7 @@ st.markdown(
     
     .sidebar-title {
         text-align: center; font-size: 15px; font-weight: 800; color: #ffffff;
-        margin-top: -10px; margin-bottom: 5px; letter-spacing: 0.5px;
+        margin-top: -5px; margin-bottom: 4px; letter-spacing: 0.5px;
     }
 
     /* Estilo dos botões da sidebar */
@@ -1148,11 +1148,12 @@ st.markdown(
         border-radius: 8px !important;
         font-weight: 600 !important;
         font-size: 13px !important;
+        margin-bottom: 4px !important;
         transition: all 0.3s ease !important;
         box-shadow: 0 0 4px rgba(255, 255, 255, 0.2) !important;
     }
     
-    /* Efeito de passar o mouse (Hover) */
+    /* Efeito Hover */
     .stButton>button:hover, .btn-redirect:hover {
         border-color: #ffffff !important;
         box-shadow: 0 0 12px rgba(255, 255, 255, 0.9) !important;
@@ -1497,7 +1498,7 @@ def gerar_csv_excel_formatado(dados_leads):
 
 
 # -----------------------------------------------------------------------------
-# BARRA LATERAL (AJUSTE DE ESPAÇAMENTOS)
+# BARRA LATERAL
 # -----------------------------------------------------------------------------
 base_leads = carregar_todos_leads_db()
 
@@ -1527,17 +1528,16 @@ with st.sidebar:
       st.image("logo_tour_transparente.png", use_container_width=True)
 
   if os.path.exists("logo_okamoto.png"):
-    c1, c2, c3 = st.columns([0.64, 3.52, 0.64])
+    c1, c2, c3 = st.columns([0.8, 4.4, 0.8])
     with c2:
       st.image("logo_okamoto.png", use_container_width=True)
 
-  # Reduzido o espaço vertical antes do alerta
-  st.markdown("<div style='margin-top: 6px;'></div>", unsafe_allow_html=True)
+  st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
 
   if len(pendentes_hoje) > 0:
     st.markdown(
         f"""
-            <div style="background-color: #7f1d1d; border: 1px solid #991b1b; padding: 10px; border-radius: 8px; margin-bottom: 8px; text-align: center;">
+            <div style="background-color: #7f1d1d; border: 1px solid #991b1b; padding: 10px; border-radius: 8px; margin-bottom: 12px; text-align: center;">
                 <span style="color: #fca5a5; font-weight: bold; font-size: 13px;">🔔 Notificação Ativa</span><br/>
                 <span style="color: #ffffff; font-size: 12px;"><b>{len(pendentes_hoje)} retornos pendentes</b> para hoje ou atrasados!</span>
             </div>
@@ -1547,7 +1547,7 @@ with st.sidebar:
   else:
     st.markdown(
         """
-            <div style="background-color: #064e3b; border: 1px solid #065f46; padding: 8px; border-radius: 8px; margin-bottom: 8px; text-align: center;">
+            <div style="background-color: #064e3b; border: 1px solid #065f46; padding: 8px; border-radius: 8px; margin-bottom: 12px; text-align: center;">
                 <span style="color: #6ee7b7; font-weight: bold; font-size: 12px;">✅ Agenda em dia! Sem pendências.</span>
             </div>
         """,
@@ -1556,7 +1556,7 @@ with st.sidebar:
 
   st.markdown(
       "<div style='text-align: center; font-weight: 700; font-size: 14px;"
-      " margin-top: 4px; margin-bottom: 6px;'>📌 Módulos</div>",
+      " margin-top: 8px; margin-bottom: 10px;'>📌 Módulos</div>",
       unsafe_allow_html=True,
   )
 
@@ -1597,19 +1597,17 @@ with st.sidebar:
   ):
     mudar_etapa(6)
 
-  # Reduzido o espaço entre o Radar Prospecção e a seção Supabase nuvem
   st.markdown(
-      "<div style='border-top: 1px solid #334155; margin: 10px 0 6px 0;'></div>",
+      "<div style='border-top: 1px solid #334155; margin: 14px 0 10px 0;'></div>",
       unsafe_allow_html=True,
   )
   st.markdown(
-      "<div style='text-align: center; font-size: 12px;'>☁️ Supabase"
+      "<div style='text-align: center; font-size: 12px; margin-bottom: 8px;'>☁️ Supabase"
       f" Nuvem:<br/><b>{len(base_leads)} leads salvos</b></div>",
       unsafe_allow_html=True,
   )
 
   if len(base_leads) > 0:
-    st.markdown("<div style='margin-top: 4px;'></div>", unsafe_allow_html=True)
     if st.button("🗑️ Limpar Banco de Dados", use_container_width=True):
       limpar_banco_dados()
       mudar_etapa(1)
