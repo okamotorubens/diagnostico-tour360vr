@@ -2649,14 +2649,14 @@ elif st.session_state.etapa == 4:
     )
 
 # -----------------------------------------------------------------------------
-# MÓDULO 5: MAPA & ROTA DE VISITAS (COM GERADOR DINÂMICO DE CORES ILIMITADAS)
+# MÓDULO 5: MAPA & ROTA DE VISITAS (PINS COLORIDOS PROFISSIONAIS)
 # -----------------------------------------------------------------------------
 elif st.session_state.etapa == 5:
   st.markdown(
       """
         <div class="main-header">
             <h1 class="main-title">🗺️ Mapa & Planejador de Rotas de Visitas</h1>
-            <div class="main-subtitle">Visualize leads no mapa com cores dinâmicas por nicho e organize seu itinerário sequencial.</div>
+            <div class="main-subtitle">Visualize leads no mapa com pins coloridos profissionais e organize seu itinerário sequencial.</div>
         </div>
     """,
       unsafe_allow_html=True,
@@ -2724,39 +2724,68 @@ elif st.session_state.etapa == 5:
     )
 
     # -------------------------------------------------------------------------
-    # GERADOR DINÂMICO DE CORES HEXADECIMAIS ILIMITADAS (DISTRIBUIÇÃO HSL)
+    # PALETA AMPLIADA DE 19 CORES OFICIAIS DE PINS DO FOLIUM
     # -------------------------------------------------------------------------
-    def gerar_cor_hex(indice, total_categorias):
-      if total_categorias <= 1:
-        hue = 0.6  # Azul padrão se houver apenas 1 nicho
-      else:
-        # Distribui as tonalidades igualmente pelo espectro de 360 graus
-        hue = (indice / total_categorias) % 1.0
+    CORES_PINS = [
+        "red",
+        "blue",
+        "green",
+        "purple",
+        "orange",
+        "darkred",
+        "lightred",
+        "darkblue",
+        "darkgreen",
+        "cadetblue",
+        "darkpurple",
+        "pink",
+        "lightblue",
+        "lightgreen",
+        "gray",
+        "black",
+        "lightgray",
+        "beige",
+    ]
 
-      # HSL para RGB (Saturação 85%, Luminosidade 50% para cores vivas e legíveis)
-      import colorsys
-
-      r, g, b = colorsys.hls_to_rgb(hue, 0.50, 0.85)
-      return f"#{int(r*255):02x}{int(g*255):02x}{int(b*255):02x}"
+    CORES_HEX = {
+        "red": "#ef4444",
+        "blue": "#2563eb",
+        "green": "#16a34a",
+        "purple": "#9333ea",
+        "orange": "#ea580c",
+        "darkred": "#991b1b",
+        "lightred": "#f87171",
+        "darkblue": "#1e3a8a",
+        "darkgreen": "#14532d",
+        "cadetblue": "#0891b2",
+        "darkpurple": "#581c87",
+        "pink": "#ec4899",
+        "lightblue": "#38bdf8",
+        "lightgreen": "#4ade80",
+        "gray": "#64748b",
+        "black": "#0f172a",
+        "lightgray": "#cbd5e1",
+        "beige": "#d97706",
+    }
 
     segmentos_unicos = sorted(list(df_mapa["categoria"].unique()))
     qtd_segmentos = len(segmentos_unicos)
 
-    # Mapeia cada nicho para uma cor Hex exclusiva
+    # Mapeia cada nicho para uma cor de pin oficial (com reuso dinâmico se passar de 18)
     mapa_cores_seg = {
-        seg: gerar_cor_hex(idx, qtd_segmentos)
+        seg: CORES_PINS[idx % len(CORES_PINS)]
         for idx, seg in enumerate(segmentos_unicos)
     }
 
-    # Legenda Dinâmica de Cores por Nicho
+    # Legenda de Cores por Nicho
     if cat_sel_mapa == "Todos os Nichos / Tags" and qtd_segmentos > 1:
-      st.markdown("**🎨 Legenda de Cores por Tag / Nicho (Ilimitado):**")
+      st.markdown("**🎨 Legenda de Cores por Tag / Nicho:**")
 
-      # Organiza em até 5 colunas responsivas
       num_cols = min(qtd_segmentos, 5)
       cols_leg = st.columns(num_cols)
 
-      for idx, (seg, hex_cor) in enumerate(mapa_cores_seg.items()):
+      for idx, (seg, cor_nome) in enumerate(mapa_cores_seg.items()):
+        hex_cor = CORES_HEX.get(cor_nome, "#ef4444")
         with cols_leg[idx % num_cols]:
           st.markdown(
               '<div style="background-color: #1e293b; padding: 6px 10px;'
@@ -2770,7 +2799,7 @@ elif st.session_state.etapa == 5:
       st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
 
     # -------------------------------------------------------------------------
-    # RENDERIZAÇÃO DO MAPA FOLIUM
+    # RENDERIZAÇÃO DO MAPA FOLIUM COM PINS PROFISSIONAIS
     # -------------------------------------------------------------------------
     if (
         "latitude" in df_mapa_filtrado.columns
@@ -2788,29 +2817,25 @@ elif st.session_state.etapa == 5:
 
       bounds = []
       for _, row in df_mapa_filtrado.iterrows():
-        cor_hex = mapa_cores_seg.get(row["categoria"], "#ef4444")
+        cor_pin = mapa_cores_seg.get(row["categoria"], "red")
+        hex_cor_tag = CORES_HEX.get(cor_pin, "#ef4444")
 
         info_card_html = f"""
                 <div style="font-family: Arial, sans-serif; font-size: 12px; min-width: 240px; padding: 6px; line-height: 1.5;">
                     <b style="color: #2563eb; font-size: 14px;">{row['nome']}</b><br/>
                     <span style="color: #475569; font-size: 11px;">📍 {row['endereco']}</span><br/>
                     <hr style="margin: 6px 0; border: 0.5px solid #cbd5e1;"/>
-                    🏷️ <b>Tag / Nicho:</b> <span style="color:{cor_hex}; font-weight:bold;">{row['categoria']}</span><br/>
+                    🏷️ <b>Tag / Nicho:</b> <span style="color:{hex_cor_tag}; font-weight:bold;">{row['categoria']}</span><br/>
                     🚨 <b>Score Oportunidade:</b> <span style="color: #dc2626; font-weight: bold;">{row['score_oportunidade']}/100</span><br/>
                     ⭐ <b>Nota no Google:</b> {row['nota']} ({row['total_avaliacoes']} avaliações)<br/>
                 </div>
                 """
 
-        # Marcador Vetorial com a cor exata em Hex (suporta ilimitadas cores)
-        folium.CircleMarker(
+        # Marcador no formato de PIN tradicional com ícone de informação
+        folium.Marker(
             location=[row["latitude"], row["longitude"]],
-            radius=9,
             popup=folium.Popup(info_card_html, max_width=320),
-            color="#ffffff",
-            weight=2,
-            fill=True,
-            fill_color=cor_hex,
-            fill_opacity=0.9,
+            icon=folium.Icon(color=cor_pin, icon="info-sign"),
         ).add_to(m)
 
         bounds.append([row["latitude"], row["longitude"]])
@@ -2853,10 +2878,11 @@ elif st.session_state.etapa == 5:
                 unsafe_allow_html=True,
             )
           with col_info:
-            cor_tag = mapa_cores_seg.get(r_visita["categoria"], "#38bdf8")
+            cor_nome = mapa_cores_seg.get(r_visita["categoria"], "red")
+            hex_cor_tag = CORES_HEX.get(cor_nome, "#38bdf8")
             st.markdown(
                 f"**{r_visita['nome']}** (Tag: <span"
-                f" style='color:{cor_tag}; font-weight:bold;'>{r_visita['categoria']}</span>)",
+                f" style='color:{hex_cor_tag}; font-weight:bold;'>{r_visita['categoria']}</span>)",
                 unsafe_allow_html=True,
             )
             st.markdown(f"📍 {r_visita['endereco']}")
