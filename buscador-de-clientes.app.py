@@ -1073,7 +1073,7 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
 
 
 # -----------------------------------------------------------------------------
-# ESTILIZAÇÃO CSS CUSTOMIZADA
+# ESTILIZAÇÃO CSS CUSTOMIZADA (AJUSTES DE ESPAÇAMENTO E EFEITO NEON FIXO)
 # -----------------------------------------------------------------------------
 st.markdown(
     """
@@ -1109,6 +1109,11 @@ st.markdown(
     [data-testid="stSidebarNav"] {
         display: none !important;
     }
+
+    /* Redução de margens da sidebar para aproximar logos e alerta */
+    [data-testid="stSidebar"] [data-testid="stVerticalBlock"] {
+        gap: 0.4rem !important;
+    }
     
     .main-header {
         background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
@@ -1132,9 +1137,10 @@ st.markdown(
     
     .sidebar-title {
         text-align: center; font-size: 15px; font-weight: 800; color: #ffffff;
-        margin-top: -10px; margin-bottom: 10px; letter-spacing: 0.5px;
+        margin-top: -10px; margin-bottom: 5px; letter-spacing: 0.5px;
     }
 
+    /* Estilo dos botões da sidebar */
     .stButton>button, .btn-redirect {
         background-color: #0f172a !important;
         color: #ffffff !important;
@@ -1145,10 +1151,20 @@ st.markdown(
         transition: all 0.3s ease !important;
         box-shadow: 0 0 4px rgba(255, 255, 255, 0.2) !important;
     }
+    
+    /* Efeito de passar o mouse (Hover) */
     .stButton>button:hover, .btn-redirect:hover {
         border-color: #ffffff !important;
-        box-shadow: 0 0 12px rgba(255, 255, 255, 0.7) !important;
+        box-shadow: 0 0 12px rgba(255, 255, 255, 0.9) !important;
         background-color: #1e293b !important;
+    }
+
+    /* EFEITO NEON BRANCO FIXO NA ABA ATIVA */
+    button[data-testid="stBaseButton-primary"] {
+        background-color: #1e293b !important;
+        border-color: #ffffff !important;
+        box-shadow: 0 0 12px rgba(255, 255, 255, 0.9) !important;
+        color: #ffffff !important;
     }
 
     .btn-redirect {
@@ -1481,7 +1497,7 @@ def gerar_csv_excel_formatado(dados_leads):
 
 
 # -----------------------------------------------------------------------------
-# BARRA LATERAL
+# BARRA LATERAL (AJUSTE DE ESPAÇAMENTOS)
 # -----------------------------------------------------------------------------
 base_leads = carregar_todos_leads_db()
 
@@ -1511,16 +1527,17 @@ with st.sidebar:
       st.image("logo_tour_transparente.png", use_container_width=True)
 
   if os.path.exists("logo_okamoto.png"):
-    c1, c2, c3 = st.columns([0.8, 4.4, 0.8])
+    c1, c2, c3 = st.columns([0.64, 3.52, 0.64])
     with c2:
       st.image("logo_okamoto.png", use_container_width=True)
 
-  st.divider()
+  # Reduzido o espaço vertical antes do alerta
+  st.markdown("<div style='margin-top: 6px;'></div>", unsafe_allow_html=True)
 
   if len(pendentes_hoje) > 0:
     st.markdown(
         f"""
-            <div style="background-color: #7f1d1d; border: 1px solid #991b1b; padding: 10px; border-radius: 8px; margin-bottom: 12px; text-align: center;">
+            <div style="background-color: #7f1d1d; border: 1px solid #991b1b; padding: 10px; border-radius: 8px; margin-bottom: 8px; text-align: center;">
                 <span style="color: #fca5a5; font-weight: bold; font-size: 13px;">🔔 Notificação Ativa</span><br/>
                 <span style="color: #ffffff; font-size: 12px;"><b>{len(pendentes_hoje)} retornos pendentes</b> para hoje ou atrasados!</span>
             </div>
@@ -1530,7 +1547,7 @@ with st.sidebar:
   else:
     st.markdown(
         """
-            <div style="background-color: #064e3b; border: 1px solid #065f46; padding: 8px; border-radius: 8px; margin-bottom: 12px; text-align: center;">
+            <div style="background-color: #064e3b; border: 1px solid #065f46; padding: 8px; border-radius: 8px; margin-bottom: 8px; text-align: center;">
                 <span style="color: #6ee7b7; font-weight: bold; font-size: 12px;">✅ Agenda em dia! Sem pendências.</span>
             </div>
         """,
@@ -1539,7 +1556,7 @@ with st.sidebar:
 
   st.markdown(
       "<div style='text-align: center; font-weight: 700; font-size: 14px;"
-      " margin-bottom: 8px;'>📌 Módulos</div>",
+      " margin-top: 4px; margin-bottom: 6px;'>📌 Módulos</div>",
       unsafe_allow_html=True,
   )
 
@@ -1580,7 +1597,11 @@ with st.sidebar:
   ):
     mudar_etapa(6)
 
-  st.divider()
+  # Reduzido o espaço entre o Radar Prospecção e a seção Supabase nuvem
+  st.markdown(
+      "<div style='border-top: 1px solid #334155; margin: 10px 0 6px 0;'></div>",
+      unsafe_allow_html=True,
+  )
   st.markdown(
       "<div style='text-align: center; font-size: 12px;'>☁️ Supabase"
       f" Nuvem:<br/><b>{len(base_leads)} leads salvos</b></div>",
@@ -1588,6 +1609,7 @@ with st.sidebar:
   )
 
   if len(base_leads) > 0:
+    st.markdown("<div style='margin-top: 4px;'></div>", unsafe_allow_html=True)
     if st.button("🗑️ Limpar Banco de Dados", use_container_width=True):
       limpar_banco_dados()
       mudar_etapa(1)
@@ -2240,7 +2262,7 @@ elif st.session_state.etapa == 3:
 
 Identifiquei pontos críticos que estão impactando a confiança de novos clientes no setor de {lead['categoria']}:
 1. Ausência de Tour Virtual 360° navegável.
-2. Perfil estático com fotos e informações defasadas.
+​2. Perfil estático com fotos e informações defasadas.
 3. Falta de otimização de presença digital.
 
 Temos soluções para transformar a vitrine do seu negócio no Google. Fico à disposição para conversarmos!
@@ -2432,7 +2454,7 @@ Olá! Analisei o perfil da {lead['nome']} no Google e gostaria de compartilhar u
 
 Identifiquei pontos críticos que estão impactando a confiança de novos clientes:
 1. Ausência de Tour Virtual 360° navegável (seus concorrentes levam vantagem visual).
-2. Perfil estático com fotos e informações desatualizadas.
+​2. Perfil estático com fotos e informações desatualizadas.
 3. Falta de otimização de palavras-chave para o setor de {lead['categoria']}.
 
 Temos soluções para transformar a vitrine do seu negócio no Google. Anexo um diagnóstico em PDF com a análise detalhada.
