@@ -2649,14 +2649,14 @@ elif st.session_state.etapa == 4:
     )
 
 # -----------------------------------------------------------------------------
-# MÓDULO 5: MAPA & ROTA DE VISITAS
+# MÓDULO 5: MAPA & ROTA DE VISITAS (COM GERADOR DINÂMICO DE CORES ILIMITADAS)
 # -----------------------------------------------------------------------------
 elif st.session_state.etapa == 5:
   st.markdown(
       """
         <div class="main-header">
             <h1 class="main-title">🗺️ Mapa & Planejador de Rotas de Visitas</h1>
-            <div class="main-subtitle">Visualize leads no mapa e organize seu itinerário sequencial com rotas de navegação passo a passo.</div>
+            <div class="main-subtitle">Visualize leads no mapa com cores dinâmicas por nicho e organize seu itinerário sequencial.</div>
         </div>
     """,
       unsafe_allow_html=True,
@@ -2723,54 +2723,55 @@ elif st.session_state.etapa == 5:
         " itinerário de visitas."
     )
 
-    CORES_PINS = [
-        "red",
-        "blue",
-        "green",
-        "purple",
-        "orange",
-        "darkred",
-        "cadetblue",
-        "darkgreen",
-        "darkblue",
-        "pink",
-    ]
-    CORES_HEX = {
-        "red": "#ef4444",
-        "blue": "#3b82f6",
-        "green": "#10b981",
-        "purple": "#8b5cf6",
-        "orange": "#f97316",
-        "darkred": "#991b1b",
-        "cadetblue": "#06b6d4",
-        "darkgreen": "#166534",
-        "darkblue": "#1e3a8a",
-        "pink": "#ec4899",
-    }
+    # -------------------------------------------------------------------------
+    # GERADOR DINÂMICO DE CORES HEXADECIMAIS ILIMITADAS (DISTRIBUIÇÃO HSL)
+    # -------------------------------------------------------------------------
+    def gerar_cor_hex(indice, total_categorias):
+      if total_categorias <= 1:
+        hue = 0.6  # Azul padrão se houver apenas 1 nicho
+      else:
+        # Distribui as tonalidades igualmente pelo espectro de 360 graus
+        hue = (indice / total_categorias) % 1.0
 
-    segmentos_unicos = list(df_mapa["categoria"].unique())
+      # HSL para RGB (Saturação 85%, Luminosidade 50% para cores vivas e legíveis)
+      import colorsys
+
+      r, g, b = colorsys.hls_to_rgb(hue, 0.50, 0.85)
+      return f"#{int(r*255):02x}{int(g*255):02x}{int(b*255):02x}"
+
+    segmentos_unicos = sorted(list(df_mapa["categoria"].unique()))
+    qtd_segmentos = len(segmentos_unicos)
+
+    # Mapeia cada nicho para uma cor Hex exclusiva
     mapa_cores_seg = {
-        seg: CORES_PINS[idx % len(CORES_PINS)]
+        seg: gerar_cor_hex(idx, qtd_segmentos)
         for idx, seg in enumerate(segmentos_unicos)
     }
 
-    if cat_sel_mapa == "Todos os Nichos / Tags" and len(segmentos_unicos) > 1:
-      st.markdown("**🎨 Legenda de Cores por Tag / Nicho:**")
-      cols_leg = st.columns(min(len(segmentos_unicos), 5))
-      for idx, (seg, cor_nome) in enumerate(mapa_cores_seg.items()):
-        hex_cor = CORES_HEX.get(cor_nome, "#ef4444")
-        with cols_leg[idx % 5]:
+    # Legenda Dinâmica de Cores por Nicho
+    if cat_sel_mapa == "Todos os Nichos / Tags" and qtd_segmentos > 1:
+      st.markdown("**🎨 Legenda de Cores por Tag / Nicho (Ilimitado):**")
+
+      # Organiza em até 5 colunas responsivas
+      num_cols = min(qtd_segmentos, 5)
+      cols_leg = st.columns(num_cols)
+
+      for idx, (seg, hex_cor) in enumerate(mapa_cores_seg.items()):
+        with cols_leg[idx % num_cols]:
           st.markdown(
-              '<div style="background-color: #1e293b; padding: 8px 12px;'
+              '<div style="background-color: #1e293b; padding: 6px 10px;'
               " border-radius: 8px; border: 1px solid #334155; margin-bottom:"
-              ' 8px; display: flex; align-items: center; gap: 8px;">'
-              f'<span style="height: 12px; width: 12px; background-color: {hex_cor}; border-radius: 50%; display: inline-block;"></span>'
-              f'<b style="color: #ffffff; font-size: 13px;">{seg}</b>'
+              ' 6px; display: flex; align-items: center; gap: 8px;">'
+              f'<span style="height: 12px; width: 12px; min-width: 12px; background-color: {hex_cor}; border-radius: 50%; display: inline-block; border: 1px solid #ffffff;"></span>'
+              f'<b style="color: #ffffff; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{seg}</b>'
               "</div>",
               unsafe_allow_html=True,
           )
       st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
 
+    # -------------------------------------------------------------------------
+    # RENDERIZAÇÃO DO MAPA FOLIUM
+    # -------------------------------------------------------------------------
     if (
         "latitude" in df_mapa_filtrado.columns
         and "longitude" in df_mapa_filtrado.columns
@@ -2787,27 +2788,29 @@ elif st.session_state.etapa == 5:
 
       bounds = []
       for _, row in df_mapa_filtrado.iterrows():
-        cor_pin = (
-            mapa_cores_seg.get(row["categoria"], "red")
-            if cat_sel_mapa == "Todos os Nichos / Tags"
-            else "red"
-        )
+        cor_hex = mapa_cores_seg.get(row["categoria"], "#ef4444")
 
         info_card_html = f"""
                 <div style="font-family: Arial, sans-serif; font-size: 12px; min-width: 240px; padding: 6px; line-height: 1.5;">
                     <b style="color: #2563eb; font-size: 14px;">{row['nome']}</b><br/>
                     <span style="color: #475569; font-size: 11px;">📍 {row['endereco']}</span><br/>
                     <hr style="margin: 6px 0; border: 0.5px solid #cbd5e1;"/>
-                    🏷️ <b>Tag / Nicho:</b> {row['categoria']}<br/>
+                    🏷️ <b>Tag / Nicho:</b> <span style="color:{cor_hex}; font-weight:bold;">{row['categoria']}</span><br/>
                     🚨 <b>Score Oportunidade:</b> <span style="color: #dc2626; font-weight: bold;">{row['score_oportunidade']}/100</span><br/>
                     ⭐ <b>Nota no Google:</b> {row['nota']} ({row['total_avaliacoes']} avaliações)<br/>
                 </div>
                 """
 
-        folium.Marker(
+        # Marcador Vetorial com a cor exata em Hex (suporta ilimitadas cores)
+        folium.CircleMarker(
             location=[row["latitude"], row["longitude"]],
+            radius=9,
             popup=folium.Popup(info_card_html, max_width=320),
-            icon=folium.Icon(color=cor_pin, icon="info-sign"),
+            color="#ffffff",
+            weight=2,
+            fill=True,
+            fill_color=cor_hex,
+            fill_opacity=0.9,
         ).add_to(m)
 
         bounds.append([row["latitude"], row["longitude"]])
@@ -2819,6 +2822,9 @@ elif st.session_state.etapa == 5:
 
       st.divider()
 
+      # -----------------------------------------------------------------------
+      # ITINERÁRIO SEQUENCIAL DE VISITAS
+      # -----------------------------------------------------------------------
       st.markdown(
           "### 🚗 Itinerário Sequencial de Visitas Presenciais (Prioridade"
           " Comercial)"
@@ -2847,8 +2853,11 @@ elif st.session_state.etapa == 5:
                 unsafe_allow_html=True,
             )
           with col_info:
+            cor_tag = mapa_cores_seg.get(r_visita["categoria"], "#38bdf8")
             st.markdown(
-                f"**{r_visita['nome']}** (Tag: *{r_visita['categoria']}*)"
+                f"**{r_visita['nome']}** (Tag: <span"
+                f" style='color:{cor_tag}; font-weight:bold;'>{r_visita['categoria']}</span>)",
+                unsafe_allow_html=True,
             )
             st.markdown(f"📍 {r_visita['endereco']}")
             st.markdown(
