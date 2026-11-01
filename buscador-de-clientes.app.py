@@ -1255,28 +1255,41 @@ def buscar_google_places_api(
   next_page_token = None
 
   try:
-    max_paginas = max(1, (limite // 20) + (1 if limite % 20 != 0 else 0))
+    # O Google Places Text Search fornece no máximo 60 resultados (3 páginas de 20)
+    max_paginas = min(3, max(1, (limite // 20) + (1 if limite % 20 != 0 else 0)))
 
     for pagina in range(max_paginas):
       if len(leads) >= limite:
         break
 
-      # Se for a 1ª página usa a query, se for das seguintes usa APENAS o pagetoken
       if pagina == 0:
         url_requisicao = base_url
       else:
         if not next_page_token:
           break
-        # PAUSA OBRIGATÓRIA: O token precisa de 2.5 a 3 segundos para ativar no Google
-        time.sleep(3.0)
+
+        # PAUSA OBRIGATÓRIA: Espera 3.2 segundos para o token ficar ativo na Google
+        time.sleep(3.2)
         url_requisicao = f"https://maps.googleapis.com/maps/api/place/textsearch/json?pagetoken={next_page_token}&key={api_key}"
 
+      # Tentativa de requisição com tratamento de token
       response = requests.get(url_requisicao, timeout=12)
       data = response.json()
       status = data.get("status")
 
-      if status not in ["OK", "ZERO_RESULTS"]:
-        # Se der INVALID_REQUEST por falta de tempo do token, encerra com o acumulado
+      # Se o token ainda não estiver pronto, faz mais uma pequena pausa de segurança e tenta de novo
+      if status == "INVALID_REQUEST" and pagina > 0:
+        time.sleep(2.5)
+        response = requests.get(url_requisicao, timeout=12)
+        data = response.json()
+        status = data.get("status")
+
+      if status != "OK":
+        if status == "ZERO_RESULTS" and len(leads) == 0:
+          st.warning(
+              "⚠️ O Google Maps não encontrou empresas para este termo exato"
+              " dentro do raio especificado. Tente simplificar a busca."
+          )
         break
 
       results = data.get("results", [])
@@ -1380,7 +1393,6 @@ def buscar_google_places_api(
         salvar_lead_db(lead_obj)
         leads.append(lead_obj)
 
-      # Atualiza o token para o próximo ciclo do loop
       next_page_token = data.get("next_page_token")
       if not next_page_token:
         break
