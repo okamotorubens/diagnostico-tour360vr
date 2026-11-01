@@ -435,9 +435,7 @@ def revalidar_ficha_google(lead):
     det_res = {}
     if place_id:
       details_url = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=name,formatted_address,formatted_phone_number,website,rating,user_ratings_total,photos&language=pt-BR&key={api_key_limpa}"
-      det_res = (
-          requests.get(details_url, timeout=5).json().get("result", {})
-      )
+      det_res = requests.get(details_url, timeout=5).json().get("result", {})
 
     nova_nota = det_res.get("rating", place.get("rating", lead["nota"]))
     novas_av = det_res.get(
@@ -633,7 +631,9 @@ def gerar_pdf_diagnostico_individual(lead):
   )
   elements.append(
       Paragraph(
-          "Este diagnóstico foi elaborado pelo Tour360VR e a Okamoto Mídias Visuais com base em inteligência de mercado local para destacar pontos cegos na sua vitrine digital do Google.",
+          "Este diagnóstico foi elaborado pelo Tour360VR e a Okamoto Mídias"
+          " Visuais com base em inteligência de mercado local para destacar"
+          " pontos cegos na sua vitrine digital do Google.",
           style_sub,
       )
   )
@@ -1184,7 +1184,7 @@ def mudar_etapa(nova_etapa):
 
 
 # -----------------------------------------------------------------------------
-# BUSCA REAL GOOGLE PLACES API (SUB-VARREDURAS DIRETAS SEM QUEBRA DE 20)
+# BUSCA REAL GOOGLE PLACES API (VARREDURA REGIONAL DINÂMICA COM LOCALIZAÇÃO EXATA)
 # -----------------------------------------------------------------------------
 def enriquecer_redes_sociais(nome_empresa, website):
   nome_normalizado = (
@@ -1211,9 +1211,28 @@ def enriquecer_redes_sociais(nome_empresa, website):
   return instagram_url, facebook_url
 
 
+def obter_lat_lng_cidade(cidade_nome, api_key):
+  """Obtém as coordenadas centrais dinâmicas de qualquer cidade digitada."""
+  try:
+    url_geo = f"https://maps.googleapis.com/maps/api/geocode/json?address={urllib.parse.quote(cidade_nome + ', Brasil')}&key={api_key}"
+    resp = requests.get(url_geo, timeout=5).json()
+    if resp.get("status") == "OK":
+      loc = resp["results"][0]["geometry"]["location"]
+      return loc["lat"], loc["lng"]
+  except Exception:
+    pass
+  return -21.1775, -47.8103
+
+
 def buscar_google_places_api(
     nome_empresa, nicho, cidade, bairro, rua, raio_km, api_key, limite=70
 ):
+  cidade_str = cidade.strip() if cidade else "Ribeirão Preto"
+  bairro_str = bairro.strip() if bairro else ""
+
+  # 1. Obter coordenada central DINÂMICA da cidade informada
+  lat_centro, lng_centro = obter_lat_lng_cidade(cidade_str, api_key)
+
   termos_base = []
   if nome_empresa:
     termos_base.append(re.sub(r"[´`\'\"]", "", nome_empresa.strip()))
@@ -1221,19 +1240,25 @@ def buscar_google_places_api(
     termos_base.append(nicho.strip())
   if rua:
     termos_base.append(rua.strip())
-  if bairro:
-    termos_base.append(bairro.strip())
-  if cidade:
-    termos_base.append(cidade.strip())
 
-  query_principal = " ".join(termos_base)
+  query_principal = " ".join(termos_base) if termos_base else (nicho or "Comércio")
   raio_metros = int(raio_km * 1000)
 
-  queries_para_executar = [query_principal]
-  if nicho and cidade:
-    queries_para_executar.append(f"{nicho} em {cidade}")
-    if bairro:
-      queries_para_executar.append(f"{nicho} {bairro} {cidade}")
+  # 2. Monta leque de varredura dinâmico e universal para qualquer cidade
+  queries_para_executar = []
+
+  if bairro_str:
+    queries_para_executar.append(f"{query_principal} {bairro_str} {cidade_str}")
+  else:
+    # Varredura universal por regiões aplicáveis a qualquer município
+    queries_para_executar.extend([
+        f"{query_principal} {cidade_str}",
+        f"{query_principal} Centro {cidade_str}",
+        f"{query_principal} Zona Sul {cidade_str}",
+        f"{query_principal} Zona Norte {cidade_str}",
+        f"{query_principal} Zona Leste {cidade_str}",
+        f"{query_principal} Zona Oeste {cidade_str}",
+    ])
 
   leads = []
   seen_place_ids = set()
@@ -1243,7 +1268,15 @@ def buscar_google_places_api(
       if len(leads) >= limite:
         break
 
-      url_requisicao = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={urllib.parse.quote(q_str)}&radius={raio_metros}&language=pt-BR&key={api_key}"
+      # FORÇA A LOCALIZAÇÃO DINÂMICA DA CIDADE PARA O RAIO FUNCIONAR NO GOOGLE
+      url_requisicao = (
+          "https://maps.googleapis.com/maps/api/place/textsearch/json?"
+          f"query={urllib.parse.quote(q_str)}"
+          f"&location={lat_centro},{lng_centro}"
+          f"&radius={raio_metros}"
+          f"&language=pt-BR&key={api_key}"
+      )
+
       response = requests.get(url_requisicao, timeout=10)
       data = response.json()
 
@@ -1263,18 +1296,23 @@ def buscar_google_places_api(
         lat = (
             place.get("geometry", {})
             .get("location", {})
-            .get("lat", -21.1775)
+            .get("lat", lat_centro)
         )
         lng = (
             place.get("geometry", {})
             .get("location", {})
-            .get("lng", -47.8103)
+            .get("lng", lng_centro)
         )
 
         det_res = {}
         if place_id:
           try:
-            details_url = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=name,formatted_address,formatted_phone_number,website,rating,user_ratings_total,photos&language=pt-BR&key={api_key}"
+            details_url = (
+                "https://maps.googleapis.com/maps/api/place/details/json?"
+                f"place_id={place_id}"
+                "&fields=name,formatted_address,formatted_phone_number,website,rating,user_ratings_total,photos"
+                f"&language=pt-BR&key={api_key}"
+            )
             det_res = (
                 requests.get(details_url, timeout=4).json().get("result", {})
             )
@@ -1295,7 +1333,10 @@ def buscar_google_places_api(
 
         foto_url = ""
         if photos and photos[0].get("photo_reference"):
-          foto_url = f"https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference={photos[0].get('photo_reference')}&key={api_key}"
+          foto_url = (
+              "https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&"
+              f"photo_reference={photos[0].get('photo_reference')}&key={api_key}"
+          )
 
         has_https = website.startswith("https://") if website else False
 
@@ -1316,8 +1357,8 @@ def buscar_google_places_api(
 
         lead_obj = {
             "data_minacao": datetime.now().strftime("%d/%m/%Y %H:%M"),
-            "cidade_busca": cidade,
-            "bairro_busca": bairro,
+            "cidade_busca": cidade_str,
+            "bairro_busca": bairro_str or "Varredura Geral",
             "nome": nome,
             "categoria": (nicho or "Comércio").capitalize(),
             "endereco": endereco,
@@ -1380,7 +1421,8 @@ def minerar_e_auditar_negocios(
       return leads_reais
   else:
     st.error(
-        "⚠️ A chave 'GOOGLE_API_KEY' não foi encontrada nos Secrets do Streamlit Cloud."
+        "⚠️ A chave 'GOOGLE_API_KEY' não foi encontrada nos Secrets do Streamlit"
+        " Cloud."
     )
   return []
 
@@ -1568,8 +1610,8 @@ with st.sidebar:
       unsafe_allow_html=True,
   )
   st.markdown(
-      "<div style='text-align: center; font-size: 12px; margin-bottom: 8px;'>☁️ Supabase"
-      f" Nuvem:<br/><b>{len(base_leads)} leads salvos</b></div>",
+      "<div style='text-align: center; font-size: 12px; margin-bottom: 8px;'>☁️"
+      f" Supabase Nuvem:<br/><b>{len(base_leads)} leads salvos</b></div>",
       unsafe_allow_html=True,
   )
 
@@ -1632,7 +1674,8 @@ if st.session_state.etapa == 1:
     st.markdown("### 🚨 Leads com Follow-up para Hoje ou Atrasados:")
     if len(pendentes_hoje) > 0:
       st.markdown(
-          f"Você possui **{len(pendentes_hoje)} leads** pendentes de retorno na agenda:"
+          f"Você possui **{len(pendentes_hoje)} leads** pendentes de retorno na"
+          " agenda:"
       )
       for r_lead in pendentes_hoje[:5]:
         st.markdown(
@@ -1713,7 +1756,8 @@ elif st.session_state.etapa == 2:
 
     if btn_minar:
       with st.spinner(
-          f"Varrendo Google Maps num raio de {raio_input} km e salvando na nuvem..."
+          f"Varrendo Google Maps num raio de {raio_input} km e salvando na"
+          " nuvem..."
       ):
         time.sleep(1)
         novos = minerar_e_auditar_negocios(
@@ -2224,7 +2268,7 @@ elif st.session_state.etapa == 3:
 
 Identifiquei pontos críticos que estão impactando a confiança de novos clientes no setor de {lead['categoria']}:
 1. Ausência de Tour Virtual 360° navegável.
-2. Perfil estático com fotos e informações defasadas.
+​2. Perfil estático com fotos e informações defasadas.
 3. Falta de otimização de presença digital.
 
 Temos soluções para transformar a vitrine do seu negócio no Google. Fico à disposição para conversarmos!
@@ -2415,7 +2459,7 @@ Olá! Analisei o perfil da {lead['nome']} no Google e gostaria de compartilhar u
 
 Identifiquei pontos críticos que estão impactando a confiança de novos clientes:
 1. Ausência de Tour Virtual 360° navegável (seus concorrentes levam vantagem visual).
-2. Perfil estático com fotos e informações desatualizadas.
+​2. Perfil estático com fotos e informações desatualizadas.
 3. Falta de otimização de palavras-chave para o setor de {lead['categoria']}.
 
 Temos soluções para transformar a vitrine do seu negócio no Google. Anexo um diagnóstico em PDF com a análise detalhada.
