@@ -144,7 +144,6 @@ components.html(
     height=0,
 )
 
-
 # -----------------------------------------------------------------------------
 # BANCO DE DADOS EM NUVEM (SUPABASE)
 # -----------------------------------------------------------------------------
@@ -156,9 +155,7 @@ def init_supabase():
     return create_client(url, key)
   return None
 
-
 supabase: Client = init_supabase()
-
 
 def salvar_lead_db(lead):
   if not supabase:
@@ -208,7 +205,6 @@ def salvar_lead_db(lead):
   except Exception as e:
     st.error(f"Erro ao salvar lead '{lead.get('nome')}': {str(e)}")
 
-
 def atualizar_status_crm(lead_id, novo_status):
   if not supabase:
     return
@@ -221,7 +217,6 @@ def atualizar_status_crm(lead_id, novo_status):
     )
   except Exception as e:
     st.error(f"Erro ao atualizar status: {str(e)}")
-
 
 def atualizar_categoria_db(lead_id, nova_categoria):
   if not supabase:
@@ -236,7 +231,6 @@ def atualizar_categoria_db(lead_id, nova_categoria):
   except Exception as e:
     st.error(f"Erro ao atualizar categoria: {str(e)}")
 
-
 def atualizar_anotacoes_db(lead_id, novas_anotacoes):
   if not supabase:
     return
@@ -249,7 +243,6 @@ def atualizar_anotacoes_db(lead_id, novas_anotacoes):
     )
   except Exception as e:
     st.error(f"Erro ao atualizar anotações: {str(e)}")
-
 
 def alternar_favorito_db(lead_id, status_atual):
   if not supabase:
@@ -265,7 +258,6 @@ def alternar_favorito_db(lead_id, status_atual):
   except Exception as e:
     st.error(f"Erro ao atualizar favorito: {str(e)}")
 
-
 def atualizar_followup_db(lead_id, nova_data):
   if not supabase:
     return
@@ -279,7 +271,6 @@ def atualizar_followup_db(lead_id, nova_data):
   except Exception as e:
     st.error(f"Erro ao atualizar follow-up: {str(e)}")
 
-
 def atualizar_dados_cadastrais_db(lead_id, dados_dict):
   if not supabase:
     return
@@ -287,7 +278,6 @@ def atualizar_dados_cadastrais_db(lead_id, dados_dict):
     supabase.table("leads").update(dados_dict).eq("id", lead_id).execute()
   except Exception as e:
     st.error(f"Erro ao atualizar dados do lead: {str(e)}")
-
 
 def obter_coordenadas_endereco(endereco_completo, cidade):
   endereco_str = f"{endereco_completo}, {cidade}, Brasil"
@@ -316,7 +306,6 @@ def obter_coordenadas_endereco(endereco_completo, cidade):
 
   return -21.1775, -47.8103
 
-
 def carregar_todos_leads_db():
   if not supabase:
     return []
@@ -327,7 +316,6 @@ def carregar_todos_leads_db():
     st.error(f"Erro ao carregar dados do Supabase: {str(e)}")
     return []
 
-
 def limpar_banco_dados():
   if not supabase:
     return
@@ -335,7 +323,6 @@ def limpar_banco_dados():
     supabase.table("leads").delete().neq("id", 0).execute()
   except Exception as e:
     st.error(f"Erro ao limpar banco: {str(e)}")
-
 
 # -----------------------------------------------------------------------------
 # CÁLCULO DE SCORE DE OTIMIZAÇÃO & AUDITORIA DA FICHA
@@ -412,7 +399,6 @@ def calcular_score_e_auditoria(
       "pontos_criticos": pontos_criticos,
       "oportunidades": oportunidades,
   }
-
 
 def revalidar_ficha_google(lead):
   api_key = st.secrets.get("GOOGLE_API_KEY", None) or os.getenv(
@@ -498,9 +484,8 @@ def revalidar_ficha_google(lead):
     st.error(f"Erro ao revalidar ficha: {str(e)}")
     return lead
 
-
 # -----------------------------------------------------------------------------
-# GERADOR DE PDF DO DIAGNÓSTICO (LAYOUT MODERNO DE PÁGINA ÚNICA REFINADO)
+# GERADOR DE PDF DO DIAGNÓSTICO (LAYOUT MODERNO DIAGRAMADO PROFISSIONALMENTE)
 # -----------------------------------------------------------------------------
 def desenhar_cabecalho_rodape_diagnostico(canvas, doc):
   canvas.saveState()
@@ -517,14 +502,15 @@ def desenhar_cabecalho_rodape_diagnostico(canvas, doc):
       )
   )
 
+  # LOGO EXPANDIDA E REORGANIZADA
   if logo_tour_path:
     try:
       canvas.drawImage(
           logo_tour_path,
           36,
-          738,
-          width=85,
-          height=38,
+          730,
+          width=110,
+          height=48,
           preserveAspectRatio=True,
           mask="auto",
       )
@@ -535,9 +521,9 @@ def desenhar_cabecalho_rodape_diagnostico(canvas, doc):
       "HeaderDiagnostico",
       parent=styles["Normal"],
       fontName="Helvetica-Bold",
-      fontSize=8,
-      leading=10.5,
-      textColor=colors.HexColor("#1e293b"),
+      fontSize=9.5,
+      leading=12,
+      textColor=colors.HexColor("#0f172a"),
       alignment=2,  # ALINHADO À DIREITA
   )
 
@@ -546,35 +532,35 @@ def desenhar_cabecalho_rodape_diagnostico(canvas, doc):
       " GOOGLE",
       header_text_style,
   )
-  head_table = Table([[head_p]], colWidths=[410])
-  head_table.wrapOn(canvas, 410, 30)
-  head_table.drawOn(canvas, 166, 740)
+  head_table = Table([[head_p]], colWidths=[380])
+  head_table.wrapOn(canvas, 380, 36)
+  head_table.drawOn(canvas, 196, 736)
 
-  # Linha divisória fina em tom azul claro
-  canvas.setStrokeColor(colors.HexColor("#e2e8f0"))
-  canvas.setLineWidth(0.5)
-  canvas.line(36, 732, 576, 732)
+  # Linha divisória em tom Azul Marinho Fino
+  canvas.setStrokeColor(colors.HexColor("#cbd5e1"))
+  canvas.setLineWidth(0.75)
+  canvas.line(36, 724, 576, 724)
 
   # --- RODAPÉ (FIXO NO FINAL DA PÁGINA) ---
-  canvas.setStrokeColor(colors.HexColor("#e2e8f0"))
-  canvas.setLineWidth(0.5)
-  canvas.line(36, 30, 576, 30)
+  canvas.setStrokeColor(colors.HexColor("#cbd5e1"))
+  canvas.setLineWidth(0.75)
+  canvas.line(36, 34, 576, 34)
 
   style_footer = ParagraphStyle(
       "FooterLinkStyle",
       parent=styles["Normal"],
-      fontName="Helvetica",
-      fontSize=7.5,
-      textColor=colors.HexColor("#475569"),
+      fontName="Helvetica-Bold",
+      fontSize=8,
+      textColor=colors.HexColor("#334155"),
       alignment=1,  # Centralizado
   )
 
   zap_clean = "".join(filter(str.isdigit, CONTATO_WHATSAPP))
-  footer_html = f'<a href="mailto:{EMAIL_CONTATO}" color="#475569">{EMAIL_CONTATO}</a> &nbsp;|&nbsp; <a href="https://{WEBSITE_OFICIAL}" color="#475569">{WEBSITE_OFICIAL}</a> &nbsp;|&nbsp; <a href="https://wa.me/55{zap_clean}" color="#475569">WhatsApp: {CONTATO_WHATSAPP}</a>'
+  footer_html = f'<a href="mailto:{EMAIL_CONTATO}" color="#0284c7">{EMAIL_CONTATO}</a> &nbsp;|&nbsp; <a href="https://{WEBSITE_OFICIAL}" color="#0284c7">{WEBSITE_OFICIAL}</a> &nbsp;|&nbsp; <a href="https://wa.me/55{zap_clean}" color="#16a34a">WhatsApp: {CONTATO_WHATSAPP}</a>'
   p_footer = Paragraph(footer_html, style_footer)
   t_footer = Table([[p_footer]], colWidths=[540])
-  t_footer.wrapOn(canvas, 540, 18)
-  t_footer.drawOn(canvas, 36, 14)
+  t_footer.wrapOn(canvas, 540, 20)
+  t_footer.drawOn(canvas, 36, 16)
 
   canvas.restoreState()
 
@@ -582,14 +568,14 @@ def desenhar_cabecalho_rodape_diagnostico(canvas, doc):
 def gerar_pdf_diagnostico_individual(lead):
   buffer = io.BytesIO()
 
-  # Margens rigorosamente configuradas para fechar 1 folha A4
+  # Configuração visual A4 em página única
   doc = SimpleDocTemplate(
       buffer,
       pagesize=letter,
       rightMargin=36,
       leftMargin=36,
-      topMargin=64,
-      bottomMargin=35,
+      topMargin=72,
+      bottomMargin=42,
       title=f"Diagnóstico de Presença Digital - {lead['nome']}",
       author="Tour360VR",
   )
@@ -600,36 +586,36 @@ def gerar_pdf_diagnostico_individual(lead):
       "NormCustom",
       parent=styles["Normal"],
       fontName="Helvetica",
-      fontSize=7.5,
-      leading=9.5,
+      fontSize=8,
+      leading=10.5,
       textColor=colors.HexColor("#334155"),
   )
   style_title = ParagraphStyle(
       "TitleDiag",
       parent=styles["Heading1"],
-      fontSize=11,
-      leading=13,
+      fontSize=12,
+      leading=14,
       textColor=colors.HexColor("#0f172a"),
       fontName="Helvetica-Bold",
-      alignment=1,  # CENTRALIZADO
+      alignment=1,
   )
   style_sub = ParagraphStyle(
       "SubDiag",
       parent=style_normal,
-      fontSize=7.5,
-      leading=10,
+      fontSize=8.5,
+      leading=11.5,
       textColor=colors.HexColor("#475569"),
-      alignment=1,  # CENTRALIZADO E BALANCEADO
+      alignment=1,
   )
   style_section_heading = ParagraphStyle(
       "SectionHead",
       parent=styles["Heading2"],
-      fontSize=8,
-      leading=10,
+      fontSize=8.5,
+      leading=11,
       textColor=colors.HexColor("#0f172a"),
       fontName="Helvetica-Bold",
-      spaceBefore=4,
-      spaceAfter=2,
+      spaceBefore=6,
+      spaceAfter=3,
   )
 
   auditoria = calcular_score_e_auditoria(
@@ -647,19 +633,19 @@ def gerar_pdf_diagnostico_individual(lead):
   av_total = lead.get("total_avaliacoes", 0)
   nota_val = lead.get("nota", 0.0)
 
-  # Cor dinânica e viva para a nota do Score Geral
+  # Cor dinâmica e viva para a nota do Score Geral
   if score_saude >= 80:
-    cor_score = "#10b981"  # Verde Vivo
+    cor_score = "#16a34a"  # Verde
   elif score_saude >= 50:
-    cor_score = "#f59e0b"  # Amarelo/Laranja Vivo
+    cor_score = "#d97706"  # Laranja/Amarelo Escuro
   else:
-    cor_score = "#ef4444"  # Vermelho Vivo
+    cor_score = "#dc2626"  # Vermelho
 
   elements = []
 
   # 1. TÍTULO CENTRALIZADO
   elements.append(Paragraph("DIAGNÓSTICO DE PRESENÇA DIGITAL", style_title))
-  elements.append(Spacer(1, 4))
+  elements.append(Spacer(1, 6))
 
   # 2. CONTAINER COM DADOS DA EMPRESA
   dados_empresa_html = (
@@ -674,66 +660,66 @@ def gerar_pdf_diagnostico_individual(lead):
   t_dados.setStyle(
       TableStyle([
           ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#f8fafc")),
-          ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#cbd5e1")),
-          ("PADDING", (0, 0), (-1, -1), 5),
+          ("BOX", (0, 0), (-1, -1), 0.75, colors.HexColor("#cbd5e1")),
+          ("PADDING", (0, 0), (-1, -1), 6),
       ])
   )
   elements.append(t_dados)
-  elements.append(Spacer(1, 4))
-
-  # 3. SUBTÍTULO DIVIDIDO EM 2 LINHAS
-  subtitulo_html = "Este diagnóstico foi elaborado pelo Tour360VR com base em inteligência de mercado local<br/>para destacar pontos cegos na sua vitrine digital do Google."
-  elements.append(Paragraph(subtitulo_html, style_sub))
   elements.append(Spacer(1, 6))
 
-  # 4. QUADRO DE ALERTA DA ATUAL SITUAÇÃO (AZUL CLARO COM BORDA AZUL ESCURO)
+  # 3. SUBTÍTULO
+  subtitulo_html = "Este diagnóstico foi elaborado pelo Tour360VR com base em inteligência de mercado local<br/>para destacar pontos cegos na sua vitrine digital do Google."
+  elements.append(Paragraph(subtitulo_html, style_sub))
+  elements.append(Spacer(1, 8))
+
+  # 4. QUADRO DE ATENÇÃO DA ATUAL SITUAÇÃO (AZUL MARINHO ELEGANTE)
   txt_alerta = f"SEU PERFIL TEM NOTA SÓLIDA DE {nota_val} COM {av_total} AVALIAÇÕES NO GOOGLE, MAS A FALTA DE EXPERIÊNCIA IMERSIVA DEIXA DINHEIRO NA MESA."
   p_alerta = Paragraph(
-      f"<b><font color='#0369a1' size='8.5'>{txt_alerta}</font></b>",
-      ParagraphStyle("AlertaTxt", parent=style_normal, alignment=1, leading=11),
+      f"<b><font color='#0f172a' size='9'>{txt_alerta}</font></b>",
+      ParagraphStyle("AlertaTxt", parent=style_normal, alignment=1, leading=12),
   )
   t_alerta = Table([[p_alerta]], colWidths=[540])
   t_alerta.setStyle(
       TableStyle([
-          ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#e0f2fe")),
-          ("BOX", (0, 0), (-1, -1), 0.75, colors.HexColor("#0284c7")),
-          ("PADDING", (0, 0), (-1, -1), 5),
+          ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#f0f9ff")),
+          ("BOX", (0, 0), (-1, -1), 1, colors.HexColor("#0284c7")),
+          ("PADDING", (0, 0), (-1, -1), 7),
       ])
   )
   elements.append(t_alerta)
-  elements.append(Spacer(1, 6))
+  elements.append(Spacer(1, 8))
 
-  # 5. QUADRO DE SCORE GERAL E AVALIAÇÕES (CONTAINER COM NOTA VIVA E MAIOR)
+  # 5. QUADRO DE SCORE GERAL E AVALIAÇÕES
   p_card_score = Paragraph(
-      f"<b>SCORE GERAL</b><br/><font size='16'"
+      f"<b>SCORE GERAL</b><br/><font size='18'"
       f" color='{cor_score}'><b>{score_saude} / 100</b></font>",
       ParagraphStyle(
-          "CScore", parent=style_normal, alignment=1, leading=16, fontSize=7
+          "CScore", parent=style_normal, alignment=1, leading=18, fontSize=8
       ),
   )
   p_card_nota = Paragraph(
-      f"<b>AVALIAÇÃO DO GOOGLE</b><br/><font size='14'"
-      f" color='#1e293b'><b>{nota_val} ★</b></font><br/><font size='6.5'"
-      f" color='#64748b'>({av_total} avaliações)</font>",
+      f"<b>AVALIAÇÃO DO GOOGLE</b><br/><font size='16'"
+      f" color='#0f172a'><b>{nota_val} ★</b></font><br/><font size='7'"
+      f" color='#64748b'>({av_total} avaliações públicas)</font>",
       ParagraphStyle(
-          "CNota", parent=style_normal, alignment=1, leading=12, fontSize=7
+          "CNota", parent=style_normal, alignment=1, leading=14, fontSize=8
       ),
   )
   t_cards = Table([[p_card_score, p_card_nota]], colWidths=[265, 265])
   t_cards.setStyle(
       TableStyle([
           ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#f8fafc")),
-          ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#cbd5e1")),
+          ("BOX", (0, 0), (-1, -1), 0.75, colors.HexColor("#cbd5e1")),
           ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#e2e8f0")),
-          ("PADDING", (0, 0), (-1, -1), 4),
+          ("PADDING", (0, 0), (-1, -1), 6),
           ("ALIGN", (0, 0), (-1, -1), "CENTER"),
           ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
       ])
   )
   elements.append(t_cards)
-  elements.append(Spacer(1, 6))
+  elements.append(Spacer(1, 8))
 
-  # 6. TABELA COM OS 9 ITENS DE DIAGNÓSTICO (CABEÇALHO AZUL ESCURO)
+  # 6. TABELA DOS 9 ITENS DE DIAGNÓSTICO (CABECALHO AZUL MARINHO)
   itens_9 = [
       (
           "1. Fotos e Resolução Visual",
@@ -787,9 +773,9 @@ def gerar_pdf_diagnostico_individual(lead):
   ]
 
   style_cell_head = ParagraphStyle(
-      "CellHead", parent=style_normal, fontName="Helvetica-Bold", color=colors.white, fontSize=7.5
+      "CellHead", parent=style_normal, fontName="Helvetica-Bold", color=colors.white, fontSize=8
   )
-  style_cell_tb = ParagraphStyle("CellTB", parent=style_normal, fontSize=7)
+  style_cell_tb = ParagraphStyle("CellTB", parent=style_normal, fontSize=7.5)
   style_cell_bold = ParagraphStyle(
       "CellTBBold", parent=style_cell_tb, fontName="Helvetica-Bold"
   )
@@ -802,7 +788,7 @@ def gerar_pdf_diagnostico_individual(lead):
 
   for it, st_tag, obs in itens_9:
     c_color = (
-        "#15803d"
+        "#16a34a"
         if st_tag in ["Atende", "Completo", "Atualizado", "Ativo"]
         else "#dc2626"
     )
@@ -814,28 +800,28 @@ def gerar_pdf_diagnostico_individual(lead):
         Paragraph(obs, style_cell_tb),
     ])
 
-  t_9 = Table(rows_9, colWidths=[165, 75, 300])
+  t_9 = Table(rows_9, colWidths=[170, 75, 295])
   t_9.setStyle(
       TableStyle([
-          ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1e293b")),  # AZUL ESCURO
+          ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#0f172a")),  # AZUL MARINHO
           ("BACKGROUND", (0, 1), (-1, -1), colors.white),
           ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#f1f5f9")),
-          ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#cbd5e1")),
-          ("TOPPADDING", (0, 0), (-1, -1), 2.5),
-          ("BOTTOMPADDING", (0, 0), (-1, -1), 2.5),
+          ("BOX", (0, 0), (-1, -1), 0.75, colors.HexColor("#cbd5e1")),
+          ("TOPPADDING", (0, 0), (-1, -1), 3),
+          ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
       ])
   )
   elements.append(t_9)
-  elements.append(Spacer(1, 6))
+  elements.append(Spacer(1, 8))
 
-  # 7. PONTOS CRÍTICOS IDENTIFICADOS NA VITRINE DIGITAL (SEM "#")
+  # 7. PONTOS CRÍTICOS IDENTIFICADOS NA VITRINE DIGITAL
   elements.append(
       Paragraph(
           "PONTOS CRÍTICOS IDENTIFICADOS NA VITRINE DIGITAL",
           style_section_heading,
       )
   )
-  elements.append(Spacer(1, 2))
+  elements.append(Spacer(1, 3))
 
   criticos_lista = (
       lead["pontos_criticos"]
@@ -848,7 +834,7 @@ def gerar_pdf_diagnostico_individual(lead):
   rows_criticos = []
   for pc in criticos_lista[:3]:
     rows_criticos.append(
-        [Paragraph(f"<font color='#dc2626'>❌ {pc}</font>", style_cell_tb)]
+        [Paragraph(f"<font color='#dc2626'>[X] {pc}</font>", style_cell_tb)]
     )
 
   t_criticos = Table(rows_criticos, colWidths=[540])
@@ -857,21 +843,21 @@ def gerar_pdf_diagnostico_individual(lead):
           ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#fef2f2")),
           ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#fecaca")),
           ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#fee2e2")),
-          ("TOPPADDING", (0, 0), (-1, -1), 2.5),
-          ("BOTTOMPADDING", (0, 0), (-1, -1), 2.5),
+          ("TOPPADDING", (0, 0), (-1, -1), 3),
+          ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
       ])
   )
   elements.append(t_criticos)
-  elements.append(Spacer(1, 6))  # MAIS ESPAÇAMENTO ENTRE OS BLOCOS
+  elements.append(Spacer(1, 8))
 
-  # 8. OPORTUNIDADES DE TRANSFORMAÇÃO E RETORNO COMERCIAL (SEM "#")
+  # 8. OPORTUNIDADES DE TRANSFORMAÇÃO E RETORNO COMERCIAL
   elements.append(
       Paragraph(
           "OPORTUNIDADES DE TRANSFORMAÇÃO E RETORNO COMERCIAL",
           style_section_heading,
       )
   )
-  elements.append(Spacer(1, 2))
+  elements.append(Spacer(1, 3))
 
   op_lista = (
       lead["oportunidades"]
@@ -884,7 +870,7 @@ def gerar_pdf_diagnostico_individual(lead):
   rows_op = []
   for op in op_lista[:3]:
     rows_op.append(
-        [Paragraph(f"<font color='#16a34a'>✅ {op}</font>", style_cell_tb)]
+        [Paragraph(f"<font color='#16a34a'>[V] {op}</font>", style_cell_tb)]
     )
 
   t_op = Table(rows_op, colWidths=[540])
@@ -893,14 +879,14 @@ def gerar_pdf_diagnostico_individual(lead):
           ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#f0fdf4")),
           ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#bbf7d0")),
           ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#dcfce7")),
-          ("TOPPADDING", (0, 0), (-1, -1), 2.5),
-          ("BOTTOMPADDING", (0, 0), (-1, -1), 2.5),
+          ("TOPPADDING", (0, 0), (-1, -1), 3),
+          ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
       ])
   )
   elements.append(t_op)
-  elements.append(Spacer(1, 8))
+  elements.append(Spacer(1, 10))
 
-  # 9. CARD DE CTA MODERNO, COMPACTO E MAIS ALTO (75% LARGURA COM BOTÃO WHATSAPP CLICÁVEL E ENCORPADO)
+  # 9. CONTAINER DE CTA REFORMULADO E DESTACADO
   zap_num = (
       lead.get("whatsapp")
       or "".join(filter(str.isdigit, lead.get("telefone", "")))
@@ -911,8 +897,8 @@ def gerar_pdf_diagnostico_individual(lead):
   cta_html = f"""
     <b>🚀 VAMOS TRANSFORMAR A SUA FICHA EM UM ÍMÃ DE CLIENTES?</b><br/>
     Implante o <b>Tour Virtual 360°</b> e a reestruturação profissional do perfil no Google Maps.<br/>
-    <div style="margin-top: 4px;">
-        <a href="{link_wa}" color="#ffffff"><b><font size="8">💬 CLIQUE AQUI E FALE NO WHATSAPP: {CONTATO_WHATSAPP}</font></b></a>
+    <div style="margin-top: 6px;">
+        <a href="{link_wa}" color="#ffffff"><b><font size="8.5">CLIQUE AQUI E FALE DIRETO NO WHATSAPP: {CONTATO_WHATSAPP}</font></b></a>
     </div>
     """
   p_cta = Paragraph(
@@ -921,24 +907,23 @@ def gerar_pdf_diagnostico_individual(lead):
           "CtaTxt",
           parent=style_normal,
           alignment=1,
-          fontSize=7.5,
-          leading=11,
+          fontSize=8,
+          leading=12,
           textColor=colors.HexColor("#0f172a"),
       ),
   )
 
-  t_cta = Table([[p_cta]], colWidths=[420])  # LARGURA REDUZIDA (75% DA PÁGINA)
+  t_cta = Table([[p_cta]], colWidths=[450])
   t_cta.setStyle(
       TableStyle([
-          ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#e0f2fe")),
-          ("BOX", (0, 0), (-1, -1), 1, colors.HexColor("#0284c7")),
-          ("PADDING", (0, 0), (-1, -1), 6),
+          ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#f0f9ff")),
+          ("BOX", (0, 0), (-1, -1), 1.25, colors.HexColor("#0284c7")),
+          ("PADDING", (0, 0), (-1, -1), 7),
           ("ALIGN", (0, 0), (-1, -1), "CENTER"),
       ])
   )
   elements.append(t_cta)
 
-  # Geração garantida em 1 página
   doc.build(
       elements,
       onFirstPage=desenhar_cabecalho_rodape_diagnostico,
@@ -946,7 +931,6 @@ def gerar_pdf_diagnostico_individual(lead):
   )
   buffer.seek(0)
   return buffer
-
 
 # -----------------------------------------------------------------------------
 # GERADOR DE PDF DO PANORAMA DE NICHO
@@ -1227,7 +1211,6 @@ def gerar_pdf_panorama_nicho(nicho_nome, df_nicho):
   buffer.seek(0)
   return buffer
 
-
 # -----------------------------------------------------------------------------
 # ESTILIZAÇÃO CSS CUSTOMIZADA
 # -----------------------------------------------------------------------------
@@ -1347,11 +1330,9 @@ st.markdown(
 if "etapa" not in st.session_state:
   st.session_state.etapa = 1
 
-
 def mudar_etapa(nova_etapa):
   st.session_state.etapa = nova_etapa
   st.rerun()
-
 
 # -----------------------------------------------------------------------------
 # BUSCA REAL GOOGLE PLACES API (VARREDURA REGIONAL DINÂMICA COM LOCALIZAÇÃO EXATA)
@@ -1380,7 +1361,6 @@ def enriquecer_redes_sociais(nome_empresa, website):
 
   return instagram_url, facebook_url
 
-
 def obter_lat_lng_cidade(cidade_nome, api_key):
   """Obtém as coordenadas centrais dinâmicas de qualquer cidade digitada."""
   try:
@@ -1392,7 +1372,6 @@ def obter_lat_lng_cidade(cidade_nome, api_key):
   except Exception:
     pass
   return -21.1775, -47.8103
-
 
 def buscar_google_places_api(
     nome_empresa, nicho, cidade, bairro, rua, raio_km, api_key, limite=70
@@ -1414,13 +1393,12 @@ def buscar_google_places_api(
   query_principal = " ".join(termos_base) if termos_base else (nicho or "Comércio")
   raio_metros = int(raio_km * 1000)
 
-  # 2. Monta leque de varredura dinâmico e universal para qualquer cidade
+  # 2. Varredura regional por cidades
   queries_para_executar = []
 
   if bairro_str:
     queries_para_executar.append(f"{query_principal} {bairro_str} {cidade_str}")
   else:
-    # Varredura universal por regiões aplicáveis a qualquer município
     queries_para_executar.extend([
         f"{query_principal} {cidade_str}",
         f"{query_principal} Centro {cidade_str}",
@@ -1438,7 +1416,6 @@ def buscar_google_places_api(
       if len(leads) >= limite:
         break
 
-      # FORÇA A LOCALIZAÇÃO DINÂMICA DA CIDADE PARA O RAIO FUNCIONAR NO GOOGLE
       url_requisicao = (
           "https://maps.googleapis.com/maps/api/place/textsearch/json?"
           f"query={urllib.parse.quote(q_str)}"
@@ -1567,7 +1544,6 @@ def buscar_google_places_api(
     st.error(f"Erro na requisição à API do Google Places: {str(e)}")
   return None
 
-
 def minerar_e_auditar_negocios(
     nome_empresa, nicho, cidade, bairro, rua, raio_km, limite=70
 ):
@@ -1595,7 +1571,6 @@ def minerar_e_auditar_negocios(
         " Cloud."
     )
   return []
-
 
 # -----------------------------------------------------------------------------
 # GERADOR DE CSV EXCEL FORMATADO
@@ -1673,7 +1648,6 @@ def gerar_csv_excel_formatado(dados_leads):
     ])
 
   return output.getvalue().encode("utf-8")
-
 
 # -----------------------------------------------------------------------------
 # BARRA LATERAL
@@ -2826,7 +2800,7 @@ elif st.session_state.etapa == 4:
     )
 
 # -----------------------------------------------------------------------------
-# MÓDULO 5: MAPA & ROTA DE VISITAS (PINS COLORIDOS PROFISSIONAIS)
+# MÓDULO 5: MAPA & ROTA DE VISITAS
 # -----------------------------------------------------------------------------
 elif st.session_state.etapa == 5:
   st.markdown(
