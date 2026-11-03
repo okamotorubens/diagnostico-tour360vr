@@ -2016,7 +2016,7 @@ elif st.session_state.etapa == 3:
           label="📊 Exportar Planilha (.csv)",
           data=csv_bytes,
           file_name=(
-              f"Leads_Completo_CRM_{datetime.now().strftime('%Y%m%d_%H%M')}.csv"
+              f"Leads Completo CRM {datetime.now().strftime('%Y%m%d_%H%M')}.csv"
           ),
           mime="text/csv",
           use_container_width=True,
