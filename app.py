@@ -339,12 +339,12 @@ def buscar_detalhes_concorrente_especifico(nome_concorrente, cidade, api_key):
         if res.get("status") == "OK" and res.get("results"):
             item = res["results"][0]
             place_id = item.get("place_id")
-            url_det = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=website,editorial_summary,opening_hours,photos,types&key={api_key}"
+            url_det = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=website,editorial_summary,opening_hours,photos,types,name,rating,user_ratings_total&key={api_key}"
             res_det = requests.get(url_det).json().get("result", {})
             photos = res_det.get("photos", item.get("photos", []))
             types_lista = res_det.get("types", [])
             return {
-                "nome": item.get("name", nome_concorrente),
+                "nome": res_det.get("name", item.get("name", nome_concorrente)),
                 "nota": float(item.get("rating", 0.0)),
                 "avaliacoes": int(item.get("user_ratings_total", 0)),
                 "tem_fotos_hd": "Sim" if len(photos) >= 10 else "Não",
@@ -358,6 +358,59 @@ def buscar_detalhes_concorrente_especifico(nome_concorrente, cidade, api_key):
             }
     except Exception: pass
     return None
+
+def sugerir_concorrentes_por_proximidade(dados, api_key):
+    if not api_key: return []
+    lat = dados.get("lat")
+    lng = dados.get("lng")
+    categorias = dados.get("categorias_detectadas", [])
+    
+    if not lat or not lng:
+        return []
+    
+    keyword_busca = categorias[0] if categorias else "estabelecimento"
+    url_nearby = (
+        f"https://maps.googleapis.com/maps/api/place/nearbysearch/json?"
+        f"location={lat},{lng}&radius=3000&keyword={requests.utils.quote(keyword_busca)}&key={api_key}"
+    )
+    
+    concorrentes_sugeridos = []
+    try:
+        resp = requests.get(url_nearby, timeout=6).json()
+        if resp.get("status") == "OK":
+            resultados = resp.get("results", [])
+            nome_cliente = str(dados.get("nome", "")).strip().lower()
+            
+            for item in resultados:
+                nome_lugar = item.get("name", "")
+                if nome_lugar.strip().lower() == nome_cliente:
+                    continue
+                
+                place_id = item.get("place_id")
+                url_det = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=website,editorial_summary,opening_hours,photos,types,name,rating,user_ratings_total&key={api_key}"
+                res_det = requests.get(url_det).json().get("result", {})
+                photos = res_det.get("photos", item.get("photos", []))
+                types_lista = res_det.get("types", [])
+                
+                concorrentes_sugeridos.append({
+                    "nome": res_det.get("name", nome_lugar),
+                    "nota": float(item.get("rating", 0.0)),
+                    "avaliacoes": int(item.get("user_ratings_total", 0)),
+                    "tem_fotos_hd": "Sim" if len(photos) >= 10 else "Não",
+                    "tem_tour360": "Não",
+                    "categorias_ok": "Sim" if len(types_lista) >= 3 else "Não",
+                    "horarios_ok": "Sim" if "opening_hours" in res_det else "Não",
+                    "tem_website": "Sim" if res_det.get("website") else "Não",
+                    "tem_descricao": "Sim" if "editorial_summary" in res_det else "Não",
+                    "atributos_ok": "Não",
+                    "respostas_ok": "Não",
+                    "busca_termo": res_det.get("name", nome_lugar)
+                })
+                if len(concorrentes_sugeridos) >= 3:
+                    break
+    except Exception:
+        pass
+    return concorrentes_sugeridos
 
 def enviar_lead_zoho_bigin(dados, score):
     url_bigin = "https://bigin.zoho.com/crm/WebToContactForm"
@@ -569,8 +622,6 @@ class PDFTour360Oficial(FPDF):
         k, hp = self.k, self.h
         _ = self._out(f'{x1*k:.2f} {(hp-y1)*k:.2f} {x2*k:.2f} {(hp-y2)*k:.2f} {x3*k:.2f} {(hp-y3)*k:.2f} c')
 
-
-# FUNÇÃO UTILITÁRIA DE COR PROTEGIDA
 def set_color_safe(pdf_obj, r, g=None, b=None, fn_type='text'):
     try:
         if isinstance(r, (tuple, list)):
@@ -627,7 +678,6 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         set_color_safe(pdf, 15, 23, 42, fn_type='text')
         _ = pdf.cell(0, 5, conv("Gestão de reputação e imagem online para o segmento no Google Maps"), align='C', ln=True)
 
-        # CARD CLIENTE
         w_capa, x_capa, y_capa = 177.0, 21.0, 96.0
         h_capa = 40.0
 
@@ -657,7 +707,6 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         _ = pdf.set_x(x_capa)
         _ = pdf.cell(w_capa, 5.0, conv(f"Telefone: {dados.get('telefone') or 'N/I'}   |   {site_txt}"), align='C', ln=True)
 
-        # IMAGEM PRINCIPAL
         y_foto, h_container, w_container = 141.0, 90.0, 177.0
         foto_renderizada = False
 
@@ -695,7 +744,6 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             set_color_safe(pdf, 100, 116, 139, fn_type='text')
             _ = pdf.cell(w_container, 6, conv("[ IMAGEM DA FICHA GOOGLE DO CLIENTE ]"), align='C', ln=True)
 
-        # BANNER DE ALERTA INFERIOR
         w_alerta = 177.0
         x_alerta = 21.0
         y_alerta = y_foto + h_container + 6.0
@@ -739,7 +787,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         _ = pdf.set_x(x_alerta)
         _ = pdf.cell(w_alerta, 4.0, conv(sub_txt_2), align='C', ln=True)
 
-    # PÁGINA 2: AUDITORIA (Com espaçamentos otimizados e card proporcional)
+    # PÁGINA 2: AUDITORIA
     if 2 in paginas_selecionadas:
         _ = pdf.add_page()
         
@@ -1045,7 +1093,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             set_color_safe(pdf, 51, 65, 85, fn_type='text')
             _ = pdf.multi_cell(w_extra - 8, 3.4, conv(plano_acao_extra), align='L')
 
-    # PÁGINA 3: MAPEAMENTO GEOGRÁFICO DE RAIO DE ATRAÇÃO
+    # PÁGINA 3: MAPA
     if 3 in paginas_selecionadas:
         _ = pdf.add_page()
         
@@ -1270,7 +1318,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         _ = pdf.set_x(25)
         _ = pdf.cell(169, 3.2, conv(txt_oport_p2), ln=True)
 
-    # PÁGINA 4: PROPOSTA COMERCIAL
+    # PÁGINA 4: PROPOSTA
     if 4 in paginas_selecionadas:
         _ = pdf.add_page()
         
@@ -1326,7 +1374,6 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         h_card_pro = 25.0 + (qtd_itens_pro * 8.0) + 4.0
         h_card_gestao = 25.0 + (qtd_itens_gestao * 8.0) + 4.0
 
-        # Card 1: Start
         set_color_safe(pdf, 255, 255, 255, fn_type='fill')
         set_color_safe(pdf, 226, 232, 240, fn_type='draw')
         _ = pdf.set_line_width(0.3)
@@ -1360,7 +1407,6 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         
         desenhar_pilulas_itens(pdf, x1, y_p + 25.0, planos.get('start_itens', ''))
 
-        # Card 2: Pro
         set_color_safe(pdf, 0, 51, 102, fn_type='fill')
         set_color_safe(pdf, 0, 51, 102, fn_type='draw')
         _ = pdf.set_line_width(0.3)
@@ -1403,7 +1449,6 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
 
         desenhar_pilulas_itens(pdf, x2, y_p + 25.0, planos.get('pro_itens', ''))
 
-        # Card 3: Gestão Mensal
         set_color_safe(pdf, 255, 255, 255, fn_type='fill')
         set_color_safe(pdf, 226, 232, 240, fn_type='draw')
         _ = pdf.set_line_width(0.3)
@@ -1789,7 +1834,7 @@ if etapa_atual == 1:
             opcoes = [f"{u.get('name')} - {u.get('formatted_address')}" for u in st.session_state['unidades_encontradas']]
             escolha = st.selectbox("Selecione a unidade exata:", opcoes, key="select_unidade_exata")
             
-            if st.button("📌 Carregar Dados da Unidade", use_container_width=True, key="btn_carregar_unidade", type="secondary"):
+            if st.button("📌 Carregar Dados da Unidade & Sugerir Concorrentes", use_container_width=True, key="btn_carregar_unidade", type="secondary"):
                 idx = opcoes.index(escolha)
                 u = st.session_state['unidades_encontradas'][idx]
                 place_id = u.get("place_id")
@@ -1822,7 +1867,14 @@ if etapa_atual == 1:
                         st.session_state['dados']['categorias_detectadas'] = types_lista
                         st.session_state['dados']['foto_reference'] = photos[0].get("photo_reference") if photos else ""
 
-                        st.success("Dados da unidade carregados com sucesso!")
+                        # BUSCA AUTOMÁTICA DE CONCORRENTES POR PROXIMIDADE E NICHO
+                        sugestoes = sugerir_concorrentes_por_proximidade(st.session_state['dados'], API_KEY_GOOGLE)
+                        if sugestoes:
+                            while len(sugestoes) < 3:
+                                sugestoes.append({"nome": "", "nota": 0.0, "avaliacoes": 0, "busca_termo": "", "cidade": "", "tem_fotos_hd": "Não", "tem_tour360": "Não", "categorias_ok": "Não", "horarios_ok": "Não", "tem_website": "Não", "tem_descricao": "Não", "atributos_ok": "Não", "respostas_ok": "Não"})
+                            st.session_state['concorrentes'] = sugestoes[:3]
+
+                        st.success("Dados carregados e concorrentes do mesmo nicho sugeridos com sucesso!")
                         st.rerun()
                     except Exception as e:
                         st.error(f"Erro ao obter detalhes: {e}")
@@ -1857,10 +1909,10 @@ if etapa_atual == 1:
             st.session_state['etapa_atual'] = 2
             st.rerun()
 
-# ETAPA 2: AVALIAÇÃO DE CONCORRENTES
+# ETAPA 2: AVALIAÇÃO DE CONCORRENTES (Com Sugestão Inteligente e Edição Manual)
 elif etapa_atual == 2:
-    st.markdown("<div class='dashboard-card'><div class='card-title'>⚔️ 2. AVALIAÇÃO DE CONCORRENTES DO SEGMENTO</div>", unsafe_allow_html=True)
-    st.caption("Digite o nome da empresa e a cidade para consultar a nota e dados no Google Maps.")
+    st.markdown("<div class='dashboard-card'><div class='card-title'>⚔️ 2. VALIDAÇÃO E EDIÇÃO DE CONCORRENTES</div>", unsafe_allow_html=True)
+    st.caption("O sistema sugeriu automaticamente concorrentes do mesmo nicho/categoria com base na localização. Valide, edite ou substitua caso necessário.")
 
     with st.form(key="form_concorrentes_fix"):
         inputs_conc = []
@@ -1869,11 +1921,11 @@ elif etapa_atual == 2:
             val_nome = st.session_state['concorrentes'][i].get('busca_termo') or st.session_state['concorrentes'][i].get('nome', '')
             val_cid = st.session_state['concorrentes'][i].get('cidade', '')
             
-            nome_c = col_c1.text_input(f"Concorrente #{i+1}:", value=val_nome, key=f"c_input_nome_{i}")
-            cid_c = col_c2.text_input(f"Cidade/Região #{i+1}:", value=val_cid, key=f"c_input_cid_{i}")
+            nome_c = col_c1.text_input(f"Concorrente #{i+1} (Nome):", value=val_nome, key=f"c_input_nome_{i}")
+            cid_c = col_c2.text_input(f"Cidade/Bairro #{i+1}:", value=val_cid, key=f"c_input_cid_{i}")
             inputs_conc.append((nome_c, cid_c))
 
-        btn_consultar = st.form_submit_button("🔎 Mapear Concorrentes via API", use_container_width=True)
+        btn_consultar = st.form_submit_button("🔎 Atualizar/Validar Concorrentes via API", use_container_width=True)
 
         if btn_consultar:
             if API_KEY_GOOGLE:
@@ -1891,19 +1943,19 @@ elif etapa_atual == 2:
                             st.session_state['concorrentes'][idx]['nome'] = nome_c
                             
                 if encontrados > 0:
-                    st.success(f"{encontrados} concorrente(s) atualizado(s) com sucesso!")
+                    st.success(f"{encontrados} concorrente(s) validado(s) com sucesso!")
                 else:
-                    st.warning("Nenhum dado retornado. Verifique a grafia do nome e cidade.")
+                    st.warning("Nenhum dado retornado. Verifique a grafia do nome.")
                 st.rerun()
             else:
                 st.error("Chave GOOGLE_API_KEY não localizada.")
 
     concorrentes_validos = [c for c in st.session_state['concorrentes'] if c.get('nome', '').strip() != '']
     if concorrentes_validos:
-        st.markdown("<div style='margin-top:10px;'><b>Resultado da Consulta:</b></div>", unsafe_allow_html=True)
+        st.markdown("<div style='margin-top:10px;'><b>Concorrentes Atuais na Tabela do PDF:</b></div>", unsafe_allow_html=True)
         for c_item in concorrentes_validos:
             score_c = calcular_score_concorrente(c_item)
-            st.markdown(f"• **{c_item['nome']}** — ⭐ Nota: `{float(c_item.get('nota', 0.0)):.1f}` ({c_item.get('avaliacoes', 0)} avaliada(s)) | Score: **{score_c}/100**")
+            st.markdown(f"• **{c_item['nome']}** — ⭐ Nota: `{float(c_item.get('nota', 0.0)):.1f}` ({c_item.get('avaliacoes', 0)} avaliações) | Score: **{score_c}/100**")
 
     st.markdown("</div>", unsafe_allow_html=True)
 
@@ -1999,7 +2051,6 @@ elif etapa_atual == 5:
         if tel_cliente and not tel_cliente.startswith("55"):
             tel_cliente = f"55{tel_cliente}"
 
-        # DEFINIÇÃO DO NOME DO ARQUIVO PDF
         if len(paginas_escolhidas) <= 3:
             nome_arquivo_pdf = f"Diagnóstico Preliminar - {nome_empresa_formatado}.pdf"
         else:
