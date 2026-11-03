@@ -2174,7 +2174,7 @@ elif st.session_state.etapa == 3:
         st.download_button(
             label="📄 Baixar Diagnóstico (.pdf)",
             data=pdf_bytes_ind,
-            file_name=f"Diagnostico_{lead['nome'].replace(' ', '_')}.pdf",
+            file_name=f"Diagnostico {lead['nome'].replace(' ', '_')}.pdf",
             mime="application/pdf",
             key=f"dl_pdf_{lead['id']}",
             use_container_width=True,
