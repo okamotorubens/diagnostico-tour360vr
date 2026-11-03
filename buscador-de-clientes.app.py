@@ -485,13 +485,13 @@ def revalidar_ficha_google(lead):
     return lead
 
 # -----------------------------------------------------------------------------
-# GERADOR DE PDF DO DIAGNÓSTICO (LAYOUT MODERNO DE PÁGINA ÚNICA)
+# GERADOR DE PDF DO DIAGNÓSTICO (DIAGRAMAÇÃO PROFISSIONAL A4)
 # -----------------------------------------------------------------------------
 def desenhar_cabecalho_rodape_diagnostico(canvas, doc):
   canvas.saveState()
   styles = getSampleStyleSheet()
 
-  # --- CABEÇALHO COM LOGO PNG AMPLIADA ---
+  # --- CABEÇALHO ---
   logo_tour_path = (
       "assests/logo_tour_transparente.png"
       if os.path.exists("assests/logo_tour_transparente.png")
@@ -507,9 +507,9 @@ def desenhar_cabecalho_rodape_diagnostico(canvas, doc):
       canvas.drawImage(
           logo_tour_path,
           36,
-          732,
-          width=105,
-          height=45,
+          728,
+          width=115,
+          height=50,
           preserveAspectRatio=True,
           mask="auto",
       )
@@ -520,8 +520,8 @@ def desenhar_cabecalho_rodape_diagnostico(canvas, doc):
       "HeaderDiagnostico",
       parent=styles["Normal"],
       fontName="Helvetica-Bold",
-      fontSize=9,
-      leading=11.5,
+      fontSize=10,
+      leading=13,
       textColor=colors.HexColor("#0f172a"),
       alignment=2,  # ALINHADO À DIREITA
   )
@@ -531,25 +531,25 @@ def desenhar_cabecalho_rodape_diagnostico(canvas, doc):
       " GOOGLE",
       header_text_style,
   )
-  head_table = Table([[head_p]], colWidths=[390])
-  head_table.wrapOn(canvas, 390, 32)
-  head_table.drawOn(canvas, 186, 738)
+  head_table = Table([[head_p]], colWidths=[380])
+  head_table.wrapOn(canvas, 380, 36)
+  head_table.drawOn(canvas, 196, 734)
 
-  # Linha divisória fina em tom azul claro
-  canvas.setStrokeColor(colors.HexColor("#e2e8f0"))
-  canvas.setLineWidth(0.5)
-  canvas.line(36, 726, 576, 726)
+  # Linha divisória em tom azul acinzentado
+  canvas.setStrokeColor(colors.HexColor("#cbd5e1"))
+  canvas.setLineWidth(0.75)
+  canvas.line(36, 720, 576, 720)
 
-  # --- RODAPÉ FIXO (MANTIDO ORIGINAL: EM PRETO E SEM NEGRITO) ---
-  canvas.setStrokeColor(colors.HexColor("#e2e8f0"))
-  canvas.setLineWidth(0.5)
-  canvas.line(36, 30, 576, 30)
+  # --- RODAPÉ (MANTIDO EM PRETO/CINZA E SEM NEGRITO) ---
+  canvas.setStrokeColor(colors.HexColor("#cbd5e1"))
+  canvas.setLineWidth(0.75)
+  canvas.line(36, 32, 576, 32)
 
   style_footer = ParagraphStyle(
       "FooterLinkStyle",
       parent=styles["Normal"],
       fontName="Helvetica",
-      fontSize=7.5,
+      fontSize=8,
       textColor=colors.HexColor("#475569"),
       alignment=1,  # Centralizado
   )
@@ -558,7 +558,7 @@ def desenhar_cabecalho_rodape_diagnostico(canvas, doc):
   footer_html = f'<a href="mailto:{EMAIL_CONTATO}" color="#475569">{EMAIL_CONTATO}</a> &nbsp;|&nbsp; <a href="https://{WEBSITE_OFICIAL}" color="#475569">{WEBSITE_OFICIAL}</a> &nbsp;|&nbsp; <a href="https://wa.me/55{zap_clean}" color="#475569">WhatsApp: {CONTATO_WHATSAPP}</a>'
   p_footer = Paragraph(footer_html, style_footer)
   t_footer = Table([[p_footer]], colWidths=[540])
-  t_footer.wrapOn(canvas, 540, 18)
+  t_footer.wrapOn(canvas, 540, 20)
   t_footer.drawOn(canvas, 36, 14)
 
   canvas.restoreState()
@@ -567,14 +567,14 @@ def desenhar_cabecalho_rodape_diagnostico(canvas, doc):
 def gerar_pdf_diagnostico_individual(lead):
   buffer = io.BytesIO()
 
-  # Configuração estrita para fechar em 1 página A4
+  # Configuração precisa para preencher 1 página A4 com margens equilibradas
   doc = SimpleDocTemplate(
       buffer,
       pagesize=letter,
       rightMargin=36,
       leftMargin=36,
-      topMargin=68,
-      bottomMargin=38,
+      topMargin=75,
+      bottomMargin=42,
       title=f"Diagnóstico de Presença Digital - {lead['nome']}",
       author="Tour360VR",
   )
@@ -585,36 +585,36 @@ def gerar_pdf_diagnostico_individual(lead):
       "NormCustom",
       parent=styles["Normal"],
       fontName="Helvetica",
-      fontSize=8,
-      leading=10.5,
+      fontSize=8.5,
+      leading=11.5,
       textColor=colors.HexColor("#334155"),
   )
   style_title = ParagraphStyle(
       "TitleDiag",
       parent=styles["Heading1"],
-      fontSize=12,
-      leading=14,
+      fontSize=13,
+      leading=15,
       textColor=colors.HexColor("#0f172a"),
       fontName="Helvetica-Bold",
-      alignment=1,  # CENTRALIZADO
+      alignment=1,
   )
   style_sub = ParagraphStyle(
       "SubDiag",
       parent=style_normal,
-      fontSize=8,
-      leading=11,
+      fontSize=9.5,  # AUMENTADO A PEDIDO
+      leading=13,  # MAIOR ENTRELINHA
       textColor=colors.HexColor("#475569"),
-      alignment=1,  # CENTRALIZADO
+      alignment=1,
   )
   style_section_heading = ParagraphStyle(
       "SectionHead",
       parent=styles["Heading2"],
-      fontSize=8.5,
-      leading=11,
+      fontSize=9,
+      leading=12,
       textColor=colors.HexColor("#0f172a"),
       fontName="Helvetica-Bold",
-      spaceBefore=6,
-      spaceAfter=3,
+      spaceBefore=8,
+      spaceAfter=4,
   )
 
   auditoria = calcular_score_e_auditoria(
@@ -632,6 +632,23 @@ def gerar_pdf_diagnostico_individual(lead):
   av_total = lead.get("total_avaliacoes", 0)
   nota_val = lead.get("nota", 0.0)
 
+  # --- CORES DINÂMICAS PARA O QUADRO DE ATENÇÃO CONFORME O SCORE ---
+  if score_saude < 50:
+    # Vermelho Crítico
+    bg_alerta = "#fef2f2"
+    border_alerta = "#ef4444"
+    txt_alerta_color = "#991b1b"
+  elif score_saude < 80:
+    # Amarelo/Amber Alerta
+    bg_alerta = "#fffbeb"
+    border_alerta = "#f59e0b"
+    txt_alerta_color = "#92400e"
+  else:
+    # Verde Saudável
+    bg_alerta = "#f0fdf4"
+    border_alerta = "#22c55e"
+    txt_alerta_color = "#166534"
+
   if score_saude >= 80:
     cor_score = "#16a34a"
   elif score_saude >= 50:
@@ -643,7 +660,7 @@ def gerar_pdf_diagnostico_individual(lead):
 
   # 1. TÍTULO CENTRALIZADO
   elements.append(Paragraph("DIAGNÓSTICO DE PRESENÇA DIGITAL", style_title))
-  elements.append(Spacer(1, 6))
+  elements.append(Spacer(1, 8))
 
   # 2. CONTAINER COM DADOS DA EMPRESA
   dados_empresa_html = (
@@ -658,66 +675,66 @@ def gerar_pdf_diagnostico_individual(lead):
   t_dados.setStyle(
       TableStyle([
           ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#f8fafc")),
-          ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#cbd5e1")),
-          ("PADDING", (0, 0), (-1, -1), 5),
+          ("BOX", (0, 0), (-1, -1), 0.75, colors.HexColor("#cbd5e1")),
+          ("PADDING", (0, 0), (-1, -1), 6),
       ])
   )
   elements.append(t_dados)
-  elements.append(Spacer(1, 6))
+  elements.append(Spacer(1, 10))
 
-  # 3. SUBTÍTULO DIVIDIDO EM 2 LINHAS
+  # 3. SUBTÍTULO COM FONTE AMPLIADA
   subtitulo_html = "Este diagnóstico foi elaborado pelo Tour360VR com base em inteligência de mercado local<br/>para destacar pontos cegos na sua vitrine digital do Google."
   elements.append(Paragraph(subtitulo_html, style_sub))
-  elements.append(Spacer(1, 8))
+  elements.append(Spacer(1, 12))
 
-  # 4. QUADRO DE ATENÇÃO (COM AS CORES COMBINADAS: FUNDO AZUL CLARO #e0f2fe E BORDA AZUL #0284c7)
+  # 4. QUADRO DE ATENÇÃO (DINÂMICO CONFORME A NOTA DE SAÚDE DA FICHA)
   txt_alerta = f"SEU PERFIL TEM NOTA SÓLIDA DE {nota_val} COM {av_total} AVALIAÇÕES NO GOOGLE, MAS A FALTA DE EXPERIÊNCIA IMERSIVA DEIXA DINHEIRO NA MESA."
   p_alerta = Paragraph(
-      f"<b><font color='#0369a1' size='8.5'>{txt_alerta}</font></b>",
-      ParagraphStyle("AlertaTxt", parent=style_normal, alignment=1, leading=11.5),
+      f"<b><font color='{txt_alerta_color}' size='9'>{txt_alerta}</font></b>",
+      ParagraphStyle("AlertaTxt", parent=style_normal, alignment=1, leading=13),
   )
   t_alerta = Table([[p_alerta]], colWidths=[540])
   t_alerta.setStyle(
       TableStyle([
-          ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#e0f2fe")),
-          ("BOX", (0, 0), (-1, -1), 0.75, colors.HexColor("#0284c7")),
-          ("PADDING", (0, 0), (-1, -1), 6),
+          ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor(bg_alerta)),
+          ("BOX", (0, 0), (-1, -1), 1, colors.HexColor(border_alerta)),
+          ("PADDING", (0, 0), (-1, -1), 8),
       ])
   )
   elements.append(t_alerta)
-  elements.append(Spacer(1, 8))
+  elements.append(Spacer(1, 12))
 
   # 5. QUADRO DE SCORE GERAL E AVALIAÇÕES
   p_card_score = Paragraph(
-      f"<b>SCORE GERAL</b><br/><font size='16'"
+      f"<b>SCORE GERAL</b><br/><font size='18'"
       f" color='{cor_score}'><b>{score_saude} / 100</b></font>",
       ParagraphStyle(
-          "CScore", parent=style_normal, alignment=1, leading=16, fontSize=7.5
+          "CScore", parent=style_normal, alignment=1, leading=18, fontSize=8.5
       ),
   )
   p_card_nota = Paragraph(
-      f"<b>AVALIAÇÃO DO GOOGLE</b><br/><font size='14'"
-      f" color='#1e293b'><b>{nota_val} ★</b></font><br/><font size='6.5'"
-      f" color='#64748b'>({av_total} avaliações)</font>",
+      f"<b>AVALIAÇÃO DO GOOGLE</b><br/><font size='16'"
+      f" color='#0f172a'><b>{nota_val} ★</b></font><br/><font size='7.5'"
+      f" color='#64748b'>({av_total} avaliações públicas)</font>",
       ParagraphStyle(
-          "CNota", parent=style_normal, alignment=1, leading=12, fontSize=7.5
+          "CNota", parent=style_normal, alignment=1, leading=14, fontSize=8.5
       ),
   )
   t_cards = Table([[p_card_score, p_card_nota]], colWidths=[265, 265])
   t_cards.setStyle(
       TableStyle([
           ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#f8fafc")),
-          ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#cbd5e1")),
+          ("BOX", (0, 0), (-1, -1), 0.75, colors.HexColor("#cbd5e1")),
           ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#e2e8f0")),
-          ("PADDING", (0, 0), (-1, -1), 5),
+          ("PADDING", (0, 0), (-1, -1), 7),
           ("ALIGN", (0, 0), (-1, -1), "CENTER"),
           ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
       ])
   )
   elements.append(t_cards)
-  elements.append(Spacer(1, 8))
+  elements.append(Spacer(1, 12))
 
-  # 6. TABELA DOS 9 ITENS DE DIAGNÓSTICO (FUNDO DO CABEÇALHO EM AZUL MARINHO #0f172a E TEXTO BRANCO)
+  # 6. TABELA DOS 9 ITENS DE DIAGNÓSTICO (CABEÇALHO AZUL MARINHO #0f172a E TEXTO BRANCO)
   itens_9 = [
       (
           "1. Fotos e Resolução Visual",
@@ -771,9 +788,9 @@ def gerar_pdf_diagnostico_individual(lead):
   ]
 
   style_cell_head = ParagraphStyle(
-      "CellHead", parent=style_normal, fontName="Helvetica-Bold", color=colors.white, fontSize=8
+      "CellHead", parent=style_normal, fontName="Helvetica-Bold", color=colors.white, fontSize=8.5
   )
-  style_cell_tb = ParagraphStyle("CellTB", parent=style_normal, fontSize=7.5)
+  style_cell_tb = ParagraphStyle("CellTB", parent=style_normal, fontSize=8)
   style_cell_bold = ParagraphStyle(
       "CellTBBold", parent=style_cell_tb, fontName="Helvetica-Bold"
   )
@@ -786,7 +803,7 @@ def gerar_pdf_diagnostico_individual(lead):
 
   for it, st_tag, obs in itens_9:
     c_color = (
-        "#15803d"
+        "#16a34a"
         if st_tag in ["Atende", "Completo", "Atualizado", "Ativo"]
         else "#dc2626"
     )
@@ -804,13 +821,13 @@ def gerar_pdf_diagnostico_individual(lead):
           ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#0f172a")),  # AZUL MARINHO PROFUNDO
           ("BACKGROUND", (0, 1), (-1, -1), colors.white),
           ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#f1f5f9")),
-          ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#cbd5e1")),
-          ("TOPPADDING", (0, 0), (-1, -1), 3),
-          ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+          ("BOX", (0, 0), (-1, -1), 0.75, colors.HexColor("#cbd5e1")),
+          ("TOPPADDING", (0, 0), (-1, -1), 4),
+          ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
       ])
   )
   elements.append(t_9)
-  elements.append(Spacer(1, 8))
+  elements.append(Spacer(1, 12))
 
   # 7. PONTOS CRÍTICOS IDENTIFICADOS NA VITRINE DIGITAL
   elements.append(
@@ -819,7 +836,7 @@ def gerar_pdf_diagnostico_individual(lead):
           style_section_heading,
       )
   )
-  elements.append(Spacer(1, 3))
+  elements.append(Spacer(1, 4))
 
   criticos_lista = (
       lead["pontos_criticos"]
@@ -841,12 +858,12 @@ def gerar_pdf_diagnostico_individual(lead):
           ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#fef2f2")),
           ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#fecaca")),
           ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#fee2e2")),
-          ("TOPPADDING", (0, 0), (-1, -1), 3),
-          ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+          ("TOPPADDING", (0, 0), (-1, -1), 4),
+          ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
       ])
   )
   elements.append(t_criticos)
-  elements.append(Spacer(1, 8))
+  elements.append(Spacer(1, 12))
 
   # 8. OPORTUNIDADES DE TRANSFORMAÇÃO E RETORNO COMERCIAL
   elements.append(
@@ -855,7 +872,7 @@ def gerar_pdf_diagnostico_individual(lead):
           style_section_heading,
       )
   )
-  elements.append(Spacer(1, 3))
+  elements.append(Spacer(1, 4))
 
   op_lista = (
       lead["oportunidades"]
@@ -877,14 +894,14 @@ def gerar_pdf_diagnostico_individual(lead):
           ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#f0fdf4")),
           ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#bbf7d0")),
           ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#dcfce7")),
-          ("TOPPADDING", (0, 0), (-1, -1), 3),
-          ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+          ("TOPPADDING", (0, 0), (-1, -1), 4),
+          ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
       ])
   )
   elements.append(t_op)
-  elements.append(Spacer(1, 10))
+  elements.append(Spacer(1, 14))
 
-  # 9. CONTAINER DE CTA MODERNO (LARGURA DESTE REDUZIDA, BOTÃO VERDE MÉDIO #16a34a COM TEXTO EM BRANCO)
+  # 9. CONTAINER DE CTA COM BOTÃO VERDE DENTRO DO CARD
   zap_num = (
       lead.get("whatsapp")
       or "".join(filter(str.isdigit, lead.get("telefone", "")))
@@ -892,37 +909,55 @@ def gerar_pdf_diagnostico_individual(lead):
   )
   link_wa = f"https://wa.me/55{zap_num}?text=Olá!%20Gostaria%20de%20solicitar%20a%20implantação%20do%20Tour%20Virtual%20360°%20para%20a%20{urllib.parse.quote(lead['nome'])}"
 
-  cta_html = f"""
-    <b>🚀 VAMOS TRANSFORMAR A SUA FICHA EM UM ÍMÃ DE CLIENTES?</b><br/>
-    Implante o <b>Tour Virtual 360°</b> e a reestruturação profissional do perfil no Google Maps.<br/>
-    <div style="margin-top: 5px;">
-        <a href="{link_wa}" color="#ffffff"><b><font size="8.5">💬 CLIQUE AQUI E FALE DIRETO NO WHATSAPP: {CONTATO_WHATSAPP}</font></b></a>
-    </div>
-    """
-  p_cta = Paragraph(
-      cta_html,
+  # Texto de chamada interno
+  p_cta_title = Paragraph(
+      "<b>🚀 VAMOS TRANSFORMAR A SUA FICHA EM UM ÍMÃ DE CLIENTES?</b><br/>"
+      "<font color='#475569'>Implante o Tour Virtual 360° e a reestruturação profissional do perfil no Google Maps.</font>",
       ParagraphStyle(
-          "CtaTxt",
+          "CtaTitle",
           parent=style_normal,
           alignment=1,
-          fontSize=8,
+          fontSize=8.5,
           leading=12,
           textColor=colors.HexColor("#0f172a"),
       ),
   )
 
-  t_cta = Table([[p_cta]], colWidths=[440])  # LARGURA REDUZIDA E CANTOS LIMPOS
+  # Botão Verde de Ação com Link do WhatsApp
+  p_btn_wa = Paragraph(
+      f'<a href="{link_wa}" color="#ffffff"><b>💬 CLIQUE AQUI E FALE DIRETO NO WHATSAPP: {CONTATO_WHATSAPP}</b></a>',
+      ParagraphStyle(
+          "WaBtnTxt",
+          parent=style_normal,
+          alignment=1,
+          fontSize=8.5,
+          leading=11,
+          textColor=colors.white,
+      ),
+  )
+
+  t_btn_wa = Table([[p_btn_wa]], colWidths=[380])
+  t_btn_wa.setStyle(
+      TableStyle([
+          ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#16a34a")),  # VERDE MÉDIO VIVO
+          ("BOX", (0, 0), (-1, -1), 1, colors.HexColor("#15803d")),
+          ("PADDING", (0, 0), (-1, -1), 6),
+          ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+      ])
+  )
+
+  # Tabela pai do CTA (Com largura ajustada de 420pt)
+  t_cta = Table([[p_cta_title], [Spacer(1, 6)], [t_btn_wa]], colWidths=[420])
   t_cta.setStyle(
       TableStyle([
           ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#f0f9ff")),
-          ("BOX", (0, 0), (-1, -1), 1, colors.HexColor("#0284c7")),
-          ("PADDING", (0, 0), (-1, -1), 7),
+          ("BOX", (0, 0), (-1, -1), 1.25, colors.HexColor("#0284c7")),
+          ("PADDING", (0, 0), (-1, -1), 8),
           ("ALIGN", (0, 0), (-1, -1), "CENTER"),
       ])
   )
   elements.append(t_cta)
 
-  # Geração em folha A4 única
   doc.build(
       elements,
       onFirstPage=desenhar_cabecalho_rodape_diagnostico,
@@ -1642,7 +1677,7 @@ def gerar_csv_excel_formatado(dados_leads):
         anotacoes_limpas,
         criticos_str,
         row.get("score_oportunidade", ""),
-  ])
+    ])
 
   return output.getvalue().encode("utf-8")
 
