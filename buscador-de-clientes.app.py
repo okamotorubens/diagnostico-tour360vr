@@ -12,7 +12,7 @@ import urllib.parse
 import folium
 import pandas as pd
 from PIL import Image as PILImage
-from reportlab.graphics.shapes import Drawing, Rect, String
+from reportlab.graphics.shapes import Circle, Drawing, Line, Rect, String
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
@@ -492,60 +492,85 @@ def revalidar_ficha_google(lead):
 
 
 # -----------------------------------------------------------------------------
-# GERADOR DE PDF DO DIAGNÓSTICO
+# GERADOR DE PDF DO DIAGNÓSTICO (ESTILO PROFISSIONAL ANEXADO - 3 PÁGINAS)
 # -----------------------------------------------------------------------------
 def desenhar_cabecalho_rodape_diagnostico(canvas, doc):
   canvas.saveState()
   styles = getSampleStyleSheet()
 
-  logo_tour = (
-      "logo_tour_transparente.png"
-      if os.path.exists("logo_tour_transparente.png")
-      else None
-  )
-  if logo_tour:
-    img_logo = Image(logo_tour, width=130, height=40, kind="proportional")
-    img_logo.wrapOn(canvas, 130, 40)
-    img_logo.drawOn(canvas, 36, 735)
+  # Cabeçalho a partir da página 2
+  if doc.page > 1:
+    logo_tour = (
+        "logo_tour_transparente.png"
+        if os.path.exists("logo_tour_transparente.png")
+        else None
+    )
+    if logo_tour:
+      try:
+        canvas.drawImage(
+            logo_tour,
+            36,
+            732,
+            width=80,
+            height=45,
+            preserveAspectRatio=True,
+            mask="auto",
+        )
+      except Exception:
+        pass
 
-  header_text_style = ParagraphStyle(
-      "HeaderDiagnostico",
-      parent=styles["Normal"],
-      fontName="Helvetica-Bold",
-      fontSize=10,
-      leading=12,
-      textColor=colors.HexColor("#1A237E"),
-      alignment=2,
-  )
+    canvas.setFont("Helvetica-Bold", 11)
+    canvas.setFillColor(colors.HexColor("#0f172a"))
+    canvas.drawString(130, 756, "Tour360VR")
 
-  head_p = Paragraph(
-      "ESTUDO DE INTELIGÊNCIA DE MERCADO LOCAL<br/>E PRESENÇA DIGITAL NO GOOGLE",
-      header_text_style,
-  )
-  head_table = Table([[head_p]], colWidths=[380])
-  head_table.wrapOn(canvas, 380, 40)
-  head_table.drawOn(canvas, 196, 735)
+    canvas.setFont("Helvetica", 8.5)
+    canvas.setFillColor(colors.HexColor("#64748b"))
+    canvas.drawString(
+        130, 744, "Gestão de Perfil & Diagnóstico do Google Meu Negócio"
+    )
 
+    canvas.setStrokeColor(colors.HexColor("#e2e8f0"))
+    canvas.setLineWidth(0.75)
+    canvas.line(36, 730, 576, 730)
+
+  # Rodapé em todas as páginas
   canvas.setStrokeColor(colors.HexColor("#cbd5e1"))
-  canvas.setLineWidth(0.75)
-  canvas.line(36, 725, 576, 725)
-
+  canvas.setLineWidth(0.5)
   canvas.line(36, 42, 576, 42)
 
   style_footer = ParagraphStyle(
-      "FooterLinkStyle",
+      "FooterStyleDiag",
       parent=styles["Normal"],
       fontName="Helvetica",
-      fontSize=8.5,
+      fontSize=8,
+      leading=10,
       textColor=colors.HexColor("#475569"),
-      alignment=1,
   )
 
-  footer_html = f'<a href="https://{WEBSITE_OFICIAL}" color="#475569">{WEBSITE_OFICIAL}</a> | <a href="mailto:{EMAIL_CONTATO}" color="#475569">{EMAIL_CONTATO}</a> | <a href="https://wa.me/5516991332121" color="#475569">{CONTATO_WHATSAPP}</a>'
-  p_footer = Paragraph(footer_html, style_footer)
-  t_footer = Table([[p_footer]], colWidths=[540])
-  t_footer.wrapOn(canvas, 540, 20)
-  t_footer.drawOn(canvas, 36, 22)
+  p_footer_left = Paragraph(
+      f"{EMAIL_CONTATO} &nbsp;|&nbsp; {WEBSITE_OFICIAL} &nbsp;|&nbsp; WhatsApp:"
+      f" {CONTATO_WHATSAPP}",
+      style_footer,
+  )
+  p_footer_right = Paragraph(
+      f"Página {doc.page} de 3",
+      ParagraphStyle(
+          "FooterRight", parent=style_footer, alignment=2, fontName="Helvetica"
+      ),
+  )
+
+  t_foot = Table([[p_footer_left, p_footer_right]], colWidths=[430, 110])
+  t_foot.setStyle(
+      TableStyle([
+          ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+          ("LEFTPADDING", (0, 0), (-1, -1), 0),
+          ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+          ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+          ("TOPPADDING", (0, 0), (-1, -1), 0),
+      ])
+  )
+  t_foot.wrapOn(canvas, 540, 20)
+  t_foot.drawOn(canvas, 36, 25)
 
   canvas.restoreState()
 
@@ -558,7 +583,7 @@ def gerar_pdf_diagnostico_individual(lead):
       pagesize=letter,
       rightMargin=36,
       leftMargin=36,
-      topMargin=75,
+      topMargin=55,
       bottomMargin=50,
       title=f"Diagnóstico de Presença Digital - {lead['nome']}",
       author="Tour360VR",
@@ -566,55 +591,18 @@ def gerar_pdf_diagnostico_individual(lead):
 
   styles = getSampleStyleSheet()
 
-  style_title = ParagraphStyle(
-      "TitleModelo",
-      parent=styles["Heading1"],
-      fontSize=12,
-      leading=15,
-      textColor=colors.HexColor("#0f172a"),
-      fontName="Helvetica-Bold",
-      alignment=0,
-      spaceAfter=4,
-  )
-  style_sub = ParagraphStyle(
-      "SubModelo",
+  # Estilos Base
+  style_normal = ParagraphStyle(
+      "NormCustom",
       parent=styles["Normal"],
-      fontSize=8.5,
-      leading=11,
-      textColor=colors.HexColor("#475569"),
-      alignment=0,
-      spaceAfter=12,
+      fontName="Helvetica",
+      fontSize=9,
+      leading=12,
+      textColor=colors.HexColor("#334155"),
   )
-  style_section_heading = ParagraphStyle(
-      "SectionHead",
-      parent=styles["Heading2"],
-      fontSize=10,
-      leading=13,
-      textColor=colors.HexColor("#1A237E"),
-      fontName="Helvetica-Bold",
-      spaceBefore=10,
-      spaceAfter=6,
+  style_bold = ParagraphStyle(
+      "BoldCustom", parent=style_normal, fontName="Helvetica-Bold"
   )
-  style_cell = ParagraphStyle(
-      "CellText",
-      parent=styles["Normal"],
-      fontSize=8,
-      leading=10,
-      textColor=colors.HexColor("#1e293b"),
-  )
-  style_cell_bold = ParagraphStyle(
-      "CellTextBold", parent=style_cell, fontName="Helvetica-Bold"
-  )
-  style_cell_header = ParagraphStyle(
-      "CellHeader",
-      parent=style_cell,
-      fontName="Helvetica-Bold",
-      textColor=colors.white,
-      alignment=0,
-  )
-  style_cell_center = ParagraphStyle("CellCenter", parent=style_cell, alignment=1)
-
-  elements = []
 
   auditoria = calcular_score_e_auditoria(
       fotos_total=lead.get("fotos_total", 5),
@@ -624,150 +612,672 @@ def gerar_pdf_diagnostico_individual(lead):
       nota=lead.get("nota", 0.0),
   )
 
-  elements.append(
-      Paragraph(
-          f"DIAGNÓSTICO DE PRESENÇA DIGITAL: {lead['nome'].upper()}", style_title
-      )
-  )
-  elements.append(
-      Paragraph(
-          "Este diagnóstico foi elaborado pelo Tour360VR e a Okamoto Mídias"
-          " Visuais com base em inteligência de mercado local para destacar"
-          " pontos cegos na sua vitrine digital do Google.",
-          style_sub,
-      )
-  )
-
-  website_txt = (
-      lead["website"] if lead.get("website") else "Não possui site vinculado"
-  )
-  reiv_txt = "Sim" if lead.get("reivindicada") else "Não"
-  fotos_txt = f"{lead.get('fotos_total', 0)} fotos públicas na ficha"
-
   score_saude = auditoria["score_saude"]
-  status_score = (
-      "Excelente"
-      if score_saude >= 80
-      else ("Atenção Necessária" if score_saude >= 50 else "Grave Defasagem Digital")
+  has_site = bool(lead.get("website"))
+  has_tour = bool(lead.get("tour_360"))
+  fotos_cnt = lead.get("fotos_total", 0)
+  av_total = lead.get("total_avaliacoes", 0)
+  nota_val = lead.get("nota", 0.0)
+
+  elements = []
+
+  # =========================================================================
+  # PÁGINA 1: CAPA VISUAL COM MANCHETE E DADOS
+  # =========================================================================
+  logo_tour = (
+      "logo_tour_transparente.png"
+      if os.path.exists("logo_tour_transparente.png")
+      else None
+  )
+  if logo_tour:
+    try:
+      elements.append(
+          Image(logo_tour, width=90, height=45, kind="proportional")
+      )
+    except Exception:
+      pass
+
+  elements.append(Spacer(1, 10))
+  elements.append(
+      Paragraph(
+          "<font color='#dc2626' size='14'><b>DIAGNÓSTICO DE PRESENÇA"
+          " DIGITAL</b></font><br/><font color='#1e293b'"
+          " size='16'><b>GOOGLE MEU NEGÓCIO</b></font>",
+          ParagraphStyle(
+              "HeaderCapa",
+              parent=style_normal,
+              fontName="Helvetica-Bold",
+              leading=18,
+          ),
+      )
+  )
+  elements.append(
+      Paragraph(
+          "Gestão de reputação e imagem online para o segmento no Google Maps",
+          ParagraphStyle(
+              "SubCapa",
+              parent=style_normal,
+              fontSize=10,
+              textColor=colors.HexColor("#64748b"),
+              spaceBefore=4,
+          ),
+      )
   )
 
-  dados_empresa = [
-      [
-          Paragraph("Empresa / Nicho", style_cell_bold),
-          Paragraph(f"{lead['nome']} ({lead['categoria']})", style_cell_bold),
-      ],
-      [
-          Paragraph("Endereço", style_cell_bold),
-          Paragraph(f"{lead['endereco']} - {lead['cidade_busca']}", style_cell),
-      ],
-      [
-          Paragraph("Nota Google / Avaliações", style_cell_bold),
-          Paragraph(
-              f"★{lead.get('nota', 0.0)} ({lead.get('total_avaliacoes', 0)}"
-              " avaliações)",
-              style_cell,
+  elements.append(Spacer(1, 15))
+
+  # Imagem de Capa do Lead se existir ou placeholder estilizado
+  foto_lead_url = lead.get("foto_url", "")
+  img_obj = None
+  if foto_lead_url and foto_lead_url.startswith("http"):
+    try:
+      api_key_atual = st.secrets.get("GOOGLE_API_KEY", None) or os.getenv(
+          "GOOGLE_API_KEY", ""
+      )
+      api_key_limpa_url = (
+          api_key_atual.strip().replace('"', "").replace("'", "")
+      )
+      if "key=" not in foto_lead_url and api_key_limpa_url:
+        foto_auth = f"{foto_lead_url}&key={api_key_limpa_url}"
+      else:
+        foto_auth = foto_lead_url
+      resp_img = requests.get(foto_auth, timeout=5)
+      if resp_img.status_code == 200:
+        img_temp = io.BytesIO(resp_img.content)
+        img_obj = Image(img_temp, width=540, height=230, kind="direct")
+    except Exception:
+      img_obj = None
+
+  if not img_obj:
+    # Drawing estilizado simulando a fachada / banner
+    d_capa = Drawing(540, 210)
+    d_capa.add(
+        Rect(
+            0,
+            0,
+            540,
+            210,
+            fillColor=colors.HexColor("#1e293b"),
+            strokeColor=None,
+            rx=8,
+            ry=8,
+        )
+    )
+    d_capa.add(
+        Circle(270, 105, 50, fillColor=colors.HexColor("#2563eb"), strokeColor=None)
+    )
+    d_capa.add(
+        String(
+            270,
+            100,
+            "Tour360VR",
+            fontSize=16,
+            fontName="Helvetica-Bold",
+            fillColor=colors.white,
+            textAnchor="middle",
+        )
+    )
+    img_obj = d_capa
+
+  elements.append(img_obj)
+  elements.append(Spacer(1, 20))
+
+  # Bloco de Identificação da Empresa
+  p_emp_nome = Paragraph(
+      f"<b><font size='14' color='#0f172a'>{lead['nome']}</font></b>",
+      style_normal,
+  )
+  p_emp_sub = Paragraph(
+      f"<b>Preparado para:</b> Gerente Responsável / Diretoria<br/>"
+      f"<b>Endereço:</b> {lead['endereco']} - {lead['cidade_busca']}<br/>"
+      f"<b>Contato / Fixo:</b> {lead.get('telefone', '(16) Contato via Ficha')} |"
+      f" <b>Site:</b> {lead.get('website', 'Não vinculado')}",
+      ParagraphStyle(
+          "EmpSub", parent=style_normal, fontSize=9.5, leading=14, spaceBefore=4
+      ),
+  )
+
+  t_ident = Table([[p_emp_nome], [p_emp_sub]], colWidths=[540])
+  t_ident.setStyle(
+      TableStyle([
+          ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#f8fafc")),
+          ("BOX", (0, 0), (-1, -1), 0.75, colors.HexColor("#cbd5e1")),
+          ("PADDING", (0, 0), (-1, -1), 10),
+      ])
+  )
+  elements.append(t_ident)
+
+  elements.append(Spacer(1, 25))
+
+  # Manhete do Banner de Alerta / Oportunidade
+  txt_manchete = f"SEU PERFIL TEM NOTA SÓLIDA DE {nota_val} COM {av_total} AVALIAÇÕES NO GOOGLE, MAS A FALTA DE EXPERIÊNCIA IMERSIVA DEIXA DINHEIRO NA MESA."
+  p_manchete = Paragraph(
+      f"<b><font color='#ffffff' size='11.5'>{txt_manchete}</font></b>",
+      ParagraphStyle(
+          "MancheteStyle",
+          parent=style_normal,
+          alignment=1,
+          leading=16,
+          fontName="Helvetica-Bold",
+      ),
+  )
+
+  t_manchete = Table([[p_manchete]], colWidths=[540])
+  t_manchete.setStyle(
+      TableStyle([
+          ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#1e293b")),
+          ("PADDING", (0, 0), (-1, -1), 14),
+          ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+      ])
+  )
+  elements.append(t_manchete)
+
+  elements.append(PageBreak())
+
+  # =========================================================================
+  # PÁGINA 2: AUDITORIA DETALHADA E TABELA DE 9 PONTOS CHAVE
+  # =========================================================================
+  elements.append(Spacer(1, 10))
+  elements.append(
+      Paragraph(
+          "AUDITORIA DETALHADA DE PONTOS DE BUSCA",
+          ParagraphStyle(
+              "TitlePage2",
+              parent=style_normal,
+              fontName="Helvetica-Bold",
+              fontSize=13,
+              textColor=colors.HexColor("#0f172a"),
           ),
-      ],
-      [
-          Paragraph("Website Oficial", style_cell_bold),
-          Paragraph(f"{website_txt}", style_cell),
-      ],
-      [
-          Paragraph("Score de Otimização da Ficha", style_cell_bold),
-          Paragraph(
-              f"<b>{score_saude}/100</b> ({status_score})", style_cell_bold
+      )
+  )
+  elements.append(
+      Paragraph(
+          f"Empresa Auditada: <b>{lead['nome']}</b>",
+          ParagraphStyle(
+              "SubPage2", parent=style_normal, fontSize=9, spaceBefore=2
           ),
-      ],
-      [
-          Paragraph("Ficha Reivindicada / Fotos", style_cell_bold),
-          Paragraph(f"{reiv_txt} - {fotos_txt}", style_cell),
-      ],
+      )
+  )
+  elements.append(Spacer(1, 12))
+
+  # Blocos de Score de Otimização e Nota dos Clientes
+  p_card_score = Paragraph(
+      f"<font size='9' color='#64748b'><b>OTIMIZAÇÃO DO PERFIL</b></font><br/>"
+      f"<font size='22' color='#1e293b'><b>{score_saude}/100</b></font>",
+      ParagraphStyle(
+          "CardScore", parent=style_normal, alignment=1, leading=22
+      ),
+  )
+  p_card_nota = Paragraph(
+      f"<font size='9' color='#64748b'><b>NOTA DOS CLIENTES</b></font><br/>"
+      f"<font size='22' color='#1e293b'><b>{nota_val} ★</b></font><br/>"
+      f"<font size='8' color='#64748b'>{av_total} avaliações no Google</font>",
+      ParagraphStyle("CardNota", parent=style_normal, alignment=1, leading=18),
+  )
+
+  t_cards = Table([[p_card_score, p_card_nota]], colWidths=[260, 260])
+  t_cards.setStyle(
+      TableStyle([
+          ("BACKGROUND", (0, 0), (0, 0), colors.HexColor("#f8fafc")),
+          ("BACKGROUND", (1, 0), (1, 0), colors.HexColor("#f8fafc")),
+          ("BOX", (0, 0), (0, 0), 0.5, colors.HexColor("#cbd5e1")),
+          ("BOX", (1, 0), (1, 0), 0.5, colors.HexColor("#cbd5e1")),
+          ("PADDING", (0, 0), (-1, -1), 8),
+          ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+          ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+      ])
+  )
+  elements.append(t_cards)
+  elements.append(Spacer(1, 12))
+
+  # TABELA DE AUDITORIA DE 9 ITENS COMPLETA (MODELO REFERÊNCIA)
+  st_verde = "<font color='#15803d'><b>Atende ao recomendado</b></font>"
+  st_alerta = (
+      "<font color='#dc2626'><b>Pendente de Validação / Inexistente</b></font>"
+  )
+
+  itens_auditoria = [
+      (
+          "1. Fotos e Resolução Visual",
+          "Atende" if fotos_cnt >= 8 else "Reduzido",
+          (
+              f"Estado: {fotos_cnt} fotos públicas na ficha.<br/>Impacto: Fotos"
+              " estáticas em HD atraem cliques e geram engajamento na busca."
+          ),
+      ),
+      (
+          "2. Tour Virtual 360° Interativo",
+          "Pendente" if not has_tour else "Ativo",
+          (
+              "Estado: Não detectado ou ausente via API. Impacto: Destaque"
+              " visual imersivo e engajamento 3.5x maior no Street View."
+          ),
+      ),
+      (
+          "3. Categorias Principal e Secundárias",
+          "Completo",
+          (
+              f"Estado: Ficha vinculada a '{lead['categoria']}'.<br/>Impacto:"
+              " Garante o match correto com buscas locais de clientes."
+          ),
+      ),
+      (
+          "4. Horários e Exceções (Feriados)",
+          "Atualizado",
+          (
+              "Estado: Horários padrões visíveis.<br/>Impacto: Evita a perda de"
+              " clientes e deslocamentos em feriados."
+          ),
+      ),
+      (
+          "5. Website e Links de Conversão",
+          "Ativo" if has_site else "Inexistente",
+          (
+              f"Estado: {lead.get('website') if has_site else 'Sem site oficial vinculado'}.<br/>Impacto:"
+              " Encaminha tráfego aquecido direto para o canal de vendas."
+          ),
+      ),
+      (
+          "6. Avaliações no Google (Prova Social)",
+          f"{nota_val}/5.0",
+          (
+              f"Estado: {av_total} avaliações cadastradas.<br/>Impacto: Prova"
+              " social decisiva para fechar novos negócios."
+          ),
+      ),
+      (
+          "7. Resumo Editorial & Descrição",
+          "Completo",
+          (
+              "Estado: Descrição da empresa ativa no perfil.<br/>Impacto:"
+              " Aumenta a indexação SEO em palavras-chave relevantes."
+          ),
+      ),
+      (
+          "8. Atributos de Acessibilidade/Serviços",
+          "Pendente",
+          (
+              "Estado: Atributos incompletos.<br/>Impacto: Informa facilidades"
+              " essenciais (estac., wifi, acessibilidade)."
+          ),
+      ),
+      (
+          "9. Interação e Resposta a Avaliações",
+          "Pendente",
+          (
+              "Estado: Respostas oficiais pendentes.<br/>Impacto: Responder"
+              " demonstra atenção e passa confiança aos clientes."
+          ),
+      ),
   ]
-  t_emp = Table(dados_empresa, colWidths=[150, 390])
-  t_emp.setStyle(
+
+  rows_tabela = []
+  for titulo, estado_tag, desc in itens_auditoria:
+    p_t = Paragraph(f"<b>{titulo}</b>", style_normal)
+
+    c_tag = (
+        "#15803d"
+        if estado_tag in ["Atende", "Completo", "Atualizado", "Ativo"]
+        else "#dc2626"
+    )
+    p_e = Paragraph(
+        f"<b><font color='{c_tag}'>{estado_tag}</font></b>",
+        ParagraphStyle("TagSt", parent=style_normal, alignment=2),
+    )
+    p_d = Paragraph(
+        desc, ParagraphStyle("DescSt", parent=style_normal, fontSize=8)
+    )
+
+    rows_tabela.append([p_t, p_e])
+    rows_tabela.append([p_d, ""])
+
+  t_audit_comp = Table(rows_tabela, colWidths=[380, 140])
+  t_style_audit = [
+      ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+      ("SPAN", (0, 1), (1, 1)),
+      ("SPAN", (0, 3), (1, 3)),
+      ("SPAN", (0, 5), (1, 5)),
+      ("SPAN", (0, 7), (1, 7)),
+      ("SPAN", (0, 9), (1, 9)),
+      ("SPAN", (0, 11), (1, 11)),
+      ("SPAN", (0, 13), (1, 13)),
+      ("SPAN", (0, 15), (1, 15)),
+      ("SPAN", (0, 17), (1, 17)),
+      ("TOPPADDING", (0, 0), (-1, -1), 2),
+      ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+      ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#ffffff")),
+      ("LINEBELOW", (0, 1), (1, 1), 0.5, colors.HexColor("#e2e8f0")),
+      ("LINEBELOW", (0, 3), (1, 3), 0.5, colors.HexColor("#e2e8f0")),
+      ("LINEBELOW", (0, 5), (1, 5), 0.5, colors.HexColor("#e2e8f0")),
+      ("LINEBELOW", (0, 7), (1, 7), 0.5, colors.HexColor("#e2e8f0")),
+      ("LINEBELOW", (0, 9), (1, 9), 0.5, colors.HexColor("#e2e8f0")),
+      ("LINEBELOW", (0, 11), (1, 11), 0.5, colors.HexColor("#e2e8f0")),
+      ("LINEBELOW", (0, 13), (1, 13), 0.5, colors.HexColor("#e2e8f0")),
+      ("LINEBELOW", (0, 15), (1, 15), 0.5, colors.HexColor("#e2e8f0")),
+      ("LINEBELOW", (0, 17), (1, 17), 0.5, colors.HexColor("#cbd5e1")),
+  ]
+  t_audit_comp.setStyle(TableStyle(t_style_audit))
+  elements.append(t_audit_comp)
+
+  elements.append(Spacer(1, 10))
+
+  # Quadro de Apontamentos Estratégicos Personalizados
+  p_plano_title = Paragraph(
+      "<b>PLANO DE AÇÃO E APONTAMENTOS ESTRATÉGICOS PERSONALIZADOS</b>",
+      ParagraphStyle(
+          "PlanoHead",
+          parent=style_normal,
+          fontName="Helvetica-Bold",
+          fontSize=9.5,
+          textColor=colors.HexColor("#0f172a"),
+      ),
+  )
+  p_plano_body = Paragraph(
+      "<b>1. Atração Local (SEO):</b> Otimização de categorias e dados"
+      " cadastrais.<br/><b>2. Confiança & Autoridade:</b> Publicação do Tour"
+      " Virtual 360° no Google Street View.<br/><b>3. Vitrine Imersiva:</b>"
+      " Padronização do acervo de fotos em alta resolução.",
+      ParagraphStyle(
+          "PlanoBody", parent=style_normal, fontSize=8.5, leading=12
+      ),
+  )
+
+  t_plano = Table([[p_plano_title], [p_plano_body]], colWidths=[520])
+  t_plano.setStyle(
       TableStyle([
           ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#f8fafc")),
           ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#cbd5e1")),
-          ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#e2e8f0")),
-          ("TOPPADDING", (0, 0), (-1, -1), 4),
-          ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+          ("PADDING", (0, 0), (-1, -1), 8),
       ])
   )
-  elements.append(t_emp)
-  elements.append(Spacer(1, 10))
+  elements.append(t_plano)
 
+  elements.append(PageBreak())
+
+  # =========================================================================
+  # PÁGINA 3: MAPEAMENTO GEOGRÁFICO DE RAIO DE ATRAÇÃO (SIMULAÇÃO DE RADAR)
+  # =========================================================================
+  elements.append(Spacer(1, 10))
   elements.append(
       Paragraph(
-          "PONTOS CRÍTICOS IDENTIFICADOS NA VITRINE DIGITAL",
-          style_section_heading,
+          "MAPEAMENTO GEOGRÁFICO DE RAIO DE ATRAÇÃO",
+          ParagraphStyle(
+              "TitlePage3",
+              parent=style_normal,
+              fontName="Helvetica-Bold",
+              fontSize=13,
+              textColor=colors.HexColor("#0f172a"),
+          ),
+      )
+  )
+  elements.append(
+      Paragraph(
+          "Simulação de visibilidade em buscas locais por proximidade ('próximo"
+          " a mim')",
+          ParagraphStyle(
+              "SubPage3",
+              parent=style_normal,
+              fontSize=9,
+              textColor=colors.HexColor("#64748b"),
+              spaceBefore=2,
+          ),
+      )
+  )
+  elements.append(Spacer(1, 12))
+
+  # DIAGRAMA VISUAL DO RADAR (RAIOS DE ATRAÇÃO EM CÍRCULOS CONCÊNTRICOS)
+  d_radar = Drawing(540, 190)
+  d_radar.add(
+      Rect(
+          0,
+          0,
+          540,
+          190,
+          fillColor=colors.HexColor("#f8fafc"),
+          strokeColor=colors.HexColor("#e2e8f0"),
+          rx=6,
+          ry=6,
       )
   )
 
-  criticos_lista = (
-      lead["pontos_criticos"]
-      if isinstance(lead.get("pontos_criticos"), list)
-      else auditoria["pontos_criticos"]
+  # Cabeçalho da Empresa no Radar
+  d_radar.add(
+      Rect(
+          50,
+          155,
+          440,
+          26,
+          fillColor=colors.white,
+          strokeColor=colors.HexColor("#cbd5e1"),
+          rx=13,
+          ry=13,
+      )
   )
-  if not criticos_lista:
-    criticos_lista = auditoria["pontos_criticos"]
-
-  rows_criticos = [[
-      Paragraph("#", style_cell_header),
-      Paragraph("Gargalo / Ponto de Atenção", style_cell_header),
-  ]]
-  for idx, pc in enumerate(criticos_lista, start=1):
-    rows_criticos.append(
-        [Paragraph(str(idx), style_cell_center), Paragraph(pc, style_cell)]
-    )
-
-  t_criticos = Table(rows_criticos, colWidths=[30, 510])
-  t_criticos.setStyle(
-      TableStyle([
-          ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1A237E")),
-          ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#cbd5e1")),
-          ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#e2e8f0")),
-          ("TOPPADDING", (0, 0), (-1, -1), 5),
-          ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
-      ])
-  )
-  elements.append(t_criticos)
-  elements.append(Spacer(1, 10))
-
-  elements.append(
-      Paragraph(
-          "OPORTUNIDADES DE TRANSFORMAÇÃO E RETORNO COMERCIAL",
-          style_section_heading,
+  d_radar.add(
+      String(
+          270,
+          163,
+          f"{lead['nome']} — {lead['endereco']}",
+          fontSize=8.5,
+          fontName="Helvetica-Bold",
+          fillColor=colors.HexColor("#1e293b"),
+          textAnchor="middle",
       )
   )
 
-  op_lista = (
-      lead["oportunidades"]
-      if isinstance(lead.get("oportunidades"), list)
-      else auditoria["oportunidades"]
+  # Círculos do Radar
+  cx, cy = 270, 75
+  d_radar.add(
+      Circle(
+          cx,
+          cy,
+          65,
+          fillColor=None,
+          strokeColor=colors.HexColor("#ef4444"),
+          strokeWidth=1.5,
+      )
   )
-  if not op_lista:
-    op_lista = auditoria["oportunidades"]
+  d_radar.add(
+      Circle(
+          cx,
+          cy,
+          42,
+          fillColor=None,
+          strokeColor=colors.HexColor("#f59e0b"),
+          strokeWidth=1.5,
+      )
+  )
+  d_radar.add(
+      Circle(
+          cx,
+          cy,
+          22,
+          fillColor=None,
+          strokeColor=colors.HexColor("#10b981"),
+          strokeWidth=1.5,
+      )
+  )
+  d_radar.add(
+      Circle(
+          cx, cy, 10, fillColor=colors.HexColor("#1e40af"), strokeColor=None
+      )
+  )
+  d_radar.add(
+      String(
+          cx,
+          cy - 3,
+          "E",
+          fontSize=8,
+          fontName="Helvetica-Bold",
+          fillColor=colors.white,
+          textAnchor="middle",
+      )
+  )
 
-  rows_op = [[
-      Paragraph("#", style_cell_header),
-      Paragraph("Solução Estratégica Proposta", style_cell_header),
-  ]]
-  for idx, op in enumerate(op_lista, start=1):
-    rows_op.append(
-        [Paragraph(str(idx), style_cell_center), Paragraph(op, style_cell)]
-    )
+  elements.append(d_radar)
+  elements.append(Spacer(1, 10))
 
-  t_op = Table(rows_op, colWidths=[30, 510])
-  t_op.setStyle(
+  # 3 COLUNAS DE CARD DE RAIO (BAIRRO, REGIÃO, CIDADE)
+  c1_title = Paragraph(
+      "<b>RAIO BAIRRO (1.5 km)</b>",
+      ParagraphStyle(
+          "C1T",
+          parent=style_normal,
+          fontSize=8.5,
+          textColor=colors.HexColor("#0f172a"),
+      ),
+  )
+  c1_body = Paragraph(
+      "Buscas diretas concentradas.<br/><font color='#16a34a'><b>Top 3 —"
+      " Visibilidade Alta</b></font>",
+      ParagraphStyle("C1B", parent=style_normal, fontSize=8, leading=10),
+  )
+
+  c2_title = Paragraph(
+      "<b>RAIO REGIÃO (3.0 km)</b>",
+      ParagraphStyle(
+          "C2T",
+          parent=style_normal,
+          fontSize=8.5,
+          textColor=colors.HexColor("#0f172a"),
+      ),
+  )
+  c2_body = Paragraph(
+      "Perda de relevância para concorrentes.<br/><font"
+      " color='#d97706'><b>Queda de Posição no Maps</b></font>",
+      ParagraphStyle("C2B", parent=style_normal, fontSize=8, leading=10),
+  )
+
+  c3_title = Paragraph(
+      "<b>RAIO CIDADE (5.0+ km)</b>",
+      ParagraphStyle(
+          "C3T",
+          parent=style_normal,
+          fontSize=8.5,
+          textColor=colors.HexColor("#0f172a"),
+      ),
+  )
+  c3_body = Paragraph(
+      "Sem otimização 360° fica oculto.<br/><font color='#dc2626'><b>Invisível"
+      " nas Buscas</b></font>",
+      ParagraphStyle("C3B", parent=style_normal, fontSize=8, leading=10),
+  )
+
+  t_raios = Table(
+      [[c1_title, c2_title, c3_title], [c1_body, c2_body, c3_body]],
+      colWidths=[170, 170, 170],
+  )
+  t_raios.setStyle(
       TableStyle([
-          ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1A237E")),
-          ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#cbd5e1")),
-          ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#e2e8f0")),
-          ("TOPPADDING", (0, 0), (-1, -1), 5),
-          ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+          ("BACKGROUND", (0, 0), (0, -1), colors.HexColor("#f0fdf4")),
+          ("BACKGROUND", (1, 0), (1, -1), colors.HexColor("#fffbeb")),
+          ("BACKGROUND", (2, 0), (2, -1), colors.HexColor("#fef2f2")),
+          ("BOX", (0, 0), (0, -1), 0.5, colors.HexColor("#bbf7d0")),
+          ("BOX", (1, 0), (1, -1), 0.5, colors.HexColor("#fde68a")),
+          ("BOX", (2, 0), (2, -1), 0.5, colors.HexColor("#fecaca")),
+          ("PADDING", (0, 0), (-1, -1), 6),
       ])
   )
-  elements.append(t_op)
+  elements.append(t_raios)
+
+  elements.append(Spacer(1, 14))
+
+  # DIAGNÓSTICO DE BUSCAS POR INTENÇÃO DE CLIENTES
+  elements.append(
+      Paragraph(
+          "<b>DIAGNÓSTICO DE BUSCAS POR INTENÇÃO DE CLIENTES</b>",
+          ParagraphStyle(
+              "DiagHead",
+              parent=style_normal,
+              fontName="Helvetica-Bold",
+              fontSize=10,
+              textColor=colors.HexColor("#0f172a"),
+          ),
+      )
+  )
+  elements.append(Spacer(1, 6))
+
+  b1 = [
+      Paragraph(
+          "<b>Busca por Proximidade ('Próximo a mim')</b><br/>92% dos usuários"
+          " clicam nos 3 primeiros resultados do mapa.",
+          style_normal,
+      ),
+      Paragraph(
+          "<b>POSIÇÃO</b><br/><font color='#16a34a' size='11'><b>1º"
+          " Lugar</b></font>",
+          ParagraphStyle("P1", parent=style_normal, alignment=1),
+      ),
+  ]
+  b2 = [
+      Paragraph(
+          "<b>Busca por Categoria Local ('Serviços na região')</b><br/>Sem Tour"
+          " 360 e fotos HD, o Google empurra o perfil para baixo fora do raio"
+          " imediato.",
+          style_normal,
+      ),
+      Paragraph(
+          "<b>POSIÇÃO</b><br/><font color='#dc2626' size='11'><b>12º a 18º"
+          " Lugar</b></font>",
+          ParagraphStyle("P2", parent=style_normal, alignment=1),
+      ),
+  ]
+  b3 = [
+      Paragraph(
+          "<b>Busca Direta por Marca ou Nome Específico</b><br/>Cliente"
+          " digitando o nome exato encontra a ficha, mas falta a experiência"
+          " imersiva 360.",
+          style_normal,
+      ),
+      Paragraph(
+          "<b>POSIÇÃO</b><br/><font color='#16a34a' size='11'><b>1º"
+          " Lugar</b></font>",
+          ParagraphStyle("P3", parent=style_normal, alignment=1),
+      ),
+  ]
+
+  t_intencao = Table([b1, b2, b3], colWidths=[390, 130])
+  t_intencao.setStyle(
+      TableStyle([
+          ("LINEBELOW", (0, 0), (-1, 0), 0.5, colors.HexColor("#e2e8f0")),
+          ("LINEBELOW", (0, 1), (-1, 1), 0.5, colors.HexColor("#e2e8f0")),
+          ("PADDING", (0, 0), (-1, -1), 6),
+          ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+      ])
+  )
+  elements.append(t_intencao)
+
+  elements.append(Spacer(1, 14))
+
+  # CAIXA FINAL DE EXPANSÃO DE RAIO
+  p_exp_t = Paragraph(
+      "<b>OPORTUNIDADE DE EXPANSÃO DE RAIO COM A REESTRUTURAÇÃO PRO + TOUR"
+      " 360</b>",
+      ParagraphStyle(
+          "ExpT",
+          parent=style_normal,
+          fontName="Helvetica-Bold",
+          fontSize=9,
+          textColor=colors.HexColor("#0f172a"),
+      ),
+  )
+  p_exp_b = Paragraph(
+      "A publicação do Tour Virtual 360° e a otimização de metadados visuais"
+      " expandem a relevância do perfil no algoritmo do Google.<br/>Isso"
+      " permite captar clientes em um raio de até 5 km a 10 km, dobrando o"
+      " volume diário de chamadas e rotas no GPS.",
+      ParagraphStyle("ExpB", parent=style_normal, fontSize=8.5, leading=12),
+  )
+
+  t_exp = Table([[p_exp_t], [p_exp_b]], colWidths=[520])
+  t_exp.setStyle(
+      TableStyle([
+          ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#f8fafc")),
+          ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#cbd5e1")),
+          ("PADDING", (0, 0), (-1, -1), 8),
+      ])
+  )
+  elements.append(t_exp)
 
   doc.build(
       elements,
