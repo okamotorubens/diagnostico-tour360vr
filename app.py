@@ -361,65 +361,6 @@ def buscar_detalhes_concorrente_especifico(nome_concorrente, cidade, api_key):
     except Exception: pass
     return None
 
-def sugerir_concorrentes_por_proximidade(dados, api_key):
-    if not api_key: return []
-    lat = dados.get("lat")
-    lng = dados.get("lng")
-    endereco_completo = dados.get("endereco", "")
-    
-    # Extrair cidade do endereço de forma simples para busca textual segura
-    cidade_extraida = ""
-    if endereco_completo:
-        partes = endereco_completo.split(",")
-        if len(partes) >= 2:
-            cidade_extraida = partes[-2].strip()
-
-    if not lat or not lng:
-        return []
-    
-    # Realiza uma busca textsearch próxima para garantir concorrentes reais do mesmo tipo na cidade
-    termo_busca = f"churrascaria restaurante {cidade_extraida}" if "churrasco" in str(dados.get("nome", "")).lower() else f"restaurante {cidade_extraida}"
-    url_search = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={requests.utils.quote(termo_busca)}&key={api_key}"
-    
-    concorrentes_sugeridos = []
-    try:
-        resp = requests.get(url_search, timeout=6).json()
-        if resp.get("status") == "OK":
-            resultados = resp.get("results", [])
-            nome_cliente = str(dados.get("nome", "")).strip().lower()
-            
-            for item in resultados:
-                nome_lugar = item.get("name", "")
-                if nome_lugar.strip().lower() == nome_cliente:
-                    continue
-                
-                place_id = item.get("place_id")
-                url_det = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=website,editorial_summary,opening_hours,photos,types,name,rating,user_ratings_total&key={api_key}"
-                res_det = requests.get(url_det).json().get("result", {})
-                photos = res_det.get("photos", item.get("photos", []))
-                types_lista = res_det.get("types", [])
-                
-                concorrentes_sugeridos.append({
-                    "nome": res_det.get("name", nome_lugar),
-                    "nota": float(item.get("rating", 0.0)),
-                    "avaliacoes": int(item.get("user_ratings_total", 0)),
-                    "tem_fotos_hd": "Sim" if len(photos) >= 10 else "Não",
-                    "tem_tour360": "Não",
-                    "categorias_ok": "Sim" if len(types_lista) >= 3 else "Não",
-                    "horarios_ok": "Sim" if "opening_hours" in res_det else "Não",
-                    "tem_website": "Sim" if res_det.get("website") else "Não",
-                    "tem_descricao": "Sim" if "editorial_summary" in res_det else "Não",
-                    "atributos_ok": "Não",
-                    "respostas_ok": "Não",
-                    "busca_termo": res_det.get("name", nome_lugar),
-                    "cidade": cidade_extraida
-                })
-                if len(concorrentes_sugeridos) >= 3:
-                    break
-    except Exception:
-        pass
-    return concorrentes_sugeridos
-
 def enviar_lead_zoho_bigin(dados, score):
     url_bigin = "https://bigin.zoho.com/crm/WebToContactForm"
     empresa_nome = dados.get("nome", "Empresa Não Informada").strip()
@@ -542,7 +483,7 @@ TEXTO_PLANO_ACAO_PADRAO = (
     "Ações prioritárias para otimização e diferenciação local:\n"
     "1. Atração Local (SEO): Correção cadastral e otimização das categorias principal e secundárias.\n"
     "2. Segurança & Posicionamento: Frequência de atualização para sinalizar ao Google que o perfil está ativo.\n"
-    "3. Confiança & Autoridade: Publication do Tour Virtual 360° no Street View e fotos em alta resolução.\n"
+    "3. Confiança & Autoridade: Publicação do Tour Virtual 360° no Street View e fotos em alta resolução.\n"
     "4. Vitrine Imersiva: Padronização do acervo visual do espaço e integração dos canais de contato direto."
 )
 
@@ -1842,7 +1783,7 @@ if etapa_atual == 1:
             opcoes = [f"{u.get('name')} - {u.get('formatted_address')}" for u in st.session_state['unidades_encontradas']]
             escolha = st.selectbox("Selecione a unidade exata:", opcoes, key="select_unidade_exata")
             
-            if st.button("📌 Carregar Dados da Unidade & Sugerir Concorrentes", use_container_width=True, key="btn_carregar_unidade", type="secondary"):
+            if st.button("📌 Carregar Dados da Unidade", use_container_width=True, key="btn_carregar_unidade", type="secondary"):
                 idx = opcoes.index(escolha)
                 u = st.session_state['unidades_encontradas'][idx]
                 place_id = u.get("place_id")
@@ -1875,21 +1816,7 @@ if etapa_atual == 1:
                         st.session_state['dados']['categorias_detectadas'] = types_lista
                         st.session_state['dados']['foto_reference'] = photos[0].get("photo_reference") if photos else ""
 
-                        # BUSCA INTELIGENTE DE CONCORRENTES REAIS DA REGIÃO
-                        sugestoes = sugerir_concorrentes_por_proximidade(st.session_state['dados'], API_KEY_GOOGLE)
-                        if sugestoes:
-                            while len(sugestoes) < 3:
-                                sugestoes.append({"nome": "", "nota": 0.0, "avaliacoes": 0, "busca_termo": "", "cidade": "", "tem_fotos_hd": "Não", "tem_tour360": "Não", "categorias_ok": "Não", "horarios_ok": "Não", "tem_website": "Não", "tem_descricao": "Não", "atributos_ok": "Não", "respostas_ok": "Não"})
-                            st.session_state['concorrentes'] = sugestoes[:3]
-                        else:
-                            # Se não encontrar automaticamente, limpa os campos para o usuário preencher limpo
-                            st.session_state['concorrentes'] = [
-                                {"nome": "", "nota": 0.0, "avaliacoes": 0, "busca_termo": "", "cidade": "", "tem_fotos_hd": "Não", "tem_tour360": "Não", "categorias_ok": "Não", "horarios_ok": "Não", "tem_website": "Não", "tem_descricao": "Não", "atributos_ok": "Não", "respostas_ok": "Não"},
-                                {"nome": "", "nota": 0.0, "avaliacoes": 0, "busca_termo": "", "cidade": "", "tem_fotos_hd": "Não", "tem_tour360": "Não", "categorias_ok": "Não", "horarios_ok": "Não", "tem_website": "Não", "tem_descricao": "Não", "atributos_ok": "Não", "respostas_ok": "Não"},
-                                {"nome": "", "nota": 0.0, "avaliacoes": 0, "busca_termo": "", "cidade": "", "tem_fotos_hd": "Não", "tem_tour360": "Não", "categorias_ok": "Não", "horarios_ok": "Não", "tem_website": "Não", "tem_descricao": "Não", "atributos_ok": "Não", "respostas_ok": "Não"}
-                            ]
-
-                        st.success("Dados carregados com sucesso! Verifique os concorrentes sugeridos na etapa 2.")
+                        st.success("Dados carregados com sucesso! Vá para a Etapa 2 para preencher os concorrentes.")
                         st.rerun()
                     except Exception as e:
                         st.error(f"Erro ao obter detalhes: {e}")
@@ -1924,12 +1851,12 @@ if etapa_atual == 1:
             st.session_state['etapa_atual'] = 2
             st.rerun()
 
-# ETAPA 2: AVALIAÇÃO DE CONCORRENTES (Com Validação e Edição Completa)
+# ETAPA 2: PREENCHIMENTO MANUAL E VALIDAÇÃO DE CONCORRENTES
 elif etapa_atual == 2:
-    st.markdown("<div class='dashboard-card'><div class='card-title'>⚔️ 2. VALIDAÇÃO E EDIÇÃO DE CONCORRENTES</div>", unsafe_allow_html=True)
-    st.caption("Revise os concorrentes sugeridos ou digite os nomes reais dos concorrentes da região. Clique em atualizar para carregar as notas do Google.")
+    st.markdown("<div class='dashboard-card'><div class='card-title'>⚔️ 2. PREENCHIMENTO MANUAL DE CONCORRENTES</div>", unsafe_allow_html=True)
+    st.caption("Digite o nome exato dos concorrentes e a cidade/bairro. O sistema buscará as notas e avaliações reais no Google ao clicar no botão.")
 
-    with st.form(key="form_concorrentes_fix"):
+    with st.form(key="form_concorrentes_manual"):
         inputs_conc = []
         for i in range(3):
             col_c1, col_c2 = st.columns([2.5, 1.5])
@@ -1940,7 +1867,7 @@ elif etapa_atual == 2:
             cid_c = col_c2.text_input(f"Cidade/Bairro #{i+1}:", value=val_cid, key=f"c_input_cid_{i}")
             inputs_conc.append((nome_c, cid_c))
 
-        btn_consultar = st.form_submit_button("🔎 Atualizar/Validar Concorrentes via API", use_container_width=True)
+        btn_consultar = st.form_submit_button("🔎 Buscar e Validar Concorrentes via API", use_container_width=True)
 
         if btn_consultar:
             if API_KEY_GOOGLE:
@@ -1956,18 +1883,20 @@ elif etapa_atual == 2:
                             encontrados += 1
                         else:
                             st.session_state['concorrentes'][idx]['nome'] = nome_c
+                    else:
+                        st.session_state['concorrentes'][idx] = {"nome": "", "nota": 0.0, "avaliacoes": 0, "busca_termo": "", "cidade": "", "tem_fotos_hd": "Não", "tem_tour360": "Não", "categorias_ok": "Não", "horarios_ok": "Não", "tem_website": "Não", "tem_descricao": "Não", "atributos_ok": "Não", "respostas_ok": "Não"}
                             
                 if encontrados > 0:
                     st.success(f"{encontrados} concorrente(s) validado(s) com sucesso!")
                 else:
-                    st.warning("Nenhum dado retornado. Verifique a grafia do nome.")
+                    st.warning("Preencha ao menos um concorrente.")
                 st.rerun()
             else:
                 st.error("Chave GOOGLE_API_KEY não localizada.")
 
     concorrentes_validos = [c for c in st.session_state['concorrentes'] if c.get('nome', '').strip() != '']
     if concorrentes_validos:
-        st.markdown("<div style='margin-top:10px;'><b>Concorrentes Atuais na Tabela do PDF:</b></div>", unsafe_allow_html=True)
+        st.markdown("<div style='margin-top:10px;'><b>Concorrentes Ativos na Tabela do PDF:</b></div>", unsafe_allow_html=True)
         for c_item in concorrentes_validos:
             score_c = calcular_score_concorrente(c_item)
             st.markdown(f"• **{c_item['nome']}** — ⭐ Nota: `{float(c_item.get('nota', 0.0)):.1f}` ({c_item.get('avaliacoes', 0)} avaliações) | Score: **{score_c}/100**")
@@ -2100,60 +2029,4 @@ elif etapa_atual == 5:
                 st.session_state.get('concorrentes', []),
                 paginas_selecionadas=paginas_escolhidas
             )
-        except Exception as e:
-            st.error(f"Erro ao gerar PDF: {e}")
-
-        if pdf_bytes:
-            with col_down1:
-                st.download_button(
-                    label=f"📥 Baixar PDF ({len(paginas_escolhidas)} Pág(s))",
-                    data=pdf_bytes,
-                    file_name=nome_arquivo_pdf,
-                    mime="application/pdf",
-                    use_container_width=True,
-                    key="btn_download_wizard"
-                )
-                
-            with col_down2:
-                st.link_button(
-                    label="📲 Abrir WhatsApp",
-                    url=link_wa,
-                    use_container_width=True
-                )
-
-            with col_down3:
-                if st.button("📧 Enviar para Meu E-mail & Bigin", use_container_width=True, type="primary", key="btn_enviar_admin_bigin"):
-                    score_calc = calcular_score_real(st.session_state['dados'])
-                    with st.spinner("Enviando e-mail de notificação e registrando no Bigin..."):
-                        sucesso_email, msg_email = enviar_email_admin_com_pdf(st.session_state['dados'], score_calc, pdf_bytes, filename_pdf=nome_arquivo_pdf)
-                        sucesso_bigin = enviar_lead_zoho_bigin(st.session_state['dados'], score_calc)
-
-                    if sucesso_email:
-                        st.success("✅ E-mail com o PDF enviado para contato@tour360vr.com.br!")
-                    else:
-                        st.error(f"❌ Erro no e-mail: {msg_email}")
-
-                    if sucesso_bigin:
-                        st.success("✅ Lead registrado no Zoho Bigin!")
-                    else:
-                        st.warning("⚠️ Não foi possível salvar automaticamente no Bigin.")
-
-    st.markdown("</div>", unsafe_allow_html=True)
-
-    col_nav1, col_nav2 = st.columns([1, 2])
-    with col_nav1:
-        if st.button("⬅️ Voltar para Ajuste de Valores", use_container_width=True, key="btn_nav_aba5_back", type="secondary"):
-            st.session_state['etapa_atual'] = 4
-            st.rerun()
-
-# -----------------------------------------------------------------------------
-# 9. RODAPÉ FIXO
-# -----------------------------------------------------------------------------
-st.markdown("""
-    <div class='custom-footer'>
-        <a href='https://tour360vr.com.br' target='_blank'>tour360vr.com.br</a> | 
-        <a href='mailto:contato@tour360vr.com.br'>contato@tour360vr.com.br</a> | 
-        Whatsapp: (16) 99133-2121 | 
-        <b>Tour360VR - Gestão de Perfil do Google</b>
-    </div>
-""", unsafe_allow_html=True)
+        except Exception
