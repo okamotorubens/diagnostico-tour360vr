@@ -560,7 +560,7 @@ def gerar_pdf_diagnostico_individual(lead):
       leftMargin=36,
       topMargin=75,
       bottomMargin=50,
-      title=f"Diagnóstico - {lead['nome']}",
+      title=f"Diagnóstico de Presença Digital - {lead['nome']}",
       author="Tour360VR",
   )
 
