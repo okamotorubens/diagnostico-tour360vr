@@ -325,7 +325,7 @@ def limpar_banco_dados():
     st.error(f"Erro ao limpar banco: {str(e)}")
 
 # -----------------------------------------------------------------------------
-# CÁLCULO DE SCORE DE OTIMIZAÇÃO & AUDITORIA DA FICHA
+# CÁLCULO DINÂMICO DE SCORE E AUDITORIA DA FICHA
 # -----------------------------------------------------------------------------
 def calcular_score_e_auditoria(
     fotos_total,
@@ -369,6 +369,15 @@ def calcular_score_e_auditoria(
         " Google"
     )
     score_saude -= 20
+  elif nota < 4.2:
+    pontos_criticos.append(
+        f"Média de nota em atenção ({nota} ⭐), abaixo do padrão ideal de"
+        " recomendação local"
+    )
+    oportunidades.append(
+        "Plano de Gestão de Respostas a Clientes e Reversão de Avaliações"
+    )
+    score_saude -= 10
 
   if not tour_360:
     pontos_criticos.append(
@@ -387,6 +396,15 @@ def calcular_score_e_auditoria(
     )
     oportunidades.append(
         "Produção de Fotografia Profissional em Alta Resolução"
+    )
+    score_saude -= 15
+
+  if not reivindicada:
+    pontos_criticos.append(
+        "Perfil não reivindicado oficialmente no Google Meu Negócio"
+    )
+    oportunidades.append(
+        "Verificação Institucional e Otimização da Ficha do Google"
     )
     score_saude -= 15
 
@@ -523,7 +541,7 @@ def desenhar_cabecalho_rodape_diagnostico(canvas, doc):
       fontSize=10,
       leading=13,
       textColor=colors.HexColor("#0f172a"),
-      alignment=2,  # ALINHADO À DIREITA
+      alignment=2,
   )
 
   head_p = Paragraph(
@@ -535,12 +553,11 @@ def desenhar_cabecalho_rodape_diagnostico(canvas, doc):
   head_table.wrapOn(canvas, 380, 36)
   head_table.drawOn(canvas, 196, 734)
 
-  # Linha divisória em tom azul acinzentado
   canvas.setStrokeColor(colors.HexColor("#cbd5e1"))
   canvas.setLineWidth(0.75)
   canvas.line(36, 720, 576, 720)
 
-  # --- RODAPÉ (PRETO/CINZA, SEM NEGRITO) ---
+  # --- RODAPÉ ---
   canvas.setStrokeColor(colors.HexColor("#cbd5e1"))
   canvas.setLineWidth(0.75)
   canvas.line(36, 32, 576, 32)
@@ -551,7 +568,7 @@ def desenhar_cabecalho_rodape_diagnostico(canvas, doc):
       fontName="Helvetica",
       fontSize=8,
       textColor=colors.HexColor("#475569"),
-      alignment=1,  # Centralizado
+      alignment=1,
   )
 
   zap_clean = "".join(filter(str.isdigit, CONTATO_WHATSAPP))
@@ -567,7 +584,6 @@ def desenhar_cabecalho_rodape_diagnostico(canvas, doc):
 def gerar_pdf_diagnostico_individual(lead):
   buffer = io.BytesIO()
 
-  # Configuração de margens para preencher perfeitamente a página A4
   doc = SimpleDocTemplate(
       buffer,
       pagesize=letter,
@@ -623,6 +639,7 @@ def gerar_pdf_diagnostico_individual(lead):
       website=lead.get("website", ""),
       total_avaliacoes=lead.get("total_avaliacoes", 0),
       nota=lead.get("nota", 0.0),
+      reivindicada=lead.get("reivindicada", True),
   )
 
   score_saude = auditoria["score_saude"]
@@ -632,7 +649,6 @@ def gerar_pdf_diagnostico_individual(lead):
   av_total = lead.get("total_avaliacoes", 0)
   nota_val = lead.get("nota", 0.0)
 
-  # Cores dinâmicas para o quadro de atenção
   if score_saude < 50:
     bg_alerta = "#fef2f2"
     border_alerta = "#ef4444"
@@ -655,12 +671,10 @@ def gerar_pdf_diagnostico_individual(lead):
 
   elements = []
 
-  # 1. ESPAÇO AMPLIADO ENTRE CABEÇALHO E TÍTULO PRINCIPAL
   elements.append(Spacer(1, 14))
   elements.append(Paragraph("DIAGNÓSTICO DE PRESENÇA DIGITAL", style_title))
   elements.append(Spacer(1, 8))
 
-  # 2. CONTAINER COM DADOS DA EMPRESA
   dados_empresa_html = (
       f"<b>Empresa:</b> {lead['nome']} ({lead['categoria']}) &nbsp;|&nbsp;"
       f" <b>Cidade:</b> {lead['cidade_busca']}<br/><b>Endereço:</b>"
@@ -679,13 +693,11 @@ def gerar_pdf_diagnostico_individual(lead):
   )
   elements.append(t_dados)
 
-  # 3. +1 ESPAÇO ANTES E DEPOIS DO SUBTÍTULO
-  elements.append(Spacer(1, 12))  # +1 Linha antes
+  elements.append(Spacer(1, 12))
   subtitulo_html = "Este diagnóstico foi elaborado pelo Tour360VR com base em inteligência de mercado local<br/>para destacar pontos cegos na sua vitrine digital do Google."
   elements.append(Paragraph(subtitulo_html, style_sub))
-  elements.append(Spacer(1, 12))  # +1 Linha depois
+  elements.append(Spacer(1, 12))
 
-  # 4. QUADRO DE ATENÇÃO DINÂMICO
   txt_alerta = f"SEU PERFIL TEM NOTA SÓLIDA DE {nota_val} COM {av_total} AVALIAÇÕES NO GOOGLE, MAS A FALTA DE EXPERIÊNCIA IMERSIVA DEIXA DINHEIRO NA MESA."
   p_alerta = Paragraph(
       f"<b><font color='{txt_alerta_color}' size='8.5'>{txt_alerta}</font></b>",
@@ -702,7 +714,6 @@ def gerar_pdf_diagnostico_individual(lead):
   elements.append(t_alerta)
   elements.append(Spacer(1, 10))
 
-  # 5. QUADRO DE SCORE GERAL E AVALIAÇÕES
   p_card_score = Paragraph(
       f"<b>SCORE GERAL</b><br/><font size='18'"
       f" color='{cor_score}'><b>{score_saude} / 100</b></font>",
@@ -732,7 +743,7 @@ def gerar_pdf_diagnostico_individual(lead):
   elements.append(t_cards)
   elements.append(Spacer(1, 10))
 
-  # 6. TABELA COM CABEÇALHO AZUL MÉDIO (#2563eb) E TEXTO BRANCO
+  # 6. TABELA COM CABEÇALHO EM AZUL ESCURO (#1e3a8a / AZUL MARINHO ESCURO)
   itens_9 = [
       (
           "1. Fotos e Resolução Visual",
@@ -816,7 +827,7 @@ def gerar_pdf_diagnostico_individual(lead):
   t_9 = Table(rows_9, colWidths=[170, 75, 295])
   t_9.setStyle(
       TableStyle([
-          ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#2563eb")),  # AZUL DE TOM MÉDIO
+          ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1e3a8a")),  # AZUL ESCURO PROFISSIONAL
           ("BACKGROUND", (0, 1), (-1, -1), colors.white),
           ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#f1f5f9")),
           ("BOX", (0, 0), (-1, -1), 0.75, colors.HexColor("#cbd5e1")),
@@ -827,7 +838,7 @@ def gerar_pdf_diagnostico_individual(lead):
   elements.append(t_9)
   elements.append(Spacer(1, 10))
 
-  # 7. PONTOS CRÍTICOS IDENTIFICADOS NA VITRINE DIGITAL
+  # 7. PONTOS CRÍTICOS IDENTIFICADOS NA VITRINE DIGITAL (DINÂMICOS POR EMPRESA)
   elements.append(
       Paragraph(
           "PONTOS CRÍTICOS IDENTIFICADOS NA VITRINE DIGITAL",
@@ -863,7 +874,7 @@ def gerar_pdf_diagnostico_individual(lead):
   elements.append(t_criticos)
   elements.append(Spacer(1, 10))
 
-  # 8. OPORTUNIDADES DE TRANSFORMAÇÃO E RETORNO COMERCIAL
+  # 8. OPORTUNIDADES DE TRANSFORMAÇÃO E RETORNO COMERCIAL (DINÂMICAS POR EMPRESA)
   elements.append(
       Paragraph(
           "OPORTUNIDADES DE TRANSFORMAÇÃO E RETORNO COMERCIAL",
@@ -897,9 +908,9 @@ def gerar_pdf_diagnostico_individual(lead):
       ])
   )
   elements.append(t_op)
-  elements.append(Spacer(1, 12))
+  elements.append(Spacer(1, 10))
 
-  # 9. CONTAINER DE CTA E BOTÃO DO WHATSAPP (COM CANTOS ARREDONDADOS E MAIOR ALTURA)
+  # 9. CONTAINER DE CTA E BOTÃO COM CANTOS ARREDONDADOS E MAIOR ALTURA
   zap_num = (
       lead.get("whatsapp")
       or "".join(filter(str.isdigit, lead.get("telefone", "")))
@@ -907,7 +918,6 @@ def gerar_pdf_diagnostico_individual(lead):
   )
   link_wa = f"https://wa.me/55{zap_num}?text=Olá!%20Gostaria%20de%20solicitar%20a%20implantação%20do%20Tour%20Virtual%20360°%20para%20a%20{urllib.parse.quote(lead['nome'])}"
 
-  # Texto de chamada interno (Removido o quadrado preto)
   p_cta_title = Paragraph(
       "<b>VAMOS TRANSFORMAR A SUA FICHA EM UM ÍMÃ DE CLIENTES?</b><br/>"
       "<font color='#475569'>Implante o Tour Virtual 360° e a reestruturação profissional do perfil no Google Maps.</font>",
@@ -921,7 +931,6 @@ def gerar_pdf_diagnostico_individual(lead):
       ),
   )
 
-  # Botão Verde de Ação com Link do WhatsApp (Removido o quadrado preto)
   p_btn_wa = Paragraph(
       f'<a href="{link_wa}" color="#ffffff"><b>CLIQUE AQUI E FALE DIRETO NO WHATSAPP: {CONTATO_WHATSAPP}</b></a>',
       ParagraphStyle(
@@ -934,39 +943,23 @@ def gerar_pdf_diagnostico_individual(lead):
       ),
   )
 
-  # Desenho do Botão Verde com Cantos Arredondados e maior altura (Drawing Shape)
-  d_btn = Drawing(400, 28)
-  d_btn.add(
-      Rect(
-          0,
-          0,
-          400,
-          28,
-          fillColor=colors.HexColor("#16a34a"),
-          strokeColor=colors.HexColor("#15803d"),
-          strokeWidth=1,
-          rx=6,
-          ry=6,
-      )
-  )
-
   t_btn_inner = Table([[p_btn_wa]], colWidths=[400])
   t_btn_inner.setStyle(
       TableStyle([
           ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#16a34a")),
-          ("PADDING", (0, 0), (-1, -1), 7),
+          ("PADDING", (0, 0), (-1, -1), 8),
           ("ALIGN", (0, 0), (-1, -1), "CENTER"),
           ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
       ])
   )
 
-  # Tabela pai do CTA com maior altura e padding expandido
-  t_cta = Table([[p_cta_title], [Spacer(1, 8)], [t_btn_inner]], colWidths=[430])
+  # Tabela do CTA com cantos arredondados suavizados e maior espaçamento
+  t_cta = Table([[p_cta_title], [Spacer(1, 8)], [t_btn_inner]], colWidths=[440])
   t_cta.setStyle(
       TableStyle([
           ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#f0f9ff")),
           ("BOX", (0, 0), (-1, -1), 1.25, colors.HexColor("#0284c7")),
-          ("PADDING", (0, 0), (-1, -1), 10),  # AUMENTADA A ALTURA/PADDING
+          ("PADDING", (0, 0), (-1, -1), 12),  # MAIOR ESPAÇAMENTO VERTICAL
           ("ALIGN", (0, 0), (-1, -1), "CENTER"),
           ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
       ])
@@ -1411,7 +1404,6 @@ def enriquecer_redes_sociais(nome_empresa, website):
   return instagram_url, facebook_url
 
 def obter_lat_lng_cidade(cidade_nome, api_key):
-  """Obtém as coordenadas centrais dinâmicas de qualquer cidade digitada."""
   try:
     url_geo = f"https://maps.googleapis.com/maps/api/geocode/json?address={urllib.parse.quote(cidade_nome + ', Brasil')}&key={api_key}"
     resp = requests.get(url_geo, timeout=5).json()
