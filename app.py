@@ -2029,7 +2029,7 @@ elif etapa_atual == 5:
                 st.session_state.get('concorrentes', []),
                 paginas_selecionadas=paginas_escolhidas
             )
-       except Exception as e:
+        except Exception as e:
             st.error(f"Erro ao gerar PDF: {e}")
 
         if pdf_bytes:
