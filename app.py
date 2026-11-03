@@ -552,7 +552,7 @@ if 'unidades_encontradas' not in st.session_state:
     st.session_state['unidades_encontradas'] = []
 
 # -----------------------------------------------------------------------------
-# 5. GERADOR DE PDF - PADRÃO ORIGINAL RESTAURADO COM ESPAÇAMENTO HARMÔNICO
+# 5. GERADOR DE PDF - PADRÃO CLÁSSICO RESTAURADO COM O DEGRADÊ CORRETO
 # -----------------------------------------------------------------------------
 class PDFTour360Oficial(FPDF):
     def __init__(self, *args, **kwargs):
@@ -784,7 +784,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         set_color_safe(pdf, 71, 85, 105, fn_type='text')
         _ = pdf.cell(177, 5, conv("Tour360VR  |  (16) 99133-2121  |  Ribeirão Preto - SP  |  tour360vr.com.br"), align='C')
 
-    # PÁGINA 2: AUDITORIA - LAYOUT ORIGINAL EXATO E HARMÔNICO
+    # PÁGINA 2: AUDITORIA - PADRÃO CLÁSSICO COM BARRA DE DEGRADÊ RESTAURADA
     if 2 in paginas_selecionadas:
         _ = pdf.add_page()
         
@@ -823,6 +823,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         set_color_safe(pdf, 15, 23, 42, fn_type='text')
         _ = pdf.cell(w_q1, 5.0, f"{score} /100", align='C')
 
+        # BARRA DE DEGRADÊ RESTAURADA EXATAMENTE COMO NO PADRÃO ORIGINAL
         y_term = y_quadros_topo + 14.5
         w_term = 70.0
         x_term_start = x_q1 + (w_q1 - w_term) / 2.0
@@ -961,7 +962,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         set_color_safe(pdf, tx_corpo_atencao, fn_type='text')
         _ = pdf.multi_cell(w_atencao - 12, 3.0, conv(txt_atencao), align='L')
 
-        # BLOCO INFERIOR: PLANO DE AÇÃO (ORIGINAL E ESPAÇOSO)
+        # PLANO DE AÇÃO (INTEGRADO COM GEMINI AI)
         if plano_acao_extra and plano_acao_extra.strip() != "":
             y_extra_top = y_atencao + h_atencao + 5.0
             w_extra, x_extra = 177.0, 21.0
