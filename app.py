@@ -354,7 +354,9 @@ def buscar_detalhes_concorrente_especifico(nome_concorrente, cidade, api_key):
                 "tem_website": "Sim" if res_det.get("website") else "Não",
                 "tem_descricao": "Sim" if "editorial_summary" in res_det else "Não",
                 "atributos_ok": "Não",
-                "respostas_ok": "Não"
+                "respostas_ok": "Não",
+                "busca_termo": nome_concorrente,
+                "cidade": cidade
             }
     except Exception: pass
     return None
@@ -363,20 +365,25 @@ def sugerir_concorrentes_por_proximidade(dados, api_key):
     if not api_key: return []
     lat = dados.get("lat")
     lng = dados.get("lng")
-    categorias = dados.get("categorias_detectadas", [])
+    endereco_completo = dados.get("endereco", "")
     
+    # Extrair cidade do endereço de forma simples para busca textual segura
+    cidade_extraida = ""
+    if endereco_completo:
+        partes = endereco_completo.split(",")
+        if len(partes) >= 2:
+            cidade_extraida = partes[-2].strip()
+
     if not lat or not lng:
         return []
     
-    keyword_busca = categorias[0] if categorias else "estabelecimento"
-    url_nearby = (
-        f"https://maps.googleapis.com/maps/api/place/nearbysearch/json?"
-        f"location={lat},{lng}&radius=3000&keyword={requests.utils.quote(keyword_busca)}&key={api_key}"
-    )
+    # Realiza uma busca textsearch próxima para garantir concorrentes reais do mesmo tipo na cidade
+    termo_busca = f"churrascaria restaurante {cidade_extraida}" if "churrasco" in str(dados.get("nome", "")).lower() else f"restaurante {cidade_extraida}"
+    url_search = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={requests.utils.quote(termo_busca)}&key={api_key}"
     
     concorrentes_sugeridos = []
     try:
-        resp = requests.get(url_nearby, timeout=6).json()
+        resp = requests.get(url_search, timeout=6).json()
         if resp.get("status") == "OK":
             resultados = resp.get("results", [])
             nome_cliente = str(dados.get("nome", "")).strip().lower()
@@ -404,7 +411,8 @@ def sugerir_concorrentes_por_proximidade(dados, api_key):
                     "tem_descricao": "Sim" if "editorial_summary" in res_det else "Não",
                     "atributos_ok": "Não",
                     "respostas_ok": "Não",
-                    "busca_termo": res_det.get("name", nome_lugar)
+                    "busca_termo": res_det.get("name", nome_lugar),
+                    "cidade": cidade_extraida
                 })
                 if len(concorrentes_sugeridos) >= 3:
                     break
@@ -534,7 +542,7 @@ TEXTO_PLANO_ACAO_PADRAO = (
     "Ações prioritárias para otimização e diferenciação local:\n"
     "1. Atração Local (SEO): Correção cadastral e otimização das categorias principal e secundárias.\n"
     "2. Segurança & Posicionamento: Frequência de atualização para sinalizar ao Google que o perfil está ativo.\n"
-    "3. Confiança & Autoridade: Publicação do Tour Virtual 360° no Street View e fotos em alta resolução.\n"
+    "3. Confiança & Autoridade: Publication do Tour Virtual 360° no Street View e fotos em alta resolução.\n"
     "4. Vitrine Imersiva: Padronização do acervo visual do espaço e integração dos canais de contato direto."
 )
 
@@ -1867,14 +1875,21 @@ if etapa_atual == 1:
                         st.session_state['dados']['categorias_detectadas'] = types_lista
                         st.session_state['dados']['foto_reference'] = photos[0].get("photo_reference") if photos else ""
 
-                        # BUSCA AUTOMÁTICA DE CONCORRENTES POR PROXIMIDADE E NICHO
+                        # BUSCA INTELIGENTE DE CONCORRENTES REAIS DA REGIÃO
                         sugestoes = sugerir_concorrentes_por_proximidade(st.session_state['dados'], API_KEY_GOOGLE)
                         if sugestoes:
                             while len(sugestoes) < 3:
                                 sugestoes.append({"nome": "", "nota": 0.0, "avaliacoes": 0, "busca_termo": "", "cidade": "", "tem_fotos_hd": "Não", "tem_tour360": "Não", "categorias_ok": "Não", "horarios_ok": "Não", "tem_website": "Não", "tem_descricao": "Não", "atributos_ok": "Não", "respostas_ok": "Não"})
                             st.session_state['concorrentes'] = sugestoes[:3]
+                        else:
+                            # Se não encontrar automaticamente, limpa os campos para o usuário preencher limpo
+                            st.session_state['concorrentes'] = [
+                                {"nome": "", "nota": 0.0, "avaliacoes": 0, "busca_termo": "", "cidade": "", "tem_fotos_hd": "Não", "tem_tour360": "Não", "categorias_ok": "Não", "horarios_ok": "Não", "tem_website": "Não", "tem_descricao": "Não", "atributos_ok": "Não", "respostas_ok": "Não"},
+                                {"nome": "", "nota": 0.0, "avaliacoes": 0, "busca_termo": "", "cidade": "", "tem_fotos_hd": "Não", "tem_tour360": "Não", "categorias_ok": "Não", "horarios_ok": "Não", "tem_website": "Não", "tem_descricao": "Não", "atributos_ok": "Não", "respostas_ok": "Não"},
+                                {"nome": "", "nota": 0.0, "avaliacoes": 0, "busca_termo": "", "cidade": "", "tem_fotos_hd": "Não", "tem_tour360": "Não", "categorias_ok": "Não", "horarios_ok": "Não", "tem_website": "Não", "tem_descricao": "Não", "atributos_ok": "Não", "respostas_ok": "Não"}
+                            ]
 
-                        st.success("Dados carregados e concorrentes do mesmo nicho sugeridos com sucesso!")
+                        st.success("Dados carregados com sucesso! Verifique os concorrentes sugeridos na etapa 2.")
                         st.rerun()
                     except Exception as e:
                         st.error(f"Erro ao obter detalhes: {e}")
@@ -1909,10 +1924,10 @@ if etapa_atual == 1:
             st.session_state['etapa_atual'] = 2
             st.rerun()
 
-# ETAPA 2: AVALIAÇÃO DE CONCORRENTES (Com Sugestão Inteligente e Edição Manual)
+# ETAPA 2: AVALIAÇÃO DE CONCORRENTES (Com Validação e Edição Completa)
 elif etapa_atual == 2:
     st.markdown("<div class='dashboard-card'><div class='card-title'>⚔️ 2. VALIDAÇÃO E EDIÇÃO DE CONCORRENTES</div>", unsafe_allow_html=True)
-    st.caption("O sistema sugeriu automaticamente concorrentes do mesmo nicho/categoria com base na localização. Valide, edite ou substitua caso necessário.")
+    st.caption("Revise os concorrentes sugeridos ou digite os nomes reais dos concorrentes da região. Clique em atualizar para carregar as notas do Google.")
 
     with st.form(key="form_concorrentes_fix"):
         inputs_conc = []
