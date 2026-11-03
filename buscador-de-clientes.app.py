@@ -743,7 +743,7 @@ def gerar_pdf_diagnostico_individual(lead):
   elements.append(t_cards)
   elements.append(Spacer(1, 10))
 
-  # 6. TABELA COM CABEÇALHO EM AZUL ESCURO (#1e3a8a / AZUL MARINHO ESCURO)
+  # ITENS DE AUDITORIA (CABEÇALHO EM AZUL ESCURO #1e3a8a)
   itens_9 = [
       (
           "1. Fotos e Resolução Visual",
@@ -827,7 +827,7 @@ def gerar_pdf_diagnostico_individual(lead):
   t_9 = Table(rows_9, colWidths=[170, 75, 295])
   t_9.setStyle(
       TableStyle([
-          ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1e3a8a")),  # AZUL ESCURO PROFISSIONAL
+          ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1e3a8a")),
           ("BACKGROUND", (0, 1), (-1, -1), colors.white),
           ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#f1f5f9")),
           ("BOX", (0, 0), (-1, -1), 0.75, colors.HexColor("#cbd5e1")),
@@ -838,7 +838,7 @@ def gerar_pdf_diagnostico_individual(lead):
   elements.append(t_9)
   elements.append(Spacer(1, 10))
 
-  # 7. PONTOS CRÍTICOS IDENTIFICADOS NA VITRINE DIGITAL (DINÂMICOS POR EMPRESA)
+  # PONTOS CRÍTICOS
   elements.append(
       Paragraph(
           "PONTOS CRÍTICOS IDENTIFICADOS NA VITRINE DIGITAL",
@@ -874,7 +874,7 @@ def gerar_pdf_diagnostico_individual(lead):
   elements.append(t_criticos)
   elements.append(Spacer(1, 10))
 
-  # 8. OPORTUNIDADES DE TRANSFORMAÇÃO E RETORNO COMERCIAL (DINÂMICAS POR EMPRESA)
+  # OPORTUNIDADES
   elements.append(
       Paragraph(
           "OPORTUNIDADES DE TRANSFORMAÇÃO E RETORNO COMERCIAL",
@@ -910,7 +910,7 @@ def gerar_pdf_diagnostico_individual(lead):
   elements.append(t_op)
   elements.append(Spacer(1, 10))
 
-  # 9. CONTAINER DE CTA E BOTÃO COM CANTOS ARREDONDADOS E MAIOR ALTURA
+  # CONTAINER DE CTA COM CANTOS ARREDONDADOS E BOTÃO ESTILO WHATSAPP MODERNO
   zap_num = (
       lead.get("whatsapp")
       or "".join(filter(str.isdigit, lead.get("telefone", "")))
@@ -926,40 +926,43 @@ def gerar_pdf_diagnostico_individual(lead):
           parent=style_normal,
           alignment=1,
           fontSize=9,
-          leading=13,
+          leading=14,
           textColor=colors.HexColor("#0f172a"),
       ),
   )
 
+  # Botão verde moderno com ícone representativo e cantos simulados/estilizados
   p_btn_wa = Paragraph(
-      f'<a href="{link_wa}" color="#ffffff"><b>CLIQUE AQUI E FALE DIRETO NO WHATSAPP: {CONTATO_WHATSAPP}</b></a>',
+      f'<a href="{link_wa}" color="#ffffff"><b>🟢 CLIQUE AQUI E FALE DIRETO NO WHATSAPP: {CONTATO_WHATSAPP}</b></a>',
       ParagraphStyle(
           "WaBtnTxt",
           parent=style_normal,
           alignment=1,
-          fontSize=8.5,
-          leading=11,
+          fontSize=9,
+          leading=12,
           textColor=colors.white,
       ),
   )
 
-  t_btn_inner = Table([[p_btn_wa]], colWidths=[400])
+  t_btn_inner = Table([[p_btn_wa]], colWidths=[440])
   t_btn_inner.setStyle(
       TableStyle([
-          ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#16a34a")),
+          ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#16a34a")),  # VERDE WHATSAPP
+          ("ROUNDEDCORNERS", [6, 6, 6, 6]),  # Cantos arredondados no botão interno
           ("PADDING", (0, 0), (-1, -1), 8),
           ("ALIGN", (0, 0), (-1, -1), "CENTER"),
           ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
       ])
   )
 
-  # Tabela do CTA com cantos arredondados suavizados e maior espaçamento
-  t_cta = Table([[p_cta_title], [Spacer(1, 8)], [t_btn_inner]], colWidths=[440])
+  # Container externo do CTA com cantos arredondados, fundo azul suave e respiro vertical amplo
+  t_cta = Table([[p_cta_title], [Spacer(1, 10)], [t_btn_inner]], colWidths=[480])
   t_cta.setStyle(
       TableStyle([
           ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#f0f9ff")),
           ("BOX", (0, 0), (-1, -1), 1.25, colors.HexColor("#0284c7")),
-          ("PADDING", (0, 0), (-1, -1), 12),  # MAIOR ESPAÇAMENTO VERTICAL
+          ("ROUNDEDCORNERS", [10, 10, 10, 10]),  # Cantos arredondados externos modernos
+          ("PADDING", (0, 0), (-1, -1), 14),  # Amplo espaçamento interno de respiro
           ("ALIGN", (0, 0), (-1, -1), "CENTER"),
           ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
       ])
@@ -1377,7 +1380,7 @@ def mudar_etapa(nova_etapa):
   st.rerun()
 
 # -----------------------------------------------------------------------------
-# BUSCA REAL GOOGLE PLACES API (VARREDURA REGIONAL DINÂMICA COM LOCALIZAÇÃO EXATA)
+# BUSCA REAL GOOGLE PLACES API
 # -----------------------------------------------------------------------------
 def enriquecer_redes_sociais(nome_empresa, website):
   nome_normalizado = (
