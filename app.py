@@ -2029,4 +2029,60 @@ elif etapa_atual == 5:
                 st.session_state.get('concorrentes', []),
                 paginas_selecionadas=paginas_escolhidas
             )
-        except Exception
+       except Exception as e:
+            st.error(f"Erro ao gerar PDF: {e}")
+
+        if pdf_bytes:
+            with col_down1:
+                st.download_button(
+                    label=f"📥 Baixar PDF ({len(paginas_escolhidas)} Pág(s))",
+                    data=pdf_bytes,
+                    file_name=nome_arquivo_pdf,
+                    mime="application/pdf",
+                    use_container_width=True,
+                    key="btn_download_wizard"
+                )
+                
+            with col_down2:
+                st.link_button(
+                    label="📲 Abrir WhatsApp",
+                    url=link_wa,
+                    use_container_width=True
+                )
+
+            with col_down3:
+                if st.button("📧 Enviar para Meu E-mail & Bigin", use_container_width=True, type="primary", key="btn_enviar_admin_bigin"):
+                    score_calc = calcular_score_real(st.session_state['dados'])
+                    with st.spinner("Enviando e-mail de notificação e registrando no Bigin..."):
+                        sucesso_email, msg_email = enviar_email_admin_com_pdf(st.session_state['dados'], score_calc, pdf_bytes, filename_pdf=nome_arquivo_pdf)
+                        sucesso_bigin = enviar_lead_zoho_bigin(st.session_state['dados'], score_calc)
+
+                    if sucesso_email:
+                        st.success("✅ E-mail com o PDF enviado para contato@tour360vr.com.br!")
+                    else:
+                        st.error(f"❌ Erro no e-mail: {msg_email}")
+
+                    if sucesso_bigin:
+                        st.success("✅ Lead registrado no Zoho Bigin!")
+                    else:
+                        st.warning("⚠️ Não foi possível salvar automaticamente no Bigin.")
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    col_nav1, col_nav2 = st.columns([1, 2])
+    with col_nav1:
+        if st.button("⬅️ Voltar para Ajuste de Valores", use_container_width=True, key="btn_nav_aba5_back", type="secondary"):
+            st.session_state['etapa_atual'] = 4
+            st.rerun()
+
+# -----------------------------------------------------------------------------
+# 9. RODAPÉ FIXO
+# -----------------------------------------------------------------------------
+st.markdown("""
+    <div class='custom-footer'>
+        <a href='https://tour360vr.com.br' target='_blank'>tour360vr.com.br</a> | 
+        <a href='mailto:contato@tour360vr.com.br'>contato@tour360vr.com.br</a> | 
+        Whatsapp: (16) 99133-2121 | 
+        <b>Tour360VR - Gestão de Perfil do Google</b>
+    </div>
+""", unsafe_allow_html=True)
