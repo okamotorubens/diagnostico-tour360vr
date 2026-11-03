@@ -249,7 +249,7 @@ SMTP_USER = "contato@tour360vr.com.br"
 SMTP_PASS = "Kakaroto@2026"
 
 # -----------------------------------------------------------------------------
-# 3. FUNÇÕES UTILITÁRIAS, LOGOS, E-MAIL & ZOHO
+# 3. INTEGRAÇÕES DE APIS AVANÇADAS (SERPAPI, GEMINI, PAGESPEED)
 # -----------------------------------------------------------------------------
 def conv(texto):
     if not texto: return ""
@@ -266,6 +266,85 @@ def carregar_imagem_base64(caminho):
         except Exception:
             pass
     return ""
+
+def buscar_dados_serpapi(nome_empresa, cidade):
+    """Busca avaliações detalhadas recentes e concorrentes diretos no Google Maps via SerpAPI."""
+    if not SERPAPI_KEY:
+        return None, []
+    try:
+        q = f"{nome_empresa} {cidade}"
+        url = f"https://serpapi.com/search.json?engine=google_maps&q={requests.utils.quote(q)}&api_key={SERPAPI_KEY}"
+        resp = requests.get(url, timeout=8).json()
+        
+        place_results = resp.get("place_results", {})
+        local_results = resp.get("local_results", [])
+        
+        # Extrai avaliações pontuais
+        reviews = place_results.get("user_reviews", {}).get("most_relevant", [])
+        
+        concorrentes_serp = []
+        for item in local_results:
+            if nome_empresa.lower() not in item.get("title", "").lower():
+                concorrentes_serp.append({
+                    "nome": item.get("title", ""),
+                    "nota": float(item.get("rating", 0.0)),
+                    "avaliacoes": int(item.get("reviews", 0)),
+                    "tem_fotos_hd": "Sim" if item.get("photos_count", 0) > 10 else "Não",
+                    "tem_tour360": "Não",
+                    "categorias_ok": "Sim",
+                    "horarios_ok": "Sim" if item.get("operating_hours") else "Não",
+                    "tem_website": "Sim" if item.get("website") else "Não",
+                    "tem_descricao": "Sim",
+                    "atributos_ok": "Não",
+                    "respostas_ok": "Não"
+                })
+                if len(concorrentes_serp) >= 3:
+                    break
+        return reviews, concorrentes_serp
+    except Exception as e:
+        print(f"Erro SerpAPI: {e}")
+        return None, []
+
+def testar_performance_pagespeed(url_website):
+    """Analisa a nota de velocidade e otimização SEO do site do cliente via PageSpeed Insights."""
+    if not url_website or url_website == "Não possui" or not PAGESPEED_API_KEY:
+        return None
+    try:
+        url_api = f"https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url={requests.utils.quote(url_website)}&strategy=mobile&key={PAGESPEED_API_KEY}"
+        resp = requests.get(url_api, timeout=10).json()
+        score = resp.get("lighthouseResult", {}).get("categories", {}).get("performance", {}).get("score", 0)
+        return int(score * 100)
+    except Exception:
+        return None
+
+def gerar_plano_acao_gemini(dados_empresa, avaliações_rec):
+    """Gera um Plano de Ação Personalizado focado nas queixas reais dos clientes via Gemini AI."""
+    if not GEMINI_API_KEY:
+        return None
+    try:
+        reviews_texto = "\n".join([f"- Nota {r.get('rating')}: {r.get('snippet')}" for r in avaliações_rec[:5] if r.get('snippet')])
+        prompt = f"""
+        Você é um consultor especialista em SEO local e perfil do Google Meu Negócio da Tour360VR.
+        Gere um Plano de Ação Estratégico com exatamente 4 pontos diretos para a empresa {dados_empresa.get('nome')}.
+        
+        Dados atuais:
+        - Nota: {dados_empresa.get('nota')} ({dados_empresa.get('avaliacoes')} avaliações)
+        - Possui Tour 360: {dados_empresa.get('tem_tour360')}
+        - Principais reclamações recentes dos clientes:
+        {reviews_texto if reviews_texto else 'Pouca interatividade no perfil e falta de atualização das fotos.'}
+        
+        Escreva 4 ações curtas, profissionais e altamente persuasivas em português do Brasil, numeradas de 1 a 4.
+        """
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={GEMINI_API_KEY}"
+        payload = {"contents": [{"parts": [{"text": prompt}]}]}
+        headers = {'Content-Type': 'application/json'}
+        resp = requests.post(url, json=payload, headers=headers, timeout=10).json()
+        
+        texto_gerado = resp['candidates'][0]['content']['parts'][0]['text']
+        return texto_gerado.strip()
+    except Exception as e:
+        print(f"Erro Gemini: {e}")
+        return None
 
 def calcular_score_real(dados):
     if not dados.get("nome"): return 0
@@ -342,35 +421,6 @@ def obter_imagem_mapa_google(dados, api_key, largura=700, altura=320, zoom=14):
             return io.BytesIO(resp.content)
     except Exception:
         pass
-    return None
-
-def buscar_detalhes_concorrente_especifico(nome_concorrente, cidade, api_key):
-    if not nome_concorrente or not api_key: return None
-    try:
-        termo = f"{nome_concorrente}, {cidade}" if cidade else nome_concorrente
-        url_search = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={requests.utils.quote(termo)}&key={api_key}"
-        res = requests.get(url_search).json()
-        if res.get("status") == "OK" and res.get("results"):
-            item = res["results"][0]
-            place_id = item.get("place_id")
-            url_det = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=website,editorial_summary,opening_hours,photos,types&key={api_key}"
-            res_det = requests.get(url_det).json().get("result", {})
-            photos = res_det.get("photos", item.get("photos", []))
-            types_lista = res_det.get("types", [])
-            return {
-                "nome": item.get("name", nome_concorrente),
-                "nota": float(item.get("rating", 0.0)),
-                "avaliacoes": int(item.get("user_ratings_total", 0)),
-                "tem_fotos_hd": "Sim" if len(photos) >= 10 else "Não",
-                "tem_tour360": "Não",
-                "categorias_ok": "Sim" if len(types_lista) >= 3 else "Não",
-                "horarios_ok": "Sim" if "opening_hours" in res_det else "Não",
-                "tem_website": "Sim" if res_det.get("website") else "Não",
-                "tem_descricao": "Sim" if "editorial_summary" in res_det else "Não",
-                "atributos_ok": "Não",
-                "respostas_ok": "Não"
-            }
-    except Exception: pass
     return None
 
 def enviar_lead_zoho_bigin(dados, score):
@@ -474,7 +524,7 @@ if 'dados' not in st.session_state:
         "nota": 0.0, "avaliacoes": 0, "tem_tour360": False, "tem_fotos_hd": False,
         "categorias_completas": False, "horarios_ok": False, "tem_descricao": False,
         "atributos_ok": False, "resposta_avaliacoes_ok": False, "categorias_detectadas": [], "foto_reference": "",
-        "lat": None, "lng": None
+        "lat": None, "lng": None, "pagespeed_score": None, "avaliacoes_detalhadas": []
     }
 
 if 'concorrentes' not in st.session_state:
@@ -506,7 +556,7 @@ if 'unidades_encontradas' not in st.session_state:
     st.session_state['unidades_encontradas'] = []
 
 # -----------------------------------------------------------------------------
-# 5. GERADOR DE PDF INTELIGENTE
+# 5. GERADOR DE PDF COM RESTAURAÇÃO COMPLETA DO LAYOUT ORIGINAL
 # -----------------------------------------------------------------------------
 class PDFTour360Oficial(FPDF):
     def __init__(self, *args, **kwargs):
@@ -633,7 +683,6 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         set_color_safe(pdf, 15, 23, 42, fn_type='text')
         _ = pdf.cell(0, 5, conv("Gestão de reputação e imagem online para o segmento no Google Maps"), align='C', ln=True)
 
-        # CARD CLIENTE
         w_capa, x_capa, y_capa = 177.0, 21.0, 92.0
         h_capa = 38.0
 
@@ -663,7 +712,6 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         _ = pdf.set_x(x_capa)
         _ = pdf.cell(w_capa, 4.5, conv(f"Telefone: {dados.get('telefone') or 'N/I'}   |   {site_txt}"), align='C', ln=True)
 
-        # IMAGEM PRINCIPAL
         y_foto, h_container, w_container = 135.0, 96.0, 177.0
         foto_renderizada = False
 
@@ -701,7 +749,6 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             set_color_safe(pdf, 100, 116, 139, fn_type='text')
             _ = pdf.cell(w_container, 6, conv("[ IMAGEM DA FICHA GOOGLE DO CLIENTE ]"), align='C', ln=True)
 
-        # BANNER DE ALERTA INFERIOR
         w_alerta = 177.0
         x_alerta = 21.0
         y_alerta = y_foto + h_container + 5.0
@@ -721,15 +768,8 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             bg_alerta = (254, 242, 242)
             bd_alerta = (254, 202, 202)
             tx_alerta = (185, 28, 28)
-            if qtd_aval == 0:
-                sub_txt_1 = "SEU PERFIL AINDA NÃO POSSUI AVALIAÇÕES CADASTRADAS NO GOOGLE,"
-                sub_txt_2 = "E A FALTA DE IMPACTO VISUAL FAZ VOCÊ PERDER CLIENTES DIARIAMENTE."
-            elif qtd_aval < 15:
-                sub_txt_1 = f"SEU PERFIL TEM NOTA {nota_cli:.1f} E APENAS {qtd_aval} AVALIAÇÕES NO GOOGLE,"
-                sub_txt_2 = "E A AUSÊNCIA DE CONTEÚDO IMERSIVO LIMITA O SEU CRESCIMENTO."
-            else:
-                sub_txt_1 = f"SEU PERFIL TEM NOTA SÓLIDA DE {nota_cli:.1f} COM {qtd_aval} AVALIAÇÕES NO GOOGLE,"
-                sub_txt_2 = "MAS A FALTA DE EXPERIÊNCIA IMERSIVA DEIXA DINHEIRO NA MESA."
+            sub_txt_1 = f"SEU PERFIL TEM NOTA SÓLIDA DE {nota_cli:.1f} COM {qtd_aval} AVALIAÇÕES NO GOOGLE,"
+            sub_txt_2 = "MAS A FALTA DE EXPERIÊNCIA IMERSIVA DEIXA DINHEIRO NA MESA."
 
         set_color_safe(pdf, bg_alerta, fn_type='fill')
         set_color_safe(pdf, bd_alerta, fn_type='draw')
@@ -743,13 +783,12 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         _ = pdf.set_x(x_alerta)
         _ = pdf.cell(w_alerta, 4.0, conv(sub_txt_2), align='C', ln=True)
 
-        # RODAPÉ ÚNICO NA CAPA
         _ = pdf.set_xy(21, 262.0)
         _ = pdf.set_font('Helvetica', '', 9.0)
         set_color_safe(pdf, 71, 85, 105, fn_type='text')
         _ = pdf.cell(177, 5, conv("Tour360VR  |  (16) 99133-2121  |  Ribeirão Preto - SP  |  tour360vr.com.br"), align='C')
 
-    # PÁGINA 2: AUDITORIA (LAYOUT AJUSTADO E RESPIRADO)
+    # PÁGINA 2: AUDITORIA (LAYOUT ORIGINAL RESTAURADO COM ESPAÇAMENTO RESPIRADO)
     if 2 in paginas_selecionadas:
         _ = pdf.add_page()
         
@@ -758,78 +797,73 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         set_color_safe(pdf, 15, 23, 42, fn_type='text')
         _ = pdf.cell(177, 6, conv('AUDITORIA DETALHADA DE PONTOS DE BUSCA'), align='C', ln=True)
 
-        w_ficha, x_ficha, y_ficha, h_ficha = 177, 21.0, 31.0, 7.5
+        w_ficha, x_ficha, y_ficha, h_ficha = 177, 21.0, 31.0, 8.5
         set_color_safe(pdf, 248, 250, 252, fn_type='fill')
         set_color_safe(pdf, 203, 213, 225, fn_type='draw')
         _ = pdf.set_line_width(0.3)
         _ = pdf.rounded_rect(x_ficha, y_ficha, w_ficha, h_ficha, 2.0, 'FD')
         
-        _ = pdf.set_xy(x_ficha, y_ficha + 1.5)
-        _ = pdf.set_font('Helvetica', 'B', 11.0)
+        _ = pdf.set_xy(x_ficha, y_ficha + 2.0)
+        _ = pdf.set_font('Helvetica', 'B', 11.5)
         set_color_safe(pdf, 30, 64, 175, fn_type='text')
         _ = pdf.cell(w_ficha, 4.5, conv(f"{dados.get('nome') or 'Empresa Analisada'}"), align='C', ln=True)
 
-        y_quadros_topo = 40.5
+        y_quadros_topo = 42.0
         w_q1, w_q2 = 86.0, 86.0
         x_q1, x_q2 = 21.0, 112.0
-        h_q = 18.0
+        h_q = 20.0
 
         set_color_safe(pdf, 255, 255, 255, fn_type='fill')
         set_color_safe(pdf, 226, 232, 240, fn_type='draw')
         _ = pdf.rounded_rect(x_q1, y_quadros_topo, w_q1, h_q, 2.5, 'FD')
 
-        _ = pdf.set_xy(x_q1, y_quadros_topo + 1.8)
-        _ = pdf.set_font('Helvetica', 'B', 7.5)
+        _ = pdf.set_xy(x_q1, y_quadros_topo + 2.0)
+        _ = pdf.set_font('Helvetica', 'B', 8.0)
         set_color_safe(pdf, 15, 23, 42, fn_type='text')
         _ = pdf.cell(w_q1, 3.0, conv("OTIMIZAÇÃO DO PERFIL"), align='C', ln=True)
 
-        _ = pdf.set_xy(x_q1, y_quadros_topo + 4.8)
-        _ = pdf.set_font('Helvetica', 'B', 15)
+        _ = pdf.set_xy(x_q1, y_quadros_topo + 5.5)
+        _ = pdf.set_font('Helvetica', 'B', 16)
         set_color_safe(pdf, 15, 23, 42, fn_type='text')
-        str_score = f"{score} /100"
-        _ = pdf.cell(w_q1, 5.0, str_score, align='C')
+        _ = pdf.cell(w_q1, 5.0, f"{score} /100", align='C')
 
-        y_term = y_quadros_topo + 13.0
+        y_term = y_quadros_topo + 14.5
         w_term = 70.0
         x_term_start = x_q1 + (w_q1 - w_term) / 2.0
         set_color_safe(pdf, 241, 245, 249, fn_type='fill')
-        _ = pdf.rounded_rect(x_term_start, y_term, w_term, 2.2, 1.0, 'F')
+        _ = pdf.rounded_rect(x_term_start, y_term, w_term, 2.5, 1.0, 'F')
         
         steps = int(w_term * (score / 100.0))
         for step in range(steps):
             ratio = step / float(w_term)
-            if ratio < 0.25:
-                r, g, b = int(126 + ratio*4*(219-126)), int(34 + ratio*4*(39-34)), int(206 + ratio*4*(119-206))
-            elif ratio < 0.50:
-                r, g, b = int(219 + (ratio-0.25)*4*(234-219)), int(39 + (ratio-0.25)*4*(88-39)), int(119 + (ratio-0.25)*4*(12-119))
-            elif ratio < 0.75:
-                r, g, b = int(234 + (ratio-0.50)*4*(234-234)), int(88 + (ratio-0.50)*4*(179-88)), int(12 + (ratio-0.50)*4*(8-12))
-            else:
-                r, g, b = int(234 + (ratio-0.75)*4*(16-234)), int(179 + (ratio-0.75)*4*(185-179)), int(8 + (ratio-0.75)*4*(129-8))
+            if ratio < 0.25: r, g, b = 219, 39, 119
+            elif ratio < 0.50: r, g, b = 234, 88, 12
+            elif ratio < 0.75: r, g, b = 234, 179, 8
+            else: r, g, b = 16, 185, 129
             set_color_safe(pdf, r, g, b, fn_type='fill')
-            _ = pdf.rect(x_term_start + step, y_term, 1.05, 2.2, 'F')
+            _ = pdf.rect(x_term_start + step, y_term, 1.05, 2.5, 'F')
 
         set_color_safe(pdf, 255, 255, 255, fn_type='fill')
         set_color_safe(pdf, 226, 232, 240, fn_type='draw')
         _ = pdf.rounded_rect(x_q2, y_quadros_topo, w_q2, h_q, 2.5, 'FD')
 
-        _ = pdf.set_xy(x_q2, y_quadros_topo + 1.8)
-        _ = pdf.set_font('Helvetica', 'B', 7.5)
+        _ = pdf.set_xy(x_q2, y_quadros_topo + 2.0)
+        _ = pdf.set_font('Helvetica', 'B', 8.0)
         set_color_safe(pdf, 15, 23, 42, fn_type='text')
         _ = pdf.cell(w_q2, 3.0, conv("NOTA DOS CLIENTES"), align='C', ln=True)
 
-        _ = pdf.set_xy(x_q2, y_quadros_topo + 4.8)
-        _ = pdf.set_font('Helvetica', 'B', 15)
+        _ = pdf.set_xy(x_q2, y_quadros_topo + 5.5)
+        _ = pdf.set_font('Helvetica', 'B', 16)
         set_color_safe(pdf, 16, 185, 129, fn_type='text')
         _ = pdf.cell(w_q2, 5.0, f"{dados.get('nota', 0.0):.1f} *", align='C')
 
-        _ = pdf.set_xy(x_q2, y_quadros_topo + 11.2)
-        _ = pdf.set_font('Helvetica', '', 7.2)
+        _ = pdf.set_xy(x_q2, y_quadros_topo + 12.5)
+        _ = pdf.set_font('Helvetica', '', 7.5)
         set_color_safe(pdf, 71, 85, 105, fn_type='text')
-        _ = pdf.cell(w_q2, 2.5, conv(f"{dados.get('avaliacoes', 0)} avaliações cadastradas no Google"), align='C', ln=True)
+        _ = pdf.cell(w_q2, 3.0, conv(f"{dados.get('avaliacoes', 0)} avaliações cadastradas no Google"), align='C', ln=True)
 
-        y_start_itens = 61.5
-        h_slot = 6.8
+        y_start_itens = 65.0
+        h_slot = 8.5
 
         pct_avaliacoes = min(int((dados.get('avaliacoes', 0) / 50.0) * 100), 100) if dados.get('avaliacoes', 0) > 0 else 10
         pct_fotos = 100 if dados.get('tem_fotos_hd') else 30
@@ -866,35 +900,35 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             y_curr = y_start_itens + (idx_item * h_slot)
             _ = pdf.set_xy(21, y_curr)
             
-            _ = pdf.set_font('Helvetica', 'B', 7.8)
+            _ = pdf.set_font('Helvetica', 'B', 8.2)
             set_color_safe(pdf, 30, 41, 59, fn_type='text')
-            _ = pdf.cell(120, 2.2, conv(titulo), border=0)
+            _ = pdf.cell(120, 2.5, conv(titulo), border=0)
             
-            _ = pdf.set_font('Helvetica', 'B', 7.8)
+            _ = pdf.set_font('Helvetica', 'B', 8.2)
             if pct < 40: set_color_safe(pdf, 239, 68, 68, fn_type='text')
             elif pct < 80: set_color_safe(pdf, 245, 158, 11, fn_type='text')
             else: set_color_safe(pdf, 22, 128, 61, fn_type='text')
                 
-            _ = pdf.cell(57, 2.2, conv(rotulo), border=0, align='R')
+            _ = pdf.cell(57, 2.5, conv(rotulo), border=0, align='R')
 
-            y_bar = y_curr + 2.5
+            y_bar = y_curr + 3.0
             set_color_safe(pdf, 226, 232, 240, fn_type='fill')
-            _ = pdf.rounded_rect(21, y_bar, 177, 1.0, 0.4, 'F')
+            _ = pdf.rounded_rect(21, y_bar, 177, 1.2, 0.5, 'F')
             
             if pct < 40: set_color_safe(pdf, 239, 68, 68, fn_type='fill')
             elif pct < 80: set_color_safe(pdf, 245, 158, 11, fn_type='fill')
             else: set_color_safe(pdf, 22, 128, 61, fn_type='fill')
                 
-            _ = pdf.rounded_rect(21, y_bar, max(float(pct) * 1.77, 4.0), 1.0, 0.4, 'F')
+            _ = pdf.rounded_rect(21, y_bar, max(float(pct) * 1.77, 4.0), 1.2, 0.5, 'F')
 
-            _ = pdf.set_xy(21, y_bar + 1.4)
-            _ = pdf.set_font('Helvetica', '', 6.8)
+            _ = pdf.set_xy(21, y_bar + 1.8)
+            _ = pdf.set_font('Helvetica', '', 7.2)
             set_color_safe(pdf, 71, 85, 105, fn_type='text')
-            _ = pdf.cell(177, 2.0, conv(f"    Estado: {desc[:60]}  |  Impacto: {impacto[:55]}"), border=0)
+            _ = pdf.cell(177, 2.2, conv(f"    Estado: {desc[:60]}  |  Impacto: {impacto[:55]}"), border=0)
 
-        y_atencao = y_start_itens + (len(itens) * h_slot) + 2.0
+        y_atencao = y_start_itens + (len(itens) * h_slot) + 3.0
         w_atencao = 177.0
-        h_atencao = 11.5
+        h_atencao = 14.0
 
         resp_ok = dados.get('resposta_avaliacoes_ok', False)
         if not resp_ok:
@@ -921,32 +955,31 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
         set_color_safe(pdf, bar_atencao, fn_type='fill')
         _ = pdf.rounded_rect(21, y_atencao, 2.5, h_atencao, 0.8, 'F')
 
-        _ = pdf.set_xy(26, y_atencao + 1.2)
-        _ = pdf.set_font('Helvetica', 'B', 8.0)
+        _ = pdf.set_xy(26, y_atencao + 1.5)
+        _ = pdf.set_font('Helvetica', 'B', 8.5)
         set_color_safe(pdf, tx_tit_atencao, fn_type='text')
-        _ = pdf.cell(w_atencao - 10, 2.5, conv(tit_atencao), ln=True)
+        _ = pdf.cell(w_atencao - 10, 3.0, conv(tit_atencao), ln=True)
 
-        _ = pdf.set_xy(26, y_atencao + 4.0)
-        _ = pdf.set_font('Helvetica', '', 6.8)
+        _ = pdf.set_xy(26, y_atencao + 4.8)
+        _ = pdf.set_font('Helvetica', '', 7.2)
         set_color_safe(pdf, tx_corpo_atencao, fn_type='text')
-        _ = pdf.multi_cell(w_atencao - 12, 2.4, conv(txt_atencao), align='L')
+        _ = pdf.multi_cell(w_atencao - 12, 2.8, conv(txt_atencao), align='L')
 
-        y_tit_conc = y_atencao + h_atencao + 3.0
+        y_tit_conc = y_atencao + h_atencao + 4.0
         concorrentes_filtrados = [c for c in concorrentes if c.get("nome", "").strip() != ""]
         
         if concorrentes_filtrados:
             _ = pdf.set_xy(21, y_tit_conc)
-            _ = pdf.set_font('Helvetica', 'B', 8.0)
+            _ = pdf.set_font('Helvetica', 'B', 8.5)
             set_color_safe(pdf, 30, 64, 175, fn_type='text')
-            _ = pdf.cell(0, 3.0, conv("ANÁLISE AUTOMÁTICA DE CONCORRENTES DO SEGMENTO"), border=0)
+            _ = pdf.cell(0, 3.5, conv("ANÁLISE AUTOMÁTICA DE CONCORRENTES DO SEGMENTO"), border=0)
 
-            # LARGURAS DA TABELA DE CONCORRENTES REAJUSTADAS
-            w_emp, w_item, w_score, h_row = 53.0, 11.0, 25.0, 4.0
-            y_table = y_tit_conc + 3.5
+            w_emp, w_item, w_score, h_row = 52.0, 11.2, 24.0, 4.8
+            y_table = y_tit_conc + 4.0
             _ = pdf.set_xy(21, y_table)
             set_color_safe(pdf, 30, 64, 175, fn_type='fill')
             set_color_safe(pdf, 255, 255, 255, fn_type='text')
-            _ = pdf.set_font('Helvetica', 'B', 6.5)
+            _ = pdf.set_font('Helvetica', 'B', 6.8)
             
             _ = pdf.cell(w_emp, h_row, conv(" Empresa / Concorrente"), border=1, fill=True, align='L')
             _ = pdf.cell(w_item, h_row, conv("1.Fotos"), border=1, fill=True, align='C')
@@ -975,9 +1008,9 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             _ = pdf.set_xy(21, y_r1)
             set_color_safe(pdf, 239, 246, 255, fn_type='fill')
             set_color_safe(pdf, 191, 219, 254, fn_type='draw')
-            _ = pdf.set_font('Helvetica', 'B', 7.0)
+            _ = pdf.set_font('Helvetica', 'B', 7.2)
             set_color_safe(pdf, 30, 64, 175, fn_type='text')
-            _ = pdf.cell(w_emp, h_row, conv(f" {str(dados.get('nome', ''))[:25]}"), border=1, fill=True)
+            _ = pdf.cell(w_emp, h_row, conv(f" {str(dados.get('nome', ''))[:24]}"), border=1, fill=True)
             
             celula_sim_nao_colorida(pdf, w_item, h_row, "Sim" if dados.get('tem_fotos_hd') else "Não")
             celula_sim_nao_colorida(pdf, w_item, h_row, "Sim" if dados.get('tem_tour360') else "Não")
@@ -994,11 +1027,11 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
             celula_sim_nao_colorida(pdf, w_item, h_row, "Sim" if dados.get('resposta_avaliacoes_ok') else "Não")
             
             set_color_safe(pdf, 239, 246, 255, fn_type='fill')
-            _ = pdf.set_font('Helvetica', 'B', 7.0)
+            _ = pdf.set_font('Helvetica', 'B', 7.2)
             set_color_safe(pdf, 30, 64, 175, fn_type='text')
             _ = pdf.cell(w_score, h_row, conv(f"{score} / 100"), border=1, fill=True, align='C')
 
-            _ = pdf.set_font('Helvetica', '', 7.0)
+            _ = pdf.set_font('Helvetica', '', 7.2)
             y_fim_conc = y_r1 + h_row
             for idx_c, c in enumerate(concorrentes_filtrados):
                 y_rc = y_r1 + ((idx_c + 1) * h_row)
@@ -1008,7 +1041,7 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
                 set_color_safe(pdf, 191, 219, 254, fn_type='draw')
                 set_color_safe(pdf, 51, 65, 85, fn_type='text')
                 
-                _ = pdf.cell(w_emp, h_row, conv(f" {c.get('nome', '')[:25]}"), border=1, fill=True)
+                _ = pdf.cell(w_emp, h_row, conv(f" {c.get('nome', '')[:24]}"), border=1, fill=True)
                 celula_sim_nao_colorida(pdf, w_item, h_row, c.get('tem_fotos_hd', 'Não'))
                 celula_sim_nao_colorida(pdf, w_item, h_row, c.get('tem_tour360', 'Não'))
                 celula_sim_nao_colorida(pdf, w_item, h_row, c.get('categorias_ok', 'Não'))
@@ -1024,39 +1057,39 @@ def gerar_pdf_oficial(dados, planos, plano_acao_extra="", concorrentes=[], pagin
                 celula_sim_nao_colorida(pdf, w_item, h_row, c.get('respostas_ok', 'Não'))
                 
                 set_color_safe(pdf, 255, 255, 255, fn_type='fill')
-                _ = pdf.set_font('Helvetica', 'B', 7.0)
+                _ = pdf.set_font('Helvetica', 'B', 7.2)
                 set_color_safe(pdf, 51, 65, 85, fn_type='text')
                 _ = pdf.cell(w_score, h_row, conv(f"{score_conc} / 100"), border=1, fill=True, align='C')
-                _ = pdf.set_font('Helvetica', '', 7.0)
+                _ = pdf.set_font('Helvetica', '', 7.2)
                 y_fim_conc = y_rc + h_row
         else:
             y_fim_conc = y_atencao + h_atencao
 
-        # QUADRO PLANO DE AÇÃO COM ESPAÇAMENTO RESPIRADO E CÁLCULO DINÂMICO
+        # QUADRO PLANO DE AÇÃO RESTAURADO AO FORMATO ESPAÇOSO
         if plano_acao_extra and plano_acao_extra.strip() != "":
-            y_extra_top = y_fim_conc + 4.0
+            y_extra_top = y_fim_conc + 5.0
             w_extra, x_extra = 177.0, 21.0
 
-            pdf.set_font('Helvetica', '', 7.0)
-            linhas_texto = pdf.multi_cell(w_extra - 8, 3.0, conv(plano_acao_extra), split_only=True)
+            pdf.set_font('Helvetica', '', 7.5)
+            linhas_texto = pdf.multi_cell(w_extra - 8, 3.2, conv(plano_acao_extra), split_only=True)
             total_linhas = len(linhas_texto) if linhas_texto else 1
             
-            h_box_extra = max(24.0, (total_linhas * 3.0) + 8.0)
+            h_box_extra = max(26.0, (total_linhas * 3.2) + 9.0)
 
             set_color_safe(pdf, 248, 250, 252, fn_type='fill')
             set_color_safe(pdf, 203, 213, 225, fn_type='draw')
             _ = pdf.set_line_width(0.3)
             _ = pdf.rounded_rect(x_extra, y_extra_top, w_extra, h_box_extra, 2.5, 'FD')
             
-            _ = pdf.set_xy(x_extra, y_extra_top + 2.0)
-            _ = pdf.set_font('Helvetica', 'B', 8.0)
+            _ = pdf.set_xy(x_extra, y_extra_top + 2.5)
+            _ = pdf.set_font('Helvetica', 'B', 8.5)
             set_color_safe(pdf, 30, 64, 175, fn_type='text')
-            _ = pdf.cell(w_extra, 3.0, conv("PLANO DE AÇÃO E APONTAMENTOS ESTRATÉGICOS PERSONALIZADOS"), align='C', border=0)
+            _ = pdf.cell(w_extra, 3.2, conv("PLANO DE AÇÃO E APONTAMENTOS ESTRATÉGICOS PERSONALIZADOS"), align='C', border=0)
             
-            _ = pdf.set_xy(x_extra + 4, y_extra_top + 6.0)
-            _ = pdf.set_font('Helvetica', '', 7.0)
+            _ = pdf.set_xy(x_extra + 4, y_extra_top + 7.0)
+            _ = pdf.set_font('Helvetica', '', 7.5)
             set_color_safe(pdf, 51, 65, 85, fn_type='text')
-            _ = pdf.multi_cell(w_extra - 8, 3.0, conv(plano_acao_extra), align='L')
+            _ = pdf.multi_cell(w_extra - 8, 3.2, conv(plano_acao_extra), align='L')
 
     # PÁGINA 3: MAPEAMENTO GEOGRÁFICO DE RAIO DE ATRAÇÃO
     if 3 in paginas_selecionadas:
@@ -1716,7 +1749,7 @@ with st.sidebar:
             "nota": 0.0, "avaliacoes": 0, "tem_tour360": False, "tem_fotos_hd": False,
             "categorias_completas": False, "horarios_ok": False, "tem_descricao": False,
             "atributos_ok": False, "resposta_avaliacoes_ok": False, "categorias_detectadas": [], "foto_reference": "",
-            "lat": None, "lng": None
+            "lat": None, "lng": None, "pagespeed_score": None, "avaliacoes_detalhadas": []
         }
         st.session_state['concorrentes'] = [
             {"nome": "", "nota": 0.0, "avaliacoes": 0, "busca_termo": "", "cidade": "", "tem_fotos_hd": "Não", "tem_tour360": "Não", "categorias_ok": "Não", "horarios_ok": "Não", "tem_website": "Não", "tem_descricao": "Não", "atributos_ok": "Não", "respostas_ok": "Não"},
@@ -1772,7 +1805,7 @@ with col_e5:
 # 8. FLUXO SEQUENCIAL DAS ETAPAS
 # -----------------------------------------------------------------------------
 
-# ETAPA 1: BUSCA & DIAGNÓSTICO DA FICHA
+# ETAPA 1: BUSCA & DIAGNÓSTICO DA FICHA COM INTEGRAÇÃO DE APIS
 if etapa_atual == 1:
     col_left, col_right = st.columns([1.5, 1])
     
@@ -1783,7 +1816,7 @@ if etapa_atual == 1:
         nome_input = c1.text_input("Nome da Empresa:", value="", placeholder="Ex: Taiwan Hotel Ltda", key="input_empresa_nome")
         cidade_empresa = c2.text_input("Cidade/Região:", value="", placeholder="Ex: Ribeirão Preto, SP", key="input_empresa_cidade")
             
-        if st.button("🚀 Pesquisar Ficha no Google", use_container_width=True, key="btn_busca_google", type="secondary"):
+        if st.button("🚀 Pesquisar Ficha no Google (API + SerpAPI)", use_container_width=True, key="btn_busca_google", type="secondary"):
             if API_KEY_GOOGLE:
                 try:
                     termo = f"{nome_input}, {cidade_empresa}" if cidade_empresa else nome_input
@@ -1802,7 +1835,7 @@ if etapa_atual == 1:
             opcoes = [f"{u.get('name')} - {u.get('formatted_address')}" for u in st.session_state['unidades_encontradas']]
             escolha = st.selectbox("Selecione a unidade exata:", opcoes, key="select_unidade_exata")
             
-            if st.button("📌 Carregar Dados da Unidade", use_container_width=True, key="btn_carregar_unidade", type="secondary"):
+            if st.button("📌 Carregar Dados Avançados & Inteligência AI", use_container_width=True, key="btn_carregar_unidade", type="secondary"):
                 idx = opcoes.index(escolha)
                 u = st.session_state['unidades_encontradas'][idx]
                 place_id = u.get("place_id")
@@ -1835,7 +1868,23 @@ if etapa_atual == 1:
                         st.session_state['dados']['categorias_detectadas'] = types_lista
                         st.session_state['dados']['foto_reference'] = photos[0].get("photo_reference") if photos else ""
 
-                        st.success("Dados da unidade carregados com sucesso!")
+                        # 1. SerpAPI - Busca de avaliações e concorrentes reais
+                        reviews_serp, conc_serp = buscar_dados_serpapi(st.session_state['dados']['nome'], cidade_empresa)
+                        if reviews_serp:
+                            st.session_state['dados']['avaliacoes_detalhadas'] = reviews_serp
+                        if conc_serp:
+                            st.session_state['concorrentes'] = conc_serp
+
+                        # 2. PageSpeed - Otimização técnica do site
+                        score_pagespeed = testar_performance_pagespeed(st.session_state['dados']['website'])
+                        st.session_state['dados']['pagespeed_score'] = score_pagespeed
+
+                        # 3. Gemini AI - Geração automática do Plano de Ação
+                        plano_gemini = gerar_plano_acao_gemini(st.session_state['dados'], st.session_state['dados']['avaliacoes_detalhadas'])
+                        if plano_gemini:
+                            st.session_state['plano_acao_extra'] = plano_gemini
+
+                        st.success("Dados da unidade, inteligência de avaliações e plano por IA carregados com sucesso!")
                         st.rerun()
                     except Exception as e:
                         st.error(f"Erro ao obter detalhes: {e}")
@@ -1862,6 +1911,10 @@ if etapa_atual == 1:
         st.session_state['dados']['telefone'] = st.text_input("Telefone:", value=st.session_state['dados']['telefone'])
         st.session_state['dados']['website'] = st.text_input("Website:", value=st.session_state['dados']['website'])
         st.session_state['dados']['endereco'] = st.text_area("Endereço:", value=st.session_state['dados']['endereco'], height=80)
+        
+        if st.session_state['dados'].get('pagespeed_score') is not None:
+            st.info(f"⚡ **Nota PageSpeed (Mobile):** {st.session_state['dados']['pagespeed_score']}/100")
+            
         st.markdown("</div>", unsafe_allow_html=True)
 
     col_nav1, col_nav2 = st.columns([2, 1])
@@ -1896,20 +1949,21 @@ elif etapa_atual == 2:
                     st.session_state['concorrentes'][idx]['cidade'] = cid_c
                     
                     if nome_c.strip() != "":
-                        det = buscar_detalhes_concorrente_especifico(nome_c, cid_c, API_KEY_GOOGLE)
-                        if det:
-                            st.session_state['concorrentes'][idx].update(det)
+                        termo = f"{nome_c}, {cid_c}" if cid_c else nome_c
+                        url_search = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={requests.utils.quote(termo)}&key={API_KEY_GOOGLE}"
+                        res = requests.get(url_search).json()
+                        if res.get("status") == "OK" and res.get("results"):
+                            item = res["results"][0]
+                            st.session_state['concorrentes'][idx]['nome'] = item.get("name", nome_c)
+                            st.session_state['concorrentes'][idx]['nota'] = float(item.get("rating", 0.0))
+                            st.session_state['concorrentes'][idx]['avaliacoes'] = int(item.get("user_ratings_total", 0))
                             encontrados += 1
-                        else:
-                            st.session_state['concorrentes'][idx]['nome'] = nome_c
                             
                 if encontrados > 0:
                     st.success(f"{encontrados} concorrente(s) atualizado(s) com sucesso!")
                 else:
                     st.warning("Nenhum dado retornado. Verifique a grafia do nome e cidade.")
                 st.rerun()
-            else:
-                st.error("Chave GOOGLE_API_KEY não localizada.")
 
     concorrentes_validos = [c for c in st.session_state['concorrentes'] if c.get('nome', '').strip() != '']
     if concorrentes_validos:
@@ -1932,8 +1986,8 @@ elif etapa_atual == 2:
 
 # ETAPA 3: PLANO DE AÇÃO ESTRATÉGICO
 elif etapa_atual == 3:
-    st.markdown("<div class='dashboard-card'><div class='card-title'>💡 3. APONTAMENTOS ESTRATÉGICOS E PLANO DE AÇÃO</div>", unsafe_allow_html=True)
-    st.caption("Texto personalizado que aparecerá no quadro em destaque na Página 2 do PDF.")
+    st.markdown("<div class='dashboard-card'><div class='card-title'>💡 3. APONTAMENTOS ESTRATÉGICOS E PLANO DE AÇÃO (GERADO VIA GEMINI AI)</div>", unsafe_allow_html=True)
+    st.caption("Texto personalizado por Inteligência Artificial que aparecerá no quadro em destaque na Página 2 do PDF.")
     
     st.session_state['plano_acao_extra'] = st.text_area(
         "Edite o plano de ação personalizado:",
