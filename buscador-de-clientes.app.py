@@ -145,6 +145,19 @@ components.html(
 )
 
 # -----------------------------------------------------------------------------
+# CACHE DE IMAGENS PARA ALTA PERFORMANCE NO CRM
+# -----------------------------------------------------------------------------
+@st.cache_data(ttl=3600, show_spinner=False)
+def baixar_imagem_cache(url_foto):
+  try:
+    resp = requests.get(url_foto, timeout=5)
+    if resp.status_code == 200:
+      return resp.content
+  except Exception:
+    pass
+  return None
+
+# -----------------------------------------------------------------------------
 # BANCO DE DADOS EM NUVEM (SUPABASE)
 # -----------------------------------------------------------------------------
 @st.cache_resource
@@ -204,6 +217,16 @@ def salvar_lead_db(lead):
       }).execute()
   except Exception as e:
     st.error(f"Erro ao salvar lead '{lead.get('nome')}': {str(e)}")
+
+def excluir_lead_db(lead_id):
+  if not supabase:
+    return False
+  try:
+    supabase.table("leads").delete().eq("id", lead_id).execute()
+    return True
+  except Exception as e:
+    st.error(f"Erro ao excluir empresa: {str(e)}")
+    return False
 
 def atualizar_status_crm(lead_id, novo_status):
   if not supabase:
@@ -456,6 +479,7 @@ def revalidar_ficha_google(lead):
     )
     novo_site = det_res.get("website", lead["website"])
     photos = det_res.get("photos", place.get("photos", [])) or []
+    has_https = novo_site.startswith("https://") if novo_site else False
 
     auditoria = calcular_score_e_auditoria(
         fotos_total=len(photos),
@@ -463,6 +487,8 @@ def revalidar_ficha_google(lead):
         website=novo_site,
         total_avaliacoes=novas_av,
         nota=nova_nota,
+        has_https=has_https,
+        reivindicada=lead.get("reivindicada", True),
     )
 
     dif_av = novas_av - lead["total_avaliacoes"]
@@ -477,6 +503,7 @@ def revalidar_ficha_google(lead):
           "nota": float(nova_nota),
           "total_avaliacoes": int(novas_av),
           "website": novo_site,
+          "website_https": has_https,
           "fotos_total": len(photos),
           "pontos_criticos": auditoria["pontos_criticos"],
           "oportunidades": auditoria["oportunidades"],
@@ -487,6 +514,7 @@ def revalidar_ficha_google(lead):
     lead["nota"] = nova_nota
     lead["total_avaliacoes"] = novas_av
     lead["website"] = novo_site
+    lead["website_https"] = has_https
     lead["fotos_total"] = len(photos)
     lead["pontos_criticos"] = auditoria["pontos_criticos"]
     lead["oportunidades"] = auditoria["oportunidades"]
@@ -698,7 +726,11 @@ def gerar_pdf_diagnostico_individual(lead):
   elements.append(Paragraph(subtitulo_html, style_sub))
   elements.append(Spacer(1, 12))
 
-  txt_alerta = f"SEU PERFIL TEM NOTA SÓLIDA DE {nota_val} COM {av_total} AVALIAÇÕES NO GOOGLE, MAS A FALTA DE EXPERIÊNCIA IMERSIVA DEIXA DINHEIRO NA MESA."
+  txt_alerta = (
+      f"SEU PERFIL TEM NOTA SÓLIDA DE {nota_val} COM {av_total} AVALIAÇÕES NO GOOGLE, MAS A FALTA DE EXPERIÊNCIA IMERSIVA DEIXA DINHEIRO NA MESA."
+      if not has_tour
+      else f"SEU PERFIL TEM NOTA {nota_val} COM {av_total} AVALIAÇÕES NO GOOGLE E CONTA COM RECURSOS VISUAIS QUE POTENCIALIZAM SUA CONVERSÃO LOCAL."
+  )
   p_alerta = Paragraph(
       f"<b><font color='{txt_alerta_color}' size='8.5'>{txt_alerta}</font></b>",
       ParagraphStyle("AlertaTxt", parent=style_normal, alignment=1, leading=12),
@@ -753,7 +785,9 @@ def gerar_pdf_diagnostico_individual(lead):
       (
           "2. Tour Virtual 360° Interativo",
           "Ausente" if not has_tour else "Ativo",
-          "Sem navegação imersiva no Street View (perda de retenção).",
+          "Sem navegação imersiva no Street View (perda de retenção)."
+          if not has_tour
+          else "Tour Virtual 360° publicado e ativo no perfil.",
       ),
       (
           "3. Categoria Principal",
@@ -853,7 +887,7 @@ def gerar_pdf_diagnostico_individual(lead):
       else auditoria["pontos_criticos"]
   )
   if not criticos_lista:
-    criticos_lista = auditoria["pontos_criticos"]
+    criticos_lista = auditoria["pontos_criticos"] or ["Nenhum ponto crítico grave identificado."]
 
   rows_criticos = []
   for pc in criticos_lista[:3]:
@@ -889,7 +923,7 @@ def gerar_pdf_diagnostico_individual(lead):
       else auditoria["oportunidades"]
   )
   if not op_lista:
-    op_lista = auditoria["oportunidades"]
+    op_lista = auditoria["oportunidades"] or ["Manutenção contínua de presença digital e atualizações sazonais."]
 
   rows_op = []
   for op in op_lista[:3]:
@@ -911,11 +945,7 @@ def gerar_pdf_diagnostico_individual(lead):
   elements.append(Spacer(1, 10))
 
   # CONTAINER DE CTA COM CANTOS ARREDONDADOS E BOTÃO ESTILO WHATSAPP MODERNO
-  zap_num = (
-      lead.get("whatsapp")
-      or "".join(filter(str.isdigit, lead.get("telefone", "")))
-      or "16991332121"
-  )
+  zap_num = "".join(filter(str.isdigit, CONTATO_WHATSAPP)) or "16991332121"
   link_wa = f"https://wa.me/55{zap_num}?text=Olá!%20Gostaria%20de%20solicitar%20a%20implantação%20do%20Tour%20Virtual%20360°%20para%20a%20{urllib.parse.quote(lead['nome'])}"
 
   p_cta_title = Paragraph(
@@ -931,7 +961,6 @@ def gerar_pdf_diagnostico_individual(lead):
       ),
   )
 
-  # Botão verde moderno com ícone representativo e cantos simulados/estilizados
   p_btn_wa = Paragraph(
       f'<a href="{link_wa}" color="#ffffff"><b>🟢 CLIQUE AQUI E FALE DIRETO NO WHATSAPP: {CONTATO_WHATSAPP}</b></a>',
       ParagraphStyle(
@@ -947,22 +976,21 @@ def gerar_pdf_diagnostico_individual(lead):
   t_btn_inner = Table([[p_btn_wa]], colWidths=[440])
   t_btn_inner.setStyle(
       TableStyle([
-          ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#16a34a")),  # VERDE WHATSAPP
-          ("ROUNDEDCORNERS", [6, 6, 6, 6]),  # Cantos arredondados no botão interno
+          ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#16a34a")),
+          ("ROUNDEDCORNERS", [6, 6, 6, 6]),
           ("PADDING", (0, 0), (-1, -1), 8),
           ("ALIGN", (0, 0), (-1, -1), "CENTER"),
           ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
       ])
   )
 
-  # Container externo do CTA com cantos arredondados, fundo azul suave e respiro vertical amplo
   t_cta = Table([[p_cta_title], [Spacer(1, 10)], [t_btn_inner]], colWidths=[480])
   t_cta.setStyle(
       TableStyle([
           ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#f0f9ff")),
           ("BOX", (0, 0), (-1, -1), 1.25, colors.HexColor("#0284c7")),
-          ("ROUNDEDCORNERS", [10, 10, 10, 10]),  # Cantos arredondados externos modernos
-          ("PADDING", (0, 0), (-1, -1), 14),  # Amplo espaçamento interno de respiro
+          ("ROUNDEDCORNERS", [10, 10, 10, 10]),
+          ("PADDING", (0, 0), (-1, -1), 14),
           ("ALIGN", (0, 0), (-1, -1), "CENTER"),
           ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
       ])
@@ -1802,9 +1830,11 @@ with st.sidebar:
   )
 
   if len(base_leads) > 0:
-    if st.button("🗑️ Limpar Banco de Dados", use_container_width=True):
-      limpar_banco_dados()
-      mudar_etapa(1)
+    with st.expander("🗑️ Limpar Toda a Base"):
+      st.warning("Ação irreversível: apaga todos os registros.")
+      if st.button("Confirmar Limpeza Total", use_container_width=True):
+        limpar_banco_dados()
+        mudar_etapa(1)
 
 # -----------------------------------------------------------------------------
 # MÓDULO 1: DASHBOARD EXECUTIVO
@@ -2140,7 +2170,7 @@ elif st.session_state.etapa == 3:
       """
         <div class="main-header">
             <h1 class="main-title">📊 Base de Leads e Gerenciador CRM</h1>
-            <div class="main-subtitle">Gerencie status, selecione tags, revalide fichas em tempo real, acompanhe a timeline de interações e exporte planilhas.</div>
+            <div class="main-subtitle">Gerencie status, selecione tags, revalide fichas em tempo real, acompanhe a timeline de interações, exclua registros e exporte planilhas.</div>
         </div>
     """,
       unsafe_allow_html=True,
@@ -2234,9 +2264,39 @@ elif st.session_state.etapa == 3:
           r for r in resultados_filtrados if r.get("favorito") == True
       ]
 
-    st.markdown(
-        f"Exibindo **{len(resultados_filtrados)}** oportunidades salvas:"
-    )
+    col_res_info, col_res_ordem = st.columns([3, 1.5])
+    with col_res_info:
+      st.markdown(
+          f"Exibindo **{len(resultados_filtrados)}** oportunidades salvas:"
+      )
+    with col_res_ordem:
+      ordem_crm = st.selectbox(
+          "Ordenar por:",
+          [
+              "Mais recentes",
+              "Maior Score de Oportunidade",
+              "Mais Avaliações",
+              "Ordem Alfabética (A-Z)",
+          ],
+          label_visibility="collapsed",
+      )
+
+    if ordem_crm == "Maior Score de Oportunidade":
+      resultados_filtrados = sorted(
+          resultados_filtrados,
+          key=lambda x: x.get("score_oportunidade", 0),
+          reverse=True,
+      )
+    elif ordem_crm == "Mais Avaliações":
+      resultados_filtrados = sorted(
+          resultados_filtrados,
+          key=lambda x: x.get("total_avaliacoes", 0),
+          reverse=True,
+      )
+    elif ordem_crm == "Ordem Alfabética (A-Z)":
+      resultados_filtrados = sorted(
+          resultados_filtrados, key=lambda x: x.get("nome", "").lower()
+      )
 
     tags_ja_salvas = sorted(list(df_leads_crm["categoria"].unique()))
 
@@ -2282,28 +2342,25 @@ elif st.session_state.etapa == 3:
       with col_img:
         foto_lead = lead.get("foto_url", "")
         if foto_lead and foto_lead.startswith("http"):
-          try:
-            api_key_atual = st.secrets.get("GOOGLE_API_KEY", None) or os.getenv(
-                "GOOGLE_API_KEY", ""
-            )
-            api_key_limpa_url = (
-                api_key_atual.strip().replace('"', "").replace("'", "")
-            )
-            if "key=" not in foto_lead and api_key_limpa_url:
-              foto_lead_auth = f"{foto_lead}&key={api_key_limpa_url}"
-            else:
-              foto_lead_auth = foto_lead
+          api_key_atual = st.secrets.get("GOOGLE_API_KEY", None) or os.getenv(
+              "GOOGLE_API_KEY", ""
+          )
+          api_key_limpa_url = (
+              api_key_atual.strip().replace('"', "").replace("'", "")
+          )
+          if "key=" not in foto_lead and api_key_limpa_url:
+            foto_lead_auth = f"{foto_lead}&key={api_key_limpa_url}"
+          else:
+            foto_lead_auth = foto_lead
 
-            resp_img = requests.get(foto_lead_auth, timeout=5)
-            if resp_img.status_code == 200:
-              st.image(
-                  resp_img.content,
-                  caption="Foto da Ficha do Google",
-                  use_container_width=True,
-              )
-            else:
-              st.info("📷 Sem foto")
-          except Exception:
+          img_bytes = baixar_imagem_cache(foto_lead_auth)
+          if img_bytes:
+            st.image(
+                img_bytes,
+                caption="Foto da Ficha do Google",
+                use_container_width=True,
+            )
+          else:
             st.info("📷 Sem foto")
         else:
           st.info("📷 Sem foto")
@@ -2360,7 +2417,7 @@ elif st.session_state.etapa == 3:
         st.download_button(
             label="📄 Baixar Diagnóstico (.pdf)",
             data=pdf_bytes_ind,
-            file_name=f"Diagnóstico de Presença Digital - {lead['nome'].replace(' ', ' ')}.pdf",
+            file_name=f"Diagnóstico de Presença Digital - {lead['nome']}.pdf",
             mime="application/pdf",
             key=f"dl_pdf_{lead['id']}",
             use_container_width=True,
@@ -2392,10 +2449,13 @@ elif st.session_state.etapa == 3:
             if isinstance(lead["pontos_criticos"], list)
             else json.loads(lead["pontos_criticos"] or "[]")
         )
-        for pc in criticos_lista:
-          st.markdown(
-              f"<div class='critical-item'>❌ {pc}</div>", unsafe_allow_html=True
-          )
+        if criticos_lista:
+          for pc in criticos_lista:
+            st.markdown(
+                f"<div class='critical-item'>❌ {pc}</div>", unsafe_allow_html=True
+            )
+        else:
+          st.success("✅ Ficha otimizada sem pontos críticos graves.")
 
       with col_actions:
         st.markdown("**🌐 Presença Web & Mídias:**")
@@ -2418,7 +2478,7 @@ elif st.session_state.etapa == 3:
         st.markdown(
             "- **Maps:** [Ver no Google"
             " Maps](https://www.google.com/maps/search/?api=1&query="
-            f"{lead['nome'].replace(' ', '+')})"
+            f"{urllib.parse.quote(lead['nome'] + ' ' + lead['endereco'])})"
         )
 
         st.markdown(
@@ -2454,7 +2514,7 @@ elif st.session_state.etapa == 3:
 
 Identifiquei pontos críticos que estão impactando a confiança de novos clientes no setor de {lead['categoria']}:
 1. Ausência de Tour Virtual 360° navegável.
-​2. Perfil estático com fotos e informações defasadas.
+2. Perfil estático com fotos e informações defasadas.
 3. Falta de otimização de presença digital.
 
 Temos soluções para transformar a vitrine do seu negócio no Google. Fico à disposição para conversarmos!
@@ -2531,53 +2591,112 @@ TOUR360VR | Okamoto Mídias Visuais
           atualizar_followup_db(lead["id"], nova_data_fu)
           st.toast("Data de follow-up atualizada!")
 
-      with st.expander(
-          "✏️ **Editar Dados Cadastrais (Nome, Endereço, Telefone, Site,"
-          " Instagram)**"
-      ):
-        with st.form(key=f"form_edit_lead_{lead['id']}"):
-          edit_nome = st.text_input(
-              "Nome da Empresa", value=lead.get("nome", "")
-          )
-          edit_end = st.text_input(
-              "Endereço Completo", value=lead.get("endereco", "")
-          )
-          edit_tel = st.text_input(
-              "Telefone / Contato", value=lead.get("telefone", "")
-          )
-          edit_site = st.text_input(
-              "Website URL", value=lead.get("website", "")
-          )
-          edit_insta = st.text_input(
-              "Instagram URL", value=lead.get("instagram", "")
-          )
+      # --- COLUNA DUPLA PARA EDIÇÃO CADASTRAL E EXCLUSÃO SEGURA ---
+      col_exp_edit, col_exp_del = st.columns([3.5, 1.5])
 
-          btn_salvar_edit = st.form_submit_button(
-              "💾 Salvar Alterações Cadastrais", use_container_width=True
+      with col_exp_edit:
+        with st.expander(
+            "✏️ **Editar Dados Cadastrais & Auditoria (Nome, Contato, Site, Tour 360°)**"
+        ):
+          with st.form(key=f"form_edit_lead_{lead['id']}"):
+            e_col1, e_col2 = st.columns(2)
+            with e_col1:
+              edit_nome = st.text_input(
+                  "Nome da Empresa", value=lead.get("nome", "")
+              )
+              edit_end = st.text_input(
+                  "Endereço Completo", value=lead.get("endereco", "")
+              )
+              edit_tel = st.text_input(
+                  "Telefone / Contato", value=lead.get("telefone", "")
+              )
+            with e_col2:
+              edit_zap = st.text_input(
+                  "WhatsApp (apenas números)", value=lead.get("whatsapp", "")
+              )
+              edit_site = st.text_input(
+                  "Website URL", value=lead.get("website", "")
+              )
+              edit_insta = st.text_input(
+                  "Instagram URL", value=lead.get("instagram", "")
+              )
+
+            chk_col1, chk_col2 = st.columns(2)
+            with chk_col1:
+              edit_tour360 = st.checkbox(
+                  "Possui Tour Virtual 360° ativo?",
+                  value=bool(lead.get("tour_360", False)),
+              )
+            with chk_col2:
+              edit_reiv = st.checkbox(
+                  "Ficha Reivindicada no Google?",
+                  value=bool(lead.get("reivindicada", True)),
+              )
+
+            btn_salvar_edit = st.form_submit_button(
+                "💾 Salvar Alterações & Recalcular Score", use_container_width=True
+            )
+
+            if btn_salvar_edit:
+              site_limpo = edit_site.strip()
+              has_https_novo = site_limpo.startswith("https://") if site_limpo else False
+              zap_limpo = "".join(filter(str.isdigit, edit_zap.strip()))
+
+              nova_aud = calcular_score_e_auditoria(
+                  fotos_total=lead.get("fotos_total", 0),
+                  tour_360=edit_tour360,
+                  website=site_limpo,
+                  total_avaliacoes=lead.get("total_avaliacoes", 0),
+                  nota=lead.get("nota", 0.0),
+                  has_https=has_https_novo,
+                  reivindicada=edit_reiv,
+              )
+
+              novos_dados = {
+                  "nome": edit_nome.strip(),
+                  "endereco": edit_end.strip(),
+                  "telefone": edit_tel.strip(),
+                  "whatsapp": zap_limpo if zap_limpo else lead.get("whatsapp", ""),
+                  "website": site_limpo,
+                  "website_https": has_https_novo,
+                  "instagram": edit_insta.strip(),
+                  "tour_360": edit_tour360,
+                  "reivindicada": edit_reiv,
+                  "pontos_criticos": nova_aud["pontos_criticos"],
+                  "oportunidades": nova_aud["oportunidades"],
+                  "score_oportunidade": nova_aud["score_oportunidade"],
+              }
+
+              if edit_end.strip() != lead.get("endereco", ""):
+                with st.spinner("Recalculando coordenadas do novo endereço..."):
+                  lat_novo, lng_novo = obter_coordenadas_endereco(
+                      edit_end.strip(),
+                      lead.get("cidade_busca", "Ribeirão Preto"),
+                  )
+                  novos_dados["latitude"] = lat_novo
+                  novos_dados["longitude"] = lng_novo
+
+              atualizar_dados_cadastrais_db(lead["id"], novos_dados)
+              st.success("✅ Dados e Score atualizados com sucesso!")
+              time.sleep(1)
+              st.rerun()
+
+      with col_exp_del:
+        with st.expander("🗑️ **Excluir Empresa**"):
+          st.caption("Remove permanentemente este lead do banco de dados.")
+          confirma_del = st.checkbox(
+              "Confirmar exclusão", key=f"chk_del_{lead['id']}"
           )
-
-          if btn_salvar_edit:
-            novos_dados = {
-                "nome": edit_nome.strip(),
-                "endereco": edit_end.strip(),
-                "telefone": edit_tel.strip(),
-                "website": edit_site.strip(),
-                "instagram": edit_insta.strip(),
-            }
-
-            if edit_end.strip() != lead.get("endereco", ""):
-              with st.spinner("Recalculando coordenadas do novo endereço..."):
-                lat_novo, lng_novo = obter_coordenadas_endereco(
-                    edit_end.strip(),
-                    lead.get("cidade_busca", "Ribeirão Preto"),
-                )
-                novos_dados["latitude"] = lat_novo
-                novos_dados["longitude"] = lng_novo
-
-            atualizar_dados_cadastrais_db(lead["id"], novos_dados)
-            st.success("✅ Dados atualizados com sucesso!")
-            time.sleep(1)
-            st.rerun()
+          if st.button(
+              "❌ Excluir Definitivamente",
+              key=f"btn_del_{lead['id']}",
+              disabled=not confirma_del,
+              use_container_width=True,
+          ):
+            if excluir_lead_db(lead["id"]):
+              st.toast(f"Empresa '{lead['nome']}' removida do sistema!")
+              time.sleep(0.5)
+              st.rerun()
 
       st.markdown(
           "**📱 Histórico e Timeline de Interações (Log de Atividades):**"
@@ -2622,7 +2741,7 @@ TOUR360VR | Okamoto Mídias Visuais
         st.caption("Nenhum histórico registrado ainda.")
 
       with st.expander(
-          f"✉️ **Scripts de Vendas e Abordagem Detalhada ({lead['nome']})**"
+          f"✉️ **Scripts de Vendas e Abordagem Detalhada ({lead['nome']}) — Clique no ícone à direita para copiar**"
       ):
         st.markdown("**1) Abordagem Inicial — WhatsApp**")
         script_wa = (
@@ -2633,10 +2752,7 @@ TOUR360VR | Okamoto Mídias Visuais
             " concorrentes.\nMontei um relatório rápido de diagnóstico em PDF."
             " Posso te enviar por aqui?"
         )
-        st.markdown(
-            f'<div class="script-box">{script_wa}</div>',
-            unsafe_allow_html=True,
-        )
+        st.code(script_wa, language=None)
 
         st.markdown("**2) Abordagem Inicial — E-mail**")
         script_email = f"""Assunto: Oportunidade de Presença Digital: {lead['nome']} no Google
@@ -2645,7 +2761,7 @@ Olá! Analisei o perfil da {lead['nome']} no Google e gostaria de compartilhar u
 
 Identifiquei pontos críticos que estão impactando a confiança de novos clientes:
 1. Ausência de Tour Virtual 360° navegável (seus concorrentes levam vantagem visual).
-​2. Perfil estático com fotos e informações desatualizadas.
+2. Perfil estático com fotos e informações desatualizadas.
 3. Falta de otimização de palavras-chave para o setor de {lead['categoria']}.
 
 Temos soluções para transformar a vitrine do seu negócio no Google. Anexo um diagnóstico em PDF com a análise detalhada.
@@ -2657,10 +2773,7 @@ Atenciosamente,
 Rubens Okamoto
 TOUR360VR | Okamoto Mídias Visuais
 (16) 99133-2121 | tour360vr.com.br"""
-        st.markdown(
-            f'<div class="script-box">{script_email}</div>',
-            unsafe_allow_html=True,
-        )
+        st.code(script_email, language=None)
 
         st.markdown("**3) Follow-up 48h — Pós-Envio do Diagnóstico**")
         script_follow = (
@@ -2668,10 +2781,7 @@ TOUR360VR | Okamoto Mídias Visuais
             f" da {lead['nome']} que te enviei? Fico no aguardo para tirar"
             " qualquer dúvida!"
         )
-        st.markdown(
-            f'<div class="script-box">{script_follow}</div>',
-            unsafe_allow_html=True,
-        )
+        st.code(script_follow, language=None)
 
       st.divider()
 
