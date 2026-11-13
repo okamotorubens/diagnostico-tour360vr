@@ -90,6 +90,202 @@ def csv_bytes(df):
     return df.to_csv(index=False, sep=";").encode("utf-8-sig")
 
 
+# --- GERADOR INTELIGENTE DE PAUTAS POR SEGMENTO ---
+def gerar_pautas_por_segmento(emp, cat, reg, cat_sec=""):
+    """Gera 16 ideias de pauta altamente adaptadas ao segmento da empresa."""
+    cat_display = cat.strip() if cat and cat.strip() else "serviços especializados"
+    reg_display = reg.strip() if reg and reg.strip() else "região"
+    texto_busca = f"{cat_display} {cat_sec}".lower()
+
+    # 1. Saúde, Clínicas, Odontologia, Fisioterapia, Medicina
+    if any(k in texto_busca for k in [
+        "saúde", "saude", "clínica", "clinica", "médic", "medic", "odont", "dentist",
+        "fisioterap", "psicolog", "nutri", "hospital", "laborat", "estética médica", "health", "physiotherapist"
+    ]):
+        return [
+            f"Quando procurar atendimento especializado em {cat_display} em {reg_display}? Sinais de alerta e prevenção.",
+            f"Conheça a estrutura de atendimento e os protocolos de biossegurança da {emp} em nosso Tour Virtual 360°.",
+            f"Como funciona a primeira avaliação e o plano de acompanhamento personalizado na {emp}.",
+            f"Tecnologia, equipamentos e diferenciais clínicos que elevam a precisão dos tratamentos na {emp}.",
+            f"Mitos e verdades sobre {cat_display}: esclarecimentos técnicos da equipe da {emp}.",
+            f"Perguntas frequentes (FAQ): convênios, formas de agendamento e preparo para sua consulta na {emp}.",
+            f"Por que o acompanhamento contínuo em {cat_display} evita complicações e melhora a qualidade de vida.",
+            f"Bastidores da {emp}: conheça os profissionais responsáveis pelo seu cuidado em {reg_display}.",
+            f"Atendimento humanizado e agendamentos rápidos pelo canal oficial da {emp}.",
+            f"Cuidados essenciais no dia a dia para potencializar os resultados do seu tratamento de {cat_display}.",
+            f"Diferenciais da localização, acessibilidade e conforto para pacientes na {emp}.",
+            f"Sazonalidade e saúde: cuidados redobrados em {cat_display} durante as mudanças de estação em {reg_display}.",
+            f"Como escolher uma clínica de {cat_display} segura e bem avaliada em {reg_display}.",
+            f"Histórias reais de recuperação e bem-estar: o impacto do atendimento da {emp} na vida dos pacientes.",
+            f"Novidades, novos procedimentos e atualizações científicas incorporadas pela {emp}.",
+            f"Passo a passo: o que trazer e como se preparar antes da sua visita à {emp}.",
+        ]
+
+    # 2. Gastronomia, Restaurantes, Cafeterias, Confeitarias, Bares, Padarias
+    if any(k in texto_busca for k in [
+        "restaurante", "confeitaria", "padaria", "café", "cafe", "cafeteria", "lanchonete",
+        "pizzaria", "hamburgueria", "bar", "gastronomia", "alimentação", "doceria", "sorveteria", "food", "bakery"
+    ]):
+        return [
+            f"Os carros-chefes do cardápio da {emp}: conheça os sabores mais pedidos em {reg_display}.",
+            f"Faça um passeio pelo nosso salão e ambiente antes de reservar sua mesa: Tour Virtual 360° da {emp}.",
+            f"Bastidores da cozinha da {emp}: seleção rigorosa de ingredientes frescos e preparo artesanal.",
+            f"Opções para eventos, confraternizações, aniversários e encomendas especiais na {emp}.",
+            f"Harmonização e sugestões da casa: como aproveitar a experiência completa de {cat_display} na {emp}.",
+            f"Horários de funcionamento, delivery e como fazer seu pedido ou reserva sem filas na {emp}.",
+            f"Novidades sazonais no cardápio da {emp}: lançamentos imperdíveis para experimentar este mês.",
+            f"Por que a {emp} se tornou ponto de encontro de referência em {cat_display} em {reg_display}.",
+            f"Perguntas frequentes (FAQ): estacionamento, espaço kids, opções vegetarianas/sem glúten na {emp}.",
+            f"Combos, condições especiais e vantagens exclusivas para clientes que acompanham a {emp} no Google.",
+            f"O cuidado com cada detalhe: apresentação, atendimento e padrão de qualidade da {emp}.",
+            f"Dicas do chef / especialista da {emp} para apreciar melhor o universo de {cat_display}.",
+            f"O que nossos clientes mais elogiam nas avaliações do Google sobre a experiência na {emp}.",
+            f"Programação especial de fim de semana e feriados na {emp} em {reg_display}.",
+            f"Presentes gastronômicos e kits especiais da {emp} para datas comemorativas.",
+            f"Como chegar fácil na {emp}: localização estratégica e facilidades em {reg_display}.",
+        ]
+
+    # 3. Imobiliário, Arquitetura, Engenharia, Construção, Móveis Planejados
+    if any(k in texto_busca for k in [
+        "imobiliária", "imobiliaria", "imóveis", "imoveis", "construtora", "arquitetura", "engenharia",
+        "móveis", "moveis", "decoração", "decoracao", "reforma", "interiores", "real_estate"
+    ]):
+        return [
+            f"Panorama do mercado de {cat_display} em {reg_display}: oportunidades e tendências para este ano.",
+            f"Visite nossos ambientes decorados e showroom sem sair de casa pelo Tour Virtual 360° da {emp}.",
+            f"Como avaliar o melhor custo-benefício e evitar imprevistos ao contratar {cat_display} em {reg_display}.",
+            f"Passo a passo do atendimento na {emp}: do primeiro contato à entrega final do projeto ou imóvel.",
+            f"Diferenciais técnicos, materiais de alta performance e garantias oferecidas pela {emp}.",
+            f"Perguntas frequentes (FAQ): prazos, financiamento, documentação e orçamentos na {emp}.",
+            f"Projetos entregues e casos de sucesso da {emp} que transformaram espaços em {reg_display}.",
+            f"5 erros comuns na hora de planejar ou investir em {cat_display} — e como a {emp} ajuda a evitar.",
+            f"Bastidores da equipe técnica da {emp}: acompanhamento de perto em cada etapa.",
+            f"Valorização patrimonial: como escolher boas soluções de {cat_display} aumenta o valor do seu imóvel.",
+            f"Atendimento consultivo e agendamento de visita técnica com os especialistas da {emp}.",
+            f"Mitos e verdades sobre prazos e investimentos em {cat_display} na região de {reg_display}.",
+            f"Novidades em acabamentos, tecnologia e sustentabilidade aplicadas pela {emp}.",
+            f"Checklist completo antes de fechar contrato de {cat_display} em {reg_display}.",
+            f"Por que clientes de {reg_display} recomendam a {emp} no Google Maps.",
+            f"Consultoria personalizada: fale diretamente com a equipe da {emp} pelo WhatsApp.",
+        ]
+
+    # 4. Automotivo, Oficinas, Estética Automotiva, Concessionárias, Autopeças
+    if any(k in texto_busca for k in [
+        "auto", "mecânica", "mecanica", "oficina", "veículo", "veiculo", "carro", "moto",
+        "funilaria", "estética automotiva", "pneu", "concessionária", "car_repair", "car_dealer"
+    ]):
+        return [
+            f"Manutenção preventiva em {cat_display}: o que revisar antes de pegar a estrada em {reg_display}.",
+            f"Conheça a estrutura, boxes de atendimento e equipamentos da {emp} no Tour Virtual 360°.",
+            f"Sinais de que seu veículo precisa de atenção imediata na área de {cat_display}.",
+            f"Transparência total no orçamento: como funciona o diagnóstico técnico na {emp}.",
+            f"Por que utilizar peças originais e mão de obra especializada em {cat_display} preserva a garantia e segurança.",
+            f"Perguntas frequentes (FAQ): prazos de serviço, garantia, formas de pagamento e agendamento na {emp}.",
+            f"Bastidores da oficina/loja da {emp}: precisão, organização e cuidado com o seu veículo.",
+            f"Mitos e verdades sobre cuidados automotivos e {cat_display} que todo motorista precisa saber.",
+            f"Diferenciais técnicos que tornam a {emp} referência em {cat_display} em {reg_display}.",
+            f"Check-up sazonal: prepare seu veículo para períodos de chuva ou calor intenso em {reg_display}.",
+            f"Avaliações reais de motoristas atendidos pela {emp} no Google Maps.",
+            f"Agendamento rápido e orçamento ágil pelo WhatsApp oficial da {emp}.",
+            f"Novas tecnologias e ferramentas de diagnóstico incorporadas pela equipe da {emp}.",
+            f"Economia de combustível e durabilidade: como a manutenção em dia reduz gastos inesperados.",
+            f"Como escolher um centro especializado em {cat_display} de confiança em {reg_display}.",
+            f"Garantia e pós-venda: o compromisso da {emp} mesmo após a entrega do veículo.",
+        ]
+
+    # 5. Beleza, Estética, Salão, Barbearia, Spa
+    if any(k in texto_busca for k in [
+        "salão", "salao", "barbearia", "estética", "estetica", "beleza", "cabelo", "unha",
+        "manicure", "spa", "sobrancelha", "maquiagem", "beauty_salon", "hair_care"
+    ]):
+        return [
+            f"Tendências e procedimentos mais procurados em {cat_display} em {reg_display} nesta temporada.",
+            f"Conheça o ambiente acolhedor e moderno da {emp} pelo nosso Tour Virtual 360°.",
+            f"Como funciona a avaliação personalizada para indicar o melhor tratamento para você na {emp}.",
+            f"Cuidados pré e pós-procedimento para manter os resultados impecáveis por muito mais tempo.",
+            f"Produtos profissionais e protocolos de higiene que garantem segurança e qualidade na {emp}.",
+            f"Perguntas frequentes (FAQ): horários, duração dos atendimentos, pacotes e agendamentos na {emp}.",
+            f"Bastidores da equipe da {emp}: especialistas atualizados com as melhores técnicas de {cat_display}.",
+            f"Pacotes especiais, dia da noiva/evento e vales-presente exclusivos da {emp}.",
+            f"Mitos e verdades sobre {cat_display}: dicas práticas dos profissionais da {emp}.",
+            f"Transformações reais e depoimentos de clientes que confiam na {emp} em {reg_display}.",
+            f"Agende seu horário com facilidade e rapidez pelo canal oficial da {emp}.",
+            f"Por que reservar um momento de autocuidado na {emp} transforma sua autoestima.",
+            f"Novidades em técnicas e equipamentos recém-chegados à {emp}.",
+            f"Cronograma de manutenção: qual a frequência ideal para cada serviço de {cat_display}.",
+            f"O padrão de atendimento que faz da {emp} destaque nas avaliações do Google em {reg_display}.",
+            f"Como chegar e facilidades de estacionamento próximas à {emp}.",
+        ]
+
+    # 6. Advocacia, Contabilidade, Consultoria, Finanças, Seguros
+    if any(k in texto_busca for k in [
+        "advocacia", "advogado", "jurídico", "juridico", "contabilidade", "contador", "consultoria",
+        "financeiro", "seguros", "corretora", "despachante", "lawyer", "accounting"
+    ]):
+        return [
+            f"Principais dúvidas e mudanças recentes na área de {cat_display} que impactam clientes em {reg_display}.",
+            f"Conheça nosso escritório e salas de reunião privativas através do Tour Virtual 360° da {emp}.",
+            f"Como funciona a primeira reunião de diagnóstico e análise de caso na {emp}.",
+            f"Prevenção e segurança: como a assessoria especializada em {cat_display} evita prejuízos.",
+            f"Documentos necessários e checklist inicial para agilizar seu atendimento na {emp}.",
+            f"Perguntas frequentes (FAQ): atendimento presencial e online, prazos e acompanhamento na {emp}.",
+            f"Diferenciais técnicos e experiência da equipe da {emp} na resolução de demandas complexas.",
+            f"Mitos e verdades sobre {cat_display}: orientações claras e objetivas da {emp}.",
+            f"Atendimento personalizado e sigilo absoluto em cada etapa conduzida pela {emp}.",
+            f"Como escolher um escritório de {cat_display} confiável e bem avaliado em {reg_display}.",
+            f"Canais diretos de agendamento e triagem rápida com os especialistas da {emp}.",
+            f"Planejamento estratégico: o melhor momento para buscar suporte em {cat_display}.",
+            f"Por que empresas e famílias de {reg_display} confiam na {emp} no Google Maps.",
+            f"Atualizações legislativas e boas práticas explicadas de forma simples pela {emp}.",
+            f"Bastidores da {emp}: compromisso ético, transparência e atualização constante.",
+            f"Localização e facilidade de acesso ao escritório da {emp} em {reg_display}.",
+        ]
+
+    # 7. Varejo, Lojas, Moda, Óticas, Pet Shop, Materiais, Comércio
+    if any(k in texto_busca for k in [
+        "loja", "varejo", "moda", "roupa", "calçado", "ótica", "otica", "pet", "agropecuária",
+        "material", "papelaria", "presente", "eletrônico", "celular", "store", "shop"
+    ]):
+        return [
+            f"Lançamentos e novidades que acabaram de chegar na vitrine da {emp} em {reg_display}.",
+            f"Explore nossos corredores e seções antes mesmo de visitar a loja: Tour Virtual 360° da {emp}.",
+            f"Guia de compra: como escolher o produto ideal de {cat_display} para a sua necessidade.",
+            f"Condições especiais de pagamento, entrega rápida em {reg_display} e retirada na loja da {emp}.",
+            f"Os produtos mais vendidos e bem avaliados pelos clientes da {emp}.",
+            f"Perguntas frequentes (FAQ): trocas, garantias, horários estendidos e pedidos pelo WhatsApp da {emp}.",
+            f"Atendimento consultivo: nossa equipe ajuda você a encontrar exatamente o que procura na {emp}.",
+            f"Dicas de conservação, uso e aproveitamento dos itens de {cat_display} adquiridos na {emp}.",
+            f"Kits, presentes e oportunidades sazonais disponíveis na {emp} em {reg_display}.",
+            f"Bastidores da {emp}: organização, curadoria de marcas e compromisso com a satisfação do cliente.",
+            f"Por que comprar localmente na {emp} garante suporte próximo e entrega imediata.",
+            f"O que os clientes de {reg_display} dizem sobre o atendimento e variedade da {emp} no Google.",
+            f"Peça catálogo ou consulte disponibilidade de estoque diretamente pelo WhatsApp da {emp}.",
+            f"Mitos e verdades na hora de comprar produtos de {cat_display}.",
+            f"Localização fácil e comodidades para sua visita presencial na {emp}.",
+            f"Comparativo técnico: diferenças entre as linhas de produtos disponíveis na {emp}.",
+        ]
+
+    # 8. Fallback Inteligente (Serviços Técnicos, Indústria, Educação, B2B e Gerais)
+    return [
+        f"Como escolher o melhor serviço de {cat_display} em {reg_display} com garantia e segurança.",
+        f"Bastidores da equipe da {emp}: nosso compromisso técnico e operacional com a excelência.",
+        f"Conheça a estrutura física e os diferenciais da {emp} através do Tour Virtual 360° no Google Maps.",
+        f"Diferenciais técnicos que tornam a {emp} referência em {cat_display} na região de {reg_display}.",
+        f"Atendimento ágil, orçamentos transparentes e facilidades pelo canal oficial da {emp}.",
+        f"Erros comuns ao contratar serviços de {cat_display} e como evitar na prática.",
+        f"Casos de sucesso, projetos entregues e depoimentos de clientes atendidos pela {emp}.",
+        f"Por que o atendimento especializado em {cat_display} gera mais resultado e economia para você.",
+        f"Novidades, investimentos em tecnologia e melhorias nos processos da {emp}.",
+        f"Perguntas frequentes (FAQ): tire todas as suas dúvidas sobre {cat_display} com a equipe da {emp}.",
+        f"Quanto custa contratar {cat_display} em {reg_display}? Entenda os fatores que compõem o orçamento.",
+        f"Passo a passo: como funciona o atendimento da {emp} desde o primeiro contato até a entrega.",
+        f"Tour Virtual 360° e transparência: como a {emp} apresenta seu trabalho antes mesmo da visita.",
+        f"Sinais de confiança: o que avaliar em um fornecedor de {cat_display} em {reg_display}.",
+        f"Planejamento e sazonalidade: o melhor momento para agendar serviços de {cat_display} na {emp}.",
+        f"Mitos e verdades sobre {cat_display} esclarecidos pelos especialistas da {emp}.",
+    ]
+
+
 # --- LOGO E RODAPÉ PADRÃO DO PDF ---
 def get_rl_image_pdf(width=45, height=45):
     if os.path.exists(LOGO_LOCAL_PATH):
@@ -172,30 +368,50 @@ def tela_login():
 query_params = st.query_params
 if "aprovar" in query_params or st.session_state.get("modo_aprovacao", False):
     logo_b64_aprov = obter_base64_logo(LOGO_LOCAL_PATH)
+    cliente_slug = query_params.get("cliente", "")
+    nome_exibicao = cliente_slug.replace("-", " ").title() if cliente_slug else ""
+    cat_param = query_params.get("seg", "")
+    reg_param = query_params.get("reg", "região")
+
+    # Tenta buscar o cliente real no banco para pegar segmento e região exatos
+    if cliente_slug:
+        try:
+            res_cli_aprov = supabase.table("clientes").select("nome_empresa, categoria_principal, categorias_secundarias, area_cobertura").execute()
+            if res_cli_aprov.data:
+                for row_c in res_cli_aprov.data:
+                    slug_db = row_c["nome_empresa"].lower().replace(" ", "-")
+                    if slug_db == cliente_slug.lower():
+                        nome_exibicao = row_c["nome_empresa"]
+                        cat_param = row_c.get("categoria_principal") or cat_param
+                        reg_param = row_c.get("area_cobertura") or reg_param
+                        break
+        except Exception:
+            pass
+
     render_hero(
         logo_b64_aprov,
-        "Página de Aprovação de Pautas",
+        f"Aprovação de Pautas{f' — {nome_exibicao}' if nome_exibicao else ''}",
         "Planejamento Estratégico de Conteúdo e SEO Local",
     )
 
     with glass_container():
         st.markdown("**Bem-vindo à sua página exclusiva de validação e curadoria de pautas.**")
+        if cat_param:
+            st.caption(f"Segmento estratégico: {cat_param} | Região: {reg_param}")
 
     section_title("Selecione as Pautas Aprovadas e Informe Ajustes se Necessário:")
 
-    pautas_exemplo = [
-        "1. Como escolher o melhor serviço especializado na região com garantia de qualidade.",
-        "2. Bastidores da nossa equipe: Nosso compromisso absoluto com a excelência.",
-        "3. Conheça nossa estrutura imersiva através do Tour Virtual 360° no Google Maps.",
-        "4. Diferenciais técnicos que tornam nosso atendimento referência local.",
-        "5. Atendimento rápido, orçamentos e facilidades pelo canal oficial de atendimento.",
-        "6. Perguntas frequentes (FAQ): Tire todas as suas dúvidas diretamente conosco.",
-    ]
+    pautas_dinamicas = gerar_pautas_por_segmento(
+        nome_exibicao or "sua empresa",
+        cat_param or "serviços especializados",
+        reg_param or "região",
+    )[:8]
 
     pautas_status = {}
     with glass_container():
-        for idx, p in enumerate(pautas_exemplo, 1):
-            pautas_status[p] = st.checkbox(p, value=False, key=f"aprov_pauta_{idx}")
+        for idx, p in enumerate(pautas_dinamicas, 1):
+            label_pauta = f"{idx}. {p}"
+            pautas_status[label_pauta] = st.checkbox(label_pauta, value=False, key=f"aprov_pauta_{idx}")
 
     section_title("💬 Solicitar Ajustes ou Alterações")
     obs_cliente = st.text_area(
@@ -206,7 +422,7 @@ if "aprovar" in query_params or st.session_state.get("modo_aprovacao", False):
 
     pautas_aprovadas_txt = "\n".join([k for k, v in pautas_status.items() if v])
     msg_envio = (
-        "Olá Rubens!\nAvaliei o planejamento de pautas na plataforma da Tour360VR.\n\n"
+        f"Olá Rubens!\nAvaliei o planejamento de pautas{f' da {nome_exibicao}' if nome_exibicao else ''} na plataforma da Tour360VR.\n\n"
         f"Pautas Aprovadas:\n{pautas_aprovadas_txt if pautas_aprovadas_txt else 'Nenhuma pauta marcada diretamente.'}\n\n"
         f"Ajustes Solicitados:\n{obs_cliente if obs_cliente else 'Nenhum ajuste adicional.'}"
     )
@@ -359,7 +575,8 @@ def auditar_ficha_google_rigorosa(query_ou_url):
         criterios.append(("2. Tour Virtual 360° Interativo", "A Places API não informa a existência de tour virtual. Conferir manualmente no perfil.", "Verificação manual", "Manual"))
 
         types = details.get("types", [])
-        tipos_txt = ", ".join(t.replace("_", " ") for t in types[:4]) or "não informado"
+        tipos_filtrados = [t.replace("_", " ") for t in types if t not in ("point_of_interest", "establishment")]
+        tipos_txt = ", ".join(tipos_filtrados[:4]) or ", ".join(t.replace("_", " ") for t in types[:4]) or "não informado"
         criterios.append(("3. Categorias Principal e Secundárias", f"Tipos retornados pela API: {tipos_txt}. Categoria principal e secundárias exigem conferência no painel do Google.", "Verificação manual", "Manual"))
 
         opening_hours = details.get("opening_hours", {})
@@ -407,6 +624,7 @@ def auditar_ficha_google_rigorosa(query_ou_url):
             "website": website or "Não informado",
             "rating": rating,
             "total_reviews": total_reviews,
+            "categoria_api": tipos_filtrados[0] if tipos_filtrados else "",
             "criterios": criterios,
         }, None
 
@@ -458,13 +676,13 @@ def gerar_pdf_auditoria(res_aud):
 
     story += cabecalho_pdf("<b>DIAGNÓSTICO DE AUDITORIA GOOGLE MAPS</b>")
 
-    story.append(Spacer(1, 12))  # 1 linha
+    story.append(Spacer(1, 12))
     story.append(Paragraph(res_aud["nome"], nome_style))
     story.append(Spacer(1, 4))
     story.append(Paragraph(f"<b>Endereço:</b> {res_aud['endereco']} | <b>Telefone:</b> {res_aud['telefone']}", body_style))
-    story.append(Spacer(1, 24))  # 2 linhas
+    story.append(Spacer(1, 24))
     story.append(Paragraph(f"Score da Ficha: {res_aud['score']}/100", score_style))
-    story.append(Spacer(1, 24))  # 2 linhas
+    story.append(Spacer(1, 24))
 
     story.append(Paragraph("Auditoria Detalhada de Pontos (9 Critérios Oficiais)", section_style))
     story.append(Spacer(1, 6))
@@ -487,7 +705,7 @@ def gerar_pdf_auditoria(res_aud):
     story.append(t_aud)
     story.append(Spacer(1, 6))
     story.append(Paragraph("Metodologia: score de 0 a 100 calculado sobre os critérios automáticos (fotos -10, horários -10, website -15, avaliações -15, resumo -10). Itens marcados como Verificação manual não pontuam.", body_style))
-    story.append(Spacer(1, 12))  # 1 linha antes do plano
+    story.append(Spacer(1, 12))
 
     story.append(Paragraph("Plano de Ação &amp; Oportunidades Recomendadas", section_style))
     story.append(Spacer(1, 6))
@@ -702,6 +920,7 @@ def gerar_pdf_contrato(dados_cliente, plano_escolhido, valor_plano, meses_duraca
     doc.build(story, onFirstPage=adicionar_rodape_padrao, onLaterPages=adicionar_rodape_padrao)
     buffer.seek(0)
     return buffer
+
 
 # --- ESTADO INICIAL ---
 if "aba_ativa" not in st.session_state:
@@ -1068,17 +1287,59 @@ elif st.session_state["aba_ativa"] == "auditoria":
         with col_db:
             if st.button("💾 Salvar Ficha na Base de Clientes (Supabase)"):
                 try:
-                    payload_novo = {
-                        "nome_empresa": res_aud["nome"],
-                        "endereco_local": res_aud["endereco"],
-                        "telefone_contato": res_aud["telefone"],
-                        "website": res_aud["website"] if res_aud["website"] != "Não informado" else "",
-                        "status_contrato": "Em Negociação",
-                        "valor_contrato_mensal": 450.0,
-                        "observacoes_tecnicas": f"Score de Auditoria: {res_aud['score']}/100.",
-                    }
-                    supabase.table("clientes").insert(payload_novo).execute()
-                    st.success(f"Empresa '{res_aud['nome']}' salva com sucesso na aba 'Ficha Comercial'!")
+                    data_hora_sp = agora_brasil().strftime("%Y-%m-%d %H:%M")
+                    # Verifica se a empresa já existe para evitar erro de chave duplicada (23505)
+                    busca_existente = (
+                        supabase.table("clientes")
+                        .select("id, categoria_principal, observacoes_tecnicas")
+                        .eq("nome_empresa", res_aud["nome"])
+                        .execute()
+                    )
+
+                    if busca_existente.data:
+                        cliente_existente = busca_existente.data[0]
+                        c_id_exist = cliente_existente["id"]
+                        obs_antiga = cliente_existente.get("observacoes_tecnicas") or ""
+                        nova_obs = f"Score de Auditoria ({data_hora_sp}): {res_aud['score']}/100."
+                        obs_combinada = f"{nova_obs}\n{obs_antiga}".strip() if obs_antiga else nova_obs
+
+                        payload_update = {
+                            "endereco_local": res_aud["endereco"],
+                            "telefone_contato": res_aud["telefone"],
+                            "observacoes_tecnicas": obs_combinada,
+                        }
+                        if res_aud["website"] != "Não informado":
+                            payload_update["website"] = res_aud["website"]
+                        if not cliente_existente.get("categoria_principal") and res_aud.get("categoria_api"):
+                            payload_update["categoria_principal"] = res_aud["categoria_api"]
+
+                        supabase.table("clientes").update(payload_update).eq("id", c_id_exist).execute()
+                        supabase.table("historico_ficha").insert({
+                            "cliente_id": c_id_exist,
+                            "data_alteracao": data_hora_sp,
+                            "descricao_alteracao": f"Nova Auditoria GMB (Score: {res_aud['score']}/100)",
+                        }).execute()
+                        st.success(f"Ficha de '{res_aud['nome']}' já existia e foi atualizada com o novo Score ({res_aud['score']}/100)!")
+                    else:
+                        payload_novo = {
+                            "nome_empresa": res_aud["nome"],
+                            "endereco_local": res_aud["endereco"],
+                            "telefone_contato": res_aud["telefone"],
+                            "website": res_aud["website"] if res_aud["website"] != "Não informado" else "",
+                            "categoria_principal": res_aud.get("categoria_api", ""),
+                            "status_contrato": "Em Negociação",
+                            "valor_contrato_mensal": 450.0,
+                            "data_inicio": agora_brasil().strftime("%Y-%m-%d"),
+                            "observacoes_tecnicas": f"Score de Auditoria: {res_aud['score']}/100.",
+                        }
+                        res_ins = supabase.table("clientes").insert(payload_novo).execute()
+                        if res_ins.data:
+                            supabase.table("historico_ficha").insert({
+                                "cliente_id": res_ins.data[0]["id"],
+                                "data_alteracao": data_hora_sp,
+                                "descricao_alteracao": f"Cadastro via Auditoria GMB (Score: {res_aud['score']}/100)",
+                            }).execute()
+                        st.success(f"Empresa '{res_aud['nome']}' cadastrada com sucesso na aba 'Ficha Comercial'!")
                 except Exception as e:
                     st.error(f"Erro ao salvar no banco: {str(e)}")
 
@@ -1154,31 +1415,15 @@ elif st.session_state["aba_ativa"] == "ia":
         c_ia_id = int(df_clientes[df_clientes["nome_empresa"] == cliente_ia]["id"].values[0])
         dados_c = obter_dados_cliente_por_id(c_ia_id)
 
-        cat = dados_c.get("categoria_principal") or "serviços locais"
+        cat = dados_c.get("categoria_principal") or "serviços especializados"
+        cat_sec = dados_c.get("categorias_secundarias") or ""
         reg = dados_c.get("area_cobertura") or "região"
         emp = dados_c.get("nome_empresa")
         resp_cliente = dados_c.get("responsavel") or emp
 
         st.markdown(f"**Banco Amplo de Pautas Inteligentes — Segmento: {cat} ({reg})**")
 
-        pautas_sugeridas = [
-            f"Como escolher o melhor serviço de {cat} em {reg}?",
-            f"Bastidores da equipe da {emp}: Nosso compromisso com a excelência.",
-            f"Conheça a estrutura imersiva da {emp} através do nosso Tour Virtual 360°.",
-            f"Diferenciais técnicos que tornam a {emp} referência absoluta na região.",
-            f"Atendimento rápido, orçamentos e facilidades pelo canal de atendimento da {emp}.",
-            f"Erros comuns ao contratar serviços de {cat} e como evitar na prática.",
-            f"Depoimentos, casos de sucesso e histórias de clientes atendidos pela {emp}.",
-            f"Por que o atendimento especializado em {cat} faz toda a diferença para você?",
-            f"Novidades, melhorias e atualizações nos serviços prestados pela {emp}.",
-            f"Perguntas frequentes (FAQ): Tire todas as suas dúvidas sobre {cat} com a {emp}.",
-            f"Quanto custa {cat} em {reg}? Fatores que definem o investimento.",
-            f"Passo a passo: como preparar sua visita antes de contratar {cat}.",
-            f"Tour Virtual 360° no Google Maps: como a {emp} aparece antes mesmo da visita.",
-            f"Sinais de confiança: o que avaliar em um fornecedor de {cat}.",
-            f"Sazonalidade: quando procurar {cat} em {reg} e como se planejar.",
-            f"Mitos e verdades sobre {cat} na região.",
-        ]
+        pautas_sugeridas = gerar_pautas_por_segmento(emp, cat, reg, cat_sec)
 
         section_title("Selecione e Personalize as Pautas do Mês:")
         pautas_selecionadas = []
@@ -1189,12 +1434,15 @@ elif st.session_state["aba_ativa"] == "ia":
                     ativo = st.checkbox(
                         f"Ativar pauta {idx}",
                         value=(idx <= 6),
-                        key=f"chk_pauta_{idx}",
+                        key=f"chk_pauta_{c_ia_id}_{idx}",
                         label_visibility="collapsed",
                     )
                 with col_txt:
                     p_editada = st.text_input(
-                        f"Pauta {idx}", value=p_text, key=f"txt_pauta_{idx}", label_visibility="collapsed",
+                        f"Pauta {idx}",
+                        value=p_text,
+                        key=f"txt_pauta_{c_ia_id}_{idx}",
+                        label_visibility="collapsed",
                     )
                 if ativo:
                     pautas_selecionadas.append(p_editada)
@@ -1202,10 +1450,10 @@ elif st.session_state["aba_ativa"] == "ia":
         section_title("✅ Otimizações Recomendadas para a Ficha")
         with glass_container():
             st.markdown(
-                "- **Respostas às avaliações:** responder todas em até 48h, inclusive as negativas, com palavras-chave do segmento.\n"
-                "- **Posts semanais no Perfil:** novidades, ofertas e eventos com foto e chamada para ação.\n"
-                "- **Fotos reais em alta resolução:** atualizar o acervo mensalmente e incluir equipe e bastidores.\n"
-                "- **Produtos e serviços:** cadastrar cada item com descrição e preço de referência.\n"
+                f"- **Respostas às avaliações:** responder todas em até 48h, inclusive as negativas, usando palavras-chave de **{cat}** em **{reg}**.\n"
+                f"- **Posts semanais no Perfil:** novidades, ofertas e diferenciais de **{cat}** com foto real e chamada para ação.\n"
+                "- **Fotos reais em alta resolução:** atualizar o acervo mensalmente e incluir equipe, estrutura e bastidores.\n"
+                "- **Produtos e serviços:** cadastrar cada item com descrição otimizada e preço de referência.\n"
                 "- **Perguntas e respostas (Q&A):** publicar as dúvidas frequentes respondidas pela própria empresa.\n"
                 "- **Categorias:** revisar a principal e as secundárias a cada trimestre.\n"
                 "- **Horários especiais:** cadastrar feriados e datas sazonais com antecedência.\n"
@@ -1215,7 +1463,8 @@ elif st.session_state["aba_ativa"] == "ia":
 
         st.markdown("---")
         section_title("🔗 Link Único de Aprovação Externa (Copie e envie ao cliente)")
-        link_exemplo = f"https://gestao-mensal-tour360vr.streamlit.app/?aprovar=true&cliente={emp.lower().replace(' ', '-')}"
+        slug_cli = urllib.parse.quote(emp.lower().replace(" ", "-"))
+        link_exemplo = f"https://gestao-mensal-tour360vr.streamlit.app/?aprovar=true&cliente={slug_cli}"
         st.code(link_exemplo, language=None)
 
         num_wsp = dados_c.get("whatsapp", "")
@@ -1223,7 +1472,7 @@ elif st.session_state["aba_ativa"] == "ia":
 
         texto_msg_wsp = (
             f"Olá {resp_cliente}!\nAqui é o Rubens da Tour360VR.\n"
-            f"Segue o link com o planejamento de pautas estratégicas para sua aprovação este mês: {link_exemplo}"
+            f"Segue o link com o planejamento de pautas estratégicas de {cat} para sua aprovação este mês: {link_exemplo}"
         )
         msg_wsp = urllib.parse.quote(texto_msg_wsp)
 
