@@ -535,10 +535,15 @@ def auditar_ficha_google_rigorosa(query_ou_url):
         return None, "Chave GOOGLE_API_KEY não configurada nos Secrets do Streamlit."
 
     try:
-        termo_busca = query_ou_url
-        if "http" in query_ou_url and ("maps.app.goo.gl" in query_ou_url or "goo.gl" in query_ou_url):
-            resp_redirect = requests.get(query_ou_url, allow_redirects=True, timeout=10)
-            termo_busca = resp_redirect.url
+        termo_busca = query_ou_url.strip()
+        if "http" in termo_busca:
+            if "maps.app.goo.gl" in termo_busca or "goo.gl" in termo_busca:
+                resp_redirect = requests.get(termo_busca, allow_redirects=True, timeout=10)
+                termo_busca = resp_redirect.url
+            # Extrai o nome da empresa de links /maps/place/Nome+Da+Empresa/ (funciona para SAB sem coordenadas)
+            if "/maps/place/" in termo_busca:
+                parte_nome = termo_busca.split("/maps/place/")[1].split("/")[0]
+                termo_busca = urllib.parse.unquote_plus(parte_nome)
 
         url_search = (
             "https://maps.googleapis.com/maps/api/place/textsearch/json"
