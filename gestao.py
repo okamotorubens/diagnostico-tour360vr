@@ -373,7 +373,7 @@ if "aprovar" in query_params or st.session_state.get("modo_aprovacao", False):
     cat_param = query_params.get("seg", "")
     reg_param = query_params.get("reg", "região")
 
-    # Tenta buscar o cliente real no banco para pegar segmento e região exatos
+    # Busca o cliente no banco para carregar segmento e região reais
     if cliente_slug:
         try:
             res_cli_aprov = supabase.table("clientes").select("nome_empresa, categoria_principal, categorias_secundarias, area_cobertura").execute()
@@ -528,7 +528,7 @@ def formatar_brl(valor):
     return f"R$ {valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 
-# --- AUDITORIA OFICIAL COM OS 9 CRITÉRIOS ---
+# --- AUDITORIA OFICIAL COM OS 9 CRITÉRIOS (SUPORTA SAB, g.page E PLACE ID) ---
 def auditar_ficha_google_rigorosa(query_ou_url):
     api_key = st.secrets.get("GOOGLE_API_KEY", "")
     if not api_key:
@@ -536,36 +536,61 @@ def auditar_ficha_google_rigorosa(query_ou_url):
 
     try:
         termo_busca = query_ou_url.strip()
-        if "http" in termo_busca:
-            if "maps.app.goo.gl" in termo_busca or "goo.gl" in termo_busca:
-                resp_redirect = requests.get(termo_busca, allow_redirects=True, timeout=10)
+        place_id = None
+
+        # 1. Caso o usuário cole diretamente um Place ID (ex: ChIJ...)
+        if termo_busca.startswith("ChIJ") and " " not in termo_busca:
+            place_id = termo_busca
+
+        # 2. Caso seja uma URL (maps.app.goo.gl, goo.gl, g.page/r/.../review ou maps/place/...)
+        elif "http" in termo_busca:
+            if any(dom in termo_busca for dom in ["maps.app.goo.gl", "goo.gl", "g.page"]):
+                resp_redirect = requests.get(
+                    termo_busca,
+                    allow_redirects=True,
+                    timeout=10,
+                    headers={"User-Agent": "Mozilla/5.0"},
+                )
                 termo_busca = resp_redirect.url
-            # Extrai o nome da empresa de links /maps/place/Nome+Da+Empresa/ (funciona para SAB sem coordenadas)
-            if "/maps/place/" in termo_busca:
+
+            # Extrai o parâmetro placeid= ou query_place_id= da URL final (padrão do g.page/r/.../review)
+            parsed = urllib.parse.urlparse(termo_busca)
+            qs = urllib.parse.parse_qs(parsed.query)
+            if "placeid" in qs:
+                place_id = qs["placeid"][0]
+            elif "query_place_id" in qs:
+                place_id = qs["query_place_id"][0]
+            elif "/maps/place/" in termo_busca:
                 parte_nome = termo_busca.split("/maps/place/")[1].split("/")[0]
                 termo_busca = urllib.parse.unquote_plus(parte_nome)
 
-        url_search = (
-            "https://maps.googleapis.com/maps/api/place/textsearch/json"
-            f"?query={urllib.parse.quote(termo_busca)}&key={api_key}&language=pt-BR"
-        )
-        resp = requests.get(url_search, timeout=10).json()
+        # 3. Se ainda não temos o place_id exato, busca via Text Search
+        if not place_id:
+            url_search = (
+                "https://maps.googleapis.com/maps/api/place/textsearch/json"
+                f"?query={urllib.parse.quote(termo_busca)}&key={api_key}&language=pt-BR"
+            )
+            resp = requests.get(url_search, timeout=10).json()
 
-        if not resp.get("results"):
-            return None, "Nenhum local encontrado com esta URL ou termo na Google Places API."
+            if not resp.get("results"):
+                return None, "Nenhum local encontrado com esta URL ou termo na Google Places API."
 
-        place = resp["results"][0]
-        place_id = place.get("place_id")
-        nome = place.get("name", "Empresa Selecionada")
+            place_id = resp["results"][0].get("place_id")
 
+        # 4. Consulta os detalhes completos pelo place_id exato
         url_details = (
             "https://maps.googleapis.com/maps/api/place/details/json"
             f"?place_id={place_id}&fields=name,formatted_address,formatted_phone_number,website,rating,"
             f"user_ratings_total,photos,opening_hours,business_status,types,editorial_summary,reviews"
             f"&key={api_key}&language=pt-BR"
         )
-        details = requests.get(url_details, timeout=10).json().get("result", {})
+        details_resp = requests.get(url_details, timeout=10).json()
+        details = details_resp.get("result", {})
 
+        if not details:
+            return None, f"Não foi possível obter os detalhes da ficha (Status API: {details_resp.get('status', 'desconhecido')})."
+
+        nome = details.get("name", "Empresa Selecionada")
         criterios = []
         score = 100
 
@@ -620,11 +645,15 @@ def auditar_ficha_google_rigorosa(query_ou_url):
         criterios.append(("9. Interação e Resposta a Avaliações", f"A API não informa respostas do gestor. Avaliações negativas na amostra: {len(negativas)}. Conferir respostas no painel.", "Verificação manual", "Manual"))
 
         score = max(0, score)
+        endereco_fmt = details.get("formatted_address", "Área de cobertura (sem endereço fixo)")
+        # Detecta se é empresa de área de cobertura (SAB) quando não há número/logradouro no endereço
+        eh_sab = not any(char.isdigit() for char in endereco_fmt.split(",")[0])
 
         return {
             "nome": nome,
             "score": score,
-            "endereco": details.get("formatted_address", "Endereço não informado"),
+            "endereco": endereco_fmt,
+            "eh_sab": eh_sab,
             "telefone": details.get("formatted_phone_number", "Não informado"),
             "website": website or "Não informado",
             "rating": rating,
@@ -684,7 +713,7 @@ def gerar_pdf_auditoria(res_aud):
     story.append(Spacer(1, 12))
     story.append(Paragraph(res_aud["nome"], nome_style))
     story.append(Spacer(1, 4))
-    story.append(Paragraph(f"<b>Endereço:</b> {res_aud['endereco']} | <b>Telefone:</b> {res_aud['telefone']}", body_style))
+    story.append(Paragraph(f"<b>Endereço / Área:</b> {res_aud['endereco']} | <b>Telefone:</b> {res_aud['telefone']}", body_style))
     story.append(Spacer(1, 24))
     story.append(Paragraph(f"Score da Ficha: {res_aud['score']}/100", score_style))
     story.append(Spacer(1, 24))
@@ -1229,8 +1258,8 @@ if st.session_state["aba_ativa"] == "cadastrar":
 elif st.session_state["aba_ativa"] == "auditoria":
     section_title("🔍 Auditoria Detalhada de Pontos de Busca (9 Critérios Oficiais)")
     url_prospect = st.text_input(
-        "URL ou Nome da Empresa no Google Maps:",
-        placeholder="https://maps.google.com/... ou Nome da Empresa",
+        "URL do Maps, Link de Avaliação (g.page), Place ID (ChIJ...) ou Nome da Empresa:",
+        placeholder="https://g.page/r/.../review, https://maps.google.com/... ou Nome da Empresa",
     )
 
     if st.button("⚡ Executar Varredura Rigorosa (API Google)"):
@@ -1246,13 +1275,14 @@ elif st.session_state["aba_ativa"] == "auditoria":
                 except Exception:
                     st.warning("Auditoria concluída, mas não foi possível salvar no histórico (verifique a tabela 'auditorias').")
         else:
-            st.warning("Insira uma URL ou o nome da empresa.")
+            st.warning("Insira uma URL, link g.page, Place ID ou o nome da empresa.")
 
     if "ultima_auditoria" in st.session_state:
         res_aud = st.session_state["ultima_auditoria"]
         with glass_container():
             st.markdown(f"### 🏢 {res_aud['nome']}")
-            st.markdown(f"📍 **Endereço:** {res_aud['endereco']} | 📞 **Tel:** {res_aud['telefone']}")
+            tipo_end_label = "Área de Cobertura (SAB)" if res_aud.get("eh_sab") else "Endereço"
+            st.markdown(f"📍 **{tipo_end_label}:** {res_aud['endereco']} | 📞 **Tel:** {res_aud['telefone']}")
 
             score = res_aud["score"]
             if score >= 75:
@@ -1310,6 +1340,7 @@ elif st.session_state["aba_ativa"] == "auditoria":
 
                         payload_update = {
                             "endereco_local": res_aud["endereco"],
+                            "atende_sem_endereco": bool(res_aud.get("eh_sab", False)),
                             "telefone_contato": res_aud["telefone"],
                             "observacoes_tecnicas": obs_combinada,
                         }
@@ -1329,6 +1360,8 @@ elif st.session_state["aba_ativa"] == "auditoria":
                         payload_novo = {
                             "nome_empresa": res_aud["nome"],
                             "endereco_local": res_aud["endereco"],
+                            "atende_sem_endereco": bool(res_aud.get("eh_sab", False)),
+                            "area_cobertura": res_aud["endereco"] if res_aud.get("eh_sab") else "",
                             "telefone_contato": res_aud["telefone"],
                             "website": res_aud["website"] if res_aud["website"] != "Não informado" else "",
                             "categoria_principal": res_aud.get("categoria_api", ""),
