@@ -374,7 +374,6 @@ if "aprovar" in query_params or st.session_state.get("modo_aprovacao", False):
     cat_param = query_params.get("seg", "")
     reg_param = query_params.get("reg", "região")
 
-    # Busca o cliente no banco para carregar segmento e região reais
     if cliente_slug:
         try:
             res_cli_aprov = supabase.table("clientes").select("nome_empresa, categoria_principal, categorias_secundarias, area_cobertura").execute()
@@ -516,6 +515,16 @@ def obter_dados_cliente_por_id(cliente_id):
     return None
 
 
+def excluir_cliente_completo(cliente_id):
+    """Remove o cliente e seus registros dependentes no Supabase."""
+    for tabela in ["historico_ficha", "metricas_mensais", "ranking_keywords"]:
+        try:
+            supabase.table(tabela).delete().eq("cliente_id", cliente_id).execute()
+        except Exception:
+            pass
+    supabase.table("clientes").delete().eq("id", cliente_id).execute()
+
+
 def calcular_variacao_pct(atual, anterior):
     if anterior is None or anterior == 0:
         return "+100%" if atual > 0 else "0%"
@@ -529,7 +538,7 @@ def formatar_brl(valor):
     return f"R$ {valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 
-# --- AUDITORIA OFICIAL COM OS 9 CRITÉRIOS (SUPORTA SAB, ftid, !1s, g.page E PLACE ID) ---
+# --- AUDITORIA OFICIAL COM OS 9 CRITÉRIOS (SUPORTA SAB, URL COM COORDENADAS, g.page E PLACE ID) ---
 def auditar_ficha_google_rigorosa(query_ou_url):
     api_key = st.secrets.get("GOOGLE_API_KEY", "")
     if not api_key:
@@ -538,16 +547,11 @@ def auditar_ficha_google_rigorosa(query_ou_url):
     try:
         termo_busca = query_ou_url.strip()
         place_id = None
-        ftid = None
+        lat_lng = None
 
-        # Remove prefixo "!1s" caso tenha sido colado junto ao CID
-        termo_sem_prefixo = termo_busca[3:] if termo_busca.startswith("!1s") else termo_busca
-
-        # 1. Caso o usuário cole diretamente um Place ID (ex: ChIJ...) ou CID (0x...:0x...)
-        if termo_sem_prefixo.startswith("ChIJ") and " " not in termo_sem_prefixo:
-            place_id = termo_sem_prefixo
-        elif re.fullmatch(r"0x[0-9a-fA-F]+:0x[0-9a-fA-F]+", termo_sem_prefixo):
-            ftid = termo_sem_prefixo
+        # 1. Caso o usuário cole diretamente um Place ID (ex: ChIJ...)
+        if termo_busca.startswith("ChIJ") and " " not in termo_busca:
+            place_id = termo_busca
 
         # 2. Caso seja uma URL do Google Maps / g.page
         elif "http" in termo_busca:
@@ -569,40 +573,47 @@ def auditar_ficha_google_rigorosa(query_ou_url):
             elif "query_place_id" in qs:
                 place_id = qs["query_place_id"][0]
 
-            # Extrai o CID hexadecimal (!1s0x...:0x...) padrão de links /maps/place//@... (SAB)
-            if not place_id:
-                match_ftid = re.search(r"!1s(0x[0-9a-fA-F]+:0x[0-9a-fA-F]+)", termo_busca)
-                if match_ftid:
-                    ftid = match_ftid.group(1)
-
-            if not place_id and not ftid and html_pagina:
+            if not place_id and html_pagina:
                 match_cid = re.search(r"(ChIJ[a-zA-Z0-9_-]{20,})", html_pagina)
                 if match_cid:
                     place_id = match_cid.group(1)
 
-            if not place_id and not ftid and "/maps/place/" in termo_busca:
+            # Extrai coordenadas @lat,lng se existirem na URL para ancorar a busca SAB
+            match_coords = re.search(r"@(-?\d+\.\d+),(-?\d+\.\d+)", termo_busca)
+            if match_coords:
+                lat_lng = f"{match_coords.group(1)},{match_coords.group(2)}"
+
+            # Extrai o nome da empresa da URL /maps/place/Nome+Da+Empresa/
+            if not place_id and "/maps/place/" in termo_busca:
                 parte_nome = termo_busca.split("/maps/place/")[1].split("/")[0]
                 if parte_nome:
                     termo_busca = urllib.parse.unquote_plus(parte_nome)
 
-        # 3. Se ainda não temos place_id nem ftid, busca via Text Search
-        if not place_id and not ftid:
-            url_search = (
-                "https://maps.googleapis.com/maps/api/place/textsearch/json"
-                f"?query={urllib.parse.quote(termo_busca)}&key={api_key}&language=pt-BR"
+        # 3. Se ainda não temos o place_id exato, busca via Find Place / Text Search
+        if not place_id:
+            bias_param = f"&locationbias=circle:50000@{lat_lng}" if lat_lng else ""
+            url_find = (
+                "https://maps.googleapis.com/maps/api/place/findplacefromtext/json"
+                f"?input={urllib.parse.quote(termo_busca)}&inputtype=textquery&fields=place_id,name"
+                f"{bias_param}&key={api_key}&language=pt-BR"
             )
-            resp = requests.get(url_search, timeout=10).json()
+            resp_find = requests.get(url_find, timeout=10).json()
+            if resp_find.get("candidates"):
+                place_id = resp_find["candidates"][0].get("place_id")
+            else:
+                url_search = (
+                    "https://maps.googleapis.com/maps/api/place/textsearch/json"
+                    f"?query={urllib.parse.quote(termo_busca)}&key={api_key}&language=pt-BR"
+                )
+                resp = requests.get(url_search, timeout=10).json()
+                if not resp.get("results"):
+                    return None, "Nenhum local encontrado com esta URL ou termo na Google Places API."
+                place_id = resp["results"][0].get("place_id")
 
-            if not resp.get("results"):
-                return None, "Nenhum local encontrado com esta URL ou termo na Google Places API."
-
-            place_id = resp["results"][0].get("place_id")
-
-        # 4. Consulta os detalhes completos pelo place_id OU ftid exato
-        param_id = f"place_id={place_id}" if place_id else f"ftid={ftid}"
+        # 4. Consulta os detalhes completos pelo place_id exato
         url_details = (
             "https://maps.googleapis.com/maps/api/place/details/json"
-            f"?{param_id}&fields=name,formatted_address,formatted_phone_number,website,rating,"
+            f"?place_id={place_id}&fields=name,formatted_address,formatted_phone_number,website,rating,"
             f"user_ratings_total,photos,opening_hours,business_status,types,editorial_summary,reviews"
             f"&key={api_key}&language=pt-BR"
         )
@@ -1235,13 +1246,16 @@ if st.session_state["aba_ativa"] == "cadastrar":
                             "cliente_id": novo_id, "data_alteracao": data_hora_sp,
                             "descricao_alteracao": "Cadastro Inicial",
                         }).execute()
-                        st.success(f"Ficha de '{nome_empresa}' cadastrada com sucesso! Atualize a página para ver a lista.")
+                        st.session_state["cliente_sel_cad"] = nome_empresa
+                        st.success(f"Ficha de '{nome_empresa}' cadastrada com sucesso!")
+                        st.rerun()
                 else:
                     supabase.table("clientes").update(payload).eq("id", c_id).execute()
                     supabase.table("historico_ficha").insert({
                         "cliente_id": c_id, "data_alteracao": data_hora_sp,
                         "descricao_alteracao": "Atualização Cadastral",
                     }).execute()
+                    st.session_state["cliente_sel_cad"] = nome_empresa
                     st.success(f"Ficha comercial de '{nome_empresa}' atualizada com sucesso!")
             except Exception as e:
                 st.error(f"Erro ao salvar: {str(e)}")
@@ -1271,6 +1285,32 @@ if st.session_state["aba_ativa"] == "cadastrar":
                 key="btn_download_qr_code_safe",
             )
 
+        st.markdown("<br>", unsafe_allow_html=True)
+        with st.expander("🗑️ Zona de Exclusão de Cadastro"):
+            st.warning(
+                f"Atenção: excluir **{cliente_menu}** removerá permanentemente a ficha comercial, "
+                "o histórico de alterações e as métricas mensais vinculadas a este cliente."
+            )
+            confirmar_exclusao = st.checkbox(
+                f"Confirmo que desejo excluir definitivamente o cadastro de '{cliente_menu}'",
+                key=f"chk_excluir_{c_id}",
+            )
+            if st.button(
+                "🗑️ Excluir Cadastro Permanentemente",
+                type="primary",
+                disabled=not confirmar_exclusao,
+                key=f"btn_excluir_{c_id}",
+            ):
+                try:
+                    excluir_cliente_completo(c_id)
+                    st.session_state["cliente_sel_cad"] = "➕ Cadastrar Novo Cliente"
+                    st.session_state.pop("cliente_id_edicao", None)
+                    st.success(f"Cadastro de '{cliente_menu}' excluído com sucesso!")
+                    time.sleep(0.8)
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Erro ao excluir cadastro: {str(e)}")
+
     gerar_botoes_navegacao_rodape()
 
 # ==========================================
@@ -1279,8 +1319,8 @@ if st.session_state["aba_ativa"] == "cadastrar":
 elif st.session_state["aba_ativa"] == "auditoria":
     section_title("🔍 Auditoria Detalhada de Pontos de Busca (9 Critérios Oficiais)")
     url_prospect = st.text_input(
-        "URL do Maps, Link de Avaliação (g.page), Place ID (ChIJ...) ou Nome da Empresa:",
-        placeholder="https://g.page/r/.../review, https://maps.google.com/... ou Nome da Empresa",
+        "URL do Maps, Link de Avaliação (g.page), Place ID (ChIJ...) ou Nome + Telefone da Empresa:",
+        placeholder="https://maps.google.com/..., ChIJ... ou Nome da Empresa + Telefone/Cidade",
     )
 
     if st.button("⚡ Executar Varredura Rigorosa (API Google)"):
@@ -1344,7 +1384,6 @@ elif st.session_state["aba_ativa"] == "auditoria":
             if st.button("💾 Salvar Ficha na Base de Clientes (Supabase)"):
                 try:
                     data_hora_sp = agora_brasil().strftime("%Y-%m-%d %H:%M")
-                    # Verifica se a empresa já existe para evitar erro de chave duplicada (23505)
                     busca_existente = (
                         supabase.table("clientes")
                         .select("id, categoria_principal, observacoes_tecnicas")
