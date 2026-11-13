@@ -528,7 +528,7 @@ def formatar_brl(valor):
     return f"R$ {valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 
-# --- AUDITORIA OFICIAL COM OS 9 CRITÉRIOS (SUPORTA SAB, g.page E PLACE ID) ---
+# --- AUDITORIA OFICIAL COM OS 9 CRITÉRIOS (SUPORTA SAB, ftid, !1s, g.page E PLACE ID) ---
 def auditar_ficha_google_rigorosa(query_ou_url):
     api_key = st.secrets.get("GOOGLE_API_KEY", "")
     if not api_key:
@@ -537,35 +537,55 @@ def auditar_ficha_google_rigorosa(query_ou_url):
     try:
         termo_busca = query_ou_url.strip()
         place_id = None
+        ftid = None
 
-        # 1. Caso o usuário cole diretamente um Place ID (ex: ChIJ...)
-        if termo_busca.startswith("ChIJ") and " " not in termo_busca:
-            place_id = termo_busca
+        # Remove prefixo "!1s" caso tenha sido colado junto ao CID
+        termo_sem_prefixo = termo_busca[3:] if termo_busca.startswith("!1s") else termo_busca
 
-        # 2. Caso seja uma URL (maps.app.goo.gl, goo.gl, g.page/r/.../review ou maps/place/...)
+        # 1. Caso o usuário cole diretamente um Place ID (ex: ChIJ...) ou CID (0x...:0x...)
+        if termo_sem_prefixo.startswith("ChIJ") and " " not in termo_sem_prefixo:
+            place_id = termo_sem_prefixo
+        elif re.fullmatch(r"0x[0-9a-fA-F]+:0x[0-9a-fA-F]+", termo_sem_prefixo):
+            ftid = termo_sem_prefixo
+
+        # 2. Caso seja uma URL do Google Maps / g.page
         elif "http" in termo_busca:
+            html_pagina = ""
             if any(dom in termo_busca for dom in ["maps.app.goo.gl", "goo.gl", "g.page"]):
                 resp_redirect = requests.get(
                     termo_busca,
                     allow_redirects=True,
                     timeout=10,
-                    headers={"User-Agent": "Mozilla/5.0"},
+                    headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"},
                 )
                 termo_busca = resp_redirect.url
+                html_pagina = resp_redirect.text
 
-            # Extrai o parâmetro placeid= ou query_place_id= da URL final (padrão do g.page/r/.../review)
             parsed = urllib.parse.urlparse(termo_busca)
             qs = urllib.parse.parse_qs(parsed.query)
             if "placeid" in qs:
                 place_id = qs["placeid"][0]
             elif "query_place_id" in qs:
                 place_id = qs["query_place_id"][0]
-            elif "/maps/place/" in termo_busca:
-                parte_nome = termo_busca.split("/maps/place/")[1].split("/")[0]
-                termo_busca = urllib.parse.unquote_plus(parte_nome)
 
-        # 3. Se ainda não temos o place_id exato, busca via Text Search
-        if not place_id:
+            # Extrai o CID hexadecimal (!1s0x...:0x...) padrão de links /maps/place//@... (SAB)
+            if not place_id:
+                match_ftid = re.search(r"!1s(0x[0-9a-fA-F]+:0x[0-9a-fA-F]+)", termo_busca)
+                if match_ftid:
+                    ftid = match_ftid.group(1)
+
+            if not place_id and not ftid and html_pagina:
+                match_cid = re.search(r"(ChIJ[a-zA-Z0-9_-]{20,})", html_pagina)
+                if match_cid:
+                    place_id = match_cid.group(1)
+
+            if not place_id and not ftid and "/maps/place/" in termo_busca:
+                parte_nome = termo_busca.split("/maps/place/")[1].split("/")[0]
+                if parte_nome:
+                    termo_busca = urllib.parse.unquote_plus(parte_nome)
+
+        # 3. Se ainda não temos place_id nem ftid, busca via Text Search
+        if not place_id and not ftid:
             url_search = (
                 "https://maps.googleapis.com/maps/api/place/textsearch/json"
                 f"?query={urllib.parse.quote(termo_busca)}&key={api_key}&language=pt-BR"
@@ -577,10 +597,11 @@ def auditar_ficha_google_rigorosa(query_ou_url):
 
             place_id = resp["results"][0].get("place_id")
 
-        # 4. Consulta os detalhes completos pelo place_id exato
+        # 4. Consulta os detalhes completos pelo place_id OU ftid exato
+        param_id = f"place_id={place_id}" if place_id else f"ftid={ftid}"
         url_details = (
             "https://maps.googleapis.com/maps/api/place/details/json"
-            f"?place_id={place_id}&fields=name,formatted_address,formatted_phone_number,website,rating,"
+            f"?{param_id}&fields=name,formatted_address,formatted_phone_number,website,rating,"
             f"user_ratings_total,photos,opening_hours,business_status,types,editorial_summary,reviews"
             f"&key={api_key}&language=pt-BR"
         )
@@ -646,7 +667,6 @@ def auditar_ficha_google_rigorosa(query_ou_url):
 
         score = max(0, score)
         endereco_fmt = details.get("formatted_address", "Área de cobertura (sem endereço fixo)")
-        # Detecta se é empresa de área de cobertura (SAB) quando não há número/logradouro no endereço
         eh_sab = not any(char.isdigit() for char in endereco_fmt.split(",")[0])
 
         return {
