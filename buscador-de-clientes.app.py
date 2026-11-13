@@ -3423,7 +3423,7 @@ elif st.session_state.etapa == 5:
 
       st.divider()
 
-     df_mapa_sorted = df_mapa_filtrado.sort_values(
+      df_mapa_sorted = df_mapa_filtrado.sort_values(
           by="score_oportunidade", ascending=False
       )
 
@@ -3439,7 +3439,8 @@ elif st.session_state.etapa == 5:
       }
 
       selecionadas_rota = st.multiselect(
-          "Escolha as empresas na ordem em que deseja visitar (deixe vazio para usar automaticamente as 8 maiores oportunidades):",
+          "Escolha as empresas na ordem em que deseja visitar (deixe vazio"
+          " para usar automaticamente as 8 maiores oportunidades):",
           options=opcoes_rota,
           max_selections=9,
           placeholder="Clique para selecionar empresas específicas...",
@@ -3452,7 +3453,8 @@ elif st.session_state.etapa == 5:
             if mapa_label_endereco[item].strip()
         ]
         texto_botao_rota = (
-            f"🗺️ Abrir Rota Personalizada no Google Maps ({len(enderecos_rota)} Paradas Selecionadas)"
+            f"🗺️ Abrir Rota Personalizada no Google Maps ({len(enderecos_rota)}"
+            " Paradas Selecionadas)"
         )
       elif len(selecionadas_rota) == 1:
         enderecos_rota = [
@@ -3469,7 +3471,8 @@ elif st.session_state.etapa == 5:
             if str(end).strip()
         ]
         texto_botao_rota = (
-            f"🗺️ Abrir Rota Automática no Google Maps (Top {len(enderecos_rota)} Oportunidades)"
+            "🗺️ Abrir Rota Automática no Google Maps (Top"
+            f" {len(enderecos_rota)} Oportunidades)"
         )
 
       if len(enderecos_rota) >= 2:
