@@ -2122,7 +2122,7 @@ elif st.session_state.etapa == 2:
         if novos and len(novos) > 0:
           mudar_etapa(3)
 
-  with tab_manual:
+with tab_manual:
     st.markdown("### Inserir Empresa Manualmente no CRM")
     st.caption(
         "Digite o Nome da Empresa e a Cidade e clique em 'Buscar Dados no"
@@ -2130,13 +2130,25 @@ elif st.session_state.etapa == 2:
         " automaticamente."
     )
 
+    # Aplica os dados buscados ANTES dos widgets serem instanciados na tela
+    if "dados_google_temp" in st.session_state:
+      dg = st.session_state.pop("dados_google_temp")
+      st.session_state["input_man_nome"] = dg["nome"]
+      st.session_state["input_man_end"] = dg["endereco"]
+      st.session_state["input_man_tel"] = dg["telefone"]
+      st.session_state["input_man_zap"] = dg["whatsapp"]
+      st.session_state["input_man_site"] = dg["website"]
+      st.session_state["input_man_nota"] = dg["nota"]
+      st.session_state["input_man_av"] = dg["total_avaliacoes"]
+      st.session_state["man_foto_url_cache"] = dg["foto_url"]
+      st.session_state["man_fotos_total_cache"] = dg["fotos_total"]
+      st.session_state["man_lat_cache"] = dg["latitude"]
+      st.session_state["man_lng_cache"] = dg["longitude"]
+      st.success("✅ Dados e foto encontrados no Google!")
+
     tags_existentes_cad = (
         sorted(
-            list(
-                set(
-                    [l.get("categoria", "Comércio") for l in base_leads]
-                )
-            )
+            list(set([l.get("categoria", "Comércio") for l in base_leads]))
         )
         if base_leads
         else ["Comércio", "Vestuário", "Saúde", "Alimentação"]
@@ -2165,18 +2177,7 @@ elif st.session_state.etapa == 2:
                 man_nome.strip(), man_cidade.strip()
             )
             if dados_g:
-              st.session_state["input_man_nome"] = dados_g["nome"]
-              st.session_state["input_man_end"] = dados_g["endereco"]
-              st.session_state["input_man_tel"] = dados_g["telefone"]
-              st.session_state["input_man_zap"] = dados_g["whatsapp"]
-              st.session_state["input_man_site"] = dados_g["website"]
-              st.session_state["input_man_nota"] = dados_g["nota"]
-              st.session_state["input_man_av"] = dados_g["total_avaliacoes"]
-              st.session_state["man_foto_url_cache"] = dados_g["foto_url"]
-              st.session_state["man_fotos_total_cache"] = dados_g["fotos_total"]
-              st.session_state["man_lat_cache"] = dados_g["latitude"]
-              st.session_state["man_lng_cache"] = dados_g["longitude"]
-              st.success("✅ Dados e foto encontrados no Google!")
+              st.session_state["dados_google_temp"] = dados_g
               st.rerun()
             else:
               st.warning(
