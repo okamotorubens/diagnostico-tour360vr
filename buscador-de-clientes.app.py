@@ -2122,7 +2122,7 @@ elif st.session_state.etapa == 2:
         if novos and len(novos) > 0:
           mudar_etapa(3)
 
-with tab_manual:
+  with tab_manual:
     st.markdown("### Inserir Empresa Manualmente no CRM")
     st.caption(
         "Digite o Nome da Empresa e a Cidade e clique em 'Buscar Dados no"
@@ -2130,7 +2130,6 @@ with tab_manual:
         " automaticamente."
     )
 
-    # Aplica os dados buscados ANTES dos widgets serem instanciados na tela
     if "dados_google_temp" in st.session_state:
       dg = st.session_state.pop("dados_google_temp")
       st.session_state["input_man_nome"] = dg["nome"]
@@ -2148,7 +2147,11 @@ with tab_manual:
 
     tags_existentes_cad = (
         sorted(
-            list(set([l.get("categoria", "Comércio") for l in base_leads]))
+            list(
+                set(
+                    [l.get("categoria", "Comércio") for l in base_leads]
+                )
+            )
         )
         if base_leads
         else ["Comércio", "Vestuário", "Saúde", "Alimentação"]
