@@ -3423,17 +3423,55 @@ elif st.session_state.etapa == 5:
 
       st.divider()
 
-      df_mapa_sorted = df_mapa_filtrado.sort_values(
+     df_mapa_sorted = df_mapa_filtrado.sort_values(
           by="score_oportunidade", ascending=False
       )
 
-      # --- BOTÃO DE ROTA MULTI-PARADAS (ATÉ 8 VISITAS EM SEQUÊNCIA) ---
-      top_visitas = df_mapa_sorted.head(8)
-      enderecos_rota = [
-          urllib.parse.quote(str(end))
-          for end in top_visitas["endereco"].tolist()
-          if str(end).strip()
+      # --- SELETOR MANUAL OU AUTOMÁTICO PARA ROTA MULTI-PARADAS ---
+      st.markdown("### 🗺️ Montar Rota Personalizada no GPS")
+      opcoes_rota = [
+          f"{r['nome']} — {r['endereco']}"
+          for _, r in df_mapa_sorted.iterrows()
       ]
+      mapa_label_endereco = {
+          f"{r['nome']} — {r['endereco']}": str(r["endereco"])
+          for _, r in df_mapa_sorted.iterrows()
+      }
+
+      selecionadas_rota = st.multiselect(
+          "Escolha as empresas na ordem em que deseja visitar (deixe vazio para usar automaticamente as 8 maiores oportunidades):",
+          options=opcoes_rota,
+          max_selections=9,
+          placeholder="Clique para selecionar empresas específicas...",
+      )
+
+      if len(selecionadas_rota) >= 2:
+        enderecos_rota = [
+            urllib.parse.quote(mapa_label_endereco[item])
+            for item in selecionadas_rota
+            if mapa_label_endereco[item].strip()
+        ]
+        texto_botao_rota = (
+            f"🗺️ Abrir Rota Personalizada no Google Maps ({len(enderecos_rota)} Paradas Selecionadas)"
+        )
+      elif len(selecionadas_rota) == 1:
+        enderecos_rota = [
+            urllib.parse.quote(mapa_label_endereco[selecionadas_rota[0]])
+        ]
+        texto_botao_rota = (
+            "🗺️ Abrir Rota no Google Maps (1 Destino Selecionado)"
+        )
+      else:
+        top_visitas = df_mapa_sorted.head(8)
+        enderecos_rota = [
+            urllib.parse.quote(str(end))
+            for end in top_visitas["endereco"].tolist()
+            if str(end).strip()
+        ]
+        texto_botao_rota = (
+            f"🗺️ Abrir Rota Automática no Google Maps (Top {len(enderecos_rota)} Oportunidades)"
+        )
+
       if len(enderecos_rota) >= 2:
         destino_final = enderecos_rota[-1]
         paradas_intermediarias = "|".join(enderecos_rota[:-1])
@@ -3442,7 +3480,16 @@ elif st.session_state.etapa == 5:
             f'<a href="{url_multi_rota}" target="_blank" style="text-decoration:none;"><button'
             ' style="width:100%; background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); color:white;'
             " border:1px solid #86efac; padding:12px; border-radius:8px; font-weight:bold; font-size:14px;"
-            f' cursor:pointer; margin-bottom:14px;">🗺️ Abrir Rota Completa no Google Maps ({len(enderecos_rota)} Paradas Prioritárias em Sequência)</button></a>',
+            f' cursor:pointer; margin-bottom:14px;">{texto_botao_rota}</button></a>',
+            unsafe_allow_html=True,
+        )
+      elif len(enderecos_rota) == 1:
+        url_rota_unica = f"https://www.google.com/maps/dir/?api=1&destination={enderecos_rota[0]}&travelmode=driving"
+        st.markdown(
+            f'<a href="{url_rota_unica}" target="_blank" style="text-decoration:none;"><button'
+            ' style="width:100%; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color:white;'
+            " border:1px solid #93c5fd; padding:12px; border-radius:8px; font-weight:bold; font-size:14px;"
+            f' cursor:pointer; margin-bottom:14px;">{texto_botao_rota}</button></a>',
             unsafe_allow_html=True,
         )
 
