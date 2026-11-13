@@ -3,6 +3,7 @@ import csv
 from datetime import date, datetime
 import io
 import json
+import math
 import os
 import re
 import time
@@ -145,8 +146,15 @@ components.html(
 )
 
 # -----------------------------------------------------------------------------
-# CACHE DE IMAGENS PARA ALTA PERFORMANCE NO CRM
+# UTILITÁRIOS DE FORMATAÇÃO E CACHE
 # -----------------------------------------------------------------------------
+def formatar_moeda_br(valor):
+  try:
+    val = float(valor or 0.0)
+  except (ValueError, TypeError):
+    val = 0.0
+  return f"R$ {val:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
 @st.cache_data(ttl=3600, show_spinner=False)
 def baixar_imagem_cache(url_foto):
   try:
@@ -210,6 +218,7 @@ def salvar_lead_db(lead):
           "pontos_criticos": lead.get("pontos_criticos", []),
           "oportunidades": lead.get("oportunidades", []),
           "score_oportunidade": int(lead.get("score_oportunidade", 0)),
+          "valor_estimado": float(lead.get("valor_estimado", 0.0)),
           "anotacoes": lead.get("anotacoes", ""),
           "favorito": bool(lead.get("favorito", False)),
           "data_followup": lead.get("data_followup", str(date.today())),
@@ -240,6 +249,19 @@ def atualizar_status_crm(lead_id, novo_status):
     )
   except Exception as e:
     st.error(f"Erro ao atualizar status: {str(e)}")
+
+def atualizar_valor_estimado_db(lead_id, novo_valor):
+  if not supabase:
+    return
+  try:
+    (
+        supabase.table("leads")
+        .update({"valor_estimado": float(novo_valor)})
+        .eq("id", lead_id)
+        .execute()
+    )
+  except Exception as e:
+    st.error(f"Erro ao atualizar valor estimado: {str(e)}")
 
 def atualizar_categoria_db(lead_id, nova_categoria):
   if not supabase:
@@ -329,12 +351,87 @@ def obter_coordenadas_endereco(endereco_completo, cidade):
 
   return -21.1775, -47.8103
 
+def buscar_dados_empresa_google_unico(nome_empresa, cidade):
+  api_key = st.secrets.get("GOOGLE_API_KEY", None) or os.getenv(
+      "GOOGLE_API_KEY", None
+  )
+  if not api_key:
+    return None
+
+  api_key_limpa = api_key.strip().replace('"', "").replace("'", "")
+  nome_limpo = re.sub(r"[´`\'\"]", "", nome_empresa.strip())
+  query_str = f"{nome_limpo} {cidade.strip()}"
+  base_url = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={urllib.parse.quote(query_str)}&language=pt-BR&key={api_key_limpa}"
+
+  try:
+    resp = requests.get(base_url, timeout=8).json()
+    results = resp.get("results", [])
+    if not results:
+      return None
+
+    place = results[0]
+    place_id = place.get("place_id")
+    det_res = {}
+    if place_id:
+      details_url = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=name,formatted_address,formatted_phone_number,website,rating,user_ratings_total,photos,geometry&language=pt-BR&key={api_key_limpa}"
+      det_res = requests.get(details_url, timeout=5).json().get("result", {})
+
+    nome = det_res.get("name") or place.get("name", nome_empresa)
+    endereco = det_res.get("formatted_address") or place.get(
+        "formatted_address", ""
+    )
+    telefone = det_res.get("formatted_phone_number", "")
+    website = det_res.get("website", "")
+    nota = float(det_res.get("rating", place.get("rating", 5.0)) or 5.0)
+    total_av = int(
+        det_res.get("user_ratings_total", place.get("user_ratings_total", 0))
+        or 0
+    )
+    photos = det_res.get("photos", place.get("photos", [])) or []
+
+    loc = det_res.get("geometry", {}).get("location") or place.get(
+        "geometry", {}
+    ).get("location", {})
+    lat = float(loc.get("lat", -21.1775))
+    lng = float(loc.get("lng", -47.8103))
+
+    foto_url = ""
+    if photos and photos[0].get("photo_reference"):
+      foto_url = (
+          "https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&"
+          f"photo_reference={photos[0].get('photo_reference')}&key={api_key_limpa}"
+      )
+
+    clean_phone = "".join(filter(str.isdigit, telefone))
+    if len(clean_phone) > 10 and clean_phone.startswith("55"):
+      clean_phone = clean_phone[2:]
+
+    return {
+        "nome": nome,
+        "endereco": endereco,
+        "telefone": telefone,
+        "whatsapp": clean_phone if len(clean_phone) >= 10 else "",
+        "website": website,
+        "nota": nota,
+        "total_avaliacoes": total_av,
+        "fotos_total": len(photos),
+        "foto_url": foto_url,
+        "latitude": lat,
+        "longitude": lng,
+    }
+  except Exception:
+    return None
+
 def carregar_todos_leads_db():
   if not supabase:
     return []
   try:
     res = supabase.table("leads").select("*").order("id", desc=True).execute()
-    return res.data or []
+    dados = res.data or []
+    for item in dados:
+      if item.get("valor_estimado") is None:
+        item["valor_estimado"] = 0.0
+    return dados
   except Exception as e:
     st.error(f"Erro ao carregar dados do Supabase: {str(e)}")
     return []
@@ -481,6 +578,13 @@ def revalidar_ficha_google(lead):
     photos = det_res.get("photos", place.get("photos", [])) or []
     has_https = novo_site.startswith("https://") if novo_site else False
 
+    nova_foto_url = lead.get("foto_url", "")
+    if photos and photos[0].get("photo_reference"):
+      nova_foto_url = (
+          "https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&"
+          f"photo_reference={photos[0].get('photo_reference')}&key={api_key_limpa}"
+      )
+
     auditoria = calcular_score_e_auditoria(
         fotos_total=len(photos),
         tour_360=lead.get("tour_360", False),
@@ -505,6 +609,7 @@ def revalidar_ficha_google(lead):
           "website": novo_site,
           "website_https": has_https,
           "fotos_total": len(photos),
+          "foto_url": nova_foto_url,
           "pontos_criticos": auditoria["pontos_criticos"],
           "oportunidades": auditoria["oportunidades"],
           "score_oportunidade": auditoria["score_oportunidade"],
@@ -516,6 +621,7 @@ def revalidar_ficha_google(lead):
     lead["website"] = novo_site
     lead["website_https"] = has_https
     lead["fotos_total"] = len(photos)
+    lead["foto_url"] = nova_foto_url
     lead["pontos_criticos"] = auditoria["pontos_criticos"]
     lead["oportunidades"] = auditoria["oportunidades"]
     lead["score_oportunidade"] = auditoria["score_oportunidade"]
@@ -537,7 +643,6 @@ def desenhar_cabecalho_rodape_diagnostico(canvas, doc):
   canvas.saveState()
   styles = getSampleStyleSheet()
 
-  # --- CABEÇALHO ---
   logo_tour_path = (
       "assests/logo_tour_transparente.png"
       if os.path.exists("assests/logo_tour_transparente.png")
@@ -585,7 +690,6 @@ def desenhar_cabecalho_rodape_diagnostico(canvas, doc):
   canvas.setLineWidth(0.75)
   canvas.line(36, 720, 576, 720)
 
-  # --- RODAPÉ ---
   canvas.setStrokeColor(colors.HexColor("#cbd5e1"))
   canvas.setLineWidth(0.75)
   canvas.line(36, 32, 576, 32)
@@ -775,7 +879,6 @@ def gerar_pdf_diagnostico_individual(lead):
   elements.append(t_cards)
   elements.append(Spacer(1, 10))
 
-  # ITENS DE AUDITORIA (CABEÇALHO EM AZUL ESCURO #1e3a8a)
   itens_9 = [
       (
           "1. Fotos e Resolução Visual",
@@ -831,7 +934,11 @@ def gerar_pdf_diagnostico_individual(lead):
   ]
 
   style_cell_head = ParagraphStyle(
-      "CellHead", parent=style_normal, fontName="Helvetica-Bold", textColor=colors.white, fontSize=8.5
+      "CellHead",
+      parent=style_normal,
+      fontName="Helvetica-Bold",
+      textColor=colors.white,
+      fontSize=8.5,
   )
   style_cell_tb = ParagraphStyle("CellTB", parent=style_normal, fontSize=8)
   style_cell_bold = ParagraphStyle(
@@ -872,7 +979,6 @@ def gerar_pdf_diagnostico_individual(lead):
   elements.append(t_9)
   elements.append(Spacer(1, 10))
 
-  # PONTOS CRÍTICOS
   elements.append(
       Paragraph(
           "PONTOS CRÍTICOS IDENTIFICADOS NA VITRINE DIGITAL",
@@ -887,7 +993,9 @@ def gerar_pdf_diagnostico_individual(lead):
       else auditoria["pontos_criticos"]
   )
   if not criticos_lista:
-    criticos_lista = auditoria["pontos_criticos"] or ["Nenhum ponto crítico grave identificado."]
+    criticos_lista = auditoria["pontos_criticos"] or [
+        "Nenhum ponto crítico grave identificado."
+    ]
 
   rows_criticos = []
   for pc in criticos_lista[:3]:
@@ -908,7 +1016,6 @@ def gerar_pdf_diagnostico_individual(lead):
   elements.append(t_criticos)
   elements.append(Spacer(1, 10))
 
-  # OPORTUNIDADES
   elements.append(
       Paragraph(
           "OPORTUNIDADES DE TRANSFORMAÇÃO E RETORNO COMERCIAL",
@@ -923,7 +1030,9 @@ def gerar_pdf_diagnostico_individual(lead):
       else auditoria["oportunidades"]
   )
   if not op_lista:
-    op_lista = auditoria["oportunidades"] or ["Manutenção contínua de presença digital e atualizações sazonais."]
+    op_lista = auditoria["oportunidades"] or [
+        "Manutenção contínua de presença digital e atualizações sazonais."
+    ]
 
   rows_op = []
   for op in op_lista[:3]:
@@ -944,7 +1053,6 @@ def gerar_pdf_diagnostico_individual(lead):
   elements.append(t_op)
   elements.append(Spacer(1, 10))
 
-  # CONTAINER DE CTA COM CANTOS ARREDONDADOS E BOTÃO ESTILO WHATSAPP MODERNO
   zap_num = "".join(filter(str.isdigit, CONTATO_WHATSAPP)) or "16991332121"
   link_wa = f"https://wa.me/55{zap_num}?text=Olá!%20Gostaria%20de%20solicitar%20a%20implantação%20do%20Tour%20Virtual%20360°%20para%20a%20{urllib.parse.quote(lead['nome'])}"
 
@@ -1402,6 +1510,10 @@ st.markdown(
 # -----------------------------------------------------------------------------
 if "etapa" not in st.session_state:
   st.session_state.etapa = 1
+if "pagina_crm" not in st.session_state:
+  st.session_state.pagina_crm = 1
+if "pdfs_gerados" not in st.session_state:
+  st.session_state.pdfs_gerados = {}
 
 def mudar_etapa(nova_etapa):
   st.session_state.etapa = nova_etapa
@@ -1600,6 +1712,7 @@ def buscar_google_places_api(
             "pontos_criticos": auditoria["pontos_criticos"],
             "oportunidades": auditoria["oportunidades"],
             "score_oportunidade": auditoria["score_oportunidade"],
+            "valor_estimado": 0.0,
             "anotacoes": "",
             "favorito": False,
             "data_followup": str(date.today()),
@@ -1657,6 +1770,7 @@ def gerar_csv_excel_formatado(dados_leads):
       "Nome da Empresa",
       "Categoria / Nicho",
       "Status Comercial CRM",
+      "Valor Estimado (R$)",
       "Favorito?",
       "Data Follow-up",
       "Endereço Completo",
@@ -1687,6 +1801,7 @@ def gerar_csv_excel_formatado(dados_leads):
 
     anotacoes_brutas = row.get("anotacoes", "") or ""
     anotacoes_limpas = " ".join(anotacoes_brutas.splitlines())
+    val_est_str = f"{float(row.get('valor_estimado', 0.0) or 0.0):.2f}".replace(".", ",")
 
     writer.writerow([
         row.get("id", ""),
@@ -1696,6 +1811,7 @@ def gerar_csv_excel_formatado(dados_leads):
         row.get("nome", ""),
         row.get("categoria", ""),
         row.get("status_crm", "🆕 Novo Lead"),
+        val_est_str,
         "Sim" if row.get("favorito") else "Não",
         row.get("data_followup", ""),
         row.get("endereco", ""),
@@ -1844,7 +1960,7 @@ if st.session_state.etapa == 1:
       """
         <div class="main-header">
             <h1 class="main-title">📈 Dashboard Executivo | Tour360VR</h1>
-            <div class="main-subtitle">Visão geral do seu funil de prospecção e oportunidades de mercado mapeadas.</div>
+            <div class="main-subtitle">Visão geral do seu funil de prospecção, faturamento e oportunidades de mercado mapeadas.</div>
         </div>
     """,
       unsafe_allow_html=True,
@@ -1857,21 +1973,34 @@ if st.session_state.etapa == 1:
     )
   else:
     df_dash = pd.DataFrame(base_leads)
+    df_dash["valor_estimado"] = pd.to_numeric(
+        df_dash.get("valor_estimado", 0.0), errors="coerce"
+    ).fillna(0.0)
 
-    col_m1, col_m2, col_m3, col_m4 = st.columns(4)
+    col_m1, col_m2, col_m3, col_m4, col_m5, col_m6 = st.columns(6)
     with col_m1:
-      st.metric("Total de Leads na Base", len(df_dash))
+      st.metric("Total de Leads", len(df_dash))
     with col_m2:
       favoritos_tot = len(df_dash[df_dash["favorito"] == True])
-      st.metric("⭐ Leads Favoritos / Quentes", favoritos_tot)
+      st.metric("⭐ Favoritos", favoritos_tot)
     with col_m3:
-      fechados = len(df_dash[df_dash["status_crm"] == "🤝 Cliente Fechado"])
-      st.metric("🤝 Clientes Fechados", fechados)
+      fechados_df = df_dash[df_dash["status_crm"] == "🤝 Cliente Fechado"]
+      st.metric("🤝 Fechados", len(fechados_df))
     with col_m4:
       sem_site_tot = len(df_dash[df_dash["website"] == ""])
       st.metric(
-          "🌐 Sem Website Oficial", f"{(sem_site_tot / len(df_dash) * 100):.1f}%"
+          "🌐 Sem Website", f"{(sem_site_tot / len(df_dash) * 100):.1f}%"
       )
+    with col_m5:
+      pipeline_ativo = df_dash[
+          df_dash["status_crm"].isin(
+              ["💬 Em Abordagem", "🛠️ Diagnóstico Gerado", "Em Negociação"]
+          )
+      ]["valor_estimado"].sum()
+      st.metric("💼 Em Negociação", formatar_moeda_br(pipeline_ativo))
+    with col_m6:
+      receita_fechada = fechados_df["valor_estimado"].sum()
+      st.metric("💰 Receita Fechada", formatar_moeda_br(receita_fechada))
 
     st.divider()
 
@@ -1894,9 +2023,14 @@ if st.session_state.etapa == 1:
           " agenda:"
       )
       for r_lead in pendentes_hoje[:5]:
+        val_txt = (
+            f" — Valor: **{formatar_moeda_br(r_lead.get('valor_estimado'))}**"
+            if float(r_lead.get("valor_estimado") or 0) > 0
+            else ""
+        )
         st.markdown(
             f"- **{r_lead['nome']}** ({r_lead['cidade_busca']}) — Status:"
-            f" `{r_lead['status_crm']}` — Retorno agendado para:"
+            f" `{r_lead['status_crm']}`{val_txt} — Retorno agendado para:"
             f" **{r_lead['data_followup']}**"
         )
     else:
@@ -1912,7 +2046,7 @@ elif st.session_state.etapa == 2:
       """
         <div class="main-header">
             <h1 class="main-title">🔎 Radar e Mineração de Mercado Local</h1>
-            <div class="main-subtitle">Varredura automática no Google Maps ou Cadastro Manual de empresas de rua e indicações.</div>
+            <div class="main-subtitle">Varredura automática no Google Maps ou Cadastro Manual enriquecido com dados do Google.</div>
         </div>
     """,
       unsafe_allow_html=True,
@@ -1991,8 +2125,9 @@ elif st.session_state.etapa == 2:
   with tab_manual:
     st.markdown("### Inserir Empresa Manualmente no CRM")
     st.caption(
-        "Use esta opção para adicionar leads de rua, indicações ou empresas"
-        " que não vieram na busca automática."
+        "Digite o Nome da Empresa e a Cidade e clique em 'Buscar Dados no"
+        " Google' para preencher endereço, telefone, nota e foto"
+        " automaticamente."
     )
 
     tags_existentes_cad = (
@@ -2008,7 +2143,47 @@ elif st.session_state.etapa == 2:
     )
     opcoes_tag_cad = tags_existentes_cad + ["➕ Digitar Nova Categoria..."]
 
-    man_nome = st.text_input("Nome da Empresa *", key="input_man_nome")
+    col_m_top1, col_m_top2, col_m_top3 = st.columns([3, 2, 2])
+    with col_m_top1:
+      man_nome = st.text_input("Nome da Empresa *", key="input_man_nome")
+    with col_m_top2:
+      man_cidade = st.text_input(
+          "Cidade *", value="Ribeirão Preto", key="input_man_cid"
+      )
+    with col_m_top3:
+      st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
+      if st.button(
+          "🔍 Buscar Dados no Google",
+          key="btn_auto_fill_manual",
+          use_container_width=True,
+      ):
+        if not man_nome.strip():
+          st.warning("⚠️ Digite o Nome da Empresa primeiro.")
+        else:
+          with st.spinner("Consultando ficha no Google Maps..."):
+            dados_g = buscar_dados_empresa_google_unico(
+                man_nome.strip(), man_cidade.strip()
+            )
+            if dados_g:
+              st.session_state["input_man_nome"] = dados_g["nome"]
+              st.session_state["input_man_end"] = dados_g["endereco"]
+              st.session_state["input_man_tel"] = dados_g["telefone"]
+              st.session_state["input_man_zap"] = dados_g["whatsapp"]
+              st.session_state["input_man_site"] = dados_g["website"]
+              st.session_state["input_man_nota"] = dados_g["nota"]
+              st.session_state["input_man_av"] = dados_g["total_avaliacoes"]
+              st.session_state["man_foto_url_cache"] = dados_g["foto_url"]
+              st.session_state["man_fotos_total_cache"] = dados_g["fotos_total"]
+              st.session_state["man_lat_cache"] = dados_g["latitude"]
+              st.session_state["man_lng_cache"] = dados_g["longitude"]
+              st.success("✅ Dados e foto encontrados no Google!")
+              st.rerun()
+            else:
+              st.warning(
+                  "⚠️ Empresa não encontrada automaticamente no Google. Você"
+                  " pode preencher os campos manualmente abaixo."
+              )
+
     escolha_cat_manual = st.selectbox(
         "Categoria / Tag / Nicho *",
         options=opcoes_tag_cad,
@@ -2025,31 +2200,32 @@ elif st.session_state.etapa == 2:
 
     m_col1, m_col2 = st.columns(2)
     with m_col1:
-      man_cidade = st.text_input(
-          "Cidade", value="Ribeirão Preto", key="input_man_cid"
-      )
       man_endereco = st.text_input(
           "Endereço Completo *",
-          value="",
           placeholder="Ex: Rua Exemplo, 100 - Centro",
           key="input_man_end",
       )
       man_tel = st.text_input(
           "Telefone / Contato",
-          value="",
           placeholder="Ex: (16) 3333-4444",
           key="input_man_tel",
       )
-    with m_col2:
       man_zap = st.text_input(
           "WhatsApp (apenas números com DDD)",
-          value="",
           placeholder="Ex: 16999999999",
           key="input_man_zap",
       )
+      man_valor = st.number_input(
+          "Valor Estimado da Proposta (R$)",
+          min_value=0.0,
+          max_value=500000.0,
+          value=0.0,
+          step=100.0,
+          key="input_man_valor",
+      )
+    with m_col2:
       man_site = st.text_input(
           "Website (Opcional)",
-          value="",
           placeholder="Ex: https://www.site.com.br",
           key="input_man_site",
       )
@@ -2089,15 +2265,21 @@ elif st.session_state.etapa == 2:
             "⚠️ Preencha o Nome, o Endereço e a Categoria/Nicho da empresa."
         )
       else:
-        with st.spinner("Geocodificando endereço exato e salvando na nuvem..."):
-          lat_manual, lng_manual = obter_coordenadas_endereco(
-              man_endereco.strip(), man_cidade
-          )
+        foto_salva = st.session_state.get("man_foto_url_cache", "")
+        fotos_qtd = st.session_state.get("man_fotos_total_cache", 5)
+        lat_manual = st.session_state.get("man_lat_cache")
+        lng_manual = st.session_state.get("man_lng_cache")
+
+        if lat_manual is None or lng_manual is None:
+          with st.spinner("Geocodificando endereço exato e salvando na nuvem..."):
+            lat_manual, lng_manual = obter_coordenadas_endereco(
+                man_endereco.strip(), man_cidade
+            )
 
         has_https = man_site.startswith("https://") if man_site else False
 
         auditoria_man = calcular_score_e_auditoria(
-            fotos_total=5,
+            fotos_total=fotos_qtd,
             tour_360=False,
             website=man_site.strip(),
             total_avaliacoes=man_av,
@@ -2129,17 +2311,18 @@ elif st.session_state.etapa == 2:
             "website_https": has_https,
             "instagram": instagram_url,
             "facebook": facebook_url,
-            "foto_url": "",
+            "foto_url": foto_salva,
             "nota": man_nota,
             "total_avaliacoes": man_av,
             "reivindicada": True,
-            "fotos_total": 5,
+            "fotos_total": fotos_qtd,
             "ultima_foto_dias": 30,
             "tour_360": False,
             "status_crm": "🆕 Novo Lead",
             "pontos_criticos": auditoria_man["pontos_criticos"],
             "oportunidades": auditoria_man["oportunidades"],
             "score_oportunidade": auditoria_man["score_oportunidade"],
+            "valor_estimado": float(man_valor),
             "anotacoes": (
                 f"[{datetime.now().strftime('%d/%m/%Y %H:%M')}] Cadastrado"
                 " manualmente no sistema."
@@ -2149,8 +2332,17 @@ elif st.session_state.etapa == 2:
             "obs_followup": "",
         }
         salvar_lead_db(lead_manual)
+
+        for k_clean in [
+            "man_foto_url_cache",
+            "man_fotos_total_cache",
+            "man_lat_cache",
+            "man_lng_cache",
+        ]:
+          st.session_state.pop(k_clean, None)
+
         st.success(f"✅ Empresa '{man_nome}' cadastrada e mapeada com sucesso!")
-        time.sleep(1.5)
+        time.sleep(1.2)
         mudar_etapa(3)
 
   if len(base_leads) > 0:
@@ -2170,7 +2362,7 @@ elif st.session_state.etapa == 3:
       """
         <div class="main-header">
             <h1 class="main-title">📊 Base de Leads e Gerenciador CRM</h1>
-            <div class="main-subtitle">Gerencie status, selecione tags, revalide fichas em tempo real, acompanhe a timeline de interações, exclua registros e exporte planilhas.</div>
+            <div class="main-subtitle">Gerencie status, valores de proposta, tags, revalidação em tempo real, timeline de interações e exclusão segura.</div>
         </div>
     """,
       unsafe_allow_html=True,
@@ -2266,8 +2458,12 @@ elif st.session_state.etapa == 3:
 
     col_res_info, col_res_ordem = st.columns([3, 1.5])
     with col_res_info:
+      soma_filtrada = sum(
+          float(r.get("valor_estimado") or 0.0) for r in resultados_filtrados
+      )
       st.markdown(
-          f"Exibindo **{len(resultados_filtrados)}** oportunidades salvas:"
+          f"Exibindo **{len(resultados_filtrados)}** oportunidades salvas"
+          f" (Pipeline filtrado: **{formatar_moeda_br(soma_filtrada)}**):"
       )
     with col_res_ordem:
       ordem_crm = st.selectbox(
@@ -2275,6 +2471,7 @@ elif st.session_state.etapa == 3:
           [
               "Mais recentes",
               "Maior Score de Oportunidade",
+              "Maior Valor Estimado",
               "Mais Avaliações",
               "Ordem Alfabética (A-Z)",
           ],
@@ -2285,6 +2482,12 @@ elif st.session_state.etapa == 3:
       resultados_filtrados = sorted(
           resultados_filtrados,
           key=lambda x: x.get("score_oportunidade", 0),
+          reverse=True,
+      )
+    elif ordem_crm == "Maior Valor Estimado":
+      resultados_filtrados = sorted(
+          resultados_filtrados,
+          key=lambda x: float(x.get("valor_estimado") or 0.0),
           reverse=True,
       )
     elif ordem_crm == "Mais Avaliações":
@@ -2298,9 +2501,45 @@ elif st.session_state.etapa == 3:
           resultados_filtrados, key=lambda x: x.get("nome", "").lower()
       )
 
+    # --- PAGINAÇÃO (15 LEADS POR PÁGINA PARA MÁXIMA VELOCIDADE) ---
+    ITENS_POR_PAGINA = 15
+    total_itens = len(resultados_filtrados)
+    total_paginas = max(1, math.ceil(total_itens / ITENS_POR_PAGINA))
+
+    if st.session_state.pagina_crm > total_paginas:
+      st.session_state.pagina_crm = 1
+
+    if total_paginas > 1:
+      p_col1, p_col2, p_col3 = st.columns([1.2, 2.6, 1.2])
+      with p_col1:
+        if st.button(
+            "⬅️ Página Anterior",
+            disabled=(st.session_state.pagina_crm <= 1),
+            use_container_width=True,
+        ):
+          st.session_state.pagina_crm -= 1
+          st.rerun()
+      with p_col2:
+        st.markdown(
+            f"<div style='text-align:center; padding-top:6px; font-weight:bold;'>Página {st.session_state.pagina_crm} de {total_paginas}</div>",
+            unsafe_allow_html=True,
+        )
+      with p_col3:
+        if st.button(
+            "Próxima Página ➡️",
+            disabled=(st.session_state.pagina_crm >= total_paginas),
+            use_container_width=True,
+        ):
+          st.session_state.pagina_crm += 1
+          st.rerun()
+
+    inicio_idx = (st.session_state.pagina_crm - 1) * ITENS_POR_PAGINA
+    fim_idx = inicio_idx + ITENS_POR_PAGINA
+    leads_pagina_atual = resultados_filtrados[inicio_idx:fim_idx]
+
     tags_ja_salvas = sorted(list(df_leads_crm["categoria"].unique()))
 
-    for lead in resultados_filtrados:
+    for lead in leads_pagina_atual:
       score = lead["score_oportunidade"]
       score_class = (
           "score-high"
@@ -2315,6 +2554,12 @@ elif st.session_state.etapa == 3:
 
       is_fav = lead.get("favorito", False)
       fav_label = "⭐ Favorito" if is_fav else "☆ Favoritar"
+      val_est_atual = float(lead.get("valor_estimado") or 0.0)
+      badge_valor = (
+          f" | 💰 <b>{formatar_moeda_br(val_est_atual)}</b>"
+          if val_est_atual > 0
+          else ""
+      )
 
       st.markdown(
           f"""
@@ -2322,7 +2567,7 @@ elif st.session_state.etapa == 3:
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
                         <div>
                             <h2 style="margin: 0; color: #ffffff; font-size: 19px;">{lead['nome']}</h2>
-                            <p style="margin: 3px 0 0 0; color: #94a3b8; font-size: 12.5px;">📍 {lead['endereco']} | 🏷️ <b>{lead['categoria']}</b></p>
+                            <p style="margin: 3px 0 0 0; color: #94a3b8; font-size: 12.5px;">📍 {lead['endereco']} | 🏷️ <b>{lead['categoria']}</b>{badge_valor}</p>
                         </div>
                         <div class="score-box {score_class}">
                             <div style="font-size: 9.5px; font-weight: bold;">SCORE OPORTUNIDADE</div>
@@ -2411,17 +2656,30 @@ elif st.session_state.etapa == 3:
         ):
           with st.spinner("Consultando dados atuais no Google Maps..."):
             revalidar_ficha_google(lead)
+            st.session_state.pdfs_gerados.pop(lead["id"], None)
             st.rerun()
 
-        pdf_bytes_ind = gerar_pdf_diagnostico_individual(lead)
-        st.download_button(
-            label="📄 Baixar Diagnóstico (.pdf)",
-            data=pdf_bytes_ind,
-            file_name=f"Diagnóstico de Presença Digital - {lead['nome']}.pdf",
-            mime="application/pdf",
-            key=f"dl_pdf_{lead['id']}",
-            use_container_width=True,
-        )
+        # --- GERAÇÃO DE PDF SOB DEMANDA (PERFORMANCE MÁXIMA) ---
+        if lead["id"] not in st.session_state.pdfs_gerados:
+          if st.button(
+              "⚙️ Preparar Diagnóstico (.pdf)",
+              key=f"prep_pdf_{lead['id']}",
+              use_container_width=True,
+          ):
+            with st.spinner("Gerando relatório PDF..."):
+              st.session_state.pdfs_gerados[lead["id"]] = (
+                  gerar_pdf_diagnostico_individual(lead).getvalue()
+              )
+              st.rerun()
+        else:
+          st.download_button(
+              label="📥 Baixar Diagnóstico (.pdf)",
+              data=st.session_state.pdfs_gerados[lead["id"]],
+              file_name=f"Diagnóstico de Presença Digital - {lead['nome']}.pdf",
+              mime="application/pdf",
+              key=f"dl_pdf_{lead['id']}",
+              use_container_width=True,
+          )
 
       with col_details1:
         st.markdown("**📊 Indicadores no Google:**")
@@ -2538,7 +2796,7 @@ TOUR360VR | Okamoto Mídias Visuais
           "<div style='border-top: 1px solid #334155; margin: 12px 0;'></div>",
           unsafe_allow_html=True,
       )
-      bar_col1, bar_col2, bar_col3 = st.columns([1.5, 3, 2.5])
+      bar_col1, bar_col2, bar_col3, bar_col4 = st.columns([1.3, 2.5, 2.0, 2.0])
 
       with bar_col1:
         st.markdown(
@@ -2575,13 +2833,27 @@ TOUR360VR | Okamoto Mídias Visuais
           st.toast("Status atualizado na nuvem!")
           st.rerun()
 
+      with bar_col3:
+        novo_valor_est = st.number_input(
+            "Valor Proposta (R$):",
+            min_value=0.0,
+            max_value=500000.0,
+            value=val_est_atual,
+            step=100.0,
+            key=f"val_est_{lead['id']}",
+        )
+        if novo_valor_est != val_est_atual:
+          atualizar_valor_estimado_db(lead["id"], novo_valor_est)
+          st.toast("Valor atualizado!")
+          st.rerun()
+
       dt_atual_str = lead.get("data_followup", str(date.today()))
       try:
         dt_obj = datetime.strptime(dt_atual_str, "%Y-%m-%d").date()
       except Exception:
         dt_obj = date.today()
 
-      with bar_col3:
+      with bar_col4:
         nova_data_fu = st.date_input(
             "Próximo Contato (Follow-up):",
             value=dt_obj,
@@ -2639,7 +2911,9 @@ TOUR360VR | Okamoto Mídias Visuais
 
             if btn_salvar_edit:
               site_limpo = edit_site.strip()
-              has_https_novo = site_limpo.startswith("https://") if site_limpo else False
+              has_https_novo = (
+                  site_limpo.startswith("https://") if site_limpo else False
+              )
               zap_limpo = "".join(filter(str.isdigit, edit_zap.strip()))
 
               nova_aud = calcular_score_e_auditoria(
@@ -2656,7 +2930,9 @@ TOUR360VR | Okamoto Mídias Visuais
                   "nome": edit_nome.strip(),
                   "endereco": edit_end.strip(),
                   "telefone": edit_tel.strip(),
-                  "whatsapp": zap_limpo if zap_limpo else lead.get("whatsapp", ""),
+                  "whatsapp": (
+                      zap_limpo if zap_limpo else lead.get("whatsapp", "")
+                  ),
                   "website": site_limpo,
                   "website_https": has_https_novo,
                   "instagram": edit_insta.strip(),
@@ -2677,6 +2953,7 @@ TOUR360VR | Okamoto Mídias Visuais
                   novos_dados["longitude"] = lng_novo
 
               atualizar_dados_cadastrais_db(lead["id"], novos_dados)
+              st.session_state.pdfs_gerados.pop(lead["id"], None)
               st.success("✅ Dados e Score atualizados com sucesso!")
               time.sleep(1)
               st.rerun()
@@ -2694,6 +2971,7 @@ TOUR360VR | Okamoto Mídias Visuais
               use_container_width=True,
           ):
             if excluir_lead_db(lead["id"]):
+              st.session_state.pdfs_gerados.pop(lead["id"], None)
               st.toast(f"Empresa '{lead['nome']}' removida do sistema!")
               time.sleep(0.5)
               st.rerun()
@@ -2959,7 +3237,7 @@ elif st.session_state.etapa == 5:
       """
         <div class="main-header">
             <h1 class="main-title">🗺️ Mapa & Planejador de Rotas de Visitas</h1>
-            <div class="main-subtitle">Visualize leads no mapa com pins coloridos profissionais e organize seu itinerário sequencial.</div>
+            <div class="main-subtitle">Visualize leads no mapa, gere rotas multi-paradas no GPS e organize seu itinerário presencial.</div>
         </div>
     """,
       unsafe_allow_html=True,
@@ -3141,16 +3419,35 @@ elif st.session_state.etapa == 5:
 
       st.divider()
 
+      df_mapa_sorted = df_mapa_filtrado.sort_values(
+          by="score_oportunidade", ascending=False
+      )
+
+      # --- BOTÃO DE ROTA MULTI-PARADAS (ATÉ 8 VISITAS EM SEQUÊNCIA) ---
+      top_visitas = df_mapa_sorted.head(8)
+      enderecos_rota = [
+          urllib.parse.quote(str(end))
+          for end in top_visitas["endereco"].tolist()
+          if str(end).strip()
+      ]
+      if len(enderecos_rota) >= 2:
+        destino_final = enderecos_rota[-1]
+        paradas_intermediarias = "|".join(enderecos_rota[:-1])
+        url_multi_rota = f"https://www.google.com/maps/dir/?api=1&destination={destino_final}&waypoints={paradas_intermediarias}&travelmode=driving"
+        st.markdown(
+            f'<a href="{url_multi_rota}" target="_blank" style="text-decoration:none;"><button'
+            ' style="width:100%; background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); color:white;'
+            " border:1px solid #86efac; padding:12px; border-radius:8px; font-weight:bold; font-size:14px;"
+            f' cursor:pointer; margin-bottom:14px;">🗺️ Abrir Rota Completa no Google Maps ({len(enderecos_rota)} Paradas Prioritárias em Sequência)</button></a>',
+            unsafe_allow_html=True,
+        )
+
       st.markdown(
           "### 🚗 Itinerário Sequencial de Visitas Presenciais (Prioridade"
           " Comercial)"
       )
       st.markdown(
           "Lista ordenada do maior score de oportunidade para o menor:"
-      )
-
-      df_mapa_sorted = df_mapa_filtrado.sort_values(
-          by="score_oportunidade", ascending=False
       )
 
       for idx, (_, r_visita) in enumerate(
@@ -3219,7 +3516,7 @@ elif st.session_state.etapa == 6:
       """
         <div class="main-header">
             <h1 class="main-title">🚀 Radar Prospecção Pro</h1>
-            <div class="main-subtitle">Funil Kanban interativo: cards compactos expansíveis para otimizar sua visualização e agilizar o dia a dia.</div>
+            <div class="main-subtitle">Funil Kanban interativo com acompanhamento financeiro por etapa de negociação.</div>
         </div>
     """,
       unsafe_allow_html=True,
@@ -3233,6 +3530,9 @@ elif st.session_state.etapa == 6:
   else:
     col_fk1, col_fk2 = st.columns([2, 2])
     df_kanban = pd.DataFrame(base_leads)
+    df_kanban["valor_estimado"] = pd.to_numeric(
+        df_kanban.get("valor_estimado", 0.0), errors="coerce"
+    ).fillna(0.0)
 
     with col_fk1:
       tags_k = ["Todos os Nichos / Tags"] + list(
@@ -3289,7 +3589,12 @@ elif st.session_state.etapa == 6:
               else pd.DataFrame()
           )
 
+        soma_col = (
+            leads_col["valor_estimado"].sum() if len(leads_col) > 0 else 0.0
+        )
         st.markdown(f"#### {status_nome} ({len(leads_col)})")
+        if soma_col > 0:
+          st.caption(f"💰 Total: **{formatar_moeda_br(soma_col)}**")
         st.markdown(
             "<div style='height: 4px;'></div>", unsafe_allow_html=True
         )
@@ -3299,10 +3604,14 @@ elif st.session_state.etapa == 6:
         else:
           for _, l in leads_col.iterrows():
             tem_site_bool = bool(l.get("website"))
+            val_card = float(l.get("valor_estimado") or 0.0)
+            sufixo_val = (
+                f" | {formatar_moeda_br(val_card)}" if val_card > 0 else ""
+            )
 
             titulo_card = (
                 f"{l.get('nome', '')} ({l.get('categoria', 'Geral')}) - ⭐"
-                f" {l.get('nota', 0.0)}"
+                f" {l.get('nota', 0.0)}{sufixo_val}"
             )
 
             with st.expander(titulo_card, expanded=False):
